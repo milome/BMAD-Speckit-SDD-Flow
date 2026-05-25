@@ -5,7 +5,8 @@ process.exit(
   runStageAudit(process.argv.slice(2), {
     cliName: 'audit_implementation_readiness.js',
     stage: 'implementation_readiness',
-    mode: 'readiness',
-    exitSemantics: 'fails when confirmability fails or deliveryReadiness.ready is false',
+    mode: 'implementation',
+    exitSemantics:
+      'fails when contract confirmation, current hashes, required sections, or reverse-audit checks fail; deliveryReadiness.ready is not required before implementation runs',
   })
 );

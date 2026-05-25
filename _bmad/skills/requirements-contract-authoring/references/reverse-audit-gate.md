@@ -1,6 +1,15 @@
 # Reverse Audit Gate
 
-Use this gate before an implementation source document can be used for readiness or implementation. The gate consumes `confirmation-render-report.json` as the structured renderer authority, then adds reverse-audit-only checks for confirmation state, render freshness, anti-smoke evidence, report shape, and a bounded pre-render definition drilldown report.
+Use this gate before an implementation source document can be used for readiness or implementation. The gate consumes `confirmation-render-report.json` as the structured renderer authority, then adds reverse-audit-only checks for confirmation state, render freshness, anti-smoke evidence, report shape, a bounded pre-render definition drilldown report, and the pre-confirmation atomic decomposition loop gate report.
+
+Reverse audit is layered:
+
+- contract confirmability audit
+- implementation readiness audit
+- delivery verification audit
+- closeout integrity audit
+
+This requirement affects contract confirmability audit. It must not mix delivery verification or closeout integrity into the scope confirmation decision.
 
 The renderer owns structure and coverage blocking rules. Reverse audit must not maintain a second copy of renderer `blockingIssues` logic, but it must fail closed when the consumed render report is missing the minimum schema fields needed to trust that authority.
 
@@ -13,11 +22,14 @@ The source document must include a `Reverse Audit Report` section with verdict `
 
 Do not use the source document for implementation with a `FAIL` verdict. Do not use the source document for delivery/readiness claims unless either reverse audit was run with `--mode readiness` and passed, or another current delivery gate proves `deliveryReadiness.ready=true`.
 
+The contract confirmability audit answers only whether the requirements scope can be confirmed. The user confirms only the requirements scope. It is not implementation complete, not delivery ready, not launch ready, not merge ready, and not closeout ready. `deliveryReadiness must not be represented as ready` unless separate delivery evidence is current and stage-specific gates pass.
+
 ## Audit Inputs
 
 - Inline `implementationConfirmation`.
 - `confirmation-render-report.json` and hashes.
 - Optional grill/definition audit report.
+- Pre-render MUST decomposition gate report.
 - Mermaid diagrams and business steps.
 - Artifact and automation plan.
 - `traceRows` and E2E acceptance evidence.
@@ -39,6 +51,9 @@ Do not use the source document for implementation with a `FAIL` verdict. Do not 
    - Verify `confirmInstruction` contains `sourceDocumentHash`, `implementationConfirmationHash`, and `confirmationPageHash`.
    - Verify the render report includes the minimum integrity schema: hashes, `actualHtmlFileHash`, `generatedAt`, `deliveryReadiness`, `blockingIssues[]`, `warnings[]`, coverage objects, `confirmInstruction`, and `artifactRef`.
    - Report `deliveryReadiness` separately in implementation mode; require `deliveryReadiness.ready === true` only in readiness mode.
+   - Verify the renderer showed `pre-confirmation-semantic-drilldown` in `renderedSections[]`.
+   - Verify `preConfirmationSemanticDrilldown` exists and points to the current gate report.
+   - Verify deliveryReadiness must not be represented as ready when only contract confirmability is proven.
 3. Reconfirmation:
    - If current hashes differ from previously confirmed hashes, verify `implementationConfirmation.status` is `reconfirm_required`.
    - Verify `reconfirmationRequest.required: true` exists with previous hashes, current hashes, diff summary, impacted IDs, and allowed user actions.
@@ -80,6 +95,18 @@ Do not use the source document for implementation with a `FAIL` verdict. Do not 
    - If `--grill-report` is supplied, fail only on findings where `severity` is `blocking` or `blocker` and `status` is not `resolved`.
    - Verify the report's `sourceDocumentHash` and `implementationConfirmationHash` match the current source document before trusting its result.
    - Treat warning-only grill findings as warnings in reverse audit output.
+12. Pre-confirmation semantic drilldown:
+   - Consume the embedded `preConfirmationSemanticDrilldown` report reference or explicit `--drilldown-gate-report`.
+   - Fail closed on missing kernel, missing packet, missing critic convergence, missing reconciliation, stale hashes, failed gate verdict, or renderer did not show drilldown sections.
+   - Verify `semantic-kernel.json` is current.
+   - Verify `must_decomposition_packet.json` is synchronized and current.
+   - Verify Critical Auditor has `consecutiveNoNewGapRounds: 3`.
+   - Verify packet/source reconciliation passed.
+   - Verify `MUST -> packet -> projections -> source rows`.
+   - Verify `packet projection -> implementationConfirmation row`.
+   - Verify `implementationConfirmation row -> packet projection`.
+   - Block when a source row independently invented outside packet projection is detected.
+   - Block when a packet projection not materialized into source is detected.
 
 ## Required Report Shape
 
@@ -125,11 +152,12 @@ Supported explicit form:
 node <skill-dir>/scripts/reverse_audit_contract.js \
   --source <source-document.md> \
   --render-report <confirmation-render-report.json> \
+  --drilldown-gate-report <pre-render-must-decomposition-gate-report.json> \
   --mode implementation \
   --json
 ```
 
-Use `--mode readiness` only when the caller wants `deliveryReadiness.ready=true` to be a hard failure condition. Use `--grill-report <report.json>` to merge a separate grill/definition audit report.
+Use `--mode readiness` only when the caller wants `deliveryReadiness.ready=true` to be a hard failure condition. Use `--grill-report <report.json>` to merge a separate grill/definition audit report. Use `--drilldown-gate-report` or `--must-decomposition-gate-report` to supply the pre-render MUST decomposition gate report explicitly.
 
 Stage-specific CLI form:
 
@@ -137,6 +165,7 @@ Stage-specific CLI form:
 node <skill-dir>/scripts/audit_contract_confirmability.js \
   --source <source-document.md> \
   --render-report <confirmation-render-report.json> \
+  --drilldown-gate-report <pre-render-must-decomposition-gate-report.json> \
   --json
 
 node <skill-dir>/scripts/audit_implementation_readiness.js \
@@ -191,6 +220,23 @@ node <skill-dir>/scripts/pre_render_definition_drilldown.js \
 ```
 
 Use the pre-render output as the deterministic automation equivalent of a grill-with-docs pass: it reviews only requirement semantic fields, emits blocker/warning findings with recommended answers, records source/implementation/context hashes, and can later be supplied back through `--grill-report`.
+
+Pre-render MUST decomposition gate form:
+
+```bash
+node <skill-dir>/scripts/pre_render_must_decomposition_gate.js \
+  --source <source-document.md> \
+  --authoring-dir _bmad-output/runtime/requirement-records/<recordId>/authoring \
+  --json
+```
+
+The gate writes:
+
+- `must_decomposition_receipt.json`
+- `must_packet_source_reconciliation_report.json`
+- `pre-render-must-decomposition-gate-report.json`
+
+The gate must block on missing semantic kernel, missing must_decomposition_packet, stale packet hash, missing Critical Auditor receipt, fewer than three no-new-gap rounds, unresolved validated gap, incomplete question coverage, `actualTaskCount < expectedTaskCount`, over-broad atomic task, missing packet projection, source row independently invented, packet projection not materialized, missing packet/source reconciliation, renderer missing drilldown sections, or stale gate hashes.
 
 Convergence fields:
 

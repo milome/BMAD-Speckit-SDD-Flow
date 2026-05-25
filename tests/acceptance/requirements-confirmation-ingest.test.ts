@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { createRequire } from 'node:module';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 const ROOT = process.cwd();
@@ -37,6 +38,19 @@ const REQ_TRACE_PROMPT = path.join(
   'scripts',
   'generate_prompt.py'
 );
+const requireForRenderer = createRequire(import.meta.url);
+const {
+  extractImplementationConfirmation,
+  sourceDocumentHashFor,
+  implementationConfirmationHashFor,
+} = requireForRenderer(path.join(
+  ROOT,
+  '_bmad',
+  'skills',
+  'requirements-contract-authoring',
+  'scripts',
+  'pre_render_definition_drilldown_lib.js'
+));
 
 let tempDir: string;
 
@@ -77,7 +91,7 @@ implementationConfirmation:
   confirmedBy: null
   sourceDocumentHash: null
   confirmationProfile: implementation_confirmation
-  requiredViewPacks: []
+  requiredViewPacks: ["currentTargetMap"]
   optionalViewPacks: []
   applicability:
     governanceEvents:
@@ -91,11 +105,14 @@ implementationConfirmation:
       applies: true
       reasonCode: "read model boundary stays visible"
     currentTargetMap:
-      applies: false
-      reasonCode: "not needed for this fixture"
+      applies: true
+      reasonCode: "confirmation ingest fixture must expose current target map"
     scriptsAndHooks:
       applies: true
       reasonCode: "ingest script is part of automation plan"
+    aiTddContractGate:
+      applies: true
+      reasonCode: "confirmation ingest fixture must expose AI-TDD manifest projection"
   governanceEventTypeRegistryPolicy:
     controlFieldVocabulary: ["artifactIndex", "confirmationHistory"]
     payloadKindContracts:
@@ -116,26 +133,35 @@ implementationConfirmation:
   must:
     - id: MUST-001
       text: "Confirmed source can be ingested into requirement record."
+      textZh: "已确认的源文档可以写入需求记录。"
       evidenceRefs: ["EVD-001"]
+      coveredByTraceRows: ["TRACE-001"]
   notDone:
     - id: NEG-001
       text: "Mismatched confirmation text must not write user_confirmed."
+      textZh: "不匹配的确认文本不得写入 user_confirmed。"
       evidenceRefs: ["EVD-002"]
+      coveredByFailurePath: ["FAIL-001"]
   mustNot:
     - id: OUT-001
       text: "Renderer must not write confirmation state."
+      textZh: "Renderer 不得写入确认状态。"
   evidence:
     - id: EVD-001
       text: "Run controlled ingest and inspect requirement record."
+      textZh: "运行受控写入并检查需求记录。"
       gate: "node ingest-confirmation-event.js"
       oracle: "requirement-record.json contains confirmation_recorded event."
+      oracleZh: "requirement-record.json 包含 confirmation_recorded 事件。"
       requiredCommandRefs: ["CMD-001"]
       artifactRefs: ["ART-001"]
       acceptanceType: acceptance_test
     - id: EVD-002
       text: "Run controlled ingest with wrong hash."
+      textZh: "使用错误 hash 运行受控写入。"
       gate: "node ingest-confirmation-event.js"
       oracle: "process exits non-zero and source remains unconfirmed."
+      oracleZh: "进程非零退出，并且源文档保持未确认。"
       requiredCommandRefs: ["CMD-002"]
       artifactRefs: ["ART-002"]
       acceptanceType: negative_test
@@ -143,16 +169,29 @@ implementationConfirmation:
   failurePaths:
     - id: FAIL-001
       title: "Wrong confirmation hash rejected"
+      titleZh: "拒绝错误确认 hash"
       trigger: "User confirmation text contains stale hash."
+      triggerZh: "用户确认文本包含过期 hash。"
       expectedBehavior: "Reject write."
+      expectedBehaviorZh: "拒绝写入。"
       forbiddenBehavior: "Do not set user_confirmed."
+      forbiddenBehaviorZh: "不得设置 user_confirmed。"
       linkedNegIds: ["NEG-001"]
       linkedEvidenceIds: ["EVD-002"]
+      traceRows: ["TRACE-001"]
+      viewRefs: ["EDGE-001"]
+      requiredAssertions: ["mismatched hash is rejected"]
   edgeCases:
     - id: EDGE-001
       condition: "Render report is stale."
+      conditionZh: "渲染报告已过期。"
       expectedBehavior: "Reject write."
+      expectedBehaviorZh: "拒绝写入。"
       linkedIds: ["NEG-001", "EVD-002"]
+      linkedFailurePathIds: ["FAIL-001"]
+      linkedEvidenceIds: ["EVD-002"]
+      traceRows: ["TRACE-001"]
+      viewRefs: ["EDGE-001"]
   traceRows:
     - id: TRACE-001
       covers: ["MUST-001", "NEG-001"]
@@ -162,7 +201,36 @@ implementationConfirmation:
       artifactRefs: ["ART-001", "ART-002"]
       contractValidationCommandRefs: ["CMD-001"]
       deliveryEvidenceCommandRefs: ["CMD-002"]
+      acceptanceRefs: ["ACC-001", "E2E-001"]
       status: PENDING
+  acceptanceTests:
+    - id: ACC-001
+      file: "tests/acceptance/requirements-confirmation-ingest.test.ts"
+      covers: ["MUST-001"]
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
+      commandRefs: ["CMD-001"]
+      failurePathRefs: ["FAIL-001"]
+      edgeCaseRefs: ["EDGE-001"]
+      expectedPreImplementationState: expected_red
+      oracle: "Controlled ingest writes confirmation_recorded."
+      positiveControl: true
+      negativeControls: ["NEG-001"]
+      mockOnly: false
+  e2eSuites:
+    - id: E2E-001
+      file: "tests/acceptance/requirements-confirmation-ingest.test.ts"
+      covers: ["NEG-001"]
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-002"]
+      commandRefs: ["CMD-002"]
+      failurePathRefs: ["FAIL-001"]
+      edgeCaseRefs: ["EDGE-001"]
+      expectedPreImplementationState: expected_red
+      oracle: "Mismatched confirmation text is rejected."
+      positiveControl: true
+      negativeControls: ["NEG-001"]
+      mockOnly: false
   requiredCommands:
     - id: CMD-001
       command: "node ingest-confirmation-event.js"
@@ -172,6 +240,9 @@ implementationConfirmation:
       purpose: "Validate stale confirmation rejection."
   closeoutReadinessPreview:
     requiredCommands: ["CMD-001", "CMD-002"]
+    orphanPolicy: "confirmation artifacts are not delivery proof"
+    currentAttemptPolicy: "deliveryReadiness remains false before implementation evidence"
+    recordClosedPolicy: "confirmation ingest does not close implementation"
   sequenceViews:
     - id: SEQ-001
       title: "Confirmation ingest success and rejection"
@@ -189,6 +260,70 @@ implementationConfirmation:
     - id: BOUNDARY-001
       title: "Renderer is read-only"
       covers: ["OUT-001"]
+  currentTargetMap:
+    schemaVersion: current-target-map/v1
+    displayProfile: closed_loop_current_target_map
+    introduction: "Confirmation ingest current target map."
+    currentSummary:
+      - id: CT-CUR-001
+        title: "Draft confirmation source"
+        detail: "Source is not yet controlled-ingested."
+    targetSummary:
+      - id: CT-TGT-001
+        title: "Controlled confirmation record"
+        detail: "Exact phrase and hashes write confirmation_recorded."
+    diffRows:
+      - id: CT-DIFF-001
+        dimension: "Confirmation state"
+        currentState: "draft"
+        targetState: "user_confirmed"
+        action: "controlled ingest"
+      - id: CT-DIFF-002
+        dimension: "Hash verification"
+        currentState: "rendered hashes are not yet controlled-ingested"
+        targetState: "sourceDocumentHash and confirmationHtmlHash match the render report"
+        action: "validate exact confirmation text before writing control state"
+      - id: CT-DIFF-003
+        dimension: "Control event log"
+        currentState: "no confirmation_recorded event exists"
+        targetState: "confirmation_recorded is appended by the registered writer"
+        action: "write the controlled event and update requirement-record.json"
+    process:
+      - id: CT-PROC-001
+        phase: "confirmation"
+        currentState: "rendered"
+        targetState: "recorded"
+    artifactPaths:
+      - id: CT-ARTPATH-001
+        path: "_bmad-output/runtime/requirement-records/REQ-CONFIRM-INGEST/requirement-record.json"
+        targetRole: "controlled requirement record"
+        traceRows: ["TRACE-001"]
+        evidenceRefs: ["EVD-001"]
+    canonicalArtifacts:
+      - id: CT-CANON-001
+        targetPathOrField: "_bmad-output/runtime/requirement-records/REQ-CONFIRM-INGEST/requirement-record.json"
+        functionDescription: "Stores confirmation_recorded."
+        controlPlaneRole: "control"
+        traceRows: ["TRACE-001"]
+        evidenceRefs: ["EVD-001"]
+    existingArtifacts:
+      - id: CT-EXIST-001
+        currentPath: "_bmad-output/runtime/requirement-records/REQ-CONFIRM-INGEST/requirement-record.json"
+        currentFunction: "missing before ingest"
+        targetTreatment: "created by controlled ingest"
+        completionProofPolicy: "not_completion_proof"
+        traceRows: ["TRACE-001"]
+        evidenceRefs: ["EVD-001"]
+  aiTddContractExecutionManifestProjection:
+    id: AI-TDD-001
+    currentTargetMap:
+      rows: ["CT-DIFF-001"]
+    errorCaseCoverage: ["FAIL-001", "EDGE-001"]
+    commandTargets: ["CMD-001", "CMD-002"]
+    traceClosure: ["TRACE-001"]
+    canonicalSurfaces: ["CT-CANON-001"]
+    legacyDenial: ["CT-EXIST-001"]
+    closeoutProofPolicy: "confirmation ingest is not delivery proof"
   artifactAutomationPlan:
     - id: ART-001
       path: "_bmad-output/runtime/requirement-records/REQ-CONFIRM-INGEST/requirement-record.json"
@@ -202,6 +337,8 @@ implementationConfirmation:
       inputArtifacts: ["confirmation-render-report.json"]
       outputArtifacts: ["requirement-record.json"]
       recordEventTypes: ["confirmation_recorded"]
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
       userApprovalRequired: true
       retention: long_lived
       cleanupPolicy: retain
@@ -221,6 +358,8 @@ implementationConfirmation:
       inputArtifacts: ["requirement-record.json"]
       outputArtifacts: ["mentor-events.jsonl"]
       recordEventTypes: ["confirmation_recorded"]
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-002"]
       userApprovalRequired: false
       retention: long_lived
       cleanupPolicy: retain
@@ -228,6 +367,18 @@ implementationConfirmation:
       containsSensitiveData: false
       trainingDataEligible: false
       linkedIds: ["NEG-001", "EVD-002"]
+  targetModificationPaths:
+    - id: TARGET-MOD-001
+      path: "_bmad-output/runtime/requirement-records/REQ-CONFIRM-INGEST/requirement-record.json"
+      coverageRole: "generated_output"
+      changeType: "requirement_record"
+      intent: "Controlled ingest writes confirmation_recorded."
+      ownerModel: "requirements_contract"
+      requirementRefs: ["MUST-001", "NEG-001"]
+      traceRefs: ["TRACE-001"]
+      evidenceRefs: ["EVD-001", "EVD-002"]
+      artifactRefs: ["ART-001"]
+      requiresReconfirmationOnChange: true
   governanceEventTypeRegistry:
     - eventType: confirmation_recorded
       ownerModel: requirements_contract
@@ -337,6 +488,55 @@ function runPython(script: string, args: string[]) {
   });
 }
 
+function fixedHash(char: string): string {
+  return `sha256:${char.repeat(64)}`;
+}
+
+function writeValidDrilldownGateReport(source: string): string {
+  const text = fs.readFileSync(source, 'utf8');
+  const extracted = extractImplementationConfirmation(text);
+  const sourceDocumentHash = sourceDocumentHashFor(text, extracted.blockText, extracted.confirmation);
+  const implementationConfirmationHash = implementationConfirmationHashFor(extracted.confirmation);
+  const reportPath = path.join(tempDir, 'pre-render-must-decomposition-gate-report.json');
+  fs.writeFileSync(
+    reportPath,
+    JSON.stringify(
+      {
+        schemaVersion: 'pre-render-must-decomposition-gate-report/v1',
+        verdict: 'PASS',
+        confirmability: 'confirmable',
+        sourceDocumentHash,
+        implementationConfirmationHash,
+        semanticKernelRef: {
+          path: path.join(tempDir, 'semantic-kernel.json'),
+          hash: fixedHash('b'),
+        },
+        mustDecompositionPacketRef: {
+          path: path.join(tempDir, 'must_decomposition_packet.json'),
+          hash: fixedHash('a'),
+          status: 'synchronized',
+        },
+        criticalAuditor: {
+          minimumRounds: 3,
+          consecutiveNoNewGapRounds: 3,
+          latestReceiptHash: fixedHash('c'),
+          convergenceVerdict: 'bounded_no_new_gap',
+        },
+        packetSourceReconciliation: {
+          reportPath: path.join(tempDir, 'must_packet_source_reconciliation_report.json'),
+          verdict: 'pass',
+        },
+        failedChecks: [],
+        blockingIssues: [],
+      },
+      null,
+      2
+    ),
+    'utf8'
+  );
+  return reportPath;
+}
+
 function render(source: string) {
   const out = path.join(tempDir, '_bmad-output/runtime/requirements/REQ-CONFIRM-INGEST/confirmation/confirmation.html');
   const result = runNode(RENDERER, [
@@ -352,6 +552,8 @@ function render(source: string) {
     'story',
     '--mermaid-bundle',
     writeMockMermaidBundle(),
+    '--drilldown-gate-report',
+    writeValidDrilldownGateReport(source),
     '--json',
   ]);
   expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);

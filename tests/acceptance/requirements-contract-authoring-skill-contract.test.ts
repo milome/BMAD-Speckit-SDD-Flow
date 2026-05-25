@@ -181,4 +181,134 @@ describe('requirements-contract-authoring published contract', () => {
     expect(checkpointWorkflow).toContain("The checkpoint runner's `--until pre-render-ready` scope covers checkpoints 1-8");
     expect(checkpointWorkflow).toContain('The runner must preserve checkpoint authoring semantics');
   });
+
+  it('requires the pre-confirmation atomic decomposition loop before any confirmable HTML', () => {
+    const skill = readSkillFile('SKILL.md');
+    const template = readSkillFile(path.join('references', 'contract-template.md'));
+    const rendererSpec = readSkillFile(path.join('references', 'html-confirmation-renderer-spec.md'));
+
+    for (const content of [skill, template, rendererSpec]) {
+      expect(content).toContain('pre-confirmation atomic decomposition loop');
+      expect(content).toContain('semantic-kernel.json');
+      expect(content).toContain('must_decomposition_packet.json');
+      expect(content).toContain('Critical Auditor');
+      expect(content).toContain('consecutiveNoNewGapRounds: 3');
+      expect(content).toContain('pre_render_must_decomposition_gate.js');
+    }
+
+    expect(skill).toContain('single_pass also cannot skip the pre-confirmation atomic decomposition loop');
+    expect(skill).toContain('Checkpointing is only persistence, recovery, single-file commit, and receipt strategy');
+    expect(rendererSpec).toContain('missing pre-confirmation semantic drilldown gate report -> confirmability=blocked');
+  });
+
+  it('publishes preConfirmationDrilldown metadata while keeping inline implementationConfirmation authoritative', () => {
+    const skill = readSkillFile('SKILL.md');
+    const template = readSkillFile(path.join('references', 'contract-template.md'));
+    const rendererSpec = readSkillFile(path.join('references', 'html-confirmation-renderer-spec.md'));
+
+    for (const content of [skill, template, rendererSpec]) {
+      expect(content).toContain('preConfirmationDrilldown');
+      expect(content).toContain('semanticKernelRef');
+      expect(content).toContain('mustDecompositionPacketRef');
+      expect(content).toContain('packetSourceReconciliation');
+      expect(content).toContain('must_packet_source_reconciliation_report.json');
+      expect(content).toContain('pre-render-must-decomposition-gate-report.json');
+    }
+
+    expect(template).toContain('Final confirmation authority remains the inline `implementationConfirmation` block');
+  });
+
+  it('documents the semantic checkpoint sequence as semantic-layer checkpoints rather than chapter checkpoints', () => {
+    const skill = readSkillFile('SKILL.md');
+    const checkpointWorkflow = readSkillFile(path.join('references', 'semantic-checkpoint-workflow.md'));
+
+    for (const content of [skill, checkpointWorkflow]) {
+      expect(content).toContain('cp-00 semantic kernel');
+      expect(content).toContain('cp-01 must_decomposition_packet');
+      expect(content).toContain('cp-02 atomic decomposition loop convergence');
+      expect(content).toContain('cp-03 packet-to-source materialization');
+      expect(content).toContain('cp-04 ID freeze');
+      expect(content).toContain('cp-05 implementationConfirmation core');
+      expect(content).toContain('cp-06 EVD/TRACE/ACC/E2E/failure/edge/currentTarget/AI-TDD');
+      expect(content).toContain('cp-07 human-readable views');
+      expect(content).toContain('cp-08 pre-render global reconciliation');
+      expect(content).toContain('Checkpoint does not perform segmented reasoning');
+    }
+  });
+
+  it('documents packet/source reconciliation as a two-way projection contract', () => {
+    const skill = readSkillFile('SKILL.md');
+    const matrixRules = readSkillFile(path.join('references', 'matrix-rules.md'));
+    const reverseAuditGate = readSkillFile(path.join('references', 'reverse-audit-gate.md'));
+
+    for (const content of [skill, matrixRules, reverseAuditGate]) {
+      expect(content).toContain('MUST -> packet -> projections -> source rows');
+      expect(content).toContain('packet projection -> implementationConfirmation row');
+      expect(content).toContain('implementationConfirmation row -> packet projection');
+      expect(content).toContain('source row independently invented');
+      expect(content).toContain('packet projection not materialized');
+    }
+  });
+
+  it('documents renderer drilldown sections and confirmation-only reverse audit layering', () => {
+    const rendererSpec = readSkillFile(path.join('references', 'html-confirmation-renderer-spec.md'));
+    const reverseAuditGate = readSkillFile(path.join('references', 'reverse-audit-gate.md'));
+
+    for (const heading of [
+      'Pre-Confirmation Semantic Drilldown',
+      'Semantic Kernel Summary',
+      'MUST Decomposition Packet',
+      'Atomicity Drivers',
+      'Atomic Task Baseline',
+      'Projection Coverage',
+      'Critical Auditor Convergence',
+      'Gap History',
+      'Packet-To-Source Reconciliation',
+    ]) {
+      expect(rendererSpec).toContain(heading);
+    }
+
+    for (const content of [rendererSpec, reverseAuditGate]) {
+      expect(content).toContain('The user confirms only the requirements scope');
+      expect(content).toContain('contract confirmability audit');
+      expect(content).toContain('implementation readiness audit');
+      expect(content).toContain('delivery verification audit');
+      expect(content).toContain('closeout integrity audit');
+      expect(content).toContain('deliveryReadiness must not be represented as ready');
+    }
+  });
+
+  it('publishes a fixture catalog for valid and blocked pre-confirmation drilldown cases', () => {
+    const catalog = JSON.parse(
+      readSkillFile(path.join('fixtures', 'pre-confirmation-must-atomic-drilldown', 'catalog.json'))
+    );
+
+    expect(catalog.validFixtures.map((fixture: any) => fixture.kind)).toEqual(
+      expect.arrayContaining(['small valid source', 'large checkpoint-required valid source'])
+    );
+    expect(catalog.blockedFixtures.map((fixture: any) => fixture.kind)).toEqual(
+      expect.arrayContaining([
+        'missing packet',
+        'stale packet',
+        'under-split MUST',
+        'over-broad atomic task',
+        'missing critic receipt',
+        'less than 3 rounds',
+        'source invented trace row',
+        'projection not materialized',
+      ])
+    );
+    expect(catalog.blockedFixtures.map((fixture: any) => fixture.expectedBlocker)).toEqual(
+      expect.arrayContaining([
+        'missing_must_decomposition_packet',
+        'must_packet_source_hash_stale',
+        'must_packet_under_split',
+        'must_packet_over_broad_atomic_task',
+        'critical_auditor_receipt_missing',
+        'critical_auditor_less_than_three_no_new_gap_rounds',
+        'source_row_independently_invented',
+        'packet_projection_not_materialized',
+      ])
+    );
+  });
 });

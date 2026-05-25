@@ -24,6 +24,8 @@ This workflow converts a large requirements source document into a confirmation-
 
 Use it for large governance documents, dense `implementationConfirmation` blocks, or any source where a complete `requirements-contract-authoring` pass is too large to finish safely in one edit.
 
+This workflow is now a semantic-layer checkpoint workflow. It does not split thinking by document chapters. The pre-confirmation atomic decomposition loop performs the complex reasoning, and checkpoints persist its outputs safely.
+
 ## Non-Goals
 
 - Do not generate the whole confirmation-ready source document in one pass when scale assessment returns `checkpoint_required`.
@@ -37,18 +39,31 @@ Use it for large governance documents, dense `implementationConfirmation` blocks
 
 Use these semantic checkpoints in order. A later checkpoint may refine earlier text, but it must not silently reduce already authored scope.
 
-1. Header, background, scope, non-goals, and frozen decisions.
-2. `implementationConfirmation` core fields and full `applicability.*` declarations.
-3. `must`, `notDone`, `mustNot`, and `evidence`.
-4. `failurePaths`, `edgeCases`, and `traceRows`.
-5. `sequenceViews`, `flowViews`, `edgeCaseViews`, and `boundaryViews`.
-6. `artifactAutomationPlan`, `requiredCommands`, `suggestedCommands`, and `closeoutReadinessPreview`.
-7. Conditional modules for governance events, runtime recovery, scoring/dashboard/SFT, current-target map, scripts, and hooks.
-8. Human-readable Mermaid views, evidence overview, E2E overview, requirement boundary overview, Definition of Done, and Reverse Audit Report.
-9. Confirmation HTML render and renderer blocker repair.
-10. User confirmation ingest and post-confirmation readiness checks.
+1. cp-00 semantic kernel
+2. cp-01 must_decomposition_packet
+3. cp-02 atomic decomposition loop convergence
+4. cp-03 packet-to-source materialization
+5. cp-04 ID freeze
+6. cp-05 implementationConfirmation core
+7. cp-06 EVD/TRACE/ACC/E2E/failure/edge/currentTarget/AI-TDD
+8. cp-07 human-readable views
+9. cp-08 pre-render global reconciliation
 
-The checkpoint runner's `--until pre-render-ready` scope covers checkpoints 1-8 and then stops before HTML render. Checkpoints 9-10 stay in the normal render and ingest modes of this skill.
+The checkpoint runner's `--until pre-render-ready` scope covers cp-00 through cp-08 and then stops before HTML render. For compatibility with older references, this is also the replacement for the historical statement: The checkpoint runner's `--until pre-render-ready` scope covers checkpoints 1-8. HTML render, user confirmation, confirmation ingest, readiness, delivery verification, and closeout remain separate skill modes.
+
+Checkpoint does not perform segmented reasoning. Checkpointing is only persistence, recovery, single-file commit, and receipt strategy. The atomic decomposition loop is where the author and Critical Auditor resolve semantic gaps.
+
+Checkpoint artifacts:
+
+- cp-00 writes or validates `semantic-kernel.json`.
+- cp-01 writes or validates `must_decomposition_packet.json`.
+- cp-02 records Critical Auditor receipts until `consecutiveNoNewGapRounds: 3`.
+- cp-03 materializes packet projections into the inline source.
+- cp-04 freezes IDs after source materialization.
+- cp-05 fills implementationConfirmation core and `applicability.*`.
+- cp-06 materializes EVD/TRACE/ACC/E2E/failure/edge/currentTarget/AI-TDD projections.
+- cp-07 renders human-readable ID-bound views.
+- cp-08 runs packet/source reconciliation plus pre-render global reconciliation.
 
 ## Checkpoint Loop
 
@@ -155,16 +170,31 @@ node _bmad/skills/requirements-contract-authoring/scripts/run_semantic_checkpoin
 Required automation behavior:
 
 - `plan` and `status` are read-only.
+- `plan` and `status` must show semantic kernel status, packet status, Critical Auditor rounds, convergence counter, packet/source reconciliation, and next action.
 - `run` without `--checkpoint` starts at the first incomplete checkpoint and continues until `pre-render-ready`.
 - `resume` starts from the progress record's next checkpoint when the current document hash matches the progress record.
+- `resume` must reload semantic kernel, must_decomposition_packet, Critical Auditor receipts, packet/source reconciliation, and checkpoint progress instead of restarting.
 - Explicit `--checkpoint` executes only that checkpoint for controlled manual repair.
 - Every completed checkpoint creates a separate single-file commit.
 - The runner must stop before commit if staged paths contain anything other than the active target requirements document.
 - The runner must not silently overwrite manual edits when the current document hash differs from the latest progress record.
+- The runner must fail closed when source hash and progress hash mismatch.
+- Progress corruption may be recovered from a backup or Git checkpoint only when the current source hash is safe to trust.
 - The runner must write progress and receipts sufficient for resume and user review.
 - The runner must preserve checkpoint authoring semantics: each checkpoint is a bounded document edit, not merely a progress status update.
 - Completing all eight pre-render checkpoints is necessary but not sufficient for `pre_render_ready`.
-- Before returning `pre_render_ready` or allowing HTML render, the runner must execute a whole-document global consistency gate.
+- Before returning `pre_render_ready` or allowing HTML render, the runner must execute the pre-render MUST decomposition gate and the whole-document global consistency gate.
+- The pre-render MUST decomposition gate is:
+
+```bash
+node _bmad/skills/requirements-contract-authoring/scripts/pre_render_must_decomposition_gate.js \
+  --source <source-document.md> \
+  --authoring-dir _bmad-output/runtime/requirement-records/<recordId>/authoring \
+  --json
+```
+
+- It must output `must_decomposition_receipt.json`, `must_packet_source_reconciliation_report.json`, and `pre-render-must-decomposition-gate-report.json`.
+- It must block on missing semantic kernel, missing must_decomposition_packet, stale packet hash, missing Critical Auditor receipt, fewer than three no-new-gap rounds, unresolved validated gap, incomplete question coverage, under-split MUST, over-broad atomic task, missing packet projection, source row independently invented, packet projection not materialized, missing packet/source reconciliation, or stale gate hashes.
 - The global consistency gate must fail closed when `implementationConfirmation` cannot be parsed, any required core array is missing, any ID is duplicated, any `MUST` or `NEG` lacks reciprocal `traceRows` coverage, any `traceRows[]` item references missing evidence, any evidence or trace command reference is undefined, any failure/edge/view reference is unresolved, or deterministic definition drilldown still has blockers.
 - The gate must write `_bmad-output/runtime/requirement-records/<recordId>/authoring/pre-render-global-consistency-report.json` or the progress-local equivalent, update progress validation as `globalConsistency: pass|fail`, and block HTML render on any finding.
 - The explicit command for this hard gate is:

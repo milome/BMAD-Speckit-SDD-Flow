@@ -6,6 +6,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const yaml = require('./load-js-yaml');
+const {
+  evaluateTargetModificationPathCoverage,
+} = require('./target_modification_path_coverage');
 
 const VALID_LANGUAGES = new Set(['zh-CN', 'en-US', 'bilingual']);
 const VALID_ENTRY_FLOWS = new Set(['bugfix', 'standalone_tasks', 'story']);
@@ -29,6 +32,17 @@ const CURRENT_TARGET_MINIMUM_COVERAGE = {
   process: 1,
   artifactPaths: 1,
 };
+const REQUIRED_PRE_CONFIRMATION_DRILLDOWN_SECTIONS = [
+  'Pre-Confirmation Semantic Drilldown',
+  'Semantic Kernel Summary',
+  'MUST Decomposition Packet',
+  'Atomicity Drivers',
+  'Atomic Task Baseline',
+  'Projection Coverage',
+  'Critical Auditor Convergence',
+  'Gap History',
+  'Packet-To-Source Reconciliation',
+];
 const DEFAULT_CONFIRMATION_PROFILE = 'implementation_confirmation';
 const REQUIRED_APPLICABILITY_DOMAINS = [
   'governanceEvents',
@@ -416,7 +430,7 @@ function extractPathRefs(value) {
   const refs = new Set();
   const normalized = String(value ?? '').replace(/\r?\n/g, ' ');
   const matches = normalized.matchAll(
-    /(?<![A-Za-z0-9_@.-])((?:[A-Za-z]:)?[./\\A-Za-z0-9_-][A-Za-z0-9_./\\-]*\.(?:test|spec)\.(?:ts|tsx|js|jsx|mjs|cjs)|[./\\A-Za-z0-9_-][A-Za-z0-9_./\\-]*\.(?:ts|js|json|ya?ml|md))/giu
+    /(?<![A-Za-z0-9_@.-])((?:[A-Za-z]:)?[./\\A-Za-z0-9_-][A-Za-z0-9_./\\-]*\.(?:test|spec)\.(?:tsx|ts|jsx|js|mjs|cjs)|[./\\A-Za-z0-9_-][A-Za-z0-9_./\\-]*\.(?:tsx|ts|jsx|json|mjs|cjs|js|ya?ml|md))(?=$|[^A-Za-z0-9_.-])/giu
   );
   for (const match of matches) refs.add(match[1]);
   return [...refs];
@@ -485,6 +499,20 @@ function readDataFile(filePath) {
   return JSON.parse(raw);
 }
 
+function readJsonSafe(filePath) {
+  try {
+    if (!filePath || !fs.existsSync(path.resolve(filePath))) return { ok: false, missing: true, path: filePath };
+    return { ok: true, value: readDataFile(path.resolve(filePath)), path: path.resolve(filePath) };
+  } catch (error) {
+    return {
+      ok: false,
+      missing: false,
+      path: filePath,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
 function defaultRequirementRecordPath(recordId) {
   return path.resolve('_bmad-output', 'runtime', 'requirement-records', recordId, 'requirement-record.json');
 }
@@ -528,6 +556,92 @@ function readRequirementRecord(args, recordId) {
       source: args.requirementRecord ? 'explicit' : 'default',
     };
   }
+}
+
+function defaultAuthoringDir(recordId) {
+  return path.resolve('_bmad-output', 'runtime', 'requirement-records', recordId, 'authoring');
+}
+
+function defaultPreRenderMustGateReportPath(recordId) {
+  return path.join(defaultAuthoringDir(recordId), 'pre-render-must-decomposition-gate-report.json');
+}
+
+function loadPreConfirmationSemanticDrilldown(args, confirmation, hashes) {
+  const explicitPath =
+    args.drilldownGateReport ??
+    args.mustDecompositionGateReport ??
+    args.preRenderMustDecompositionGateReport ??
+    confirmation.preConfirmationDrilldown?.preRenderGateReportPath ??
+    confirmation.preConfirmationDrilldown?.mustDecompositionGateReportPath;
+  const reportPath = explicitPath || (confirmation.recordId ? defaultPreRenderMustGateReportPath(confirmation.recordId) : '');
+  const issues = [];
+  if (!reportPath) {
+    issues.push(blocking('missing_pre_confirmation_semantic_drilldown_gate_report', 'pre-render MUST decomposition gate report is required before confirmation HTML'));
+    return {
+      status: 'missing',
+      reportPath: '',
+      report: null,
+      blockingIssues: issues,
+      warnings: [],
+      requiredSections: REQUIRED_PRE_CONFIRMATION_DRILLDOWN_SECTIONS,
+    };
+  }
+  const read = readJsonSafe(reportPath);
+  if (!read.ok) {
+    issues.push(
+      blocking(
+        read.missing ? 'missing_pre_confirmation_semantic_drilldown_gate_report' : 'pre_confirmation_semantic_drilldown_gate_report_parse_failed',
+        read.error ?? 'pre-render MUST decomposition gate report is missing or unreadable',
+        [normalizePathForReport(path.resolve(reportPath))]
+      )
+    );
+    return {
+      status: 'blocked',
+      reportPath: normalizePathForReport(path.resolve(reportPath)),
+      report: null,
+      blockingIssues: issues,
+      warnings: [],
+      requiredSections: REQUIRED_PRE_CONFIRMATION_DRILLDOWN_SECTIONS,
+    };
+  }
+  const report = read.value;
+  if (report.schemaVersion !== 'pre-render-must-decomposition-gate-report/v1' && report.schemaVersion !== 'semantic-checkpoint-pre-render-gate/v1') {
+    issues.push(blocking('pre_confirmation_semantic_drilldown_gate_schema_invalid', 'drilldown gate report schemaVersion is invalid', ['schemaVersion']));
+  }
+  if (report.sourceDocumentHash && report.sourceDocumentHash !== hashes.sourceDocumentHash) {
+    issues.push(blocking('pre_confirmation_semantic_drilldown_gate_source_hash_stale', 'drilldown gate report sourceDocumentHash is stale', ['sourceDocumentHash']));
+  }
+  if (report.implementationConfirmationHash && report.implementationConfirmationHash !== hashes.implementationConfirmationHash) {
+    issues.push(
+      blocking(
+        'pre_confirmation_semantic_drilldown_gate_implementation_hash_stale',
+        'drilldown gate report implementationConfirmationHash is stale',
+        ['implementationConfirmationHash']
+      )
+    );
+  }
+  if (report.verdict !== 'PASS' || report.confirmability === 'blocked') {
+    for (const code of asArray(report.failedChecks)) {
+      issues.push(blocking(`pre_confirmation_semantic_drilldown_${code}`, `drilldown gate failed: ${code}`, [code]));
+    }
+    if (!asArray(report.failedChecks).length) {
+      issues.push(blocking('pre_confirmation_semantic_drilldown_gate_failed', 'drilldown gate verdict is not PASS'));
+    }
+  }
+  if ((report.criticalAuditor?.consecutiveNoNewGapRounds ?? 0) < 3) {
+    issues.push(blocking('pre_confirmation_semantic_drilldown_less_than_three_critic_rounds', 'Critical Auditor convergence is below three no-new-gap rounds'));
+  }
+  if (report.packetSourceReconciliation?.verdict && report.packetSourceReconciliation.verdict !== 'pass') {
+    issues.push(blocking('pre_confirmation_semantic_drilldown_reconciliation_failed', 'packet/source reconciliation did not pass'));
+  }
+  return {
+    status: issues.length ? 'blocked' : 'pass',
+    reportPath: normalizePathForReport(path.resolve(reportPath)),
+    report,
+    blockingIssues: issues,
+    warnings: [],
+    requiredSections: REQUIRED_PRE_CONFIRMATION_DRILLDOWN_SECTIONS,
+  };
 }
 
 function normalizePathForReport(filePath) {
@@ -1817,7 +1931,7 @@ function aiTddContractManifestRequired(confirmation) {
 }
 
 function buildAiTddContractManifestCoverage(input) {
-  const { confirmation, traceRows, views, artifactPlan, targetModificationPaths, acceptanceRows } = input;
+  const { confirmation, traceRows, views, artifactPlan, targetModificationPaths, acceptanceRows, targetModificationPathCoverage } = input;
   const required = aiTddContractManifestRequired(confirmation);
   const allViews = [
     ...asArray(views.sequenceViews),
@@ -2018,6 +2132,21 @@ function buildAiTddContractManifestCoverage(input) {
     legacyDenial: { rows: legacyRows, missing: rowsMissing(legacyRows, 'LEGACY_DENIAL') },
     closeoutProof: { rows: [{ id: 'closeoutReadinessPreview', requiredCommands: stringList(closeout.requiredCommands), policies: [closeout.orphanPolicy, closeout.currentAttemptPolicy, closeout.recordClosedPolicy].filter(Boolean), missing: closeoutMissing }], missing: closeoutMissing.map((code) => ({ id: 'closeoutReadinessPreview', code, category: 'CLOSEOUT_PROOF' })) },
     evidenceTrustStates: { rows: evidenceRows, missing: rowsMissing(evidenceRows, 'EVIDENCE_TRUST') },
+    targetModificationPathCoverage: {
+      rows: targetModificationPaths,
+      missing: [
+        ...asArray(targetModificationPathCoverage?.missingCoverage).map((row) => ({
+          id: row.path,
+          code: 'target_modification_path_coverage_missing',
+          category: 'TARGET_MODIFICATION_PATH_COVERAGE',
+        })),
+        ...asArray(targetModificationPathCoverage?.unclassifiedCoverage).map((row) => ({
+          id: row.path,
+          code: 'target_modification_path_classification_missing',
+          category: 'TARGET_MODIFICATION_PATH_COVERAGE',
+        })),
+      ],
+    },
   };
   for (const section of Object.values(sections)) {
     section.ready = section.rows.length > 0 && section.missing.length === 0;
@@ -2074,6 +2203,14 @@ function normalizeTargetModificationPaths(confirmation, artifactPlan) {
     rows.push({
       id: String(row?.id ?? row?.targetModificationId ?? `TARGET-MOD-${String(index + 1).padStart(3, '0')}`).trim(),
       path: normalizePathForReport(pathValue),
+      coverageRole: String(
+        row?.coverageRole ??
+          row?.targetPathRole ??
+          row?.pathRole ??
+          row?.classification ??
+          row?.role ??
+          ''
+      ).trim(),
       changeType: String(row?.changeType ?? row?.operation ?? row?.action ?? row?.modificationType ?? '').trim(),
       intent: String(row?.intent ?? row?.purpose ?? row?.description ?? row?.reason ?? '').trim(),
       ownerModel: String(row?.ownerModel ?? row?.owner ?? '').trim(),
@@ -2148,7 +2285,7 @@ function normalizeTargetModificationPaths(confirmation, artifactPlan) {
   });
 }
 
-function validateTargetModificationPaths(confirmation, targetModificationPaths, artifactPlan, idSet) {
+function validateTargetModificationPaths(confirmation, targetModificationPaths, artifactPlan, idSet, pathCoverage = null) {
   const issues = [];
   const artifactIds = new Set(artifactPlan.map((item) => item.artifactId).filter(Boolean));
   const explicitRows = targetModificationPaths.filter((row) => row.sourceSection !== 'artifactAutomationPlan.derived');
@@ -2185,6 +2322,26 @@ function validateTargetModificationPaths(confirmation, targetModificationPaths, 
       }
     }
   });
+  if (pathCoverage) {
+    for (const row of pathCoverage.missing ?? []) {
+      issues.push(
+        blocking(
+          'target_modification_path_coverage_missing',
+          `${row.path} is declared by ${row.sources.join(', ')} but missing from targetModificationPaths[]`,
+          [row.path, ...row.refs]
+        )
+      );
+    }
+    for (const row of pathCoverage.unclassified ?? []) {
+      issues.push(
+        blocking(
+          'target_modification_path_classification_missing',
+          `${row.path} is a command/current-target path and must be classified as validation_only, generated_output, runtime_output, or an explicit modification`,
+          [row.path, ...row.refs]
+        )
+      );
+    }
+  }
   return issues;
 }
 
@@ -2855,6 +3012,11 @@ function buildCoverage(input) {
   const idSet = makeIdSet(confirmation);
   const knownIds = allKnownIds(idSet);
   const acceptanceRows = normalizeAcceptanceSuites(confirmation);
+  const targetModificationPathCoverageAudit = evaluateTargetModificationPathCoverage(
+    confirmation,
+    targetModificationPaths,
+    artifactPlan
+  );
   const aiTddContractManifestCoverage = buildAiTddContractManifestCoverage({
     confirmation,
     traceRows,
@@ -2862,6 +3024,7 @@ function buildCoverage(input) {
     artifactPlan,
     targetModificationPaths,
     acceptanceRows,
+    targetModificationPathCoverage: targetModificationPathCoverageAudit,
   });
   const artifactIds = new Set(artifactPlan.map((item) => item.artifactId).filter(Boolean));
   const acceptanceIds = new Set(acceptanceRows.map((item) => item.id));
@@ -3137,7 +3300,15 @@ function buildCoverage(input) {
   if (!artifactPlan.length) {
     blockingIssues.push(blocking('missing_artifact_automation_plan', 'artifactAutomationPlan[] is required'));
   }
-  blockingIssues.push(...validateTargetModificationPaths(confirmation, targetModificationPaths, artifactPlan, idSet));
+  blockingIssues.push(
+    ...validateTargetModificationPaths(
+      confirmation,
+      targetModificationPaths,
+      artifactPlan,
+      idSet,
+      targetModificationPathCoverageAudit
+    )
+  );
 
   const requiredArtifactFields = [
     'artifactId',
@@ -3243,10 +3414,17 @@ function buildCoverage(input) {
       missingArtifactRefs: unique(
         targetModificationPaths.flatMap((row) => row.artifactRefs).filter((ref) => !artifactIds.has(ref))
       ),
+      requiredCoverage: targetModificationPathCoverageAudit.required,
+      missingCoverage: targetModificationPathCoverageAudit.missing,
+      unclassifiedCoverage: targetModificationPathCoverageAudit.unclassified,
+      ready: targetModificationPathCoverageAudit.ready,
       counts: {
         total: targetModificationPaths.length,
         explicit: targetModificationPaths.filter((row) => row.sourceSection !== 'artifactAutomationPlan.derived').length,
         derived: targetModificationPaths.filter((row) => row.sourceSection === 'artifactAutomationPlan.derived').length,
+        requiredCoverage: targetModificationPathCoverageAudit.counts.required,
+        missingCoverage: targetModificationPathCoverageAudit.counts.missing,
+        unclassifiedCoverage: targetModificationPathCoverageAudit.counts.unclassified,
       },
     },
     aiTddContractManifestCoverage,
@@ -3814,6 +3992,7 @@ function renderedSectionsForProfile(profile) {
     'fingerprint',
     'core-design',
     'progress-delta',
+    'pre-confirmation-semantic-drilldown',
     'decision-summary',
     'confirm-instruction',
     'requirements',
@@ -5672,7 +5851,7 @@ function renderTargetModificationPaths(targetModificationPaths) {
   const rows = targetModificationPaths.map((item) => [
     item.id,
     item.path,
-    item.changeType || 'unspecified',
+    item.coverageRole || item.changeType || 'unspecified',
     item.intent || '',
     item.ownerModel || '',
     renderIdBadges(item.requirementRefs),
@@ -5704,6 +5883,7 @@ function renderAiTddContractManifestCoverage(coverage) {
     ['commandTargetCollection', 'Command targets'],
     ['traceClosureAssertions', 'Trace closure'],
     ['currentTargetMap', 'Current/target map'],
+    ['targetModificationPathCoverage', 'Target modification path coverage'],
     ['canonicalSurfaceReconciliation', 'Canonical surfaces'],
     ['legacyDenial', 'Legacy denial'],
     ['closeoutProof', 'Closeout proof'],
@@ -5977,6 +6157,64 @@ function renderDeliveryReadiness(deliveryReadiness, ui) {
       <div class="metric warn"><strong>${escapeHtml(deliveryReadiness.staleProofCount)}</strong><span>${escapeHtml(ui.staleProofNeedsRecheck)}</span></div>
     </div>
     <div class="table-wrap">${renderTable(['reasonId', 'reason'], reasonRows)}</div>
+  </section>`;
+}
+
+function renderPreConfirmationSemanticDrilldown(drilldown) {
+  const report = drilldown?.report ?? {};
+  const nestedGate = report.mustDecompositionGate ?? {};
+  const packet = report.mustDecompositionPacketRef ?? nestedGate.mustDecompositionPacketRef ?? {};
+  const kernel = report.semanticKernelRef ?? nestedGate.semanticKernelRef ?? {};
+  const critic = report.criticalAuditor ?? nestedGate.criticalAuditor ?? {};
+  const reconciliation = report.packetSourceReconciliation ?? nestedGate.packetSourceReconciliation ?? {};
+  const failedChecks = asArray(report.failedChecks);
+  return `<section class="card" id="pre-confirmation-semantic-drilldown">
+    <h2>Pre-Confirmation Semantic Drilldown</h2>
+    <p class="section-lead">本区说明模型如何理解需求、如何自我追问、MUST 如何拆成原子任务，以及 packet/source 是否同源同步。用户确认的只是需求范围，不是 delivery ready 或 closeout ready。</p>
+    ${renderTable(['Field', 'Value'], [
+      ['Gate verdict', report.verdict ?? drilldown.status ?? 'missing'],
+      ['Gate report', drilldown.reportPath || 'missing'],
+      ['Semantic kernel hash', kernel.hash ?? 'missing'],
+      ['Packet hash', packet.hash ?? 'missing'],
+      ['Packet status', packet.status ?? 'missing'],
+      ['Critical Auditor rounds', String(critic.consecutiveNoNewGapRounds ?? critic.rounds ?? 0)],
+      ['Reconciliation verdict', reconciliation.verdict ?? 'missing'],
+      ['Failed checks', failedChecks.join(', ') || 'none'],
+    ])}
+    <h3>Semantic Kernel Summary</h3>
+    ${renderTable(['Kernel Field', 'Value'], [
+      ['path', kernel.path ?? 'missing'],
+      ['hash', kernel.hash ?? 'missing'],
+      ['sourceDocumentHash', report.sourceDocumentHash ?? 'missing'],
+      ['implementationConfirmationHash', report.implementationConfirmationHash ?? 'missing'],
+    ])}
+    <h3>MUST Decomposition Packet</h3>
+    ${renderTable(['Packet Field', 'Value'], [
+      ['path', packet.path ?? 'missing'],
+      ['hash', packet.hash ?? 'missing'],
+      ['status', packet.status ?? 'missing'],
+      ['confirmability', report.confirmability ?? 'blocked'],
+    ])}
+    <h3>Atomicity Drivers</h3>
+    <p class="muted">每个 MUST 必须在 packet 中记录 decompositionBasis、atomicityDrivers、questionCoverage 和 atomicityCompleteness；缺失或 under-split 会阻断确认页。</p>
+    <h3>Atomic Task Baseline</h3>
+    <p class="muted">expectedTaskCount 与 actualTaskCount 必须一致；任何 covers 多个独立行为面或多个独立 oracle 的 task 会被判定为 over-broad。</p>
+    <h3>Projection Coverage</h3>
+    <p class="muted">EVD / TRACE / ACC / E2E / failure / edge / currentTarget / AI-TDD / artifacts / commands / closeout 均必须从 packet projection 物化，不允许 source row 独立发明。</p>
+    <h3>Critical Auditor Convergence</h3>
+    ${renderTable(['Field', 'Value'], [
+      ['minimumRounds', String(critic.minimumRounds ?? 3)],
+      ['consecutiveNoNewGapRounds', String(critic.consecutiveNoNewGapRounds ?? 0)],
+      ['latestReceiptHash', critic.latestReceiptHash ?? 'missing'],
+      ['convergenceVerdict', critic.convergenceVerdict ?? 'blocked'],
+    ])}
+    <h3>Gap History</h3>
+    <p class="muted">${failedChecks.length ? failedChecks.map(escapeHtml).join(', ') : 'No unresolved validated gap in the loaded drilldown gate report.'}</p>
+    <h3>Packet-To-Source Reconciliation</h3>
+    ${renderTable(['Field', 'Value'], [
+      ['reportPath', reconciliation.reportPath ?? 'missing'],
+      ['verdict', reconciliation.verdict ?? 'missing'],
+    ])}
   </section>`;
 }
 
@@ -6280,6 +6518,7 @@ function buildHtml(input) {
     controlledIngestWriters,
     mermaidRuntime,
     requirementBoundary,
+    preConfirmationSemanticDrilldown,
   } = input;
   const aiTddContractManifestCoverage = input.coverage.aiTddContractManifestCoverage;
   const ui = getUiText(args.language);
@@ -6304,6 +6543,7 @@ function buildHtml(input) {
     ],
     ['delivery-readiness', renderDeliveryReadiness(deliveryReadiness, ui)],
     ['progress-delta', renderProgressDelta(progressDelta, reconfirmationState, ui)],
+    ['pre-confirmation-semantic-drilldown', renderPreConfirmationSemanticDrilldown(preConfirmationSemanticDrilldown)],
     reconfirmationState?.required ? ['reconfirmation-request', renderReconfirmationPanel(reconfirmationState)] : null,
     ['decision-summary', `<section class="card" id="decision-summary"><h2>${escapeHtml(ui.decisionSummary)}</h2>${renderTable(
       [ui.decisionQuestion, ui.decisionAnswer],
@@ -6351,6 +6591,7 @@ function buildHtml(input) {
     'core-design': ui.coreDesign,
     'delivery-readiness': ui.deliveryReadiness,
     'progress-delta': ui.progressDelta,
+    'pre-confirmation-semantic-drilldown': 'Pre-Confirmation Semantic Drilldown',
     'reconfirmation-request': '重新确认请求',
     'decision-summary': ui.decisionSummary,
     'confirm-instruction': ui.confirmInstruction,
@@ -6451,6 +6692,7 @@ function buildReport(input) {
     unknownViewPacks: input.confirmationProfile?.unknownViewPacks ?? [],
     confirmability: input.confirmability,
     scopeConfirmability: input.confirmability,
+    preConfirmationSemanticDrilldown: input.preConfirmationSemanticDrilldown,
     deliveryReadiness: input.deliveryReadiness,
     blockingIssues: input.blockingIssues,
     warnings: input.warnings,
@@ -6546,6 +6788,7 @@ function buildSummary(report, confirmation, views, artifactPlan) {
     generatedAt: report.generatedAt,
     confirmability: report.confirmability,
     scopeConfirmability: report.scopeConfirmability,
+    preConfirmationSemanticDrilldown: report.preConfirmationSemanticDrilldown,
     blockingIssues: report.blockingIssues,
     deliveryReadiness: report.deliveryReadiness,
     warnings: report.warnings,
@@ -6697,6 +6940,12 @@ function main(argv) {
       )
     );
   }
+  const preConfirmationSemanticDrilldown = loadPreConfirmationSemanticDrilldown(args, confirmation, {
+    sourceDocumentHash,
+    implementationConfirmationHash,
+  });
+  coverage.blockingIssues.push(...preConfirmationSemanticDrilldown.blockingIssues);
+  coverage.warnings.push(...preConfirmationSemanticDrilldown.warnings);
 
   const confirmability = coverage.blockingIssues.length ? 'blocked' : 'confirmable';
   const confirmInstruction = [
@@ -6738,6 +6987,7 @@ function main(argv) {
     controlledIngestWriters,
     mermaidRuntime,
     requirementBoundary,
+    preConfirmationSemanticDrilldown,
     coverage,
   });
   const confirmationPageHash = confirmationPageHashFor(htmlWithSelfHashPlaceholder, generatedAt);
@@ -6795,6 +7045,7 @@ function main(argv) {
     resumeFailureRegistry,
     mermaidRuntime,
     requirementBoundary,
+    preConfirmationSemanticDrilldown,
   };
   const report = buildReport(common);
   const summary = buildSummary(report, confirmation, views, artifactPlan);

@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { createRequire } from 'node:module';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import yaml from 'js-yaml';
 
@@ -22,6 +23,14 @@ const CHECKPOINTS = path.join(
   'scripts',
   'run_semantic_checkpoints.js'
 );
+const PRE_RENDER_MUST_GATE = path.join(
+  ROOT,
+  '_bmad',
+  'skills',
+  'requirements-contract-authoring',
+  'scripts',
+  'pre_render_must_decomposition_gate.js'
+);
 const RETENTION_CLEANUP = path.join(
   ROOT,
   '_bmad',
@@ -38,6 +47,20 @@ const CHECKPOINT_REQUIREMENT_DOC = path.join(
 );
 
 let tempDir: string;
+const requireForGate = createRequire(import.meta.url);
+const {
+  extractImplementationConfirmation,
+  sourceDocumentHashFor,
+  implementationConfirmationHashFor,
+} = requireForGate(path.join(
+  ROOT,
+  '_bmad',
+  'skills',
+  'requirements-contract-authoring',
+  'scripts',
+  'pre_render_definition_drilldown_lib.js'
+));
+const { buildAuditInputHash } = requireForGate(PRE_RENDER_MUST_GATE);
 
 beforeEach(() => {
   tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'requirements-checkpoint-automation-'));
@@ -88,6 +111,531 @@ function refs(row: Record<string, any>, keys: string[]): string[] {
   return Array.from(
     new Set(keys.flatMap((key) => (Array.isArray(row[key]) ? row[key].filter((value: unknown) => typeof value === 'string') : [])))
   );
+}
+
+function fixedHash(char: string): string {
+  return `sha256:${char.repeat(64)}`;
+}
+
+function mustGateSource(packetHash = fixedHash('a'), overrides = ''): string {
+  const inventedTraceBackRef = overrides.includes('SOURCE_INVENTED_TRACE_ROW') ? '' : `      derivedFromMustRef: MUST-001
+      derivedFromPacketHash: ${packetHash}`;
+  return `# MUST Gate Fixture
+
+implementationConfirmation:
+  contractSchemaVersion: 1
+  status: draft
+  recordId: REQ-MUST-GATE
+  requirementSetId: REQSET-MUST-GATE
+  entryFlow: standalone_tasks
+  entryFlowClass: task_packet_entry
+  workflowAdapter: direct
+  contractAuthoringRequired: true
+  confirmationLanguage: zh-CN
+  confirmationProfile: implementation_confirmation
+  requiredViewPacks: ["currentTargetMap"]
+  optionalViewPacks: []
+  confirmedAt: null
+  confirmedBy: null
+  sourceDocumentHash: null
+  confirmationRender:
+    htmlPath: null
+    summaryPath: null
+    reportPath: null
+    htmlHash: null
+    confirmationPhrase: null
+  applicability:
+    governanceEvents:
+      applies: false
+      reasonCode: no_governance_event_changes
+    runtimeRecovery:
+      applies: false
+      reasonCode: no_runtime_recovery_changes
+      requiresFunctionalResumeFailureCaseRegistry: false
+      activeRequirementResolutionRequired: false
+      retiredContextSurfaceForbidden: true
+    scoringDashboardSft:
+      applies: false
+      reasonCode: no_scoring_changes
+    currentTargetMap:
+      applies: true
+      reasonCode: requires_current_target_map
+    scriptsAndHooks:
+      applies: false
+      reasonCode: no_scripts_or_hooks
+    aiTddContractGate:
+      applies: true
+      reasonCode: requires_manifest_projection
+  must:
+    - id: MUST-001
+      text: "Render only after atomic decomposition converges."
+      evidenceRefs: ["EVD-001"]
+      coveredByTraceRows: ["TRACE-001"]
+      coveredBySequenceViews: ["SEQ-001"]
+  notDone:
+    - id: NEG-001
+      text: "A shallow field-only source must not be confirmable."
+      evidenceRefs: ["EVD-001"]
+      whyItBlocksCompletion: "It bypasses semantic drilldown."
+      negativeAssertionRequired: true
+      coveredByFailurePath: ["FAIL-001"]
+      derivedFromMustRef: MUST-001
+      derivedFromPacketHash: ${packetHash}
+  mustNot:
+    - id: OUT-001
+      text: "Do not claim delivery readiness from the packet."
+      scopeBoundary: "Confirmation scope only."
+      userApprovalRequiredIfChanged: true
+  mustExecutionDecompositionMatrix:
+    - id: MDM-001
+      mustRef: MUST-001
+      atomicTaskRefs: ["TASK-001"]
+      derivedFromMustRef: MUST-001
+      derivedFromPacketHash: ${packetHash}
+  atomicImplementationTaskList:
+    - id: TASK-001
+      text: "Validate drilldown gate before render."
+      targetFiles: ["_bmad/skills/requirements-contract-authoring/scripts/pre_render_must_decomposition_gate.js"]
+      acceptanceRefs: ["ACC-001"]
+      redProofPlan: "Gate fails when packet is missing."
+      derivedFromMustRef: MUST-001
+      derivedFromPacketHash: ${packetHash}
+  evidence:
+    - id: EVD-001
+      text: "Gate report proves confirmability is blocked or pass."
+      gate: "node pre_render_must_decomposition_gate.js"
+      oracle: "Fails closed on missing drilldown artifacts."
+      requiredCommandRefs: ["CMD-001"]
+      artifactRefs: ["ART-001"]
+      derivedFromMustRef: MUST-001
+      derivedFromPacketHash: ${packetHash}
+  failurePaths:
+    - id: FAIL-001
+      title: "Missing packet blocks render."
+      trigger: "Packet is missing."
+      expectedBehavior: "Gate fails closed."
+      forbiddenBehavior: "Renderer marks source confirmable."
+      blocksCompletionWhenViolated: true
+      linkedNegIds: ["NEG-001"]
+      linkedEvidenceIds: ["EVD-001"]
+      requiredAssertions: ["missing packet blocks"]
+      derivedFromMustRef: MUST-001
+      derivedFromPacketHash: ${packetHash}
+  edgeCases:
+    - id: EDGE-001
+      category: stale_hash
+      condition: "Packet hash is stale."
+      expectedBehavior: "Gate blocks."
+      forbiddenBehavior: "Gate passes."
+      linkedFailurePathIds: ["FAIL-001"]
+      linkedEvidenceIds: ["EVD-001"]
+      derivedFromMustRef: MUST-001
+      derivedFromPacketHash: ${packetHash}
+  traceRows:
+    - id: TRACE-001
+      covers: ["MUST-001", "NEG-001"]
+      taskRefs: ["TASK-001"]
+      evidenceRefs: ["EVD-001"]
+      contractValidationCommandRefs: ["CMD-001"]
+      deliveryEvidenceCommandRefs: ["CMD-001"]
+      acceptanceRefs: ["ACC-001"]
+      sequenceViewRefs: ["SEQ-001"]
+      boundaryViewRefs: ["BOUND-001"]
+      artifactRefs: ["ART-001"]
+      status: PENDING
+${inventedTraceBackRef}
+  acceptanceTests:
+    - id: ACC-001
+      file: "tests/acceptance/requirements-contract-checkpoint-automation.test.ts"
+      covers: ["MUST-001", "NEG-001"]
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
+      commandRefs: ["CMD-001"]
+      expectedPreImplementationState: expected_red
+      oracle: "Gate fails before artifacts exist and passes with synchronized artifacts."
+      positiveControl: true
+      negativeControls: ["NEG-001"]
+      mockOnly: false
+      derivedFromMustRef: MUST-001
+      derivedFromPacketHash: ${packetHash}
+  e2eSuites:
+    - id: E2E-001
+      file: "tests/acceptance/requirements-contract-checkpoint-automation.test.ts"
+      covers: ["MUST-001"]
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
+      commandRefs: ["CMD-001"]
+      expectedPreImplementationState: expected_red
+      oracle: "End-to-end gate CLI behavior."
+      positiveControl: true
+      negativeControls: []
+      mockOnly: false
+      derivedFromMustRef: MUST-001
+      derivedFromPacketHash: ${packetHash}
+  targetModificationPaths:
+    - id: TARGET-MOD-001
+      path: "_bmad/skills/requirements-contract-authoring/scripts/pre_render_must_decomposition_gate.js"
+      changeType: explicit_modification
+      intent: "Implement deterministic pre-render MUST decomposition gate."
+      requirementRefs: ["MUST-001"]
+      traceRefs: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
+      artifactRefs: ["ART-001"]
+      requiresReconfirmationOnChange: true
+      derivedFromMustRef: MUST-001
+      derivedFromPacketHash: ${packetHash}
+  currentTargetMap:
+    schemaVersion: current-target-map/v1
+    displayProfile: closed_loop_current_target_map
+    currentSummary:
+      - id: CT-CUR-001
+        title: "No gate"
+        detail: "Renderer can pass shallow source."
+    targetSummary:
+      - id: CT-TGT-001
+        title: "Gate enforced"
+        detail: "Renderer consumes drilldown gate."
+    diffRows:
+      - id: CT-DIFF-001
+        dimension: "Gate"
+        currentState: "missing"
+        targetState: "mandatory"
+        action: "add pre-render gate"
+      - id: CT-DIFF-002
+        dimension: "Packet"
+        currentState: "optional"
+        targetState: "synchronized"
+        action: "require packet"
+      - id: CT-DIFF-003
+        dimension: "Critic"
+        currentState: "not enforced"
+        targetState: "three rounds"
+        action: "verify receipts"
+    process:
+      - id: CT-PROC-001
+        step: "Run gate"
+        owner: "requirements-contract-authoring"
+    artifactPaths:
+      - id: CT-ART-001
+        path: "_bmad-output/runtime/requirement-records/REQ-MUST-GATE/authoring/pre-render-must-decomposition-gate-report.json"
+        targetRole: "gate_report"
+    canonicalArtifacts: []
+    existingArtifacts: []
+  aiTddContractExecutionManifestProjection:
+    id: AI-TDD-001
+    derivedFromMustRef: MUST-001
+    derivedFromPacketHash: ${packetHash}
+  artifactAutomationPlan:
+    - artifactId: ART-001
+      path: "_bmad-output/runtime/requirement-records/REQ-MUST-GATE/authoring/pre-render-must-decomposition-gate-report.json"
+      artifactType: report
+      sourceOfTruthRole: evidence
+      ownerModel: requirements
+      producer: pre_render_must_decomposition_gate
+      consumer: renderer
+      inputArtifacts: []
+      outputArtifacts: ["pre-render-must-decomposition-gate-report.json"]
+      recordEventTypes: []
+      canAffectControlFlow: false
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
+      retention: long_lived
+      cleanupPolicy: keep
+      orphanRisk: low
+      derivedFromMustRef: MUST-001
+      derivedFromPacketHash: ${packetHash}
+  requiredCommands:
+    - id: CMD-001
+      command: "node _bmad/skills/requirements-contract-authoring/scripts/pre_render_must_decomposition_gate.js --source source.md --json"
+      purpose: "Validate pre-render MUST decomposition gate."
+      derivedFromMustRef: MUST-001
+      derivedFromPacketHash: ${packetHash}
+  requirementBoundary:
+    business:
+      description: "No business behavior."
+      requirementIds: []
+      viewRefs: []
+      diagramRefs: []
+    governance:
+      description: "Pre-render gate governance."
+      requirementIds: ["MUST-001", "NEG-001"]
+      viewRefs: ["BOUND-001"]
+      diagramRefs: ["SEQ-001"]
+  sequenceViews:
+    - id: SEQ-001
+      title: "Gate sequence"
+      scope: governance
+      covers: ["MUST-001", "NEG-001"]
+      mermaid: "sequenceDiagram\\n  participant A\\n  participant G\\n  A->>G: run gate [MUST-001]"
+  flowViews:
+    - id: FLOW-001
+      title: "Gate flow"
+      scope: governance
+      covers: ["MUST-001"]
+      mermaid: "flowchart TD\\n  A[MUST-001] --> B[TRACE-001]"
+  edgeCaseViews:
+    - id: EDGEVIEW-001
+      title: "Gate edge"
+      scope: governance
+      covers: ["EDGE-001", "FAIL-001"]
+  boundaryViews:
+    - id: BOUND-001
+      title: "Scope boundary"
+      scope: governance
+      covers: ["OUT-001"]
+  suggestedCommands: []
+  closeoutReadinessPreview:
+    requiredCommands: ["CMD-001"]
+    orphanPolicy: "Packet is not closeout proof."
+    currentAttemptPolicy: "Confirmation scope only."
+    derivedFromMustRef: MUST-001
+    derivedFromPacketHash: ${packetHash}
+
+## Reverse Audit Report
+
+Definition of Done
+`;
+}
+
+function writeMustGateFixture(overrides = '') {
+  const fixtureDir = path.join(tempDir, `must-gate-${overrides.replace(/[^A-Z0-9_]+/g, '-').toLowerCase() || 'valid'}`);
+  const authoringDir = path.join(fixtureDir, 'authoring');
+  fs.mkdirSync(authoringDir, { recursive: true });
+  const source = path.join(fixtureDir, 'source.md');
+  const packetHash = fixedHash('a');
+  fs.writeFileSync(source, mustGateSource(packetHash, overrides), 'utf8');
+  const text = fs.readFileSync(source, 'utf8');
+  const extracted = extractImplementationConfirmation(text);
+  const sourceDocumentHash = sourceDocumentHashFor(text, extracted.blockText, extracted.confirmation);
+  const implementationConfirmationHash = implementationConfirmationHashFor(extracted.confirmation);
+  const kernelHash = fixedHash('b');
+  const kernel = {
+    schemaVersion: 'semantic-kernel/v1',
+    recordId: 'REQ-MUST-GATE',
+    sourceDocument: source,
+    sourceDocumentHash: overrides.includes('STALE_KERNEL') ? fixedHash('c') : sourceDocumentHash,
+    goal: 'Gate confirmation before render.',
+    currentState: ['Field presence can pass shallow source.'],
+    targetState: ['Drilldown artifacts are mandatory.'],
+    nonGoals: [],
+    mustCandidates: ['MUST-001'],
+    kernelHash,
+  };
+  const taskCount = overrides.includes('UNDER_SPLIT') ? { expectedTaskCount: 2, actualTaskCount: 1 } : { expectedTaskCount: 1, actualTaskCount: 1 };
+  const packet = {
+    schemaVersion: 'must-decomposition-packet/v1',
+    recordId: 'REQ-MUST-GATE',
+    sourceDocument: source,
+    sourceDocumentHash: overrides.includes('STALE_PACKET') ? fixedHash('d') : sourceDocumentHash,
+    semanticKernelHash: kernelHash,
+    packetHash,
+    status: overrides.includes('BLOCKED_PACKET') ? 'blocked' : 'synchronized',
+    generatedBy: 'requirements-contract-authoring',
+    materializationTarget: 'implementationConfirmation',
+    mustPackets: [
+      {
+        mustRef: 'MUST-001',
+        mustIntent: 'Render only after atomic decomposition converges.',
+        decompositionBasis: { observableBehaviors: ['block missing packet'], targetSurfaces: ['pre_render_must_decomposition_gate.js'] },
+        atomicityDrivers: { behaviorSurfaceOracleUnits: ['gate report oracle'] },
+        questionCoverage: { requiredCategories: ['intent_boundary'], answeredCategories: ['intent_boundary'], missingCategories: [], coverageVerdict: overrides.includes('INCOMPLETE_QUESTION') ? 'incomplete' : 'complete' },
+        atomicityCompleteness: { splitRule: 'one_task_per_independent_behavior_surface_oracle', completenessVerdict: overrides.includes('UNDER_SPLIT') ? 'under_split' : 'complete', ...taskCount },
+        mustAtomicTasks: [
+          {
+            id: 'TASK-001',
+            targetFiles: ['_bmad/skills/requirements-contract-authoring/scripts/pre_render_must_decomposition_gate.js'],
+            redProofPlan: overrides.includes('MISSING_RED_PROOF') ? '' : 'Gate fails without packet.',
+            overBroad: overrides.includes('OVER_BROAD_TASK'),
+            materializedTo: overrides.includes('PROJECTION_NOT_MATERIALIZED') ? [] : ['implementationConfirmation.atomicImplementationTaskList[TASK-001]'],
+          },
+        ],
+        mustExecutionDecompositionMatrix: [{ id: 'MDM-001', materializedTo: ['implementationConfirmation.mustExecutionDecompositionMatrix[MDM-001]'] }],
+        mustEvidenceProjection: [{ id: 'EVD-001', materializedTo: ['implementationConfirmation.evidence[EVD-001]'] }],
+        mustTraceProjection: [{ id: 'TRACE-001', materializedTo: ['implementationConfirmation.traceRows[TRACE-001]'] }],
+        mustAcceptanceProjection: [
+          { id: 'ACC-001', materializedTo: ['implementationConfirmation.acceptanceTests[ACC-001]'] },
+          { id: 'E2E-001', materializedTo: ['implementationConfirmation.e2eSuites[E2E-001]'] },
+        ],
+        mustFailureEdgeProjection: [
+          { id: 'FAIL-001', materializedTo: ['implementationConfirmation.failurePaths[FAIL-001]'] },
+          { id: 'EDGE-001', materializedTo: ['implementationConfirmation.edgeCases[EDGE-001]'] },
+        ],
+        mustTargetPathProjection: [{ id: 'TARGET-MOD-001', materializedTo: ['implementationConfirmation.targetModificationPaths[TARGET-MOD-001]'] }],
+        mustArtifactProjection: [{ id: 'ART-001', materializedTo: ['implementationConfirmation.artifactAutomationPlan[ART-001]'] }],
+        mustCommandProjection: [{ id: 'CMD-001', materializedTo: ['implementationConfirmation.requiredCommands[CMD-001]'] }],
+      },
+    ],
+    mustDerivedProjectionMap: [
+      { mustRef: 'MUST-001', materializedTo: ['implementationConfirmation.currentTargetMap', 'implementationConfirmation.aiTddContractExecutionManifestProjection', 'implementationConfirmation.closeoutReadinessPreview'] },
+    ],
+  };
+  fs.writeFileSync(path.join(authoringDir, 'semantic-kernel.json'), JSON.stringify({ semanticKernel: kernel }, null, 2), 'utf8');
+  fs.writeFileSync(path.join(authoringDir, 'must_decomposition_packet.json'), JSON.stringify({ must_decomposition_packet: packet }, null, 2), 'utf8');
+  const auditInputHash = buildAuditInputHash({ sourceDocumentHash, implementationConfirmationHash, kernel, packet });
+  if (!overrides.includes('MISSING_CRITIC')) {
+    const rounds = overrides.includes('LESS_THAN_3_ROUNDS') ? 2 : 3;
+    for (let index = 1; index <= rounds; index += 1) {
+      const receipt = {
+        criticalAuditorReceipt: {
+          schemaVersion: 'critical-auditor-receipt/v1',
+          roundIndex: index,
+          inputHash: overrides.includes('STALE_CRITIC') ? fixedHash('e') : auditInputHash,
+          attackVectors: ['missing_projection'],
+          gapCandidates: [],
+          validatedGaps: overrides.includes('UNRESOLVED_GAP') && index === rounds ? [{ id: 'GAP-001', status: 'open' }] : [],
+          rejectedGapCandidates: [{ id: `REJ-${index}` }],
+          mutationPressureFindings: [],
+          overBroadTaskFindings: [],
+          missingProjectionFindings: [],
+          invalidProofFindings: [],
+          legacyBypassFindings: [],
+          sourceMaterializationFindings: [],
+          noNewGapRationale: 'No new valid gap in fixture.',
+          convergenceDecision: {
+            verdict: 'no_new_valid_gap',
+            resetsConvergenceCounter: false,
+          },
+        },
+      };
+      fs.writeFileSync(path.join(authoringDir, `critical-auditor-receipt-round-${index}.json`), JSON.stringify(receipt, null, 2), 'utf8');
+    }
+  }
+  return { source, authoringDir };
+}
+
+function writeValidMustGateArtifactsForSource(source: string, authoringDir: string) {
+  fs.mkdirSync(authoringDir, { recursive: true });
+  const text = fs.readFileSync(source, 'utf8');
+  const extracted = extractImplementationConfirmation(text);
+  const confirmation = extracted.confirmation;
+  let sourceDocumentHash = sourceDocumentHashFor(text, extracted.blockText, confirmation);
+  let implementationConfirmationHash = implementationConfirmationHashFor(confirmation);
+  const packetHash = fixedHash('a');
+  const kernelHash = fixedHash('b');
+  const kernel = {
+    schemaVersion: 'semantic-kernel/v1',
+    recordId: confirmation.recordId,
+    sourceDocument: source,
+    sourceDocumentHash,
+    goal: 'Validate semantic pre-render gate.',
+    currentState: ['Legacy global consistency is the only gate.'],
+    targetState: ['MUST packet and critic convergence gate HTML rendering.'],
+    kernelHash,
+  };
+  const mustRows = asArray(confirmation.must);
+  const packet = {
+    schemaVersion: 'must-decomposition-packet/v1',
+    recordId: confirmation.recordId,
+    sourceDocument: source,
+    sourceDocumentHash,
+    semanticKernelHash: kernelHash,
+    packetHash,
+    status: 'synchronized',
+    mustPackets: mustRows.map((must: any, index: number) => {
+      const taskId = `TASK-${String(index + 1).padStart(3, '0')}`;
+      return {
+        mustRef: must.id,
+        mustIntent: must.text,
+        decompositionBasis: { observableBehaviors: [must.text], targetSurfaces: ['confirmation source'] },
+        atomicityDrivers: { behaviorSurfaceOracleUnits: [`${must.id} oracle`] },
+        questionCoverage: { requiredCategories: ['intent_boundary'], answeredCategories: ['intent_boundary'], missingCategories: [], coverageVerdict: 'complete' },
+        atomicityCompleteness: { expectedTaskCount: 1, actualTaskCount: 1, completenessVerdict: 'complete' },
+        mustAtomicTasks: [{ id: taskId, targetFiles: ['tests/acceptance/requirements-contract-checkpoint-automation.test.ts'], redProofPlan: `${must.id} red proof`, materializedTo: [`implementationConfirmation.atomicImplementationTaskList[${taskId}]`] }],
+        mustExecutionDecompositionMatrix: [{ id: `MDM-${String(index + 1).padStart(3, '0')}`, materializedTo: [`implementationConfirmation.mustExecutionDecompositionMatrix[MDM-${String(index + 1).padStart(3, '0')}]`] }],
+        mustEvidenceProjection: asArray(confirmation.evidence).map((row: any) => ({ id: row.id, materializedTo: [`implementationConfirmation.evidence[${row.id}]`] })),
+        mustTraceProjection: asArray(confirmation.traceRows).map((row: any) => ({ id: row.id, materializedTo: [`implementationConfirmation.traceRows[${row.id}]`] })),
+        mustAcceptanceProjection: [
+          ...asArray(confirmation.acceptanceTests).map((row: any) => ({ id: row.id, materializedTo: [`implementationConfirmation.acceptanceTests[${row.id}]`] })),
+          ...asArray(confirmation.e2eSuites).map((row: any) => ({ id: row.id, materializedTo: [`implementationConfirmation.e2eSuites[${row.id}]`] })),
+        ],
+        mustFailureEdgeProjection: [
+          ...asArray(confirmation.failurePaths).map((row: any) => ({ id: row.id, materializedTo: [`implementationConfirmation.failurePaths[${row.id}]`] })),
+          ...asArray(confirmation.edgeCases).map((row: any) => ({ id: row.id, materializedTo: [`implementationConfirmation.edgeCases[${row.id}]`] })),
+        ],
+        mustTargetPathProjection: asArray(confirmation.targetModificationPaths).map((row: any) => ({ id: row.id, materializedTo: [`implementationConfirmation.targetModificationPaths[${row.id}]`] })),
+        mustArtifactProjection: asArray(confirmation.artifactAutomationPlan).map((row: any) => ({ id: row.artifactId ?? row.id, materializedTo: [`implementationConfirmation.artifactAutomationPlan[${row.artifactId ?? row.id}]`] })),
+        mustCommandProjection: asArray(confirmation.requiredCommands).map((row: any) => ({ id: row.id, materializedTo: [`implementationConfirmation.requiredCommands[${row.id}]`] })),
+      };
+    }),
+    mustDerivedProjectionMap: [
+      {
+        mustRef: mustRows[0]?.id ?? 'MUST-001',
+        materializedTo: ['implementationConfirmation.closeoutReadinessPreview'],
+      },
+    ],
+  };
+  const addBackRefs = (rows: any[]) => rows.forEach((row) => {
+    row.derivedFromMustRef = row.derivedFromMustRef ?? mustRows[0]?.id ?? 'MUST-001';
+    row.derivedFromPacketHash = packetHash;
+  });
+  confirmation.atomicImplementationTaskList = mustRows.map((must: any, index: number) => ({
+    id: `TASK-${String(index + 1).padStart(3, '0')}`,
+    text: `${must.id} atomic fixture task`,
+    targetFiles: ['tests/acceptance/requirements-contract-checkpoint-automation.test.ts'],
+    redProofPlan: `${must.id} red proof`,
+    derivedFromMustRef: must.id,
+    derivedFromPacketHash: packetHash,
+  }));
+  confirmation.mustExecutionDecompositionMatrix = mustRows.map((must: any, index: number) => ({
+    id: `MDM-${String(index + 1).padStart(3, '0')}`,
+    mustRef: must.id,
+    atomicTaskRefs: [`TASK-${String(index + 1).padStart(3, '0')}`],
+    derivedFromMustRef: must.id,
+    derivedFromPacketHash: packetHash,
+  }));
+  addBackRefs(asArray(confirmation.evidence));
+  addBackRefs(asArray(confirmation.traceRows));
+  addBackRefs(asArray(confirmation.acceptanceTests));
+  addBackRefs(asArray(confirmation.e2eSuites));
+  addBackRefs(asArray(confirmation.failurePaths));
+  addBackRefs(asArray(confirmation.edgeCases));
+  addBackRefs(asArray(confirmation.targetModificationPaths));
+  addBackRefs(asArray(confirmation.artifactAutomationPlan));
+  addBackRefs(asArray(confirmation.requiredCommands));
+  confirmation.closeoutReadinessPreview = {
+    ...(confirmation.closeoutReadinessPreview ?? {}),
+    derivedFromMustRef: mustRows[0]?.id ?? 'MUST-001',
+    derivedFromPacketHash: packetHash,
+  };
+  fs.writeFileSync(source, `# Source\n\n${yaml.dump({ implementationConfirmation: confirmation }, { lineWidth: -1 })}`, 'utf8');
+  const finalText = fs.readFileSync(source, 'utf8');
+  const finalExtracted = extractImplementationConfirmation(finalText);
+  sourceDocumentHash = sourceDocumentHashFor(finalText, finalExtracted.blockText, finalExtracted.confirmation);
+  implementationConfirmationHash = implementationConfirmationHashFor(finalExtracted.confirmation);
+  kernel.sourceDocumentHash = sourceDocumentHash;
+  packet.sourceDocumentHash = sourceDocumentHash;
+  const auditInputHash = buildAuditInputHash({ sourceDocumentHash, implementationConfirmationHash, kernel, packet });
+  fs.writeFileSync(path.join(authoringDir, 'semantic-kernel.json'), JSON.stringify({ semanticKernel: kernel }, null, 2), 'utf8');
+  fs.writeFileSync(path.join(authoringDir, 'must_decomposition_packet.json'), JSON.stringify({ must_decomposition_packet: packet }, null, 2), 'utf8');
+  for (let roundIndex = 1; roundIndex <= 3; roundIndex += 1) {
+    fs.writeFileSync(
+      path.join(authoringDir, `critical-auditor-receipt-round-${roundIndex}.json`),
+      JSON.stringify(
+        {
+          criticalAuditorReceipt: {
+            schemaVersion: 'critical-auditor-receipt/v1',
+            roundIndex,
+            inputHash: auditInputHash,
+            attackVectors: [],
+            gapCandidates: [],
+            validatedGaps: [],
+            rejectedGapCandidates: [],
+            mutationPressureFindings: [],
+            overBroadTaskFindings: [],
+            missingProjectionFindings: [],
+            invalidProofFindings: [],
+            legacyBypassFindings: [],
+            sourceMaterializationFindings: [],
+            noNewGapRationale: 'Fixture has no new valid gap.',
+            convergenceDecision: { verdict: 'no_new_valid_gap', resetsConvergenceCounter: false },
+          },
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+  }
 }
 
 function writeSmallSource(root = tempDir): string {
@@ -278,6 +826,16 @@ function completeImplementationConfirmation(): string {
     - id: CMD-DELIVERY-001
       command: "npx vitest run tests/acceptance/requirements-contract-checkpoint-automation.test.ts"
       purpose: "Produce current delivery evidence for the checkpoint runner."
+  targetModificationPaths:
+    - id: TARGET-MOD-001
+      path: tests/acceptance/requirements-contract-checkpoint-automation.test.ts
+      changeType: validation_only
+      intent: "Validation command target for checkpoint global consistency fixtures."
+      requirementRefs: ["MUST-001", "NEG-001"]
+      traceRefs: ["TRACE-001", "TRACE-002"]
+      evidenceRefs: ["EVD-001", "EVD-002"]
+      artifactRefs: []
+      requiresReconfirmationOnChange: false
   suggestedCommands: []
   closeoutReadinessPreview:
     requiredCommands: ["CMD-CONTRACT-001", "CMD-DELIVERY-001"]
@@ -620,14 +1178,27 @@ function initGitRepo(root: string) {
 }
 
 describe('requirements contract checkpoint automation', () => {
-  it('routes small requirements to single_pass', () => {
+  const SEMANTIC_CHECKPOINT_IDS = [
+    'cp-00-semantic-kernel',
+    'cp-01-must-decomposition-packet',
+    'cp-02-atomic-decomposition-loop-convergence',
+    'cp-03-packet-to-source-materialization',
+    'cp-04-id-freeze',
+    'cp-05-implementation-confirmation-core',
+    'cp-06-projections',
+    'cp-07-human-readable-views',
+    'cp-08-pre-render-global-reconciliation',
+  ];
+
+  it('routes small requirements to single_pass_allowed while still requiring semantic kernel then packet authoring', () => {
     const source = writeSmallSource();
 
     const { result, json } = runNode(ASSESS, ['--source', source]);
 
     expect(result.status).toBe(0);
-    expect(json.decision).toBe('single_pass');
-    expect(json.authoringMode).toBe('single_pass');
+    expect(json.schemaVersion).toBe('contract-authoring-scale-assessment/v1');
+    expect(json.decision).toBe('single_pass_allowed');
+    expect(json.authoringMode).toBe('semantic_kernel_then_packet');
     expect(json.riskLevel).toBe('low');
     expect(json.recommendedCheckpoints).toEqual([]);
   });
@@ -639,11 +1210,11 @@ describe('requirements contract checkpoint automation', () => {
 
     expect(result.status).toBe(0);
     expect(json.decision).toBe('checkpoint_required');
-    expect(json.authoringMode).toBe('kernel_then_checkpoint');
+    expect(json.authoringMode).toBe('semantic_kernel_then_packet');
     expect(json.signals.applicableConditionalDomains).toEqual(
       expect.arrayContaining(['governanceEvents', 'runtimeRecovery', 'scriptsAndHooks'])
     );
-    expect(json.recommendedCheckpoints).toContain('cp-01-header-scope-decisions');
+    expect(json.recommendedCheckpoints).toEqual(SEMANTIC_CHECKPOINT_IDS);
   });
 
   it('routes to checkpoint_required when progress already exists', () => {
@@ -654,8 +1225,8 @@ describe('requirements contract checkpoint automation', () => {
     const { result, json } = runNode(ASSESS, ['--source', source, '--progress', progress]);
 
     expect(result.status).toBe(0);
-    expect(json.decision).toBe('checkpoint_required');
-    expect(json.authoringMode).toBe('kernel_then_checkpoint_with_amendment');
+    expect(json.decision).toBe('checkpoint_required_with_amendment');
+    expect(json.authoringMode).toBe('semantic_kernel_then_packet_with_amendment');
     expect(json.signals.progressExists).toBe(true);
   });
 
@@ -665,8 +1236,8 @@ describe('requirements contract checkpoint automation', () => {
     const { result, json } = runNode(ASSESS, ['--source', source]);
 
     expect(result.status).toBe(0);
-    expect(json.decision).toBe('checkpoint_required');
-    expect(json.authoringMode).toBe('kernel_then_checkpoint_with_amendment');
+    expect(json.decision).toBe('checkpoint_required_with_amendment');
+    expect(json.authoringMode).toBe('semantic_kernel_then_packet_with_amendment');
     expect(json.signals.amendmentRisk).toBe(true);
   });
 
@@ -676,18 +1247,67 @@ describe('requirements contract checkpoint automation', () => {
     const { result, json } = runNode(CHECKPOINTS, ['--source', source, '--mode', 'plan']);
 
     expect(result.status).toBe(0);
-    expect(json.authoringMode).toBe('kernel_then_checkpoint');
-    expect(json.checkpoints.map((checkpoint: any) => checkpoint.id)).toEqual([
-      'cp-01-header-scope-decisions',
-      'cp-02-confirmation-core-applicability',
-      'cp-03-must-neg-out-evidence',
-      'cp-04-failure-edge-trace',
-      'cp-05-views',
-      'cp-06-artifacts-commands-closeout',
-      'cp-07-conditional-modules',
-      'cp-08-human-readable-views-dod-reverse-audit',
+    expect(json.authoringMode).toBe('semantic_kernel_then_packet');
+    expect(json.checkpoints.map((checkpoint: any) => checkpoint.id)).toEqual(SEMANTIC_CHECKPOINT_IDS);
+    expect(json.nextCheckpoint).toBe('cp-00-semantic-kernel');
+    expect(json.semanticDrilldown.semanticKernel.status).toBe('missing');
+    expect(json.semanticDrilldown.nextAction).toBe('create_semantic_kernel');
+  });
+
+  it('blocks pre-render MUST decomposition gate failures before confirmable HTML', () => {
+    const cases = [
+      ['missing semantic kernel', 'MISSING_KERNEL', 'missing_semantic_kernel'],
+      ['missing must_decomposition_packet', 'MISSING_PACKET', 'missing_must_decomposition_packet'],
+      ['stale packet hash', 'STALE_PACKET', 'must_packet_source_hash_stale'],
+      ['missing Critical Auditor receipt', 'MISSING_CRITIC', 'critical_auditor_receipt_missing'],
+      ['less than three no-new-gap rounds', 'LESS_THAN_3_ROUNDS', 'critical_auditor_less_than_three_no_new_gap_rounds'],
+      ['unresolved validated gap', 'UNRESOLVED_GAP', 'critical_auditor_validated_gap_unresolved'],
+      ['question coverage incomplete', 'INCOMPLETE_QUESTION', 'must_packet_question_coverage_incomplete'],
+      ['actual task count below expected', 'UNDER_SPLIT', 'must_packet_under_split'],
+      ['over-broad atomic task', 'OVER_BROAD_TASK', 'must_packet_over_broad_atomic_task'],
+      ['source row independently invented', 'SOURCE_INVENTED_TRACE_ROW', 'source_row_independently_invented'],
+      ['packet projection not materialized', 'PROJECTION_NOT_MATERIALIZED', 'packet_projection_not_materialized'],
+    ];
+
+    for (const [_label, override, code] of cases) {
+      const fixture = writeMustGateFixture(override);
+      if (override === 'MISSING_KERNEL') fs.rmSync(path.join(fixture.authoringDir, 'semantic-kernel.json'));
+      if (override === 'MISSING_PACKET') fs.rmSync(path.join(fixture.authoringDir, 'must_decomposition_packet.json'));
+
+      const { result, json } = runNode(PRE_RENDER_MUST_GATE, [
+        '--source',
+        fixture.source,
+        '--authoring-dir',
+        fixture.authoringDir,
+      ]);
+
+      expect(result.status, `${override} should fail`).toBe(1);
+      expect(json.confirmability).toBe('blocked');
+      expect(json.failedChecks).toContain(code);
+      expect(fs.existsSync(path.join(fixture.authoringDir, 'pre-render-must-decomposition-gate-report.json'))).toBe(true);
+      expect(fs.existsSync(path.join(fixture.authoringDir, 'must_packet_source_reconciliation_report.json'))).toBe(true);
+    }
+  });
+
+  it('marks complete kernel, packet, critic receipts, and reconciliation as confirmable', () => {
+    const fixture = writeMustGateFixture();
+
+    const { result, json } = runNode(PRE_RENDER_MUST_GATE, [
+      '--source',
+      fixture.source,
+      '--authoring-dir',
+      fixture.authoringDir,
     ]);
-    expect(json.nextCheckpoint).toBe('cp-01-header-scope-decisions');
+    const receipt = JSON.parse(fs.readFileSync(path.join(fixture.authoringDir, 'must_decomposition_receipt.json'), 'utf8'));
+    const reconciliation = JSON.parse(fs.readFileSync(path.join(fixture.authoringDir, 'must_packet_source_reconciliation_report.json'), 'utf8'));
+
+    expect(result.status).toBe(0);
+    expect(json.verdict).toBe('PASS');
+    expect(json.confirmability).toBe('confirmable');
+    expect(json.criticalAuditor.consecutiveNoNewGapRounds).toBe(3);
+    expect(json.packetSourceReconciliation.verdict).toBe('pass');
+    expect(receipt.criticalAuditor.convergenceVerdict).toBe('bounded_no_new_gap');
+    expect(reconciliation.verdict).toBe('pass');
   });
 
   it('reports status from progress without editing', () => {
@@ -752,7 +1372,7 @@ describe('requirements contract checkpoint automation', () => {
     expect(json.ok).toBe(true);
     expect(json.commitHash).toMatch(/^[a-f0-9]{40}$/u);
     expect(fs.existsSync(progress)).toBe(true);
-    expect(JSON.parse(fs.readFileSync(progress, 'utf8')).lastCompletedCheckpoint).toBe('cp-01-header-scope-decisions');
+    expect(JSON.parse(fs.readFileSync(progress, 'utf8')).lastCompletedCheckpoint).toBe('cp-01-must-decomposition-packet');
     expect(JSON.parse(fs.readFileSync(progress, 'utf8')).checkpoints[0].idempotencyKey).toMatch(/^[a-f0-9]{64}$/u);
     expect(committedFiles).toEqual(['docs/requirements/source.md']);
   });
@@ -792,7 +1412,8 @@ describe('requirements contract checkpoint automation', () => {
     expect(result.status).toBe(0);
     expect(json.status).toBe('ready');
     expect(json.recoveredFrom).toBe('backup');
-    expect(json.nextCheckpoint).toBe('cp-02-confirmation-core-applicability');
+    expect(json.nextCheckpoint).toBe('cp-02-atomic-decomposition-loop-convergence');
+    expect(json.semanticDrilldown.nextAction).toBe('create_semantic_kernel');
   });
 
   it('recovers status from the latest git checkpoint when progress and backup are corrupt', () => {
@@ -809,7 +1430,7 @@ describe('requirements contract checkpoint automation', () => {
     expect(result.status).toBe(0);
     expect(json.status).toBe('ready');
     expect(json.recoveredFrom).toBe('git_checkpoint');
-    expect(json.nextCheckpoint).toBe('cp-02-confirmation-core-applicability');
+    expect(json.nextCheckpoint).toBe('cp-02-atomic-decomposition-loop-convergence');
   });
 
   it('continues run from recovered progress instead of replaying completed checkpoints', () => {
@@ -823,17 +1444,19 @@ describe('requirements contract checkpoint automation', () => {
     const { result, json } = runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'run'], tempDir);
     const commitCount = spawnSync('git', ['rev-list', '--count', 'HEAD'], { cwd: tempDir, encoding: 'utf8' }).stdout.trim();
 
-    expect(result.status).toBe(0);
+    expect(result.status).toBe(1);
+    expect(json.code).toBe('pre_render_gate_failed');
     expect(json.completedCheckpoints.map((item: any) => item.checkpoint)).toEqual([
-      'cp-02-confirmation-core-applicability',
-      'cp-03-must-neg-out-evidence',
-      'cp-04-failure-edge-trace',
-      'cp-05-views',
-      'cp-06-artifacts-commands-closeout',
-      'cp-07-conditional-modules',
-      'cp-08-human-readable-views-dod-reverse-audit',
+      'cp-02-atomic-decomposition-loop-convergence',
+      'cp-03-packet-to-source-materialization',
+      'cp-04-id-freeze',
+      'cp-05-implementation-confirmation-core',
+      'cp-06-projections',
+      'cp-07-human-readable-views',
+      'cp-08-pre-render-global-reconciliation',
     ]);
     expect(commitCount).toBe('8');
+    expect(json.failedChecks).toContain('missing_semantic_kernel');
   });
 
   it('fails closed when checkpoint progress cannot be written after a checkpoint commit', () => {
@@ -874,28 +1497,23 @@ describe('requirements contract checkpoint automation', () => {
 
     expect(result.status).toBe(1);
     expect(json.ok).toBe(false);
-    expect(json.code).toBe('pre_render_global_consistency_failed');
+    expect(json.code).toBe('pre_render_gate_failed');
     expect(json.status).toBe('blocked');
     expect(json.completedCheckpoints.map((item: any) => item.checkpoint)).toEqual([
-      'cp-01-header-scope-decisions',
-      'cp-02-confirmation-core-applicability',
-      'cp-03-must-neg-out-evidence',
-      'cp-04-failure-edge-trace',
-      'cp-05-views',
-      'cp-06-artifacts-commands-closeout',
-      'cp-07-conditional-modules',
-      'cp-08-human-readable-views-dod-reverse-audit',
+      ...SEMANTIC_CHECKPOINT_IDS,
     ]);
-    expect(commitHashes).toHaveLength(8);
-    expect(committedFileSets).toEqual(Array.from({ length: 8 }, () => ['docs/requirements/source.md']));
-    expect(savedProgress.lastCompletedCheckpoint).toBe('cp-08-human-readable-views-dod-reverse-audit');
+    expect(commitHashes).toHaveLength(9);
+    expect(committedFileSets).toEqual(Array.from({ length: 9 }, () => ['docs/requirements/source.md']));
+    expect(savedProgress.lastCompletedCheckpoint).toBe('cp-08-pre-render-global-reconciliation');
     expect(savedProgress.next).toBeNull();
     expect(savedProgress.validation.globalConsistency).toBe('fail');
+    expect(savedProgress.validation.mustDecomposition).toBe('fail');
     expect(json.failedChecks).toContain('global_source_parse_failed');
+    expect(json.failedChecks).toContain('source_parse_failed');
     expect(fs.existsSync(path.join(tempDir, 'pre-render-global-consistency-report.json'))).toBe(true);
   });
 
-  it('runs all pre-render checkpoints as separate commits and reports ready only after global consistency passes', () => {
+  it('blocks full checkpoint run when semantic kernel, packet, critic, and reconciliation are missing', () => {
     initGitRepo(tempDir);
     const source = writeGloballyConsistentSource(tempDir);
     const progress = path.join(tempDir, 'progress.json');
@@ -906,13 +1524,16 @@ describe('requirements contract checkpoint automation', () => {
       .filter(Boolean);
     const savedProgress = JSON.parse(fs.readFileSync(progress, 'utf8'));
 
-    expect(result.status).toBe(0);
-    expect(json.ok).toBe(true);
-    expect(json.status).toBe('pre_render_ready');
-    expect(json.completedCheckpoints).toHaveLength(8);
-    expect(commitHashes).toHaveLength(8);
+    expect(result.status).toBe(1);
+    expect(json.ok).toBe(false);
+    expect(json.status).toBe('blocked');
+    expect(json.completedCheckpoints).toHaveLength(9);
+    expect(commitHashes).toHaveLength(9);
     expect(savedProgress.validation.globalConsistency).toBe('pass');
+    expect(savedProgress.validation.mustDecomposition).toBe('fail');
     expect(savedProgress.preRenderGlobalConsistency.verdict).toBe('PASS');
+    expect(savedProgress.preRenderGate.verdict).toBe('FAIL');
+    expect(json.failedChecks).toContain('missing_semantic_kernel');
     expect(fs.existsSync(path.join(tempDir, 'pre-render-global-consistency-report.json'))).toBe(true);
   });
 
@@ -930,20 +1551,21 @@ describe('requirements contract checkpoint automation', () => {
     const commitCount = spawnSync('git', ['rev-list', '--count', 'HEAD'], { cwd: tempDir, encoding: 'utf8' }).stdout.trim();
     const savedProgress = JSON.parse(fs.readFileSync(progress, 'utf8'));
 
-    expect(result.status).toBe(0);
-    expect(json.ok).toBe(true);
+    expect(result.status).toBe(1);
+    expect(json.ok).toBe(false);
     expect(json.completedCheckpoints.map((item: any) => item.checkpoint)).toEqual([
-      'cp-02-confirmation-core-applicability',
-      'cp-03-must-neg-out-evidence',
-      'cp-04-failure-edge-trace',
-      'cp-05-views',
-      'cp-06-artifacts-commands-closeout',
-      'cp-07-conditional-modules',
-      'cp-08-human-readable-views-dod-reverse-audit',
+      'cp-02-atomic-decomposition-loop-convergence',
+      'cp-03-packet-to-source-materialization',
+      'cp-04-id-freeze',
+      'cp-05-implementation-confirmation-core',
+      'cp-06-projections',
+      'cp-07-human-readable-views',
+      'cp-08-pre-render-global-reconciliation',
     ]);
     expect(commitCount).toBe('8');
     expect(savedProgress.next).toBeNull();
     expect(savedProgress.validation.globalConsistency).toBe('pass');
+    expect(savedProgress.validation.mustDecomposition).toBe('fail');
   });
 
   it('fails the pre-render gate for eighteen trace rows that reference missing evidence', () => {

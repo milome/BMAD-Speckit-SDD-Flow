@@ -4,6 +4,12 @@ Use this reference when implementing or invoking `_bmad/skills/requirements-cont
 
 The renderer is a generic read-only confirmation view generator. It reads an implementation source document and its inline `implementationConfirmation`; it renders HTML plus machine-readable summaries. It must not create, infer, rewrite, merge, shrink, confirm, or mutate requirements.
 
+The renderer must not produce confirmable HTML until the pre-confirmation atomic decomposition loop has completed. It must consume the `preConfirmationDrilldown` metadata and the current pre-render MUST decomposition gate report generated from `semantic-kernel.json`, `must_decomposition_packet.json`, Critical Auditor receipts, packet/source reconciliation, and `pre_render_must_decomposition_gate.js`.
+
+The source-level `preConfirmationDrilldown` metadata must include `semanticKernelRef`, `mustDecompositionPacketRef`, `packetSourceReconciliation`, and `preRenderGateReportPath`. These references point to `semantic-kernel.json`, `must_decomposition_packet.json`, `must_packet_source_reconciliation_report.json`, and `pre-render-must-decomposition-gate-report.json`; the renderer treats stale or missing references as confirmation blockers.
+
+The confirmation page belongs to the contract confirmability audit layer only. It may show implementation readiness audit, delivery verification audit, and closeout integrity audit states as blocked or not-yet-ready, but it must not mix those stages into scope confirmation.
+
 Post-confirmation control writes are handled by the high-level confirmation ingest action, not by the renderer:
 
 ```bash
@@ -64,6 +70,9 @@ Optional options:
 - `--requirement-set-id`
 - `--entry-flow-class`
 - `--workflow-adapter`
+- `--drilldown-gate-report`
+- `--must-decomposition-gate-report`
+- `--pre-render-must-decomposition-gate-report`
 - `--artifact-plan`
 - `--current-target-map`
 - `--theme readable|compact|audit`
@@ -117,7 +126,23 @@ Write all runtime outputs under the same confirmation directory:
     "sourceOfTruthRole": "projection",
     "path": "_bmad-output/runtime/requirement-records/<recordId>/confirmation/confirmation.html",
     "hash": "sha256:..."
-  }
+  },
+  "preConfirmationSemanticDrilldown": {
+    "status": "pass|blocked|missing",
+    "reportPath": "_bmad-output/runtime/requirement-records/<recordId>/authoring/pre-render-must-decomposition-gate-report.json",
+    "requiredSections": [
+      "Pre-Confirmation Semantic Drilldown",
+      "Semantic Kernel Summary",
+      "MUST Decomposition Packet",
+      "Atomicity Drivers",
+      "Atomic Task Baseline",
+      "Projection Coverage",
+      "Critical Auditor Convergence",
+      "Gap History",
+      "Packet-To-Source Reconciliation"
+    ]
+  },
+  "renderedSections": ["pre-confirmation-semantic-drilldown"]
 }
 ```
 
@@ -386,11 +411,47 @@ Render every `traceRows[]` row with:
 
 Highlight unknown references, missing task binding, missing evidence, missing diagrams, missing command categories, non-PENDING rows without evidence, and bare `DEFERRED` or `OUT_OF_SCOPE`.
 
-### 8. Current Vs Target Comparison
+### 8. Pre-Confirmation Semantic Drilldown
+
+Render the productized pre-confirmation drilldown before the user can confirm scope. The section is required even when blocked; missing data must render as an explicit blocker, not as an omitted section.
+
+Required top-level section headings:
+
+- Pre-Confirmation Semantic Drilldown
+- Semantic Kernel Summary
+- MUST Decomposition Packet
+- Atomicity Drivers
+- Atomic Task Baseline
+- Projection Coverage
+- Critical Auditor Convergence
+- Gap History
+- Packet-To-Source Reconciliation
+
+The section must answer:
+
+- How the model understands the requirement through `semantic-kernel.json`.
+- How the model self-questioned the requirement before materializing source rows.
+- How each `MUST-*` was split into atomic tasks.
+- Whether `expectedTaskCount` and `actualTaskCount` match.
+- Which gaps were found, rejected, fixed, moved to `OUT-*`, or converted to blocking `openQuestions`.
+- Whether Critical Auditor has `consecutiveNoNewGapRounds: 3`.
+- Whether all `EVD-*`, `TRACE-*`, `ACC-*`, `E2E-*`, `currentTargetMap`, and AI-TDD rows are same-origin packet projections.
+- Whether packet/source reconciliation passed in both directions.
+
+Blocking examples:
+
+- missing pre-confirmation semantic drilldown gate report -> confirmability=blocked
+- stale packet -> confirmability=blocked
+- less than 3 rounds -> confirmability=blocked
+- unresolved gap -> confirmability=blocked
+- missing coverage -> confirmability=blocked
+- missing rendered drilldown section -> confirmability=blocked
+
+### 9. Current Vs Target Comparison
 
 Render only source-provided or explicit input rows. Do not use renderer constants as current/target authority.
 
-### 9. Artifact And Automation Plan View
+### 10. Artifact And Automation Plan View
 
 Render each planned or existing artifact/script/hook output with:
 
@@ -414,11 +475,11 @@ Render each planned or existing artifact/script/hook output with:
 
 Reports, summaries, dashboards, SFT datasets, score files, legacy script outputs, and hook receipts are evidence/read-model/projection artifacts unless a controlled gate ingests them and writes a `decision` field.
 
-### 10. Architecture Impact View
+### 11. Architecture Impact View
 
 Render affected modules, schema/types/contracts, adapters, scripts/hooks/no-hook fallback, runtime policy, scoring policy, dashboard/read model, SFT pipeline, migration, security/privacy, performance, observability, and rollback when source data provides it.
 
-### 11. EntryFlow-Specific View
+### 12. EntryFlow-Specific View
 
 For `story`, show Product Brief, elicitation, PRD, Architecture, Epic/Story, Speckit lineage and upstream hash alignment where supplied.
 
@@ -428,13 +489,13 @@ For `standalone_tasks`, show task packet path, task list provenance, missing acc
 
 All entry flows have the same hard gates: user confirmation, source hash, traceRows, task-to-ID binding, failure/edge coverage, and evidence expectations.
 
-### 12. Scoring, Dashboard, And SFT Read-Model View
+### 13. Scoring, Dashboard, And SFT Read-Model View
 
 Render whether the source touches scoring, dashboard, SFT, dataset manifests, eval/holdout, redaction, contamination, or withdrawal.
 
 State explicitly that score files, dashboards, and SFT outputs do not directly close requirements. Score materialization and score evaluation gates may write controlled `gateChecks[].decision`.
 
-### 13. Closeout Readiness Preview
+### 14. Closeout Readiness Preview
 
 Render:
 
@@ -445,7 +506,7 @@ Render:
 - blocking orphan artifacts.
 - open blocker, open RCA action, pending rerun, missing downstream link, stale lease, invalid resume packet, host parity mismatch when relevant.
 
-### 14. Validation Panel
+### 15. Validation Panel
 
 Render pass/fail/warning results for:
 
@@ -506,6 +567,13 @@ Set `confirmability: blocked` if any of these is true:
 - HTML hash or source hash cannot be computed.
 - renderer cannot write all required outputs.
 - Mermaid runtime is missing or invalid and Mermaid blocks exist.
+- missing semantic kernel.
+- missing must_decomposition_packet.
+- missing Critical Auditor convergence.
+- missing packet/source reconciliation.
+- pre-confirmation semantic drilldown gate report is missing or stale.
+- renderer did not show drilldown sections.
+- deliveryReadiness must not be represented as ready when the page is only confirming requirements scope.
 
 ## Styling And Usability
 
@@ -532,3 +600,11 @@ The page must clearly answer:
 6. Which artifacts affect control flow and which are evidence/read-model only?
 7. What is the gap between current and target state?
 8. After confirmation, what may the agent do and what is forbidden?
+9. How did the model understand the requirement before writing the source?
+10. How did the model self-question the requirement and resolve or expose gaps?
+11. How was each `MUST-*` decomposed into atomic tasks?
+12. Do `expectedTaskCount` and `actualTaskCount` match?
+13. Did Critical Auditor reach three consecutive no-new-valid-gap rounds?
+14. Are all EVD/TRACE/ACC/E2E/currentTarget/AI-TDD rows same-origin projections?
+
+The user confirms only the requirements scope. The HTML must not imply implementation completion, delivery readiness, closeout readiness, or merge readiness unless separate stage-specific evidence proves those states. `deliveryReadiness must not be represented as ready` when the page is only proving contract confirmability audit.

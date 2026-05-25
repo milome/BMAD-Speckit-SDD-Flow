@@ -28,7 +28,7 @@ implementationConfirmation:
   contractAuthoringRequired: true
   confirmationLanguage: zh-CN | en-US | bilingual
   confirmationProfile: implementation_confirmation
-  requiredViewPacks: []
+  requiredViewPacks: ["currentTargetMap"]
   optionalViewPacks: []
   confirmedAt: null
   confirmedBy: null
@@ -40,6 +40,24 @@ implementationConfirmation:
     reportPath: null
     htmlHash: null
     confirmationPhrase: null
+
+  preConfirmationDrilldown:
+    semanticKernelRef:
+      path: "_bmad-output/runtime/requirement-records/<recordId>/authoring/semantic-kernel.json"
+      hash: "sha256:..."
+    mustDecompositionPacketRef:
+      path: "_bmad-output/runtime/requirement-records/<recordId>/authoring/must_decomposition_packet.json"
+      hash: "sha256:..."
+      status: synchronized
+    criticalAuditor:
+      minimumRounds: 3
+      consecutiveNoNewGapRounds: 3
+      latestReceiptHash: "sha256:..."
+      convergenceVerdict: bounded_no_new_gap
+    packetSourceReconciliation:
+      reportPath: "_bmad-output/runtime/requirement-records/<recordId>/authoring/must_packet_source_reconciliation_report.json"
+      verdict: pass
+    preRenderGateReportPath: "_bmad-output/runtime/requirement-records/<recordId>/authoring/pre-render-must-decomposition-gate-report.json"
 
   applicability:
     governanceEvents:
@@ -55,11 +73,14 @@ implementationConfirmation:
       applies: false
       reasonCode: no_scoring_dashboard_sft_dataset_or_read_model_changes
     currentTargetMap:
-      applies: false
-      reasonCode: no_current_target_migration_or_governance_comparison_needed
+      applies: true
+      reasonCode: requirements_contract_authoring_requires_visible_current_target_map
     scriptsAndHooks:
       applies: false
       reasonCode: no_script_hook_report_or_generated_artifact_changes
+    aiTddContractGate:
+      applies: true
+      reasonCode: requirements_contract_authoring_requires_ai_tdd_contract_execution_manifest
 
   must:
     - id: MUST-001
@@ -207,6 +228,27 @@ implementationConfirmation:
 
 Only explicit chat confirmation with matching hashes may change `status` to `user_confirmed`.
 
+`preConfirmationDrilldown` is drilldown metadata only. Final confirmation authority remains the inline `implementationConfirmation` block; the metadata only proves the source block was materialized from the semantic kernel, synchronized `must_decomposition_packet.json`, Critical Auditor receipts, and packet/source reconciliation.
+
+The template assumes the pre-confirmation atomic decomposition loop has already produced:
+
+- `_bmad-output/runtime/requirement-records/<recordId>/authoring/semantic-kernel.json`
+- `_bmad-output/runtime/requirement-records/<recordId>/authoring/must_decomposition_packet.json`
+- `_bmad-output/runtime/requirement-records/<recordId>/authoring/critical-auditor-receipt-round-*.json`
+- `_bmad-output/runtime/requirement-records/<recordId>/authoring/must_decomposition_receipt.json`
+- `_bmad-output/runtime/requirement-records/<recordId>/authoring/must_packet_source_reconciliation_report.json`
+- `_bmad-output/runtime/requirement-records/<recordId>/authoring/pre-render-must-decomposition-gate-report.json`
+
+The renderer and reverse audit must block if these artifacts are missing, stale, or not synchronized. A single_pass source still needs the same loop; single_pass only means the human-readable source may be authored in one pass after the packet has converged.
+
+Run the deterministic gate before rendering:
+
+```text
+node _bmad/skills/requirements-contract-authoring/scripts/pre_render_must_decomposition_gate.js --source <source-document.md> --authoring-dir _bmad-output/runtime/requirement-records/<recordId>/authoring --json
+```
+
+Critical Auditor receipt convergence is represented by `consecutiveNoNewGapRounds: 3`; fewer rounds, unresolved validated gaps, stale input hashes, or author claims without critic disposition block confirmation.
+
 ## Applicability Domains
 
 `applicability` is mandatory even when every heavy domain is irrelevant.
@@ -216,8 +258,9 @@ Only explicit chat confirmation with matching hashes may change `status` to `use
 | `governanceEvents` | `applies`, `reasonCode` | Add or reference `governanceEventTypeRegistryPolicy`, `governanceEventTypeRegistry[]`, and `controlledIngestWriterRegistry[]`; each event type must include `payloadContract` that passes the policy, and each control-writing event type must be covered by a registered writer. |
 | `runtimeRecovery` | `applies`, `reasonCode`, `requiresFunctionalResumeFailureCaseRegistry`, `activeRequirementResolutionRequired`, `retiredContextSurfaceForbidden` | Add `activeRequirementResolution` and `functionalResumeFailureCaseRegistry` when resume, rerun, closeout, hook trust, ingest, runtime policy, active requirement resolution, or trace checkpoint recovery is involved. |
 | `scoringDashboardSft` | `applies`, `reasonCode` | Add read-model boundary details for scoring, dashboard, SFT, dataset manifests, eval/holdout, redaction, contamination, and withdrawal. |
-| `currentTargetMap` | `applies`, `reasonCode` | Add `currentTargetMap` rows; renderer must parse this data instead of hardcoding project rows. |
+| `currentTargetMap` | `applies`, `reasonCode` | Mandatory for this skill. Add `currentTargetMap` rows; renderer must parse this data instead of hardcoding project rows. |
 | `scriptsAndHooks` | `applies`, `reasonCode` | Add artifact/script/hook visibility, ownerModel, input/output artifacts, fallback, and event type references. |
+| `aiTddContractGate` | `applies`, `reasonCode` | Mandatory for this skill. Provide the source data needed for the AI-TDD `ContractExecutionManifest` sections consumed by renderer, reverse audit, readiness, delivery verification, and closeout. |
 
 ## Conditional Expansion Modules
 
@@ -422,23 +465,62 @@ Renderer and ingest must not classify recovery groups by regex. Grouping authori
 
 ### Current Target Map
 
-Use this only when `applicability.currentTargetMap.applies: true`.
+This is mandatory for source documents authored by this skill. `applicability.currentTargetMap.applies` must be `true`, and the confirmation page must render this view.
 
 ```yaml
   currentTargetMap:
     schemaVersion: current-target-map/v1
     displayProfile: closed_loop_current_target_map
     introduction: "Source-driven current versus target comparison."
+    currentSummary:
+      - title: "Current behavior or control surface"
+        detail: "Describe what exists or is unverified today."
+    targetSummary:
+      - title: "Target behavior or control surface"
+        detail: "Describe the exact target state that implementation must satisfy."
     diffRows:
       - dimension: "Trace command semantics"
         currentState: "commandRefs[] only"
         targetState: "contractValidationCommandRefs[] and deliveryEvidenceCommandRefs[]"
         action: "split"
+      - dimension: "Target implementation surface"
+        currentState: "No confirmed target surface mapping"
+        targetState: "Each canonical surface has TRACE/EVD bindings"
+        action: "map and verify"
+      - dimension: "Legacy proof"
+        currentState: "Old reports or events may be mistaken for completion"
+        targetState: "Legacy surfaces are diagnostic only unless explicitly migrated"
+        action: "deny legacy proof"
+    process:
+      - phase: "Confirmation"
+        currentState: "Draft source document"
+        targetState: "HTML confirmation renders current/target map"
+    artifactPaths:
+      - path: "src/example-target.ts"
+        targetRole: "Target implementation surface"
+        traceRows: ["TRACE-001"]
+        evidenceRefs: ["EVD-001"]
+    canonicalArtifacts:
+      - id: CANONICAL-001
+        targetPathOrField: "src/example-target.ts"
+        functionDescription: "Target implementation surface"
+        traceRows: ["TRACE-001"]
+        evidenceRefs: ["EVD-001"]
     pathRegistry:
       - category: "Requirement record"
         fixedPath: "_bmad-output/runtime/requirement-records/<recordId>/requirement-record.json"
         sourceOfTruthRole: control
         description: "Main controlled requirement record."
+        traceRows: ["TRACE-001"]
+        evidenceRefs: ["EVD-001"]
+    existingArtifacts:
+      - id: LEGACY-001
+        currentPath: "legacy/report-or-event"
+        currentFunction: "Diagnostic legacy proof"
+        targetTreatment: "May remain as context only; cannot prove delivery"
+        completionProofPolicy: legacy_only
+        traceRows: ["TRACE-001"]
+        evidenceRefs: ["EVD-002"]
 ```
 
 ### Scoring / Dashboard / SFT Read Model

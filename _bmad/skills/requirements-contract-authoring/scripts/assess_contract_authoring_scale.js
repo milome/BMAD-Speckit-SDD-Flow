@@ -11,16 +11,15 @@ const CONDITIONAL_DOMAINS = [
   'scriptsAndHooks',
 ];
 const AUTHORING_MODES = {
-  SINGLE_PASS: 'single_pass',
-  KERNEL_THEN_CHECKPOINT: 'kernel_then_checkpoint',
-  KERNEL_THEN_CHECKPOINT_WITH_AMENDMENT: 'kernel_then_checkpoint_with_amendment',
+  SEMANTIC_KERNEL_THEN_PACKET: 'semantic_kernel_then_packet',
+  SEMANTIC_KERNEL_THEN_PACKET_WITH_AMENDMENT: 'semantic_kernel_then_packet_with_amendment',
 };
 
 function usage(exitCode = 0) {
   console.log(`Usage:
   node assess_contract_authoring_scale.js --source <source-document.md> [--progress <progress.json>] [--out <assessment.json>] [--json]
 
-Classifies requirements contract authoring as single_pass or checkpoint_required, with semantic-kernel-first authoringMode.`);
+Classifies requirements contract authoring as single_pass_allowed, checkpoint_required, or checkpoint_required_with_amendment.`);
   process.exit(exitCode);
 }
 
@@ -138,9 +137,10 @@ function amendmentRiskSignals(text, progressExists, confirmation) {
 }
 
 function authoringModeFor(decision, signals) {
-  if (decision === 'single_pass') return AUTHORING_MODES.SINGLE_PASS;
-  if (signals?.amendmentRisk) return AUTHORING_MODES.KERNEL_THEN_CHECKPOINT_WITH_AMENDMENT;
-  return AUTHORING_MODES.KERNEL_THEN_CHECKPOINT;
+  if (decision === 'checkpoint_required_with_amendment' || signals?.amendmentRisk) {
+    return AUTHORING_MODES.SEMANTIC_KERNEL_THEN_PACKET_WITH_AMENDMENT;
+  }
+  return AUTHORING_MODES.SEMANTIC_KERNEL_THEN_PACKET;
 }
 
 function defaultProgressPath(sourcePath) {
@@ -185,10 +185,13 @@ function buildAssessment(sourcePath, progressPath = '') {
     progressExists,
     signals.amendmentRisk,
   ];
-  const decision = score >= 6 || hardTriggers.some(Boolean) ? 'checkpoint_required' : 'single_pass';
+  const checkpointRequired = score >= 6 || hardTriggers.some(Boolean);
+  const decision = checkpointRequired
+    ? (signals.amendmentRisk ? 'checkpoint_required_with_amendment' : 'checkpoint_required')
+    : 'single_pass_allowed';
   const authoringMode = authoringModeFor(decision, signals);
   return {
-    schemaVersion: 'requirements-contract-scale-assessment/v1',
+    schemaVersion: 'contract-authoring-scale-assessment/v1',
     target: normalizePathForReport(absolute),
     decision,
     authoringMode,
@@ -202,19 +205,20 @@ function buildAssessment(sourcePath, progressPath = '') {
       conditionalDomainHardTrigger: 2,
     },
     signals,
-    recommendedCheckpoints: decision === 'checkpoint_required' ? CHECKPOINT_IDS_PRE_RENDER : [],
+    recommendedCheckpoints: decision === 'single_pass_allowed' ? [] : CHECKPOINT_IDS_PRE_RENDER,
   };
 }
 
 const CHECKPOINT_IDS_PRE_RENDER = [
-  'cp-01-header-scope-decisions',
-  'cp-02-confirmation-core-applicability',
-  'cp-03-must-neg-out-evidence',
-  'cp-04-failure-edge-trace',
-  'cp-05-views',
-  'cp-06-artifacts-commands-closeout',
-  'cp-07-conditional-modules',
-  'cp-08-human-readable-views-dod-reverse-audit',
+  'cp-00-semantic-kernel',
+  'cp-01-must-decomposition-packet',
+  'cp-02-atomic-decomposition-loop-convergence',
+  'cp-03-packet-to-source-materialization',
+  'cp-04-id-freeze',
+  'cp-05-implementation-confirmation-core',
+  'cp-06-projections',
+  'cp-07-human-readable-views',
+  'cp-08-pre-render-global-reconciliation',
 ];
 
 function main(argv) {

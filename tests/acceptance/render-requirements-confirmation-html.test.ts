@@ -2,6 +2,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { createRequire } from 'node:module';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 const ROOT = process.cwd();
@@ -13,6 +14,19 @@ const SCRIPT = path.join(
   'scripts',
   'render-requirements-confirmation-html.ts'
 );
+const requireForRenderer = createRequire(import.meta.url);
+const {
+  extractImplementationConfirmation,
+  sourceDocumentHashFor,
+  implementationConfirmationHashFor,
+} = requireForRenderer(path.join(
+  ROOT,
+  '_bmad',
+  'skills',
+  'requirements-contract-authoring',
+  'scripts',
+  'pre_render_definition_drilldown_lib.js'
+));
 
 let tempDir: string;
 
@@ -21,6 +35,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  if (process.env.KEEP_REQ_CONFIRM_HTML_TEMP === '1') return;
   fs.rmSync(tempDir, { recursive: true, force: true });
 });
 
@@ -332,7 +347,7 @@ ${overrides.includes('MISSING_AI_TDD_MANIFEST_PROJECTION') ? '' : '      failure
   targetModificationPaths:${overrides.includes('MISSING_TARGET_MODIFICATION_PATHS') ? ' []' : ''}
 ${overrides.includes('MISSING_TARGET_MODIFICATION_PATHS') ? '' : `    - id: TARGET-MOD-001
       path: "src/upload.ts"
-      changeType: modify
+      coverageRole: modify
       intent: "Implement confirmed upload behavior."
       ownerModel: implementation
       requirementRefs: ["MUST-001", "NEG-001"]
@@ -340,6 +355,36 @@ ${overrides.includes('MISSING_TARGET_MODIFICATION_PATHS') ? '' : `    - id: TARG
       evidenceRefs: ["EVD-001", "EVD-002"]
       artifactRefs: ["ART-CODE-001"]
       requiresReconfirmationOnChange: true
+    - id: TARGET-MOD-002
+      path: "${acceptanceTestPath.replace(/\\/gu, '/')}"
+      changeType: validation_only
+      intent: "Run positive upload acceptance oracle without treating the test file as implementation scope."
+      ownerModel: acceptance_tests
+      requirementRefs: ["MUST-001"]
+      traceRefs: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
+      artifactRefs: []
+      requiresReconfirmationOnChange: false
+    - id: TARGET-MOD-003
+      path: "${e2eTestPath.replace(/\\/gu, '/')}"
+      changeType: validation_only
+      intent: "Run negative upload E2E oracle without treating the test file as implementation scope."
+      ownerModel: e2e_tests
+      requirementRefs: ["NEG-001"]
+      traceRefs: ["TRACE-001"]
+      evidenceRefs: ["EVD-002"]
+      artifactRefs: []
+      requiresReconfirmationOnChange: false
+    - id: TARGET-MOD-004
+      path: "fixture/scripts/render.ts"
+      changeType: validation_only
+      intent: "Classify currentTargetMap script convergence path as a validation-only target."
+      ownerModel: current_target_map
+      requirementRefs: ["MUST-001"]
+      traceRefs: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
+      artifactRefs: []
+      requiresReconfirmationOnChange: false
 `}
   sequenceViews:${overrides.includes('EMPTY_REQUIRED_VIEWS') ? ' []' : ''}
 ${overrides.includes('EMPTY_REQUIRED_VIEWS') ? '' : `
@@ -882,8 +927,70 @@ stateDiagram-v2
   return file;
 }
 
-function runRenderer(args: string[]) {
-  return spawnSync(process.execPath, [SCRIPT, ...args], {
+function fixedHash(char: string): string {
+  return `sha256:${char.repeat(64)}`;
+}
+
+function sourceArg(args: string[]): string {
+  const index = args.indexOf('--source');
+  return index >= 0 ? args[index + 1] : '';
+}
+
+function writeValidDrilldownGateReport(source: string, reportPath = path.join(tempDir, 'pre-render-must-decomposition-gate-report.json')) {
+  const text = fs.readFileSync(source, 'utf8');
+  const extracted = extractImplementationConfirmation(text);
+  const sourceDocumentHash = sourceDocumentHashFor(text, extracted.blockText, extracted.confirmation);
+  const implementationConfirmationHash = implementationConfirmationHashFor(extracted.confirmation);
+  fs.writeFileSync(
+    reportPath,
+    JSON.stringify(
+      {
+        schemaVersion: 'pre-render-must-decomposition-gate-report/v1',
+        verdict: 'PASS',
+        confirmability: 'confirmable',
+        sourceDocumentHash,
+        implementationConfirmationHash,
+        semanticKernelRef: {
+          path: path.join(tempDir, 'semantic-kernel.json'),
+          hash: fixedHash('b'),
+        },
+        mustDecompositionPacketRef: {
+          path: path.join(tempDir, 'must_decomposition_packet.json'),
+          hash: fixedHash('a'),
+          status: 'synchronized',
+        },
+        criticalAuditor: {
+          minimumRounds: 3,
+          consecutiveNoNewGapRounds: 3,
+          latestReceiptHash: fixedHash('c'),
+          convergenceVerdict: 'bounded_no_new_gap',
+        },
+        packetSourceReconciliation: {
+          reportPath: path.join(tempDir, 'must_packet_source_reconciliation_report.json'),
+          verdict: 'pass',
+        },
+        failedChecks: [],
+        blockingIssues: [],
+      },
+      null,
+      2
+    ),
+    'utf8'
+  );
+  return reportPath;
+}
+
+function runRenderer(args: string[], options: { drilldown?: boolean } = {}) {
+  const finalArgs = [...args];
+  const source = sourceArg(finalArgs);
+  const hasExplicitDrilldown =
+    finalArgs.includes('--drilldown-gate-report') ||
+    finalArgs.includes('--must-decomposition-gate-report') ||
+    finalArgs.includes('--pre-render-must-decomposition-gate-report');
+  if (options.drilldown !== false && source && !hasExplicitDrilldown) {
+    finalArgs.push('--drilldown-gate-report', writeValidDrilldownGateReport(source));
+  }
+  return spawnSync(process.execPath, [SCRIPT, ...finalArgs], {
     cwd: ROOT,
     encoding: 'utf8',
   });
@@ -2501,8 +2608,12 @@ flowchart TD
     expect(html).toContain('目标修改路径清单');
     expect(html).toContain('src/upload.ts');
     expect(report.renderedSections).toContain('target-modification-paths');
-    expect(report.targetModificationPaths).toHaveLength(1);
-    expect(report.targetModificationPathCoverage.counts.explicit).toBe(1);
+    expect(report.targetModificationPaths).toHaveLength(4);
+    expect(report.targetModificationPathCoverage.counts.explicit).toBe(4);
+    expect(report.targetModificationPathCoverage.ready).toBe(true);
+    expect(report.targetModificationPathCoverage.counts.missingCoverage).toBe(0);
+    expect(report.targetModificationPathCoverage.counts.unclassifiedCoverage).toBe(0);
+    expect(report.targetModificationPaths.find((row: any) => row.path === 'src/upload.ts')?.coverageRole).toBe('modify');
 
     const missingSource = writeSource('MISSING_TARGET_MODIFICATION_PATHS');
     const missingOut = path.join(tempDir, 'confirmation-missing-target-modification-paths.html');
@@ -2524,6 +2635,42 @@ flowchart TD
     expect(missingResult.status).toBe(3);
     expect(missingReport.confirmability).toBe('blocked');
     expect(missingReport.blockingIssues.map((issue: any) => issue.code)).toContain('target_modification_paths_missing');
+  });
+
+  it('blocks confirmability when targetModificationPaths omit artifact, command, or current-target coverage', () => {
+    const source = writeSource('MISSING_TARGET_MODIFICATION_PATHS');
+    const mermaidBundle = writeMockMermaidBundle();
+    const out = path.join(tempDir, 'confirmation-target-modification-path-coverage-missing.html');
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+    ]);
+
+    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
+    const codes = report.blockingIssues.map((issue: any) => issue.code);
+    expect(result.status).toBe(3);
+    expect(report.confirmability).toBe('blocked');
+    expect(codes).toContain('target_modification_path_coverage_missing');
+    expect(report.targetModificationPathCoverage.ready).toBe(false);
+    expect(report.targetModificationPathCoverage.missingCoverage.map((row: any) => row.path)).toEqual(
+      expect.arrayContaining(['src/upload.ts'])
+    );
+    expect(report.targetModificationPathCoverage.missingCoverage.some((row: any) => row.sources.includes('requiredCommands.targetFiles'))).toBe(
+      true
+    );
+    expect(report.targetModificationPathCoverage.missingCoverage.some((row: any) => row.sources.includes('currentTargetMap.scriptConvergence'))).toBe(
+      true
+    );
   });
 
   it('supports external artifact plan input without mutating the source', () => {
@@ -2881,10 +3028,87 @@ flowchart TD
     expect(html).toContain('Fallback 结构图（非确认图）');
   });
 
+  it('blocks confirmability when the pre-confirmation semantic drilldown gate report is missing', () => {
+    const source = writeSource();
+    const mermaidBundle = writeMockMermaidBundle();
+    const out = path.join(tempDir, 'confirmation-missing-drilldown.html');
+    const result = runRenderer(
+      [
+        '--source',
+        source,
+        '--out',
+        out,
+        '--mermaid-bundle',
+        mermaidBundle,
+        '--language',
+        'zh-CN',
+        '--record-id',
+        'REQ-UPLOAD-001',
+        '--entry-flow',
+        'story',
+        '--drilldown-gate-report',
+        path.join(tempDir, 'missing-drilldown-report.json'),
+      ],
+      { drilldown: false }
+    );
+
+    expect(result.status).toBe(3);
+    const html = fs.readFileSync(out, 'utf8');
+    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
+    expect(report.confirmability).toBe('blocked');
+    expect(report.renderedSections).toContain('pre-confirmation-semantic-drilldown');
+    expect(report.blockingIssues.map((issue: any) => issue.code)).toContain('missing_pre_confirmation_semantic_drilldown_gate_report');
+    expect(html).toContain('Pre-Confirmation Semantic Drilldown');
+  });
+
+  it('renders pre-confirmation semantic drilldown sections from a synchronized PASS gate report', () => {
+    const source = writeSource();
+    const mermaidBundle = writeMockMermaidBundle();
+    const out = path.join(tempDir, 'confirmation-drilldown.html');
+    const gateReport = writeValidDrilldownGateReport(source, path.join(tempDir, 'valid-drilldown-report.json'));
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+      '--drilldown-gate-report',
+      gateReport,
+    ]);
+
+    expect(result.status).toBe(0);
+    const html = fs.readFileSync(out, 'utf8');
+    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
+    expect(report.confirmability).toBe('confirmable');
+    expect(report.preConfirmationSemanticDrilldown.status).toBe('pass');
+    expect(report.renderedSections).toContain('pre-confirmation-semantic-drilldown');
+    for (const heading of [
+      'Pre-Confirmation Semantic Drilldown',
+      'Semantic Kernel Summary',
+      'MUST Decomposition Packet',
+      'Atomicity Drivers',
+      'Atomic Task Baseline',
+      'Projection Coverage',
+      'Critical Auditor Convergence',
+      'Gap History',
+      'Packet-To-Source Reconciliation',
+    ]) {
+      expect(html).toContain(heading);
+    }
+  });
+
   it('can be invoked through the documented node CLI and prints machine-readable summary with --json', () => {
     const source = writeSource();
     const mermaidBundle = writeMockMermaidBundle();
     const out = path.join(tempDir, 'confirmation.html');
+    const gateReport = writeValidDrilldownGateReport(source, path.join(tempDir, 'cli-drilldown-report.json'));
     const stdout = execFileSync(process.execPath, [
       SCRIPT,
       '--source',
@@ -2901,6 +3125,8 @@ flowchart TD
       'story',
       '--mode',
       'confirmation',
+      '--drilldown-gate-report',
+      gateReport,
       '--json',
     ], {
       cwd: ROOT,

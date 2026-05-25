@@ -4,6 +4,21 @@ Use these rules to validate human-readable diagrams, `implementationConfirmation
 
 ## Mapping Rules
 
+The complete source-materialization lineage is:
+
+```text
+MUST -> packet -> projections -> source rows
+```
+
+The old shortcut `MUST -> TRACE -> EVD` is insufficient for source documents authored by this skill. Each `MUST-*` first becomes a row in `must_decomposition_packet.json`; packet projection rows then materialize into `implementationConfirmation` rows.
+
+Packet/source reconciliation is bidirectional:
+
+- packet projection -> implementationConfirmation row
+- implementationConfirmation row -> packet projection
+
+Any source row independently invented outside synchronized packet projections is a blocker. Any packet projection not materialized into the source is a blocker. These blockers must be reported as `source row independently invented` and `packet projection not materialized`.
+
 | Mermaid Element | Required Confirmation Link |
 |---|---|
 | Message (`A->>B`) | References one or more `must` or `notDone` IDs |
@@ -25,12 +40,30 @@ Use these rules to validate human-readable diagrams, `implementationConfirmation
 A `traceRows` row is valid only if it answers:
 
 - Which existing `must` / `notDone` IDs it covers.
+- Which `must_decomposition_packet.json` projection row produced it.
 - Which existing `evidence` IDs prove the covered behavior.
 - Which task references will implement the covered IDs, if tasks exist.
 - Which diagram, command, and artifact references support the row, if those views exist.
 - Which current status applies.
 
 If any answer is missing, keep the row `PENDING`, add an `openQuestions` item, or mark the row `MISSING_TESTABILITY`. Do not invent new requirement semantics in trace rows.
+
+Every row in these source arrays must have a packet projection back-reference or equivalent synchronized packet hash:
+
+- `mustExecutionDecompositionMatrix[]`
+- `atomicImplementationTaskList[]`
+- `evidence[]`
+- `traceRows[]`
+- `acceptanceTests[]`
+- `e2eSuites[]`
+- `failurePaths[]`
+- `edgeCases[]`
+- `targetModificationPaths[]`
+- `currentTargetMap`
+- `aiTddContractExecutionManifestProjection`
+- `artifactAutomationPlan[]`
+- `requiredCommands[]`
+- `closeoutReadinessPreview`
 
 ## Reverse Coverage Checklist
 

@@ -34,6 +34,8 @@ function usage(exitCode = 0) {
 
 Options:
   --render-report <path>      Use an explicit confirmation-render-report.json.
+  --drilldown-gate-report <path>
+                              Use an explicit pre-render MUST decomposition gate report.
   --confirmation-dir <dir>    Discover confirmation-render-report.json in this directory.
   --record-id <id>            Discover report under _bmad-output runtime records.
   --mode <implementation|readiness>
@@ -57,6 +59,7 @@ function parseArgs(argv) {
     recordId: '',
     mode: 'implementation',
     grillReport: '',
+    drilldownGateReport: '',
     definitionOnly: false,
     json: false,
   };
@@ -126,6 +129,15 @@ function parseArgs(argv) {
         return { error: 'missing value for --grill-report' };
       }
       args.grillReport = next;
+      i += 1;
+      continue;
+    }
+    if (arg === '--drilldown-gate-report' || arg === '--must-decomposition-gate-report') {
+      const next = argv[i + 1];
+      if (!next || next.startsWith('--')) {
+        return { error: `missing value for ${arg}` };
+      }
+      args.drilldownGateReport = next;
       i += 1;
       continue;
     }
@@ -795,6 +807,139 @@ function collectReadinessModeIssues(renderReport, mode) {
   ];
 }
 
+function collectPreConfirmationSemanticDrilldownIssues(args, renderReport, hashes) {
+  const embedded = renderReport?.preConfirmationSemanticDrilldown ?? null;
+  const reportPath = args.drilldownGateReport || embedded?.reportPath || '';
+  const findings = [];
+  if (!reportPath) {
+    findings.push(
+      issue(
+        'missing_pre_confirmation_semantic_drilldown_gate_report',
+        'pre-render MUST decomposition gate report is required for contract confirmability audit',
+        ['preConfirmationSemanticDrilldown'],
+        'blocker',
+        'pre_confirmation_semantic_drilldown'
+      )
+    );
+    return { summary: { status: 'missing', reportPath: null }, findings };
+  }
+  let report = args.drilldownGateReport ? null : embedded?.report ?? null;
+  try {
+    if (!report && fs.existsSync(path.resolve(reportPath))) report = readJson(path.resolve(reportPath));
+  } catch (error) {
+    findings.push(
+      issue(
+        'pre_confirmation_semantic_drilldown_gate_report_parse_failed',
+        error instanceof Error ? error.message : String(error),
+        [reportPath],
+        'blocker',
+        'pre_confirmation_semantic_drilldown'
+      )
+    );
+  }
+  if (!report) {
+    findings.push(
+      issue(
+        'missing_pre_confirmation_semantic_drilldown_gate_report',
+        'pre-render MUST decomposition gate report path does not exist',
+        [reportPath],
+        'blocker',
+        'pre_confirmation_semantic_drilldown'
+      )
+    );
+    return { summary: { status: 'missing', reportPath: normalizePathForReport(reportPath) }, findings };
+  }
+  if (report.sourceDocumentHash !== hashes.currentSourceHash) {
+    findings.push(
+      issue(
+        'pre_confirmation_semantic_drilldown_gate_source_hash_stale',
+        'drilldown gate sourceDocumentHash does not match current source',
+        ['sourceDocumentHash'],
+        'blocker',
+        'pre_confirmation_semantic_drilldown'
+      )
+    );
+  }
+  if (report.implementationConfirmationHash !== hashes.currentImplementationHash) {
+    findings.push(
+      issue(
+        'pre_confirmation_semantic_drilldown_gate_implementation_hash_stale',
+        'drilldown gate implementationConfirmationHash does not match current source',
+        ['implementationConfirmationHash'],
+        'blocker',
+        'pre_confirmation_semantic_drilldown'
+      )
+    );
+  }
+  if (report.verdict !== 'PASS' || report.confirmability === 'blocked') {
+    const failedChecks = asArray(report.failedChecks);
+    if (!failedChecks.length) {
+      findings.push(
+        issue(
+          'pre_confirmation_semantic_drilldown_gate_failed',
+          'drilldown gate verdict is not PASS',
+          [reportPath],
+          'blocker',
+          'pre_confirmation_semantic_drilldown'
+        )
+      );
+    }
+    for (const code of failedChecks) {
+      findings.push(
+        issue(
+          `pre_confirmation_semantic_drilldown_${code}`,
+          `drilldown gate failed: ${code}`,
+          [code],
+          'blocker',
+          'pre_confirmation_semantic_drilldown'
+        )
+      );
+    }
+  }
+  if ((report.criticalAuditor?.consecutiveNoNewGapRounds ?? 0) < 3) {
+    findings.push(
+      issue(
+        'missing_critic_convergence',
+        'Critical Auditor convergence must have three consecutive no-new-gap rounds',
+        ['criticalAuditor.consecutiveNoNewGapRounds'],
+        'blocker',
+        'pre_confirmation_semantic_drilldown'
+      )
+    );
+  }
+  if (report.packetSourceReconciliation?.verdict !== 'pass') {
+    findings.push(
+      issue(
+        'missing_packet_source_reconciliation',
+        'packet/source reconciliation must pass before contract confirmability',
+        ['packetSourceReconciliation.verdict'],
+        'blocker',
+        'pre_confirmation_semantic_drilldown'
+      )
+    );
+  }
+  if (!asArray(renderReport?.renderedSections).includes('pre-confirmation-semantic-drilldown')) {
+    findings.push(
+      issue(
+        'renderer_missing_pre_confirmation_drilldown_sections',
+        'renderer did not show the pre-confirmation semantic drilldown sections',
+        ['renderedSections'],
+        'blocker',
+        'pre_confirmation_semantic_drilldown'
+      )
+    );
+  }
+  return {
+    summary: {
+      status: findings.length ? 'blocked' : 'pass',
+      reportPath: normalizePathForReport(reportPath),
+      verdict: report.verdict ?? null,
+      failedChecks: report.failedChecks ?? [],
+    },
+    findings,
+  };
+}
+
 function collectGrillReportIssues(grillReportPath, currentHashes) {
   if (!grillReportPath) {
     return {
@@ -902,6 +1047,7 @@ function buildReport({
   integrity,
   traceability,
   definitionDrilldown,
+  preConfirmationSemanticDrilldown,
   findings,
 }) {
   const blockerFindings = findings.filter((item) => item.severity !== 'warning');
@@ -936,6 +1082,7 @@ function buildReport({
       missingDiagramCoverage: traceability.missingDiagramCoverage,
     },
     definitionDrilldown,
+    preConfirmationSemanticDrilldown,
     failedChecks: blockerFindings.map((item) => item.code),
     warningChecks: warningFindings.map((item) => item.code),
     findings,
@@ -1054,6 +1201,11 @@ function main(argv) {
     sourcePath: target,
   });
   findings.push(...definitionDrilldown.blockers, ...definitionDrilldown.warnings);
+  const preConfirmationSemanticDrilldown = collectPreConfirmationSemanticDrilldownIssues(args, renderReport, {
+    currentSourceHash: integrity.currentSourceHash,
+    currentImplementationHash: integrity.currentImplementationHash,
+  });
+  findings.push(...preConfirmationSemanticDrilldown.findings);
   const grillReport = collectGrillReportIssues(args.grillReport, {
     sourceDocumentHash: integrity.currentSourceHash,
     implementationConfirmationHash: integrity.currentImplementationHash,
@@ -1071,6 +1223,7 @@ function main(argv) {
     integrity,
     traceability,
     definitionDrilldown,
+    preConfirmationSemanticDrilldown: preConfirmationSemanticDrilldown.summary,
     findings,
   });
   const output = `${JSON.stringify(report, null, 2)}\n`;

@@ -44,6 +44,9 @@ If older project material says "requirements contract", treat it as a legacy ali
 - Keep ordinary business/functional failure paths separate from the conditional `functionalResumeFailureCaseRegistry`.
 - Use `contractValidationCommandRefs[]` and `deliveryEvidenceCommandRefs[]` in `traceRows[]`; do not use legacy `commandRefs[]` as the sole command authority.
 - Treat `acceptanceTests[]` and `e2eSuites[]` as first-class contract rows. `CMD-*` says how to run, `ACC-*` / `E2E-*` says what is being accepted, `EVD-*` says why the result is trusted, and `TRACE-*` binds the slice.
+- A `MUST-*` is not allowed to be only a sentence-level claim. Every `MUST-*` must first enter `must_decomposition_packet.json`, where it is split into atomic tasks, atomicity drivers, question coverage, and projection rows.
+- `EVD-*`, `TRACE-*`, `ACC-*`, `E2E-*`, `failurePaths[]`, `edgeCases[]`, `currentTargetMap`, and `aiTddContractExecutionManifestProjection` must be same-origin projections from the synchronized `must_decomposition_packet.json`; they must not be independently invented in the source document.
+- Critical Auditor is mandatory for confirmation-ready authoring. Three consecutive no-new-valid-gap rounds, recorded as `consecutiveNoNewGapRounds: 3`, are the only convergence condition for the pre-confirmation atomic decomposition loop.
 - When governance events apply, require `governanceEventTypeRegistryPolicy` plus `governanceEventTypeRegistry[]`; every event type needs a `payloadContract` that passes the policy.
 - `governanceEventTypeRegistryPolicy` must define `controlFieldVocabulary[]`, `payloadKindContracts[]`, `controlWriteModePolicies[]`, and `eventSpecificRequirements[]`; renderer, ingest, gates, hooks, workers, and tests must not keep a second hardcoded event or payload rule list.
 - `controlFieldVocabulary[]` is the only policy-level vocabulary for control-shaped fields. A transport envelope that carries any vocabulary field at top level or under `payload` must be rejected unless the current event type lists that field in `writesControlFields[]`.
@@ -58,12 +61,19 @@ If older project material says "requirements contract", treat it as a legacy ali
 
 Default to `author-confirmation-ready-source` when the user asks to generate a requirements contract document, requirement contract, or source document confirmation block.
 
-- `author-confirmation-ready-source`: create or update the implementation source document with a complete inline `implementationConfirmation`, ID-bound views, artifact plan, evidence, failure paths, edge cases, trace rows, and applicable governance/runtime modules. Stop after draft quality checks unless the user already selected a confirmation language or explicitly asked to render.
+- `author-confirmation-ready-source`: create or update the implementation source document with a complete inline `implementationConfirmation`, ID-bound views, artifact plan, evidence, failure paths, edge cases, trace rows, and applicable governance/runtime modules. This mode must first complete the pre-confirmation atomic decomposition loop; it must not directly write a long source document, must not directly write by chapter checkpoint, and single_pass also cannot skip the pre-confirmation atomic decomposition loop. Stop after draft quality checks unless the user already selected a confirmation language or explicitly asked to render.
 - `render-confirmation`: render the HTML confirmation page only after the user selected a confirmation language.
 - `ingest-confirmation`: ingest exact user confirmation text and hashes through the controlled confirm-scope path.
 - `readiness-or-prompt`: run reverse audit, readiness gates, or prompt generation only after controlled confirmation ingest succeeds.
 
 Do not collapse these modes into one long execution chain. "Generate requirements contract document" means author the confirmation-ready source document; it does not imply user confirmation, confirmation ingest, readiness, prompt generation, or closeout.
+
+Internal stages are mandatory workflow phases, not user-facing manual commands:
+
+- `semantic-kernel-authoring`: produce `_bmad-output/runtime/requirement-records/<recordId>/authoring/semantic-kernel.json`.
+- `atomic-decomposition-loop`: produce `_bmad-output/runtime/requirement-records/<recordId>/authoring/must_decomposition_packet.json`, invoke Critical Auditor, and iterate until `consecutiveNoNewGapRounds: 3`.
+- `packet-source-materialization`: materialize only synchronized packet projections into inline `implementationConfirmation`.
+- `pre-render-drilldown-gate`: run `pre_render_must_decomposition_gate.js` and block HTML rendering until the gate passes.
 
 ## Confirmation-Ready Authoring Target
 
@@ -120,7 +130,23 @@ node _bmad/skills/requirements-contract-authoring/scripts/run_semantic_checkpoin
 
 Checkpoint automation is an execution strategy only. It must not reduce scope, omit required registries, omit negative assertions, omit renderer-facing views, or defer trace/evidence coverage.
 
+Checkpointing is only persistence, recovery, single-file commit, and receipt strategy. Complex reasoning happens in the pre-confirmation atomic decomposition loop, not in chapter checkpoints.
+
 Every checkpoint remains a bounded source-document edit followed by validation, a forced single-file commit, and a receipt. The runner may automate repeated steps, but it must not collapse checkpoint commits into one commit, stage unrelated files, or degrade checkpoint work into status-only progress markers when required source content is missing.
+
+The semantic checkpoint sequence is:
+
+- cp-00 semantic kernel
+- cp-01 must_decomposition_packet
+- cp-02 atomic decomposition loop convergence
+- cp-03 packet-to-source materialization
+- cp-04 ID freeze
+- cp-05 implementationConfirmation core
+- cp-06 EVD/TRACE/ACC/E2E/failure/edge/currentTarget/AI-TDD
+- cp-07 human-readable views
+- cp-08 pre-render global reconciliation
+
+Checkpoint does not perform segmented reasoning; it persists and resumes the semantic-layer authoring artifacts.
 
 If the runner behavior changes, update [semantic-checkpoint-workflow.md](references/semantic-checkpoint-workflow.md) in the same change so future skill executions do not follow stale process documentation.
 
@@ -151,6 +177,23 @@ implementationConfirmation:
     reportPath: null
     htmlHash: null
     confirmationPhrase: null
+  preConfirmationDrilldown:
+    semanticKernelRef:
+      path: _bmad-output/runtime/requirement-records/<recordId>/authoring/semantic-kernel.json
+      hash: sha256:...
+    mustDecompositionPacketRef:
+      path: _bmad-output/runtime/requirement-records/<recordId>/authoring/must_decomposition_packet.json
+      hash: sha256:...
+      status: synchronized
+    criticalAuditor:
+      minimumRounds: 3
+      consecutiveNoNewGapRounds: 3
+      latestReceiptHash: sha256:...
+      convergenceVerdict: bounded_no_new_gap
+    packetSourceReconciliation:
+      reportPath: _bmad-output/runtime/requirement-records/<recordId>/authoring/must_packet_source_reconciliation_report.json
+      verdict: pass
+    preRenderGateReportPath: _bmad-output/runtime/requirement-records/<recordId>/authoring/pre-render-must-decomposition-gate-report.json
   applicability:
     governanceEvents:
       applies: false
@@ -445,6 +488,8 @@ Rules:
 
 Before rendering HTML, verify the source document against confirmation-page blocking rules:
 
+Run the pre-confirmation atomic decomposition loop first. This loop produces `semantic-kernel.json`, `must_decomposition_packet.json`, Critical Auditor receipts, packet/source reconciliation, and a deterministic pre-render MUST decomposition gate report. The loop is mandatory for both checkpoint and single_pass scale decisions.
+
 Run the deterministic definition drilldown first:
 
 When authoring a source document, run scale assessment before deciding whether to use a single authoring pass or semantic checkpoint authoring:
@@ -469,6 +514,19 @@ node _bmad/skills/requirements-contract-authoring/scripts/run_semantic_checkpoin
 ```
 
 The runner must stop before commit if staged files contain any path other than the active target requirements document.
+
+Before the HTML renderer can produce a confirmable page, run:
+
+```bash
+node _bmad/skills/requirements-contract-authoring/scripts/pre_render_must_decomposition_gate.js \
+  --source <source-document.md> \
+  --authoring-dir _bmad-output/runtime/requirement-records/<recordId>/authoring \
+  --json
+```
+
+The gate reads `semantic-kernel.json`, `must_decomposition_packet.json`, `critical-auditor-receipt-round-*.json`, inline `implementationConfirmation`, and packet/source reconciliation state. It writes `must_decomposition_receipt.json`, `must_packet_source_reconciliation_report.json`, and `pre-render-must-decomposition-gate-report.json`.
+
+The gate is deterministic and fail-closed. It verifies schema, source hashes, task split, question coverage, packet projection materialization, Critical Auditor convergence, and two-way packet/source reconciliation. It must block on missing semantic kernel, missing packet, stale packet hash, missing Critical Auditor receipt, fewer than three no-new-gap rounds, unresolved validated gap, incomplete question coverage, `actualTaskCount < expectedTaskCount`, over-broad atomic task, missing packet projection, source row independently invented, packet projection not materialized, missing packet/source reconciliation, or any stale gate report.
 
 ```bash
 node _bmad/skills/requirements-contract-authoring/scripts/pre_render_definition_drilldown.js \
@@ -511,6 +569,10 @@ Ask the user only for remaining decision-packet clusters that cannot be resolved
 - Mermaid diagrams reference only declared IDs and use renderer-compatible labels.
 - Business and governance views are both present when both requirement groups exist.
 - Read models, dashboard green, score green, stdout, HTTP 200, page render, and mock calls are not treated as acceptance evidence.
+- Every source row follows `MUST -> packet -> projections -> source rows`.
+- Packet/source reconciliation checks `packet projection -> implementationConfirmation row` and `implementationConfirmation row -> packet projection`.
+- A source row independently invented outside packet projections blocks confirmation.
+- A packet projection not materialized into the source blocks confirmation.
 
 If a pre-render check fails, fix the source document before invoking the renderer. If the user already selected a confirmation language, render immediately after this check and repair renderer blocking issues until the page is confirmable or a real blocker is found.
 

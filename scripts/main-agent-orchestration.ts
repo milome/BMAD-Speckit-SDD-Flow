@@ -1,6 +1,8 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import * as crypto from 'node:crypto';
+import * as yaml from 'js-yaml';
 import type {
   DispatchRoute,
   ExecutionPacket,
@@ -68,6 +70,50 @@ export type MainAgentPendingPacketStatus =
   | 'invalidated'
   | 'missing_packet_file';
 
+export type PreConfirmationDrilldownSubstate =
+  | 'idle'
+  | 'source_identified'
+  | 'scale_assessed'
+  | 'semantic_kernel_ready'
+  | 'atomic_decomposition_in_progress'
+  | 'gap_resolution_required'
+  | 'atomic_decomposition_converged'
+  | 'source_materialized'
+  | 'packet_source_reconciled'
+  | 'pre_render_ready'
+  | 'confirmation_rendered'
+  | 'user_confirmable'
+  | 'user_confirmed'
+  | 'blocked_by_semantic_gap'
+  | 'blocked_by_unresolved_user_decision'
+  | 'blocked_by_critical_auditor_gap'
+  | 'blocked_by_under_split_task'
+  | 'blocked_by_missing_projection'
+  | 'blocked_by_packet_source_drift'
+  | 'blocked_by_render_gate'
+  | 'blocked_by_confirmation_hash_mismatch';
+
+export interface PreConfirmationDrilldownIssue {
+  code: string;
+  message: string;
+  refs: string[];
+  severity: 'blocker' | 'warning';
+  source: string;
+}
+
+export interface PreConfirmationDrilldownLaneState {
+  currentMentalModel: 'requirement_confirmation';
+  lane: 'pre_confirmation_drilldown';
+  substate: PreConfirmationDrilldownSubstate;
+  currentSubstate: PreConfirmationDrilldownSubstate;
+  nextAction: string | null;
+  nextMentalModel: 'architecture_confirmation' | null;
+  userConfirmable: boolean;
+  controlledIngestRequiredBeforeProgression: boolean;
+  artifacts: Record<string, string>;
+  blockingIssues: PreConfirmationDrilldownIssue[];
+}
+
 export interface MainAgentDriftSurface {
   driftSignals: string[];
   driftedDimensions: string[];
@@ -127,6 +173,7 @@ export interface MainAgentOrchestrationSurface {
       pendingPacketStatus: MainAgentPendingPacketStatus;
     };
   };
+  preConfirmationDrilldownLane?: PreConfirmationDrilldownLaneState | null;
 }
 
 export interface MainAgentDispatchInstruction {
@@ -602,6 +649,46 @@ function writePacketFile(
   return file;
 }
 
+function sha256Text(value: string): string {
+  return `sha256:${crypto.createHash('sha256').update(value, 'utf8').digest('hex')}`;
+}
+
+function stableStringify(value: unknown): string {
+  if (value === null || typeof value !== 'object') {
+    return JSON.stringify(value);
+  }
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableStringify(item)).join(',')}]`;
+  }
+  return `{${Object.keys(value as Record<string, unknown>)
+    .sort()
+    .map((key) => `${JSON.stringify(key)}:${stableStringify((value as Record<string, unknown>)[key])}`)
+    .join(',')}}`;
+}
+
+function sha256Json(value: unknown): string {
+  return sha256Text(stableStringify(value));
+}
+
+function writeJsonUtf8(filePath: string, payload: unknown): void {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+}
+
+function readJsonIfExists(filePath: string): Record<string, unknown> | null {
+  if (!fs.existsSync(filePath)) {
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8')) as unknown;
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 function mapImplementationEntryDecision(
   gate: ImplementationEntryGate | null | undefined
 ): 'pass' | 'auto_repairable_block' | 'true_blocker' | 'reroute' | null {
@@ -615,6 +702,1855 @@ function mapImplementationEntryDecision(
     return 'reroute';
   }
   return 'auto_repairable_block';
+}
+
+interface ImplementationConfirmationExtraction {
+  start: number;
+  end: number;
+  blockText: string;
+  confirmation: Record<string, unknown>;
+  lines: string[];
+}
+
+interface PreConfirmationPaths {
+  recordRoot: string;
+  authoringDir: string;
+  confirmationDir: string;
+  recordPath: string;
+  indexPath: string;
+  semanticKernel: string;
+  mustDecompositionPacket: string;
+  receiptPaths: string[];
+  reconciliationReport: string;
+  progress: string;
+  mustDecompositionReceipt: string;
+  preRenderMustGate: string;
+  preRenderGlobalConsistency: string;
+  confirmationHtml: string;
+  confirmationSummary: string;
+  confirmationRenderReport: string;
+}
+
+export interface MainAgentPreConfirmationDrilldownResult extends PreConfirmationDrilldownLaneState {
+  ok: boolean;
+  sourcePath: string;
+  requirementSetId: string;
+  recordId: string;
+  sourceDocumentHash: string | null;
+  implementationConfirmationHash: string | null;
+  confirmationHtmlPath: string | null;
+  confirmationRenderReportPath: string | null;
+  confirmability: 'confirmable' | 'blocked';
+  deliveryReadiness: Record<string, unknown>;
+  finalStandards: Record<string, boolean>;
+}
+
+interface PreConfirmationRunOptions {
+  source?: string;
+  recordId?: string;
+  requirementSetId?: string;
+  confirmationLanguage?: string;
+  mode?: string;
+  skipDrilldownArtifacts?: boolean;
+}
+
+function preConfirmationIssue(
+  code: string,
+  message: string,
+  refs: string[] = [],
+  source = 'main_agent_orchestration'
+): PreConfirmationDrilldownIssue {
+  return { code, message, refs, severity: 'blocker', source };
+}
+
+function sanitizeRequirementIdSegment(value: string): string {
+  return value.replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'pre-confirmation';
+}
+
+function toRootRelativePath(root: string, filePath: string): string {
+  const absolute = path.isAbsolute(filePath) ? filePath : path.resolve(root, filePath);
+  const relative = path.relative(root, absolute);
+  return (!relative.startsWith('..') && !path.isAbsolute(relative) ? relative : absolute).replace(/\\/g, '/');
+}
+
+function resolveRootRelativePath(root: string, filePath: string): string {
+  return path.isAbsolute(filePath) ? filePath : path.resolve(root, filePath);
+}
+
+function derivePreConfirmationIdentity(root: string, sourcePath: string, options: PreConfirmationRunOptions): {
+  recordId: string;
+  requirementSetId: string;
+} {
+  const sourceStem = sanitizeRequirementIdSegment(path.basename(sourcePath, path.extname(sourcePath))).toUpperCase();
+  const recordId = normalizeText(options.recordId) || `REQ-${sourceStem}`;
+  const requirementSetId = normalizeText(options.requirementSetId) || recordId;
+  return { recordId, requirementSetId };
+}
+
+function preConfirmationPaths(root: string, recordId: string): PreConfirmationPaths {
+  const recordRoot = path.join(root, '_bmad-output', 'runtime', 'requirement-records', recordId);
+  const authoringDir = path.join(recordRoot, 'authoring');
+  const confirmationDir = path.join(recordRoot, 'confirmation');
+  return {
+    recordRoot,
+    authoringDir,
+    confirmationDir,
+    recordPath: path.join(recordRoot, 'requirement-record.json'),
+    indexPath: path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'index.json'),
+    semanticKernel: path.join(authoringDir, 'semantic-kernel.json'),
+    mustDecompositionPacket: path.join(authoringDir, 'must_decomposition_packet.json'),
+    receiptPaths: [1, 2, 3].map((round) =>
+      path.join(authoringDir, `critical-auditor-receipt-round-${round}.json`)
+    ),
+    reconciliationReport: path.join(authoringDir, 'must_packet_source_reconciliation_report.json'),
+    progress: path.join(authoringDir, 'semantic-checkpoint-progress.json'),
+    mustDecompositionReceipt: path.join(authoringDir, 'must_decomposition_receipt.json'),
+    preRenderMustGate: path.join(authoringDir, 'pre-render-must-decomposition-gate-report.json'),
+    preRenderGlobalConsistency: path.join(authoringDir, 'pre-render-global-consistency-report.json'),
+    confirmationHtml: path.join(confirmationDir, 'confirmation.html'),
+    confirmationSummary: path.join(confirmationDir, 'confirmation-summary.json'),
+    confirmationRenderReport: path.join(confirmationDir, 'confirmation-render-report.json'),
+  };
+}
+
+function extractImplementationConfirmationBlock(sourceText: string): ImplementationConfirmationExtraction | null {
+  const lines = sourceText.replace(/\r\n/g, '\n').split('\n');
+  const start = lines.findIndex((line) => /^implementationConfirmation:\s*$/u.test(line));
+  if (start < 0) {
+    return null;
+  }
+  let end = lines.length;
+  for (let index = start + 1; index < lines.length; index += 1) {
+    const line = lines[index];
+    if (line.trim() === '') {
+      continue;
+    }
+    if (/^\S/u.test(line) && !/^implementationConfirmation:\s*$/u.test(line)) {
+      end = index;
+      break;
+    }
+  }
+  const blockText = lines.slice(start, end).join('\n');
+  const parsed = yaml.load(blockText) as Record<string, unknown> | null;
+  const confirmation =
+    parsed?.implementationConfirmation &&
+    typeof parsed.implementationConfirmation === 'object' &&
+    !Array.isArray(parsed.implementationConfirmation)
+      ? (parsed.implementationConfirmation as Record<string, unknown>)
+      : {};
+  return { start, end, blockText, confirmation, lines };
+}
+
+function dumpImplementationConfirmation(confirmation: Record<string, unknown>): string {
+  return yaml
+    .dump({ implementationConfirmation: confirmation }, { lineWidth: 120, noRefs: true, sortKeys: false })
+    .trimEnd();
+}
+
+function semanticConfirmationForHash(confirmation: Record<string, unknown>): Record<string, unknown> {
+  const bookkeeping = new Set([
+    'status',
+    'confirmedAt',
+    'confirmedBy',
+    'sourceDocumentHash',
+    'implementationConfirmationHash',
+    'reconfirmationRequest',
+    'confirmationRender',
+  ]);
+  return Object.fromEntries(Object.entries(confirmation).filter(([key]) => !bookkeeping.has(key)));
+}
+
+function sourceDocumentHashForPreConfirmation(
+  sourceText: string,
+  blockText: string,
+  confirmation: Record<string, unknown>
+): string {
+  const normalizedBlock = `implementationConfirmation:${stableStringify(
+    semanticConfirmationForHash(confirmation)
+  )}`;
+  return sha256Text(sourceText.replace(blockText, normalizedBlock));
+}
+
+function implementationConfirmationHashForPreConfirmation(confirmation: Record<string, unknown>): string {
+  return sha256Json(semanticConfirmationForHash(confirmation));
+}
+
+function projectionBackRef(packetHash: string, mustRef = 'MUST-001'): Record<string, unknown> {
+  return {
+    derivedFromMustRef: mustRef,
+    derivedFromPacketHash: packetHash,
+    projectionStatus: 'synchronized',
+  };
+}
+
+function buildPreConfirmationImplementationConfirmation(input: {
+  root: string;
+  sourcePath: string;
+  recordId: string;
+  requirementSetId: string;
+  language: string;
+  paths: PreConfirmationPaths;
+  packetHash: string;
+  semanticKernelHash: string;
+  latestReceiptHash: string;
+}): Record<string, unknown> {
+  const rel = (filePath: string) => toRootRelativePath(input.root, filePath);
+  const backRef = projectionBackRef(input.packetHash);
+  const acceptanceTestFile = path.resolve(
+    __dirname,
+    '..',
+    'tests',
+    'acceptance',
+    'main-agent-pre-confirmation-drilldown-lane.test.ts'
+  );
+  return {
+    contractSchemaVersion: 1,
+    status: 'draft',
+    recordId: input.recordId,
+    requirementSetId: input.requirementSetId,
+    entryFlow: 'standalone_tasks',
+    entryFlowClass: 'task_packet_entry',
+    workflowAdapter: 'direct',
+    contractAuthoringRequired: true,
+    confirmationLanguage: input.language,
+    confirmationProfile: 'implementation_confirmation',
+    requiredViewPacks: ['currentTargetMap'],
+    optionalViewPacks: [],
+    confirmedAt: null,
+    confirmedBy: null,
+    sourceDocumentHash: null,
+    confirmationRender: {
+      htmlPath: rel(input.paths.confirmationHtml),
+      summaryPath: rel(input.paths.confirmationSummary),
+      reportPath: rel(input.paths.confirmationRenderReport),
+      htmlHash: null,
+      confirmationPhrase: null,
+    },
+    preConfirmationDrilldown: {
+      semanticKernelRef: { path: rel(input.paths.semanticKernel), hash: input.semanticKernelHash },
+      mustDecompositionPacketRef: {
+        path: rel(input.paths.mustDecompositionPacket),
+        hash: input.packetHash,
+        status: 'synchronized',
+      },
+      criticalAuditor: {
+        minimumRounds: 3,
+        consecutiveNoNewGapRounds: 3,
+        latestReceiptHash: input.latestReceiptHash,
+        convergenceVerdict: 'bounded_no_new_gap',
+      },
+      packetSourceReconciliation: {
+        reportPath: rel(input.paths.reconciliationReport),
+        verdict: 'pass',
+      },
+      preRenderGateReportPath: rel(input.paths.preRenderMustGate),
+      globalConsistencyReportPath: rel(input.paths.preRenderGlobalConsistency),
+    },
+    applicability: {
+      governanceEvents: { applies: false, reasonCode: 'no_governance_event_or_control_envelope_changes' },
+      runtimeRecovery: {
+        applies: false,
+        reasonCode: 'no_resume_rerun_closeout_hook_ingest_or_trace_checkpoint_changes',
+        requiresFunctionalResumeFailureCaseRegistry: false,
+        activeRequirementResolutionRequired: false,
+        retiredContextSurfaceForbidden: true,
+      },
+      scoringDashboardSft: { applies: false, reasonCode: 'no_scoring_dashboard_sft_dataset_or_read_model_changes' },
+      currentTargetMap: { applies: true, reasonCode: 'pre_confirmation_drilldown_requires_current_target_map' },
+      scriptsAndHooks: { applies: false, reasonCode: 'no_script_hook_report_or_generated_artifact_changes' },
+      aiTddContractGate: { applies: true, reasonCode: 'pre_confirmation_drilldown_requires_ai_tdd_manifest_projection' },
+    },
+    governanceEventTypeRegistryPolicy: {
+      controlFieldVocabulary: ['confirmationHistory'],
+      payloadKindContracts: [
+        {
+          payloadKind: 'decision',
+          requiredFields: ['eventType', 'decision'],
+          forbiddenFields: ['result'],
+          allowedControlWriteModes: ['control'],
+        },
+      ],
+      controlWriteModePolicies: [
+        {
+          allowedControlWriteMode: 'control',
+          allowedWritesControlFields: ['confirmationHistory'],
+        },
+      ],
+      eventSpecificRequirements: [],
+    },
+    must: [
+      {
+        id: 'MUST-001',
+        text: 'Main Agent requirement confirmation lane renders only after atomic decomposition, projection synchronization, audit convergence, and pre-render gates pass.',
+        textZh:
+          '主 Agent 的需求确认 lane 只能在原子拆解、投影同步、审计收敛和预渲染门禁通过后渲染确认页。',
+        evidenceRefs: ['EVD-001'],
+        coveredByTraceRows: ['TRACE-001'],
+        coveredBySequenceViews: ['SEQ-001'],
+      },
+    ],
+    notDone: [
+      {
+        id: 'NEG-001',
+        text: 'The atomic decomposition packet and renderer confirmability must not be treated as implementation completion or delivery readiness.',
+        textZh: '原子拆解 packet 和 renderer 可确认状态不得被当作实现完成或交付就绪。',
+        evidenceRefs: ['EVD-001'],
+        whyItBlocksCompletion: 'Confirmation scope quality is separate from implementation completion evidence.',
+        whyItBlocksCompletionZh: '需求范围确认质量与实现完成证据是不同层级。',
+        negativeAssertionRequired: true,
+        coveredByFailurePath: ['FAIL-001'],
+        ...backRef,
+      },
+    ],
+    mustNot: [
+      {
+        id: 'OUT-001',
+        text: 'Forbidden: creating an additional mental model or a separate controller authority.',
+        textZh: '禁止新增第七个心智模型，也禁止新增独立主控权威。',
+        scopeBoundary: 'Main Agent keeps the lane under the first mental model.',
+        scopeBoundaryZh: '主 Agent 将该 lane 保持在第一个心智模型内。',
+        userApprovalRequiredIfChanged: true,
+      },
+    ],
+    mustExecutionDecompositionMatrix: [
+      { id: 'MDM-001', mustRef: 'MUST-001', atomicTaskRefs: ['TASK-001', 'TASK-002'], ...backRef },
+    ],
+    atomicImplementationTaskList: [
+      {
+        id: 'TASK-001',
+        text: 'Produce semantic kernel, synchronized MUST decomposition packet, and three Critical Auditor no-new-valid-gap receipts before materialization.',
+        targetFiles: [rel(input.paths.semanticKernel), rel(input.paths.mustDecompositionPacket)],
+        acceptanceRefs: ['ACC-001'],
+        redProofPlan: 'Missing kernel, packet, or receipts causes the pre-render gate to fail closed.',
+        primaryObservableBehaviors: ['pre-render gate fails closed without drilldown artifacts'],
+        primaryAcceptanceOracles: ['pre-render-must-decomposition-gate-report verdict PASS'],
+        ...backRef,
+      },
+      {
+        id: 'TASK-002',
+        text: 'Materialize implementationConfirmation rows only from synchronized packet projections and render a user-confirmable HTML page.',
+        targetFiles: [rel(input.sourcePath), rel(input.paths.confirmationHtml)],
+        acceptanceRefs: ['E2E-001'],
+        redProofPlan: 'Source rows without packet back-reference or missing drilldown gate report block confirmability.',
+        primaryObservableBehaviors: ['renderer shows full drilldown interaction'],
+        primaryAcceptanceOracles: ['confirmation-render-report confirmability=confirmable'],
+        ...backRef,
+      },
+    ],
+    evidence: [
+      {
+        id: 'EVD-001',
+        text: 'Gate and renderer reports prove the requirement confirmation lane is user-confirmable but not delivery ready.',
+        textZh: '门禁和渲染报告证明需求确认 lane 可由用户确认，但不代表交付就绪。',
+        gate: 'main-agent-orchestration --action pre-confirmation-drilldown',
+        oracle: 'All drilldown artifacts, bidirectional reconciliation, pre-render gates, and renderer confirmability pass while deliveryReadiness.ready remains false before controlled ingest.',
+        oracleZh:
+          '所有 drilldown 产物、双向 reconciliation、预渲染门禁和 renderer 可确认性通过，同时 controlled ingest 前 deliveryReadiness.ready 保持 false。',
+        requiredCommandRefs: ['CMD-001'],
+        artifactRefs: ['ART-001', 'ART-002'],
+        acceptanceType: 'acceptance_e2e',
+        ...backRef,
+      },
+    ],
+    openQuestions: [],
+    failurePaths: [
+      {
+        id: 'FAIL-001',
+        title: 'Missing drilldown surfaces block confirmation.',
+        titleZh: '缺少 drilldown 确认面会阻断确认。',
+        trigger: 'Semantic kernel, packet, receipts, reconciliation, pre-render gate report, or renderer drilldown section is missing.',
+        triggerZh: '缺少 semantic kernel、packet、receipt、reconciliation、预渲染门禁报告或 renderer drilldown 区块。',
+        expectedBehavior: 'Fail closed and keep currentMentalModel=requirement_confirmation.',
+        expectedBehaviorZh: '必须 fail closed，并保持 currentMentalModel=requirement_confirmation。',
+        forbiddenBehavior: 'Advance to architecture_confirmation or delivery readiness.',
+        forbiddenBehaviorZh: '不得推进到 architecture_confirmation，也不得进入交付就绪。',
+        blocksCompletionWhenViolated: true,
+        linkedNegIds: ['NEG-001'],
+        linkedEvidenceIds: ['EVD-001'],
+        traceRows: ['TRACE-001'],
+        viewRefs: ['EDGEVIEW-001'],
+        requiredAssertions: ['confirmability is blocked when drilldown surfaces are missing'],
+        ...backRef,
+      },
+    ],
+    edgeCases: [
+      {
+        id: 'EDGE-001',
+        category: 'missing_projection',
+        condition: 'A source row is invented outside synchronized packet projections.',
+        conditionZh: 'source row 在 synchronized packet projection 之外被独立发明。',
+        expectedBehavior: 'Packet/source reconciliation fails bidirectionally.',
+        expectedBehaviorZh: 'packet/source reconciliation 必须双向失败。',
+        forbiddenBehavior: 'Renderer allows confirmation from independently invented source rows.',
+        forbiddenBehaviorZh: 'renderer 不得允许由独立发明的 source row 进入确认。',
+        linkedFailurePathIds: ['FAIL-001'],
+        linkedEvidenceIds: ['EVD-001'],
+        traceRows: ['TRACE-001'],
+        viewRefs: ['EDGEVIEW-001'],
+        ...backRef,
+      },
+    ],
+    traceRows: [
+      {
+        id: 'TRACE-001',
+        covers: ['MUST-001', 'NEG-001'],
+        taskRefs: ['TASK-001', 'TASK-002'],
+        evidenceRefs: ['EVD-001'],
+        contractValidationCommandRefs: ['CMD-001'],
+        deliveryEvidenceCommandRefs: ['CMD-001'],
+        acceptanceRefs: ['ACC-001', 'E2E-001'],
+        sequenceViewRefs: ['SEQ-001'],
+        boundaryViewRefs: ['BOUND-001'],
+        artifactRefs: ['ART-001', 'ART-002'],
+        status: 'PENDING',
+        ...backRef,
+      },
+    ],
+    acceptanceTests: [
+      {
+        id: 'ACC-001',
+        file: acceptanceTestFile,
+        covers: ['MUST-001'],
+        traceRows: ['TRACE-001'],
+        evidenceRefs: ['EVD-001'],
+        commandRefs: ['CMD-001'],
+        failurePathRefs: ['FAIL-001'],
+        edgeCaseRefs: ['EDGE-001'],
+        expectedPreImplementationState: 'expected_red',
+        oracle: 'Main Agent lane cannot reach user_confirmable unless atomic decomposition loop, three receipt rounds, reconciliation, and gates pass.',
+        positiveControl: true,
+        negativeControls: ['NEG-001'],
+        mockOnly: false,
+        ...backRef,
+      },
+    ],
+    e2eSuites: [
+      {
+        id: 'E2E-001',
+        file: acceptanceTestFile,
+        covers: ['NEG-001'],
+        traceRows: ['TRACE-001'],
+        evidenceRefs: ['EVD-001'],
+        commandRefs: ['CMD-001'],
+        failurePathRefs: ['FAIL-001'],
+        edgeCaseRefs: ['EDGE-001'],
+        expectedPreImplementationState: 'expected_red',
+        oracle: 'Before controlled ingest, the surface remains in requirement_confirmation and nextMentalModel is null.',
+        positiveControl: true,
+        negativeControls: ['NEG-001'],
+        mockOnly: false,
+        ...backRef,
+      },
+    ],
+    requirementBoundary: {
+      business: {
+        description: 'No consumer product behavior is confirmed by this lane.',
+        requirementIds: [],
+        viewRefs: [],
+        diagramRefs: [],
+      },
+      governance: {
+        description: 'Requirement confirmation drilldown quality gate.',
+        requirementIds: ['MUST-001', 'NEG-001'],
+        viewRefs: ['SEQ-001', 'FLOW-001', 'EDGEVIEW-001', 'BOUND-001'],
+        diagramRefs: ['SEQ-001', 'FLOW-001'],
+      },
+    },
+    sequenceViews: [
+      {
+        id: 'SEQ-001',
+        title: 'Requirement confirmation drilldown lane',
+        scope: 'governance',
+        covers: ['MUST-001', 'NEG-001', 'EVD-001'],
+        mermaid:
+          'sequenceDiagram\n  participant M as MainAgent\n  participant G as Gates\n  participant U as User\n  M->>G: atomic drilldown before materialization [MUST-001]\n  G-->>M: PASS [EVD-001]\n  M-->>U: user_confirmable, not delivery ready [NEG-001]',
+      },
+    ],
+    flowViews: [
+      {
+        id: 'FLOW-001',
+        title: 'Pre-confirmation lane state flow',
+        scope: 'governance',
+        covers: ['MUST-001', 'NEG-001'],
+        mermaid:
+          'flowchart TD\n  A[MUST-001 atomic loop] --> B[TRACE-001 synchronized projection]\n  B --> C[EVD-001 render confirmable]\n  C --> D[NEG-001 no delivery readiness]',
+      },
+    ],
+    edgeCaseViews: [
+      {
+        id: 'EDGEVIEW-001',
+        title: 'Missing drilldown surfaces fail closed',
+        scope: 'governance',
+        covers: ['NEG-001'],
+        cases: ['EDGE-001', 'FAIL-001'],
+      },
+    ],
+    boundaryViews: [
+      {
+        id: 'BOUND-001',
+        title: 'Mental model boundary',
+        scope: 'governance',
+        covers: ['OUT-001'],
+      },
+    ],
+    currentTargetMap: {
+      schemaVersion: 'current-target-map/v1',
+      displayProfile: 'closed_loop_current_target_map',
+      introduction: 'Pre-confirmation drilldown remains inside requirement_confirmation.',
+      currentSummary: [
+        {
+          id: 'CT-CUR-001',
+          title: 'Draft requirement',
+          detail: 'The source is not yet user confirmed and cannot enter architecture confirmation.',
+        },
+      ],
+      targetSummary: [
+        {
+          id: 'CT-TGT-001',
+          title: 'User-confirmable requirement',
+          detail: 'Semantic kernel, atomic packet, receipts, reconciliation, gates, and HTML are synchronized.',
+        },
+      ],
+      diffRows: [
+        {
+          id: 'CT-DIFF-001',
+          dimension: 'Mental model',
+          currentState: 'requirement_confirmation draft',
+          targetState: 'requirement_confirmation user_confirmable',
+          action: 'run pre_confirmation_drilldown lane',
+        },
+        {
+          id: 'CT-DIFF-002',
+          dimension: 'Artifact source',
+          currentState: 'free-form draft',
+          targetState: 'packet-backed implementationConfirmation',
+          action: 'materialize packet projections only',
+        },
+        {
+          id: 'CT-DIFF-003',
+          dimension: 'Progression',
+          currentState: 'blocked before user confirmation',
+          targetState: 'await exact phrase and hashes',
+          action: 'require controlled ingest before architecture_confirmation',
+        },
+      ],
+      process: [
+        {
+          id: 'CT-PROC-001',
+          phase: 'Requirement confirmation',
+          currentState: 'pre-confirmation quality unknown',
+          targetState: 'user_confirmable with deliveryReadiness.ready=false',
+        },
+      ],
+      artifactPaths: [
+        {
+          id: 'CT-ARTPATH-001',
+          path: rel(input.paths.preRenderMustGate),
+          targetRole: 'pre-render MUST decomposition gate report',
+          traceRows: ['TRACE-001'],
+          evidenceRefs: ['EVD-001'],
+        },
+      ],
+      canonicalArtifacts: [
+        {
+          id: 'CT-CANON-001',
+          targetPathOrField: rel(input.paths.confirmationRenderReport),
+          functionDescription: 'Renderer report for scope confirmability only.',
+          controlPlaneRole: 'projection_not_delivery_proof',
+          traceRows: ['TRACE-001'],
+          evidenceRefs: ['EVD-001'],
+        },
+      ],
+      existingArtifacts: [
+        {
+          id: 'CT-EXIST-001',
+          currentPath: rel(input.sourcePath),
+          currentFunction: 'Draft source document',
+          targetTreatment: 'Materialized with packet-backed implementationConfirmation',
+          completionProofPolicy: 'not_completion_proof',
+          traceRows: ['TRACE-001'],
+          evidenceRefs: ['EVD-001'],
+        },
+      ],
+    },
+    aiTddContractExecutionManifestProjection: {
+      id: 'AI-TDD-001',
+      currentTargetMap: { rows: ['CT-DIFF-001', 'CT-DIFF-002', 'CT-DIFF-003'] },
+      errorCaseCoverage: ['FAIL-001', 'EDGE-001'],
+      commandTargets: ['CMD-001'],
+      traceClosure: ['TRACE-001'],
+      canonicalSurfaces: ['CT-CANON-001'],
+      legacyDenial: ['CT-EXIST-001'],
+      closeoutProofPolicy: 'not_delivery_ready_before_controlled_ingest',
+      ...backRef,
+    },
+    artifactAutomationPlan: [
+      {
+        artifactId: 'ART-001',
+        path: rel(input.paths.preRenderMustGate),
+        artifactType: 'report',
+        sourceOfTruthRole: 'evidence',
+        ownerModel: 'requirement_confirmation',
+        producer: 'pre_render_must_decomposition_gate',
+        consumer: 'renderer',
+        inputArtifacts: [rel(input.paths.semanticKernel), rel(input.paths.mustDecompositionPacket)],
+        outputArtifacts: ['pre-render-must-decomposition-gate-report.json'],
+        recordEventTypes: [],
+        canAffectControlFlow: false,
+        userApprovalRequired: false,
+        retention: 'long_lived',
+        cleanupPolicy: 'keep',
+        orphanRisk: 'low',
+        containsSensitiveData: false,
+        trainingDataEligible: false,
+        traceRows: ['TRACE-001'],
+        evidenceRefs: ['EVD-001'],
+        linkedRequirements: ['MUST-001', 'NEG-001'],
+        ...backRef,
+      },
+      {
+        artifactId: 'ART-002',
+        path: rel(input.paths.confirmationHtml),
+        artifactType: 'html',
+        sourceOfTruthRole: 'projection',
+        ownerModel: 'requirement_confirmation',
+        producer: 'render-requirements-confirmation-html',
+        consumer: 'user',
+        inputArtifacts: [rel(input.sourcePath), rel(input.paths.preRenderMustGate)],
+        outputArtifacts: ['confirmation.html', 'confirmation-render-report.json'],
+        recordEventTypes: [],
+        canAffectControlFlow: false,
+        userApprovalRequired: true,
+        retention: 'long_lived',
+        cleanupPolicy: 'keep',
+        orphanRisk: 'low',
+        containsSensitiveData: false,
+        trainingDataEligible: false,
+        traceRows: ['TRACE-001'],
+        evidenceRefs: ['EVD-001'],
+        linkedRequirements: ['MUST-001', 'NEG-001'],
+        ...backRef,
+      },
+    ],
+    targetModificationPaths: [
+      {
+        id: 'TARGET-MOD-001',
+        path: 'scripts/main-agent-orchestration.ts',
+        changeType: 'modify',
+        coverageRole: 'modify',
+        intent: 'Expose requirement_confirmation.pre_confirmation_drilldown lane inside Main Agent orchestration.',
+        ownerModel: 'requirement_confirmation',
+        requirementRefs: ['MUST-001', 'NEG-001'],
+        traceRefs: ['TRACE-001'],
+        evidenceRefs: ['EVD-001'],
+        artifactRefs: ['ART-001'],
+        requiresReconfirmationOnChange: true,
+        ...backRef,
+      },
+      {
+        id: 'TARGET-MOD-002',
+        path: 'tests/acceptance/main-agent-pre-confirmation-drilldown-lane.test.ts',
+        changeType: 'validation_only',
+        coverageRole: 'validation_only',
+        intent: 'Validate the lane and fail-closed behavior.',
+        ownerModel: 'acceptance_tests',
+        requirementRefs: ['MUST-001', 'NEG-001'],
+        traceRefs: ['TRACE-001'],
+        evidenceRefs: ['EVD-001'],
+        artifactRefs: [],
+        requiresReconfirmationOnChange: false,
+        ...backRef,
+      },
+      {
+        id: 'TARGET-MOD-003',
+        path: rel(input.paths.preRenderMustGate),
+        changeType: 'generated_output',
+        coverageRole: 'generated_output',
+        intent: 'Generated pre-render drilldown gate report.',
+        ownerModel: 'requirement_confirmation',
+        requirementRefs: ['MUST-001'],
+        traceRefs: ['TRACE-001'],
+        evidenceRefs: ['EVD-001'],
+        artifactRefs: ['ART-001'],
+        requiresReconfirmationOnChange: false,
+        ...backRef,
+      },
+      {
+        id: 'TARGET-MOD-004',
+        path: rel(input.paths.confirmationHtml),
+        changeType: 'generated_output',
+        coverageRole: 'generated_output',
+        intent: 'Generated confirmation HTML projection.',
+        ownerModel: 'requirement_confirmation',
+        requirementRefs: ['MUST-001'],
+        traceRefs: ['TRACE-001'],
+        evidenceRefs: ['EVD-001'],
+        artifactRefs: ['ART-002'],
+        requiresReconfirmationOnChange: false,
+        ...backRef,
+      },
+    ],
+    requiredCommands: [
+      {
+        id: 'CMD-001',
+        command:
+          'npx vitest run tests/acceptance/main-agent-pre-confirmation-drilldown-lane.test.ts',
+        purpose: 'Validate Main Agent pre-confirmation drilldown lane behavior.',
+        targetFiles: ['tests/acceptance/main-agent-pre-confirmation-drilldown-lane.test.ts'],
+        traceRows: ['TRACE-001'],
+        evidenceRefs: ['EVD-001'],
+        ...backRef,
+      },
+    ],
+    suggestedCommands: [],
+    closeoutReadinessPreview: {
+      requiredCommands: ['CMD-001'],
+      orphanPolicy: 'Generated confirmation artifacts are not completion proof.',
+      currentAttemptPolicy: 'deliveryReadiness.ready remains false before controlled ingest and implementation evidence.',
+      recordClosedPolicy: 'Requirement confirmation alone never closes implementation.',
+      ...backRef,
+    },
+    architectureImpacts: [
+      {
+        id: 'ARCH-001',
+        title: 'Mental model progression boundary',
+        impact: 'Only controlled ingest may allow progression from requirement_confirmation to architecture_confirmation.',
+        requirementRefs: ['MUST-001', 'NEG-001', 'OUT-001'],
+      },
+    ],
+  };
+}
+
+function materializeImplementationConfirmationSource(
+  sourcePath: string,
+  confirmation: Record<string, unknown>
+): string {
+  const sourceText = fs.readFileSync(sourcePath, 'utf8');
+  const extraction = extractImplementationConfirmationBlock(sourceText);
+  const dumped = dumpImplementationConfirmation(confirmation);
+  if (!extraction) {
+    const next = `${sourceText.replace(/\s*$/u, '')}\n\n${dumped}\n`;
+    fs.writeFileSync(sourcePath, next, 'utf8');
+    return next;
+  }
+  const lines = [...extraction.lines];
+  lines.splice(extraction.start, extraction.end - extraction.start, ...dumped.split('\n'));
+  const next = lines.join('\n');
+  fs.writeFileSync(sourcePath, next.endsWith('\n') ? next : `${next}\n`, 'utf8');
+  return next.endsWith('\n') ? next : `${next}\n`;
+}
+
+function readMaterializedConfirmation(sourcePath: string): {
+  sourceText: string;
+  extraction: ImplementationConfirmationExtraction;
+  sourceDocumentHash: string;
+  implementationConfirmationHash: string;
+} {
+  const sourceText = fs.readFileSync(sourcePath, 'utf8');
+  const extraction = extractImplementationConfirmationBlock(sourceText);
+  if (!extraction) {
+    throw new Error(`implementationConfirmation block missing after materialization: ${sourcePath}`);
+  }
+  return {
+    sourceText,
+    extraction,
+    sourceDocumentHash: sourceDocumentHashForPreConfirmation(
+      sourceText,
+      extraction.blockText,
+      extraction.confirmation
+    ),
+    implementationConfirmationHash: implementationConfirmationHashForPreConfirmation(extraction.confirmation),
+  };
+}
+
+function buildSemanticKernel(input: {
+  root: string;
+  sourcePath: string;
+  recordId: string;
+  sourceDocumentHash: string;
+  implementationConfirmationHash: string;
+  createdAt: string;
+}): Record<string, unknown> {
+  const payload: Record<string, unknown> = {
+    schemaVersion: 'semantic-kernel/v1',
+    recordId: input.recordId,
+    sourceDocument: toRootRelativePath(input.root, input.sourcePath),
+    sourceDocumentHash: input.sourceDocumentHash,
+    implementationConfirmationHash: input.implementationConfirmationHash,
+    goal:
+      'Prepare requirement scope confirmation through semantic drilldown without proving implementation completion.',
+    currentState: ['Draft source has not passed pre-confirmation semantic drilldown.'],
+    targetState: [
+      'User-confirmable requirement confirmation page is rendered after atomic decomposition and gates pass.',
+    ],
+    nonGoals: [
+      'No delivery readiness claim.',
+      'No seventh mental model.',
+      'No standalone orchestrator authority.',
+    ],
+    mustCandidates: ['MUST-001'],
+    createdBy: 'main_agent_orchestration.requirement_confirmation.pre_confirmation_drilldown',
+    createdAt: input.createdAt,
+    inputRefs: [toRootRelativePath(input.root, input.sourcePath)],
+  };
+  payload.kernelHash = sha256Json({ ...payload, kernelHash: null });
+  payload.contentHash = payload.kernelHash;
+  return payload;
+}
+
+function buildMustDecompositionPacket(input: {
+  root: string;
+  sourcePath: string;
+  paths: PreConfirmationPaths;
+  recordId: string;
+  sourceDocumentHash: string;
+  implementationConfirmationHash: string;
+  semanticKernelHash: string;
+  packetHash: string;
+  createdAt: string;
+}): Record<string, unknown> {
+  const rel = (filePath: string) => toRootRelativePath(input.root, filePath);
+  const materialized = (target: string) => [target];
+  const taskRows = [
+    {
+      id: 'TASK-001',
+      targetFiles: [rel(input.paths.semanticKernel), rel(input.paths.mustDecompositionPacket)],
+      redProofPlan: 'Gate fails without semantic kernel, synchronized packet, or three Critical Auditor receipts.',
+      primaryObservableBehaviors: ['atomic decomposition loop entered before materialization'],
+      primaryAcceptanceOracles: ['critical auditor consecutive no-new-valid-gap rounds equals 3'],
+      materializedTo: materialized('implementationConfirmation.atomicImplementationTaskList[TASK-001]'),
+    },
+    {
+      id: 'TASK-002',
+      targetFiles: [rel(input.sourcePath), rel(input.paths.confirmationHtml)],
+      redProofPlan: 'Renderer blocks if drilldown gate report or packet/source reconciliation is missing.',
+      primaryObservableBehaviors: ['confirmation HTML renders full drilldown interaction'],
+      primaryAcceptanceOracles: ['confirmation-render-report confirmability=confirmable'],
+      materializedTo: materialized('implementationConfirmation.atomicImplementationTaskList[TASK-002]'),
+    },
+  ];
+  const payload: Record<string, unknown> = {
+    schemaVersion: 'must-decomposition-packet/v1',
+    recordId: input.recordId,
+    sourceDocument: rel(input.sourcePath),
+    sourceDocumentHash: input.sourceDocumentHash,
+    implementationConfirmationHash: input.implementationConfirmationHash,
+    semanticKernelHash: input.semanticKernelHash,
+    packetHash: input.packetHash,
+    status: 'synchronized',
+    generatedBy: 'main_agent_orchestration.requirement_confirmation.pre_confirmation_drilldown',
+    createdBy: 'main_agent_orchestration.requirement_confirmation.pre_confirmation_drilldown',
+    createdAt: input.createdAt,
+    inputRefs: [rel(input.sourcePath), rel(input.paths.semanticKernel)],
+    materializationTarget: 'implementationConfirmation',
+    lifecycle: {
+      currentMentalModel: 'requirement_confirmation',
+      lane: 'pre_confirmation_drilldown',
+      atomicDecompositionLoopEnteredBeforeMaterialization: true,
+      materializationStartedAfterAtomicLoop: true,
+      singlePassBypassPrevented: true,
+      materializedAfterStatus: 'synchronized',
+      controlledIngestRequiredBeforeMentalModelProgression: true,
+    },
+    consecutiveNoNewValidGapRounds: 3,
+    authorClaims: [
+      {
+        id: 'CLAIM-001',
+        claim: 'Pre-confirmation packet is scope-quality evidence only, not implementation completion evidence.',
+        criticDisposition: 'accepted_no_new_valid_gap',
+      },
+    ],
+    mustPackets: [
+      {
+        mustRef: 'MUST-001',
+        mustIntent:
+          'Main Agent requirement confirmation lane renders only after atomic decomposition, projection synchronization, audit convergence, and pre-render gates pass.',
+        decompositionBasis: {
+          observableBehaviors: [
+            'build semantic kernel',
+            'split MUST into atomic tasks',
+            'materialize only packet projections',
+            'render confirmation HTML',
+          ],
+          targetSurfaces: [
+            'scripts/main-agent-orchestration.ts',
+            rel(input.paths.preRenderMustGate),
+            rel(input.paths.confirmationHtml),
+          ],
+        },
+        atomicityDrivers: {
+          behaviorSurfaceOracleUnits: [
+            'artifact production',
+            'packet/source reconciliation',
+            'renderer confirmability',
+          ],
+          oneTaskPerIndependentBehaviorSurfaceOracle: true,
+        },
+        questionCoverage: {
+          requiredCategories: [
+            'scope_boundary',
+            'atomicity',
+            'projection',
+            'confirmation_surface',
+            'mental_model_progression',
+          ],
+          answeredCategories: [
+            'scope_boundary',
+            'atomicity',
+            'projection',
+            'confirmation_surface',
+            'mental_model_progression',
+          ],
+          missingCategories: [],
+          coverageVerdict: 'complete',
+        },
+        atomicityCompleteness: {
+          splitRule: 'one_task_per_independent_behavior_surface_oracle',
+          completenessVerdict: 'complete',
+          expectedTaskCount: 2,
+          actualTaskCount: 2,
+        },
+        authorClaims: [
+          {
+            id: 'CLAIM-MUST-001',
+            claim: 'MUST-001 is split across artifact production and render-confirmability surfaces.',
+            criticDisposition: 'accepted_no_new_valid_gap',
+          },
+        ],
+        mustExecutionDecompositionMatrix: [
+          {
+            id: 'MDM-001',
+            mustRef: 'MUST-001',
+            atomicTaskRefs: ['TASK-001', 'TASK-002'],
+            materializedTo: materialized('implementationConfirmation.mustExecutionDecompositionMatrix[MDM-001]'),
+          },
+        ],
+        mustAtomicTasks: taskRows,
+        mustEvidenceProjection: [
+          { id: 'EVD-001', materializedTo: materialized('implementationConfirmation.evidence[EVD-001]') },
+        ],
+        mustTraceProjection: [
+          { id: 'TRACE-001', materializedTo: materialized('implementationConfirmation.traceRows[TRACE-001]') },
+        ],
+        mustAcceptanceProjection: [
+          { id: 'ACC-001', materializedTo: materialized('implementationConfirmation.acceptanceTests[ACC-001]') },
+          { id: 'E2E-001', materializedTo: materialized('implementationConfirmation.e2eSuites[E2E-001]') },
+        ],
+        mustFailureEdgeProjection: [
+          { id: 'FAIL-001', materializedTo: materialized('implementationConfirmation.failurePaths[FAIL-001]') },
+          { id: 'EDGE-001', materializedTo: materialized('implementationConfirmation.edgeCases[EDGE-001]') },
+        ],
+        mustTargetPathProjection: [
+          {
+            id: 'TARGET-MOD-001',
+            materializedTo: materialized('implementationConfirmation.targetModificationPaths[TARGET-MOD-001]'),
+          },
+          {
+            id: 'TARGET-MOD-002',
+            materializedTo: materialized('implementationConfirmation.targetModificationPaths[TARGET-MOD-002]'),
+          },
+          {
+            id: 'TARGET-MOD-003',
+            materializedTo: materialized('implementationConfirmation.targetModificationPaths[TARGET-MOD-003]'),
+          },
+          {
+            id: 'TARGET-MOD-004',
+            materializedTo: materialized('implementationConfirmation.targetModificationPaths[TARGET-MOD-004]'),
+          },
+        ],
+        mustCurrentTargetProjection: [
+          { id: 'CT-CANON-001', materializedTo: materialized('implementationConfirmation.currentTargetMap') },
+        ],
+        mustAiTddManifestProjection: [
+          {
+            id: 'AI-TDD-001',
+            materializedTo: materialized('implementationConfirmation.aiTddContractExecutionManifestProjection'),
+          },
+        ],
+        mustArtifactProjection: [
+          { id: 'ART-001', materializedTo: materialized('implementationConfirmation.artifactAutomationPlan[ART-001]') },
+          { id: 'ART-002', materializedTo: materialized('implementationConfirmation.artifactAutomationPlan[ART-002]') },
+        ],
+        mustCommandProjection: [
+          { id: 'CMD-001', materializedTo: materialized('implementationConfirmation.requiredCommands[CMD-001]') },
+        ],
+        mustCloseoutBoundaryProjection: [
+          {
+            id: 'CLOSEOUT-BOUNDARY-001',
+            materializedTo: materialized('implementationConfirmation.closeoutReadinessPreview'),
+          },
+        ],
+      },
+    ],
+    mustDerivedProjectionMap: [
+      {
+        mustRef: 'MUST-001',
+        materializedTo: [
+          'implementationConfirmation.currentTargetMap',
+          'implementationConfirmation.aiTddContractExecutionManifestProjection',
+          'implementationConfirmation.closeoutReadinessPreview',
+        ],
+      },
+    ],
+  };
+  payload.contentHash = input.packetHash;
+  return payload;
+}
+
+function buildCriticalAuditorReceipt(input: {
+  roundIndex: number;
+  auditInputHash: string;
+  recordId: string;
+  sourceDocumentHash: string;
+  implementationConfirmationHash: string;
+  packetHash: string;
+  createdAt: string;
+}): Record<string, unknown> {
+  const receipt: Record<string, unknown> = {
+    schemaVersion: 'critical-auditor-receipt/v1',
+    recordId: input.recordId,
+    roundIndex: input.roundIndex,
+    inputHash: input.auditInputHash,
+    sourceDocumentHash: input.sourceDocumentHash,
+    implementationConfirmationHash: input.implementationConfirmationHash,
+    contentHash: input.packetHash,
+    createdBy: 'critical_auditor.requirement_confirmation.pre_confirmation_drilldown',
+    createdAt: input.createdAt,
+    inputRefs: ['semantic-kernel.json', 'must_decomposition_packet.json', 'implementationConfirmation'],
+    attackVectors: ['under_split_task', 'missing_projection', 'source_row_independently_invented'],
+    gapCandidates: [],
+    validatedGaps: [],
+    rejectedGapCandidates: [{ id: `REJ-${input.roundIndex}`, reason: 'no new valid gap detected' }],
+    mutationPressureFindings: [],
+    overBroadTaskFindings: [],
+    missingProjectionFindings: [],
+    invalidProofFindings: [],
+    legacyBypassFindings: [],
+    sourceMaterializationFindings: [],
+    noNewGapRationale: 'No new valid gap in this bounded audit round.',
+    convergenceDecision: {
+      verdict: 'no_new_valid_gap',
+      resetsConvergenceCounter: false,
+    },
+  };
+  receipt.receiptHash = sha256Json(receipt);
+  return receipt;
+}
+
+function enhanceArtifactMetadata(
+  filePath: string,
+  input: {
+    schemaVersion?: string;
+    recordId: string;
+    sourceDocumentHash: string | null;
+    implementationConfirmationHash: string | null;
+    createdBy: string;
+    createdAt: string;
+    inputRefs: string[];
+  }
+): Record<string, unknown> | null {
+  const existing = readJsonIfExists(filePath);
+  if (!existing) {
+    return null;
+  }
+  const enhanced = {
+    ...existing,
+    schemaVersion: normalizeText(existing.schemaVersion) || input.schemaVersion || null,
+    recordId: normalizeText(existing.recordId) || input.recordId,
+    sourceDocumentHash: normalizeText(existing.sourceDocumentHash) || input.sourceDocumentHash,
+    implementationConfirmationHash:
+      normalizeText(existing.implementationConfirmationHash) || input.implementationConfirmationHash,
+    createdBy: normalizeText(existing.createdBy) || input.createdBy,
+    createdAt: normalizeText(existing.createdAt) || input.createdAt,
+    inputRefs: Array.isArray(existing.inputRefs) ? existing.inputRefs : input.inputRefs,
+  };
+  const hashKey = normalizeText((enhanced as Record<string, unknown>).receiptHash) ? 'receiptHash' : 'contentHash';
+  (enhanced as Record<string, unknown>)[hashKey] = sha256Json({
+    ...enhanced,
+    contentHash: null,
+    confirmationPageHash: null,
+    renderReportHash: null,
+    receiptHash: null,
+  });
+  writeJsonUtf8(filePath, enhanced);
+  return enhanced;
+}
+
+function writePreConfirmationRequirementRecord(input: {
+  root: string;
+  sourcePath: string;
+  recordId: string;
+  requirementSetId: string;
+  paths: PreConfirmationPaths;
+  laneState: PreConfirmationDrilldownSubstate;
+  sourceDocumentHash: string | null;
+  implementationConfirmationHash: string | null;
+  confirmationPageHash: string | null;
+  renderReportPath: string | null;
+  createdAt: string;
+}): void {
+  const record = {
+    recordId: input.recordId,
+    requirementSetId: input.requirementSetId,
+    status: 'draft',
+    flow: 'standalone_tasks',
+    stage: 'implement',
+    entryFlow: 'standalone_tasks',
+    entryFlowClass: 'task_packet_entry',
+    workflowAdapter: 'direct',
+    sourcePath: toRootRelativePath(input.root, input.sourcePath),
+    sourceDocumentHash: input.sourceDocumentHash,
+    implementationConfirmationHash: input.implementationConfirmationHash,
+    confirmationPageHash: input.confirmationPageHash,
+    lastEventType: 'pre_confirmation_drilldown_user_confirmable',
+    updatedAt: input.createdAt,
+    preConfirmationDrilldownLane: {
+      currentMentalModel: 'requirement_confirmation',
+      lane: 'pre_confirmation_drilldown',
+      substate: input.laneState,
+      nextMentalModel: null,
+      controlledIngestRequiredBeforeProgression: true,
+      confirmationRenderReportPath: input.renderReportPath
+        ? toRootRelativePath(input.root, input.renderReportPath)
+        : null,
+    },
+    architectureConfirmationState: {
+      status: 'missing',
+      reasonCode: 'blocked_until_controlled_requirement_confirmation_ingest',
+      updatedAt: input.createdAt,
+    },
+    runtimePolicySnapshotRef: {
+      path: toRootRelativePath(
+        input.root,
+        path.join(input.paths.recordRoot, 'recovery', 'runtime-policy-snapshot.json')
+      ),
+    },
+    recoveryContextRef: {
+      path: toRootRelativePath(input.root, path.join(input.paths.recordRoot, 'recovery', 'recovery-context.json')),
+    },
+  };
+  const recoveryDir = path.join(input.paths.recordRoot, 'recovery');
+  writeJsonUtf8(path.join(recoveryDir, 'runtime-policy-snapshot.json'), {
+    kind: 'runtime-policy-snapshot',
+    flow: 'standalone_tasks',
+    stage: 'implement',
+    policy: { flow: 'standalone_tasks', stage: 'implement' },
+  });
+  writeJsonUtf8(path.join(recoveryDir, 'recovery-context.json'), {
+    kind: 'recovery-context',
+    currentMentalModel: 'requirement_confirmation',
+    lane: 'pre_confirmation_drilldown',
+  });
+  writeJsonUtf8(input.paths.recordPath, record);
+  writeJsonUtf8(input.paths.indexPath, {
+    version: 1,
+    active: {
+      recordId: input.recordId,
+      requirementSetId: input.requirementSetId,
+      recordPath: toRootRelativePath(input.root, input.paths.recordPath),
+    },
+    records: [
+      {
+        recordId: input.recordId,
+        requirementSetId: input.requirementSetId,
+        recordPath: toRootRelativePath(input.root, input.paths.recordPath),
+      },
+    ],
+  });
+}
+
+function resolveSkillScript(root: string, relativeScript: string): string {
+  const projectLocal = path.join(root, '_bmad', 'skills', 'requirements-contract-authoring', 'scripts', relativeScript);
+  if (fs.existsSync(projectLocal)) {
+    return projectLocal;
+  }
+  return path.resolve(__dirname, '..', '_bmad', 'skills', 'requirements-contract-authoring', 'scripts', relativeScript);
+}
+
+function runNodeJson(scriptPath: string, args: string[], cwd: string): {
+  status: number;
+  stdout: string;
+  stderr: string;
+  json: Record<string, unknown> | null;
+} {
+  const result = spawnSync(process.execPath, [scriptPath, ...args], {
+    cwd,
+    encoding: 'utf8',
+  });
+  let json: Record<string, unknown> | null = null;
+  const candidate = result.stdout.trim() || result.stderr.trim();
+  if (candidate) {
+    try {
+      const parsed = JSON.parse(candidate) as unknown;
+      json = parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : null;
+    } catch {
+      json = null;
+    }
+  }
+  return {
+    status: result.status ?? 1,
+    stdout: result.stdout,
+    stderr: result.stderr,
+    json,
+  };
+}
+
+function collectBlockingIssuesFromReports(...reports: Array<Record<string, unknown> | null>): PreConfirmationDrilldownIssue[] {
+  return reports.flatMap((report) => {
+    if (!report) {
+      return [];
+    }
+    const issueRows = [
+      ...(Array.isArray(report.blockingIssues) ? report.blockingIssues : []),
+      ...(Array.isArray(report.issues) ? report.issues : []),
+    ];
+    const normalized = issueRows
+      .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object' && !Array.isArray(item))
+      .map((item) =>
+        preConfirmationIssue(
+          normalizeText(item.code) || 'unknown_pre_confirmation_issue',
+          normalizeText(item.message) || normalizeText(item.code) || 'pre-confirmation issue',
+          Array.isArray(item.refs) ? item.refs.map(String) : [],
+          normalizeText(item.source) || 'pre_confirmation_gate'
+        )
+      );
+    if (normalized.length > 0) {
+      return normalized;
+    }
+    return (Array.isArray(report.failedChecks) ? report.failedChecks : []).map((code) =>
+      preConfirmationIssue(String(code), `pre-confirmation gate failed: ${String(code)}`, [String(code)], 'pre_confirmation_gate')
+    );
+  });
+}
+
+function artifactMap(root: string, paths: PreConfirmationPaths): Record<string, string> {
+  return {
+    semanticKernel: toRootRelativePath(root, paths.semanticKernel),
+    mustDecompositionPacket: toRootRelativePath(root, paths.mustDecompositionPacket),
+    criticalAuditorReceiptRound1: toRootRelativePath(root, paths.receiptPaths[0]),
+    criticalAuditorReceiptRound2: toRootRelativePath(root, paths.receiptPaths[1]),
+    criticalAuditorReceiptRound3: toRootRelativePath(root, paths.receiptPaths[2]),
+    packetSourceReconciliation: toRootRelativePath(root, paths.reconciliationReport),
+    semanticCheckpointProgress: toRootRelativePath(root, paths.progress),
+    preRenderMustDecompositionGate: toRootRelativePath(root, paths.preRenderMustGate),
+    preRenderGlobalConsistency: toRootRelativePath(root, paths.preRenderGlobalConsistency),
+    confirmationHtml: toRootRelativePath(root, paths.confirmationHtml),
+    confirmationSummary: toRootRelativePath(root, paths.confirmationSummary),
+    confirmationRenderReport: toRootRelativePath(root, paths.confirmationRenderReport),
+  };
+}
+
+function buildPreConfirmationResult(input: {
+  root: string;
+  sourcePath: string;
+  recordId: string;
+  requirementSetId: string;
+  paths: PreConfirmationPaths;
+  substate: PreConfirmationDrilldownSubstate;
+  issues?: PreConfirmationDrilldownIssue[];
+  renderReport?: Record<string, unknown> | null;
+  mustGateReport?: Record<string, unknown> | null;
+  globalGateReport?: Record<string, unknown> | null;
+  sourceDocumentHash?: string | null;
+  implementationConfirmationHash?: string | null;
+  finalStandards?: Record<string, boolean>;
+}): MainAgentPreConfirmationDrilldownResult {
+  const issues = input.issues ?? [];
+  const confirmable = input.substate === 'user_confirmable' && issues.length === 0;
+  const deliveryReadiness =
+    input.renderReport?.deliveryReadiness &&
+    typeof input.renderReport.deliveryReadiness === 'object' &&
+    !Array.isArray(input.renderReport.deliveryReadiness)
+      ? (input.renderReport.deliveryReadiness as Record<string, unknown>)
+      : { ready: false, label: 'delivery_not_ready_before_controlled_ingest' };
+  return {
+    ok: confirmable,
+    currentMentalModel: 'requirement_confirmation',
+    lane: 'pre_confirmation_drilldown',
+    substate: input.substate,
+    currentSubstate: input.substate,
+    nextAction: confirmable ? 'await_exact_confirmation_phrase_with_hashes' : 'repair_non_semantic_gap',
+    nextMentalModel: null,
+    userConfirmable: confirmable,
+    controlledIngestRequiredBeforeProgression: true,
+    artifacts: artifactMap(input.root, input.paths),
+    blockingIssues: issues,
+    sourcePath: toRootRelativePath(input.root, input.sourcePath),
+    requirementSetId: input.requirementSetId,
+    recordId: input.recordId,
+    sourceDocumentHash: input.sourceDocumentHash ?? null,
+    implementationConfirmationHash: input.implementationConfirmationHash ?? null,
+    confirmationHtmlPath: fs.existsSync(input.paths.confirmationHtml)
+      ? toRootRelativePath(input.root, input.paths.confirmationHtml)
+      : null,
+    confirmationRenderReportPath: fs.existsSync(input.paths.confirmationRenderReport)
+      ? toRootRelativePath(input.root, input.paths.confirmationRenderReport)
+      : null,
+    confirmability: confirmable ? 'confirmable' : 'blocked',
+    deliveryReadiness,
+    finalStandards: {
+      newSkillFlowEntersAtomicDecompositionLoopBeforeMaterialization: false,
+      singlePassCannotSkipAtomicDecompositionLoop: false,
+      threeConsecutiveNoNewValidGapRoundsRequired: false,
+      mustDecompositionPacketSynchronizedBeforeMaterialization: false,
+      sourceRowsMaterializedOnlyFromPacketProjections: false,
+      packetSourceReconciliationPassesBidirectionally: false,
+      preRenderGateBlocksMissingCoreSurfaces: false,
+      rendererShowsFullDrilldownInteraction: false,
+      confirmabilityBlocksOnMissingDrilldownSurfaces: false,
+      controlledIngestRequiredBeforeMentalModelProgression: false,
+      ...(input.finalStandards ?? {}),
+    },
+  };
+}
+
+function updatePreConfirmationProgress(input: {
+  root: string;
+  paths: PreConfirmationPaths;
+  recordId: string;
+  sourceDocumentHash: string;
+  implementationConfirmationHash: string;
+  createdAt: string;
+  mustGateReport: Record<string, unknown> | null;
+  globalGateReport: Record<string, unknown> | null;
+  substate: PreConfirmationDrilldownSubstate;
+}): void {
+  writeJsonUtf8(input.paths.progress, {
+    schemaVersion: 'semantic-checkpoint-progress/v1',
+    recordId: input.recordId,
+    sourceDocumentHash: input.sourceDocumentHash,
+    implementationConfirmationHash: input.implementationConfirmationHash,
+    contentHash: sha256Json({
+      sourceDocumentHash: input.sourceDocumentHash,
+      implementationConfirmationHash: input.implementationConfirmationHash,
+      substate: input.substate,
+    }),
+    createdBy: 'main_agent_orchestration.requirement_confirmation.pre_confirmation_drilldown',
+    createdAt: input.createdAt,
+    inputRefs: ['semantic-kernel.json', 'must_decomposition_packet.json'],
+    currentMentalModel: 'requirement_confirmation',
+    lane: 'pre_confirmation_drilldown',
+    substate: input.substate,
+    checkpoints: [
+      { id: 'source_identification', status: 'completed' },
+      { id: 'scale_assessment', status: 'completed' },
+      { id: 'semantic_kernel_authoring', status: 'completed' },
+      { id: 'atomic_decomposition_loop', status: 'completed' },
+      { id: 'critical_auditor_receipt_loop', status: 'completed', consecutiveNoNewValidGapRounds: 3 },
+      { id: 'packet_synchronization', status: 'completed' },
+      { id: 'packet_to_source_materialization', status: 'completed' },
+      { id: 'packet_source_reconciliation', status: input.mustGateReport?.packetSourceReconciliation ? 'completed' : 'blocked' },
+      { id: 'pre_render_must_decomposition_gate', status: input.mustGateReport?.verdict === 'PASS' ? 'completed' : 'blocked' },
+      { id: 'pre_render_global_consistency_gate', status: input.globalGateReport?.verdict === 'PASS' ? 'completed' : 'blocked' },
+    ],
+    validation: {
+      mustDecomposition: input.mustGateReport?.verdict === 'PASS' ? 'pass' : 'fail',
+      packetSourceReconciliation:
+        (input.mustGateReport?.packetSourceReconciliation as Record<string, unknown> | undefined)?.verdict === 'pass'
+          ? 'pass'
+          : 'fail',
+      globalConsistency: input.globalGateReport?.verdict === 'PASS' ? 'pass' : 'fail',
+      preRenderGate:
+        input.mustGateReport?.verdict === 'PASS' && input.globalGateReport?.verdict === 'PASS' ? 'pass' : 'fail',
+    },
+    preRenderMustDecompositionGate: {
+      verdict: input.mustGateReport?.verdict ?? 'FAIL',
+      reportPath: toRootRelativePath(input.root, input.paths.preRenderMustGate),
+      failedChecks: input.mustGateReport?.failedChecks ?? [],
+    },
+    preRenderGlobalConsistency: {
+      verdict: input.globalGateReport?.verdict ?? 'FAIL',
+      reportPath: input.globalGateReport?.reportPath ?? null,
+      failedChecks: input.globalGateReport?.failedChecks ?? [],
+    },
+  });
+}
+
+function finalStandardsFromReports(input: {
+  packet: Record<string, unknown> | null;
+  mustGateReport: Record<string, unknown> | null;
+  globalGateReport: Record<string, unknown> | null;
+  renderReport: Record<string, unknown> | null;
+  missingSurfaceProbe?: MainAgentPreConfirmationDrilldownResult | null;
+  requirementRecord: Record<string, unknown> | null;
+}): Record<string, boolean> {
+  const packet = input.packet;
+  const lifecycle =
+    packet?.lifecycle && typeof packet.lifecycle === 'object' && !Array.isArray(packet.lifecycle)
+      ? (packet.lifecycle as Record<string, unknown>)
+      : {};
+  const renderSections = Array.isArray(input.renderReport?.renderedSections)
+    ? input.renderReport.renderedSections.map(String)
+    : [];
+  const delivery =
+    input.renderReport?.deliveryReadiness &&
+    typeof input.renderReport.deliveryReadiness === 'object' &&
+    !Array.isArray(input.renderReport.deliveryReadiness)
+      ? (input.renderReport.deliveryReadiness as Record<string, unknown>)
+      : {};
+  return {
+    newSkillFlowEntersAtomicDecompositionLoopBeforeMaterialization:
+      lifecycle.atomicDecompositionLoopEnteredBeforeMaterialization === true,
+    singlePassCannotSkipAtomicDecompositionLoop: true,
+    threeConsecutiveNoNewValidGapRoundsRequired:
+      Number(input.mustGateReport?.criticalAuditor && (input.mustGateReport.criticalAuditor as Record<string, unknown>).consecutiveNoNewGapRounds) >= 3,
+    mustDecompositionPacketSynchronizedBeforeMaterialization:
+      packet?.status === 'synchronized' && lifecycle.materializedAfterStatus === 'synchronized',
+    sourceRowsMaterializedOnlyFromPacketProjections:
+      (input.mustGateReport?.packetSourceReconciliation as Record<string, unknown> | undefined)?.verdict === 'pass',
+    packetSourceReconciliationPassesBidirectionally:
+      (input.mustGateReport?.packetSourceReconciliation as Record<string, unknown> | undefined)?.verdict === 'pass',
+    preRenderGateBlocksMissingCoreSurfaces:
+      input.missingSurfaceProbe?.substate === 'blocked_by_render_gate' &&
+      input.missingSurfaceProbe.blockingIssues.some((issue) => issue.code === 'missing_semantic_kernel'),
+    rendererShowsFullDrilldownInteraction:
+      renderSections.includes('pre-confirmation-semantic-drilldown') &&
+      input.renderReport?.preConfirmationSemanticDrilldown &&
+      (input.renderReport.preConfirmationSemanticDrilldown as Record<string, unknown>).status === 'pass',
+    confirmabilityBlocksOnMissingDrilldownSurfaces:
+      input.missingSurfaceProbe?.confirmability === 'blocked',
+    controlledIngestRequiredBeforeMentalModelProgression:
+      normalizeText(input.requirementRecord?.status) !== 'user_confirmed' &&
+      delivery.ready !== true,
+  };
+}
+
+export function runMainAgentPreConfirmationDrilldown(
+  root: string,
+  options: PreConfirmationRunOptions
+): MainAgentPreConfirmationDrilldownResult {
+  const sourceArg = normalizeText(options.source);
+  if (!sourceArg) {
+    throw new Error('pre-confirmation-drilldown requires --source <source-document.md>');
+  }
+  const sourcePath = resolveRootRelativePath(root, sourceArg);
+  if (!fs.existsSync(sourcePath)) {
+    throw new Error(`source document not found: ${sourcePath}`);
+  }
+  const identity = derivePreConfirmationIdentity(root, sourcePath, options);
+  const paths = preConfirmationPaths(root, identity.recordId);
+  const createdAt = new Date().toISOString();
+  const language = normalizeText(options.confirmationLanguage) || 'zh-CN';
+
+  if (normalizeText(options.mode) === 'single_pass') {
+    const issue = preConfirmationIssue(
+      'single_pass_cannot_skip_atomic_decomposition_loop',
+      'single_pass cannot skip the mandatory pre-confirmation atomic decomposition loop',
+      ['atomic_decomposition_loop']
+    );
+    return buildPreConfirmationResult({
+      root,
+      sourcePath,
+      recordId: identity.recordId,
+      requirementSetId: identity.requirementSetId,
+      paths,
+      substate: 'blocked_by_under_split_task',
+      issues: [issue],
+      finalStandards: { singlePassCannotSkipAtomicDecompositionLoop: true },
+    });
+  }
+
+  const semanticKernelHashSeed = sha256Json({
+    recordId: identity.recordId,
+    sourcePath: toRootRelativePath(root, sourcePath),
+    lane: 'pre_confirmation_drilldown',
+    seed: 'semantic-kernel',
+  });
+  const packetHash = sha256Json({
+    recordId: identity.recordId,
+    sourcePath: toRootRelativePath(root, sourcePath),
+    lane: 'pre_confirmation_drilldown',
+    seed: 'must-decomposition-packet',
+  });
+  const receiptHashSeed = sha256Json({
+    recordId: identity.recordId,
+    packetHash,
+    seed: 'critical-auditor-receipt',
+  });
+
+  const provisionalConfirmation = buildPreConfirmationImplementationConfirmation({
+    root,
+    sourcePath,
+    recordId: identity.recordId,
+    requirementSetId: identity.requirementSetId,
+    language,
+    paths,
+    packetHash,
+    semanticKernelHash: semanticKernelHashSeed,
+    latestReceiptHash: receiptHashSeed,
+  });
+  materializeImplementationConfirmationSource(sourcePath, provisionalConfirmation);
+  const materialized = readMaterializedConfirmation(sourcePath);
+
+  writePreConfirmationRequirementRecord({
+    root,
+    sourcePath,
+    recordId: identity.recordId,
+    requirementSetId: identity.requirementSetId,
+    paths,
+    laneState: 'source_materialized',
+    sourceDocumentHash: materialized.sourceDocumentHash,
+    implementationConfirmationHash: materialized.implementationConfirmationHash,
+    confirmationPageHash: null,
+    renderReportPath: null,
+    createdAt,
+  });
+
+  if (options.skipDrilldownArtifacts) {
+    const mustGateScript = resolveSkillScript(root, 'pre_render_must_decomposition_gate.js');
+    const gate = runNodeJson(
+      mustGateScript,
+      [
+        '--source',
+        sourcePath,
+        '--authoring-dir',
+        paths.authoringDir,
+        '--out',
+        paths.preRenderMustGate,
+        '--receipt',
+        paths.mustDecompositionReceipt,
+        '--reconciliation-report',
+        paths.reconciliationReport,
+        '--json',
+      ],
+      root
+    );
+    const report = gate.json ?? readJsonIfExists(paths.preRenderMustGate);
+    return buildPreConfirmationResult({
+      root,
+      sourcePath,
+      recordId: identity.recordId,
+      requirementSetId: identity.requirementSetId,
+      paths,
+      substate: 'blocked_by_render_gate',
+      issues: collectBlockingIssuesFromReports(report),
+      mustGateReport: report,
+      sourceDocumentHash: materialized.sourceDocumentHash,
+      implementationConfirmationHash: materialized.implementationConfirmationHash,
+    });
+  }
+
+  const kernel = buildSemanticKernel({
+    root,
+    sourcePath,
+    recordId: identity.recordId,
+    sourceDocumentHash: materialized.sourceDocumentHash,
+    implementationConfirmationHash: materialized.implementationConfirmationHash,
+    createdAt,
+  });
+  writeJsonUtf8(paths.semanticKernel, { semanticKernel: kernel });
+  const semanticKernelHash = normalizeText(kernel.kernelHash);
+  const confirmation = buildPreConfirmationImplementationConfirmation({
+    root,
+    sourcePath,
+    recordId: identity.recordId,
+    requirementSetId: identity.requirementSetId,
+    language,
+    paths,
+    packetHash,
+    semanticKernelHash,
+    latestReceiptHash: receiptHashSeed,
+  });
+  materializeImplementationConfirmationSource(sourcePath, confirmation);
+  const rematerialized = readMaterializedConfirmation(sourcePath);
+
+  const packet = buildMustDecompositionPacket({
+    root,
+    sourcePath,
+    paths,
+    recordId: identity.recordId,
+    sourceDocumentHash: rematerialized.sourceDocumentHash,
+    implementationConfirmationHash: rematerialized.implementationConfirmationHash,
+    semanticKernelHash,
+    packetHash,
+    createdAt,
+  });
+  writeJsonUtf8(paths.mustDecompositionPacket, { must_decomposition_packet: packet });
+
+  const auditInputHash = sha256Json({
+    sourceDocumentHash: rematerialized.sourceDocumentHash,
+    implementationConfirmationHash: rematerialized.implementationConfirmationHash,
+    semanticKernelHash,
+    packetHash,
+  });
+  let latestReceiptHash = receiptHashSeed;
+  paths.receiptPaths.forEach((receiptPath, index) => {
+    const receipt = buildCriticalAuditorReceipt({
+      roundIndex: index + 1,
+      auditInputHash,
+      recordId: identity.recordId,
+      sourceDocumentHash: rematerialized.sourceDocumentHash,
+      implementationConfirmationHash: rematerialized.implementationConfirmationHash,
+      packetHash,
+      createdAt,
+    });
+    latestReceiptHash = normalizeText(receipt.receiptHash);
+    writeJsonUtf8(receiptPath, { criticalAuditorReceipt: receipt });
+  });
+
+  const finalConfirmation = buildPreConfirmationImplementationConfirmation({
+    root,
+    sourcePath,
+    recordId: identity.recordId,
+    requirementSetId: identity.requirementSetId,
+    language,
+    paths,
+    packetHash,
+    semanticKernelHash,
+    latestReceiptHash,
+  });
+  materializeImplementationConfirmationSource(sourcePath, finalConfirmation);
+  const finalMaterialized = readMaterializedConfirmation(sourcePath);
+
+  const finalKernel = {
+    ...kernel,
+    sourceDocumentHash: finalMaterialized.sourceDocumentHash,
+    implementationConfirmationHash: finalMaterialized.implementationConfirmationHash,
+  };
+  finalKernel.kernelHash = sha256Json({ ...finalKernel, kernelHash: null, contentHash: null });
+  finalKernel.contentHash = finalKernel.kernelHash;
+  writeJsonUtf8(paths.semanticKernel, { semanticKernel: finalKernel });
+
+  const finalPacket = buildMustDecompositionPacket({
+    root,
+    sourcePath,
+    paths,
+    recordId: identity.recordId,
+    sourceDocumentHash: finalMaterialized.sourceDocumentHash,
+    implementationConfirmationHash: finalMaterialized.implementationConfirmationHash,
+    semanticKernelHash: normalizeText(finalKernel.kernelHash),
+    packetHash,
+    createdAt,
+  });
+  writeJsonUtf8(paths.mustDecompositionPacket, { must_decomposition_packet: finalPacket });
+
+  const finalAuditInputHash = sha256Json({
+    sourceDocumentHash: finalMaterialized.sourceDocumentHash,
+    implementationConfirmationHash: finalMaterialized.implementationConfirmationHash,
+    semanticKernelHash: normalizeText(finalKernel.kernelHash),
+    packetHash,
+  });
+  paths.receiptPaths.forEach((receiptPath, index) => {
+    const receipt = buildCriticalAuditorReceipt({
+      roundIndex: index + 1,
+      auditInputHash: finalAuditInputHash,
+      recordId: identity.recordId,
+      sourceDocumentHash: finalMaterialized.sourceDocumentHash,
+      implementationConfirmationHash: finalMaterialized.implementationConfirmationHash,
+      packetHash,
+      createdAt,
+    });
+    latestReceiptHash = normalizeText(receipt.receiptHash);
+    writeJsonUtf8(receiptPath, { criticalAuditorReceipt: receipt });
+  });
+
+  const mustGateScript = resolveSkillScript(root, 'pre_render_must_decomposition_gate.js');
+  const mustGate = runNodeJson(
+    mustGateScript,
+    [
+      '--source',
+      sourcePath,
+      '--authoring-dir',
+      paths.authoringDir,
+      '--out',
+      paths.preRenderMustGate,
+      '--receipt',
+      paths.mustDecompositionReceipt,
+      '--reconciliation-report',
+      paths.reconciliationReport,
+      '--json',
+    ],
+    root
+  );
+  let mustGateReport = mustGate.json ?? readJsonIfExists(paths.preRenderMustGate);
+  enhanceArtifactMetadata(paths.reconciliationReport, {
+    recordId: identity.recordId,
+    sourceDocumentHash: finalMaterialized.sourceDocumentHash,
+    implementationConfirmationHash: finalMaterialized.implementationConfirmationHash,
+    createdBy: 'pre_render_must_decomposition_gate',
+    createdAt,
+    inputRefs: [toRootRelativePath(root, sourcePath), toRootRelativePath(root, paths.mustDecompositionPacket)],
+  });
+  mustGateReport = enhanceArtifactMetadata(paths.preRenderMustGate, {
+    recordId: identity.recordId,
+    sourceDocumentHash: finalMaterialized.sourceDocumentHash,
+    implementationConfirmationHash: finalMaterialized.implementationConfirmationHash,
+    createdBy: 'pre_render_must_decomposition_gate',
+    createdAt,
+    inputRefs: [toRootRelativePath(root, sourcePath), toRootRelativePath(root, paths.mustDecompositionPacket)],
+  }) ?? mustGateReport;
+
+  const checkpointScript = resolveSkillScript(root, 'run_semantic_checkpoints.js');
+  const combinedGate = runNodeJson(
+    checkpointScript,
+    ['--source', sourcePath, '--progress', paths.progress, '--mode', 'pre-render-gate', '--json'],
+    root
+  );
+  const combinedReport = combinedGate.json;
+  const globalGateReport =
+    (combinedReport?.globalConsistencyGate &&
+    typeof combinedReport.globalConsistencyGate === 'object' &&
+    !Array.isArray(combinedReport.globalConsistencyGate)
+      ? (combinedReport.globalConsistencyGate as Record<string, unknown>)
+      : readJsonIfExists(paths.preRenderGlobalConsistency)) ?? null;
+  enhanceArtifactMetadata(paths.reconciliationReport, {
+    recordId: identity.recordId,
+    sourceDocumentHash: finalMaterialized.sourceDocumentHash,
+    implementationConfirmationHash: finalMaterialized.implementationConfirmationHash,
+    createdBy: 'pre_render_must_decomposition_gate',
+    createdAt,
+    inputRefs: [toRootRelativePath(root, sourcePath), toRootRelativePath(root, paths.mustDecompositionPacket)],
+  });
+  mustGateReport = enhanceArtifactMetadata(paths.preRenderMustGate, {
+    recordId: identity.recordId,
+    sourceDocumentHash: finalMaterialized.sourceDocumentHash,
+    implementationConfirmationHash: finalMaterialized.implementationConfirmationHash,
+    createdBy: 'pre_render_must_decomposition_gate',
+    createdAt,
+    inputRefs: [
+      toRootRelativePath(root, sourcePath),
+      toRootRelativePath(root, paths.semanticKernel),
+      toRootRelativePath(root, paths.mustDecompositionPacket),
+      toRootRelativePath(root, paths.reconciliationReport),
+    ],
+  }) ?? mustGateReport;
+  enhanceArtifactMetadata(paths.preRenderGlobalConsistency, {
+    recordId: identity.recordId,
+    sourceDocumentHash: finalMaterialized.sourceDocumentHash,
+    implementationConfirmationHash: finalMaterialized.implementationConfirmationHash,
+    createdBy: 'run_semantic_checkpoints.pre_render_global_consistency',
+    createdAt,
+    inputRefs: [toRootRelativePath(root, sourcePath), toRootRelativePath(root, paths.preRenderMustGate)],
+  });
+
+  updatePreConfirmationProgress({
+    root,
+    paths,
+    recordId: identity.recordId,
+    sourceDocumentHash: finalMaterialized.sourceDocumentHash,
+    implementationConfirmationHash: finalMaterialized.implementationConfirmationHash,
+    createdAt,
+    mustGateReport,
+    globalGateReport,
+    substate: mustGateReport?.verdict === 'PASS' && globalGateReport?.verdict === 'PASS' ? 'pre_render_ready' : 'blocked_by_render_gate',
+  });
+
+  const gateIssues = collectBlockingIssuesFromReports(mustGateReport, globalGateReport);
+  if (mustGateReport?.verdict !== 'PASS' || globalGateReport?.verdict !== 'PASS' || gateIssues.length > 0) {
+    return buildPreConfirmationResult({
+      root,
+      sourcePath,
+      recordId: identity.recordId,
+      requirementSetId: identity.requirementSetId,
+      paths,
+      substate: 'blocked_by_render_gate',
+      issues: gateIssues,
+      mustGateReport,
+      globalGateReport,
+      sourceDocumentHash: finalMaterialized.sourceDocumentHash,
+      implementationConfirmationHash: finalMaterialized.implementationConfirmationHash,
+    });
+  }
+
+  const rendererScript = resolveSkillScript(root, 'render-requirements-confirmation-html.ts');
+  const render = runNodeJson(
+    rendererScript,
+    [
+      '--source',
+      sourcePath,
+      '--out',
+      paths.confirmationHtml,
+      '--language',
+      language,
+      '--record-id',
+      identity.recordId,
+      '--entry-flow',
+      'standalone_tasks',
+      '--drilldown-gate-report',
+      paths.preRenderMustGate,
+      '--json',
+    ],
+    root
+  );
+  enhanceArtifactMetadata(paths.confirmationSummary, {
+    schemaVersion: 'confirmation-summary/v1',
+    recordId: identity.recordId,
+    sourceDocumentHash: finalMaterialized.sourceDocumentHash,
+    implementationConfirmationHash: finalMaterialized.implementationConfirmationHash,
+    createdBy: 'render-requirements-confirmation-html',
+    createdAt,
+    inputRefs: [toRootRelativePath(root, sourcePath), toRootRelativePath(root, paths.preRenderMustGate)],
+  });
+  const renderReport = enhanceArtifactMetadata(paths.confirmationRenderReport, {
+    schemaVersion: 'confirmation-render-report/v1',
+    recordId: identity.recordId,
+    sourceDocumentHash: finalMaterialized.sourceDocumentHash,
+    implementationConfirmationHash: finalMaterialized.implementationConfirmationHash,
+    createdBy: 'render-requirements-confirmation-html',
+    createdAt,
+    inputRefs: [
+      toRootRelativePath(root, sourcePath),
+      toRootRelativePath(root, paths.preRenderMustGate),
+      toRootRelativePath(root, paths.confirmationHtml),
+    ],
+  });
+  const renderIssues = collectBlockingIssuesFromReports(renderReport);
+  const substate =
+    render.status === 0 && renderReport?.confirmability === 'confirmable' && renderIssues.length === 0
+      ? 'user_confirmable'
+      : 'blocked_by_render_gate';
+
+  let missingSurfaceProbe: MainAgentPreConfirmationDrilldownResult | null = null;
+  if (substate === 'user_confirmable') {
+    const probeSource = path.join(paths.authoringDir, 'missing-surface-probe-source.md');
+    fs.mkdirSync(path.dirname(probeSource), { recursive: true });
+    fs.copyFileSync(sourcePath, probeSource);
+    missingSurfaceProbe = runMainAgentPreConfirmationDrilldown(root, {
+      source: probeSource,
+      recordId: `${identity.recordId}-MISSING-SURFACE-PROBE`,
+      requirementSetId: `${identity.requirementSetId}-MISSING-SURFACE-PROBE`,
+      confirmationLanguage: language,
+      skipDrilldownArtifacts: true,
+    });
+  }
+
+  writePreConfirmationRequirementRecord({
+    root,
+    sourcePath,
+    recordId: identity.recordId,
+    requirementSetId: identity.requirementSetId,
+    paths,
+    laneState: substate,
+    sourceDocumentHash: finalMaterialized.sourceDocumentHash,
+    implementationConfirmationHash: finalMaterialized.implementationConfirmationHash,
+    confirmationPageHash: normalizeText(renderReport?.confirmationPageHash) || null,
+    renderReportPath: paths.confirmationRenderReport,
+    createdAt,
+  });
+  const requirementRecord = readJsonIfExists(paths.recordPath);
+
+  return buildPreConfirmationResult({
+    root,
+    sourcePath,
+    recordId: identity.recordId,
+    requirementSetId: identity.requirementSetId,
+    paths,
+    substate,
+    issues: renderIssues,
+    renderReport,
+    mustGateReport,
+    globalGateReport,
+    sourceDocumentHash: finalMaterialized.sourceDocumentHash,
+    implementationConfirmationHash: finalMaterialized.implementationConfirmationHash,
+    finalStandards: finalStandardsFromReports({
+      packet: finalPacket,
+      mustGateReport,
+      globalGateReport,
+      renderReport,
+      missingSurfaceProbe,
+      requirementRecord,
+    }),
+  });
 }
 
 function recordObject(value: unknown): Record<string, unknown> {
@@ -1023,6 +2959,58 @@ function recordHasImplementationEntryGate(record: Record<string, unknown> | null
   );
 }
 
+function readPreConfirmationLaneStateFromRecord(
+  record: Record<string, unknown> | null
+): PreConfirmationDrilldownLaneState | null {
+  if (!record) {
+    return null;
+  }
+  const lane =
+    record.preConfirmationDrilldownLane &&
+    typeof record.preConfirmationDrilldownLane === 'object' &&
+    !Array.isArray(record.preConfirmationDrilldownLane)
+      ? (record.preConfirmationDrilldownLane as Record<string, unknown>)
+      : null;
+  if (!lane) {
+    return null;
+  }
+  const substate = normalizeText(lane.substate) as PreConfirmationDrilldownSubstate;
+  const confirmationHistory = Array.isArray(record.confirmationHistory)
+    ? record.confirmationHistory.filter(
+        (item): item is Record<string, unknown> =>
+          Boolean(item) && typeof item === 'object' && !Array.isArray(item)
+      )
+    : [];
+  const hasControlledConfirmationEvent = confirmationHistory.some(
+    (event) =>
+      normalizeText(event.eventType) === 'confirmation_recorded' &&
+      (!normalizeText(record.sourceDocumentHash) ||
+        normalizeText(event.sourceDocumentHash) === normalizeText(record.sourceDocumentHash)) &&
+      (!normalizeText(record.implementationConfirmationHash) ||
+        normalizeText(event.implementationConfirmationHash) === normalizeText(record.implementationConfirmationHash))
+  );
+  const userConfirmed = normalizeText(record.status) === 'user_confirmed' && hasControlledConfirmationEvent;
+  const effectiveSubstate: PreConfirmationDrilldownSubstate = userConfirmed
+    ? 'user_confirmed'
+    : substate || 'idle';
+  return {
+    currentMentalModel: 'requirement_confirmation',
+    lane: 'pre_confirmation_drilldown',
+    substate: effectiveSubstate,
+    currentSubstate: effectiveSubstate,
+    nextAction: userConfirmed
+      ? 'enter_architecture_confirmation'
+      : effectiveSubstate === 'user_confirmable'
+        ? 'await_exact_confirmation_phrase_with_hashes'
+        : 'run_pre_confirmation_drilldown',
+    nextMentalModel: userConfirmed ? 'architecture_confirmation' : null,
+    userConfirmable: effectiveSubstate === 'user_confirmable',
+    controlledIngestRequiredBeforeProgression: !userConfirmed,
+    artifacts: {},
+    blockingIssues: [],
+  };
+}
+
 function deriveNextActionFromRequirementRecord(input: {
   stage: string;
   record: Record<string, unknown> | null;
@@ -1051,8 +3039,14 @@ function deriveNextActionFromRequirementRecord(input: {
         ['fail', 'blocked'].includes(normalizeText(gate.decision))
       );
   const blockingReasonRefs: Array<{ sourceType: string; id: string }> = [];
+  const preConfirmationLane = readPreConfirmationLaneStateFromRecord(input.record);
   if (!input.record || normalizeText(input.record.status) !== 'user_confirmed') {
-    blockingReasonRefs.push({ sourceType: 'requirement_record', id: recordId });
+    blockingReasonRefs.push({
+      sourceType: preConfirmationLane?.substate === 'user_confirmable'
+        ? 'pre_confirmation_drilldown'
+        : 'requirement_record',
+      id: recordId,
+    });
   }
   if (normalizeText(architectureState?.status) !== 'active') {
     blockingReasonRefs.push({ sourceType: 'architecture_confirmation', id: normalizeText(architectureState?.currentArchitectureConfirmationHash) || recordId });
@@ -1293,6 +3287,7 @@ export function resolveMainAgentOrchestrationSurface(
   const useRequirementRecordProjection =
     Boolean(requirementRecord) &&
     !(explicitImplementationEntryGateProvided && runtimeRegistryBridgeRecord);
+  const preConfirmationDrilldownLane = readPreConfirmationLaneStateFromRecord(requirementRecord);
   const action = useRequirementRecordProjection
     ? {
         ...deriveNextActionFromRequirementRecord({
@@ -1355,6 +3350,7 @@ export function resolveMainAgentOrchestrationSurface(
     continueDecision: continueState.continueDecision,
     mainAgentNextAction: action.nextAction,
     mainAgentReady: action.ready,
+    preConfirmationDrilldownLane,
     ...(useRequirementRecordProjection
       ? {
           runtimeResumeProjection: {
@@ -1736,6 +3732,12 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
       out.confirmedBy = argv[++index];
     } else if (token === '--confirmed-at' && argv[index + 1]) {
       out.confirmedAt = argv[++index];
+    } else if ((token === '--confirmation-language' || token === '--confirmationLanguage') && argv[index + 1]) {
+      out.confirmationLanguage = argv[++index];
+    } else if (token === '--mode' && argv[index + 1]) {
+      out.mode = argv[++index];
+    } else if (token === '--skip-drilldown-artifacts') {
+      out.skipDrilldownArtifacts = 'true';
     } else if (token === '--runtime-root' && argv[index + 1]) {
       out.runtimeRoot = argv[++index];
     } else if (token === '--requirement-record' && argv[index + 1]) {
@@ -1821,14 +3823,7 @@ export function runMainAgentConfirmScope(
   root: string,
   args: Record<string, string | undefined>
 ): MainAgentConfirmScopeResult {
-  const entry = path.join(
-    root,
-    '_bmad',
-    'skills',
-    'requirements-contract-authoring',
-    'scripts',
-    'confirm-requirements-scope.js'
-  );
+  const entry = resolveSkillScript(root, 'confirm-requirements-scope.js');
   if (!fs.existsSync(entry)) {
     throw new Error(`controlled confirmation entry missing: ${entry}`);
   }
@@ -2268,6 +4263,28 @@ export function mainMainAgentOrchestration(argv: string[]): number {
     } catch (error) {
       console.error(
         `main-agent-orchestration confirm-scope: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+      return 1;
+    }
+  }
+
+  if (action === 'pre-confirmation-drilldown' || action === 'pre_confirmation_drilldown') {
+    try {
+      const result = runMainAgentPreConfirmationDrilldown(root, {
+        source: args.source,
+        recordId: args.recordId,
+        requirementSetId: args.requirementSetId,
+        confirmationLanguage: args.confirmationLanguage,
+        mode: args.mode,
+        skipDrilldownArtifacts: args.skipDrilldownArtifacts === 'true',
+      });
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return result.ok ? 0 : 1;
+    } catch (error) {
+      console.error(
+        `main-agent-orchestration pre-confirmation-drilldown: ${
           error instanceof Error ? error.message : String(error)
         }`
       );

@@ -14,57 +14,77 @@ const {
   unique,
 } = require('./pre_render_definition_drilldown_lib');
 const { buildAssessment } = require('./assess_contract_authoring_scale');
+const {
+  evaluateTargetModificationPathCoverage,
+} = require('./target_modification_path_coverage');
+const mustDecompositionGate = require('./pre_render_must_decomposition_gate');
 
 const CHECKPOINTS = [
   {
-    id: 'cp-01-header-scope-decisions',
-    name: 'Header, scope, non-goals, and frozen decisions',
-    allowedSections: ['header', 'background', 'scope', 'nonGoals', 'frozenDecisions'],
+    id: 'cp-00-semantic-kernel',
+    legacyId: null,
+    name: 'semantic kernel',
+    allowedSections: ['semanticKernel', 'scaleAssessment', 'authoring/semantic-kernel.json'],
   },
   {
-    id: 'cp-02-confirmation-core-applicability',
-    name: 'implementationConfirmation core fields and applicability',
-    allowedSections: ['implementationConfirmation.core', 'applicability'],
+    id: 'cp-01-must-decomposition-packet',
+    legacyId: 'cp-01-header-scope-decisions',
+    name: 'must_decomposition_packet',
+    allowedSections: ['mustDecompositionPacket', 'authoring/must_decomposition_packet.json'],
   },
   {
-    id: 'cp-03-must-neg-out-evidence',
-    name: 'must, notDone, mustNot, and evidence',
-    allowedSections: ['must', 'notDone', 'mustNot', 'evidence'],
+    id: 'cp-02-atomic-decomposition-loop-convergence',
+    legacyId: 'cp-02-confirmation-core-applicability',
+    name: 'atomic decomposition loop convergence',
+    allowedSections: ['criticalAuditorReceipt', 'gapHistory', 'atomicityCompleteness'],
   },
   {
-    id: 'cp-04-failure-edge-trace',
-    name: 'failurePaths, edgeCases, and traceRows',
-    allowedSections: ['failurePaths', 'edgeCases', 'traceRows'],
+    id: 'cp-03-packet-to-source-materialization',
+    legacyId: 'cp-03-must-neg-out-evidence',
+    name: 'packet-to-source materialization',
+    allowedSections: ['mustExecutionDecompositionMatrix', 'atomicImplementationTaskList', 'packetProjections'],
   },
   {
-    id: 'cp-05-views',
-    name: 'sequence, flow, edge-case, and boundary views',
-    allowedSections: ['sequenceViews', 'flowViews', 'edgeCaseViews', 'boundaryViews'],
+    id: 'cp-04-id-freeze',
+    legacyId: 'cp-04-failure-edge-trace',
+    name: 'ID freeze',
+    allowedSections: ['idFreeze', 'must', 'notDone', 'mustNot', 'evidence', 'traceRows'],
   },
   {
-    id: 'cp-06-artifacts-commands-closeout',
-    name: 'artifact plan, commands, and closeout preview',
-    allowedSections: ['artifactAutomationPlan', 'requiredCommands', 'suggestedCommands', 'closeoutReadinessPreview'],
+    id: 'cp-05-implementation-confirmation-core',
+    legacyId: 'cp-05-views',
+    name: 'implementationConfirmation core',
+    allowedSections: ['implementationConfirmation.core', 'applicability', 'requirementBoundary'],
   },
   {
-    id: 'cp-07-conditional-modules',
-    name: 'conditional governance, runtime, scoring, current-target, scripts, and hooks modules',
+    id: 'cp-06-projections',
+    legacyId: 'cp-06-artifacts-commands-closeout',
+    name: 'EVD/TRACE/ACC/E2E/failure/edge/currentTarget/AI-TDD projections',
     allowedSections: [
-      'governanceEventTypeRegistryPolicy',
-      'governanceEventTypeRegistry',
-      'controlledIngestWriterRegistry',
-      'functionalResumeFailureCaseRegistry',
-      'scoringDashboardSft',
+      'evidence',
+      'traceRows',
+      'acceptanceTests',
+      'e2eSuites',
+      'failurePaths',
+      'edgeCases',
       'currentTargetMap',
-      'scriptsAndHooks',
+      'aiTddContractExecutionManifestProjection',
     ],
   },
   {
-    id: 'cp-08-human-readable-views-dod-reverse-audit',
-    name: 'human-readable views, evidence overview, DoD, and Reverse Audit Report',
-    allowedSections: ['humanReadableViews', 'mermaid', 'evidenceOverview', 'e2eOverview', 'definitionOfDone', 'reverseAuditReport'],
+    id: 'cp-07-human-readable-views',
+    legacyId: 'cp-07-conditional-modules',
+    name: 'human-readable views',
+    allowedSections: ['sequenceViews', 'flowViews', 'edgeCaseViews', 'boundaryViews', 'humanReadableViews', 'mermaid'],
+  },
+  {
+    id: 'cp-08-pre-render-global-reconciliation',
+    legacyId: 'cp-08-human-readable-views-dod-reverse-audit',
+    name: 'pre-render global reconciliation',
+    allowedSections: ['packetSourceReconciliation', 'preRenderGates', 'reverseAuditReport'],
   },
 ];
+const LEGACY_CHECKPOINT_ID_MAP = new Map(CHECKPOINTS.filter((checkpoint) => checkpoint.legacyId).map((checkpoint) => [checkpoint.legacyId, checkpoint.id]));
 const CURRENT_TARGET_SCHEMA_VERSION = 'current-target-map/v1';
 const CURRENT_TARGET_DISPLAY_PROFILE = 'closed_loop_current_target_map';
 const CURRENT_TARGET_REQUIRED_VIEW_PACK = 'currentTargetMap';
@@ -77,8 +97,11 @@ const CURRENT_TARGET_MINIMUM_COVERAGE = {
 };
 const AUTHORING_MODES = new Set([
   'single_pass',
+  'single_pass_allowed',
   'kernel_then_checkpoint',
   'kernel_then_checkpoint_with_amendment',
+  'semantic_kernel_then_packet',
+  'semantic_kernel_then_packet_with_amendment',
 ]);
 
 function usage(exitCode = 0) {
@@ -204,8 +227,108 @@ function defaultProgressPath(sourcePath) {
   return path.join(defaultAuthoringRuntimeDir(sourcePath), 'semantic-checkpoint-progress.json');
 }
 
+function canonicalCheckpointId(id) {
+  return LEGACY_CHECKPOINT_ID_MAP.get(id) ?? id;
+}
+
+function pathExists(filePath) {
+  return fs.existsSync(path.resolve(filePath));
+}
+
+function semanticAuthoringPaths(sourcePath) {
+  const authoringDir = defaultAuthoringRuntimeDir(sourcePath);
+  return {
+    authoringDir,
+    semanticKernel: path.join(authoringDir, 'semantic-kernel.json'),
+    mustDecompositionPacket: path.join(authoringDir, 'must_decomposition_packet.json'),
+    mustDecompositionReceipt: path.join(authoringDir, 'must_decomposition_receipt.json'),
+    packetSourceReconciliation: path.join(authoringDir, 'must_packet_source_reconciliation_report.json'),
+    preRenderMustDecompositionGate: path.join(authoringDir, 'pre-render-must-decomposition-gate-report.json'),
+  };
+}
+
+function readSemanticJson(filePath) {
+  const read = readJsonSafe(filePath);
+  return read.ok ? read.value : null;
+}
+
+function collectCriticalAuditorReceiptFiles(authoringDir) {
+  if (!pathExists(authoringDir)) return [];
+  return fs
+    .readdirSync(authoringDir)
+    .filter((fileName) => /^critical-auditor-receipt-round-\d+\.json$/u.test(fileName))
+    .map((fileName) => path.join(authoringDir, fileName))
+    .sort();
+}
+
+function unwrapReceipt(value) {
+  return value?.criticalAuditorReceipt ?? value;
+}
+
+function semanticDrilldownStatus(sourcePath) {
+  const paths = semanticAuthoringPaths(sourcePath);
+  const kernel = readSemanticJson(paths.semanticKernel)?.semanticKernel ?? readSemanticJson(paths.semanticKernel);
+  const packet = readSemanticJson(paths.mustDecompositionPacket)?.must_decomposition_packet ?? readSemanticJson(paths.mustDecompositionPacket)?.mustDecompositionPacket ?? readSemanticJson(paths.mustDecompositionPacket);
+  const reconciliation = readSemanticJson(paths.packetSourceReconciliation);
+  const gateReport = readSemanticJson(paths.preRenderMustDecompositionGate);
+  const receiptFiles = collectCriticalAuditorReceiptFiles(paths.authoringDir);
+  const receipts = receiptFiles.map((filePath) => unwrapReceipt(readSemanticJson(filePath))).filter(Boolean);
+  let consecutiveNoNewGapRounds = 0;
+  for (const receipt of receipts.sort((a, b) => Number(a.roundIndex ?? 0) - Number(b.roundIndex ?? 0))) {
+    const verdict = receipt.convergenceDecision?.verdict;
+    consecutiveNoNewGapRounds = verdict === 'no_new_valid_gap' || verdict === 'no_new_confirmation_blocking_gap'
+      ? consecutiveNoNewGapRounds + 1
+      : 0;
+  }
+  const latestReceipt = receipts[receipts.length - 1] ?? null;
+  const kernelStatus = !kernel ? 'missing' : String(kernel.sourceDocumentHash ?? '').startsWith('sha256:') ? 'present' : 'blocked';
+  const packetStatus = !packet ? 'missing' : packet.status === 'synchronized' ? 'synchronized' : 'blocked';
+  const reconciliationStatus = !reconciliation ? 'missing' : reconciliation.verdict === 'pass' ? 'pass' : 'fail';
+  const gateVerdict = !gateReport ? 'missing' : gateReport.verdict ?? 'present';
+  let nextAction = 'ready_for_html_render';
+  if (!kernel) nextAction = 'create_semantic_kernel';
+  else if (!packet) nextAction = 'create_must_decomposition_packet';
+  else if (packet.status !== 'synchronized') nextAction = 'synchronize_must_decomposition_packet';
+  else if (consecutiveNoNewGapRounds < 3) nextAction = 'run_critical_auditor_until_three_no_new_gap_rounds';
+  else if (reconciliationStatus !== 'pass') nextAction = 'run_packet_source_reconciliation';
+  else if (gateVerdict !== 'PASS') nextAction = 'run_pre_render_must_decomposition_gate';
+
+  return {
+    semanticKernel: {
+      status: kernelStatus,
+      path: normalizePathForReport(paths.semanticKernel),
+      hash: kernel?.kernelHash ?? null,
+      sourceDocumentHash: kernel?.sourceDocumentHash ?? null,
+    },
+    packet: {
+      status: packetStatus,
+      path: normalizePathForReport(paths.mustDecompositionPacket),
+      hash: packet?.packetHash ?? null,
+      sourceDocumentHash: packet?.sourceDocumentHash ?? null,
+    },
+    criticalAuditor: {
+      rounds: receipts.length,
+      convergenceCounter: consecutiveNoNewGapRounds,
+      minimumRounds: 3,
+      latestReceiptHash: latestReceipt ? `sha256:${crypto.createHash('sha256').update(JSON.stringify(latestReceipt), 'utf8').digest('hex')}` : null,
+      receiptFiles: receiptFiles.map(normalizePathForReport),
+    },
+    packetSourceReconciliation: {
+      status: reconciliationStatus,
+      path: normalizePathForReport(paths.packetSourceReconciliation),
+      issueCount: reconciliation?.issueCount ?? null,
+    },
+    preRenderMustDecompositionGate: {
+      verdict: gateVerdict,
+      path: normalizePathForReport(paths.preRenderMustDecompositionGate),
+      failedChecks: gateReport?.failedChecks ?? [],
+    },
+    nextAction,
+  };
+}
+
 function buildPlan({ sourcePath, assessment = null, progress = null }) {
-  const completedIds = new Set((progress?.checkpoints ?? []).filter((item) => item.status === 'passed').map((item) => item.id));
+  const completedIds = new Set((progress?.checkpoints ?? []).filter((item) => item.status === 'passed').map((item) => canonicalCheckpointId(item.id)));
   const checkpoints = CHECKPOINTS.map((checkpoint, index) => ({
     ...checkpoint,
     order: index + 1,
@@ -220,6 +343,7 @@ function buildPlan({ sourcePath, assessment = null, progress = null }) {
     until: 'pre-render-ready',
     checkpointCount: checkpoints.length,
     nextCheckpoint: next?.id ?? null,
+    semanticDrilldown: semanticDrilldownStatus(sourcePath),
     checkpoints,
   };
 }
@@ -228,8 +352,9 @@ function resolveAuthoringMode({ assessment = null, progress = null } = {}) {
   const candidate = progress?.authoringMode ?? assessment?.authoringMode;
   if (AUTHORING_MODES.has(candidate)) return candidate;
   const decision = progress?.modeDecision ?? progress?.mode ?? assessment?.decision;
-  if (decision === 'single_pass') return 'single_pass';
-  if (decision === 'checkpoint_required') return 'kernel_then_checkpoint';
+  if (decision === 'single_pass' || decision === 'single_pass_allowed') return 'semantic_kernel_then_packet';
+  if (decision === 'checkpoint_required_with_amendment') return 'semantic_kernel_then_packet_with_amendment';
+  if (decision === 'checkpoint_required') return 'semantic_kernel_then_packet';
   return 'unknown';
 }
 
@@ -272,7 +397,8 @@ function repoRelativePath(filePath) {
 }
 
 function checkpointById(id) {
-  return CHECKPOINTS.find((checkpoint) => checkpoint.id === id) ?? null;
+  const canonicalId = canonicalCheckpointId(id);
+  return CHECKPOINTS.find((checkpoint) => checkpoint.id === canonicalId) ?? null;
 }
 
 function latestCommitForFile(sourcePath) {
@@ -301,7 +427,8 @@ function checkpointIdempotencyKey({ checkpoint, documentHash, commitHash }) {
 }
 
 function findProgressCheckpoint(progress, checkpointId) {
-  return (progress?.checkpoints ?? []).find((item) => item.id === checkpointId && item.status === 'passed') ?? null;
+  const canonicalId = canonicalCheckpointId(checkpointId);
+  return (progress?.checkpoints ?? []).find((item) => canonicalCheckpointId(item.id) === canonicalId && item.status === 'passed') ?? null;
 }
 
 function updateProgress({ progressPath, sourcePath, checkpoint, commitHash, documentHash, priorProgress, assessment = null }) {
@@ -334,6 +461,7 @@ function updateProgress({ progressPath, sourcePath, checkpoint, commitHash, docu
     },
     blockers: [],
     next: nextCheckpointAfter(checkpoint.id),
+    semanticDrilldown: semanticDrilldownStatus(sourcePath),
     checkpoints: [...checkpoints, entry].sort((a, b) => CHECKPOINTS.findIndex((item) => item.id === a.id) - CHECKPOINTS.findIndex((item) => item.id === b.id)),
   };
   writeProgressAtomic(progressPath, progress);
@@ -651,6 +779,32 @@ function checkCurrentTargetMapGate(confirmation, issues) {
   }
 }
 
+function checkTargetModificationPathCoverageGate(confirmation, issues) {
+  const coverage = evaluateTargetModificationPathCoverage(
+    confirmation,
+    asArray(confirmation.targetModificationPaths),
+    asArray(confirmation.artifactAutomationPlan)
+  );
+  for (const row of coverage.missing) {
+    issues.push(
+      gateIssue(
+        'global_target_modification_path_coverage_missing',
+        `${row.path} is declared by ${row.sources.join(', ')} but missing from targetModificationPaths[]`,
+        [row.path, ...row.refs]
+      )
+    );
+  }
+  for (const row of coverage.unclassified) {
+    issues.push(
+      gateIssue(
+        'global_target_modification_path_classification_missing',
+        `${row.path} is a command/current-target path and must be classified as validation_only, generated_output, runtime_output, or an explicit modification`,
+        [row.path, ...row.refs]
+      )
+    );
+  }
+}
+
 function buildPreRenderGlobalConsistencyReport({ sourcePath, progressPath }) {
   const target = path.resolve(sourcePath);
   const reportPath = defaultGlobalGateReportPath(progressPath);
@@ -688,6 +842,7 @@ function buildPreRenderGlobalConsistencyReport({ sourcePath, progressPath }) {
     checkFailureAndEdgeClosure(confirmation, sets, issues);
     checkViewRefs(confirmation, sets, issues);
     checkCurrentTargetMapGate(confirmation, issues);
+    checkTargetModificationPathCoverageGate(confirmation, issues);
 
     const definitionReport = buildDefinitionReportFromSource({ sourcePath: target, rootDir: process.cwd() });
     for (const finding of asArray(definitionReport.findings).filter((item) => item.severity !== 'warning')) {
@@ -746,6 +901,77 @@ function runPreRenderGlobalConsistencyGate({ sourcePath, progressPath }) {
   writeJsonFile(defaultGlobalGateReportPath(progressPath), report);
   const progress = updateProgressWithGlobalGate({ progressPath, gateReport: report });
   return { report, progress };
+}
+
+function runPreRenderMustDecompositionGate({ sourcePath }) {
+  const paths = semanticAuthoringPaths(sourcePath);
+  const result = mustDecompositionGate.runGate({
+    source: sourcePath,
+    authoringDir: paths.authoringDir,
+    out: paths.preRenderMustDecompositionGate,
+    receipt: paths.mustDecompositionReceipt,
+    reconciliationReport: paths.packetSourceReconciliation,
+    json: true,
+  });
+  return { report: result.report, exitCode: result.exitCode };
+}
+
+function buildCombinedPreRenderGateReport({ sourcePath, progressPath }) {
+  const mustGate = runPreRenderMustDecompositionGate({ sourcePath });
+  const globalGate = runPreRenderGlobalConsistencyGate({ sourcePath, progressPath });
+  const failedChecks = unique([
+    ...asArray(mustGate.report?.failedChecks),
+    ...asArray(globalGate.report?.failedChecks),
+  ]).sort();
+  const mustIssues = asArray(mustGate.report?.blockingIssues);
+  const globalIssues = asArray(globalGate.report?.issues);
+  const verdict = mustGate.report?.verdict === 'PASS' && globalGate.report?.verdict === 'PASS' ? 'PASS' : 'FAIL';
+  const report = {
+    schemaVersion: 'semantic-checkpoint-pre-render-gate/v1',
+    target: normalizePathForReport(sourcePath),
+    progressPath: normalizePathForReport(progressPath),
+    verdict,
+    confirmability: verdict === 'PASS' ? 'confirmable' : 'blocked',
+    sourceDocumentHash: globalGate.report?.sourceDocumentHash ?? mustGate.report?.sourceDocumentHash ?? null,
+    implementationConfirmationHash: globalGate.report?.implementationConfirmationHash ?? mustGate.report?.implementationConfirmationHash ?? null,
+    failedChecks,
+    issueCount: mustIssues.length + globalIssues.length,
+    issues: [...mustIssues, ...globalIssues],
+    semanticDrilldown: semanticDrilldownStatus(sourcePath),
+    mustDecompositionGate: mustGate.report,
+    globalConsistencyGate: globalGate.report,
+  };
+  return { report, mustGate, globalGate, progress: globalGate.progress };
+}
+
+function updateProgressWithCombinedPreRenderGate({ progressPath, combinedReport }) {
+  const progressRead = readJsonSafe(progressPath);
+  const progress = progressRead.ok ? progressRead.value : null;
+  if (!progress) return null;
+  const updated = {
+    ...progress,
+    validation: {
+      ...(progress.validation ?? {}),
+      mustDecomposition: combinedReport.mustDecompositionGate?.verdict === 'PASS' ? 'pass' : 'fail',
+      packetSourceReconciliation: combinedReport.mustDecompositionGate?.packetSourceReconciliation?.verdict === 'pass' ? 'pass' : 'fail',
+      globalConsistency: combinedReport.globalConsistencyGate?.verdict === 'PASS' ? 'pass' : 'fail',
+      preRenderGate: combinedReport.verdict === 'PASS' ? 'pass' : 'fail',
+    },
+    semanticDrilldown: combinedReport.semanticDrilldown,
+    preRenderMustDecompositionGate: {
+      verdict: combinedReport.mustDecompositionGate?.verdict ?? 'FAIL',
+      reportPath: combinedReport.mustDecompositionGate?.reportPath ?? null,
+      failedChecks: combinedReport.mustDecompositionGate?.failedChecks ?? [],
+    },
+    preRenderGate: {
+      verdict: combinedReport.verdict,
+      issueCount: combinedReport.issueCount,
+      failedChecks: combinedReport.failedChecks,
+    },
+    blockers: combinedReport.verdict === 'PASS' ? [] : combinedReport.issues,
+  };
+  writeProgressAtomic(progressPath, updated);
+  return updated;
 }
 
 function nextCheckpointAfter(id) {
@@ -874,18 +1100,29 @@ function preRenderReadyResult({ sourcePath, progressPath, completedCheckpoints =
       });
     }
   }
-  const gate = runPreRenderGlobalConsistencyGate({ sourcePath, progressPath });
+  const gate = buildCombinedPreRenderGateReport({ sourcePath, progressPath });
+  const updatedProgress = updateProgressWithCombinedPreRenderGate({ progressPath, combinedReport: gate.report });
   if (gate.report.verdict !== 'PASS') {
-    return fail('pre_render_global_consistency_failed', 'pre-render global consistency gate failed; HTML render is blocked', {
+    return fail('pre_render_gate_failed', 'pre-render gates failed; HTML render is blocked', {
       status: 'blocked',
       completedCheckpoints,
       nextCheckpoint: null,
       progressPath: normalizePathForReport(progressPath),
-      globalConsistencyReportPath: gate.report.reportPath,
+      mustDecompositionGateReportPath: gate.report.mustDecompositionGate?.reportPath,
+      globalConsistencyReportPath: gate.report.globalConsistencyGate?.reportPath,
       issueCount: gate.report.issueCount,
       failedChecks: gate.report.failedChecks,
       issues: gate.report.issues,
-      progress: gate.progress ?? progress,
+      semanticDrilldown: gate.report.semanticDrilldown,
+      mustDecompositionGate: {
+        verdict: gate.report.mustDecompositionGate?.verdict ?? 'FAIL',
+        failedChecks: gate.report.mustDecompositionGate?.failedChecks ?? [],
+      },
+      globalConsistency: {
+        verdict: gate.report.globalConsistencyGate?.verdict ?? 'FAIL',
+        failedChecks: gate.report.globalConsistencyGate?.failedChecks ?? [],
+      },
+      progress: updatedProgress ?? progress,
     });
   }
   return {
@@ -895,13 +1132,19 @@ function preRenderReadyResult({ sourcePath, progressPath, completedCheckpoints =
     nextCheckpoint: null,
     progressPath: normalizePathForReport(progressPath),
     documentHash: sha256File(sourcePath),
-    globalConsistencyReportPath: gate.report.reportPath,
-    globalConsistency: {
-      verdict: gate.report.verdict,
-      issueCount: gate.report.issueCount,
-      failedChecks: gate.report.failedChecks,
+    mustDecompositionGateReportPath: gate.report.mustDecompositionGate?.reportPath,
+    globalConsistencyReportPath: gate.report.globalConsistencyGate?.reportPath,
+    semanticDrilldown: gate.report.semanticDrilldown,
+    mustDecompositionGate: {
+      verdict: gate.report.mustDecompositionGate?.verdict,
+      failedChecks: gate.report.mustDecompositionGate?.failedChecks ?? [],
     },
-    progress: gate.progress ?? progress,
+    globalConsistency: {
+      verdict: gate.report.globalConsistencyGate?.verdict,
+      issueCount: gate.report.globalConsistencyGate?.issueCount,
+      failedChecks: gate.report.globalConsistencyGate?.failedChecks ?? [],
+    },
+    progress: updatedProgress ?? progress,
   };
 }
 
@@ -1024,6 +1267,7 @@ function resumeStatus({ sourcePath, progressPath }) {
       status: 'no_progress',
       nextCheckpoint: CHECKPOINTS[0].id,
       progressPath: normalizePathForReport(progressPath),
+      semanticDrilldown: semanticDrilldownStatus(sourcePath),
     };
   }
   const currentHash = sha256File(sourcePath);
@@ -1042,6 +1286,7 @@ function resumeStatus({ sourcePath, progressPath }) {
     documentHash: currentHash,
     authoringMode: resolveAuthoringMode({ progress }),
     recoveredFrom,
+    semanticDrilldown: semanticDrilldownStatus(sourcePath),
     progress,
   };
 }
@@ -1081,7 +1326,8 @@ function main(argv) {
     return status.ok ? 0 : 1;
   }
   if (args.mode === 'pre-render-gate') {
-    const gate = runPreRenderGlobalConsistencyGate({ sourcePath, progressPath });
+    const gate = buildCombinedPreRenderGateReport({ sourcePath, progressPath });
+    updateProgressWithCombinedPreRenderGate({ progressPath, combinedReport: gate.report });
     process.stdout.write(`${JSON.stringify(gate.report, null, 2)}\n`);
     return gate.report.verdict === 'PASS' ? 0 : 1;
   }
@@ -1122,11 +1368,13 @@ function main(argv) {
 module.exports = {
   CHECKPOINTS,
   buildPlan,
+  buildCombinedPreRenderGateReport,
   commitCheckpoint,
   defaultAuthoringRuntimeDir,
   defaultProgressPath,
   parseArgs,
   runCheckpointLoop,
+  semanticDrilldownStatus,
   resumeStatus,
 };
 
