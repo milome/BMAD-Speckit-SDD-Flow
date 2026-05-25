@@ -175,7 +175,7 @@
   ],
   "confirmationProjectionHistory": [],
   "lastEventType": "execution_iteration_recorded",
-  "updatedAt": "2026-05-25T07:36:43.201Z",
+  "updatedAt": "2026-05-25T07:37:39.627Z",
   "architectureConfirmations": [],
   "architectureConfirmationStateChecks": [],
   "executionIterations": [
@@ -4757,6 +4757,201 @@
       "implementationConfirmationHash": "sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
       "architectureConfirmationHash": "sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
       "recordedAt": "2026-05-25T07:36:43.201Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "execution_iteration_recorded",
+      "recordId": "REQ-CHECKPOINT-AUTOMATION",
+      "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+      "executionIterationId": "execution-TRACE-024-run-TRACE-024-20260525T073707Z",
+      "runId": "run-TRACE-024-20260525T073707Z",
+      "status": "done",
+      "traceRows": [
+        "TRACE-024"
+      ],
+      "taskRefs": [
+        "TASK-024"
+      ],
+      "evidenceRefs": [
+        "EVD-024"
+      ],
+      "filesChanged": [
+        "scripts/run-confirmed-trace-slice.js"
+      ],
+      "diffSummary": "Recorded current-attempt runtime closure evidence for TRACE-024 from confirmed implementationConfirmation IDs.",
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-TARGET-MODIFICATION-PATHS-001",
+          "command": "npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts",
+          "runId": "run-TRACE-024-20260525T073707Z",
+          "closeoutAttemptId": "attempt-TRACE-024-20260525T073707Z",
+          "exitCode": 0,
+          "startedAt": "2026-05-25T07:37:07.941Z",
+          "completedAt": "2026-05-25T07:37:23.358Z",
+          "outputSummary": "COMMAND_ID: CMD-TARGET-MODIFICATION-PATHS-001 | COMMAND: npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts | RUN_ID: run-TRACE-024-20260525T073707Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-024-20260525T073707Z | STARTED_AT: 2026-05-25T07:37:07.941Z | COMPLETED_AT: 2026-05-25T07:37:23.358Z | EXIT_CODE: 0 | STDOUT: | \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/render-requirements-confirmation-html.test.ts \u001b[2m(\u001b[22m\u001b[2m46 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 13310\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m renders current controlled execution state only when hashes and current attempt match \u001b[33m 361\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m preserves id-badge mini as trusted HTML inside requirement boundary tables \u001b[33m 1930\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m renders target modification paths and blocks when the explicit list is missing for implementation changes \u001b[33m 330\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m uses the skill-bundled Mermaid runtime by default without requiring consumer project dependencies \u001b[33m 1859\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m can explicitly open fallback structure diagrams alongside the skill-bundled native Mermaid runtime \u001b[33m 2021\u001b[2mms\u001b[22m\u001b[39m | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m46 passed\u001b[39m\u001b[22m\u001b[90m (46)\u001b[39m | \u001b[2m   Start at \u001b[22m 15:37:09 | \u001b[2m   Duration \u001b[22m 13.57s\u001b[2m (transform 79ms, setup 0ms, import 122ms, tests 13.31s, environment 0ms)\u001b[22m | STDERR:"
+        },
+        {
+          "commandId": "CMD-TARGET-MODIFICATION-PATHS-001",
+          "command": "npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts",
+          "runId": "run-TRACE-024-20260525T073707Z",
+          "closeoutAttemptId": "attempt-TRACE-024-20260525T073707Z",
+          "exitCode": 0,
+          "startedAt": "2026-05-25T07:37:23.359Z",
+          "completedAt": "2026-05-25T07:37:38.699Z",
+          "outputSummary": "COMMAND_ID: CMD-TARGET-MODIFICATION-PATHS-001 | COMMAND: npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts | RUN_ID: run-TRACE-024-20260525T073707Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-024-20260525T073707Z | STARTED_AT: 2026-05-25T07:37:23.359Z | COMPLETED_AT: 2026-05-25T07:37:38.699Z | EXIT_CODE: 0 | STDOUT: | \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/render-requirements-confirmation-html.test.ts \u001b[2m(\u001b[22m\u001b[2m46 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 13215\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m renders current controlled execution state only when hashes and current attempt match \u001b[33m 338\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m preserves id-badge mini as trusted HTML inside requirement boundary tables \u001b[33m 1933\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m renders target modification paths and blocks when the explicit list is missing for implementation changes \u001b[33m 314\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m uses the skill-bundled Mermaid runtime by default without requiring consumer project dependencies \u001b[33m 1882\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m can explicitly open fallback structure diagrams alongside the skill-bundled native Mermaid runtime \u001b[33m 2094\u001b[2mms\u001b[22m\u001b[39m | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m46 passed\u001b[39m\u001b[22m\u001b[90m (46)\u001b[39m | \u001b[2m   Start at \u001b[22m 15:37:25 | \u001b[2m   Duration \u001b[22m 13.49s\u001b[2m (transform 79ms, setup 0ms, import 123ms, tests 13.21s, environment 0ms)\u001b[22m | STDERR:"
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_output",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-024/run-TRACE-024-20260525T073707Z/CMD-TARGET-MODIFICATION-PATHS-001.output.txt",
+          "contentHash": "sha256:0df724cc33760e5151e8630a5083dca7c0e1537b1f5da0482360ea1b38743ded",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "fresh current-attempt output for CMD-TARGET-MODIFICATION-PATHS-001 covering TRACE-024",
+          "relatedRequirementIds": [
+            "CMD-TARGET-MODIFICATION-PATHS-001",
+            "TRACE-024",
+            "MUST-024",
+            "EVD-024"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "cmd-target-modification-paths-001-trace-024-current-attempt-output-v1",
+          "traceRows": [
+            "TRACE-024"
+          ],
+          "evidenceRefs": [
+            "EVD-024"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_output",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-024/run-TRACE-024-20260525T073707Z/CMD-TARGET-MODIFICATION-PATHS-001.output.txt",
+          "contentHash": "sha256:0df724cc33760e5151e8630a5083dca7c0e1537b1f5da0482360ea1b38743ded",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "fresh current-attempt output for CMD-TARGET-MODIFICATION-PATHS-001 covering TRACE-024",
+          "relatedRequirementIds": [
+            "CMD-TARGET-MODIFICATION-PATHS-001",
+            "TRACE-024",
+            "MUST-024",
+            "EVD-024"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "cmd-target-modification-paths-001-trace-024-current-attempt-output-v1",
+          "traceRows": [
+            "TRACE-024"
+          ],
+          "evidenceRefs": [
+            "EVD-024"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_receipt",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-024/run-TRACE-024-20260525T073707Z/trace-024-command-receipt.json",
+          "contentHash": "sha256:0611b941796a0678254df052501225444a805e59c477a8b6e3c757c446801bab",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "current-attempt command receipt bundle for TRACE-024",
+          "relatedRequirementIds": [
+            "TRACE-024",
+            "MUST-024",
+            "EVD-024"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "trace-024-command-receipt-v1",
+          "traceRows": [
+            "TRACE-024"
+          ],
+          "evidenceRefs": [
+            "EVD-024"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "completion_evidence_packet",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-024/run-TRACE-024-20260525T073707Z/trace-024-completion-evidence-packet.json",
+          "contentHash": "sha256:531ba57d9030009ca7cc7c79f81fd7628556cab5aacc94c9f3db9465399338c5",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "current-attempt completion evidence packet for TRACE-024",
+          "relatedRequirementIds": [
+            "TRACE-024",
+            "MUST-024",
+            "EVD-024"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "trace-024-completion-evidence-packet-v1",
+          "traceRows": [
+            "TRACE-024"
+          ],
+          "evidenceRefs": [
+            "EVD-024"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "diff_summary",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-024/run-TRACE-024-20260525T073707Z/trace-024-diff-summary.md",
+          "contentHash": "sha256:65d6bfb27a730c7ae2cd077d6842d4f56f35aa50f3adb78d8e5126a5f25763a7",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "runtime closure diff summary for TRACE-024",
+          "relatedRequirementIds": [
+            "TRACE-024",
+            "MUST-024",
+            "EVD-024"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "trace-024-diff-summary-v1",
+          "traceRows": [
+            "TRACE-024"
+          ],
+          "evidenceRefs": [
+            "EVD-024"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-024"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-024"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TARGET-MODIFICATION-PATHS-001"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TARGET-MODIFICATION-PATHS-001"
+        }
+      ],
+      "sourceDocumentHash": "sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad",
+      "implementationConfirmationHash": "sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+      "architectureConfirmationHash": "sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+      "recordedAt": "2026-05-25T07:37:39.627Z",
       "recordedBy": "codex"
     }
   ],
@@ -21362,6 +21557,558 @@
       ],
       "recordedAt": "2026-05-25T07:36:43.201Z",
       "recordedBy": "codex"
+    },
+    {
+      "eventType": "requirement_closure_recorded",
+      "recordId": "REQ-CHECKPOINT-AUTOMATION",
+      "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+      "requirementId": "TRACE-024",
+      "status": "pass",
+      "traceRows": [
+        "TRACE-024"
+      ],
+      "evidenceRefs": [
+        "EVD-024"
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-TARGET-MODIFICATION-PATHS-001",
+          "command": "npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts",
+          "runId": "run-TRACE-024-20260525T073707Z",
+          "closeoutAttemptId": "attempt-TRACE-024-20260525T073707Z",
+          "exitCode": 0,
+          "startedAt": "2026-05-25T07:37:07.941Z",
+          "completedAt": "2026-05-25T07:37:23.358Z",
+          "outputSummary": "COMMAND_ID: CMD-TARGET-MODIFICATION-PATHS-001 | COMMAND: npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts | RUN_ID: run-TRACE-024-20260525T073707Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-024-20260525T073707Z | STARTED_AT: 2026-05-25T07:37:07.941Z | COMPLETED_AT: 2026-05-25T07:37:23.358Z | EXIT_CODE: 0 | STDOUT: | \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/render-requirements-confirmation-html.test.ts \u001b[2m(\u001b[22m\u001b[2m46 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 13310\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m renders current controlled execution state only when hashes and current attempt match \u001b[33m 361\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m preserves id-badge mini as trusted HTML inside requirement boundary tables \u001b[33m 1930\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m renders target modification paths and blocks when the explicit list is missing for implementation changes \u001b[33m 330\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m uses the skill-bundled Mermaid runtime by default without requiring consumer project dependencies \u001b[33m 1859\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m can explicitly open fallback structure diagrams alongside the skill-bundled native Mermaid runtime \u001b[33m 2021\u001b[2mms\u001b[22m\u001b[39m | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m46 passed\u001b[39m\u001b[22m\u001b[90m (46)\u001b[39m | \u001b[2m   Start at \u001b[22m 15:37:09 | \u001b[2m   Duration \u001b[22m 13.57s\u001b[2m (transform 79ms, setup 0ms, import 122ms, tests 13.31s, environment 0ms)\u001b[22m | STDERR:"
+        },
+        {
+          "commandId": "CMD-TARGET-MODIFICATION-PATHS-001",
+          "command": "npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts",
+          "runId": "run-TRACE-024-20260525T073707Z",
+          "closeoutAttemptId": "attempt-TRACE-024-20260525T073707Z",
+          "exitCode": 0,
+          "startedAt": "2026-05-25T07:37:23.359Z",
+          "completedAt": "2026-05-25T07:37:38.699Z",
+          "outputSummary": "COMMAND_ID: CMD-TARGET-MODIFICATION-PATHS-001 | COMMAND: npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts | RUN_ID: run-TRACE-024-20260525T073707Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-024-20260525T073707Z | STARTED_AT: 2026-05-25T07:37:23.359Z | COMPLETED_AT: 2026-05-25T07:37:38.699Z | EXIT_CODE: 0 | STDOUT: | \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/render-requirements-confirmation-html.test.ts \u001b[2m(\u001b[22m\u001b[2m46 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 13215\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m renders current controlled execution state only when hashes and current attempt match \u001b[33m 338\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m preserves id-badge mini as trusted HTML inside requirement boundary tables \u001b[33m 1933\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m renders target modification paths and blocks when the explicit list is missing for implementation changes \u001b[33m 314\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m uses the skill-bundled Mermaid runtime by default without requiring consumer project dependencies \u001b[33m 1882\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m can explicitly open fallback structure diagrams alongside the skill-bundled native Mermaid runtime \u001b[33m 2094\u001b[2mms\u001b[22m\u001b[39m | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m46 passed\u001b[39m\u001b[22m\u001b[90m (46)\u001b[39m | \u001b[2m   Start at \u001b[22m 15:37:25 | \u001b[2m   Duration \u001b[22m 13.49s\u001b[2m (transform 79ms, setup 0ms, import 123ms, tests 13.21s, environment 0ms)\u001b[22m | STDERR:"
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_output",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-024/run-TRACE-024-20260525T073707Z/CMD-TARGET-MODIFICATION-PATHS-001.output.txt",
+          "contentHash": "sha256:0df724cc33760e5151e8630a5083dca7c0e1537b1f5da0482360ea1b38743ded",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "fresh current-attempt output for CMD-TARGET-MODIFICATION-PATHS-001 covering TRACE-024",
+          "relatedRequirementIds": [
+            "CMD-TARGET-MODIFICATION-PATHS-001",
+            "TRACE-024",
+            "MUST-024",
+            "EVD-024"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "cmd-target-modification-paths-001-trace-024-current-attempt-output-v1",
+          "traceRows": [
+            "TRACE-024"
+          ],
+          "evidenceRefs": [
+            "EVD-024"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_output",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-024/run-TRACE-024-20260525T073707Z/CMD-TARGET-MODIFICATION-PATHS-001.output.txt",
+          "contentHash": "sha256:0df724cc33760e5151e8630a5083dca7c0e1537b1f5da0482360ea1b38743ded",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "fresh current-attempt output for CMD-TARGET-MODIFICATION-PATHS-001 covering TRACE-024",
+          "relatedRequirementIds": [
+            "CMD-TARGET-MODIFICATION-PATHS-001",
+            "TRACE-024",
+            "MUST-024",
+            "EVD-024"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "cmd-target-modification-paths-001-trace-024-current-attempt-output-v1",
+          "traceRows": [
+            "TRACE-024"
+          ],
+          "evidenceRefs": [
+            "EVD-024"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_receipt",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-024/run-TRACE-024-20260525T073707Z/trace-024-command-receipt.json",
+          "contentHash": "sha256:0611b941796a0678254df052501225444a805e59c477a8b6e3c757c446801bab",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "current-attempt command receipt bundle for TRACE-024",
+          "relatedRequirementIds": [
+            "TRACE-024",
+            "MUST-024",
+            "EVD-024"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "trace-024-command-receipt-v1",
+          "traceRows": [
+            "TRACE-024"
+          ],
+          "evidenceRefs": [
+            "EVD-024"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "completion_evidence_packet",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-024/run-TRACE-024-20260525T073707Z/trace-024-completion-evidence-packet.json",
+          "contentHash": "sha256:531ba57d9030009ca7cc7c79f81fd7628556cab5aacc94c9f3db9465399338c5",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "current-attempt completion evidence packet for TRACE-024",
+          "relatedRequirementIds": [
+            "TRACE-024",
+            "MUST-024",
+            "EVD-024"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "trace-024-completion-evidence-packet-v1",
+          "traceRows": [
+            "TRACE-024"
+          ],
+          "evidenceRefs": [
+            "EVD-024"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "diff_summary",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-024/run-TRACE-024-20260525T073707Z/trace-024-diff-summary.md",
+          "contentHash": "sha256:65d6bfb27a730c7ae2cd077d6842d4f56f35aa50f3adb78d8e5126a5f25763a7",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "runtime closure diff summary for TRACE-024",
+          "relatedRequirementIds": [
+            "TRACE-024",
+            "MUST-024",
+            "EVD-024"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "trace-024-diff-summary-v1",
+          "traceRows": [
+            "TRACE-024"
+          ],
+          "evidenceRefs": [
+            "EVD-024"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-024"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-024"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TARGET-MODIFICATION-PATHS-001"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TARGET-MODIFICATION-PATHS-001"
+        }
+      ],
+      "recordedAt": "2026-05-25T07:37:39.627Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "requirement_closure_recorded",
+      "recordId": "REQ-CHECKPOINT-AUTOMATION",
+      "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+      "requirementId": "MUST-024",
+      "status": "pass",
+      "traceRows": [
+        "TRACE-024"
+      ],
+      "evidenceRefs": [
+        "EVD-024"
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-TARGET-MODIFICATION-PATHS-001",
+          "command": "npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts",
+          "runId": "run-TRACE-024-20260525T073707Z",
+          "closeoutAttemptId": "attempt-TRACE-024-20260525T073707Z",
+          "exitCode": 0,
+          "startedAt": "2026-05-25T07:37:07.941Z",
+          "completedAt": "2026-05-25T07:37:23.358Z",
+          "outputSummary": "COMMAND_ID: CMD-TARGET-MODIFICATION-PATHS-001 | COMMAND: npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts | RUN_ID: run-TRACE-024-20260525T073707Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-024-20260525T073707Z | STARTED_AT: 2026-05-25T07:37:07.941Z | COMPLETED_AT: 2026-05-25T07:37:23.358Z | EXIT_CODE: 0 | STDOUT: | \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/render-requirements-confirmation-html.test.ts \u001b[2m(\u001b[22m\u001b[2m46 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 13310\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m renders current controlled execution state only when hashes and current attempt match \u001b[33m 361\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m preserves id-badge mini as trusted HTML inside requirement boundary tables \u001b[33m 1930\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m renders target modification paths and blocks when the explicit list is missing for implementation changes \u001b[33m 330\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m uses the skill-bundled Mermaid runtime by default without requiring consumer project dependencies \u001b[33m 1859\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m can explicitly open fallback structure diagrams alongside the skill-bundled native Mermaid runtime \u001b[33m 2021\u001b[2mms\u001b[22m\u001b[39m | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m46 passed\u001b[39m\u001b[22m\u001b[90m (46)\u001b[39m | \u001b[2m   Start at \u001b[22m 15:37:09 | \u001b[2m   Duration \u001b[22m 13.57s\u001b[2m (transform 79ms, setup 0ms, import 122ms, tests 13.31s, environment 0ms)\u001b[22m | STDERR:"
+        },
+        {
+          "commandId": "CMD-TARGET-MODIFICATION-PATHS-001",
+          "command": "npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts",
+          "runId": "run-TRACE-024-20260525T073707Z",
+          "closeoutAttemptId": "attempt-TRACE-024-20260525T073707Z",
+          "exitCode": 0,
+          "startedAt": "2026-05-25T07:37:23.359Z",
+          "completedAt": "2026-05-25T07:37:38.699Z",
+          "outputSummary": "COMMAND_ID: CMD-TARGET-MODIFICATION-PATHS-001 | COMMAND: npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts | RUN_ID: run-TRACE-024-20260525T073707Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-024-20260525T073707Z | STARTED_AT: 2026-05-25T07:37:23.359Z | COMPLETED_AT: 2026-05-25T07:37:38.699Z | EXIT_CODE: 0 | STDOUT: | \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/render-requirements-confirmation-html.test.ts \u001b[2m(\u001b[22m\u001b[2m46 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 13215\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m renders current controlled execution state only when hashes and current attempt match \u001b[33m 338\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m preserves id-badge mini as trusted HTML inside requirement boundary tables \u001b[33m 1933\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m renders target modification paths and blocks when the explicit list is missing for implementation changes \u001b[33m 314\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m uses the skill-bundled Mermaid runtime by default without requiring consumer project dependencies \u001b[33m 1882\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m can explicitly open fallback structure diagrams alongside the skill-bundled native Mermaid runtime \u001b[33m 2094\u001b[2mms\u001b[22m\u001b[39m | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m46 passed\u001b[39m\u001b[22m\u001b[90m (46)\u001b[39m | \u001b[2m   Start at \u001b[22m 15:37:25 | \u001b[2m   Duration \u001b[22m 13.49s\u001b[2m (transform 79ms, setup 0ms, import 123ms, tests 13.21s, environment 0ms)\u001b[22m | STDERR:"
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_output",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-024/run-TRACE-024-20260525T073707Z/CMD-TARGET-MODIFICATION-PATHS-001.output.txt",
+          "contentHash": "sha256:0df724cc33760e5151e8630a5083dca7c0e1537b1f5da0482360ea1b38743ded",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "fresh current-attempt output for CMD-TARGET-MODIFICATION-PATHS-001 covering TRACE-024",
+          "relatedRequirementIds": [
+            "CMD-TARGET-MODIFICATION-PATHS-001",
+            "TRACE-024",
+            "MUST-024",
+            "EVD-024"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "cmd-target-modification-paths-001-trace-024-current-attempt-output-v1",
+          "traceRows": [
+            "TRACE-024"
+          ],
+          "evidenceRefs": [
+            "EVD-024"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_output",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-024/run-TRACE-024-20260525T073707Z/CMD-TARGET-MODIFICATION-PATHS-001.output.txt",
+          "contentHash": "sha256:0df724cc33760e5151e8630a5083dca7c0e1537b1f5da0482360ea1b38743ded",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "fresh current-attempt output for CMD-TARGET-MODIFICATION-PATHS-001 covering TRACE-024",
+          "relatedRequirementIds": [
+            "CMD-TARGET-MODIFICATION-PATHS-001",
+            "TRACE-024",
+            "MUST-024",
+            "EVD-024"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "cmd-target-modification-paths-001-trace-024-current-attempt-output-v1",
+          "traceRows": [
+            "TRACE-024"
+          ],
+          "evidenceRefs": [
+            "EVD-024"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_receipt",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-024/run-TRACE-024-20260525T073707Z/trace-024-command-receipt.json",
+          "contentHash": "sha256:0611b941796a0678254df052501225444a805e59c477a8b6e3c757c446801bab",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "current-attempt command receipt bundle for TRACE-024",
+          "relatedRequirementIds": [
+            "TRACE-024",
+            "MUST-024",
+            "EVD-024"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "trace-024-command-receipt-v1",
+          "traceRows": [
+            "TRACE-024"
+          ],
+          "evidenceRefs": [
+            "EVD-024"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "completion_evidence_packet",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-024/run-TRACE-024-20260525T073707Z/trace-024-completion-evidence-packet.json",
+          "contentHash": "sha256:531ba57d9030009ca7cc7c79f81fd7628556cab5aacc94c9f3db9465399338c5",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "current-attempt completion evidence packet for TRACE-024",
+          "relatedRequirementIds": [
+            "TRACE-024",
+            "MUST-024",
+            "EVD-024"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "trace-024-completion-evidence-packet-v1",
+          "traceRows": [
+            "TRACE-024"
+          ],
+          "evidenceRefs": [
+            "EVD-024"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "diff_summary",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-024/run-TRACE-024-20260525T073707Z/trace-024-diff-summary.md",
+          "contentHash": "sha256:65d6bfb27a730c7ae2cd077d6842d4f56f35aa50f3adb78d8e5126a5f25763a7",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "runtime closure diff summary for TRACE-024",
+          "relatedRequirementIds": [
+            "TRACE-024",
+            "MUST-024",
+            "EVD-024"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "trace-024-diff-summary-v1",
+          "traceRows": [
+            "TRACE-024"
+          ],
+          "evidenceRefs": [
+            "EVD-024"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-024"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-024"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TARGET-MODIFICATION-PATHS-001"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TARGET-MODIFICATION-PATHS-001"
+        }
+      ],
+      "recordedAt": "2026-05-25T07:37:39.627Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "requirement_closure_recorded",
+      "recordId": "REQ-CHECKPOINT-AUTOMATION",
+      "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+      "requirementId": "EVD-024",
+      "status": "pass",
+      "traceRows": [
+        "TRACE-024"
+      ],
+      "evidenceRefs": [
+        "EVD-024"
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-TARGET-MODIFICATION-PATHS-001",
+          "command": "npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts",
+          "runId": "run-TRACE-024-20260525T073707Z",
+          "closeoutAttemptId": "attempt-TRACE-024-20260525T073707Z",
+          "exitCode": 0,
+          "startedAt": "2026-05-25T07:37:07.941Z",
+          "completedAt": "2026-05-25T07:37:23.358Z",
+          "outputSummary": "COMMAND_ID: CMD-TARGET-MODIFICATION-PATHS-001 | COMMAND: npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts | RUN_ID: run-TRACE-024-20260525T073707Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-024-20260525T073707Z | STARTED_AT: 2026-05-25T07:37:07.941Z | COMPLETED_AT: 2026-05-25T07:37:23.358Z | EXIT_CODE: 0 | STDOUT: | \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/render-requirements-confirmation-html.test.ts \u001b[2m(\u001b[22m\u001b[2m46 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 13310\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m renders current controlled execution state only when hashes and current attempt match \u001b[33m 361\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m preserves id-badge mini as trusted HTML inside requirement boundary tables \u001b[33m 1930\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m renders target modification paths and blocks when the explicit list is missing for implementation changes \u001b[33m 330\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m uses the skill-bundled Mermaid runtime by default without requiring consumer project dependencies \u001b[33m 1859\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m can explicitly open fallback structure diagrams alongside the skill-bundled native Mermaid runtime \u001b[33m 2021\u001b[2mms\u001b[22m\u001b[39m | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m46 passed\u001b[39m\u001b[22m\u001b[90m (46)\u001b[39m | \u001b[2m   Start at \u001b[22m 15:37:09 | \u001b[2m   Duration \u001b[22m 13.57s\u001b[2m (transform 79ms, setup 0ms, import 122ms, tests 13.31s, environment 0ms)\u001b[22m | STDERR:"
+        },
+        {
+          "commandId": "CMD-TARGET-MODIFICATION-PATHS-001",
+          "command": "npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts",
+          "runId": "run-TRACE-024-20260525T073707Z",
+          "closeoutAttemptId": "attempt-TRACE-024-20260525T073707Z",
+          "exitCode": 0,
+          "startedAt": "2026-05-25T07:37:23.359Z",
+          "completedAt": "2026-05-25T07:37:38.699Z",
+          "outputSummary": "COMMAND_ID: CMD-TARGET-MODIFICATION-PATHS-001 | COMMAND: npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts | RUN_ID: run-TRACE-024-20260525T073707Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-024-20260525T073707Z | STARTED_AT: 2026-05-25T07:37:23.359Z | COMPLETED_AT: 2026-05-25T07:37:38.699Z | EXIT_CODE: 0 | STDOUT: | \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/render-requirements-confirmation-html.test.ts \u001b[2m(\u001b[22m\u001b[2m46 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 13215\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m renders current controlled execution state only when hashes and current attempt match \u001b[33m 338\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m preserves id-badge mini as trusted HTML inside requirement boundary tables \u001b[33m 1933\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m renders target modification paths and blocks when the explicit list is missing for implementation changes \u001b[33m 314\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m uses the skill-bundled Mermaid runtime by default without requiring consumer project dependencies \u001b[33m 1882\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m can explicitly open fallback structure diagrams alongside the skill-bundled native Mermaid runtime \u001b[33m 2094\u001b[2mms\u001b[22m\u001b[39m | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m46 passed\u001b[39m\u001b[22m\u001b[90m (46)\u001b[39m | \u001b[2m   Start at \u001b[22m 15:37:25 | \u001b[2m   Duration \u001b[22m 13.49s\u001b[2m (transform 79ms, setup 0ms, import 123ms, tests 13.21s, environment 0ms)\u001b[22m | STDERR:"
+        }
+      ],
+      "evidenceArtifactRefs": [
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_output",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-024/run-TRACE-024-20260525T073707Z/CMD-TARGET-MODIFICATION-PATHS-001.output.txt",
+          "contentHash": "sha256:0df724cc33760e5151e8630a5083dca7c0e1537b1f5da0482360ea1b38743ded",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "fresh current-attempt output for CMD-TARGET-MODIFICATION-PATHS-001 covering TRACE-024",
+          "relatedRequirementIds": [
+            "CMD-TARGET-MODIFICATION-PATHS-001",
+            "TRACE-024",
+            "MUST-024",
+            "EVD-024"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "cmd-target-modification-paths-001-trace-024-current-attempt-output-v1",
+          "traceRows": [
+            "TRACE-024"
+          ],
+          "evidenceRefs": [
+            "EVD-024"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_output",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-024/run-TRACE-024-20260525T073707Z/CMD-TARGET-MODIFICATION-PATHS-001.output.txt",
+          "contentHash": "sha256:0df724cc33760e5151e8630a5083dca7c0e1537b1f5da0482360ea1b38743ded",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "fresh current-attempt output for CMD-TARGET-MODIFICATION-PATHS-001 covering TRACE-024",
+          "relatedRequirementIds": [
+            "CMD-TARGET-MODIFICATION-PATHS-001",
+            "TRACE-024",
+            "MUST-024",
+            "EVD-024"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "cmd-target-modification-paths-001-trace-024-current-attempt-output-v1",
+          "traceRows": [
+            "TRACE-024"
+          ],
+          "evidenceRefs": [
+            "EVD-024"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "command_run_receipt",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-024/run-TRACE-024-20260525T073707Z/trace-024-command-receipt.json",
+          "contentHash": "sha256:0611b941796a0678254df052501225444a805e59c477a8b6e3c757c446801bab",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "current-attempt command receipt bundle for TRACE-024",
+          "relatedRequirementIds": [
+            "TRACE-024",
+            "MUST-024",
+            "EVD-024"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "trace-024-command-receipt-v1",
+          "traceRows": [
+            "TRACE-024"
+          ],
+          "evidenceRefs": [
+            "EVD-024"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "completion_evidence_packet",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-024/run-TRACE-024-20260525T073707Z/trace-024-completion-evidence-packet.json",
+          "contentHash": "sha256:531ba57d9030009ca7cc7c79f81fd7628556cab5aacc94c9f3db9465399338c5",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "current-attempt completion evidence packet for TRACE-024",
+          "relatedRequirementIds": [
+            "TRACE-024",
+            "MUST-024",
+            "EVD-024"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "trace-024-completion-evidence-packet-v1",
+          "traceRows": [
+            "TRACE-024"
+          ],
+          "evidenceRefs": [
+            "EVD-024"
+          ]
+        },
+        {
+          "eventType": "artifact_indexed",
+          "artifactType": "diff_summary",
+          "sourceOfTruthRole": "evidence",
+          "recordId": "REQ-CHECKPOINT-AUTOMATION",
+          "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+          "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-024/run-TRACE-024-20260525T073707Z/trace-024-diff-summary.md",
+          "contentHash": "sha256:65d6bfb27a730c7ae2cd077d6842d4f56f35aa50f3adb78d8e5126a5f25763a7",
+          "producer": "run-confirmed-trace-slice",
+          "purpose": "runtime closure diff summary for TRACE-024",
+          "relatedRequirementIds": [
+            "TRACE-024",
+            "MUST-024",
+            "EVD-024"
+          ],
+          "status": "active",
+          "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+          "outputVersion": "trace-024-diff-summary-v1",
+          "traceRows": [
+            "TRACE-024"
+          ],
+          "evidenceRefs": [
+            "EVD-024"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-024"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-024"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TARGET-MODIFICATION-PATHS-001"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TARGET-MODIFICATION-PATHS-001"
+        }
+      ],
+      "recordedAt": "2026-05-25T07:37:39.627Z",
+      "recordedBy": "codex"
     }
   ],
   "gateChecks": [
@@ -23663,6 +24410,106 @@
         }
       ],
       "recordedAt": "2026-05-25T07:36:43.201Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "gate_check_recorded",
+      "checkId": "TRACE-024:CMD-TARGET-MODIFICATION-PATHS-001:run-TRACE-024-20260525T073707Z",
+      "gate": "CMD-TARGET-MODIFICATION-PATHS-001",
+      "decision": "pass",
+      "blockingReasons": [],
+      "checks": [],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-024"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-024"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TARGET-MODIFICATION-PATHS-001"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TARGET-MODIFICATION-PATHS-001"
+        }
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-TARGET-MODIFICATION-PATHS-001",
+          "command": "npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts",
+          "runId": "run-TRACE-024-20260525T073707Z",
+          "closeoutAttemptId": "attempt-TRACE-024-20260525T073707Z",
+          "exitCode": 0,
+          "startedAt": "2026-05-25T07:37:07.941Z",
+          "completedAt": "2026-05-25T07:37:23.358Z",
+          "outputSummary": "COMMAND_ID: CMD-TARGET-MODIFICATION-PATHS-001 | COMMAND: npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts | RUN_ID: run-TRACE-024-20260525T073707Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-024-20260525T073707Z | STARTED_AT: 2026-05-25T07:37:07.941Z | COMPLETED_AT: 2026-05-25T07:37:23.358Z | EXIT_CODE: 0 | STDOUT: | \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/render-requirements-confirmation-html.test.ts \u001b[2m(\u001b[22m\u001b[2m46 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 13310\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m renders current controlled execution state only when hashes and current attempt match \u001b[33m 361\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m preserves id-badge mini as trusted HTML inside requirement boundary tables \u001b[33m 1930\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m renders target modification paths and blocks when the explicit list is missing for implementation changes \u001b[33m 330\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m uses the skill-bundled Mermaid runtime by default without requiring consumer project dependencies \u001b[33m 1859\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m can explicitly open fallback structure diagrams alongside the skill-bundled native Mermaid runtime \u001b[33m 2021\u001b[2mms\u001b[22m\u001b[39m | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m46 passed\u001b[39m\u001b[22m\u001b[90m (46)\u001b[39m | \u001b[2m   Start at \u001b[22m 15:37:09 | \u001b[2m   Duration \u001b[22m 13.57s\u001b[2m (transform 79ms, setup 0ms, import 122ms, tests 13.31s, environment 0ms)\u001b[22m | STDERR:"
+        },
+        {
+          "commandId": "CMD-TARGET-MODIFICATION-PATHS-001",
+          "command": "npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts",
+          "runId": "run-TRACE-024-20260525T073707Z",
+          "closeoutAttemptId": "attempt-TRACE-024-20260525T073707Z",
+          "exitCode": 0,
+          "startedAt": "2026-05-25T07:37:23.359Z",
+          "completedAt": "2026-05-25T07:37:38.699Z",
+          "outputSummary": "COMMAND_ID: CMD-TARGET-MODIFICATION-PATHS-001 | COMMAND: npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts | RUN_ID: run-TRACE-024-20260525T073707Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-024-20260525T073707Z | STARTED_AT: 2026-05-25T07:37:23.359Z | COMPLETED_AT: 2026-05-25T07:37:38.699Z | EXIT_CODE: 0 | STDOUT: | \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/render-requirements-confirmation-html.test.ts \u001b[2m(\u001b[22m\u001b[2m46 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 13215\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m renders current controlled execution state only when hashes and current attempt match \u001b[33m 338\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m preserves id-badge mini as trusted HTML inside requirement boundary tables \u001b[33m 1933\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m renders target modification paths and blocks when the explicit list is missing for implementation changes \u001b[33m 314\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m uses the skill-bundled Mermaid runtime by default without requiring consumer project dependencies \u001b[33m 1882\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m can explicitly open fallback structure diagrams alongside the skill-bundled native Mermaid runtime \u001b[33m 2094\u001b[2mms\u001b[22m\u001b[39m | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m46 passed\u001b[39m\u001b[22m\u001b[90m (46)\u001b[39m | \u001b[2m   Start at \u001b[22m 15:37:25 | \u001b[2m   Duration \u001b[22m 13.49s\u001b[2m (transform 79ms, setup 0ms, import 123ms, tests 13.21s, environment 0ms)\u001b[22m | STDERR:"
+        }
+      ],
+      "recordedAt": "2026-05-25T07:37:39.627Z",
+      "recordedBy": "codex"
+    },
+    {
+      "eventType": "gate_check_recorded",
+      "checkId": "TRACE-024:CMD-TARGET-MODIFICATION-PATHS-001:run-TRACE-024-20260525T073707Z",
+      "gate": "CMD-TARGET-MODIFICATION-PATHS-001",
+      "decision": "pass",
+      "blockingReasons": [],
+      "checks": [],
+      "sourceRefs": [
+        {
+          "sourceType": "trace_row",
+          "id": "TRACE-024"
+        },
+        {
+          "sourceType": "evidence",
+          "id": "EVD-024"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TARGET-MODIFICATION-PATHS-001"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-TARGET-MODIFICATION-PATHS-001"
+        }
+      ],
+      "commandRunRefs": [
+        {
+          "commandId": "CMD-TARGET-MODIFICATION-PATHS-001",
+          "command": "npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts",
+          "runId": "run-TRACE-024-20260525T073707Z",
+          "closeoutAttemptId": "attempt-TRACE-024-20260525T073707Z",
+          "exitCode": 0,
+          "startedAt": "2026-05-25T07:37:07.941Z",
+          "completedAt": "2026-05-25T07:37:23.358Z",
+          "outputSummary": "COMMAND_ID: CMD-TARGET-MODIFICATION-PATHS-001 | COMMAND: npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts | RUN_ID: run-TRACE-024-20260525T073707Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-024-20260525T073707Z | STARTED_AT: 2026-05-25T07:37:07.941Z | COMPLETED_AT: 2026-05-25T07:37:23.358Z | EXIT_CODE: 0 | STDOUT: | \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/render-requirements-confirmation-html.test.ts \u001b[2m(\u001b[22m\u001b[2m46 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 13310\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m renders current controlled execution state only when hashes and current attempt match \u001b[33m 361\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m preserves id-badge mini as trusted HTML inside requirement boundary tables \u001b[33m 1930\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m renders target modification paths and blocks when the explicit list is missing for implementation changes \u001b[33m 330\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m uses the skill-bundled Mermaid runtime by default without requiring consumer project dependencies \u001b[33m 1859\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m can explicitly open fallback structure diagrams alongside the skill-bundled native Mermaid runtime \u001b[33m 2021\u001b[2mms\u001b[22m\u001b[39m | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m46 passed\u001b[39m\u001b[22m\u001b[90m (46)\u001b[39m | \u001b[2m   Start at \u001b[22m 15:37:09 | \u001b[2m   Duration \u001b[22m 13.57s\u001b[2m (transform 79ms, setup 0ms, import 122ms, tests 13.31s, environment 0ms)\u001b[22m | STDERR:"
+        },
+        {
+          "commandId": "CMD-TARGET-MODIFICATION-PATHS-001",
+          "command": "npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts",
+          "runId": "run-TRACE-024-20260525T073707Z",
+          "closeoutAttemptId": "attempt-TRACE-024-20260525T073707Z",
+          "exitCode": 0,
+          "startedAt": "2026-05-25T07:37:23.359Z",
+          "completedAt": "2026-05-25T07:37:38.699Z",
+          "outputSummary": "COMMAND_ID: CMD-TARGET-MODIFICATION-PATHS-001 | COMMAND: npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts | RUN_ID: run-TRACE-024-20260525T073707Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-024-20260525T073707Z | STARTED_AT: 2026-05-25T07:37:23.359Z | COMPLETED_AT: 2026-05-25T07:37:38.699Z | EXIT_CODE: 0 | STDOUT: | \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/render-requirements-confirmation-html.test.ts \u001b[2m(\u001b[22m\u001b[2m46 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 13215\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m renders current controlled execution state only when hashes and current attempt match \u001b[33m 338\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m preserves id-badge mini as trusted HTML inside requirement boundary tables \u001b[33m 1933\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m renders target modification paths and blocks when the explicit list is missing for implementation changes \u001b[33m 314\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m uses the skill-bundled Mermaid runtime by default without requiring consumer project dependencies \u001b[33m 1882\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m can explicitly open fallback structure diagrams alongside the skill-bundled native Mermaid runtime \u001b[33m 2094\u001b[2mms\u001b[22m\u001b[39m | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m46 passed\u001b[39m\u001b[22m\u001b[90m (46)\u001b[39m | \u001b[2m   Start at \u001b[22m 15:37:25 | \u001b[2m   Duration \u001b[22m 13.49s\u001b[2m (transform 79ms, setup 0ms, import 123ms, tests 13.21s, environment 0ms)\u001b[22m | STDERR:"
+        }
+      ],
+      "recordedAt": "2026-05-25T07:37:39.627Z",
       "recordedBy": "codex"
     }
   ],
@@ -26686,6 +27533,133 @@
       "evidenceRefs": [
         "EVD-023"
       ]
+    },
+    {
+      "eventType": "artifact_indexed",
+      "artifactType": "command_run_output",
+      "sourceOfTruthRole": "evidence",
+      "recordId": "REQ-CHECKPOINT-AUTOMATION",
+      "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-024/run-TRACE-024-20260525T073707Z/CMD-TARGET-MODIFICATION-PATHS-001.output.txt",
+      "contentHash": "sha256:0df724cc33760e5151e8630a5083dca7c0e1537b1f5da0482360ea1b38743ded",
+      "producer": "run-confirmed-trace-slice",
+      "purpose": "fresh current-attempt output for CMD-TARGET-MODIFICATION-PATHS-001 covering TRACE-024",
+      "relatedRequirementIds": [
+        "CMD-TARGET-MODIFICATION-PATHS-001",
+        "TRACE-024",
+        "MUST-024",
+        "EVD-024"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+      "outputVersion": "cmd-target-modification-paths-001-trace-024-current-attempt-output-v1",
+      "traceRows": [
+        "TRACE-024"
+      ],
+      "evidenceRefs": [
+        "EVD-024"
+      ]
+    },
+    {
+      "eventType": "artifact_indexed",
+      "artifactType": "command_run_output",
+      "sourceOfTruthRole": "evidence",
+      "recordId": "REQ-CHECKPOINT-AUTOMATION",
+      "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-024/run-TRACE-024-20260525T073707Z/CMD-TARGET-MODIFICATION-PATHS-001.output.txt",
+      "contentHash": "sha256:0df724cc33760e5151e8630a5083dca7c0e1537b1f5da0482360ea1b38743ded",
+      "producer": "run-confirmed-trace-slice",
+      "purpose": "fresh current-attempt output for CMD-TARGET-MODIFICATION-PATHS-001 covering TRACE-024",
+      "relatedRequirementIds": [
+        "CMD-TARGET-MODIFICATION-PATHS-001",
+        "TRACE-024",
+        "MUST-024",
+        "EVD-024"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+      "outputVersion": "cmd-target-modification-paths-001-trace-024-current-attempt-output-v1",
+      "traceRows": [
+        "TRACE-024"
+      ],
+      "evidenceRefs": [
+        "EVD-024"
+      ]
+    },
+    {
+      "eventType": "artifact_indexed",
+      "artifactType": "command_run_receipt",
+      "sourceOfTruthRole": "evidence",
+      "recordId": "REQ-CHECKPOINT-AUTOMATION",
+      "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-024/run-TRACE-024-20260525T073707Z/trace-024-command-receipt.json",
+      "contentHash": "sha256:0611b941796a0678254df052501225444a805e59c477a8b6e3c757c446801bab",
+      "producer": "run-confirmed-trace-slice",
+      "purpose": "current-attempt command receipt bundle for TRACE-024",
+      "relatedRequirementIds": [
+        "TRACE-024",
+        "MUST-024",
+        "EVD-024"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+      "outputVersion": "trace-024-command-receipt-v1",
+      "traceRows": [
+        "TRACE-024"
+      ],
+      "evidenceRefs": [
+        "EVD-024"
+      ]
+    },
+    {
+      "eventType": "artifact_indexed",
+      "artifactType": "completion_evidence_packet",
+      "sourceOfTruthRole": "evidence",
+      "recordId": "REQ-CHECKPOINT-AUTOMATION",
+      "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-024/run-TRACE-024-20260525T073707Z/trace-024-completion-evidence-packet.json",
+      "contentHash": "sha256:531ba57d9030009ca7cc7c79f81fd7628556cab5aacc94c9f3db9465399338c5",
+      "producer": "run-confirmed-trace-slice",
+      "purpose": "current-attempt completion evidence packet for TRACE-024",
+      "relatedRequirementIds": [
+        "TRACE-024",
+        "MUST-024",
+        "EVD-024"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+      "outputVersion": "trace-024-completion-evidence-packet-v1",
+      "traceRows": [
+        "TRACE-024"
+      ],
+      "evidenceRefs": [
+        "EVD-024"
+      ]
+    },
+    {
+      "eventType": "artifact_indexed",
+      "artifactType": "diff_summary",
+      "sourceOfTruthRole": "evidence",
+      "recordId": "REQ-CHECKPOINT-AUTOMATION",
+      "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-024/run-TRACE-024-20260525T073707Z/trace-024-diff-summary.md",
+      "contentHash": "sha256:65d6bfb27a730c7ae2cd077d6842d4f56f35aa50f3adb78d8e5126a5f25763a7",
+      "producer": "run-confirmed-trace-slice",
+      "purpose": "runtime closure diff summary for TRACE-024",
+      "relatedRequirementIds": [
+        "TRACE-024",
+        "MUST-024",
+        "EVD-024"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+      "outputVersion": "trace-024-diff-summary-v1",
+      "traceRows": [
+        "TRACE-024"
+      ],
+      "evidenceRefs": [
+        "EVD-024"
+      ]
     }
   ],
   "extensionRefs": [],
@@ -27847,6 +28821,71 @@
             "evidenceRefs": []
           }
         ]
+      },
+      {
+        "commandId": "CMD-TARGET-MODIFICATION-PATHS-001",
+        "command": "npx vitest run tests/acceptance/render-requirements-confirmation-html.test.ts",
+        "commandType": "delivery_evidence",
+        "blockingIfMissing": true,
+        "negativeOrRegression": true,
+        "closeoutAttemptId": "attempt-TRACE-024-20260525T073707Z",
+        "lastRunRef": {
+          "commandId": "CMD-TARGET-MODIFICATION-PATHS-001",
+          "runId": "run-TRACE-024-20260525T073707Z",
+          "closeoutAttemptId": "attempt-TRACE-024-20260525T073707Z"
+        },
+        "traceRows": [
+          "TRACE-024"
+        ],
+        "evidenceRefs": [
+          "EVD-024"
+        ],
+        "artifactRefs": [
+          {
+            "eventType": "artifact_indexed",
+            "artifactType": "command_run_output",
+            "sourceOfTruthRole": "evidence",
+            "recordId": "REQ-CHECKPOINT-AUTOMATION",
+            "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-024/run-TRACE-024-20260525T073707Z/CMD-TARGET-MODIFICATION-PATHS-001.output.txt",
+            "contentHash": "sha256:0df724cc33760e5151e8630a5083dca7c0e1537b1f5da0482360ea1b38743ded",
+            "producer": "run-confirmed-trace-slice",
+            "purpose": "fresh current-attempt output for CMD-TARGET-MODIFICATION-PATHS-001 covering TRACE-024",
+            "relatedRequirementIds": [
+              "CMD-TARGET-MODIFICATION-PATHS-001",
+              "TRACE-024",
+              "MUST-024",
+              "EVD-024"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+            "outputVersion": "cmd-target-modification-paths-001-trace-024-current-attempt-output-v1",
+            "traceRows": [],
+            "evidenceRefs": []
+          },
+          {
+            "eventType": "artifact_indexed",
+            "artifactType": "command_run_output",
+            "sourceOfTruthRole": "evidence",
+            "recordId": "REQ-CHECKPOINT-AUTOMATION",
+            "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-024/run-TRACE-024-20260525T073707Z/CMD-TARGET-MODIFICATION-PATHS-001.output.txt",
+            "contentHash": "sha256:0df724cc33760e5151e8630a5083dca7c0e1537b1f5da0482360ea1b38743ded",
+            "producer": "run-confirmed-trace-slice",
+            "purpose": "fresh current-attempt output for CMD-TARGET-MODIFICATION-PATHS-001 covering TRACE-024",
+            "relatedRequirementIds": [
+              "CMD-TARGET-MODIFICATION-PATHS-001",
+              "TRACE-024",
+              "MUST-024",
+              "EVD-024"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+            "outputVersion": "cmd-target-modification-paths-001-trace-024-current-attempt-output-v1",
+            "traceRows": [],
+            "evidenceRefs": []
+          }
+        ]
       }
     ],
     "historicalRunRefs": [
@@ -28079,20 +29118,30 @@
         "commandId": "CMD-AUDIT-STAGE-REGRESSION-001",
         "runId": "run-TRACE-023-20260525T073610Z",
         "closeoutAttemptId": "attempt-TRACE-023-20260525T073610Z"
+      },
+      {
+        "commandId": "CMD-TARGET-MODIFICATION-PATHS-001",
+        "runId": "run-TRACE-024-20260525T073707Z",
+        "closeoutAttemptId": "attempt-TRACE-024-20260525T073707Z"
+      },
+      {
+        "commandId": "CMD-TARGET-MODIFICATION-PATHS-001",
+        "runId": "run-TRACE-024-20260525T073707Z",
+        "closeoutAttemptId": "attempt-TRACE-024-20260525T073707Z"
       }
     ]
   },
   "schemaVersion": "requirement-record/v1",
-  "recordHash": "sha256:e7c00b580ff2cc67d52d3b354a82648a6bf5f78cb91a09740750bccfac0cd99c",
-  "lastAppliedEventId": "implementation_evidence_ingested:2026-05-25T07:36:43.201Z:e41902f7584c",
-  "lastAppliedEventHash": "sha256:fafe8dbb702a7579e6db771b7b8171977028a11ed77c5e8505c65caf8381adc7",
-  "eventChainHead": "sha256:fafe8dbb702a7579e6db771b7b8171977028a11ed77c5e8505c65caf8381adc7",
-  "eventCount": 23,
+  "recordHash": "sha256:5672363c679af5b4b45f39c587ecb911be9bf92e354c7b44cc268e23222144e7",
+  "lastAppliedEventId": "implementation_evidence_ingested:2026-05-25T07:37:39.627Z:0df3b5f3227f",
+  "lastAppliedEventHash": "sha256:34a73d7477d81c87a4569cfd0fb689c2bf5a7fc06ce077f47991b1664d978f9e",
+  "eventChainHead": "sha256:34a73d7477d81c87a4569cfd0fb689c2bf5a7fc06ce077f47991b1664d978f9e",
+  "eventCount": 24,
   "controlStore": {
     "schemaVersion": "control-store/v1",
     "eventLogPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/events/control-events.jsonl",
-    "lastEventId": "implementation_evidence_ingested:2026-05-25T07:36:43.201Z:e41902f7584c",
-    "lastEventHash": "sha256:fafe8dbb702a7579e6db771b7b8171977028a11ed77c5e8505c65caf8381adc7",
+    "lastEventId": "implementation_evidence_ingested:2026-05-25T07:37:39.627Z:0df3b5f3227f",
+    "lastEventHash": "sha256:34a73d7477d81c87a4569cfd0fb689c2bf5a7fc06ce077f47991b1664d978f9e",
     "reducer": "canonical-requirement-record-reducer/v1",
     "atomicCommitter": "requirement-record-control-store/v1"
   }
