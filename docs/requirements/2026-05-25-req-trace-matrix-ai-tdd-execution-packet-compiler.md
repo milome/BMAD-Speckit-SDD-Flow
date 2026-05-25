@@ -1416,11 +1416,12 @@ implementationConfirmation:
       sourceOfTruthRole: repository_skill_surface
       canAffectControlFlow: true
       evidenceRefs: [EVD-011, EVD-012]
+      linkedEvidenceIds: [EVD-011, EVD-012]
       traceRows: [TRACE-008]
       failureSemantics: "If confirmed-source routing text is absent or inconsistent, skill contract tests must fail."
       idempotencySemantics: "Surface regeneration must preserve the same compiler routing rule and not duplicate conflicting legacy instructions."
       recoverySemantics: "Recover by syncing the source skill surface and rerunning skill contract plus encoding gates."
-      description: "Project Codex skill surface for execution packet compiler usage."
+      description: "Project Codex skill surface for execution packet compiler usage; must fail closed when confirmed-source routing is absent, preserve idempotent routing text during regeneration, and recover by sync plus skill/encoding receipt checks."
     - artifactId: ART-008
       path: "_bmad/skills/req-trace-matrix-prompt-generator/SKILL.md"
       artifactType: skill
@@ -1470,11 +1471,12 @@ implementationConfirmation:
       sourceOfTruthRole: sync_oracle
       canAffectControlFlow: true
       evidenceRefs: [EVD-011, EVD-012]
+      linkedEvidenceIds: [EVD-011, EVD-012]
       traceRows: [TRACE-008]
       failureSemantics: "Sync contract must fail if installed or repository skill surfaces diverge on compiler routing."
       idempotencySemantics: "Repeated sync validation reads the same surfaces and produces the same pass/fail result."
       recoverySemantics: "Recover by syncing surfaces and rerunning sync plus encoding checks."
-      description: "Global skill sync regression for installed and repository surfaces."
+      description: "Global skill sync regression for installed and repository surfaces; must fail closed on routing divergence, remain idempotent across repeated checks, and recover by sync plus encoding receipt checks."
   requiredCommands:
     - id: CMD-TEST-001
       command: "npx vitest run tests/acceptance/req-trace-confirmation-block-generator.test.ts"
