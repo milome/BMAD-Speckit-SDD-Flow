@@ -1,0 +1,379 @@
+{
+  "eventType": "execution_iteration_recorded",
+  "recordId": "REQ-CHECKPOINT-AUTOMATION",
+  "requirementSetId": "REQSET-CHECKPOINT-AUTOMATION",
+  "executionIterationId": "execution-TRACE-014-run-TRACE-014-20260525T072458Z",
+  "runId": "run-TRACE-014-20260525T072458Z",
+  "closeoutAttemptId": "attempt-TRACE-014-20260525T072458Z",
+  "status": "done",
+  "sourceDocumentHash": "sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad",
+  "implementationConfirmationHash": "sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+  "traceRows": [
+    "TRACE-014"
+  ],
+  "taskRefs": [
+    "TASK-014"
+  ],
+  "evidenceRefs": [
+    "EVD-014"
+  ],
+  "filesChanged": [
+    "scripts/run-confirmed-trace-slice.js"
+  ],
+  "implementationDelta": {
+    "filesChanged": [
+      "scripts/run-confirmed-trace-slice.js"
+    ],
+    "diffSummaryRef": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-014/run-TRACE-014-20260525T072458Z/trace-014-diff-summary.md",
+    "behaviorAffecting": true,
+    "negativeAssertionArtifactRefs": [
+      {
+        "artifactType": "command_run_output",
+        "sourceOfTruthRole": "evidence",
+        "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-014/run-TRACE-014-20260525T072458Z/CMD-CANONICAL-SURFACE-001.output.txt",
+        "hash": "sha256:394ab1156f4e0127396118635182c3789454e6dfcab529d9df0666e50ae647e0",
+        "producer": "run-confirmed-trace-slice",
+        "purpose": "fresh current-attempt output for CMD-CANONICAL-SURFACE-001 covering TRACE-014",
+        "relatedRequirementIds": [
+          "CMD-CANONICAL-SURFACE-001",
+          "TRACE-014",
+          "MUST-014",
+          "EVD-014"
+        ],
+        "status": "active",
+        "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+        "outputVersion": "cmd-canonical-surface-001-trace-014-current-attempt-output-v1"
+      },
+      {
+        "artifactType": "command_run_output",
+        "sourceOfTruthRole": "evidence",
+        "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-014/run-TRACE-014-20260525T072458Z/CMD-CANONICAL-SURFACE-001.output.txt",
+        "hash": "sha256:394ab1156f4e0127396118635182c3789454e6dfcab529d9df0666e50ae647e0",
+        "producer": "run-confirmed-trace-slice",
+        "purpose": "fresh current-attempt output for CMD-CANONICAL-SURFACE-001 covering TRACE-014",
+        "relatedRequirementIds": [
+          "CMD-CANONICAL-SURFACE-001",
+          "TRACE-014",
+          "MUST-014",
+          "EVD-014"
+        ],
+        "status": "active",
+        "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+        "outputVersion": "cmd-canonical-surface-001-trace-014-current-attempt-output-v1"
+      },
+      {
+        "artifactType": "command_run_receipt",
+        "sourceOfTruthRole": "evidence",
+        "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-014/run-TRACE-014-20260525T072458Z/trace-014-command-receipt.json",
+        "hash": "sha256:582ec52f86cac8c8c3dd0ce0c0cc65a7874e21e95a6a42932d8f50906dba21f0",
+        "producer": "run-confirmed-trace-slice",
+        "purpose": "current-attempt command receipt bundle for TRACE-014",
+        "relatedRequirementIds": [
+          "TRACE-014",
+          "MUST-014",
+          "EVD-014"
+        ],
+        "status": "active",
+        "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+        "outputVersion": "trace-014-command-receipt-v1"
+      },
+      {
+        "artifactType": "completion_evidence_packet",
+        "sourceOfTruthRole": "evidence",
+        "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-014/run-TRACE-014-20260525T072458Z/trace-014-completion-evidence-packet.json",
+        "hash": "sha256:26478c0ae231f814acfdfc59671cce6f96ba7c721afd42ed5f74c87bafce732e",
+        "producer": "run-confirmed-trace-slice",
+        "purpose": "current-attempt completion evidence packet for TRACE-014",
+        "relatedRequirementIds": [
+          "TRACE-014",
+          "MUST-014",
+          "EVD-014"
+        ],
+        "status": "active",
+        "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+        "outputVersion": "trace-014-completion-evidence-packet-v1"
+      },
+      {
+        "artifactType": "diff_summary",
+        "sourceOfTruthRole": "evidence",
+        "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-014/run-TRACE-014-20260525T072458Z/trace-014-diff-summary.md",
+        "hash": "sha256:1722850dc28bd9a1c2c0605e1ffc9ac48fbf670c2918b377bc679471d937db58",
+        "producer": "run-confirmed-trace-slice",
+        "purpose": "runtime closure diff summary for TRACE-014",
+        "relatedRequirementIds": [
+          "TRACE-014",
+          "MUST-014",
+          "EVD-014"
+        ],
+        "status": "active",
+        "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+        "outputVersion": "trace-014-diff-summary-v1"
+      }
+    ]
+  },
+  "diffSummary": "Recorded current-attempt runtime closure evidence for TRACE-014 from confirmed implementationConfirmation IDs.",
+  "commandRuns": [
+    {
+      "commandId": "CMD-CANONICAL-SURFACE-001",
+      "command": "npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts",
+      "runId": "run-TRACE-014-20260525T072458Z",
+      "closeoutAttemptId": "attempt-TRACE-014-20260525T072458Z",
+      "exitCode": 0,
+      "startedAt": "2026-05-25T07:24:58.982Z",
+      "completedAt": "2026-05-25T07:25:15.044Z",
+      "outputPath": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-014/run-TRACE-014-20260525T072458Z/CMD-CANONICAL-SURFACE-001.output.txt",
+      "outputSummary": "COMMAND_ID: CMD-CANONICAL-SURFACE-001 | COMMAND: npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts | RUN_ID: run-TRACE-014-20260525T072458Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-014-20260525T072458Z | STARTED_AT: 2026-05-25T07:24:58.982Z | COMPLETED_AT: 2026-05-25T07:25:15.044Z | EXIT_CODE: 0 | STDOUT: | \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/reverse-audit-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m20 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 3833\u001b[2mms\u001b[22m\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/requirements-contract-checkpoint-automation.test.ts \u001b[2m(\u001b[22m\u001b[2m14 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 14010\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m fails closed when unrelated staged files exist before checkpoint commit \u001b[33m 343\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m creates a single-file checkpoint commit and progress record \u001b[33m 713\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m blocks pre-render readiness when checkpoint logs exist but global consistency is missing \u001b[33m 4298\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs all pre-render checkpoints as separate commits and reports ready only after global consistency passes \u001b[33m 3876\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m resumes from progress next checkpoint and runs remaining checkpoints separately \u001b[33m 3963\u001b[2mms\u001b[22m\u001b[39m | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m34 passed\u001b[39m\u001b[22m\u001b[90m (34)\u001b[39m | \u001b[2m   Start at \u001b[22m 15:25:00 | \u001b[2m   Duration \u001b[22m 14.23s\u001b[2m (transform 104ms, setup 0ms, import 169ms, tests 17.84s, environment 0ms)\u001b[22m | STDERR:"
+    },
+    {
+      "commandId": "CMD-CANONICAL-SURFACE-001",
+      "command": "npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts",
+      "runId": "run-TRACE-014-20260525T072458Z",
+      "closeoutAttemptId": "attempt-TRACE-014-20260525T072458Z",
+      "exitCode": 0,
+      "startedAt": "2026-05-25T07:25:15.045Z",
+      "completedAt": "2026-05-25T07:25:31.389Z",
+      "outputPath": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-014/run-TRACE-014-20260525T072458Z/CMD-CANONICAL-SURFACE-001.output.txt",
+      "outputSummary": "COMMAND_ID: CMD-CANONICAL-SURFACE-001 | COMMAND: npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts | RUN_ID: run-TRACE-014-20260525T072458Z | CLOSEOUT_ATTEMPT_ID: attempt-TRACE-014-20260525T072458Z | STARTED_AT: 2026-05-25T07:25:15.045Z | COMPLETED_AT: 2026-05-25T07:25:31.389Z | EXIT_CODE: 0 | STDOUT: | \u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/reverse-audit-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m20 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 4083\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m fails delivery readiness only in readiness mode \u001b[33m 325\u001b[2mms\u001b[22m\u001b[39m |  \u001b[32m✓\u001b[39m tests/acceptance/requirements-contract-checkpoint-automation.test.ts \u001b[2m(\u001b[22m\u001b[2m14 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 14297\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m fails closed when unrelated staged files exist before checkpoint commit \u001b[33m 388\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m creates a single-file checkpoint commit and progress record \u001b[33m 728\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m blocks pre-render readiness when checkpoint logs exist but global consistency is missing \u001b[33m 4540\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs all pre-render checkpoints as separate commits and reports ready only after global consistency passes \u001b[33m 3893\u001b[2mms\u001b[22m\u001b[39m |      \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m resumes from progress next checkpoint and runs remaining checkpoints separately \u001b[33m 3929\u001b[2mms\u001b[22m\u001b[39m | \u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m | \u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m34 passed\u001b[39m\u001b[22m\u001b[90m (34)\u001b[39m | \u001b[2m   Start at \u001b[22m 15:25:16 | \u001b[2m   Duration \u001b[22m 14.52s\u001b[2m (transform 100ms, setup 0ms, import 167ms, tests 18.38s, environment 0ms)\u001b[22m | STDERR:"
+    }
+  ],
+  "artifactRefs": [
+    {
+      "artifactType": "command_run_output",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-014/run-TRACE-014-20260525T072458Z/CMD-CANONICAL-SURFACE-001.output.txt",
+      "hash": "sha256:394ab1156f4e0127396118635182c3789454e6dfcab529d9df0666e50ae647e0",
+      "producer": "run-confirmed-trace-slice",
+      "purpose": "fresh current-attempt output for CMD-CANONICAL-SURFACE-001 covering TRACE-014",
+      "relatedRequirementIds": [
+        "CMD-CANONICAL-SURFACE-001",
+        "TRACE-014",
+        "MUST-014",
+        "EVD-014"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+      "outputVersion": "cmd-canonical-surface-001-trace-014-current-attempt-output-v1"
+    },
+    {
+      "artifactType": "command_run_output",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-014/run-TRACE-014-20260525T072458Z/CMD-CANONICAL-SURFACE-001.output.txt",
+      "hash": "sha256:394ab1156f4e0127396118635182c3789454e6dfcab529d9df0666e50ae647e0",
+      "producer": "run-confirmed-trace-slice",
+      "purpose": "fresh current-attempt output for CMD-CANONICAL-SURFACE-001 covering TRACE-014",
+      "relatedRequirementIds": [
+        "CMD-CANONICAL-SURFACE-001",
+        "TRACE-014",
+        "MUST-014",
+        "EVD-014"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+      "outputVersion": "cmd-canonical-surface-001-trace-014-current-attempt-output-v1"
+    },
+    {
+      "artifactType": "command_run_receipt",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-014/run-TRACE-014-20260525T072458Z/trace-014-command-receipt.json",
+      "hash": "sha256:582ec52f86cac8c8c3dd0ce0c0cc65a7874e21e95a6a42932d8f50906dba21f0",
+      "producer": "run-confirmed-trace-slice",
+      "purpose": "current-attempt command receipt bundle for TRACE-014",
+      "relatedRequirementIds": [
+        "TRACE-014",
+        "MUST-014",
+        "EVD-014"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+      "outputVersion": "trace-014-command-receipt-v1"
+    },
+    {
+      "artifactType": "completion_evidence_packet",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-014/run-TRACE-014-20260525T072458Z/trace-014-completion-evidence-packet.json",
+      "hash": "sha256:26478c0ae231f814acfdfc59671cce6f96ba7c721afd42ed5f74c87bafce732e",
+      "producer": "run-confirmed-trace-slice",
+      "purpose": "current-attempt completion evidence packet for TRACE-014",
+      "relatedRequirementIds": [
+        "TRACE-014",
+        "MUST-014",
+        "EVD-014"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+      "outputVersion": "trace-014-completion-evidence-packet-v1"
+    },
+    {
+      "artifactType": "diff_summary",
+      "sourceOfTruthRole": "evidence",
+      "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-014/run-TRACE-014-20260525T072458Z/trace-014-diff-summary.md",
+      "hash": "sha256:1722850dc28bd9a1c2c0605e1ffc9ac48fbf670c2918b377bc679471d937db58",
+      "producer": "run-confirmed-trace-slice",
+      "purpose": "runtime closure diff summary for TRACE-014",
+      "relatedRequirementIds": [
+        "TRACE-014",
+        "MUST-014",
+        "EVD-014"
+      ],
+      "status": "active",
+      "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+      "outputVersion": "trace-014-diff-summary-v1"
+    }
+  ],
+  "contractChecks": [],
+  "gateChecks": [
+    {
+      "gate": "CMD-CANONICAL-SURFACE-001",
+      "decision": "pass",
+      "checkId": "TRACE-014:CMD-CANONICAL-SURFACE-001:run-TRACE-014-20260525T072458Z"
+    },
+    {
+      "gate": "CMD-CANONICAL-SURFACE-001",
+      "decision": "pass",
+      "checkId": "TRACE-014:CMD-CANONICAL-SURFACE-001:run-TRACE-014-20260525T072458Z"
+    }
+  ],
+  "deliveryEvidence": {
+    "requiredCommands": [
+      {
+        "commandId": "CMD-CANONICAL-SURFACE-001",
+        "command": "npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts",
+        "commandType": "delivery_evidence",
+        "blockingIfMissing": true,
+        "negativeOrRegression": true,
+        "closeoutAttemptId": "attempt-TRACE-014-20260525T072458Z",
+        "lastRunRef": {
+          "commandId": "CMD-CANONICAL-SURFACE-001",
+          "runId": "run-TRACE-014-20260525T072458Z",
+          "closeoutAttemptId": "attempt-TRACE-014-20260525T072458Z"
+        },
+        "traceRows": [
+          "TRACE-014"
+        ],
+        "evidenceRefs": [
+          "EVD-014"
+        ],
+        "artifactRefs": [
+          {
+            "artifactType": "command_run_output",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-014/run-TRACE-014-20260525T072458Z/CMD-CANONICAL-SURFACE-001.output.txt",
+            "hash": "sha256:394ab1156f4e0127396118635182c3789454e6dfcab529d9df0666e50ae647e0",
+            "producer": "run-confirmed-trace-slice",
+            "purpose": "fresh current-attempt output for CMD-CANONICAL-SURFACE-001 covering TRACE-014",
+            "relatedRequirementIds": [
+              "CMD-CANONICAL-SURFACE-001",
+              "TRACE-014",
+              "MUST-014",
+              "EVD-014"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+            "outputVersion": "cmd-canonical-surface-001-trace-014-current-attempt-output-v1"
+          },
+          {
+            "artifactType": "command_run_output",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-014/run-TRACE-014-20260525T072458Z/CMD-CANONICAL-SURFACE-001.output.txt",
+            "hash": "sha256:394ab1156f4e0127396118635182c3789454e6dfcab529d9df0666e50ae647e0",
+            "producer": "run-confirmed-trace-slice",
+            "purpose": "fresh current-attempt output for CMD-CANONICAL-SURFACE-001 covering TRACE-014",
+            "relatedRequirementIds": [
+              "CMD-CANONICAL-SURFACE-001",
+              "TRACE-014",
+              "MUST-014",
+              "EVD-014"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+            "outputVersion": "cmd-canonical-surface-001-trace-014-current-attempt-output-v1"
+          }
+        ]
+      },
+      {
+        "commandId": "CMD-CANONICAL-SURFACE-001",
+        "command": "npx vitest run tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts",
+        "commandType": "delivery_evidence",
+        "blockingIfMissing": true,
+        "negativeOrRegression": true,
+        "closeoutAttemptId": "attempt-TRACE-014-20260525T072458Z",
+        "lastRunRef": {
+          "commandId": "CMD-CANONICAL-SURFACE-001",
+          "runId": "run-TRACE-014-20260525T072458Z",
+          "closeoutAttemptId": "attempt-TRACE-014-20260525T072458Z"
+        },
+        "traceRows": [
+          "TRACE-014"
+        ],
+        "evidenceRefs": [
+          "EVD-014"
+        ],
+        "artifactRefs": [
+          {
+            "artifactType": "command_run_output",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-014/run-TRACE-014-20260525T072458Z/CMD-CANONICAL-SURFACE-001.output.txt",
+            "hash": "sha256:394ab1156f4e0127396118635182c3789454e6dfcab529d9df0666e50ae647e0",
+            "producer": "run-confirmed-trace-slice",
+            "purpose": "fresh current-attempt output for CMD-CANONICAL-SURFACE-001 covering TRACE-014",
+            "relatedRequirementIds": [
+              "CMD-CANONICAL-SURFACE-001",
+              "TRACE-014",
+              "MUST-014",
+              "EVD-014"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+            "outputVersion": "cmd-canonical-surface-001-trace-014-current-attempt-output-v1"
+          },
+          {
+            "artifactType": "command_run_output",
+            "sourceOfTruthRole": "evidence",
+            "path": "_bmad-output/runtime/requirement-records/REQ-CHECKPOINT-AUTOMATION/evidence/TRACE-014/run-TRACE-014-20260525T072458Z/CMD-CANONICAL-SURFACE-001.output.txt",
+            "hash": "sha256:394ab1156f4e0127396118635182c3789454e6dfcab529d9df0666e50ae647e0",
+            "producer": "run-confirmed-trace-slice",
+            "purpose": "fresh current-attempt output for CMD-CANONICAL-SURFACE-001 covering TRACE-014",
+            "relatedRequirementIds": [
+              "CMD-CANONICAL-SURFACE-001",
+              "TRACE-014",
+              "MUST-014",
+              "EVD-014"
+            ],
+            "status": "active",
+            "inputVersion": "source=sha256:405e440bedbb7498774f4200d9ebb377bad782d64c0d87dc2e565e1f722a14ad;implementation=sha256:f150f22376bc2aa942a030fe8c7b3e91361f27f0d9255824b92648015b0087c8",
+            "outputVersion": "cmd-canonical-surface-001-trace-014-current-attempt-output-v1"
+          }
+        ]
+      }
+    ],
+    "historicalRunRefs": [
+      {
+        "commandId": "CMD-CANONICAL-SURFACE-001",
+        "runId": "run-TRACE-014-20260525T072458Z",
+        "closeoutAttemptId": "attempt-TRACE-014-20260525T072458Z"
+      },
+      {
+        "commandId": "CMD-CANONICAL-SURFACE-001",
+        "runId": "run-TRACE-014-20260525T072458Z",
+        "closeoutAttemptId": "attempt-TRACE-014-20260525T072458Z"
+      }
+    ]
+  },
+  "requirementClosures": [
+    {
+      "requirementId": "TRACE-014",
+      "status": "pass",
+      "closureSource": "confirmed_trace_runtime_current_attempt"
+    },
+    {
+      "requirementId": "MUST-014",
+      "status": "pass",
+      "closureSource": "confirmed_trace_runtime_current_attempt"
+    },
+    {
+      "requirementId": "EVD-014",
+      "status": "pass",
+      "closureSource": "confirmed_trace_runtime_current_attempt"
+    }
+  ]
+}
