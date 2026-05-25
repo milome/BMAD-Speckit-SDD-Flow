@@ -1187,11 +1187,184 @@ implementationConfirmation:
         - "Generated artifacts cannot prove implementation delivery."
         - "ExitCode-only, mock-only, stale, smoke-only, legacy, or self-certified evidence cannot close requirements."
         - "Confirmed source traceRows.status cannot be rewritten as runtime PASS."
-  artifactAutomationPlan: []
-  requiredCommands: []
-  suggestedCommands: []
+  artifactAutomationPlan:
+    - artifactId: ART-001
+      path: "_bmad-output/runtime/requirement-records/<recordId>/trace-execution/model_packet.json"
+      artifactType: execution_packet
+      group: executionInput
+      sourceOfTruthRole: execution_authority
+      canAffectControlFlow: true
+      generatedBy: "_bmad/skills/req-trace-matrix-prompt-generator/scripts/generate_prompt.js"
+      evidenceRefs: [EVD-001, EVD-006, EVD-007, EVD-009, EVD-010]
+      traceRows: [TRACE-001, TRACE-004, TRACE-005, TRACE-007]
+      description: "Machine-readable AI-TDD execution packet and primary execution authority."
+    - artifactId: ART-002
+      path: "_bmad-output/runtime/requirement-records/<recordId>/trace-execution/human_prompt.txt"
+      artifactType: prompt_projection
+      group: executionInput
+      sourceOfTruthRole: projection
+      canAffectControlFlow: false
+      generatedBy: "_bmad/skills/req-trace-matrix-prompt-generator/scripts/generate_prompt.js"
+      evidenceRefs: [EVD-001, EVD-002, EVD-007, EVD-009, EVD-010]
+      traceRows: [TRACE-001, TRACE-004, TRACE-005, TRACE-007]
+      description: "Human-readable projection over model_packet.json; it must not add authority."
+    - artifactId: ART-003
+      path: "_bmad-output/runtime/requirement-records/<recordId>/trace-execution/audit_receipt.json"
+      artifactType: generator_receipt
+      group: executionEvidence
+      sourceOfTruthRole: generator_self_audit
+      canAffectControlFlow: false
+      generatedBy: "_bmad/skills/req-trace-matrix-prompt-generator/scripts/generate_prompt.js"
+      evidenceRefs: [EVD-001, EVD-003, EVD-005, EVD-007, EVD-008, EVD-009, EVD-010]
+      traceRows: [TRACE-001, TRACE-002, TRACE-003, TRACE-005, TRACE-006, TRACE-007]
+      completionProofPolicy: not_completion_proof
+      description: "Self-audit receipt for generation validity; never delivery verification."
+    - artifactId: ART-004
+      path: "_bmad/skills/req-trace-matrix-prompt-generator/scripts/generate_prompt.js"
+      artifactType: script
+      group: scripts
+      sourceOfTruthRole: implementation
+      canAffectControlFlow: true
+      evidenceRefs: [EVD-001, EVD-002, EVD-003, EVD-006, EVD-009]
+      traceRows: [TRACE-001, TRACE-004]
+      description: "Primary Node compiler implementation."
+    - artifactId: ART-005
+      path: "_bmad/skills/req-trace-matrix-prompt-generator/scripts/generate_prompt.py"
+      artifactType: script
+      group: scripts
+      sourceOfTruthRole: compatibility_launcher
+      canAffectControlFlow: true
+      evidenceRefs: [EVD-011, EVD-012]
+      traceRows: [TRACE-008]
+      description: "Compatibility launcher must route to the compiler behavior, not legacy prompt-only behavior."
+    - artifactId: ART-006
+      path: "scripts/ai-tdd-contract-gate.ts"
+      artifactType: gate
+      group: scripts
+      sourceOfTruthRole: contract_manifest_standard
+      canAffectControlFlow: true
+      evidenceRefs: [EVD-005, EVD-007, EVD-008]
+      traceRows: [TRACE-003, TRACE-006]
+      description: "AI-TDD ContractExecutionManifest standard consumed by the compiler validator."
+    - artifactId: ART-007
+      path: ".codex/skills/req-trace-matrix-prompt-generator/SKILL.md"
+      artifactType: skill
+      group: skillSurface
+      sourceOfTruthRole: repository_skill_surface
+      canAffectControlFlow: true
+      evidenceRefs: [EVD-011, EVD-012]
+      traceRows: [TRACE-008]
+      description: "Project Codex skill surface for execution packet compiler usage."
+    - artifactId: ART-008
+      path: "_bmad/skills/req-trace-matrix-prompt-generator/SKILL.md"
+      artifactType: skill
+      group: skillSurface
+      sourceOfTruthRole: bmad_skill_surface
+      canAffectControlFlow: true
+      evidenceRefs: [EVD-011, EVD-012]
+      traceRows: [TRACE-008]
+      description: "BMAD skill surface mirrored with compiler routing semantics."
+    - artifactId: ART-009
+      path: "tests/acceptance/req-trace-confirmation-block-generator.test.ts"
+      artifactType: test
+      group: tests
+      sourceOfTruthRole: acceptance_oracle
+      canAffectControlFlow: true
+      evidenceRefs: [EVD-001, EVD-002, EVD-003, EVD-004, EVD-005, EVD-006, EVD-007, EVD-008, EVD-009, EVD-010]
+      traceRows: [TRACE-001, TRACE-002, TRACE-003, TRACE-004, TRACE-005, TRACE-006, TRACE-007]
+      description: "Main acceptance regression suite for compiler packet, prompt, receipt, and false-positive blockers."
+    - artifactId: ART-010
+      path: "tests/acceptance/ai-tdd-contract-gate.test.ts"
+      artifactType: test
+      group: tests
+      sourceOfTruthRole: manifest_gate_oracle
+      canAffectControlFlow: true
+      evidenceRefs: [EVD-005, EVD-007, EVD-008]
+      traceRows: [TRACE-003, TRACE-005, TRACE-006]
+      description: "AI-TDD manifest completeness and red-proof-plan regression suite."
+    - artifactId: ART-011
+      path: "tests/acceptance/requirements-contract-authoring-skill-contract.test.ts"
+      artifactType: test
+      group: tests
+      sourceOfTruthRole: skill_contract_oracle
+      canAffectControlFlow: true
+      evidenceRefs: [EVD-011, EVD-012]
+      traceRows: [TRACE-008]
+      description: "Skill contract regression for confirmed-source routing."
+    - artifactId: ART-012
+      path: "tests/acceptance/setup-global-skill-sync-contract.test.ts"
+      artifactType: test
+      group: tests
+      sourceOfTruthRole: sync_oracle
+      canAffectControlFlow: true
+      evidenceRefs: [EVD-011, EVD-012]
+      traceRows: [TRACE-008]
+      description: "Global skill sync regression for installed and repository surfaces."
+  requiredCommands:
+    - id: CMD-TEST-001
+      command: "npx vitest run tests/acceptance/req-trace-confirmation-block-generator.test.ts"
+      purpose: "Validate compiler outputs, packet sections, prompt projection, receipt hashes, and trace slice fields."
+      purposeZh: "验证编译器输出、执行包区块、prompt 投影、receipt hash 和 trace slice 字段。"
+      traceRows: [TRACE-001, TRACE-004, TRACE-006]
+      evidenceRefs: [EVD-001, EVD-002, EVD-003, EVD-006, EVD-008, EVD-009]
+      targetFiles: [tests/acceptance/req-trace-confirmation-block-generator.test.ts]
+      expectedResult: "exit 0 only when packet, prompt, receipt, block codes, and section coverage assertions pass."
+    - id: CMD-TEST-002
+      command: "npx vitest run tests/acceptance/req-trace-confirmation-block-generator.test.ts tests/acceptance/requirements-confirmation-ingest.test.ts"
+      purpose: "Validate Source/Record authority and preserve confirmation ingest/hash behavior."
+      purposeZh: "验证 Source/Record 权威并保持确认 ingest/hash 行为。"
+      traceRows: [TRACE-002]
+      evidenceRefs: [EVD-004]
+      targetFiles: [tests/acceptance/req-trace-confirmation-block-generator.test.ts, tests/acceptance/requirements-confirmation-ingest.test.ts]
+      expectedResult: "exit 0 only when invalid source/record fixtures block and confirmed source fixtures pass."
+    - id: CMD-TEST-003
+      command: "npx vitest run tests/acceptance/req-trace-confirmation-block-generator.test.ts tests/acceptance/ai-tdd-contract-gate.test.ts"
+      purpose: "Validate ContractExecutionManifest completeness, error-case closure, acceptanceRefs, and red proof plan requirements."
+      purposeZh: "验证 ContractExecutionManifest 完整性、错误用例闭环、acceptanceRefs 和 red proof plan 要求。"
+      traceRows: [TRACE-003, TRACE-005, TRACE-006]
+      evidenceRefs: [EVD-005, EVD-007, EVD-008]
+      targetFiles: [tests/acceptance/req-trace-confirmation-block-generator.test.ts, tests/acceptance/ai-tdd-contract-gate.test.ts]
+      expectedResult: "exit 0 only when missing manifest sections, missing acceptance bindings, and missing redProofPlan are blocked."
+    - id: CMD-TEST-004
+      command: "npx vitest run tests/acceptance/req-trace-confirmation-block-generator.test.ts tests/acceptance/strict-closeout-proof-gate.test.ts"
+      purpose: "Validate invalid proof taxonomy and closeout authority boundaries."
+      purposeZh: "验证无效证明分类和 closeout 权威边界。"
+      traceRows: [TRACE-007]
+      evidenceRefs: [EVD-006, EVD-010]
+      targetFiles: [tests/acceptance/req-trace-confirmation-block-generator.test.ts, tests/acceptance/strict-closeout-proof-gate.test.ts]
+      expectedResult: "exit 0 only when generated artifacts forbid completion packet, exitCode-only, mock-only, stale, smoke-only, legacy, and self-certified proof."
+    - id: CMD-TEST-005
+      command: "npx vitest run tests/acceptance/requirements-contract-authoring-skill-contract.test.ts tests/acceptance/setup-global-skill-sync-contract.test.ts"
+      purpose: "Validate confirmed-source compiler routing across skill surfaces and synced hosts."
+      purposeZh: "验证技能表面和同步宿主中的已确认源文档编译器路由。"
+      traceRows: [TRACE-008]
+      evidenceRefs: [EVD-011, EVD-012]
+      targetFiles: [tests/acceptance/requirements-contract-authoring-skill-contract.test.ts, tests/acceptance/setup-global-skill-sync-contract.test.ts]
+      expectedResult: "exit 0 only when bugfix, standalone tasks, and story flows route confirmed implementationConfirmation through the compiler."
+    - id: CMD-ENCODING-001
+      command: "node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js"
+      purpose: "Validate UTF-8 integrity for modified skill, script, test, and requirements surfaces."
+      purposeZh: "验证修改后的 skill、script、test 和 requirements 表面 UTF-8 完整性。"
+      traceRows: [TRACE-008]
+      evidenceRefs: [EVD-012]
+      targetFiles: [_bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js]
+      expectedResult: "checkedFiles reports zero findings."
+  suggestedCommands:
+    - id: CMD-SMOKE-001
+      command: "node _bmad/skills/req-trace-matrix-prompt-generator/scripts/generate_prompt.js --source <confirmed-source.md> --out-dir _bmad-output/runtime/requirement-records/<recordId>/trace-execution --json"
+      purpose: "Manual smoke for artifact emission shape; not acceptance by itself."
+      traceRows: [TRACE-001]
+      evidenceRefs: [EVD-001, EVD-003]
+      acceptanceRole: smoke_only_not_closeout
   closeoutReadinessPreview:
-    requiredCommands: []
+    requiredCommands: [CMD-TEST-001, CMD-TEST-002, CMD-TEST-003, CMD-TEST-004, CMD-TEST-005, CMD-ENCODING-001]
     orphanPolicy: "No generated packet, prompt, or receipt may count as closeout proof by itself."
     currentAttemptPolicy: "Delivery verification and closeout integrity must consume current-attempt controlled reports."
+    recordClosedPolicy: "record_closed may only be written by existing AI-TDD delivery verification and closeout integrity controlled writers, not by this generator."
+    proofPolicy: "Completion Evidence Packet, audit_receipt.json, stdout, exitCode-only evidence, mock-only evidence, stale attempt evidence, and prompt text are invalid closeout proof."
+    items:
+      - label: "Generation authority"
+        value: "model_packet.json is execution authority; human_prompt.txt is projection; audit_receipt.json is generator self-audit."
+      - label: "Delivery authority"
+        value: "AI-TDD gate, delivery verification, and closeout integrity controlled reports remain the only closeout path."
 ```
