@@ -996,10 +996,197 @@ implementationConfirmation:
       requirementIds: []
       viewRefs: []
       diagramRefs: []
-  sequenceViews: []
-  flowViews: []
-  edgeCaseViews: []
-  boundaryViews: []
+  sequenceViews:
+    - id: SEQ-001
+      title: "Confirmed source compiles into synchronized execution artifacts"
+      titleZh: "已确认源文档编译为同步执行产物"
+      scope: governance
+      covers: [MUST-001, MUST-002, MUST-003, NEG-001, EVD-001, EVD-002, EVD-003, TRACE-001]
+      actor: "executor"
+      system: "req-trace-matrix-prompt-generator compiler"
+      steps:
+        - "Read confirmed implementationConfirmation and controlled requirement record."
+        - "Compile model_packet.json as primary authority."
+        - "Project human_prompt.txt from model_packet.json."
+        - "Write audit_receipt.json with validator decisions and artifact hashes."
+      expectedOutcome: "The three artifacts describe the same source, trace order, manifest projection, and hash set."
+    - id: SEQ-002
+      title: "Source/Record Validator blocks invalid authority"
+      titleZh: "Source/Record Validator 阻断无效权威"
+      scope: governance
+      covers: [MUST-004, EVD-004, TRACE-002, EDGE-001, EDGE-002, EDGE-003]
+      actor: "generator"
+      system: "Source/Record Validator"
+      steps:
+        - "Parse inline implementationConfirmation."
+        - "Require status=user_confirmed."
+        - "Load requirement-record confirmationHistory."
+        - "Compare source and implementationConfirmation hashes."
+        - "Reject blocking open questions, unknown trace refs, and unknown command refs."
+      expectedOutcome: "Artifacts are written only for current confirmed source and record authority."
+    - id: SEQ-003
+      title: "ContractExecutionManifest Validator checks first-class sections"
+      titleZh: "ContractExecutionManifest Validator 校验一等清单"
+      scope: governance
+      covers: [MUST-005, MUST-006, NEG-006, NEG-007, EVD-005, EVD-008, TRACE-003]
+      actor: "generator"
+      system: "ContractExecutionManifest Validator"
+      steps:
+        - "Require aiTddContractGate and currentTargetMap applicability."
+        - "Require non-empty failurePaths, edgeCases, acceptanceTests, and e2eSuites."
+        - "Validate every MUST/NEG closure over TRACE, EVD, ACC or E2E, and CMD."
+        - "Validate traceRows[].acceptanceRefs resolution."
+      expectedOutcome: "Incomplete or happy-path-only manifests fail closed before packet compilation."
+    - id: SEQ-004
+      title: "Error-case coverage is promoted to executable contract input"
+      titleZh: "错误用例覆盖提升为可执行契约输入"
+      scope: governance
+      covers: [MUST-007, NEG-006, FAIL-005, EDGE-008, EVD-005, TRACE-003]
+      actor: "generator"
+      system: "Error Case Coverage Matrix"
+      steps:
+        - "Collect FAIL-* and EDGE-* rows."
+        - "Bind each row to NEG, EVD, TRACE, ACC or E2E, and CMD."
+        - "Emit failurePathRefs and edgeCaseRefs into traceSliceRegistry."
+      expectedOutcome: "No error case remains prose-only or invisible to the execution model."
+    - id: SEQ-005
+      title: "Execution Packet Compiler emits trace slices and runtime policies"
+      titleZh: "Execution Packet Compiler 输出 trace slices 与运行时策略"
+      scope: governance
+      covers: [MUST-008, MUST-009, NEG-004, EVD-006, TRACE-004]
+      actor: "compiler"
+      system: "model_packet.json"
+      steps:
+        - "Build all mandatory top-level packet sections."
+        - "Compile each traceRows[] entry into a trace slice."
+        - "Copy requirement, negative, failure, edge, acceptance, command, artifact, target, canonical, legacy, and proof refs."
+        - "Emit allowedRuntimeWrites and forbiddenProofTypes per trace slice."
+      expectedOutcome: "The model executes from structured packet fields rather than prose inference."
+    - id: SEQ-006
+      title: "RED/GREEN/REFACTOR/CLOSEOUT state machine is explicit"
+      titleZh: "RED/GREEN/REFACTOR/CLOSEOUT 状态机显式化"
+      scope: governance
+      covers: [MUST-010, NEG-008, FAIL-007, EDGE-009, EVD-007, TRACE-005]
+      actor: "executor"
+      system: "redGreenRefactorStateMachine"
+      steps:
+        - "RED requires expected_red and redProofPlan before implementation."
+        - "GREEN implements only the active trace slice."
+        - "REFACTOR runs only after slice green and reruns related tests."
+        - "CLOSEOUT accepts only current-attempt controlled verification."
+      expectedOutcome: "The generated execution plan cannot skip red proof planning or close by self-certification."
+    - id: SEQ-007
+      title: "BLOCK decision table has stable failure semantics"
+      titleZh: "BLOCK 决策表具备稳定失败语义"
+      scope: governance
+      covers: [MUST-011, EVD-008, TRACE-006, FAIL-005, FAIL-006, FAIL-007]
+      actor: "generator"
+      system: "blockingDecisionTable"
+      steps:
+        - "Map each invalid source or manifest condition to an explicit BLOCK code."
+        - "Write the BLOCK code into audit_receipt.json."
+        - "Stop before artifact emission when a blocking condition exists."
+      expectedOutcome: "Invalid inputs produce deterministic BLOCK codes rather than generic warnings or misleading PASS."
+    - id: SEQ-008
+      title: "Skill integrations route confirmed sources through compiler"
+      titleZh: "技能集成将已确认源文档路由到编译器"
+      scope: governance
+      covers: [MUST-012, NEG-009, EVD-011, EVD-012, TRACE-008]
+      actor: "bugfix standalone story skills"
+      system: "req-trace-matrix-prompt-generator"
+      steps:
+        - "Detect confirmed implementationConfirmation."
+        - "Invoke the compiler instead of legacy prompt templates."
+        - "Use legacy prompt fallback only when no confirmed source exists."
+      expectedOutcome: "Confirmed requirements always produce structured AI-TDD execution packet inputs."
+  flowViews:
+    - id: FLOW-001
+      title: "Compiler pipeline state flow"
+      titleZh: "编译器流水线状态流"
+      scope: governance
+      covers: [MUST-001, MUST-004, MUST-005, MUST-008, MUST-010, TRACE-001, TRACE-002, TRACE-003, TRACE-004, TRACE-005]
+      states:
+        - "source_received"
+        - "source_record_validated"
+        - "manifest_validated"
+        - "packet_compiled"
+        - "prompt_projected"
+        - "receipt_written"
+        - "ready_for_execution_packet_use"
+      forbiddenTransitions:
+        - "source_received -> packet_compiled without Source/Record Validator PASS"
+        - "manifest_validated -> closeout without AI-TDD delivery verification"
+        - "prompt_projected -> primary_authority"
+    - id: FLOW-002
+      title: "TDD slice execution state flow"
+      titleZh: "TDD 切片执行状态流"
+      scope: governance
+      covers: [MUST-010, NEG-002, NEG-003, NEG-005, NEG-008, TRACE-005, TRACE-007]
+      states:
+        - "trace_slice_selected"
+        - "red_plan_declared"
+        - "expected_red_proven_in_runtime"
+        - "green_attempted"
+        - "slice_green"
+        - "refactor_guarded"
+        - "delivery_verification_required"
+      forbiddenTransitions:
+        - "trace_slice_selected -> green_attempted without red_plan_declared"
+        - "slice_green -> record_closed without delivery_verification_required"
+        - "completion_packet_written -> delivery_verified"
+  edgeCaseViews:
+    - id: EDGEVIEW-001
+      title: "Source authority edge cases"
+      titleZh: "源权威边界场景"
+      scope: governance
+      covers: [EDGE-001, EDGE-002, EDGE-003, FAIL-006, MUST-004]
+      expectedHandling: "Block before artifact emission and report the exact invalid source/record condition."
+    - id: EDGEVIEW-002
+      title: "Manifest completeness and acceptance binding edge cases"
+      titleZh: "Manifest 完整性与验收绑定边界场景"
+      scope: governance
+      covers: [EDGE-004, EDGE-005, EDGE-006, EDGE-007, EDGE-008, FAIL-005, FAIL-006, MUST-005, MUST-006, MUST-007, NEG-006, NEG-007]
+      expectedHandling: "Fail closed with AI_TDD_CONTRACT_GATE_REQUIRED, CONTRACT_EXECUTION_MANIFEST_INCOMPLETE, or TRACE_ACCEPTANCE_BINDING_INVALID."
+    - id: EDGEVIEW-003
+      title: "RED proof and invalid proof edge cases"
+      titleZh: "RED 证明与无效证明边界场景"
+      scope: governance
+      covers: [EDGE-009, EDGE-011, FAIL-003, FAIL-007, MUST-010, NEG-003, NEG-008]
+      expectedHandling: "Block missing redProofPlan and forbid invalid proof types in both packet and prompt."
+    - id: EDGEVIEW-004
+      title: "Prompt projection and skill integration edge cases"
+      titleZh: "Prompt 投影与技能集成边界场景"
+      scope: governance
+      covers: [EDGE-010, EDGE-012, FAIL-001, FAIL-008, MUST-002, MUST-012, NEG-001, NEG-009]
+      expectedHandling: "Prompt remains projection-only and confirmed-source flows cannot bypass compiler routing."
+  boundaryViews:
+    - id: BOUNDARY-001
+      title: "Compiler scope boundary"
+      titleZh: "编译器范围边界"
+      scope: governance
+      covers: [OUT-001, OUT-002, MUST-004, MUST-005, MUST-012]
+      inScope:
+        - "Validate confirmed source and requirement record."
+        - "Validate AI-TDD ContractExecutionManifest completeness."
+        - "Generate model_packet.json, human_prompt.txt, and audit_receipt.json."
+        - "Route confirmed-source skill flows into compiler."
+      outOfScope:
+        - "Execute implementation commands."
+        - "Mark requirements PASS."
+        - "Write record_closed."
+        - "Replace confirmation ingest, AI-TDD gate, delivery verification, or closeout integrity writer."
+    - id: BOUNDARY-002
+      title: "Generated artifact proof boundary"
+      titleZh: "生成工件证明边界"
+      scope: governance
+      covers: [OUT-003, NEG-002, NEG-003, NEG-004, NEG-005, TRACE-004, TRACE-005, TRACE-007]
+      inScope:
+        - "Generated artifacts can guide execution and index generator validation."
+        - "Completion Evidence Packet can index evidence references."
+      outOfScope:
+        - "Generated artifacts cannot prove implementation delivery."
+        - "ExitCode-only, mock-only, stale, smoke-only, legacy, or self-certified evidence cannot close requirements."
+        - "Confirmed source traceRows.status cannot be rewritten as runtime PASS."
   artifactAutomationPlan: []
   requiredCommands: []
   suggestedCommands: []
