@@ -1,0 +1,31 @@
+{
+  "runId": "2026-05-25-ai-tdd-contract-gate",
+  "stage": "skeleton_check",
+  "runtime": "vibe",
+  "internalGrade": "XL",
+  "checkedAt": "2026-05-25T00:00:00+08:00",
+  "repoRoot": "D:/Dev/BMAD-Speckit-SDD-Flow",
+  "canonicalPath": "specs/ai-tdd-contract-gate/vibe-receipts/skeleton-receipt.json",
+  "legacyLocalPath": "outputs/runtime/vibe-sessions/2026-05-25-ai-tdd-contract-gate/skeleton-receipt.json",
+  "encodingGate": {
+    "command": "node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js",
+    "result": "checkedFiles=2817 findings=0"
+  },
+  "worktreePolicy": {
+    "dirtyWorktreeObserved": true,
+    "unrelatedChangesPreserved": true,
+    "destructiveCommandsAllowed": false
+  },
+  "scope": {
+    "goal": "Implement a universal Contract-Level AI-TDD Gate and converge the pre-rerun spike into a compatibility wrapper.",
+    "primaryFiles": [
+      "specs/ai-tdd-contract-gate/requirement.md",
+      "specs/ai-tdd-contract-gate/execution-plan.md",
+      "scripts/ai-tdd-contract-gate.ts",
+      "scripts/pre-rerun-anti-false-positive-gate.ts",
+      "scripts/main-agent-delivery-closeout-gate.ts",
+      "tests/acceptance/ai-tdd-contract-gate.test.ts"
+    ]
+  }
+}
+

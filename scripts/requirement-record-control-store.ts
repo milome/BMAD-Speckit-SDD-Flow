@@ -586,6 +586,7 @@ export function canonicalizeRequirementRecord(record: JsonObject): JsonObject {
     'deliveryEvidence',
     'hookReconciliation',
     'latestReviewerCloseout',
+    'aiTddContractGate',
     'lastEventType',
     'updatedAt',
     'recordHash',

@@ -71,6 +71,7 @@ function writeRecord(root: string): string {
             checkedBy: 'test',
           },
         ],
+        aiTddContractGate: { enforcementMode: 'skipped_by_policy' },
       },
       null,
       2

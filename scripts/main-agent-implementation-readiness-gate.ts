@@ -2,13 +2,20 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { resolveArchitectureConfirmationHashRecipe } from './architecture-confirmation-hash-recipe';
+import {
+  aiTddContractGateRequired,
+  evaluateAiTddContractGate,
+} from './ai-tdd-contract-gate';
 import { appendControlEventAndReplay, sha256Text } from './requirement-record-control-store';
 
 type JsonObject = Record<string, unknown>;
 type ReadinessDecision = 'pass' | 'blocked';
+type ImplementationRunKind = 'first-implementation' | 'rerun';
 
 interface ParsedArgs {
   requirementRecord?: string;
+  source?: string;
+  implementationRunKind?: string;
   reportPath?: string;
   evaluatedBy?: string;
   evaluatedAt?: string;
@@ -43,6 +50,18 @@ function objects(value: unknown): JsonObject[] {
   return Array.isArray(value)
     ? value.filter((item): item is JsonObject => Boolean(item) && typeof item === 'object' && !Array.isArray(item))
     : [];
+}
+
+function strings(value: unknown): string[] {
+  return Array.isArray(value) ? value.map(text).filter(Boolean) : [];
+}
+
+function nested(value: unknown): JsonObject {
+  return value && typeof value === 'object' && !Array.isArray(value) ? (value as JsonObject) : {};
+}
+
+function unique(values: string[]): string[] {
+  return [...new Set(values.filter(Boolean))];
 }
 
 function readJson(file: string): JsonObject {
@@ -85,13 +104,100 @@ function architectureConfirmationRequired(record: JsonObject): boolean {
   );
 }
 
-function evaluate(record: JsonObject): {
+function normalizeImplementationRunKind(value: unknown): ImplementationRunKind | '' {
+  const raw = text(value);
+  if (raw === 'first-implementation' || raw === 'first_implementation' || raw === 'first') {
+    return 'first-implementation';
+  }
+  if (raw === 'rerun' || raw === 're-run' || raw === 'resume') return 'rerun';
+  return '';
+}
+
+function inferImplementationRunKind(record: JsonObject): {
+  kind: ImplementationRunKind | '';
+  inferred: boolean;
+  evidence: string[];
+  blockingReasons: string[];
+} {
+  const controlledHints = unique([
+    normalizeImplementationRunKind(record.implementationRunKind),
+    normalizeImplementationRunKind(nested(record.implementationEntryGate).implementationRunKind),
+  ]);
+  if (controlledHints.length > 1) {
+    return {
+      kind: '',
+      inferred: false,
+      evidence: controlledHints,
+      blockingReasons: ['implementation_run_kind_conflict'],
+    };
+  }
+  if (controlledHints.length === 1) {
+    return { kind: controlledHints[0] as ImplementationRunKind, inferred: false, evidence: controlledHints, blockingReasons: [] };
+  }
+  const evidence = [
+    objects(record.executionIterations).length > 0 ? 'executionIterations' : '',
+    objects(record.requirementClosures).length > 0 ? 'requirementClosures' : '',
+    objects(record.rerunLoops).length > 0 ? 'rerunLoops' : '',
+    objects(nested(record.closeout).attempts).length > 0 ? 'closeout.attempts' : '',
+    objects(nested(record.deliveryEvidence).requiredCommands).length > 0 ? 'deliveryEvidence.requiredCommands' : '',
+    objects(record.artifactIndex).length > 0 ? 'artifactIndex' : '',
+  ].filter(Boolean);
+  return {
+    kind: evidence.length > 0 ? 'rerun' : 'first-implementation',
+    inferred: true,
+    evidence,
+    blockingReasons: [],
+  };
+}
+
+function resolveImplementationRunKind(
+  record: JsonObject,
+  explicit?: string
+): ReturnType<typeof inferImplementationRunKind> {
+  const explicitKind = normalizeImplementationRunKind(explicit);
+  if (explicit && !explicitKind) {
+    return {
+      kind: '',
+      inferred: false,
+      evidence: [explicit],
+      blockingReasons: ['implementation_run_kind_invalid'],
+    };
+  }
+  if (explicitKind) return { kind: explicitKind, inferred: false, evidence: ['cli'], blockingReasons: [] };
+  return inferImplementationRunKind(record);
+}
+
+function resolveSourcePath(record: JsonObject, explicit?: string): string {
+  const candidate = text(explicit) || text(record.sourcePath);
+  if (!candidate) return '';
+  const resolved = path.resolve(candidate);
+  return fs.existsSync(resolved) ? resolved : '';
+}
+
+function evaluate(record: JsonObject, input: {
+  recordPath: string;
+  sourcePath?: string;
+  implementationRunKind?: string;
+  evaluatedAt: string;
+  evaluatedBy: string;
+}): {
   decision: ReadinessDecision;
   blockingReasons: string[];
   checks: JsonObject[];
 } {
   const checks: JsonObject[] = [];
   const blockingReasons: string[] = [];
+  const runKind = resolveImplementationRunKind(record, input.implementationRunKind);
+  checks.push({
+    id: 'implementation-run-kind-resolved',
+    passed: runKind.blockingReasons.length === 0,
+    implementationRunKind: runKind.kind,
+    inferred: runKind.inferred,
+    evidence: runKind.evidence,
+    blockingReasons: runKind.blockingReasons,
+  });
+  blockingReasons.push(...runKind.blockingReasons);
+
   const confirmation = latestConfirmation(record);
   const confirmed = text(record.status) === 'user_confirmed';
   checks.push({ id: 'record-status-user-confirmed', passed: confirmed });
@@ -155,9 +261,77 @@ function evaluate(record: JsonObject): {
   checks.push({ id: 'no-blocking-open-questions', passed: !blockingQuestion });
   if (blockingQuestion) blockingReasons.push('blocking_open_question_exists');
 
+  const resolvedSourcePath = resolveSourcePath(record, input.sourcePath);
+  if (aiTddContractGateRequired(record, resolvedSourcePath)) {
+    if (!resolvedSourcePath) {
+      checks.push({
+        id: 'ai-tdd-contract-gate-source',
+        passed: false,
+        blockingReasons: ['ai_tdd_contract_gate_source_missing'],
+      });
+      blockingReasons.push('ai_tdd_contract_gate_source_missing');
+    } else if (!runKind.kind || runKind.blockingReasons.length > 0) {
+      checks.push({
+        id: 'ai-tdd-contract-gate-run-kind',
+        passed: false,
+        blockingReasons: ['ai_tdd_contract_gate_run_kind_unresolved', ...runKind.blockingReasons],
+      });
+      blockingReasons.push('ai_tdd_contract_gate_run_kind_unresolved');
+    } else {
+      const mode = runKind.kind === 'first-implementation' ? 'pre-implementation' : 'pre-rerun';
+      try {
+        const aiTddGate = evaluateAiTddContractGate({
+          sourcePath: resolvedSourcePath,
+          record,
+          recordPath: input.recordPath,
+          mode,
+          attemptId: `implementation-readiness:${input.evaluatedAt}`,
+          evaluatedAt: input.evaluatedAt,
+          evaluatedBy: input.evaluatedBy,
+        });
+        const preImplementationReadiness = nested(aiTddGate.preImplementationReadinessReport);
+        const closeoutReadiness = nested(aiTddGate.closeoutReadinessReport);
+        const passed =
+          runKind.kind === 'first-implementation'
+            ? preImplementationReadiness.ready === true
+            : text(aiTddGate.decision) === 'pass';
+        const aiTddBlockers =
+          runKind.kind === 'first-implementation'
+            ? strings(preImplementationReadiness.blockingReasons)
+            : strings(aiTddGate.blockingReasons);
+        checks.push({
+          id: `ai-tdd-contract-gate-${mode}`,
+          passed,
+          implementationRunKind: runKind.kind,
+          mode,
+          decision: text(aiTddGate.decision),
+          closeoutReady: closeoutReadiness.ready === true,
+          preImplementationReady: preImplementationReadiness.ready === true,
+          blockingReasons: aiTddBlockers,
+        });
+        if (!passed) {
+          blockingReasons.push(
+            runKind.kind === 'first-implementation'
+              ? 'ai_tdd_pre_implementation_readiness_not_ready'
+              : 'ai_tdd_pre_rerun_gate_not_passed',
+            ...aiTddBlockers
+          );
+        }
+      } catch (error) {
+        checks.push({
+          id: 'ai-tdd-contract-gate-evaluation',
+          passed: false,
+          blockingReasons: ['ai_tdd_contract_gate_evaluation_failed'],
+          error: error instanceof Error ? error.message : String(error),
+        });
+        blockingReasons.push('ai_tdd_contract_gate_evaluation_failed');
+      }
+    }
+  }
+
   return {
     decision: blockingReasons.length === 0 ? 'pass' : 'blocked',
-    blockingReasons,
+    blockingReasons: unique(blockingReasons),
     checks,
   };
 }
@@ -251,7 +425,9 @@ function requestReadinessBaselineActivation(
 export function mainImplementationReadinessGate(argv: string[]): number {
   const args = parseArgs(argv);
   if (args.help) {
-    console.log('Usage: main-agent-implementation-readiness-gate --requirement-record <json> [--json]');
+    console.log(
+      'Usage: main-agent-implementation-readiness-gate --requirement-record <json> [--source <requirement.md>] [--implementation-run-kind <first-implementation|rerun>] [--json]'
+    );
     return 0;
   }
   if (!args.requirementRecord) throw new Error('missing required args: requirementRecord');
@@ -262,12 +438,19 @@ export function mainImplementationReadinessGate(argv: string[]): number {
   const reportPath = path.resolve(
     args.reportPath ?? path.join(path.dirname(recordPath), 'implementation-readiness-report.json')
   );
-  const evaluation = evaluate(record);
+  const evaluation = evaluate(record, {
+    recordPath,
+    sourcePath: args.source,
+    implementationRunKind: args.implementationRunKind,
+    evaluatedAt,
+    evaluatedBy,
+  });
   const report = {
     reportType: 'implementation_readiness_report',
     generatedAt: evaluatedAt,
     recordId: text(record.recordId),
     requirementSetId: text(record.requirementSetId),
+    implementationRunKind: normalizeImplementationRunKind(args.implementationRunKind) || inferImplementationRunKind(record).kind,
     decision: evaluation.decision,
     blockingReasons: evaluation.blockingReasons,
     checks: evaluation.checks,

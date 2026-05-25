@@ -1,0 +1,29 @@
+{
+  "runId": "2026-05-25-ai-tdd-contract-gate",
+  "stage": "deep_interview",
+  "canonicalPath": "specs/ai-tdd-contract-gate/vibe-receipts/intent-contract.json",
+  "goal": "Promote the anti-false-positive spike into a general AI-TDD contract execution gate for any confirmed implementationConfirmation.",
+  "deliverable": "A read-only gate CLI that emits ContractExecutionManifest, row-level red/green matrix, missing test plan, acceptance/e2e plan, target artifact plan, negative control plan, closeout readiness report, and sub-gate reports.",
+  "constraints": [
+    "Do not continue expanding pre-rerun-anti-false-positive-gate as the primary implementation.",
+    "Keep implementationConfirmation as the authoritative requirements source.",
+    "Treat acceptance/e2e tests as first-class manifest entries rather than implicit command text.",
+    "Preserve existing uncommitted user changes.",
+    "Use PowerShell 7 for shell commands and apply_patch for edits."
+  ],
+  "acceptanceCriteria": [
+    "scripts/ai-tdd-contract-gate.ts supports pre-implementation, pre-rerun, iteration, and closeout modes.",
+    "acceptanceTests and e2eSuites are schemaized and recognized by renderer, reverse audit, and contract authoring.",
+    "pre-rerun compatibility wrapper delegates to the new gate.",
+    "closeout runner enforces the new gate by default for confirmed source-backed records.",
+    "Tests cover unconfirmed source, missing acceptance coverage, missing negative controls, controlled red proof, unexpected green, invalid red, partial iteration green, row-level matrix, closeout reverse audit blocking, mock-only, exitCode-only, stale attempt evidence, and wrapper compatibility."
+  ],
+  "nonGoals": [
+    "Do not execute arbitrary requirement commands unless an explicit CLI opt-in is provided.",
+    "Do not mutate requirement-record.json from the new gate.",
+    "Do not mark trace rows closed from the new gate.",
+    "Do not make package.json script changes unless required by tests."
+  ],
+  "completionLanguagePolicy": "Report only evidence-backed completion; downgrade completion if any verification fails or is not run."
+}
+

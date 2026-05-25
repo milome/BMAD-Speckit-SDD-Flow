@@ -194,6 +194,7 @@
       "items": { "$ref": "#/$defs/artifactRef" }
     },
     "deliveryEvidence": { "$ref": "#/$defs/deliveryEvidence" },
+    "aiTddContractGate": { "$ref": "#/$defs/aiTddContractGate" },
     "hookReconciliation": { "$ref": "#/$defs/hookReconciliation" },
     "latestReviewerCloseout": {
       "type": "object",
@@ -1129,6 +1130,118 @@
           }
         }
       }
+    },
+    "aiTddContractGate": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "required": { "type": "boolean" },
+        "enforcementMode": { "enum": ["default_for_confirmed", "explicit_required", "skipped_by_policy"] },
+        "lastReportPath": { "$ref": "#/$defs/nonEmptyString" },
+        "lastReportHash": { "$ref": "#/$defs/sha256" },
+        "preImplementationRedProofs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/aiTddRedProof" }
+        },
+        "acceptanceTests": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/aiTddAcceptanceSuite" }
+        },
+        "e2eSuites": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/aiTddAcceptanceSuite" }
+        }
+      }
+    },
+    "aiTddRedProof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["proofId", "acceptanceId", "state", "oracle", "recordedAt", "recordedBy"],
+      "properties": {
+        "proofId": { "$ref": "#/$defs/nonEmptyString" },
+        "acceptanceId": { "$ref": "#/$defs/nonEmptyString" },
+        "commandId": { "$ref": "#/$defs/nonEmptyString" },
+        "runId": { "$ref": "#/$defs/nonEmptyString" },
+        "state": {
+          "enum": ["expected_red", "unexpected_green", "invalid_red"]
+        },
+        "oracle": { "$ref": "#/$defs/nonEmptyString" },
+        "failureClass": {
+          "enum": ["oracle_failure", "unexpected_pass", "missing_test_file", "runner_crash", "syntax_error", "environment_error", "unbound_oracle"]
+        },
+        "exitCode": { "type": "integer" },
+        "artifactRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/artifactRef" }
+        },
+        "recordedAt": { "type": "string", "format": "date-time" },
+        "recordedBy": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "aiTddAcceptanceSuite": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "covers", "traceRows", "evidenceRefs", "commandRefs", "oracle"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^(ACC|E2E)-[A-Za-z0-9_.:-]+$"
+        },
+        "suiteType": {
+          "enum": ["acceptance", "e2e", "integration", "contract"]
+        },
+        "file": { "$ref": "#/$defs/nonEmptyString" },
+        "files": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "covers": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "pattern": "^(MUST|NEG)-"
+          }
+        },
+        "traceRows": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "pattern": "^TRACE-"
+          }
+        },
+        "evidenceRefs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "pattern": "^EVD-"
+          }
+        },
+        "commandRefs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "pattern": "^CMD-"
+          }
+        },
+        "expectedPreImplementationState": {
+          "enum": ["expected_red", "unexpected_green", "invalid_red", "not_applicable"]
+        },
+        "oracle": { "$ref": "#/$defs/nonEmptyString" },
+        "positiveControl": { "type": "boolean" },
+        "negativeControls": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "mockOnly": { "type": "boolean" }
+      },
+      "anyOf": [
+        { "required": ["file"] },
+        { "required": ["files"] }
+      ]
     }
   }
 }

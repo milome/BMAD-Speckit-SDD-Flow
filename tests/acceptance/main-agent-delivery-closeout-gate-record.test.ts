@@ -473,6 +473,70 @@ function evidenceArtifactRef(pathValue = '_bmad-output/runtime/requirement-recor
   };
 }
 
+function writeAiTddSource(root: string, testPath: string): string {
+  const sourcePath = path.join(root, 'ai-tdd-source.md');
+  writeText(
+    sourcePath,
+    [
+      'implementationConfirmation:',
+      '  status: user_confirmed',
+      '  must:',
+      '    - id: MUST-001',
+      '      text: Must pass closeout acceptance.',
+      '      evidenceRefs: [EVD-001]',
+      '      coveredByTraceRows: [TRACE-001]',
+      '  notDone:',
+      '    - id: NEG-001',
+      '      text: Missing AI-TDD acceptance cannot close.',
+      '      evidenceRefs: [EVD-001]',
+      '      oracle: negative control oracle',
+      '      coveredByTraceRows: [TRACE-001]',
+      '  mustNot:',
+      '    - id: OUT-001',
+      '      text: Do not self-certify closeout.',
+      '  evidence:',
+      '    - id: EVD-001',
+      '      text: Current attempt acceptance evidence.',
+      '      oracle: current-attempt command with artifact evidence',
+      '      requiredCommandRefs: [CMD-AI-TDD]',
+      '      artifactRefs: [ART-AI-TDD]',
+      '  traceRows:',
+      '    - id: TRACE-001',
+      '      covers: [MUST-001, NEG-001]',
+      '      evidenceRefs: [EVD-001]',
+      '      deliveryEvidenceCommandRefs: [CMD-AI-TDD]',
+      '      acceptanceRefs: [ACC-AI-TDD]',
+      '  requiredCommands:',
+      '    - id: CMD-AI-TDD',
+      `      command: npx vitest run ${testPath.replace(/\\/gu, '/')}`,
+      '      oracle: current-attempt command with artifact evidence',
+      '  acceptanceTests:',
+      '    - id: ACC-AI-TDD',
+      `      file: ${testPath.replace(/\\/gu, '/')}`,
+      '      covers: [MUST-001, NEG-001]',
+      '      traceRows: [TRACE-001]',
+      '      evidenceRefs: [EVD-001]',
+      '      commandRefs: [CMD-AI-TDD]',
+      '      expectedPreImplementationState: expected_red',
+      '      oracle: current-attempt command with artifact evidence',
+      '  artifactAutomationPlan:',
+      '    - id: ART-AI-TDD',
+      '      artifactType: report',
+      '      path: _bmad-output/runtime/requirement-records/REQ-CLOSEOUT/evidence/ai-tdd.json',
+      '      producer: ai-tdd-fixture',
+      '      sourceOfTruthRole: evidence',
+      '      traceRows: [TRACE-001]',
+      '      evidenceRefs: [EVD-001]',
+      '  currentTargetMap:',
+      '    canonicalArtifacts: []',
+      '    pathRegistry: []',
+      '    existingArtifacts: []',
+      '',
+    ].join('\n')
+  );
+  return sourcePath;
+}
+
 function baseRecord(): Record<string, unknown> {
   const recipe = resolveArchitectureConfirmationHashRecipe();
   return {
@@ -646,6 +710,67 @@ describe('requirement-scoped delivery closeout gate', () => {
         closeoutAttemptId: 'closeout-pass',
         decision: 'pass',
       });
+    } finally {
+      cleanupTempRoot(root);
+    }
+  });
+
+  it('blocks closeout by default for confirmed AI-TDD source with missing acceptance evidence', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-ai-tdd-'));
+    try {
+      const missingTestPath = path.join(root, 'tests', 'acceptance', 'missing-ai-tdd.test.ts');
+      const sourcePath = writeAiTddSource(root, missingTestPath);
+      const recordPath = writeRecord(root, {
+        ...baseRecord(),
+        sourcePath,
+        deliveryEvidence: {
+          requiredCommands: [
+            {
+              commandId: 'CMD-DELIVERY',
+              blockingIfMissing: true,
+              negativeOrRegression: true,
+              closeoutAttemptId: 'closeout-ai-tdd',
+              artifactRefs: [
+                evidenceArtifactRef(
+                  '_bmad-output\\runtime\\requirement-records\\REQ-CLOSEOUT\\execution\\evidence.json'
+                ),
+              ],
+            },
+          ],
+        },
+        executionIterations: [
+          {
+            executionIterationId: 'exec-001',
+            commandRunRefs: [
+              {
+                commandId: 'CMD-DELIVERY',
+                closeoutAttemptId: 'closeout-ai-tdd',
+                exitCode: 0,
+              },
+            ],
+          },
+        ],
+        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+      });
+      const code = mainDeliveryCloseoutGate([
+        '--requirement-record',
+        recordPath,
+        '--source',
+        sourcePath,
+        '--attempt-id',
+        'closeout-ai-tdd',
+        '--evaluated-at',
+        '2026-05-19T00:00:00.000Z',
+      ]);
+      expect(code).toBe(1);
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(record.closeout.decision).toBe('blocked');
+      expect(record.closeout.attempts[0].blockingReasons).toContain(
+        'ai_tdd_contract_gate_not_passed'
+      );
+      expect(record.closeout.attempts[0].blockingReasons).toContain(
+        'acceptance_test_file_missing'
+      );
     } finally {
       cleanupTempRoot(root);
     }
