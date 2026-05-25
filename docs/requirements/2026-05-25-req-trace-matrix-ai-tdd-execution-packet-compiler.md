@@ -175,6 +175,10 @@ After implementation, reverse audit and render report must show:
 - target modification paths are visible.
 - invalid proof taxonomy is visible in both packet and prompt projections.
 
+### Checkpoint Repair Closure
+
+The pre-render gate repair added missing currentTargetMap process coverage and fail-closed/idempotency/recovery semantics for control-affecting artifacts. This cp-08 closure note confirms the human-readable reverse-audit layer reflects those repaired machine-readable sections and does not introduce new executable scope.
+
 ## Current Problem
 
 The current generator emits a single natural-language execution prompt. It validates the confirmed inline `implementationConfirmation`, requirement-record confirmation history, semantic hashes, trace references, and command references, but the output still lets an execution model infer too much from prose and prompt text.
