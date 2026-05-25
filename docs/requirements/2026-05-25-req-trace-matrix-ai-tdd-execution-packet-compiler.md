@@ -18,6 +18,163 @@ confirmed implementationConfirmation
 -> model_packet.json + human_prompt.txt + audit_receipt.json
 ```
 
+## Human-Readable Confirmation Views
+
+### Execution Packet Metadata
+
+确认范围是把 `req-trace-matrix-prompt-generator` 从单一提示词生成器升级为 AI-TDD Contract Execution Packet Compiler。生成器必须从已确认的 `implementationConfirmation` 和受控 requirement record 编译执行包，而不是让执行模型从 prose 自由推断。
+
+主输出是 `model_packet.json`。`human_prompt.txt` 只是可读投影，`audit_receipt.json` 只是生成器自审收据。三者必须 hash-linked，并且必须指向同一份 source、record、trace order、manifest coverage 和 currentTargetMap。
+
+### Source And Record Authority
+
+`MUST-004` 定义了输入权威：只有 inline `implementationConfirmation`、`status=user_confirmed`、匹配的 requirement-record confirmationHistory、匹配的 source/implementationConfirmation hash、无阻断 open question、有效 trace refs 和 command refs 同时成立时，生成器才允许写出执行产物。
+
+`EDGE-001` 到 `EDGE-003` 是这层的关键反例：draft source、hash mismatch、blocking open question 都必须阻断。阻断结果应出现在 `audit_receipt.json`，但该 receipt 本身不得成为 delivery proof。
+
+### AI-TDD ContractExecutionManifest Projection
+
+`MUST-005` 到 `MUST-007` 要求生成器把 AI-TDD manifest 作为统一标准，而不是自定义另一份 readiness/closeout 清单。以下 section 必须作为一等公民进入 `model_packet.json` 并投影到 `human_prompt.txt`：
+
+- error cases
+- command targets
+- trace closure
+- current target map
+- canonical surfaces
+- legacy denial
+- closeout proof
+- evidence trust
+
+任何缺失 `failurePaths[]`、`edgeCases[]`、`acceptanceTests[]`、`e2eSuites[]`、`traceRows[].acceptanceRefs[]`、FAIL/EDGE 覆盖或 currentTargetMap 的情况，都必须 fail closed。
+
+### Red-Green-Refactor State Machine
+
+每个 trace slice 必须按 RED -> GREEN -> REFACTOR -> CLOSEOUT 执行。生成器阶段不需要真实 RED proof，但必须要求 `expectedPreImplementationState: expected_red` 和 `redProofPlan`。真实 RED/GREEN/REFACTOR proof 由执行阶段写入 runtime/control store。
+
+如果 ACC/E2E 缺 `expected_red` 或 `redProofPlan`，`PRE_IMPLEMENTATION_RED_PROOF_PLAN_REQUIRED` 必须阻断生成。
+
+### False-Positive Proof Boundary
+
+`NEG-002` 到 `NEG-005` 是防假阳性的硬边界：
+
+- Completion Evidence Packet 只是证据索引。
+- `audit_receipt.json` 只是生成器自审。
+- `exitCode=0` 只是诊断信号。
+- mock-only、self-certification、stale attempt、legacy proof、smoke-only proof 都不能 closeout。
+- confirmed source `traceRows.status` 不能被执行器改写成 runtime PASS。
+
+closeout 只能由 AI-TDD gate、delivery verification、closeout integrity 的 current-attempt 受控报告决定。
+
+### Current And Target State
+
+现状：执行提示主要以自然语言 prompt 呈现，错误用例、RED 计划、canonical surfaces、legacy denial 和 closeout 证明规则容易成为文字建议，而不是机器可执行约束。
+
+目标态：`model_packet.json` 将这些结构全部提升为字段和矩阵；`human_prompt.txt` 只从这些字段投影；`audit_receipt.json` 证明生成器输入输出一致，但不证明实现完成。
+
+`currentTargetMap` 是确认页一级硬门禁。确认页必须显示当前 prompt-only 模式与目标 AI-TDD compiler 模式的差异，特别是输出权威、manifest completeness、TDD protocol、error cases 和 closeout authority。
+
+## Mermaid Views
+
+```mermaid
+flowchart TD
+  A[Confirmed implementationConfirmation] --> B[Source/Record Validator]
+  B --> C[ContractExecutionManifest Validator]
+  C --> D[Execution Packet Compiler]
+  D --> E[model_packet.json]
+  D --> F[human_prompt.txt projection]
+  D --> G[audit_receipt.json self audit]
+  E --> H[AI executor uses packet]
+  F -. no independent authority .-> H
+  G -. not delivery proof .-> H
+```
+
+```mermaid
+stateDiagram-v2
+  [*] --> RED
+  RED --> BLOCKED: missing expected_red or redProofPlan
+  RED --> GREEN: current attempt red proof recorded by executor
+  GREEN --> REFACTOR: slice acceptance/e2e/error cases pass
+  REFACTOR --> CLOSEOUT_READY: guards rerun
+  CLOSEOUT_READY --> BLOCKED: invalid proof type or self certification
+  CLOSEOUT_READY --> VERIFIED: AI-TDD delivery verification and closeout integrity pass
+```
+
+```mermaid
+flowchart LR
+  FAIL[FAIL and EDGE rows] --> NEG[NEG bindings]
+  FAIL --> EVD[EVD oracles]
+  FAIL --> TRACE[TRACE slices]
+  FAIL --> ACC[ACC or E2E]
+  FAIL --> CMD[CMD command targets]
+  CMD --> BLOCK[BLOCK when any binding missing]
+```
+
+## Evidence Overview
+
+The evidence model is intentionally strict:
+
+- `EVD-001` to `EVD-003` prove the three synchronized artifacts and receipt content.
+- `EVD-004` proves source/record authority and confirmation hash validation.
+- `EVD-005` proves ContractExecutionManifest completeness and error-case closure.
+- `EVD-006` proves packet trace slice shape and runtime write policy.
+- `EVD-007` proves RED/GREEN/REFACTOR/CLOSEOUT state-machine fields and red proof plan blocking.
+- `EVD-008` proves stable BLOCK code behavior.
+- `EVD-009` proves end-to-end synchronized generation without scope reduction.
+- `EVD-010` proves invalid proof types cannot be closeout authority.
+- `EVD-011` and `EVD-012` prove skill routing and UTF-8/sync integrity.
+
+## E2E Overview
+
+`E2E-001` is the valid confirmed-source compiler path: source and record pass, then packet, prompt, and receipt are produced with synchronized hashes and required sections.
+
+`E2E-002` is the incomplete manifest and error-case path: missing AI-TDD applicability, currentTargetMap, error-case closure, acceptance binding, or red proof plan blocks generation.
+
+`E2E-003` is the skill routing path: bugfix, standalone tasks, and story surfaces must route confirmed `implementationConfirmation` sources through the compiler, with legacy prompt fallback only when no confirmed source exists.
+
+## Definition Of Done
+
+This source document is ready for confirmation render only when:
+
+- `implementationConfirmation` remains `draft` until explicit user confirmation.
+- Every MUST and NEG has EVD, TRACE, ACC/E2E, CMD, and view coverage.
+- Every FAIL and EDGE has NEG/EVD/TRACE/ACC or E2E/CMD coverage.
+- `currentTargetMap` uses `schemaVersion=current-target-map/v1` and `displayProfile=closed_loop_current_target_map`.
+- `targetModificationPaths[]` explicitly lists affected scripts, skill surfaces, and tests.
+- AI-TDD manifest projection covers error cases, command targets, trace closure, currentTargetMap, canonical surfaces, legacy denial, closeout proof, and evidence trust.
+- The pre-render global consistency gate passes.
+- Encoding integrity reports zero findings.
+
+Implementation is not done by this source document. Confirmation only authorizes scope; delivery remains blocked until later implementation, AI-TDD delivery verification, and closeout integrity all pass with current-attempt evidence.
+
+## Reverse Audit Report
+
+### Contract Confirmability
+
+This draft is intended to be confirmable after HTML render because it contains a complete inline `implementationConfirmation`, mandatory applicability decisions, current/target map, failure paths, edge cases, trace rows, acceptance/E2E rows, artifact plan, command matrix, target modification paths, and AI-TDD manifest projection.
+
+### Implementation Readiness Boundary
+
+The draft does not claim implementation readiness. `status` is `draft`, confirmation render has not been produced in this checkpoint authoring task, and controlled confirmation ingest has not run.
+
+### Delivery Verification Boundary
+
+The draft does not claim delivery verification. `model_packet.json`, `human_prompt.txt`, `audit_receipt.json`, command exit codes, stdout, and completion packet are explicitly non-closeout proof unless validated by downstream AI-TDD delivery verification and closeout integrity controlled reports.
+
+### Anti-Smoke And Anti-Happy-Path Checks
+
+The source blocks happy-path-only behavior through `NEG-006`, `FAIL-005`, `EDGE-006`, `EDGE-008`, `ACC-004`, `ACC-005`, `ACC-008`, and `E2E-002`. Smoke command `CMD-SMOKE-001` is explicitly `smoke_only_not_closeout`.
+
+### Report Shape Checks
+
+After implementation, reverse audit and render report must show:
+
+- `confirmability=confirmable` only for scope confirmation.
+- `deliveryReadiness.ready=false` until current-attempt controlled execution evidence exists.
+- AI-TDD manifest coverage sections are present and non-empty.
+- current/target coverage is non-zero and displayed.
+- target modification paths are visible.
+- invalid proof taxonomy is visible in both packet and prompt projections.
+
 ## Current Problem
 
 The current generator emits a single natural-language execution prompt. It validates the confirmed inline `implementationConfirmation`, requirement-record confirmation history, semantic hashes, trace references, and command references, but the output still lets an execution model infer too much from prose and prompt text.
