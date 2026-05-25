@@ -47,11 +47,16 @@ function sourceText(input: {
   omitTargetModificationPaths?: boolean;
   targetModificationNoRefs?: boolean;
   targetModificationBrokenRefs?: boolean;
+  omitCloseoutPreview?: boolean;
+  omitLegacyRefs?: boolean;
   brokenRefs?: boolean;
   omitAcc?: boolean;
   omitE2e?: boolean;
   includeOrphans?: boolean;
   omitRequirementRefs?: boolean;
+  omitFailureNegRefs?: boolean;
+  omitEdgeFailureRefs?: boolean;
+  omitErrorCaseAcceptanceRefs?: boolean;
 }): string {
   const status = input.status ?? 'user_confirmed';
   const targetPath = input.targetPath ?? 'evidence/target.json';
@@ -70,6 +75,7 @@ function sourceText(input: {
         '    - id: ACC-001',
         `      file: ${testPath.replace(/\\/gu, '/')}`,
         `      covers: [${input.brokenRefs ? 'MUST-MISSING' : 'MUST-001'}]`,
+        ...(input.omitErrorCaseAcceptanceRefs ? [] : ['      failurePathRefs: [FAIL-001]', '      edgeCaseRefs: [EDGE-001]']),
         '      traceRows: [TRACE-001]',
         '      evidenceRefs: [EVD-001]',
         '      commandRefs: [CMD-001]',
@@ -84,6 +90,7 @@ function sourceText(input: {
         '    - id: E2E-001',
         `      file: ${e2eTestPath.replace(/\\/gu, '/')}`,
         `      covers: [${input.brokenRefs ? 'NEG-MISSING' : 'NEG-001'}]`,
+        ...(input.omitErrorCaseAcceptanceRefs ? [] : ['      failurePathRefs: [FAIL-001]', '      edgeCaseRefs: [EDGE-001]']),
         '      traceRows: [TRACE-001]',
         '      evidenceRefs: [EVD-001]',
         '      commandRefs: [CMD-002]',
@@ -120,6 +127,16 @@ function sourceText(input: {
         '      artifactRefs: []',
       ]
     : [];
+  const legacyRefs = input.omitLegacyRefs ? [] : ['        traceRows: [TRACE-001]', '        evidenceRefs: [EVD-001]'];
+  const closeoutPreviewRows = input.omitCloseoutPreview
+    ? []
+    : [
+        '  closeoutReadinessPreview:',
+        '    requiredCommands: [CMD-001, CMD-002]',
+        '    orphanPolicy: no orphan commands, evidence, or artifacts may satisfy closeout',
+        '    currentAttemptPolicy: closeout consumes only current-attempt command and artifact evidence',
+        '    recordClosedPolicy: record_closed is written only after delivery verification',
+      ];
   return [
     'implementationConfirmation:',
     `  status: ${status}`,
@@ -143,7 +160,7 @@ function sourceText(input: {
     '      text: Acceptance evidence.',
     '      oracle: current-attempt command with artifact evidence',
     '      requiredCommandRefs: [CMD-001, CMD-002]',
-    '      artifactRefs: [ART-001]',
+    '      artifactRefs: [CANONICAL-001, scripts/ai-tdd-contract-gate.ts]',
     ...orphanRows,
     '  traceRows:',
     '    - id: TRACE-001',
@@ -151,7 +168,30 @@ function sourceText(input: {
     '      evidenceRefs: [EVD-001]',
     '      deliveryEvidenceCommandRefs: [CMD-001, CMD-002]',
     '      acceptanceRefs: [ACC-001, E2E-001]',
-    '      artifactRefs: [ART-001]',
+    '      artifactRefs: [CANONICAL-001, scripts/ai-tdd-contract-gate.ts]',
+    '  failurePaths:',
+    '    - id: FAIL-001',
+    '      title: Missing AI-TDD negative coverage',
+    '      trigger: A negative behavior lacks explicit AI-TDD coverage.',
+    '      expectedBehavior: Fail closed.',
+    '      forbiddenBehavior: Report the contract complete.',
+    '      blocksCompletionWhenViolated: true',
+    `      linkedNegIds: [${input.omitFailureNegRefs ? '' : 'NEG-001'}]`,
+    '      linkedEvidenceIds: [EVD-001]',
+    '      requiredAssertions: [error-case coverage is explicit]',
+    '  edgeCases:',
+    '    - id: EDGE-001',
+    '      category: explicit_error_case_mapping',
+    '      condition: An edge case depends on the failure path.',
+    '      expectedBehavior: Fail closed.',
+    '      forbiddenBehavior: Hide edge-case coverage.',
+    `      linkedFailurePathIds: [${input.omitEdgeFailureRefs ? '' : 'FAIL-001'}]`,
+    '      linkedEvidenceIds: [EVD-001]',
+    '  edgeCaseViews:',
+    '    - id: EDGEVIEW-001',
+    '      title: AI-TDD error-case coverage view',
+    '      covers: [FAIL-001, EDGE-001]',
+    '      cases: [EDGE-001]',
     '  requiredCommands:',
     '    - id: CMD-001',
     `      command: ${acceptanceCommandText}`,
@@ -183,21 +223,57 @@ function sourceText(input: {
     ...(input.includeOrphans
       ? [
           '    - id: ART-ORPHAN',
-          '      artifactType: report',
+          '      artifactType: code',
           '      path: evidence/orphan.json',
           '      producer: ai-tdd-fixture',
-          '      sourceOfTruthRole: evidence',
+          '      sourceOfTruthRole: implementation',
           '      traceRows: [TRACE-001]',
           '      evidenceRefs: [EVD-001]',
         ]
       : []),
     '  currentTargetMap:',
-    '    canonicalArtifacts: []',
+    '    schemaVersion: current-target-map/v1',
+    '    displayProfile: closed_loop_current_target_map',
+    '    currentSummary:',
+    '      - title: current fixture state',
+    '        detail: fixture target artifact is not yet delivery verified',
+    '    targetSummary:',
+    '      - title: target fixture state',
+    '        detail: fixture target artifact must be proven by current attempt evidence',
+    '    diffRows:',
+    '      - dimension: fixture positive behavior',
+    '        currentState: unverified',
+    '        targetState: current-attempt proof required',
+    '        action: verify MUST-001',
+    '      - dimension: fixture negative behavior',
+    '        currentState: incomplete negative proof can be hidden',
+    '        targetState: NEG-001 has failure/e2e coverage',
+    '        action: verify NEG-001',
+    '      - dimension: fixture completion proof',
+    '        currentState: legacy completion event exists',
+    '        targetState: legacy proof cannot close delivery',
+    '        action: deny legacy proof',
+    '    process:',
+    '      - phase: pre-implementation',
+    '        currentState: red proof required',
+    '        targetState: AI-TDD manifest gates are ready',
+    '    artifactPaths:',
+    '      - path: scripts/ai-tdd-contract-gate.ts',
+    '        targetRole: contract execution manifest gate',
+    '        traceRows: [TRACE-001]',
+    '        evidenceRefs: [EVD-001]',
+    '    canonicalArtifacts:',
+    '      - id: CANONICAL-001',
+    `        targetPathOrField: ${targetPath.replace(/\\/gu, '/')}`,
+    '        traceRows: [TRACE-001]',
+    '        evidenceRefs: [EVD-001]',
     '    pathRegistry: []',
     '    existingArtifacts:',
     '      - id: LEGACY-001',
     '        currentPath: legacy_completion_event',
     '        completionProofPolicy: legacy_only',
+    ...legacyRefs,
+    ...closeoutPreviewRows,
     ...targetModificationRows,
     ...acceptance,
     '',
@@ -220,11 +296,16 @@ function writeFixture(
     omitTargetModificationPaths?: boolean;
     targetModificationNoRefs?: boolean;
     targetModificationBrokenRefs?: boolean;
+    omitCloseoutPreview?: boolean;
+    omitLegacyRefs?: boolean;
     brokenRefs?: boolean;
     omitAcc?: boolean;
     omitE2e?: boolean;
     includeOrphans?: boolean;
     omitRequirementRefs?: boolean;
+    omitFailureNegRefs?: boolean;
+    omitEdgeFailureRefs?: boolean;
+    omitErrorCaseAcceptanceRefs?: boolean;
   } = {}
 ) {
   const testPath = path.join(root, 'tests', 'acceptance', 'ai-tdd-fixture.test.ts');
@@ -249,11 +330,16 @@ function writeFixture(
       omitTargetModificationPaths: options.omitTargetModificationPaths,
       targetModificationNoRefs: options.targetModificationNoRefs,
       targetModificationBrokenRefs: options.targetModificationBrokenRefs,
+      omitCloseoutPreview: options.omitCloseoutPreview,
+      omitLegacyRefs: options.omitLegacyRefs,
       brokenRefs: options.brokenRefs,
       omitAcc: options.omitAcc,
       omitE2e: options.omitE2e,
       includeOrphans: options.includeOrphans,
       omitRequirementRefs: options.omitRequirementRefs,
+      omitFailureNegRefs: options.omitFailureNegRefs,
+      omitEdgeFailureRefs: options.omitEdgeFailureRefs,
+      omitErrorCaseAcceptanceRefs: options.omitErrorCaseAcceptanceRefs,
     })
   );
   const confirmation = {
@@ -286,7 +372,7 @@ function writeFixture(
         text: 'Acceptance evidence.',
         oracle: 'current-attempt command with artifact evidence',
         requiredCommandRefs: ['CMD-001'],
-        artifactRefs: ['ART-001'],
+        artifactRefs: ['CANONICAL-001', 'scripts/ai-tdd-contract-gate.ts'],
       },
       ...(options.includeOrphans
         ? [
@@ -307,7 +393,39 @@ function writeFixture(
         evidenceRefs: ['EVD-001'],
         deliveryEvidenceCommandRefs: ['CMD-001', 'CMD-002'],
         acceptanceRefs: ['ACC-001', 'E2E-001'],
-        artifactRefs: ['ART-001'],
+        artifactRefs: ['CANONICAL-001', 'scripts/ai-tdd-contract-gate.ts'],
+      },
+    ],
+    failurePaths: [
+      {
+        id: 'FAIL-001',
+        title: 'Missing AI-TDD negative coverage',
+        trigger: 'A negative behavior lacks explicit AI-TDD coverage.',
+        expectedBehavior: 'Fail closed.',
+        forbiddenBehavior: 'Report the contract complete.',
+        blocksCompletionWhenViolated: true,
+        linkedNegIds: options.omitFailureNegRefs ? [] : ['NEG-001'],
+        linkedEvidenceIds: ['EVD-001'],
+        requiredAssertions: ['error-case coverage is explicit'],
+      },
+    ],
+    edgeCases: [
+      {
+        id: 'EDGE-001',
+        category: 'explicit_error_case_mapping',
+        condition: 'An edge case depends on the failure path.',
+        expectedBehavior: 'Fail closed.',
+        forbiddenBehavior: 'Hide edge-case coverage.',
+        linkedFailurePathIds: options.omitEdgeFailureRefs ? [] : ['FAIL-001'],
+        linkedEvidenceIds: ['EVD-001'],
+      },
+    ],
+    edgeCaseViews: [
+      {
+        id: 'EDGEVIEW-001',
+        title: 'AI-TDD error-case coverage view',
+        covers: ['FAIL-001', 'EDGE-001'],
+        cases: ['EDGE-001'],
       },
     ],
     requiredCommands: [
@@ -353,10 +471,10 @@ function writeFixture(
         ? [
             {
               id: 'ART-ORPHAN',
-              artifactType: 'report',
+              artifactType: 'code',
               path: 'evidence/orphan.json',
               producer: 'ai-tdd-fixture',
-              sourceOfTruthRole: 'evidence',
+              sourceOfTruthRole: 'implementation',
               traceRows: ['TRACE-001'],
               evidenceRefs: ['EVD-001'],
             },
@@ -364,16 +482,34 @@ function writeFixture(
         : []),
     ],
     currentTargetMap: {
-      canonicalArtifacts: [],
+      canonicalArtifacts: [
+        {
+          id: 'CANONICAL-001',
+          targetPathOrField: targetPath.replace(/\\/gu, '/'),
+          traceRows: ['TRACE-001'],
+          evidenceRefs: ['EVD-001'],
+        },
+      ],
       pathRegistry: [],
       existingArtifacts: [
         {
           id: 'LEGACY-001',
           currentPath: 'legacy_completion_event',
           completionProofPolicy: 'legacy_only',
+          ...(options.omitLegacyRefs ? {} : { traceRows: ['TRACE-001'], evidenceRefs: ['EVD-001'] }),
         },
       ],
     },
+    ...(options.omitCloseoutPreview
+      ? {}
+      : {
+          closeoutReadinessPreview: {
+            requiredCommands: ['CMD-001', 'CMD-002'],
+            orphanPolicy: 'no orphan commands, evidence, or artifacts may satisfy closeout',
+            currentAttemptPolicy: 'closeout consumes only current-attempt command and artifact evidence',
+            recordClosedPolicy: 'record_closed is written only after delivery verification',
+          },
+        }),
     ...(options.omitTargetModificationPaths
       ? {}
       : {
@@ -408,6 +544,9 @@ function writeFixture(
                     id: 'ACC-001',
                     file: testPath.replace(/\\/gu, '/'),
                     covers: ['MUST-001'],
+                    ...(options.omitErrorCaseAcceptanceRefs
+                      ? {}
+                      : { failurePathRefs: ['FAIL-001'], edgeCaseRefs: ['EDGE-001'] }),
                     traceRows: ['TRACE-001'],
                     evidenceRefs: ['EVD-001'],
                     commandRefs: ['CMD-001'],
@@ -425,6 +564,9 @@ function writeFixture(
                     id: 'E2E-001',
                     file: e2eTestPath.replace(/\\/gu, '/'),
                     covers: ['NEG-001'],
+                    ...(options.omitErrorCaseAcceptanceRefs
+                      ? {}
+                      : { failurePathRefs: ['FAIL-001'], edgeCaseRefs: ['EDGE-001'] }),
                     traceRows: ['TRACE-001'],
                     evidenceRefs: ['EVD-001'],
                     commandRefs: ['CMD-002'],
@@ -611,6 +753,91 @@ describe('ai tdd contract gate', () => {
           expect.objectContaining({ category: 'MUST', code: 'requirement_trace_refs_missing' }),
           expect.objectContaining({ category: 'NEG', code: 'requirement_evidence_refs_missing' }),
           expect.objectContaining({ category: 'NEG', code: 'requirement_trace_refs_missing' }),
+        ])
+      );
+
+      const missingFailureNegRefs = writeFixture(path.join(root, 'missing-failure-neg-refs'), {
+        omitFailureNegRefs: true,
+      });
+      const missingFailureNegRefsReport = evaluateAiTddContractGate({
+        sourcePath: missingFailureNegRefs.sourcePath,
+        record: missingFailureNegRefs.record,
+        recordPath: missingFailureNegRefs.recordPath,
+        mode: 'pre-implementation',
+        attemptId: ATTEMPT,
+      });
+      expect(reportArray(reportObject(missingFailureNegRefsReport, 'contractCompletenessReport'), 'issues')).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ category: 'FAIL', code: 'failure_path_neg_refs_missing', id: 'FAIL-001' }),
+        ])
+      );
+
+      const missingEdgeFailureRefs = writeFixture(path.join(root, 'missing-edge-failure-refs'), {
+        omitFailureNegRefs: true,
+        omitEdgeFailureRefs: true,
+      });
+      const missingEdgeFailureRefsReport = evaluateAiTddContractGate({
+        sourcePath: missingEdgeFailureRefs.sourcePath,
+        record: missingEdgeFailureRefs.record,
+        recordPath: missingEdgeFailureRefs.recordPath,
+        mode: 'pre-implementation',
+        attemptId: ATTEMPT,
+      });
+      expect(reportArray(reportObject(missingEdgeFailureRefsReport, 'contractCompletenessReport'), 'issues')).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ category: 'EDGE', code: 'edge_case_failure_or_neg_missing', id: 'EDGE-001' }),
+        ])
+      );
+
+      const missingErrorCaseAcceptanceRefs = writeFixture(path.join(root, 'missing-error-case-acceptance-refs'), {
+        omitErrorCaseAcceptanceRefs: true,
+      });
+      const missingErrorCaseAcceptanceRefsReport = evaluateAiTddContractGate({
+        sourcePath: missingErrorCaseAcceptanceRefs.sourcePath,
+        record: missingErrorCaseAcceptanceRefs.record,
+        recordPath: missingErrorCaseAcceptanceRefs.recordPath,
+        mode: 'pre-implementation',
+        attemptId: ATTEMPT,
+      });
+      expect(
+        reportArray(reportObject(missingErrorCaseAcceptanceRefsReport, 'contractCompletenessReport'), 'issues')
+      ).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ category: 'FAIL', code: 'failure_path_acceptance_coverage_missing', id: 'FAIL-001' }),
+          expect.objectContaining({ category: 'EDGE', code: 'edge_case_acceptance_coverage_missing', id: 'EDGE-001' }),
+        ])
+      );
+
+      const missingCloseoutPreview = writeFixture(path.join(root, 'missing-closeout-preview'), {
+        omitCloseoutPreview: true,
+      });
+      const missingCloseoutPreviewReport = evaluateAiTddContractGate({
+        sourcePath: missingCloseoutPreview.sourcePath,
+        record: missingCloseoutPreview.record,
+        recordPath: missingCloseoutPreview.recordPath,
+        mode: 'pre-implementation',
+        attemptId: ATTEMPT,
+      });
+      expect(reportArray(reportObject(missingCloseoutPreviewReport, 'contractCompletenessReport'), 'issues')).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ category: 'CLOSEOUT_PROOF', code: 'closeout_proof_required_commands_missing' }),
+          expect.objectContaining({ category: 'CLOSEOUT_PROOF', code: 'closeout_proof_policies_missing' }),
+        ])
+      );
+
+      const missingLegacyRefs = writeFixture(path.join(root, 'missing-legacy-refs'), {
+        omitLegacyRefs: true,
+      });
+      const missingLegacyRefsReport = evaluateAiTddContractGate({
+        sourcePath: missingLegacyRefs.sourcePath,
+        record: missingLegacyRefs.record,
+        recordPath: missingLegacyRefs.recordPath,
+        mode: 'pre-implementation',
+        attemptId: ATTEMPT,
+      });
+      expect(reportArray(reportObject(missingLegacyRefsReport, 'contractCompletenessReport'), 'issues')).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ category: 'LEGACY_DENIAL', code: 'legacy_denial_refs_missing' }),
         ])
       );
 
@@ -975,6 +1202,33 @@ describe('ai tdd contract gate', () => {
       expect(report.contractExecutionManifest.acceptanceTests).toHaveLength(1);
       expect(report.contractExecutionManifest.e2eSuites).toHaveLength(1);
       expect(report.contractExecutionManifest.acceptanceSuites).toHaveLength(2);
+      expect(report.contractExecutionManifest.errorCaseCoverage).toMatchObject({
+        ready: true,
+        decision: 'pass',
+        summary: {
+          failurePathCount: 1,
+          edgeCaseCount: 1,
+          missingCount: 0,
+        },
+      });
+      expect(report.contractExecutionManifest.commandTargetCollection).toMatchObject({ ready: true, decision: 'pass' });
+      expect(report.contractExecutionManifest.traceClosureAssertions).toMatchObject({ ready: true, decision: 'pass' });
+      expect(report.contractExecutionManifest.canonicalSurfaceReconciliation).toMatchObject({ ready: true, decision: 'pass' });
+      expect(report.contractExecutionManifest.legacyDenial).toMatchObject({ ready: true, decision: 'pass' });
+      expect(report.contractExecutionManifest.closeoutProof).toMatchObject({ ready: true, decision: 'pass' });
+      expect(report.contractExecutionManifest.evidenceTrustStates).toMatchObject({ ready: true, decision: 'pass' });
+      expect(report.contractExecutionManifest.closeoutGates).toMatchObject({
+        decision: 'pass',
+        requiredManifestSections: [
+          'commandTargetCollection',
+          'traceClosureAssertions',
+          'currentTargetMap',
+          'canonicalSurfaceReconciliation',
+          'legacyDenial',
+          'closeoutProof',
+          'evidenceTrustStates',
+        ],
+      });
       expect(report.acceptanceE2eTestPlan.tests.length).toBeGreaterThan(0);
       expect(report.acceptanceE2eTestPlan.e2eSuites.length).toBeGreaterThan(0);
       expect(report.redGreenMatrix.map((row: Record<string, unknown>) => row.category)).toEqual(

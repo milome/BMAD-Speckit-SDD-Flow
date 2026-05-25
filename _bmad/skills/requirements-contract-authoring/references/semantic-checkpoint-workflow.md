@@ -1,0 +1,224 @@
+# Requirements Contract Semantic Checkpoint Workflow
+
+## Role In This Skill
+
+This reference is part of `requirements-contract-authoring`. It is the normative workflow for large or high-risk confirmation-ready source authoring when one full-document pass is unsafe.
+
+The historical source was `docs/design/2026-05-24-requirements-contract-semantic-checkpoint-workflow.md`. Keep this reference synchronized when checkpoint runner behavior changes. The design document may remain as project history, but this skill reference is the workflow authority used by the skill.
+
+The executable companion is:
+
+```bash
+node _bmad/skills/requirements-contract-authoring/scripts/run_semantic_checkpoints.js
+```
+
+The script should automate the manual steps in this reference where possible. Automation must not remove the core safety property:
+
+```text
+one semantic checkpoint -> one bounded source-document edit -> validation -> forced single-file commit -> receipt with diff and hash
+```
+
+## Purpose
+
+This workflow converts a large requirements source document into a confirmation-ready implementation source document without timing out, losing work, or mixing unrelated changes.
+
+Use it for large governance documents, dense `implementationConfirmation` blocks, or any source where a complete `requirements-contract-authoring` pass is too large to finish safely in one edit.
+
+## Non-Goals
+
+- Do not generate the whole confirmation-ready source document in one pass when scale assessment returns `checkpoint_required`.
+- Do not stream full document bodies back into chat.
+- Do not stage unrelated files.
+- Do not treat a checkpoint commit as final delivery readiness.
+- Do not set `implementationConfirmation.status: user_confirmed` without explicit user confirmation and controlled ingest.
+- Do not render confirmation HTML until the source document is structurally ready, pre-render blockers are resolved, and the user has selected the confirmation language.
+
+## Checkpoint Sequence
+
+Use these semantic checkpoints in order. A later checkpoint may refine earlier text, but it must not silently reduce already authored scope.
+
+1. Header, background, scope, non-goals, and frozen decisions.
+2. `implementationConfirmation` core fields and full `applicability.*` declarations.
+3. `must`, `notDone`, `mustNot`, and `evidence`.
+4. `failurePaths`, `edgeCases`, and `traceRows`.
+5. `sequenceViews`, `flowViews`, `edgeCaseViews`, and `boundaryViews`.
+6. `artifactAutomationPlan`, `requiredCommands`, `suggestedCommands`, and `closeoutReadinessPreview`.
+7. Conditional modules for governance events, runtime recovery, scoring/dashboard/SFT, current-target map, scripts, and hooks.
+8. Human-readable Mermaid views, evidence overview, E2E overview, requirement boundary overview, Definition of Done, and Reverse Audit Report.
+9. Confirmation HTML render and renderer blocker repair.
+10. User confirmation ingest and post-confirmation readiness checks.
+
+The checkpoint runner's `--until pre-render-ready` scope covers checkpoints 1-8 and then stops before HTML render. Checkpoints 9-10 stay in the normal render and ingest modes of this skill.
+
+## Checkpoint Loop
+
+Each checkpoint follows the same loop.
+
+### 1. Before Editing
+
+Run:
+
+```powershell
+git status --short
+node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js
+```
+
+Record whether unrelated worktree changes exist. Unrelated changes must stay unstaged.
+
+### 2. Edit Scope
+
+Edit only the target requirements document for the current checkpoint unless the user explicitly approves related files.
+
+For ignored requirement documents under `docs/requirements/`, expect to stage with `git add -f`.
+
+This edit must be a real source-document authoring step. It may add or refine the checkpoint's semantic section, ID matrix rows, views, evidence, commands, or human-readable explanations. It must not degrade into writing only a status marker unless the checkpoint content was already fully present and the status marker is only a receipt.
+
+### 3. After Editing
+
+Run:
+
+```powershell
+node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js
+git diff -- docs/requirements/<source-document>.md
+git diff --stat -- docs/requirements/<source-document>.md
+(Get-FileHash -Algorithm SHA256 docs/requirements/<source-document>.md).Hash
+```
+
+If the checkpoint modifies contract structure, also run the best available contract check for the current maturity level:
+
+```powershell
+node _bmad/skills/requirements-contract-authoring/scripts/reverse_audit_contract.js docs/requirements/<source-document>.md
+```
+
+For early draft checkpoints, a reverse audit `FAIL` is acceptable only when the failure is expected, such as missing user confirmation or missing HTML render. Unexpected structural failures must be repaired before committing.
+
+### 4. Stage One File
+
+Run:
+
+```powershell
+git add -f -- docs/requirements/<source-document>.md
+git diff --cached --name-status
+```
+
+The staged set must contain only the target source document. Stop if any unrelated path appears.
+
+### 5. Commit
+
+Use a concise Chinese commit message:
+
+```powershell
+git commit -m "docs(requirements): 补充<checkpoint名称>"
+```
+
+Then record:
+
+```powershell
+git rev-parse HEAD
+git show --stat --oneline HEAD
+```
+
+### 6. Receipt
+
+After every checkpoint, report this receipt:
+
+```text
+Checkpoint: <name>
+Commit: <commitHash>
+Document SHA256: <sha256>
+Diff: +<added> -<removed>
+Validation: encoding findings=0; reverse audit=<PASS|EXPECTED_FAIL|NOT_RUN>
+Next: <next checkpoint>
+```
+
+The receipt is the human-readable progress ledger. Git is the authoritative diff ledger.
+
+## Automation Contract
+
+The skill should prefer script automation over manual repetition:
+
+```bash
+node _bmad/skills/requirements-contract-authoring/scripts/assess_contract_authoring_scale.js \
+  --source <source-document.md> \
+  --out _bmad-output/runtime/requirement-records/<recordId>/authoring/scale-assessment.json \
+  --json
+
+node _bmad/skills/requirements-contract-authoring/scripts/run_semantic_checkpoints.js \
+  --source <source-document.md> \
+  --assessment _bmad-output/runtime/requirement-records/<recordId>/authoring/scale-assessment.json \
+  --progress _bmad-output/runtime/requirement-records/<recordId>/authoring/semantic-checkpoint-progress.json \
+  --mode run \
+  --until pre-render-ready \
+  --json
+```
+
+Required automation behavior:
+
+- `plan` and `status` are read-only.
+- `run` without `--checkpoint` starts at the first incomplete checkpoint and continues until `pre-render-ready`.
+- `resume` starts from the progress record's next checkpoint when the current document hash matches the progress record.
+- Explicit `--checkpoint` executes only that checkpoint for controlled manual repair.
+- Every completed checkpoint creates a separate single-file commit.
+- The runner must stop before commit if staged paths contain anything other than the active target requirements document.
+- The runner must not silently overwrite manual edits when the current document hash differs from the latest progress record.
+- The runner must write progress and receipts sufficient for resume and user review.
+- The runner must preserve checkpoint authoring semantics: each checkpoint is a bounded document edit, not merely a progress status update.
+- Completing all eight pre-render checkpoints is necessary but not sufficient for `pre_render_ready`.
+- Before returning `pre_render_ready` or allowing HTML render, the runner must execute a whole-document global consistency gate.
+- The global consistency gate must fail closed when `implementationConfirmation` cannot be parsed, any required core array is missing, any ID is duplicated, any `MUST` or `NEG` lacks reciprocal `traceRows` coverage, any `traceRows[]` item references missing evidence, any evidence or trace command reference is undefined, any failure/edge/view reference is unresolved, or deterministic definition drilldown still has blockers.
+- The gate must write `_bmad-output/runtime/requirement-records/<recordId>/authoring/pre-render-global-consistency-report.json` or the progress-local equivalent, update progress validation as `globalConsistency: pass|fail`, and block HTML render on any finding.
+- The explicit command for this hard gate is:
+
+```bash
+node _bmad/skills/requirements-contract-authoring/scripts/run_semantic_checkpoints.js \
+  --source <source-document.md> \
+  --progress _bmad-output/runtime/requirement-records/<recordId>/authoring/semantic-checkpoint-progress.json \
+  --mode pre-render-gate \
+  --json
+```
+
+This gate exists because checkpoint splitting removes the implicit whole-document pass that a single generation step used to provide. A checkpoint log, checkpoint count, or trace row count must never be accepted as equivalent to global trace/evidence consistency.
+
+## Efficient Streaming Policy
+
+Use chat streaming for progress and evidence, not for full document content.
+
+Each working update should include only:
+
+- current checkpoint name
+- section range being edited
+- validation command result
+- commit hash
+- document SHA256
+- next checkpoint
+
+Do not paste full YAML blocks, full Mermaid diagrams, or full document sections unless the user explicitly asks. The file on disk and Git commits are the source of truth.
+
+## Resume Rules
+
+To resume after interruption:
+
+1. Run `git log --oneline -- docs/requirements/<source-document>.md`.
+2. Read the latest checkpoint receipt, if available.
+3. Run `git show --stat --oneline HEAD -- docs/requirements/<source-document>.md`.
+4. Compute current document SHA256.
+5. Continue from the next checkpoint.
+
+If the file differs from the last recorded SHA256, inspect the diff before editing:
+
+```powershell
+git diff -- docs/requirements/<source-document>.md
+```
+
+Do not overwrite uncommitted user edits. If the diff conflicts with the next checkpoint, ask before proceeding.
+
+## Final Index Cleanup
+
+The checkpoint commits intentionally force-add ignored requirement documents to protect work from accidental deletion. At final cleanup, if the project wants the generated requirements document removed from Git index but retained locally, run:
+
+```powershell
+git rm --cached -- docs/requirements/<source-document>.md
+git commit -m "chore(requirements): 移出临时需求文档索引"
+```
+
+Only do this after the user confirms the final retention strategy.

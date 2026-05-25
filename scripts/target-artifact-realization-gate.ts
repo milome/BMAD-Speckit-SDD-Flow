@@ -281,10 +281,22 @@ function pushTarget(targets: TargetItem[], item: TargetItem): void {
     existing.expectedSourceOfTruthRole || item.expectedSourceOfTruthRole;
 }
 
+function artifactPlanRowDefinesTargetSurface(row: JsonObject): boolean {
+  const role = text(row.sourceOfTruthRole);
+  const artifactType = text(row.artifactType);
+  return (
+    role === 'implementation' ||
+    role === 'control' ||
+    row.canAffectControlFlow === true ||
+    /^(?:code|script|hook|test|config|schema|control_record)$/iu.test(artifactType)
+  );
+}
+
 export function deriveTargetArtifactChecklist(confirmation: JsonObject): TargetItem[] {
   const targets: TargetItem[] = [];
 
   for (const row of objects(confirmation.artifactAutomationPlan)) {
+    if (!artifactPlanRowDefinesTargetSurface(row)) continue;
     const id = text(row.id) || `artifactAutomationPlan:${targets.length + 1}`;
     const links = collectLinkedIds(row);
     const rowPath = text(row.path);

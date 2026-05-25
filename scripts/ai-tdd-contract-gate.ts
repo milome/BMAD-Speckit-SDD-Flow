@@ -60,6 +60,8 @@ interface AcceptanceRow {
   files: string[];
   commandRefs: string[];
   covers: string[];
+  failurePathRefs: string[];
+  edgeCaseRefs: string[];
   traceRefs: string[];
   evidenceRefs: string[];
   negativeControlRefs: string[];
@@ -185,6 +187,18 @@ function idRefs(row: JsonObject, keys: string[]): string[] {
   return unique(keys.flatMap((key) => strings(row[key])));
 }
 
+function isFailurePathId(value: string): boolean {
+  return /^FAIL-\d+/u.test(value);
+}
+
+function isEdgeCaseId(value: string): boolean {
+  return /^EDGE-\d+/u.test(value);
+}
+
+function requirementCoverageRefs(values: string[]): string[] {
+  return values.filter((value) => !isFailurePathId(value) && !isEdgeCaseId(value));
+}
+
 function extractCommandFileRefs(command: string): string[] {
   const refs = new Set<string>();
   const normalized = command.replace(/\r?\n/gu, ' ');
@@ -286,7 +300,17 @@ function explicitAcceptanceRows(confirmation: JsonObject): AcceptanceRow[] {
         sourceSection: section,
         files,
         commandRefs: commandRefs(row),
-        covers: idRefs(row, ['covers', 'requirementRefs', 'linkedRequirementIds', 'mustRefs', 'negRefs']),
+        covers: requirementCoverageRefs(
+          idRefs(row, ['covers', 'requirementRefs', 'linkedRequirementIds', 'mustRefs', 'negRefs'])
+        ),
+        failurePathRefs: unique([
+          ...idRefs(row, ['failurePathRefs', 'linkedFailurePathIds']),
+          ...idRefs(row, ['covers', 'requirementRefs', 'linkedRequirementIds']).filter(isFailurePathId),
+        ]),
+        edgeCaseRefs: unique([
+          ...idRefs(row, ['edgeCaseRefs', 'linkedEdgeCaseIds']),
+          ...idRefs(row, ['covers', 'requirementRefs', 'linkedRequirementIds']).filter(isEdgeCaseId),
+        ]),
         traceRefs: idRefs(row, ['traceRows', 'traceRefs']),
         evidenceRefs: idRefs(row, ['evidenceRefs', 'linkedEvidenceIds']),
         negativeControlRefs: idRefs(row, ['negativeControlRefs', 'negativeControls', 'linkedNegIds']),
@@ -324,7 +348,9 @@ function derivedAcceptanceRows(confirmation: JsonObject): AcceptanceRow[] {
         sourceSection: 'requiredCommands',
         files,
         commandRefs: id ? [id] : [],
-        covers,
+        covers: requirementCoverageRefs(covers),
+        failurePathRefs: unique(covers.filter(isFailurePathId)),
+        edgeCaseRefs: unique(covers.filter(isEdgeCaseId)),
         traceRefs: unique([
           ...idRefs(command, ['traceRows', 'traceRefs']),
           ...linkedTraces.map((trace) => text(trace.id)),
@@ -491,6 +517,452 @@ function negativeControls(confirmation: JsonObject): JsonObject[] {
   return controls.filter((row) => text(row.id));
 }
 
+function viewCoverageIndex(confirmation: JsonObject): Map<string, string[]> {
+  const index = new Map<string, string[]>();
+  const views = [
+    ...objects(confirmation.sequenceViews),
+    ...objects(confirmation.flowViews),
+    ...objects(confirmation.edgeCaseViews),
+    ...objects(confirmation.boundaryViews),
+  ];
+  for (const view of views) {
+    const viewId = text(view.id);
+    for (const ref of idRefs(view, ['covers', 'cases'])) {
+      index.set(ref, unique([...(index.get(ref) ?? []), viewId].filter(Boolean)));
+    }
+  }
+  return index;
+}
+
+function traceRefsFor(
+  traceRows: JsonObject[],
+  requirementRefs: string[],
+  evidenceRefs: string[],
+  explicitRefs: string[]
+): string[] {
+  return unique([
+    ...explicitRefs,
+    ...traceRows
+      .filter(
+        (trace) =>
+          strings(trace.covers).some((ref) => requirementRefs.includes(ref)) ||
+          strings(trace.evidenceRefs).some((ref) => evidenceRefs.includes(ref))
+      )
+      .map((trace) => text(trace.id)),
+  ]);
+}
+
+function acceptanceRefsFor(
+  acceptance: AcceptanceRow[],
+  key: 'failurePathRefs' | 'edgeCaseRefs',
+  id: string
+): { acceptanceRefs: string[]; e2eRefs: string[] } {
+  const covering = acceptance.filter((row) => row.explicit !== false && row[key].includes(id));
+  return {
+    acceptanceRefs: covering
+      .filter((row) => !(row.kind === 'e2e' || row.id.startsWith('E2E-')))
+      .map((row) => row.id),
+    e2eRefs: covering.filter((row) => row.kind === 'e2e' || row.id.startsWith('E2E-')).map((row) => row.id),
+  };
+}
+
+function errorCaseCoverage(confirmation: JsonObject, acceptance: AcceptanceRow[]): JsonObject {
+  const traceRows = objects(confirmation.traceRows);
+  const failureRows = objects(confirmation.failurePaths);
+  const edgeRows = objects(confirmation.edgeCases);
+  const views = viewCoverageIndex(confirmation);
+  const failureNegRefs = new Map(
+    failureRows.map((row) => [text(row.id), idRefs(row, ['linkedNegIds', 'negRefs'])])
+  );
+
+  const failurePaths = failureRows
+    .map((row) => {
+      const id = text(row.id);
+      const linkedNegIds = idRefs(row, ['linkedNegIds', 'negRefs']);
+      const linkedEvidenceIds = idRefs(row, ['linkedEvidenceIds', 'evidenceRefs']);
+      const traceRefs = traceRefsFor(
+        traceRows,
+        linkedNegIds,
+        linkedEvidenceIds,
+        idRefs(row, ['traceRows', 'traceRefs'])
+      );
+      const viewRefs = unique([...idRefs(row, ['viewRefs', 'sequenceViewRefs', 'boundaryViewRefs']), ...(views.get(id) ?? [])]);
+      const { acceptanceRefs, e2eRefs } = acceptanceRefsFor(acceptance, 'failurePathRefs', id);
+      const missing = [
+        ...(linkedNegIds.length > 0 ? [] : ['failure_path_neg_refs_missing']),
+        ...(linkedEvidenceIds.length > 0 ? [] : ['failure_path_evidence_refs_missing']),
+        ...(traceRefs.length > 0 ? [] : ['failure_path_trace_coverage_missing']),
+        ...(acceptanceRefs.length + e2eRefs.length > 0 ? [] : ['failure_path_acceptance_coverage_missing']),
+        ...(viewRefs.length > 0 ? [] : ['failure_path_view_coverage_missing']),
+      ];
+      return {
+        id,
+        linkedNegIds,
+        linkedEvidenceIds,
+        traceRefs,
+        viewRefs,
+        acceptanceRefs,
+        e2eRefs,
+        missing,
+        covered: missing.length === 0,
+      };
+    })
+    .filter((row) => text(row.id));
+
+  const edgeCases = edgeRows
+    .map((row) => {
+      const id = text(row.id);
+      const linkedFailurePathIds = idRefs(row, ['linkedFailurePathIds', 'failurePathRefs']);
+      const directNegIds = idRefs(row, ['linkedNegIds', 'negRefs']);
+      const linkedNegIds = unique([
+        ...directNegIds,
+        ...linkedFailurePathIds.flatMap((failureId) => failureNegRefs.get(failureId) ?? []),
+      ]);
+      const linkedEvidenceIds = idRefs(row, ['linkedEvidenceIds', 'evidenceRefs']);
+      const traceRefs = traceRefsFor(
+        traceRows,
+        linkedNegIds,
+        linkedEvidenceIds,
+        idRefs(row, ['traceRows', 'traceRefs'])
+      );
+      const viewRefs = unique([...idRefs(row, ['viewRefs', 'sequenceViewRefs', 'boundaryViewRefs']), ...(views.get(id) ?? [])]);
+      const { acceptanceRefs, e2eRefs } = acceptanceRefsFor(acceptance, 'edgeCaseRefs', id);
+      const missing = [
+        ...(linkedFailurePathIds.length + linkedNegIds.length > 0 ? [] : ['edge_case_failure_or_neg_missing']),
+        ...(linkedEvidenceIds.length > 0 ? [] : ['edge_case_evidence_refs_missing']),
+        ...(traceRefs.length > 0 ? [] : ['edge_case_trace_coverage_missing']),
+        ...(acceptanceRefs.length + e2eRefs.length > 0 ? [] : ['edge_case_acceptance_coverage_missing']),
+        ...(viewRefs.length > 0 ? [] : ['edge_case_view_coverage_missing']),
+      ];
+      return {
+        id,
+        linkedFailurePathIds,
+        linkedNegIds,
+        linkedEvidenceIds,
+        traceRefs,
+        viewRefs,
+        acceptanceRefs,
+        e2eRefs,
+        missing,
+        covered: missing.length === 0,
+      };
+    })
+    .filter((row) => text(row.id));
+
+  const missing = [...failurePaths, ...edgeCases].flatMap((row) =>
+    strings(row.missing).map((code) => ({
+      id: text(row.id),
+      code,
+      category: isFailurePathId(text(row.id)) ? 'FAIL' : 'EDGE',
+    }))
+  );
+  return {
+    decision: missing.length === 0 ? 'pass' : 'blocked',
+    ready: missing.length === 0,
+    failurePaths,
+    edgeCases,
+    missing,
+    summary: {
+      failurePathCount: failurePaths.length,
+      edgeCaseCount: edgeCases.length,
+      coveredFailurePathCount: failurePaths.filter((row) => row.covered === true).length,
+      coveredEdgeCaseCount: edgeCases.filter((row) => row.covered === true).length,
+      missingCount: missing.length,
+    },
+  };
+}
+
+function commandTargetCollection(confirmation: JsonObject): JsonObject {
+  const traceRows = objects(confirmation.traceRows);
+  const rows = objects(confirmation.requiredCommands).map((row) => {
+    const id = commandId(row);
+    const traceRefs = idRefs(row, ['traceRows', 'traceRefs']);
+    const evidenceRefs = idRefs(row, ['evidenceRefs', 'linkedEvidenceIds']);
+    const files = extractCommandFileRefs(text(row.command));
+    const linkedTraceRows = traceRows.filter((trace) => commandRefs(trace).includes(id));
+    const collectedTraceRefs = unique([...traceRefs, ...linkedTraceRows.map((trace) => text(trace.id))]);
+    const collectedEvidenceRefs = unique([
+      ...evidenceRefs,
+      ...linkedTraceRows.flatMap((trace) => strings(trace.evidenceRefs)),
+    ]);
+    const missing = [
+      ...(files.length > 0 ? [] : ['command_target_files_missing']),
+      ...(collectedTraceRefs.length > 0 ? [] : ['command_target_trace_refs_missing']),
+      ...(collectedEvidenceRefs.length > 0 ? [] : ['command_target_evidence_refs_missing']),
+    ];
+    return {
+      id,
+      command: text(row.command),
+      files: files.map(normalizePath),
+      traceRefs: collectedTraceRefs,
+      evidenceRefs: collectedEvidenceRefs,
+      missing,
+      ready: missing.length === 0,
+    };
+  }).filter((row) => row.id);
+  const missing = rows.flatMap((row) =>
+    strings(row.missing).map((code) => ({ id: text(row.id), code, category: 'CMD_TARGET' }))
+  );
+  return {
+    decision: rows.length > 0 && missing.length === 0 ? 'pass' : 'blocked',
+    ready: rows.length > 0 && missing.length === 0,
+    rows,
+    missing: rows.length === 0 ? [{ id: 'requiredCommands', code: 'command_target_collection_missing', category: 'CMD_TARGET' }] : missing,
+    summary: {
+      commandCount: rows.length,
+      coveredCommandCount: rows.filter((row) => row.ready === true).length,
+      missingCount: rows.length === 0 ? 1 : missing.length,
+    },
+  };
+}
+
+function traceClosureAssertions(confirmation: JsonObject): JsonObject {
+  const rows = objects(confirmation.traceRows).map((row) => {
+    const id = text(row.id);
+    const covers = strings(row.covers);
+    const evidenceRefs = strings(row.evidenceRefs);
+    const commandRefsForRow = commandRefs(row);
+    const acceptanceRefs = strings(row.acceptanceRefs);
+    const artifactRefs = strings(row.artifactRefs);
+    const missing = [
+      ...(covers.length > 0 ? [] : ['trace_closure_requirement_refs_missing']),
+      ...(evidenceRefs.length > 0 ? [] : ['trace_closure_evidence_refs_missing']),
+      ...(commandRefsForRow.length > 0 ? [] : ['trace_closure_command_refs_missing']),
+      ...(acceptanceRefs.length > 0 ? [] : ['trace_closure_acceptance_refs_missing']),
+      ...(artifactRefs.length > 0 ? [] : ['trace_closure_artifact_refs_missing']),
+    ];
+    return {
+      id,
+      covers,
+      evidenceRefs,
+      commandRefs: commandRefsForRow,
+      acceptanceRefs,
+      artifactRefs,
+      closureAssertion: text(row.closureAssertion) || text(row.oracle) || 'target-state closure requires current command, evidence, acceptance, and artifact binding',
+      missing,
+      ready: missing.length === 0,
+    };
+  }).filter((row) => row.id);
+  const missing = rows.flatMap((row) =>
+    strings(row.missing).map((code) => ({ id: text(row.id), code, category: 'TRACE_CLOSURE' }))
+  );
+  return {
+    decision: rows.length > 0 && missing.length === 0 ? 'pass' : 'blocked',
+    ready: rows.length > 0 && missing.length === 0,
+    rows,
+    missing: rows.length === 0 ? [{ id: 'traceRows', code: 'trace_closure_assertions_missing', category: 'TRACE_CLOSURE' }] : missing,
+    summary: {
+      traceCount: rows.length,
+      closedByPlanCount: rows.filter((row) => row.ready === true).length,
+      missingCount: rows.length === 0 ? 1 : missing.length,
+    },
+  };
+}
+
+function canonicalSurfaceReconciliation(confirmation: JsonObject, targetArtifacts: JsonObject[]): JsonObject {
+  const currentTargetMap = nested(confirmation.currentTargetMap);
+  const rows = targetArtifacts
+    .filter((row) => text(row.kind) !== 'legacy_policy')
+    .map((row) => {
+      const id = text(row.id);
+      const traceRefs = strings(row.traceRefs);
+      const evidenceRefs = strings(row.evidenceRefs);
+      const missing = [
+        ...(text(row.pathOrField) ? [] : ['canonical_surface_path_or_field_missing']),
+        ...(traceRefs.length > 0 ? [] : ['canonical_surface_trace_refs_missing']),
+        ...(evidenceRefs.length > 0 ? [] : ['canonical_surface_evidence_refs_missing']),
+      ];
+      return {
+        id,
+        kind: text(row.kind),
+        sourceSection: text(row.sourceSection),
+        pathOrField: text(row.pathOrField),
+        traceRefs,
+        evidenceRefs,
+        missing,
+        ready: missing.length === 0,
+      };
+    });
+  const missing = rows.flatMap((row) =>
+    strings(row.missing).map((code) => ({ id: text(row.id), code, category: 'CANONICAL_SURFACE' }))
+  );
+  return {
+    decision: rows.length > 0 && missing.length === 0 ? 'pass' : 'blocked',
+    ready: rows.length > 0 && missing.length === 0,
+    applies: nested(confirmation.applicability).currentTargetMap ? nested(nested(confirmation.applicability).currentTargetMap).applies === true : Object.keys(currentTargetMap).length > 0,
+    rows,
+    missing: rows.length === 0 ? [{ id: 'currentTargetMap', code: 'canonical_surface_reconciliation_missing', category: 'CANONICAL_SURFACE' }] : missing,
+    summary: {
+      canonicalSurfaceCount: rows.length,
+      reconciledByPlanCount: rows.filter((row) => row.ready === true).length,
+      missingCount: rows.length === 0 ? 1 : missing.length,
+    },
+  };
+}
+
+function currentTargetMapSection(confirmation: JsonObject): JsonObject {
+  const map = nested(confirmation.currentTargetMap);
+  const requiredGroups = [
+    ['currentSummary', objects(map.currentSummary)],
+    ['targetSummary', objects(map.targetSummary)],
+    ['diffRows', objects(map.diffRows)],
+    ['process', objects(map.process)],
+    ['artifactPaths', objects(map.artifactPaths)],
+    ['canonicalArtifacts', objects(map.canonicalArtifacts)],
+    ['existingArtifacts', objects(map.existingArtifacts)],
+  ] as const;
+  const missing: JsonObject[] = [];
+  for (const [groupName, rows] of requiredGroups) {
+    if (rows.length === 0) {
+      missing.push({ id: groupName, code: 'current_target_map_group_missing', category: 'CURRENT_TARGET_MAP' });
+    }
+  }
+  if (text(map.schemaVersion) !== 'current-target-map/v1') {
+    missing.push({ id: 'schemaVersion', code: 'current_target_map_schema_version_missing_or_invalid', category: 'CURRENT_TARGET_MAP' });
+  }
+  if (text(map.displayProfile) !== 'closed_loop_current_target_map') {
+    missing.push({ id: 'displayProfile', code: 'current_target_map_display_profile_missing_or_invalid', category: 'CURRENT_TARGET_MAP' });
+  }
+  const rows = requiredGroups.map(([groupName, groupRows]) => ({
+    id: groupName,
+    count: groupRows.length,
+    ready: groupRows.length > 0,
+  }));
+  return {
+    decision: missing.length === 0 ? 'pass' : 'blocked',
+    ready: missing.length === 0,
+    schemaVersion: text(map.schemaVersion),
+    displayProfile: text(map.displayProfile),
+    rows,
+    missing,
+    summary: {
+      currentSummaryCount: objects(map.currentSummary).length,
+      targetSummaryCount: objects(map.targetSummary).length,
+      diffRowCount: objects(map.diffRows).length,
+      processCount: objects(map.process).length,
+      artifactPathCount: objects(map.artifactPaths).length,
+      canonicalArtifactCount: objects(map.canonicalArtifacts).length,
+      legacySurfaceCount: objects(map.existingArtifacts).length,
+      missingCount: missing.length,
+    },
+  };
+}
+
+function legacyDenial(confirmation: JsonObject, targetArtifacts: JsonObject[], controls: JsonObject[]): JsonObject {
+  const legacyRows = [
+    ...targetArtifacts.filter((row) => text(row.kind) === 'legacy_policy'),
+    ...controls.filter((row) => text(row.source) === 'legacy_policy'),
+  ];
+  const rows = legacyRows.map((row) => {
+    const id = text(row.id);
+    const traceRefs = strings(row.traceRefs);
+    const evidenceRefs = strings(row.evidenceRefs);
+    const linkedIds = strings(row.linkedIds);
+    const oracle = text(row.oracle) || `Must not use ${text(row.pathOrField)} as completion proof`;
+    const missing = [
+      ...(oracle ? [] : ['legacy_denial_oracle_missing']),
+      ...(traceRefs.length + evidenceRefs.length + linkedIds.length > 0 ? [] : ['legacy_denial_refs_missing']),
+    ];
+    return {
+      id,
+      pathOrField: text(row.pathOrField),
+      completionProofPolicy: text(row.completionProofPolicy) || 'legacy_only',
+      oracle,
+      traceRefs,
+      evidenceRefs,
+      linkedIds,
+      missing,
+      ready: missing.length === 0,
+    };
+  }).filter((row) => row.id || row.pathOrField);
+  const missing = rows.flatMap((row) =>
+    strings(row.missing).map((code) => ({ id: text(row.id) || text(row.pathOrField), code, category: 'LEGACY_DENIAL' }))
+  );
+  return {
+    decision: rows.length > 0 && missing.length === 0 ? 'pass' : 'blocked',
+    ready: rows.length > 0 && missing.length === 0,
+    rows,
+    missing: rows.length === 0 ? [{ id: 'currentTargetMap.existingArtifacts', code: 'legacy_denial_missing', category: 'LEGACY_DENIAL' }] : missing,
+    summary: {
+      legacyDenialCount: rows.length,
+      coveredLegacyDenialCount: rows.filter((row) => row.ready === true).length,
+      missingCount: rows.length === 0 ? 1 : missing.length,
+    },
+  };
+}
+
+function closeoutProof(confirmation: JsonObject, targetArtifacts: JsonObject[]): JsonObject {
+  const preview = nested(confirmation.closeoutReadinessPreview);
+  const requiredCommands = strings(preview.requiredCommands);
+  const policies = [
+    text(preview.orphanPolicy),
+    text(preview.currentAttemptPolicy),
+    text(preview.recordClosedPolicy),
+  ].filter(Boolean);
+  const targetRefs = targetArtifacts
+    .filter((row) => text(row.kind) !== 'legacy_policy')
+    .map((row) => text(row.id) || text(row.pathOrField))
+    .filter(Boolean);
+  const missing = [
+    ...(requiredCommands.length > 0 ? [] : ['closeout_proof_required_commands_missing']),
+    ...(policies.length > 0 ? [] : ['closeout_proof_policies_missing']),
+    ...(targetRefs.length > 0 ? [] : ['closeout_proof_target_refs_missing']),
+  ];
+  return {
+    decision: missing.length === 0 ? 'pass' : 'blocked',
+    ready: missing.length === 0,
+    requiredCommands,
+    policies,
+    targetRefs,
+    missing: missing.map((code) => ({ id: 'closeoutReadinessPreview', code, category: 'CLOSEOUT_PROOF' })),
+    summary: {
+      requiredCommandCount: requiredCommands.length,
+      policyCount: policies.length,
+      targetRefCount: targetRefs.length,
+      missingCount: missing.length,
+    },
+  };
+}
+
+function evidenceTrustStates(confirmation: JsonObject): JsonObject {
+  const evidenceRows = objects(confirmation.evidence);
+  const rows = evidenceRows.map((row) => {
+    const id = text(row.id);
+    const requiredCommandRefs = idRefs(row, ['requiredCommandRefs', 'commandRefs']);
+    const artifactRefs = idRefs(row, ['artifactRefs']);
+    const missing = [
+      ...(text(row.oracle) ? [] : ['evidence_trust_oracle_missing']),
+      ...(requiredCommandRefs.length > 0 ? [] : ['evidence_trust_command_refs_missing']),
+      ...(artifactRefs.length > 0 ? [] : ['evidence_trust_artifact_refs_missing']),
+    ];
+    return {
+      id,
+      initialState: 'planned',
+      allowedStates: ['planned', 'observed', 'assertion_validated', 'delivery_verified'],
+      closeoutConsumableState: 'delivery_verified',
+      requiredCommandRefs,
+      artifactRefs,
+      oracle: text(row.oracle),
+      missing,
+      ready: missing.length === 0,
+    };
+  }).filter((row) => row.id);
+  const missing = rows.flatMap((row) =>
+    strings(row.missing).map((code) => ({ id: text(row.id), code, category: 'EVIDENCE_TRUST' }))
+  );
+  return {
+    decision: rows.length > 0 && missing.length === 0 ? 'pass' : 'blocked',
+    ready: rows.length > 0 && missing.length === 0,
+    rows,
+    missing: rows.length === 0 ? [{ id: 'evidence', code: 'evidence_trust_states_missing', category: 'EVIDENCE_TRUST' }] : missing,
+    summary: {
+      evidenceCount: rows.length,
+      trustedByPlanCount: rows.filter((row) => row.ready === true).length,
+      missingCount: rows.length === 0 ? 1 : missing.length,
+    },
+  };
+}
+
 function buildManifest(input: {
   sourcePath: string;
   confirmation: JsonObject;
@@ -500,6 +972,16 @@ function buildManifest(input: {
 }): JsonObject {
   const acceptance = acceptanceRows(input.confirmation);
   const redProofs = redProofRows({ confirmation: input.confirmation, record: input.record });
+  const targetArtifacts = deriveTargetArtifactChecklist(input.confirmation);
+  const controls = negativeControls(input.confirmation);
+  const errorCoverage = errorCaseCoverage(input.confirmation, acceptance);
+  const commandTargets = commandTargetCollection(input.confirmation);
+  const traceClosures = traceClosureAssertions(input.confirmation);
+  const currentTargetMapManifest = currentTargetMapSection(input.confirmation);
+  const canonicalSurfaces = canonicalSurfaceReconciliation(input.confirmation, targetArtifacts as unknown as JsonObject[]);
+  const legacyControls = legacyDenial(input.confirmation, targetArtifacts as unknown as JsonObject[], controls);
+  const closeoutProofPlan = closeoutProof(input.confirmation, targetArtifacts as unknown as JsonObject[]);
+  const evidenceTrust = evidenceTrustStates(input.confirmation);
   return {
     sourcePath: normalizePath(path.resolve(input.sourcePath)),
     recordPath: normalizePath(path.resolve(input.recordPath)),
@@ -536,18 +1018,40 @@ function buildManifest(input: {
     e2eSuites: acceptance.filter((row) => row.kind === 'e2e'),
     acceptanceSuites: acceptance,
     preImplementationRedProofs: redProofs,
-    targetArtifacts: deriveTargetArtifactChecklist(input.confirmation),
+    targetArtifacts,
     targetModificationPaths: targetModificationPaths(input.confirmation),
-    negativeControls: negativeControls(input.confirmation),
-    closeoutGates: [
-      'reverse_audit',
-      'strict_proof',
-      'target_artifact_realization',
-      'current_attempt_binding',
-      'required_command_evidence',
-      'acceptance_e2e_evidence',
-      'negative_controls',
-    ],
+    negativeControls: controls,
+    errorCaseCoverage: errorCoverage,
+    commandTargetCollection: commandTargets,
+    traceClosureAssertions: traceClosures,
+    currentTargetMap: currentTargetMapManifest,
+    canonicalSurfaceReconciliation: canonicalSurfaces,
+    legacyDenial: legacyControls,
+    closeoutProof: closeoutProofPlan,
+    evidenceTrustStates: evidenceTrust,
+    closeoutGates: {
+      decision:
+        [
+          commandTargets,
+          traceClosures,
+          currentTargetMapManifest,
+          canonicalSurfaces,
+          legacyControls,
+          closeoutProofPlan,
+          evidenceTrust,
+        ].every((section) => section.ready === true)
+          ? 'pass'
+          : 'blocked',
+      requiredManifestSections: [
+        'commandTargetCollection',
+        'traceClosureAssertions',
+        'currentTargetMap',
+        'canonicalSurfaceReconciliation',
+        'legacyDenial',
+        'closeoutProof',
+        'evidenceTrustStates',
+      ],
+    },
   };
 }
 
@@ -619,6 +1123,16 @@ function contractCompletenessReport(manifest: JsonObject): JsonObject {
   const artifacts = objects(manifest.targetArtifacts);
   const proofArtifacts = artifacts.filter((row) => text(row.kind) !== 'legacy_policy');
   const targetModifications = objects(manifest.targetModificationPaths);
+  const errorCoverage = nested(manifest.errorCaseCoverage);
+  const manifestSections = [
+    ['commandTargetCollection', nested(manifest.commandTargetCollection)],
+    ['traceClosureAssertions', nested(manifest.traceClosureAssertions)],
+    ['currentTargetMap', nested(manifest.currentTargetMap)],
+    ['canonicalSurfaceReconciliation', nested(manifest.canonicalSurfaceReconciliation)],
+    ['legacyDenial', nested(manifest.legacyDenial)],
+    ['closeoutProof', nested(manifest.closeoutProof)],
+    ['evidenceTrustStates', nested(manifest.evidenceTrustStates)],
+  ] as const;
 
   const requirementIds = idSet(requirements);
   const mustNegIds = new Set([...must, ...neg].map((row) => text(row.id)).filter(Boolean));
@@ -651,6 +1165,27 @@ function contractCompletenessReport(manifest: JsonObject): JsonObject {
   if (proofArtifacts.length === 0) issues.push(issue('ART', 'target_artifacts_missing', 'ART-*'));
   if (targetModifications.length === 0) {
     issues.push(issue('targetModificationPaths', 'target_modification_paths_missing', 'targetModificationPaths'));
+  }
+  for (const row of objects(errorCoverage.missing)) {
+    const category = text(row.category) || (isFailurePathId(text(row.id)) ? 'FAIL' : 'EDGE');
+    issues.push(issue(category, text(row.code) || 'error_case_coverage_missing', text(row.id)));
+  }
+  for (const [sectionName, section] of manifestSections) {
+    if (section.ready !== true) {
+      const missing = objects(section.missing);
+      if (missing.length === 0) {
+        issues.push(issue(sectionName, `${sectionName}_blocked`, sectionName));
+      }
+      for (const row of missing) {
+        issues.push(
+          issue(
+            text(row.category) || sectionName,
+            text(row.code) || `${sectionName}_blocked`,
+            text(row.id) || sectionName
+          )
+        );
+      }
+    }
   }
 
   for (const row of requirements) {
@@ -834,6 +1369,14 @@ function contractCompletenessReport(manifest: JsonObject): JsonObject {
       E2E: e2e.length,
       ART: proofArtifacts.length,
       targetModificationPaths: targetModifications.length,
+      errorCaseCoverage: objects(errorCoverage.failurePaths).length + objects(errorCoverage.edgeCases).length,
+      commandTargetCollection: objects(nested(manifest.commandTargetCollection).rows).length,
+      traceClosureAssertions: objects(nested(manifest.traceClosureAssertions).rows).length,
+      currentTargetMap: objects(nested(manifest.currentTargetMap).rows).length,
+      canonicalSurfaceReconciliation: objects(nested(manifest.canonicalSurfaceReconciliation).rows).length,
+      legacyDenial: objects(nested(manifest.legacyDenial).rows).length,
+      closeoutProof: strings(nested(manifest.closeoutProof).requiredCommands).length,
+      evidenceTrustStates: objects(nested(manifest.evidenceTrustStates).rows).length,
     },
   };
 }

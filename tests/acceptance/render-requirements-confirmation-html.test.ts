@@ -25,13 +25,22 @@ afterEach(() => {
 });
 
 function writeSource(overrides = ''): string {
+  const includeChineseConfirmationText = !overrides.includes('ENGLISH_ONLY_CONFIRMATION_TEXT');
+  const acceptanceTestPath = path.join(tempDir, 'tests', 'acceptance', 'upload.acceptance.test.ts');
+  const e2eTestPath = path.join(tempDir, 'tests', 'e2e', 'upload-invalid.e2e.test.ts');
+  fs.mkdirSync(path.dirname(acceptanceTestPath), { recursive: true });
+  fs.mkdirSync(path.dirname(e2eTestPath), { recursive: true });
+  fs.writeFileSync(acceptanceTestPath, 'import { it } from "vitest"; it("positive upload acceptance oracle", () => {});\n', 'utf8');
+  fs.writeFileSync(e2eTestPath, 'import { it } from "vitest"; it("invalid upload e2e oracle", () => {});\n', 'utf8');
+  const currentTargetViewPackEnabled = !overrides.includes('CURRENT_TARGET_APPLIES_WITHOUT_VIEW_PACK');
+  const currentTargetApplies = true;
   const file = path.join(tempDir, 'prd.md');
   const currentTargetMapBlock =
-    overrides.includes('GOVERNANCE_VIEW_PACKS') || overrides.includes('CURRENT_TARGET_VIEW_PACK')
+    currentTargetApplies
       ? `
   currentTargetMap:
     schemaVersion: current-target-map/v1
-    displayProfile: closed_loop_current_target_map
+    ${overrides.includes('CURRENT_TARGET_APPLIES_MISSING_DISPLAY_PROFILE') ? '' : 'displayProfile: closed_loop_current_target_map'}
     introduction: "fixture-provided current target map"
     currentTitle: "Fixture current state"
     targetTitle: "Fixture target state"
@@ -52,6 +61,14 @@ function writeSource(overrides = ''): string {
         currentState: "current fixture"
         targetState: "target fixture"
         action: "source-provided action"
+      - dimension: "Fixture diff two"
+        currentState: "current fixture two"
+        targetState: "target fixture two"
+        action: "source-provided action two"
+      - dimension: "Fixture diff three"
+        currentState: "current fixture three"
+        targetState: "target fixture three"
+        action: "source-provided action three"
     targetFlow:
       - stepTitle: "Fixture source output"
         description: "Only appears because the fixture source provides currentTargetMap."
@@ -84,20 +101,28 @@ function writeSource(overrides = ''): string {
       - targetPathOrField: "fixture://record"
         functionDescription: "Fixture canonical record"
         controlPlaneRole: "fixture-control"
+        traceRows: ["TRACE-001"]
+        evidenceRefs: ["EVD-001"]
     pathRegistry:
       - category: "Fixture Record"
         fixedPath: "fixture://runtime/record.json"
         sourceOfTruthRole: "control"
         description: "Fixture path only"
+        traceRows: ["TRACE-001"]
+        evidenceRefs: ["EVD-001"]
       - category: "Fixture Sample Route"
         fixedPath: "fixture://runtime/sample-routes.jsonl"
         sourceOfTruthRole: "derived"
         description: "Fixture sample routing path"
+        traceRows: ["TRACE-001"]
+        evidenceRefs: ["EVD-001"]
     existingArtifacts:
       - currentPath: "fixture://legacy-report.md"
         currentFunction: "Fixture legacy report"
         targetTreatment: "source-provided evidence"
-        completionProofPolicy: "否"
+        completionProofPolicy: "legacy_only"
+        traceRows: ["TRACE-001"]
+        evidenceRefs: ["EVD-002"]
     scriptConvergence:
       - scriptOrConfigPath: "fixture/scripts/render.ts"
         currentFunction: "Fixture render"
@@ -133,6 +158,8 @@ function writeSource(overrides = ''): string {
     artifactPaths:
       - path: "fixture://artifact-path"
         targetRole: "fixture target role"
+        traceRows: ["TRACE-001"]
+        evidenceRefs: ["EVD-001"]
     architecture:
       - dimension: "Fixture layer"
         currentState: "fixture current architecture"
@@ -155,12 +182,16 @@ implementationConfirmation:
   confirmedBy: null
   sourceDocumentHash: null
   confirmationProfile: implementation_confirmation
-  requiredViewPacks: []
+  requiredViewPacks: ${
+    currentTargetViewPackEnabled
+      ? '["currentTargetMap"]'
+      : '[]'
+  }
   optionalViewPacks: ${
     overrides.includes('GOVERNANCE_VIEW_PACKS')
-      ? '["currentTargetMap", "sixMentalModels", "doubleGates"]'
-      : overrides.includes('CURRENT_TARGET_VIEW_PACK')
-        ? '["currentTargetMap"]'
+      ? '["sixMentalModels", "doubleGates"]'
+      : overrides.includes('CURRENT_TARGET_APPLIES_WITHOUT_VIEW_PACK') || overrides.includes('CURRENT_TARGET_APPLIES_MISSING_DISPLAY_PROFILE')
+        ? '[]'
         : '[]'
   }
   applicability:${overrides.includes('MISSING_APPLICABILITY') ? ' null' : ''}
@@ -175,11 +206,14 @@ ${overrides.includes('MISSING_APPLICABILITY') ? '' : `    governanceEvents:
       applies: true
       reasonCode: "fixture_renders_scoring_dashboard_sft_read_model_boundaries"
     currentTargetMap:
-      applies: ${overrides.includes('GOVERNANCE_VIEW_PACKS') || overrides.includes('CURRENT_TARGET_VIEW_PACK') ? 'true' : 'false'}
-      reasonCode: "${overrides.includes('GOVERNANCE_VIEW_PACKS') || overrides.includes('CURRENT_TARGET_VIEW_PACK') ? 'fixture_current_target_pack_enabled' : 'fixture_current_target_pack_not_enabled'}"
+      applies: true
+      reasonCode: "requirements_contract_authoring_always_requires_current_target_map"
     scriptsAndHooks:
       applies: true
       reasonCode: "fixture_artifact_plan_contains_scripts_and_hooks"
+    aiTddContractGate:
+      applies: true
+      reasonCode: "requirements_contract_authoring_always_requires_ai_tdd_gate"
 `}
   governanceEventTypeRegistryPolicy:
     controlFieldVocabulary: ["artifactIndex", "closeout", "confirmationHistory", "contractChecks", "executionIterations", "failureRecords", "gateChecks", "recoveryContext", "runtimePolicySnapshotRef"]
@@ -207,45 +241,46 @@ ${overrides.includes('MISSING_APPLICABILITY') ? '' : `    governanceEvents:
   must:
     - id: MUST-001
       text: "User uploads a valid file and sees it in the persisted file list."
-      evidenceRefs: ["EVD-001"]
+${includeChineseConfirmationText ? '      textZh: "用户上传有效文件后，可以在持久化文件列表中看到该文件。"\n' : ''}      evidenceRefs: ["EVD-001"]
       upstreamRequirementIds: ["PRD-001"]
       riskLevel: high
   notDone:
     - id: NEG-001
       text: "Empty upload must not show success and must not create persistent side effects."
-      evidenceRefs: ["EVD-002"]
+${includeChineseConfirmationText ? '      textZh: "空文件上传不得显示成功，也不得产生持久化副作用。"\n' : ''}      evidenceRefs: ["EVD-002"]
       whyItBlocksCompletion: "Without this, a smoke-only upload can be misreported as complete."
-      negativeAssertionRequired: true
+${includeChineseConfirmationText ? '      whyItBlocksCompletionZh: "如果缺少该约束，只有 smoke 级别的上传可能被误报为完成。"\n' : ''}      negativeAssertionRequired: true
   mustNot:
     - id: OUT-001
       text: "Batch upload is out of scope for this confirmation."
-      scopeBoundary: "single file only"
-      userApprovalRequiredIfChanged: true
+${includeChineseConfirmationText ? '      textZh: "批量上传不在本次确认范围内。"\n' : ''}      scopeBoundary: "single file only"
+${includeChineseConfirmationText ? '      scopeBoundaryZh: "仅限单文件。"\n' : ''}      userApprovalRequiredIfChanged: true
   evidence:
     - id: EVD-001
       text: "Run positive upload acceptance with persisted state oracle."
-      gate: "npm run test:e2e -- upload"
+${includeChineseConfirmationText ? '      textZh: "运行正向上传验收，并使用持久化状态作为判定 oracle。"\n' : ''}      gate: "npm run test:e2e -- upload"
       oracle: "Independent storage query shows persisted file and UI/API list includes it."
-      requiredCommandRefs: ["CMD-001"]
+${includeChineseConfirmationText ? '      oracleZh: "独立存储查询能看到持久化文件，且 UI/API 列表包含该文件。"\n' : ''}      requiredCommandRefs: ["CMD-001"]
       artifactRefs: ["ART-EVD-001"]
       acceptanceType: acceptance_e2e
     - id: EVD-002
       text: "Run invalid upload acceptance and assert no record was created."
-      gate: "npm run test:e2e -- upload-invalid"
+${includeChineseConfirmationText ? '      textZh: "运行无效上传验收，并断言没有创建任何记录。"\n' : ''}      gate: "npm run test:e2e -- upload-invalid"
       oracle: "Independent storage query shows no new file record."
-      requiredCommandRefs: ["CMD-002"]
+${includeChineseConfirmationText ? '      oracleZh: "独立存储查询显示没有新增文件记录。"\n' : ''}      requiredCommandRefs: ["CMD-002"]
       artifactRefs: ["ART-EVD-002"]
       acceptanceType: adversarial_e2e
   openQuestions: []
   failurePaths:${overrides.includes('MISSING_FAILURE_PATHS') ? ' []' : ''}
 ${overrides.includes('MISSING_FAILURE_PATHS') ? '' : `    - id: FAIL-001
       title: "Empty upload rejected"
-      trigger: "User submits an empty file."
-      expectedBehavior: "Show validation error and persist nothing."
-      forbiddenBehavior: "Do not show success, create a record, enqueue work, or mark requirement complete."
-      blocksCompletionWhenViolated: true
+${includeChineseConfirmationText ? '      titleZh: "空文件上传被拒绝"\n' : ''}      trigger: "User submits an empty file."
+${includeChineseConfirmationText ? '      triggerZh: "用户提交空文件。"\n' : ''}      expectedBehavior: "Show validation error and persist nothing."
+${includeChineseConfirmationText ? '      expectedBehaviorZh: "显示校验错误，并且不持久化任何内容。"\n' : ''}      forbiddenBehavior: "Do not show success, create a record, enqueue work, or mark requirement complete."
+${includeChineseConfirmationText ? '      forbiddenBehaviorZh: "不得显示成功、创建记录、入队任务或标记需求完成。"\n' : ''}      blocksCompletionWhenViolated: true
       linkedNegIds: ["NEG-001"]
       linkedEvidenceIds: ["EVD-002"]
+      viewRefs: ["SEQ-002"]
       requiredAssertions:
         - "Empty file returns an actionable validation error."
         - "No file record is created."
@@ -254,21 +289,58 @@ ${overrides.includes('MISSING_FAILURE_PATHS') ? '' : `    - id: FAIL-001
 ${overrides.includes('MISSING_EDGE_CASES') ? '' : `    - id: EDGE-001
       category: invalid_input
       condition: "Empty upload, missing config, duplicate execution, interrupted run, hash mismatch, orphan artifact, or pending rerun is observed."
-      expectedBehavior: "Fail closed or require explicit recovery according to linked IDs."
-      forbiddenBehavior: "Do not silently continue or claim completion from a read model."
-      linkedFailurePathIds: ["FAIL-001"]
+${includeChineseConfirmationText ? '      conditionZh: "出现空文件上传、配置缺失、重复执行、运行中断、hash 不匹配、孤儿工件或待重跑状态。"\n' : ''}      expectedBehavior: "Fail closed or require explicit recovery according to linked IDs."
+${includeChineseConfirmationText ? '      expectedBehaviorZh: "按照关联 ID fail closed，或要求显式恢复决策。"\n' : ''}      forbiddenBehavior: "Do not silently continue or claim completion from a read model."
+${includeChineseConfirmationText ? '      forbiddenBehaviorZh: "不得静默继续，也不得用只读模型声称完成。"\n' : ''}      linkedFailurePathIds: ["FAIL-001"]
       linkedEvidenceIds: ["EVD-002"]
+      viewRefs: ["EDGEVIEW-001"]
       blocksImplementation: false
 `}
   traceRows:
     - id: TRACE-001
-      covers: ["MUST-001", "NEG-001", "OUT-001"]
+      covers: ["MUST-001", "NEG-001"]
       taskRefs: ["TASK-001"]
       evidenceRefs: ["EVD-001", "EVD-002"]
 ${overrides.includes('LEGACY_COMMAND_REFS_ONLY') ? '      commandRefs: ["CMD-001", "CMD-002"]' : '      contractValidationCommandRefs: ["CMD-001"]\n      deliveryEvidenceCommandRefs: ["CMD-002"]'}
+      acceptanceRefs: ["ACC-001", "E2E-001"]
       sequenceViewRefs: ["SEQ-001", "SEQ-002"]
+      boundaryViewRefs: ["BOUNDARY-001"]
       artifactRefs: ["ART-CODE-001", "ART-EVD-001", "ART-EVD-002"]
       status: PENDING
+  acceptanceTests:
+    - id: ACC-001
+      file: "${acceptanceTestPath.replace(/\\/gu, '/')}"
+      covers: ["MUST-001"]
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
+${overrides.includes('MISSING_AI_TDD_MANIFEST_PROJECTION') ? '' : '      failurePathRefs: ["FAIL-001"]\n      edgeCaseRefs: ["EDGE-001"]'}
+      commandRefs: ["CMD-001"]
+      positiveControl: true
+      expectedPreImplementationState: expected_red
+      oracle: "Independent storage query shows persisted file and UI/API list includes it."
+  e2eSuites:
+    - id: E2E-001
+      file: "${e2eTestPath.replace(/\\/gu, '/')}"
+      covers: ["NEG-001"]
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-002"]
+${overrides.includes('MISSING_AI_TDD_MANIFEST_PROJECTION') ? '' : '      failurePathRefs: ["FAIL-001"]\n      edgeCaseRefs: ["EDGE-001"]'}
+      commandRefs: ["CMD-002"]
+      negativeControls: ["NEG-001"]
+      expectedPreImplementationState: expected_red
+      oracle: "Independent storage query shows no new file record."
+  targetModificationPaths:${overrides.includes('MISSING_TARGET_MODIFICATION_PATHS') ? ' []' : ''}
+${overrides.includes('MISSING_TARGET_MODIFICATION_PATHS') ? '' : `    - id: TARGET-MOD-001
+      path: "src/upload.ts"
+      changeType: modify
+      intent: "Implement confirmed upload behavior."
+      ownerModel: implementation
+      requirementRefs: ["MUST-001", "NEG-001"]
+      traceRefs: ["TRACE-001"]
+      evidenceRefs: ["EVD-001", "EVD-002"]
+      artifactRefs: ["ART-CODE-001"]
+      requiresReconfirmationOnChange: true
+`}
   sequenceViews:${overrides.includes('EMPTY_REQUIRED_VIEWS') ? ' []' : ''}
 ${overrides.includes('EMPTY_REQUIRED_VIEWS') ? '' : `
     - id: SEQ-001
@@ -289,6 +361,10 @@ ${overrides.includes('EMPTY_REQUIRED_VIEWS') ? '' : `
     - id: EDGE-001
       title: "Permission/config/empty/duplicate/recovery/hash/orphan/rerun cases"
       covers: ["NEG-001"]
+      cases: ["EDGE-001"]
+    - id: EDGEVIEW-001
+      title: "Explicit AI-TDD edge-case coverage"
+      covers: ["NEG-001"]
       cases: ["permission denied", "missing config", "empty data", "duplicate execution", "resume interruption", "hash mismatch", "orphan artifact", "pending rerun"]
 `}
   boundaryViews:${overrides.includes('EMPTY_REQUIRED_VIEWS') ? ' []' : ''}
@@ -297,7 +373,51 @@ ${overrides.includes('EMPTY_REQUIRED_VIEWS') ? '' : `
       title: "Single upload boundary"
       covers: ["OUT-001"]
 `}
-${currentTargetMapBlock}
+${currentTargetMapBlock || `  currentTargetMap:
+    schemaVersion: current-target-map/v1
+    displayProfile: closed_loop_current_target_map
+    introduction: "Default fixture current/target map required by requirements-contract-authoring."
+    currentSummary:
+      - title: "Current upload path"
+        detail: "Upload behavior is not yet confirmed against target implementation evidence."
+    targetSummary:
+      - title: "Target upload path"
+        detail: "Upload behavior is implemented only when target code, evidence, and negative paths match this map."
+    diffRows:
+      - dimension: "Positive upload"
+        currentState: "Unconfirmed behavior or smoke-only proof."
+        targetState: "Persisted file appears in the file list."
+        action: "Implement and verify MUST-001."
+      - dimension: "Empty upload"
+        currentState: "May be falsely accepted by smoke-only proof."
+        targetState: "Validation error with no persistent side effect."
+        action: "Implement and verify NEG-001."
+      - dimension: "Completion proof"
+        currentState: "Legacy report may exist as diagnostic context."
+        targetState: "Only current-attempt acceptance evidence can close traces."
+        action: "Reject legacy completion proof."
+    process:
+      - phase: "Confirm source"
+        currentState: "Draft source document."
+        targetState: "Confirmed source with visible current/target map."
+    artifactPaths:
+      - path: "src/upload.ts"
+        targetRole: "Target implementation surface"
+    canonicalArtifacts:
+      - id: CANONICAL-001
+        targetPathOrField: "src/upload.ts"
+        traceRows: ["TRACE-001"]
+        evidenceRefs: ["EVD-001"]
+    pathRegistry: []
+    existingArtifacts:
+      - id: LEGACY-001
+        currentPath: "legacy://upload-smoke-report"
+        currentFunction: "Legacy smoke-only upload report"
+        targetTreatment: "May remain as diagnostic context only."
+        completionProofPolicy: "legacy_only"
+        traceRows: ["TRACE-001"]
+        evidenceRefs: ["EVD-002"]
+`}
   governanceEventTypeRegistry:
     - eventType: confirmation_recorded
       ownerModel: requirements_contract
@@ -550,6 +670,8 @@ ${currentTargetMapBlock}
       outputArtifacts: ["upload behavior"]
       recordEventTypes: ["implementation_delta"]
       canAffectControlFlow: true
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
       userApprovalRequired: true
       retention: long_lived
       cleanupPolicy: source_controlled
@@ -571,6 +693,8 @@ ${currentTargetMapBlock}
       outputArtifacts: ["hook receipt"]
       recordEventTypes: ["hook_receipt"]
       canAffectControlFlow: false
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
       userApprovalRequired: false
       retention: short_lived
       cleanupPolicy: keep_receipt_only
@@ -583,12 +707,21 @@ ${currentTargetMapBlock}
       linkedRequirements: ["EVD-001"]
   requiredCommands:
     - id: CMD-001
-      command: "npm run test:e2e -- upload"
+      command: "npx vitest run ${acceptanceTestPath.replace(/\\/gu, '/')}"
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
     - id: CMD-002
-      command: "npm run test:e2e -- upload-invalid"
+      command: "npx vitest run ${e2eTestPath.replace(/\\/gu, '/')}"
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-002"]
   suggestedCommands:
     - id: CMD-SUG-001
       command: "npm run lint"
+  closeoutReadinessPreview:
+    requiredCommands: ["CMD-001", "CMD-002"]
+    orphanPolicy: "No orphan command, evidence, artifact, or report may satisfy closeout."
+    currentAttemptPolicy: "Only current-attempt evidence with current source and implementation hashes may close trace rows."
+    recordClosedPolicy: "record_closed may be written only after delivery verification is verified."
   architectureImpacts:
     - component: "upload module"
       currentState: "no confirmed contract"
@@ -1318,8 +1451,9 @@ describe('render-requirements-confirmation-html', () => {
     expect(progressDeltaSection).toContain('class="review-flow"');
     expect(progressDeltaSection.match(/class="review-step"/g)?.length).toBeGreaterThanOrEqual(3);
     expect(progressDeltaSection).not.toContain('class="split"');
-    expect(html).not.toContain('<section class="card current-target-map" id="current-target">');
-    expect(html).not.toContain('current-target-split');
+    expect(html).toContain('<section class="card current-target-map" id="current-target">');
+    expect(html).toContain('fixture-provided current target map');
+    expect(html).toContain('AI-TDD 契约执行清单');
     expect(html).not.toContain('六个心智模型');
     expect(html).not.toContain('双唯一门禁与 typed envelope');
     expect(html).toContain('diagram-viewer');
@@ -1419,11 +1553,15 @@ describe('render-requirements-confirmation-html', () => {
       expect.arrayContaining(['coreDesign', 'decisionSummary', 'businessVisuals', 'traceMatrix'])
     );
     expect(report.optionalViewPacks).toEqual([]);
-    expect(report.renderedSections).not.toContain('current-target');
-    expect(report.currentTargetCoverage.artifactPaths).toBe(0);
-    expect(report.currentTargetCoverage.pathRegistry).toBe(0);
-    expect(report.currentTargetSchemaVersion).toBe('');
-    expect(report.currentTargetDisplayProfile).toBe('');
+    expect(report.renderedSections).toContain('current-target');
+    expect(report.currentTargetCoverage.artifactPaths).toBeGreaterThan(0);
+    expect(report.currentTargetCoverage.canonicalArtifacts).toBeGreaterThan(0);
+    expect(report.currentTargetSchemaVersion).toBe('current-target-map/v1');
+    expect(report.currentTargetDisplayProfile).toBe('closed_loop_current_target_map');
+    expect(report.aiTddContractManifestCoverage.sections.currentTargetMap).toMatchObject({
+      ready: true,
+      decision: 'pass',
+    });
     expect(report.resumeFailureCaseCoverage).toMatchObject({
       status: 'frozen_in_P0',
       caseCount: 3,
@@ -1944,6 +2082,36 @@ functionalResumeFailureCaseRegistry:
     expect(report.confirmInstruction).toContain('Confirm the above scope and enter the next stage');
   });
 
+  it('blocks zh-CN confirmation when core confirmation text is English-only', () => {
+    const source = writeSource('ENGLISH_ONLY_CONFIRMATION_TEXT');
+    const mermaidBundle = writeMockMermaidBundle();
+    const out = path.join(tempDir, 'english-only-confirmation.html');
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+    ]);
+
+    expect(result.status).toBe(3);
+    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
+    expect(report.confirmability).toBe('blocked');
+    expect(report.blockingIssues.map((issue: any) => issue.code)).toContain(
+      'confirmation_language_content_english_only'
+    );
+    expect(report.blockingIssues.some((issue: any) => issue.refs.includes('MUST-001'))).toBe(true);
+    const html = fs.readFileSync(out, 'utf8');
+    expect(html).toContain('confirmation_language_content_english_only');
+  });
+
   it('derives real Mermaid diagrams from structured views when the source has no fenced Mermaid blocks', () => {
     const source = writeSource();
     const original = fs.readFileSync(source, 'utf8');
@@ -2135,8 +2303,8 @@ flowchart TD
     const source = writeSource();
     const original = fs.readFileSync(source, 'utf8');
     const mutated = original.replace(
-      /\n {4}currentTargetMap:\n {6}applies: false\n {6}reasonCode: "fixture_current_target_pack_not_enabled"/u,
-      '\n    currentTargetMap:\n      applies: false'
+      /\n {4}scoringDashboardSft:\n {6}applies: true\n {6}reasonCode: "fixture_renders_scoring_dashboard_sft_read_model_boundaries"/u,
+      '\n    scoringDashboardSft:\n      applies: false'
     );
     fs.writeFileSync(source, mutated, 'utf8');
     const mermaidBundle = writeMockMermaidBundle();
@@ -2159,6 +2327,98 @@ flowchart TD
     expect(result.status).toBe(3);
     const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
     expect(report.blockingIssues.map((issue: any) => issue.code)).toContain('applicability_domain_missing_reason_code');
+  });
+
+  it('blocks confirmability when aiTddContractGate applies but manifest projection coverage is missing', () => {
+    const source = writeSource('MISSING_AI_TDD_MANIFEST_PROJECTION');
+    const mermaidBundle = writeMockMermaidBundle();
+    const out = path.join(tempDir, 'confirmation-missing-ai-tdd-manifest-projection.html');
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+    ]);
+
+    expect(result.status).toBe(3);
+    const html = fs.readFileSync(out, 'utf8');
+    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
+    const blockingCodes = report.blockingIssues.map((issue: any) => issue.code);
+    expect(report.confirmability).toBe('blocked');
+    expect(report.aiTddContractManifestCoverage.required).toBe(true);
+    expect(report.aiTddContractManifestCoverage.decision).toBe('blocked');
+    expect(report.aiTddContractManifestCoverage.sections.errorCaseCoverage.decision).toBe('blocked');
+    expect(blockingCodes).toEqual(
+      expect.arrayContaining([
+        'ai_tdd_manifest_failure_path_acceptance_coverage_missing',
+        'ai_tdd_manifest_edge_case_acceptance_coverage_missing',
+      ])
+    );
+    expect(html).toContain('AI-TDD 契约执行清单');
+    expect(html).toContain('failure_path_acceptance_coverage_missing');
+    expect(html).toContain('edge_case_acceptance_coverage_missing');
+  });
+
+  it('blocks confirmability when currentTargetMap applies but the required view pack is missing', () => {
+    const source = writeSource('CURRENT_TARGET_APPLIES_WITHOUT_VIEW_PACK');
+    const mermaidBundle = writeMockMermaidBundle();
+    const out = path.join(tempDir, 'confirmation-current-target-hidden.html');
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+    ]);
+
+    expect(result.status).toBe(3);
+    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
+    expect(report.confirmability).toBe('blocked');
+    expect(report.blockingIssues.map((issue: any) => issue.code)).toContain('current_target_required_view_pack_missing');
+    expect(report.currentTargetCoverage.diffRows).toBe(3);
+    expect(report.renderedSections).not.toContain('current-target');
+  });
+
+  it('blocks confirmability when currentTargetMap applies but displayProfile is missing', () => {
+    const source = writeSource('CURRENT_TARGET_APPLIES_MISSING_DISPLAY_PROFILE');
+    const mermaidBundle = writeMockMermaidBundle();
+    const out = path.join(tempDir, 'confirmation-current-target-missing-display-profile.html');
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+    ]);
+
+    expect(result.status).toBe(3);
+    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
+    const codes = report.blockingIssues.map((issue: any) => issue.code);
+    expect(report.confirmability).toBe('blocked');
+    expect(codes).toContain('current_target_required_display_profile_missing_or_invalid');
+    expect(report.renderedSections).toContain('current-target');
   });
 
   it('fails closed when runtimeRecovery applies but functional resume registry is missing', () => {
@@ -2216,6 +2476,56 @@ flowchart TD
     expect(codes).toContain('trace_legacy_command_refs_only');
   });
 
+  it('renders target modification paths and blocks when the explicit list is missing for implementation changes', () => {
+    const source = writeSource();
+    const mermaidBundle = writeMockMermaidBundle();
+    const out = path.join(tempDir, 'confirmation-target-modification-paths.html');
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+    ]);
+
+    expect(result.status).toBe(0);
+    const html = fs.readFileSync(out, 'utf8');
+    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
+    expect(html).toContain('目标修改路径清单');
+    expect(html).toContain('src/upload.ts');
+    expect(report.renderedSections).toContain('target-modification-paths');
+    expect(report.targetModificationPaths).toHaveLength(1);
+    expect(report.targetModificationPathCoverage.counts.explicit).toBe(1);
+
+    const missingSource = writeSource('MISSING_TARGET_MODIFICATION_PATHS');
+    const missingOut = path.join(tempDir, 'confirmation-missing-target-modification-paths.html');
+    const missingResult = runRenderer([
+      '--source',
+      missingSource,
+      '--out',
+      missingOut,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+    ]);
+    const missingReport = JSON.parse(fs.readFileSync(path.join(path.dirname(missingOut), 'confirmation-render-report.json'), 'utf8'));
+    expect(missingResult.status).toBe(3);
+    expect(missingReport.confirmability).toBe('blocked');
+    expect(missingReport.blockingIssues.map((issue: any) => issue.code)).toContain('target_modification_paths_missing');
+  });
+
   it('supports external artifact plan input without mutating the source', () => {
     const source = writeSource();
     const original = fs.readFileSync(source, 'utf8');
@@ -2229,7 +2539,7 @@ flowchart TD
             artifactId: 'ART-SCRIPT-001',
             path: '_bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts',
             artifactType: 'script',
-            sourceOfTruthRole: 'projection',
+            sourceOfTruthRole: 'evidence',
             ownerModel: 'requirements',
             producer: 'renderer',
             consumer: 'user',
@@ -2237,6 +2547,8 @@ flowchart TD
             outputArtifacts: ['confirmation.html'],
             recordEventTypes: ['confirmation_view_rendered'],
             canAffectControlFlow: false,
+            traceRows: ['TRACE-001'],
+            evidenceRefs: ['EVD-001'],
             userApprovalRequired: false,
             retention: 'long_lived',
             cleanupPolicy: 'source_controlled',
@@ -2274,17 +2586,17 @@ flowchart TD
     expect(fs.readFileSync(source, 'utf8')).toBe(original);
     const html = fs.readFileSync(out, 'utf8');
     expect(html).toContain('_bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts');
-    expect(html).not.toContain('<section class="card current-target-map" id="current-target">');
+    expect(html).toContain('<section class="card current-target-map" id="current-target">');
     const summary = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-summary.json'), 'utf8'));
     const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
     expect(summary.counts.artifactPlanItems).toBe(4);
-    expect(report.currentTargetSchemaVersion).toBe('');
-    expect(report.currentTargetDisplayProfile).toBe('');
-    expect(report.currentTargetCoverage.pathRegistry).toBe(0);
+    expect(report.currentTargetSchemaVersion).toBe('current-target-map/v1');
+    expect(report.currentTargetDisplayProfile).toBe('closed_loop_current_target_map');
+    expect(report.currentTargetCoverage.artifactPaths).toBeGreaterThan(0);
     expect(report.currentTargetSchemaIssues).toEqual([]);
   });
 
-  it('keeps current-target content out of the default instance when the source does not enable its pack', () => {
+  it('renders current-target content in the default instance because AI-TDD gate requires it', () => {
     const source = writeSource();
     const mermaidBundle = writeMockMermaidBundle();
     const out = path.join(tempDir, 'confirmation-no-current-target.html');
@@ -2306,11 +2618,11 @@ flowchart TD
     expect(result.status).toBe(0);
     const html = fs.readFileSync(out, 'utf8');
     const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
-    expect(html).not.toContain('<section class="card current-target-map" id="current-target">');
+    expect(html).toContain('<section class="card current-target-map" id="current-target">');
     expect(html).not.toContain('六个心智模型');
     expect(html).not.toContain('双唯一门禁与 typed envelope');
-    expect(report.currentTargetCoverage.pathRegistry).toBe(0);
-    expect(report.currentTargetCoverage.artifactPaths).toBe(0);
+    expect(report.currentTargetCoverage.artifactPaths).toBeGreaterThan(0);
+    expect(report.currentTargetCoverage.canonicalArtifacts).toBeGreaterThan(0);
     expect(report.currentTargetSchemaIssues).toEqual([]);
   });
 
