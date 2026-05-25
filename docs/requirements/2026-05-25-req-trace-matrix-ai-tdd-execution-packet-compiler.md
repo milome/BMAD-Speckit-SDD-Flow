@@ -1367,4 +1367,430 @@ implementationConfirmation:
         value: "model_packet.json is execution authority; human_prompt.txt is projection; audit_receipt.json is generator self-audit."
       - label: "Delivery authority"
         value: "AI-TDD gate, delivery verification, and closeout integrity controlled reports remain the only closeout path."
+  targetModificationPaths:
+    - id: TARGET-MOD-001
+      path: _bmad/skills/req-trace-matrix-prompt-generator/scripts/generate_prompt.js
+      changeType: modify
+      intent: "Refactor prompt-only generator into AI-TDD Contract Execution Packet compiler."
+      ownerModel: req_trace_matrix_prompt_generator
+      requirementRefs: [MUST-001, MUST-002, MUST-003, MUST-004, MUST-005, MUST-006, MUST-007, MUST-008, MUST-009, MUST-010, MUST-011]
+      traceRefs: [TRACE-001, TRACE-002, TRACE-003, TRACE-004, TRACE-005, TRACE-006, TRACE-007]
+      evidenceRefs: [EVD-001, EVD-002, EVD-003, EVD-004, EVD-005, EVD-006, EVD-007, EVD-008, EVD-009, EVD-010]
+      artifactRefs: [ART-001, ART-002, ART-003, ART-004]
+      requiresReconfirmationOnChange: true
+    - id: TARGET-MOD-002
+      path: _bmad/skills/req-trace-matrix-prompt-generator/scripts/generate_prompt.py
+      changeType: modify
+      intent: "Keep compatibility launcher aligned with compiler behavior."
+      ownerModel: req_trace_matrix_prompt_generator
+      requirementRefs: [MUST-012, NEG-009]
+      traceRefs: [TRACE-008]
+      evidenceRefs: [EVD-011, EVD-012]
+      artifactRefs: [ART-005]
+      requiresReconfirmationOnChange: true
+    - id: TARGET-MOD-003
+      path: .codex/skills/req-trace-matrix-prompt-generator/SKILL.md
+      changeType: modify
+      intent: "Document model_packet.json, human_prompt.txt, audit_receipt.json, and confirmed-source compiler routing."
+      ownerModel: req_trace_matrix_prompt_generator
+      requirementRefs: [MUST-001, MUST-002, MUST-012, NEG-009]
+      traceRefs: [TRACE-001, TRACE-008]
+      evidenceRefs: [EVD-011, EVD-012]
+      artifactRefs: [ART-007]
+      requiresReconfirmationOnChange: true
+    - id: TARGET-MOD-004
+      path: _bmad/skills/req-trace-matrix-prompt-generator/SKILL.md
+      changeType: modify
+      intent: "Mirror compiler routing in BMAD skill surface."
+      ownerModel: req_trace_matrix_prompt_generator
+      requirementRefs: [MUST-001, MUST-002, MUST-012, NEG-009]
+      traceRefs: [TRACE-001, TRACE-008]
+      evidenceRefs: [EVD-011, EVD-012]
+      artifactRefs: [ART-008]
+      requiresReconfirmationOnChange: true
+    - id: TARGET-MOD-005
+      path: tests/acceptance/req-trace-confirmation-block-generator.test.ts
+      changeType: modify
+      intent: "Add compiler, manifest, RED plan, error-case, and invalid-proof regression coverage."
+      ownerModel: acceptance_tests
+      requirementRefs: [MUST-001, MUST-002, MUST-003, MUST-004, MUST-005, MUST-006, MUST-007, MUST-008, MUST-009, MUST-010, MUST-011, NEG-001, NEG-002, NEG-003, NEG-004, NEG-005, NEG-006, NEG-007, NEG-008]
+      traceRefs: [TRACE-001, TRACE-002, TRACE-003, TRACE-004, TRACE-005, TRACE-006, TRACE-007]
+      evidenceRefs: [EVD-001, EVD-002, EVD-003, EVD-004, EVD-005, EVD-006, EVD-007, EVD-008, EVD-009, EVD-010]
+      artifactRefs: [ART-009]
+      requiresReconfirmationOnChange: true
+    - id: TARGET-MOD-006
+      path: tests/acceptance/ai-tdd-contract-gate.test.ts
+      changeType: modify
+      intent: "Ensure ContractExecutionManifest validates error cases, currentTargetMap, trace acceptance binding, and red proof plan as first-class fields."
+      ownerModel: ai_tdd_contract_gate
+      requirementRefs: [MUST-005, MUST-006, MUST-007, MUST-010, MUST-011, NEG-006, NEG-007, NEG-008]
+      traceRefs: [TRACE-003, TRACE-005, TRACE-006]
+      evidenceRefs: [EVD-005, EVD-007, EVD-008]
+      artifactRefs: [ART-010]
+      requiresReconfirmationOnChange: true
+    - id: TARGET-MOD-007
+      path: tests/acceptance/requirements-contract-authoring-skill-contract.test.ts
+      changeType: modify
+      intent: "Assert skill surfaces route confirmed implementationConfirmation through compiler."
+      ownerModel: skill_contract_tests
+      requirementRefs: [MUST-012, NEG-009]
+      traceRefs: [TRACE-008]
+      evidenceRefs: [EVD-011]
+      artifactRefs: [ART-011]
+      requiresReconfirmationOnChange: true
+    - id: TARGET-MOD-008
+      path: tests/acceptance/setup-global-skill-sync-contract.test.ts
+      changeType: modify
+      intent: "Assert synchronized skill surfaces preserve compiler routing."
+      ownerModel: skill_sync_tests
+      requirementRefs: [MUST-012, NEG-009]
+      traceRefs: [TRACE-008]
+      evidenceRefs: [EVD-011, EVD-012]
+      artifactRefs: [ART-012]
+      requiresReconfirmationOnChange: true
+  currentTargetMap:
+    schemaVersion: current-target-map/v1
+    displayProfile: closed_loop_current_target_map
+    purpose: "Make the current prompt-only execution surface and target AI-TDD compiler surface visible before confirmation."
+    currentTitle: "Current state: prompt-oriented execution plan"
+    targetTitle: "Target state: AI-TDD Contract Execution Packet compiler"
+    sourceReferences:
+      - path: docs/requirements/2026-05-25-req-trace-matrix-ai-tdd-execution-packet-compiler.md
+        description: "Authoritative source document for this compiler upgrade."
+        sourceOfTruthRole: source_document
+      - path: _bmad/skills/req-trace-matrix-prompt-generator/scripts/generate_prompt.js
+        description: "Current prompt generator implementation to be refactored."
+        sourceOfTruthRole: implementation_surface
+      - path: scripts/ai-tdd-contract-gate.ts
+        description: "AI-TDD ContractExecutionManifest standard consumed by validator."
+        sourceOfTruthRole: manifest_standard
+    metrics:
+      - value: "3"
+        label: "mandatory generated artifacts"
+        tone: gold
+      - value: "8"
+        label: "trace slices in this source"
+        tone: red
+      - value: "12"
+        label: "edge cases requiring explicit coverage"
+        tone: red
+    currentSummary:
+      - id: CTM-001
+        title: "Prompt is primary surface"
+        detail: "The current generator centers execution around a readable prompt, leaving the model to infer structure from prose."
+        tone: red
+      - id: CTM-002
+        title: "Error-case completeness is indirect"
+        detail: "Failure and edge-case coverage can be discussed in text but is not guaranteed as a machine-readable execution matrix."
+        tone: red
+      - id: CTM-003
+        title: "Closeout wording can drift"
+        detail: "Prompt text can mention completion evidence without a packet-level invalid-proof taxonomy and closeout policy."
+        tone: amber
+    targetSummary:
+      - id: CTM-004
+        title: "model_packet.json is primary authority"
+        detail: "The compiler emits a machine-readable execution packet that contains all trace, error, acceptance, target, canonical, legacy, proof, and gate sections."
+        tone: green
+      - id: CTM-005
+        title: "human_prompt.txt is projection"
+        detail: "The prompt is generated from the packet and cannot introduce unpacketized scope or closeout rules."
+        tone: green
+      - id: CTM-006
+        title: "audit_receipt.json is generator self-audit"
+        detail: "The receipt records validation decisions and hashes, while explicitly remaining non-delivery proof."
+        tone: green
+    diffRows:
+      - id: CTM-007
+        dimension: "Output authority"
+        currentState: "Single natural-language prompt can be interpreted as execution authority."
+        targetState: "model_packet.json is primary; prompt is projection; receipt is self-audit."
+        action: replace
+      - id: CTM-008
+        dimension: "Manifest completeness"
+        currentState: "Trace rows and commands are validated, but AI-TDD sections can remain implicit."
+        targetState: "AI-TDD manifest sections are first-class and fail closed when incomplete."
+        action: harden
+      - id: CTM-009
+        dimension: "TDD protocol"
+        currentState: "Prompt instructs execution but does not encode a required RED/GREEN/REFACTOR state machine."
+        targetState: "Packet contains redGreenRefactorStateMachine and per-trace expectedRedProofs."
+        action: add
+      - id: CTM-010
+        dimension: "Error cases"
+        currentState: "FAIL/EDGE coverage can be missing while happy-path traces look complete."
+        targetState: "ErrorCaseCoverageMatrix binds every FAIL/EDGE to NEG/EVD/TRACE/ACC/E2E/CMD."
+        action: add
+      - id: CTM-011
+        dimension: "Closeout authority"
+        currentState: "Completion packet or exit code may be over-trusted by downstream model behavior."
+        targetState: "Invalid proof taxonomy and finalGateMatrix route closeout only to controlled reports."
+        action: restrict
+    targetFlow:
+      - id: CTM-012
+        stepTitle: "Validate source"
+        description: "Require confirmed implementationConfirmation, controlled record, matching hashes, no blocking open questions, and valid refs."
+        output: "sourceAndRecordAuthority"
+        ownerModel: Source/Record Validator
+      - id: CTM-013
+        stepTitle: "Validate manifest"
+        description: "Require AI-TDD applicability, currentTargetMap, error cases, acceptance/e2e, trace closure, canonical surfaces, legacy denial, closeout proof, and evidence trust."
+        output: "aiTddContractExecutionManifest"
+        ownerModel: ContractExecutionManifest Validator
+      - id: CTM-014
+        stepTitle: "Compile packet"
+        description: "Emit model_packet.json with state machine, trace slices, matrices, policies, gates, and completion evidence packet schema."
+        output: "model_packet.json"
+        ownerModel: Execution Packet Compiler
+      - id: CTM-015
+        stepTitle: "Project prompt"
+        description: "Render human_prompt.txt from packet sections without adding independent authority."
+        output: "human_prompt.txt"
+        ownerModel: Prompt Projection
+      - id: CTM-016
+        stepTitle: "Write receipt"
+        description: "Record self-audit decisions and output hashes while marking receipt as non-closeout proof."
+        output: "audit_receipt.json"
+        ownerModel: Generator Audit
+    canonicalArtifacts:
+      - id: SURFACE-001
+        targetPathOrField: "model_packet.json.executionPacketMetadata"
+        functionDescription: "Packet identity, version, source hashes, and generation metadata."
+        controlPlaneRole: execution_authority
+        traceRefs: [TRACE-001, TRACE-004]
+        evidenceRefs: [EVD-001, EVD-006, EVD-009]
+      - id: SURFACE-002
+        targetPathOrField: "model_packet.json.sourceAndRecordAuthority"
+        functionDescription: "Confirmed source, record, confirmation history, and hash authority."
+        controlPlaneRole: source_authority
+        traceRefs: [TRACE-001, TRACE-002]
+        evidenceRefs: [EVD-003, EVD-004]
+      - id: SURFACE-003
+        targetPathOrField: "model_packet.json.immutableContractSnapshot"
+        functionDescription: "Frozen IDs and source contract snapshot used for execution."
+        controlPlaneRole: contract_snapshot
+        traceRefs: [TRACE-001]
+        evidenceRefs: [EVD-001, EVD-009]
+      - id: SURFACE-004
+        targetPathOrField: "Source/Record Validator"
+        functionDescription: "Fail-closed validation for source status, record, hashes, open questions, trace refs, and command refs."
+        controlPlaneRole: validation_gate
+        traceRefs: [TRACE-002]
+        evidenceRefs: [EVD-004]
+      - id: SURFACE-005
+        targetPathOrField: "model_packet.json.aiTddContractExecutionManifest"
+        functionDescription: "Mandatory AI-TDD manifest projection."
+        controlPlaneRole: manifest_authority
+        traceRefs: [TRACE-003]
+        evidenceRefs: [EVD-005, EVD-008]
+      - id: SURFACE-006
+        targetPathOrField: "model_packet.json.errorCaseCoverageMatrix"
+        functionDescription: "FAIL/EDGE coverage matrix."
+        controlPlaneRole: error_case_gate
+        traceRefs: [TRACE-003]
+        evidenceRefs: [EVD-005]
+      - id: SURFACE-007
+        targetPathOrField: "model_packet.json.acceptanceAndE2eMatrix"
+        functionDescription: "ACC/E2E oracle matrix with expected_red and redProofPlan."
+        controlPlaneRole: acceptance_gate
+        traceRefs: [TRACE-003, TRACE-005]
+        evidenceRefs: [EVD-005, EVD-007]
+      - id: SURFACE-008
+        targetPathOrField: "model_packet.json.traceSliceRegistry[*]"
+        functionDescription: "Per-trace executable slice fields."
+        controlPlaneRole: trace_execution_authority
+        traceRefs: [TRACE-004]
+        evidenceRefs: [EVD-006]
+      - id: SURFACE-009
+        targetPathOrField: "model_packet.json.redGreenRefactorStateMachine"
+        functionDescription: "RED/GREEN/REFACTOR/CLOSEOUT state protocol."
+        controlPlaneRole: tdd_state_machine
+        traceRefs: [TRACE-005]
+        evidenceRefs: [EVD-007]
+      - id: SURFACE-010
+        targetPathOrField: "model_packet.json.blockingDecisionTable"
+        functionDescription: "Stable BLOCK code table."
+        controlPlaneRole: blocking_gate
+        traceRefs: [TRACE-006]
+        evidenceRefs: [EVD-008]
+      - id: SURFACE-011
+        targetPathOrField: "model_packet.json.evidenceTrustAndInvalidProofTaxonomy"
+        functionDescription: "Invalid proof taxonomy and evidence trust rules."
+        controlPlaneRole: false_positive_guard
+        traceRefs: [TRACE-007]
+        evidenceRefs: [EVD-010]
+      - id: SURFACE-012
+        targetPathOrField: "skill routing surfaces"
+        functionDescription: "Bugfix, standalone task, and story confirmed-source routing to compiler."
+        controlPlaneRole: skill_integration
+        traceRefs: [TRACE-008]
+        evidenceRefs: [EVD-011, EVD-012]
+    artifactPaths:
+      - path: "_bmad-output/runtime/requirement-records/<recordId>/trace-execution/model_packet.json"
+        role: execution_authority_output
+        traceRefs: [TRACE-001, TRACE-004, TRACE-005, TRACE-007]
+      - path: "_bmad-output/runtime/requirement-records/<recordId>/trace-execution/human_prompt.txt"
+        role: readable_projection_output
+        traceRefs: [TRACE-001, TRACE-004, TRACE-005, TRACE-007]
+      - path: "_bmad-output/runtime/requirement-records/<recordId>/trace-execution/audit_receipt.json"
+        role: generator_self_audit_output
+        traceRefs: [TRACE-001, TRACE-002, TRACE-003, TRACE-006]
+      - path: "_bmad/skills/req-trace-matrix-prompt-generator/scripts/generate_prompt.js"
+        role: compiler_implementation
+        traceRefs: [TRACE-001, TRACE-002, TRACE-003, TRACE-004, TRACE-005, TRACE-006, TRACE-007]
+      - path: "tests/acceptance/req-trace-confirmation-block-generator.test.ts"
+        role: acceptance_oracle
+        traceRefs: [TRACE-001, TRACE-002, TRACE-003, TRACE-004, TRACE-005, TRACE-006, TRACE-007]
+    pathRegistry:
+      - category: output
+        fixedPath: "_bmad-output/runtime/requirement-records/<recordId>/trace-execution/model_packet.json"
+        sourceOfTruthRole: execution_authority
+        description: "Primary machine-readable execution packet."
+        traceRefs: [TRACE-001, TRACE-004]
+        evidenceRefs: [EVD-001, EVD-006]
+      - category: output
+        fixedPath: "_bmad-output/runtime/requirement-records/<recordId>/trace-execution/human_prompt.txt"
+        sourceOfTruthRole: projection
+        description: "Human-readable projection."
+        traceRefs: [TRACE-001]
+        evidenceRefs: [EVD-002]
+      - category: output
+        fixedPath: "_bmad-output/runtime/requirement-records/<recordId>/trace-execution/audit_receipt.json"
+        sourceOfTruthRole: self_audit_receipt
+        description: "Generator self-audit receipt."
+        traceRefs: [TRACE-001, TRACE-003, TRACE-006]
+        evidenceRefs: [EVD-003, EVD-008]
+    existingArtifacts:
+      - currentPath: "_bmad-output/runtime/requirement-records/<recordId>/trace-execution-prompt.txt"
+        currentFunction: "Readable execution prompt."
+        targetTreatment: "Retain as legacy projection or compatibility output only when no confirmed source exists."
+        completionProofPolicy: not_completion_proof
+        traceRefs: [TRACE-001, TRACE-008]
+        evidenceRefs: [EVD-001, EVD-011]
+      - currentPath: "_bmad/skills/req-trace-matrix-prompt-generator/scripts/generate_prompt.js"
+        currentFunction: "Validates confirmed block and emits natural-language prompt."
+        targetTreatment: "Refactor to compile structured packet, prompt projection, and audit receipt."
+        completionProofPolicy: implementation_surface
+        traceRefs: [TRACE-001, TRACE-002, TRACE-003, TRACE-004, TRACE-005, TRACE-006, TRACE-007]
+        evidenceRefs: [EVD-001, EVD-004, EVD-005, EVD-006, EVD-007, EVD-008, EVD-010]
+      - currentPath: "Completion Evidence Packet"
+        currentFunction: "Evidence index emitted after execution."
+        targetTreatment: "Explicitly treated as evidence index, never PASS source."
+        completionProofPolicy: not_completion_proof
+        traceRefs: [TRACE-007]
+        evidenceRefs: [EVD-010]
+    scriptConvergence:
+      - scriptOrConfigPath: "_bmad/skills/req-trace-matrix-prompt-generator/scripts/generate_prompt.js"
+        currentFunction: "Prompt text generator."
+        targetOwnerModel: "AI-TDD Contract Execution Packet Compiler"
+        targetWritesOrOutputs: "model_packet.json, human_prompt.txt, audit_receipt.json"
+        completionAuthority: "no_closeout"
+      - scriptOrConfigPath: "scripts/ai-tdd-contract-gate.ts"
+        currentFunction: "ContractExecutionManifest validation surface."
+        targetOwnerModel: "AI-TDD manifest standard"
+        targetWritesOrOutputs: "manifest validation report consumed by generator validator"
+        completionAuthority: "readiness_gate_only"
+      - scriptOrConfigPath: "_bmad/skills/req-trace-matrix-prompt-generator/scripts/generate_prompt.py"
+        currentFunction: "Compatibility launcher."
+        targetOwnerModel: "compiler launcher"
+        targetWritesOrOutputs: "delegates to Node compiler outputs"
+        completionAuthority: "no_closeout"
+  aiTddContractExecutionManifestProjection:
+    schemaVersion: contract-execution-manifest/v1
+    applies: true
+    requiredSections:
+      - errorCaseCoverage
+      - commandTargets
+      - traceClosureAssertions
+      - currentTargetMap
+      - canonicalSurfaceReconciliation
+      - legacyDenial
+      - closeoutProof
+      - evidenceTrustStates
+    errorCaseCoverage:
+      failurePaths: [FAIL-001, FAIL-002, FAIL-003, FAIL-004, FAIL-005, FAIL-006, FAIL-007, FAIL-008]
+      edgeCases: [EDGE-001, EDGE-002, EDGE-003, EDGE-004, EDGE-005, EDGE-006, EDGE-007, EDGE-008, EDGE-009, EDGE-010, EDGE-011, EDGE-012]
+      acceptanceRefs: [ACC-001, ACC-002, ACC-003, ACC-004, ACC-005, ACC-006, ACC-007, ACC-008, ACC-009, ACC-010, E2E-001, E2E-002, E2E-003]
+    commandTargets:
+      commandRefs: [CMD-TEST-001, CMD-TEST-002, CMD-TEST-003, CMD-TEST-004, CMD-TEST-005, CMD-ENCODING-001]
+      targetModificationPathRefs: [TARGET-MOD-001, TARGET-MOD-002, TARGET-MOD-003, TARGET-MOD-004, TARGET-MOD-005, TARGET-MOD-006, TARGET-MOD-007, TARGET-MOD-008]
+    traceClosureAssertions:
+      - traceId: TRACE-001
+        assertion: "Three synchronized artifacts exist and are hash-linked."
+        evidenceRefs: [EVD-001, EVD-002, EVD-003, EVD-009]
+      - traceId: TRACE-003
+        assertion: "Incomplete manifest and missing error-case coverage block generation."
+        evidenceRefs: [EVD-005, EVD-008]
+      - traceId: TRACE-007
+        assertion: "Invalid proof types and source trace mutation are forbidden."
+        evidenceRefs: [EVD-010]
+    currentTargetMapRefs: [CTM-001, CTM-002, CTM-003, CTM-004, CTM-005, CTM-006, CTM-007, CTM-008, CTM-009, CTM-010, CTM-011, CTM-012]
+    canonicalSurfaceRefs: [SURFACE-001, SURFACE-002, SURFACE-003, SURFACE-004, SURFACE-005, SURFACE-006, SURFACE-007, SURFACE-008, SURFACE-009, SURFACE-010, SURFACE-011, SURFACE-012]
+    legacyDenial:
+      - id: LEGACY-001
+        deniedSurface: "prompt-only output"
+        replacement: "model_packet.json + human_prompt.txt + audit_receipt.json"
+        traceRefs: [TRACE-001]
+        evidenceRefs: [EVD-001, EVD-002]
+      - id: LEGACY-002
+        deniedSurface: "prose-only or draft source execution"
+        replacement: "confirmed source plus controlled requirement record"
+        traceRefs: [TRACE-002]
+        evidenceRefs: [EVD-004]
+      - id: LEGACY-003
+        deniedSurface: "local manifest checklist diverging from AI-TDD manifest"
+        replacement: "ContractExecutionManifest Validator"
+        traceRefs: [TRACE-003, TRACE-006]
+        evidenceRefs: [EVD-005, EVD-008]
+      - id: LEGACY-004
+        deniedSurface: "taskRefs-only or completion-packet closeout"
+        replacement: "runtimeWritePolicy and finalGateMatrix"
+        traceRefs: [TRACE-004, TRACE-007]
+        evidenceRefs: [EVD-006, EVD-010]
+      - id: LEGACY-005
+        deniedSurface: "GREEN without expected RED plan"
+        replacement: "redGreenRefactorStateMachine"
+        traceRefs: [TRACE-005]
+        evidenceRefs: [EVD-007]
+      - id: LEGACY-006
+        deniedSurface: "legacy skill prompt primary route"
+        replacement: "confirmed-source compiler routing"
+        traceRefs: [TRACE-008]
+        evidenceRefs: [EVD-011, EVD-012]
+    closeoutProof:
+      allowedAuthorities: [AI_TDD_gate_report, delivery_verification_report, closeout_integrity_report]
+      forbiddenAuthorities: [audit_receipt_json, completion_packet_self_certification, exitCode_only, stdout_only, prompt_text, stale_attempt, mock_only, smoke_only]
+      recordClosedWriter: "existing closeout integrity controlled writer only"
+    evidenceTrustStates:
+      trusted: [current_attempt_controlled_report, oracle_bound_acceptance, oracle_bound_e2e, artifact_hash_match]
+      diagnosticOnly: [exitCode_0, stdout, audit_receipt_json, completion_evidence_packet]
+      forbidden: [mock_only, self_certification, stale_attempt, legacy_prompt, smoke_only]
+  architectureImpacts:
+    - component: "req-trace-matrix-prompt-generator compiler"
+      currentState: "Prompt generator validates confirmed source and emits readable prompt text."
+      targetState: "Compiler validates source, validates AI-TDD manifest, emits model packet, prompt projection, and audit receipt."
+      impactType: skill_architecture
+      risk: high
+      requiredDecision: "Confirm prompt generation is upgraded into a structured compiler and model_packet.json becomes primary execution authority."
+      linkedRequirements: [MUST-001, MUST-002, MUST-003, MUST-008, MUST-009]
+      linkedEvidence: [EVD-001, EVD-002, EVD-003, EVD-006, EVD-009]
+      ownerModel: req_trace_matrix_prompt_generator
+    - component: "AI-TDD manifest integration"
+      currentState: "Prompt generator does not fully require AI-TDD manifest sections as first-class execution packet sections."
+      targetState: "ContractExecutionManifest Validator consumes required manifest sections and blocks incomplete coverage."
+      impactType: contract_gate_architecture
+      risk: high
+      requiredDecision: "Confirm readiness and closeout completeness standards are unified through AI-TDD manifest rather than local checklists."
+      linkedRequirements: [MUST-005, MUST-006, MUST-007, MUST-011]
+      linkedEvidence: [EVD-005, EVD-008]
+      ownerModel: ai_tdd_contract_gate
+    - component: "skill routing surfaces"
+      currentState: "Some bugfix, standalone task, or story flows can still rely on legacy natural-language prompt templates."
+      targetState: "Confirmed implementationConfirmation sources are routed through the compiler before implementation execution."
+      impactType: workflow_routing
+      risk: medium
+      requiredDecision: "Confirm legacy templates are fallback only when no confirmed implementationConfirmation exists."
+      linkedRequirements: [MUST-012, NEG-009]
+      linkedEvidence: [EVD-011, EVD-012]
+      ownerModel: skill_surfaces
 ```
