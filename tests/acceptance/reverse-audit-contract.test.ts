@@ -21,6 +21,46 @@ const REVERSE_AUDIT = path.join(
   'scripts',
   'reverse_audit_contract.js'
 );
+const AUDIT_CONTRACT_CONFIRMABILITY = path.join(
+  ROOT,
+  '_bmad',
+  'skills',
+  'requirements-contract-authoring',
+  'scripts',
+  'audit_contract_confirmability.js'
+);
+const AUDIT_IMPLEMENTATION_READINESS = path.join(
+  ROOT,
+  '_bmad',
+  'skills',
+  'requirements-contract-authoring',
+  'scripts',
+  'audit_implementation_readiness.js'
+);
+const AUDIT_DELIVERY_VERIFICATION = path.join(
+  ROOT,
+  '_bmad',
+  'skills',
+  'requirements-contract-authoring',
+  'scripts',
+  'audit_delivery_verification.js'
+);
+const AUDIT_CLOSEOUT_INTEGRITY = path.join(
+  ROOT,
+  '_bmad',
+  'skills',
+  'requirements-contract-authoring',
+  'scripts',
+  'audit_closeout_integrity.js'
+);
+const AUDIT_STAGE_COMMON = path.join(
+  ROOT,
+  '_bmad',
+  'skills',
+  'requirements-contract-authoring',
+  'scripts',
+  'reverse_audit_stage_common.js'
+);
 const PRE_RENDER_DRILLDOWN = path.join(
   ROOT,
   '_bmad',
@@ -503,6 +543,17 @@ function runPreRenderDrilldown(source: string, extraArgs: string[] = []) {
   };
 }
 
+function runStageAudit(script: string, source: string, reportPath: string, extraArgs: string[] = []) {
+  const result = spawnSync(process.execPath, [script, source, '--render-report', reportPath, ...extraArgs, '--json'], {
+    cwd: ROOT,
+    encoding: 'utf8',
+  });
+  return {
+    result,
+    report: JSON.parse(result.stdout),
+  };
+}
+
 describe('reverse_audit_contract', () => {
   it('passes with a confirmable render report and carries delivery readiness separately', () => {
     const source = writeSource();
@@ -691,6 +742,19 @@ describe('reverse_audit_contract', () => {
     expect(audit.report.contextHash).toMatch(/^sha256:/);
   });
 
+  it('does not treat fail-closed error-case coverage wording as a contradiction', () => {
+    const source = writeSource();
+    const text = fs.readFileSync(source, 'utf8').replace(
+      'expectedBehavior: "Block completion until independent evidence exists."',
+      'expectedBehavior: "Contract completeness blocks readiness and closeout until independent evidence exists."'
+    );
+    fs.writeFileSync(source, text, 'utf8');
+
+    const audit = runPreRenderDrilldown(source);
+
+    expect(audit.report.failedChecks).not.toContain('definition_contradiction_matrix');
+  });
+
   it('suppresses unchanged previous blockers when changed-only is requested', () => {
     const source = writeSource('SIDE_EFFECT CONFLICT_OUT');
     const previous = path.join(tempDir, 'previous-definition-report.json');
@@ -819,6 +883,39 @@ describe('reverse_audit_contract', () => {
     expect(implementationAudit.result.status).toBe(0);
     expect(readinessAudit.result.status).toBe(1);
     expect(readinessAudit.report.failedChecks).toContain('delivery_readiness_not_ready');
+  });
+
+  it('exposes stage-specific reverse audit CLIs with explicit stage semantics', () => {
+    for (const file of [
+      AUDIT_CONTRACT_CONFIRMABILITY,
+      AUDIT_IMPLEMENTATION_READINESS,
+      AUDIT_DELIVERY_VERIFICATION,
+      AUDIT_CLOSEOUT_INTEGRITY,
+      AUDIT_STAGE_COMMON,
+    ]) {
+      expect(fs.existsSync(file), file).toBe(true);
+    }
+
+    const source = writeSource();
+    const render = runRenderer(source);
+    patchConfirmationRender(source, render);
+
+    const confirmability = runStageAudit(AUDIT_CONTRACT_CONFIRMABILITY, source, render.reportPath);
+    const readiness = runStageAudit(AUDIT_IMPLEMENTATION_READINESS, source, render.reportPath);
+    const delivery = runStageAudit(AUDIT_DELIVERY_VERIFICATION, source, render.reportPath);
+    const closeout = runStageAudit(AUDIT_CLOSEOUT_INTEGRITY, source, render.reportPath);
+
+    expect(confirmability.result.status).toBe(0);
+    expect(confirmability.report.stageAudit).toMatchObject({
+      stage: 'contract_confirmability',
+      forcedMode: 'implementation',
+      genericWrapperPassDeprecated: true,
+    });
+    for (const audit of [readiness, delivery, closeout]) {
+      expect(audit.result.status).toBe(1);
+      expect(audit.report.stageAudit.forcedMode).toBe('readiness');
+      expect(audit.report.failedChecks).toContain('delivery_readiness_not_ready');
+    }
   });
 
   it('fails when render report confirmInstruction does not include the current hashes', () => {

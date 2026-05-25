@@ -615,7 +615,10 @@ function collectContradictionQuestions(confirmation) {
     .join('\n');
   for (const failure of asArray(confirmation.failurePaths)) {
     const expected = String(failure.expectedBehavior ?? '');
-    if (/mark done|complete|allow|proceed|放行|完成/u.test(expected) && /must not|not treat|不得|不能|禁止/u.test(negativeText)) {
+    const expectedAllowsCompletion = /mark done|complete|allow|proceed|放行|完成/u.test(expected);
+    const expectedBlocksCompletion =
+      /block(?:s|ed|ing)?|reject(?:s|ed|ing)?|fail[- ]closed|cannot|must not|阻断|拒绝|不得|不能|禁止/u.test(expected);
+    if (expectedAllowsCompletion && !expectedBlocksCompletion && /must not|not treat|不得|不能|禁止/u.test(negativeText)) {
       questions.push({
         id: `DQ-CONFLICT-${slug(failure.id)}`,
         severity: 'blocker',

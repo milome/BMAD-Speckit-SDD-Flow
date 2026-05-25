@@ -1,6 +1,6 @@
 ---
 name: requirements-contract-authoring
-description: Create or update implementation source documents with an inline implementationConfirmation block, mandatory HTML confirmation view, ID-bound sequence/flow/artifact views, traceRows, evidence expectations, and reverse-audit checks. Use when preparing PRD/BUGFIX/TASKS/story documents for implementation, converting session requirements into a source document draft, auditing happy-path-only specs, or preventing MVP/toy/stub/mock-only delivery. Do not use as a separate authoritative requirements contract generator.
+description: Create or update confirmation-ready implementation source documents with an inline implementationConfirmation block, mandatory HTML confirmation view, ID-bound sequence/flow/artifact views, traceRows, evidence expectations, and reverse-audit checks. Use when preparing PRD/BUGFIX/TASKS/story documents for implementation, converting session requirements into a source document draft, auditing happy-path-only specs, or preventing MVP/toy/stub/mock-only delivery. Do not use as a separate authoritative requirements contract generator.
 ---
 
 # Requirements Contract Authoring
@@ -25,7 +25,7 @@ If older project material says "requirements contract", treat it as a legacy ali
 - Use diagrams, steps, matrices, and trace rows only as views over `implementationConfirmation` IDs.
 - Do not set `status: user_confirmed`; only explicit user confirmation may do that.
 - Require `contractAuthoringRequired: true` for every `entryFlow`; bugfix and standalone task flows may bypass the full BMAD chain, but never user confirmation or traceRows.
-- Bind every implementation task to existing `MUST` / `NEG` / `OUT` / `EVD` / `TRACE` IDs before implementation readiness.
+- Bind every implementation task to existing `MUST` / `NEG` / `OUT` / `EVD` / `TRACE` / `ACC` / `E2E` IDs before implementation readiness.
 - Before asking for confirmation, require the user to choose the confirmation language unless the user already explicitly selected it for this source document.
 - Do not infer confirmation language from the conversation language, repository language, or document language.
 - Render the confirmation page as mandatory HTML in the selected language; there is no Markdown/chat fallback.
@@ -38,8 +38,12 @@ If older project material says "requirements contract", treat it as a legacy ali
 - Do not let governance diagrams substitute for consumer/business diagrams. If the source document only renders inherited governance workflow, current/target governance maps, closeout gates, or confirmation machinery, it is not enough for a consumer project.
 - Author the schema in this order: core fields first, `applicability.*` declarations second, then expand only the conditional domains marked `applies: true`.
 - Treat `failurePaths[]` and `edgeCases[]` as core mandatory fields for every source document; they are not optional advanced runtime sections.
+- Treat `currentTargetMap` as a mandatory first-class confirmation surface for every new or updated source document authored by this skill. `requiredViewPacks[]` must include `currentTargetMap`, `applicability.currentTargetMap.applies` must be `true`, `currentTargetMap.displayProfile` must be `closed_loop_current_target_map`, and the HTML confirmation page must show the current/target section before the user can confirm.
+- Treat AI-TDD contract completeness as mandatory for every new or updated source document authored by this skill. `applicability.aiTddContractGate.applies` must be `true`; implementation readiness, delivery verification, closeout, renderer stage checks, and reverse-audit stage checks must consume the AI-TDD `ContractExecutionManifest` rather than inventing local checklist standards.
+- `currentTargetMap` is also a first-class section of `ContractExecutionManifest`. It must be validated together with error-case coverage, command targets, trace closure, canonical surfaces, legacy denial, closeout proof, and evidence trust.
 - Keep ordinary business/functional failure paths separate from the conditional `functionalResumeFailureCaseRegistry`.
 - Use `contractValidationCommandRefs[]` and `deliveryEvidenceCommandRefs[]` in `traceRows[]`; do not use legacy `commandRefs[]` as the sole command authority.
+- Treat `acceptanceTests[]` and `e2eSuites[]` as first-class contract rows. `CMD-*` says how to run, `ACC-*` / `E2E-*` says what is being accepted, `EVD-*` says why the result is trusted, and `TRACE-*` binds the slice.
 - When governance events apply, require `governanceEventTypeRegistryPolicy` plus `governanceEventTypeRegistry[]`; every event type needs a `payloadContract` that passes the policy.
 - `governanceEventTypeRegistryPolicy` must define `controlFieldVocabulary[]`, `payloadKindContracts[]`, `controlWriteModePolicies[]`, and `eventSpecificRequirements[]`; renderer, ingest, gates, hooks, workers, and tests must not keep a second hardcoded event or payload rule list.
 - `controlFieldVocabulary[]` is the only policy-level vocabulary for control-shaped fields. A transport envelope that carries any vocabulary field at top level or under `payload` must be rejected unless the current event type lists that field in `writesControlFields[]`.
@@ -49,6 +53,76 @@ If older project material says "requirements contract", treat it as a legacy ali
 - When runtime recovery applies or requires functional resume coverage, require source-defined `functionalResumeFailureCaseRegistry` groups, actions, failure cases, expected recovery actions, and record event types.
 - When runtime governance or recovery applies, require active requirement/run resolution through `requirement-records/index.json` or explicit `recordId` / `requirementSetId` / `runId`; never rely on `_bmad-output/runtime/context/project.json`.
 - Score, dashboard, SFT, report, summary, and hook receipt outputs are read models or evidence only; they do not close requirements unless a controlled gate writes `decision`.
+
+## Operating Modes
+
+Default to `author-confirmation-ready-source` when the user asks to generate a requirements contract document, requirement contract, or source document confirmation block.
+
+- `author-confirmation-ready-source`: create or update the implementation source document with a complete inline `implementationConfirmation`, ID-bound views, artifact plan, evidence, failure paths, edge cases, trace rows, and applicable governance/runtime modules. Stop after draft quality checks unless the user already selected a confirmation language or explicitly asked to render.
+- `render-confirmation`: render the HTML confirmation page only after the user selected a confirmation language.
+- `ingest-confirmation`: ingest exact user confirmation text and hashes through the controlled confirm-scope path.
+- `readiness-or-prompt`: run reverse audit, readiness gates, or prompt generation only after controlled confirmation ingest succeeds.
+
+Do not collapse these modes into one long execution chain. "Generate requirements contract document" means author the confirmation-ready source document; it does not imply user confirmation, confirmation ingest, readiness, prompt generation, or closeout.
+
+## Confirmation-Ready Authoring Target
+
+The target is not a loose draft. The target is a source document that is ready to render a confirmation page with minimal or no renderer repair.
+
+Before writing long prose, design the renderer-facing structure:
+
+- `must`, `notDone`, `mustNot`
+- `evidence`
+- `failurePaths`
+- `edgeCases`
+- `traceRows`
+- `requirementBoundary`
+- `sequenceViews`, `flowViews`, `edgeCaseViews`, and `boundaryViews`
+- `artifactAutomationPlan`
+- `requiredCommands`
+- `closeoutReadinessPreview`
+- conditional modules required by `applicability.*`
+
+Human-readable prose, diagrams, tables, and summaries must explain these IDs. They must not introduce behavior, scope, evidence, or completion semantics absent from `implementationConfirmation`.
+
+## Fact Collection Discipline
+
+Use authority-first, expand-on-signal fact collection.
+
+For each critical claim, identify at least one source:
+
+- explicit user requirement
+- existing source document
+- authoritative implementation file
+- acceptance/unit test or gate
+- previously confirmed requirement source
+- repository rule
+
+Do not run broad repository searches before authoring. Prefer exact-symbol searches and narrow file reads. Expand search only when a key fact is missing, sources contradict each other, a renderer/validator reports a blocking issue, or the requirement changes shared contract, schema, runtime control, scoring, closeout, or controlled ingest behavior.
+
+For repeated or interrupted authoring, reuse the already collected facts unless relevant files changed. Do not restart with broad discovery after every interruption.
+
+## Chunked Authoring And Resume
+
+Large or high-risk source documents must follow [semantic-checkpoint-workflow.md](references/semantic-checkpoint-workflow.md). That reference is part of this skill and is the normative checkpoint workflow for splitting source-document authoring before HTML render.
+
+When scale assessment returns `checkpoint_required`, prefer the skill-local checkpoint runner over manual repetition:
+
+```bash
+node _bmad/skills/requirements-contract-authoring/scripts/run_semantic_checkpoints.js \
+  --source <source-document.md> \
+  --assessment _bmad-output/runtime/requirement-records/<recordId>/authoring/scale-assessment.json \
+  --progress _bmad-output/runtime/requirement-records/<recordId>/authoring/semantic-checkpoint-progress.json \
+  --mode run \
+  --until pre-render-ready \
+  --json
+```
+
+Checkpoint automation is an execution strategy only. It must not reduce scope, omit required registries, omit negative assertions, omit renderer-facing views, or defer trace/evidence coverage.
+
+Every checkpoint remains a bounded source-document edit followed by validation, a forced single-file commit, and a receipt. The runner may automate repeated steps, but it must not collapse checkpoint commits into one commit, stage unrelated files, or degrade checkpoint work into status-only progress markers when required source content is missing.
+
+If the runner behavior changes, update [semantic-checkpoint-workflow.md](references/semantic-checkpoint-workflow.md) in the same change so future skill executions do not follow stale process documentation.
 
 ## Authoritative Block
 
@@ -66,7 +140,7 @@ implementationConfirmation:
   contractAuthoringRequired: true
   confirmationLanguage: zh-CN | en-US | bilingual
   confirmationProfile: implementation_confirmation
-  requiredViewPacks: []
+  requiredViewPacks: ["currentTargetMap"]
   optionalViewPacks: []
   confirmedAt: null
   confirmedBy: null
@@ -91,11 +165,14 @@ implementationConfirmation:
       applies: false
       reasonCode: no_scoring_dashboard_sft_dataset_or_read_model_changes
     currentTargetMap:
-      applies: false
-      reasonCode: no_current_target_migration_or_governance_comparison_needed
+      applies: true
+      reasonCode: requirements_contract_authoring_requires_visible_current_target_map
     scriptsAndHooks:
       applies: false
       reasonCode: no_script_hook_report_or_generated_artifact_changes
+    aiTddContractGate:
+      applies: true
+      reasonCode: requirements_contract_authoring_requires_ai_tdd_contract_execution_manifest
   must:
     - id: MUST-001
       text: "..."
@@ -150,10 +227,35 @@ implementationConfirmation:
       evidenceRefs: ["EVD-001", "EVD-002"]
       contractValidationCommandRefs: ["CMD-CONTRACT-001"]
       deliveryEvidenceCommandRefs: ["CMD-DELIVERY-001"]
+      acceptanceRefs: ["ACC-001"]
       sequenceViewRefs: []
       boundaryViewRefs: []
       artifactRefs: []
       status: PENDING
+  acceptanceTests:
+    - id: ACC-001
+      file: "tests/acceptance/example.test.ts"
+      covers: ["MUST-001", "NEG-001"]
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-001", "EVD-002"]
+      commandRefs: ["CMD-DELIVERY-001"]
+      expectedPreImplementationState: expected_red
+      oracle: "Acceptance behavior fails on old implementation and passes with current-attempt evidence."
+      positiveControl: true
+      negativeControls: ["NEG-001"]
+      mockOnly: false
+  e2eSuites:
+    - id: E2E-001
+      file: "tests/e2e/example.spec.ts"
+      covers: ["MUST-001"]
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
+      commandRefs: ["CMD-E2E-001"]
+      expectedPreImplementationState: expected_red
+      oracle: "End-to-end user-visible flow proves the acceptance path."
+      positiveControl: true
+      negativeControls: []
+      mockOnly: false
   requirementBoundary:
     business:
       description: "..."
@@ -209,13 +311,29 @@ Conversation requirements must not go directly to implementation or prompt gener
 
 Work only inside the implementation source document.
 
+Before writing the source document body, build the ID matrix:
+
+- `MUST-*`: positive behavior that must exist.
+- `NEG-*`: negative assertion or missing behavior that blocks completion.
+- `OUT-*`: explicit scope boundary or forbidden expansion.
+- `EVD-*`: evidence and oracle.
+- `FAIL-*`: failure path.
+- `EDGE-*`: edge case.
+- `TRACE-*`: implementation slice.
+- `CMD-*`: validation command.
+- `ART-*`: artifact or automation output.
+- `ACC-*`: acceptance, integration, or contract test suite that proves requirement behavior.
+- `E2E-*`: end-to-end test suite that proves user-visible or cross-boundary behavior.
+
+Every `MUST-*` and `NEG-*` must have evidence, trace coverage, at least one view, and at least one `ACC-*` or `E2E-*` coverage row. Every `NEG-*` must have a failure path and a negative-control assertion. `OUT-*` must not appear in `traceRows[].covers`; bind it through `boundaryViews[]`, `boundaryViewRefs[]`, or `boundaryRefs[]`.
+
 Authoring order is mandatory:
 
 1. Write core fields: status, entryFlow, IDs, `must`, `notDone`, `mustNot`, `evidence`, `failurePaths`, `edgeCases`, `traceRows`, views, artifact plan, commands, and closeout preview.
 2. Declare every `applicability.*` domain with `applies` and `reasonCode`.
 3. Expand only the conditional domains whose `applies` value is `true`.
 
-Never omit an applicability domain to imply it is irrelevant. Use `applies: false` plus a concrete `reasonCode`.
+Never omit an applicability domain to imply it is irrelevant. Use `applies: false` plus a concrete `reasonCode` only for domains that are not mandatory for this skill. For this skill, `currentTargetMap` and `aiTddContractGate` are mandatory and must be authored with `applies: true`.
 
 Conditional expansion rules:
 
@@ -223,8 +341,9 @@ Conditional expansion rules:
 - `runtimeRecovery.applies=true` or `requiresFunctionalResumeFailureCaseRegistry=true`: define `functionalResumeFailureCaseRegistry` with source-defined groups, failure cases, recovery actions, expected recovery actions, and record event types.
 - `runtimeRecovery.applies=true`: define `activeRequirementResolution` or reference the project-standard Active Requirement Resolver; startup must locate the current requirement through explicit IDs or `_bmad-output/runtime/requirement-records/index.json`, then verify `requirement-record.json`, `runtimePolicySnapshotRef`, `recoveryContextRef`, trace checkpoint, and bmad workflow projection hashes.
 - `scoringDashboardSft.applies=true`: define score/dashboard/SFT read-model boundaries and state why they cannot reverse-drive closeout.
-- `currentTargetMap.applies=true`: define source-driven current/target rows; do not rely on renderer hardcoded rows.
+- `currentTargetMap.applies=true`: define source-driven current/target rows; do not rely on renderer hardcoded rows. This is mandatory for this skill, not an optional view. Include `schemaVersion: current-target-map/v1`, `displayProfile: closed_loop_current_target_map`, `currentSummary[]`, `targetSummary[]`, at least three `diffRows[]`, `process[]`, `artifactPaths[]`, `canonicalArtifacts[]`, and `existingArtifacts[]` with trace/evidence bindings where they describe proof or target implementation surfaces.
 - `scriptsAndHooks.applies=true`: define visible script/hook/artifact outputs, ownerModel, input/output artifacts, event types, fallback, and control/evidence role.
+- `aiTddContractGate.applies=true`: define enough data for the AI-TDD `ContractExecutionManifest`: `errorCaseCoverage`, `commandTargetCollection`, `traceClosureAssertions`, `currentTargetMap`, `canonicalSurfaceReconciliation`, `legacyDenial`, `closeoutProof`, and `evidenceTrustStates`. Do not define separate readiness or closeout completeness lists outside the manifest.
 
 For an existing source document:
 
@@ -321,6 +440,79 @@ Rules:
 - `contractValidationCommandRefs[]` prove that the contract, views, trace rows, and renderer output are valid.
 - `deliveryEvidenceCommandRefs[]` prove the implemented behavior in the current closeout attempt.
 - Legacy `commandRefs[]` may be read for compatibility by older reports, but it must not be the only command field in newly authored source documents.
+
+### 4a. Pre-Render Completeness Check
+
+Before rendering HTML, verify the source document against confirmation-page blocking rules:
+
+Run the deterministic definition drilldown first:
+
+When authoring a source document, run scale assessment before deciding whether to use a single authoring pass or semantic checkpoint authoring:
+
+```bash
+node _bmad/skills/requirements-contract-authoring/scripts/assess_contract_authoring_scale.js \
+  --source <source-document.md> \
+  --out _bmad-output/runtime/requirement-records/<recordId>/authoring/scale-assessment.json \
+  --json
+```
+
+If the decision is `checkpoint_required`, use the semantic checkpoint runner before HTML render. Checkpoint mode must create a single-file Git commit for each completed checkpoint and write a progress record for resume:
+
+```bash
+node _bmad/skills/requirements-contract-authoring/scripts/run_semantic_checkpoints.js \
+  --source <source-document.md> \
+  --assessment _bmad-output/runtime/requirement-records/<recordId>/authoring/scale-assessment.json \
+  --progress _bmad-output/runtime/requirement-records/<recordId>/authoring/semantic-checkpoint-progress.json \
+  --mode plan|status|run|resume \
+  --until pre-render-ready \
+  --json
+```
+
+The runner must stop before commit if staged files contain any path other than the active target requirements document.
+
+```bash
+node _bmad/skills/requirements-contract-authoring/scripts/pre_render_definition_drilldown.js \
+  --source <source-document.md> \
+  --out _bmad-output/runtime/requirement-records/<recordId>/confirmation/grill-definition-report.json \
+  --previous-report _bmad-output/runtime/requirement-records/<recordId>/confirmation/grill-definition-report.previous.json \
+  --resolutions _bmad-output/runtime/requirement-records/<recordId>/confirmation/grill-definition-resolutions.json \
+  --changed-only \
+  --max-new-blockers 10 \
+  --emit-decision-packet _bmad-output/runtime/requirement-records/<recordId>/confirmation/grill-definition-decision-packet.json \
+  --json
+```
+
+Treat unresolved blocking findings as authoring blockers before HTML render. This is the deterministic automation equivalent of a `grill-with-docs` pass: it checks root/source-local/`CONTEXT-MAP.md` glossary conflicts, vague terms, unresolved command authority refs, direct contradiction matrix findings, and external side effects that lack timeout/failure/idempotency/recovery/evidence semantics.
+
+Do not increase drilldown rounds to chase the same blocker repeatedly. The pre-render gate must converge by stable finding fingerprints, a resolution ledger, blocker clusters, and explicit stop reasons:
+
+- Every finding and question has a stable `fingerprint` and `clusterId`.
+- `--previous-report` plus `--changed-only` reports only newly discovered blockers and suppresses unchanged fingerprints from the previous report.
+- `--resolutions` may suppress a finding only when its status is `resolved`, `waived`, `converted_to_open_question`, or `converted_to_out_boundary`, and the ledger entry includes the current source, implementationConfirmation, and context hashes.
+- `--max-new-blockers` limits emitted blockers for review load while preserving total/new/suppressed/truncated counts in `convergence`.
+- `--emit-decision-packet` writes `remainingBlockingClusters` and recommended actions (`convert_to_open_question`, `add_out_boundary`, `split_requirement`, `add_evidence_oracle`) so the loop stops at a decision packet instead of continuing to ask forever.
+- Stop reasons must distinguish `no_new_blockers`, `blocking_definition_questions_found`, `warning_only`, and `no_blocking_definition_questions`.
+
+Ask the user only for remaining decision-packet clusters that cannot be resolved from existing source, glossary, ADR, code, tests, or repository rules.
+
+- `implementationConfirmation` is valid YAML.
+- Core arrays are present and non-empty: `must`, `notDone`, `mustNot`, `evidence`, `failurePaths`, `edgeCases`, and `traceRows`.
+- Every `MUST-*` and `NEG-*` has evidence and trace coverage.
+- Every `MUST-*` and `NEG-*` has `acceptanceTests[]` or `e2eSuites[]` coverage.
+- Every `NEG-*` has a linked failure path.
+- Every evidence item has an oracle and command refs.
+- `traceRows[].covers` contains only `MUST-*` and `NEG-*`.
+- Every `traceRows[].acceptanceRefs[]` resolves to `ACC-*` or `E2E-*`.
+- `OUT-*` is bound only through boundary views or boundary refs.
+- Applicability domains are all declared.
+- Conditional modules exist when `applies: true`.
+- Governance event types that write control fields have controlled writers.
+- Runtime recovery has functional resume failure cases when required.
+- Mermaid diagrams reference only declared IDs and use renderer-compatible labels.
+- Business and governance views are both present when both requirement groups exist.
+- Read models, dashboard green, score green, stdout, HTTP 200, page render, and mock calls are not treated as acceptance evidence.
+
+If a pre-render check fails, fix the source document before invoking the renderer. If the user already selected a confirmation language, render immediately after this check and repair renderer blocking issues until the page is confirmable or a real blocker is found.
 
 ### 5. Select Confirmation Language
 
@@ -500,6 +692,18 @@ When a local file is produced, run:
 node <skill-dir>/scripts/reverse_audit_contract.js <source-document.md>
 ```
 
+Prefer the stage-specific CLIs when the caller has a stage intent:
+
+```bash
+node <skill-dir>/scripts/audit_contract_confirmability.js <source-document.md> --render-report <confirmation-render-report.json> --json
+node <skill-dir>/scripts/audit_implementation_readiness.js <source-document.md> --render-report <confirmation-render-report.json> --json
+node <skill-dir>/scripts/audit_delivery_verification.js <source-document.md> --render-report <confirmation-render-report.json> --json
+node <skill-dir>/scripts/audit_closeout_integrity.js <source-document.md> --render-report <confirmation-render-report.json> --json
+```
+
+`reverse_audit_contract.js` remains a compatibility wrapper for legacy callers. Do not use its generic `PASS` as delivery verification or closeout proof; stage CLIs force their stage mode and emit `stageAudit` metadata.
+The stage CLIs share `reverse_audit_stage_common.js` so mode forcing and `stageAudit` metadata stay consistent.
+
 Use the script output as evidence. If it reports `FAIL`, revise the source document before using it for implementation.
 
 ## Output Structure
@@ -513,6 +717,8 @@ Use [matrix-rules.md](references/matrix-rules.md) when validating diagrams, trac
 Use [e2e-dod.md](references/e2e-dod.md) when designing acceptance E2E and Definition of Done.
 
 Use [reverse-audit-gate.md](references/reverse-audit-gate.md) when writing or evaluating the reverse audit report.
+
+Use [semantic-checkpoint-workflow.md](references/semantic-checkpoint-workflow.md) when scale assessment selects `checkpoint_required`, when resuming interrupted authoring, or when implementing/checking checkpoint automation.
 
 ## Scope Change
 

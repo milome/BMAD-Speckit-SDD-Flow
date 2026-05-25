@@ -98,7 +98,8 @@ describe('requirements-contract-authoring published contract', () => {
     expect(skill).toContain('Use authority-first, expand-on-signal fact collection');
     expect(skill).toContain('Do not run broad repository searches before authoring');
     expect(skill).toContain('Before writing the source document body, build the ID matrix');
-    expect(skill).toContain('Every `MUST-*` and `NEG-*` must have evidence, trace coverage, and at least one view');
+    expect(skill).toContain('Every `MUST-*` and `NEG-*` must have evidence, trace coverage, at least one view, and at least one `ACC-*` or `E2E-*` coverage row');
+    expect(skill).toContain('Treat `acceptanceTests[]` and `e2eSuites[]` as first-class contract rows');
     expect(skill).toContain('`OUT-*` must not appear in `traceRows[].covers`');
   });
 
@@ -114,6 +115,22 @@ describe('requirements-contract-authoring published contract', () => {
     expect(skill).toContain('Governance event types that write control fields have controlled writers');
     expect(skill).toContain('Mermaid diagrams reference only declared IDs and use renderer-compatible labels');
     expect(skill).toContain('repair renderer blocking issues until the page is confirmable or a real blocker is found');
+  });
+
+  it('documents stage-specific reverse audit CLIs and deprecated generic wrapper semantics', () => {
+    const skill = readSkillFile('SKILL.md');
+    const reverseAuditGate = readSkillFile(path.join('references', 'reverse-audit-gate.md'));
+
+    for (const content of [skill, reverseAuditGate]) {
+      expect(content).toContain('audit_contract_confirmability.js');
+      expect(content).toContain('audit_implementation_readiness.js');
+      expect(content).toContain('audit_delivery_verification.js');
+      expect(content).toContain('audit_closeout_integrity.js');
+      expect(content).toContain('reverse_audit_stage_common.js');
+      expect(content).toContain('compatibility wrapper');
+      expect(content).toContain('generic `PASS`');
+      expect(content).toContain('stageAudit');
+    }
   });
 
   it('documents convergent pre-render drilldown instead of unbounded question loops', () => {
@@ -149,5 +166,19 @@ describe('requirements-contract-authoring published contract', () => {
       expect(content).toContain('--mode plan|status|run|resume');
       expect(content).toContain('--until pre-render-ready');
     }
+  });
+
+  it('publishes semantic checkpoint workflow as a skill reference', () => {
+    const skill = readSkillFile('SKILL.md');
+    const checkpointWorkflow = readSkillFile(path.join('references', 'semantic-checkpoint-workflow.md'));
+
+    expect(skill).toContain('semantic-checkpoint-workflow.md');
+    expect(skill).toContain('normative checkpoint workflow');
+    expect(skill).toContain('Every checkpoint remains a bounded source-document edit');
+    expect(skill).toContain('degrade checkpoint work into status-only progress markers');
+    expect(checkpointWorkflow).toContain('This reference is part of `requirements-contract-authoring`');
+    expect(checkpointWorkflow).toContain('one semantic checkpoint -> one bounded source-document edit');
+    expect(checkpointWorkflow).toContain("The checkpoint runner's `--until pre-render-ready` scope covers checkpoints 1-8");
+    expect(checkpointWorkflow).toContain('The runner must preserve checkpoint authoring semantics');
   });
 });

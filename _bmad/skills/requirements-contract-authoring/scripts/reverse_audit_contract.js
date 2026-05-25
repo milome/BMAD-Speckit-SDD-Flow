@@ -560,8 +560,8 @@ function collectTraceabilityIssues(text, confirmation) {
   const findings = [];
   const mermaidBlocks = [...text.matchAll(/```mermaid\r?\n([\s\S]*?)```/g)].map((match) => match[1]);
   const nonDiagramText = text.replace(/```mermaid\r?\n[\s\S]*?```/g, '\n');
-  const diagramIdPattern = /\b(?:MUST|NEG|OUT|EVD|TRACE|Q|MAIN|FAIL|IDEMP|REC|CONC|STATE|INV)-[A-Z]?\d+\b/g;
-  const confirmationIdPattern = /\b(?:MUST|NEG|OUT|EVD|TRACE|Q)-\d+\b/g;
+  const diagramIdPattern = /\b(?:MUST|NEG|OUT|EVD|TRACE|ACC|E2E|Q|MAIN|FAIL|IDEMP|REC|CONC|STATE|INV)-[A-Z0-9_.:-]+\b/g;
+  const confirmationIdPattern = /\b(?:MUST|NEG|OUT|EVD|TRACE|ACC|E2E|Q)-[A-Za-z0-9_.:-]+\b/g;
   const diagramIds = unique(
     mermaidBlocks.flatMap((block) => [...block.matchAll(diagramIdPattern)].map((match) => match[0]))
   ).sort();
@@ -588,6 +588,12 @@ function collectTraceabilityIssues(text, confirmation) {
   const negIds = new Set(asArray(confirmation.notDone).map((item) => item.id));
   const evidenceIds = new Set(asArray(confirmation.evidence).map((item) => item.id));
   const traceIds = new Set(asArray(confirmation.traceRows).map((row) => row.id));
+  const acceptanceRows = normalizeAcceptanceSuites(confirmation);
+  const acceptanceIds = new Set(acceptanceRows.map((row) => row.id));
+  const commandIds = new Set([
+    ...asArray(confirmation.requiredCommands).map((item) => item.id ?? item.commandId).filter(Boolean),
+    ...asArray(confirmation.suggestedCommands).map((item) => item.id ?? item.commandId).filter(Boolean),
+  ]);
   const allowedCoverIds = new Set([...mustIds, ...negIds]);
   const allConfirmationIds = new Set([
     ...mustIds,
@@ -595,6 +601,7 @@ function collectTraceabilityIssues(text, confirmation) {
     ...asArray(confirmation.mustNot).map((item) => item.id),
     ...evidenceIds,
     ...traceIds,
+    ...acceptanceIds,
   ]);
 
   const knownTraceRows = new Set(asArray(confirmation.traceRows).map((row) => row.id));
@@ -617,6 +624,11 @@ function collectTraceabilityIssues(text, confirmation) {
         findings.push(issue('trace_row_unknown_evidence_ref', `${rowId} references unknown evidence ${evidenceId}`, [rowId, evidenceId]));
       }
     }
+    for (const acceptanceId of stringList(row.acceptanceRefs)) {
+      if (!acceptanceIds.has(acceptanceId)) {
+        findings.push(issue('trace_row_unknown_acceptance_ref', `${rowId} references unknown acceptance/e2e row ${acceptanceId}`, [rowId, acceptanceId]));
+      }
+    }
     for (const taskRef of stringList(row.taskRefs)) {
       if (/^(?:MUST|NEG|OUT|EVD|TRACE)-/u.test(taskRef) && !allConfirmationIds.has(taskRef)) {
         findings.push(issue('trace_row_unknown_task_contract_ref', `${rowId} taskRefs includes unknown contract ID ${taskRef}`, [rowId, taskRef]));
@@ -629,12 +641,91 @@ function collectTraceabilityIssues(text, confirmation) {
     }
   }
 
+  for (const id of [...mustIds, ...negIds]) {
+    if (!acceptanceRows.some((row) => row.covers.includes(id))) {
+      findings.push(issue('requirement_missing_acceptance_or_e2e_coverage', `${id} has no ACC/E2E coverage`, [id]));
+    }
+  }
+
+  for (const row of acceptanceRows) {
+    if (!/^(ACC|E2E)-/u.test(row.id)) {
+      findings.push(issue('acceptance_invalid_id', `${row.id} must start with ACC- or E2E-`, [row.id]));
+    }
+    if (!row.files.length) {
+      findings.push(issue('acceptance_missing_file', `${row.id} must declare file/files`, [row.id]));
+    }
+    for (const file of row.files) {
+      const absolute = path.isAbsolute(file) ? file : path.resolve(process.cwd(), file);
+      if (!fs.existsSync(absolute)) {
+        findings.push(issue('acceptance_test_file_missing', `${row.id} references missing file ${file}`, [row.id, file]));
+      }
+    }
+    for (const cover of row.covers) {
+      if (!allowedCoverIds.has(cover)) {
+        findings.push(issue('acceptance_unknown_requirement_ref', `${row.id} covers unknown ${cover}`, [row.id, cover]));
+      }
+    }
+    for (const traceId of row.traceRows) {
+      if (!traceIds.has(traceId)) findings.push(issue('acceptance_unknown_trace_ref', `${row.id} references unknown ${traceId}`, [row.id, traceId]));
+    }
+    for (const evidenceId of row.evidenceRefs) {
+      if (!evidenceIds.has(evidenceId)) findings.push(issue('acceptance_unknown_evidence_ref', `${row.id} references unknown ${evidenceId}`, [row.id, evidenceId]));
+    }
+    for (const commandId of row.commandRefs) {
+      if (!commandIds.has(commandId)) findings.push(issue('acceptance_unknown_command_ref', `${row.id} references unknown ${commandId}`, [row.id, commandId]));
+    }
+    if (!row.oracle) findings.push(issue('acceptance_missing_oracle', `${row.id} lacks oracle`, [row.id]));
+    if (row.mockOnly) findings.push(issue('acceptance_mock_only_invalid', `${row.id} is mock-only`, [row.id]));
+  }
+
   return {
     findings,
     diagramBlockCount: mermaidBlocks.length,
     diagramIdCount: diagramIds.length,
     missingDiagramCoverage,
   };
+}
+
+function normalizeAcceptanceSuites(confirmation) {
+  const sections = [
+    ['acceptanceTests', 'acceptance', 'ACC'],
+    ['acceptanceTestSuites', 'acceptance', 'ACC'],
+    ['integrationTests', 'integration', 'ACC'],
+    ['contractTests', 'contract', 'ACC'],
+    ['e2eSuites', 'e2e', 'E2E'],
+    ['e2eTests', 'e2e', 'E2E'],
+  ];
+  const rows = [];
+  for (const [section, suiteType, prefix] of sections) {
+    asArray(confirmation?.[section]).forEach((item, index) => {
+      rows.push({
+        id: String(item?.id ?? item?.testId ?? `${prefix}-${String(index + 1).padStart(3, '0')}`).trim(),
+        suiteType: String(item?.suiteType ?? item?.kind ?? suiteType),
+        files: unique([
+          String(item?.file ?? item?.path ?? item?.testFile ?? item?.testPath ?? '').trim(),
+          ...stringList(item?.files),
+          ...stringList(item?.testFiles),
+        ]).filter(Boolean),
+        covers: unique([
+          ...stringList(item?.covers),
+          ...stringList(item?.requirementRefs),
+          ...stringList(item?.linkedRequirementIds),
+          ...stringList(item?.mustRefs),
+          ...stringList(item?.negRefs),
+        ]),
+        traceRows: unique([...stringList(item?.traceRows), ...stringList(item?.traceRefs)]),
+        evidenceRefs: unique([...stringList(item?.evidenceRefs), ...stringList(item?.linkedEvidenceIds)]),
+        commandRefs: unique([
+          ...stringList(item?.commandRefs),
+          ...stringList(item?.requiredCommandRefs),
+          ...stringList(item?.requiredCommandIds),
+        ]),
+        oracle: String(item?.oracle ?? item?.expectedBehavior ?? item?.assertion ?? '').trim(),
+        mockOnly: item?.mockOnly === true,
+      });
+    });
+  }
+  return rows.filter((row) => row.id);
 }
 
 function addRangeCoverage(body, covered) {
@@ -654,8 +745,8 @@ function addRangeCoverage(body, covered) {
 function collectAntiSmokeIssues(text, confirmation) {
   const findings = [];
   const hasSmokeOnlyWarning =
-    /Must Not Count As|不能算作|不得算作|不计为完成/u.test(text) &&
-    /exit code only|stdout|HTTP 200|page render|mock calls?|仅退出码|标准输出|页面渲染|mock/u.test(text);
+    /Must Not Count As|must not count|cannot satisfy|cannot substitute|cannot count|不能算作|不得算作|不计为完成|不能满足|不能替代/u.test(text) &&
+    /exit code only|exit code|stdout|HTTP 200|page render|mock calls?|command exit code|smoke-only proof|smoke-level acceptance|仅退出码|标准输出|页面渲染|mock/u.test(text);
   if (!hasSmokeOnlyWarning) {
     findings.push(
       issue(
@@ -680,6 +771,11 @@ function collectAntiSmokeIssues(text, confirmation) {
     }
     if (!gate) {
       findings.push(issue('evidence_missing_gate', `${evidence.id ?? 'EVD-UNKNOWN'} lacks gate command or manual proof`));
+    }
+  }
+  for (const row of normalizeAcceptanceSuites(confirmation)) {
+    if (/^(exit code|stdout|http 200|page render|mock calls?)$/iu.test(row.oracle)) {
+      findings.push(issue('acceptance_oracle_smoke_only', `${row.id} uses a smoke-only oracle`, [row.id]));
     }
   }
   return findings;
