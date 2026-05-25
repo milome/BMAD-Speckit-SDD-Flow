@@ -13,6 +13,7 @@ const {
   stringList,
   unique,
 } = require('./pre_render_definition_drilldown_lib');
+const { buildAssessment } = require('./assess_contract_authoring_scale');
 
 const CHECKPOINTS = [
   {
@@ -74,6 +75,11 @@ const CURRENT_TARGET_MINIMUM_COVERAGE = {
   process: 1,
   artifactPaths: 1,
 };
+const AUTHORING_MODES = new Set([
+  'single_pass',
+  'kernel_then_checkpoint',
+  'kernel_then_checkpoint_with_amendment',
+]);
 
 function usage(exitCode = 0) {
   console.log(`Usage:
@@ -140,6 +146,45 @@ function readJsonIfExists(filePath) {
   return JSON.parse(fs.readFileSync(absolute, 'utf8'));
 }
 
+function readJsonSafe(filePath) {
+  const absolute = path.resolve(filePath);
+  if (!fs.existsSync(absolute)) return { ok: false, missing: true, path: absolute };
+  try {
+    return { ok: true, value: JSON.parse(fs.readFileSync(absolute, 'utf8')), path: absolute };
+  } catch (error) {
+    return {
+      ok: false,
+      missing: false,
+      path: absolute,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+function backupProgressPath(progressPath) {
+  return `${path.resolve(progressPath)}.bak`;
+}
+
+function writeJsonFileAtomic(filePath, value) {
+  const absolute = path.resolve(filePath);
+  fs.mkdirSync(path.dirname(absolute), { recursive: true });
+  const content = `${JSON.stringify(value, null, 2)}\n`;
+  const temporary = path.join(
+    path.dirname(absolute),
+    `.${path.basename(absolute)}.${process.pid}.${Date.now()}.tmp`
+  );
+  fs.writeFileSync(temporary, content, 'utf8');
+  fs.renameSync(temporary, absolute);
+}
+
+function writeProgressAtomic(progressPath, value) {
+  const absolute = path.resolve(progressPath);
+  if (fs.existsSync(absolute)) {
+    fs.copyFileSync(absolute, backupProgressPath(absolute));
+  }
+  writeJsonFileAtomic(absolute, value);
+}
+
 function defaultAuthoringRuntimeDir(sourcePath) {
   try {
     const text = fs.readFileSync(path.resolve(sourcePath), 'utf8');
@@ -171,11 +216,21 @@ function buildPlan({ sourcePath, assessment = null, progress = null }) {
     schemaVersion: 'semantic-checkpoint-plan/v1',
     target: normalizePathForReport(sourcePath),
     modeDecision: assessment?.decision ?? 'unknown',
+    authoringMode: resolveAuthoringMode({ assessment, progress }),
     until: 'pre-render-ready',
     checkpointCount: checkpoints.length,
     nextCheckpoint: next?.id ?? null,
     checkpoints,
   };
+}
+
+function resolveAuthoringMode({ assessment = null, progress = null } = {}) {
+  const candidate = progress?.authoringMode ?? assessment?.authoringMode;
+  if (AUTHORING_MODES.has(candidate)) return candidate;
+  const decision = progress?.modeDecision ?? progress?.mode ?? assessment?.decision;
+  if (decision === 'single_pass') return 'single_pass';
+  if (decision === 'checkpoint_required') return 'kernel_then_checkpoint';
+  return 'unknown';
 }
 
 function git(args, options = {}) {
@@ -225,21 +280,49 @@ function latestCommitForFile(sourcePath) {
   return result.status === 0 ? result.stdout.trim() : '';
 }
 
-function updateProgress({ progressPath, sourcePath, checkpoint, commitHash, documentHash, priorProgress }) {
+function latestCheckpointCommitFromGit(sourcePath) {
+  const result = git(['log', '-1', '--format=%H%x00%s', '--', repoRelativePath(sourcePath)]);
+  if (result.status !== 0 || !result.stdout.trim()) return null;
+  const [commitHash, subject = ''] = result.stdout.trim().split('\u0000');
+  const checkpoint = CHECKPOINTS.find((item) => subject.includes(item.name));
+  if (!checkpoint || !commitHash) return null;
+  return {
+    id: checkpoint.id,
+    commitHash,
+    next: nextCheckpointAfter(checkpoint.id),
+  };
+}
+
+function checkpointIdempotencyKey({ checkpoint, documentHash, commitHash }) {
+  return crypto
+    .createHash('sha256')
+    .update([checkpoint.id, documentHash, commitHash].join('\n'))
+    .digest('hex');
+}
+
+function findProgressCheckpoint(progress, checkpointId) {
+  return (progress?.checkpoints ?? []).find((item) => item.id === checkpointId && item.status === 'passed') ?? null;
+}
+
+function updateProgress({ progressPath, sourcePath, checkpoint, commitHash, documentHash, priorProgress, assessment = null }) {
   const previous = priorProgress ?? {};
   const checkpoints = Array.isArray(previous.checkpoints) ? previous.checkpoints.filter((item) => item.id !== checkpoint.id) : [];
+  const authoringMode = resolveAuthoringMode({ assessment, progress: previous });
   const entry = {
     id: checkpoint.id,
     name: checkpoint.name,
     status: 'passed',
     commitHash,
     documentHash,
+    idempotencyKey: checkpointIdempotencyKey({ checkpoint, documentHash, commitHash }),
     completedAt: new Date().toISOString(),
   };
   const progress = {
     schemaVersion: 'semantic-checkpoint-progress/v1',
     source: normalizePathForReport(sourcePath),
     mode: 'checkpoint_required',
+    modeDecision: 'checkpoint_required',
+    authoringMode,
     lastCompletedCheckpoint: checkpoint.id,
     currentCheckpoint: nextCheckpointAfter(checkpoint.id),
     lastCommit: commitHash,
@@ -253,8 +336,7 @@ function updateProgress({ progressPath, sourcePath, checkpoint, commitHash, docu
     next: nextCheckpointAfter(checkpoint.id),
     checkpoints: [...checkpoints, entry].sort((a, b) => CHECKPOINTS.findIndex((item) => item.id === a.id) - CHECKPOINTS.findIndex((item) => item.id === b.id)),
   };
-  fs.mkdirSync(path.dirname(progressPath), { recursive: true });
-  fs.writeFileSync(progressPath, `${JSON.stringify(progress, null, 2)}\n`, 'utf8');
+  writeProgressAtomic(progressPath, progress);
   return progress;
 }
 
@@ -632,12 +714,12 @@ function defaultGlobalGateReportPath(progressPath) {
 }
 
 function writeJsonFile(filePath, value) {
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+  writeJsonFileAtomic(filePath, value);
 }
 
 function updateProgressWithGlobalGate({ progressPath, gateReport }) {
-  const progress = readJsonIfExists(progressPath);
+  const progressRead = readJsonSafe(progressPath);
+  const progress = progressRead.ok ? progressRead.value : null;
   if (!progress) return null;
   const updated = {
     ...progress,
@@ -655,7 +737,7 @@ function updateProgressWithGlobalGate({ progressPath, gateReport }) {
     },
     blockers: gateReport.verdict === 'PASS' ? [] : gateReport.issues,
   };
-  writeJsonFile(progressPath, updated);
+  writeProgressAtomic(progressPath, updated);
   return updated;
 }
 
@@ -687,9 +769,52 @@ function appendCheckpointExecutionLog({ sourcePath, checkpoint }) {
   return true;
 }
 
-function commitCheckpoint({ sourcePath, checkpointId, progressPath }) {
+function commitCheckpoint({ sourcePath, checkpointId, progressPath, assessment = null, priorProgressOverride = null }) {
   const checkpoint = checkpointById(checkpointId);
   if (!checkpoint) return fail('unknown_checkpoint', `unknown checkpoint ${checkpointId}`);
+  const currentDocumentHash = sha256File(sourcePath);
+  const currentCommitHash = latestCommitForFile(sourcePath);
+  const priorProgressRead = priorProgressOverride
+    ? { ok: true, value: priorProgressOverride }
+    : readJsonSafe(progressPath);
+  if (!priorProgressRead.ok && !priorProgressRead.missing) {
+    return fail('progress_record_unreadable', 'checkpoint progress record is corrupt and cannot be safely updated', {
+      progressPath: normalizePathForReport(progressPath),
+      error: priorProgressRead.error,
+    });
+  }
+  const priorProgress = priorProgressRead.ok ? priorProgressRead.value : null;
+  const existingEntry = findProgressCheckpoint(priorProgress, checkpoint.id);
+  const currentIdempotencyKey = checkpointIdempotencyKey({
+    checkpoint,
+    documentHash: currentDocumentHash,
+    commitHash: currentCommitHash,
+  });
+  if (existingEntry && existingEntry.documentHash === currentDocumentHash && existingEntry.commitHash === currentCommitHash) {
+    if (priorProgressOverride) {
+      try {
+        writeProgressAtomic(progressPath, priorProgress);
+      } catch (error) {
+        return fail('progress_write_failed', 'checkpoint was already recorded but recovered progress could not be restored', {
+          commitHash: currentCommitHash,
+          documentHash: currentDocumentHash,
+          progressPath: normalizePathForReport(progressPath),
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+    return {
+      ok: true,
+      checkpoint: checkpoint.id,
+      commitHash: currentCommitHash,
+      documentHash: currentDocumentHash,
+      idempotencyKey: existingEntry.idempotencyKey ?? currentIdempotencyKey,
+      progressPath: normalizePathForReport(progressPath),
+      progress: priorProgress,
+      noOp: true,
+      reason: 'checkpoint_already_recorded_for_current_document_and_commit',
+    };
+  }
   const targetRel = repoRelativePath(sourcePath);
   const existingStaged = stagedPaths();
   if (existingStaged.length) {
@@ -715,8 +840,17 @@ function commitCheckpoint({ sourcePath, checkpointId, progressPath }) {
   }
   const commitHash = latestCommitForFile(sourcePath);
   const documentHash = sha256File(sourcePath);
-  const priorProgress = readJsonIfExists(progressPath);
-  const progress = updateProgress({ progressPath, sourcePath, checkpoint, commitHash, documentHash, priorProgress });
+  let progress;
+  try {
+    progress = updateProgress({ progressPath, sourcePath, checkpoint, commitHash, documentHash, priorProgress, assessment });
+  } catch (error) {
+    return fail('progress_write_failed', 'checkpoint commit succeeded but progress write failed; stop before continuing', {
+      commitHash,
+      documentHash,
+      progressPath: normalizePathForReport(progressPath),
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
   return {
     ok: true,
     checkpoint: checkpoint.id,
@@ -727,7 +861,19 @@ function commitCheckpoint({ sourcePath, checkpointId, progressPath }) {
   };
 }
 
-function preRenderReadyResult({ sourcePath, progressPath, completedCheckpoints = [], progress = null }) {
+function preRenderReadyResult({ sourcePath, progressPath, completedCheckpoints = [], progress = null, progressOverride = null }) {
+  if (progressOverride) {
+    try {
+      writeProgressAtomic(progressPath, progressOverride);
+    } catch (error) {
+      return fail('progress_write_failed', 'recovered progress could not be restored before pre-render gate', {
+        status: 'blocked',
+        completedCheckpoints,
+        progressPath: normalizePathForReport(progressPath),
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
   const gate = runPreRenderGlobalConsistencyGate({ sourcePath, progressPath });
   if (gate.report.verdict !== 'PASS') {
     return fail('pre_render_global_consistency_failed', 'pre-render global consistency gate failed; HTML render is blocked', {
@@ -759,12 +905,20 @@ function preRenderReadyResult({ sourcePath, progressPath, completedCheckpoints =
   };
 }
 
-function runCheckpointLoop({ sourcePath, progressPath, startCheckpointId }) {
-  if (!startCheckpointId) return preRenderReadyResult({ sourcePath, progressPath, progress: readJsonIfExists(progressPath) });
+function runCheckpointLoop({ sourcePath, progressPath, startCheckpointId, assessment = null, priorProgressOverride = null }) {
+  if (!startCheckpointId) {
+    return preRenderReadyResult({
+      sourcePath,
+      progressPath,
+      progress: priorProgressOverride ?? readJsonIfExists(progressPath),
+      progressOverride: priorProgressOverride,
+    });
+  }
   const startIndex = checkpointIndex(startCheckpointId);
   if (startIndex < 0) return fail('unknown_checkpoint', `unknown checkpoint ${startCheckpointId}`);
 
   const completedCheckpoints = [];
+  let progressOverrideForNextCommit = priorProgressOverride;
   for (const checkpoint of CHECKPOINTS.slice(startIndex)) {
     const existingStaged = stagedPaths();
     if (existingStaged.length) {
@@ -776,7 +930,14 @@ function runCheckpointLoop({ sourcePath, progressPath, startCheckpointId }) {
       });
     }
     appendCheckpointExecutionLog({ sourcePath, checkpoint });
-    const result = commitCheckpoint({ sourcePath, checkpointId: checkpoint.id, progressPath });
+    const result = commitCheckpoint({
+      sourcePath,
+      checkpointId: checkpoint.id,
+      progressPath,
+      assessment,
+      priorProgressOverride: progressOverrideForNextCommit,
+    });
+    progressOverrideForNextCommit = null;
     if (!result.ok) {
       return {
         ...result,
@@ -801,7 +962,62 @@ function runCheckpointLoop({ sourcePath, progressPath, startCheckpointId }) {
 }
 
 function resumeStatus({ sourcePath, progressPath }) {
-  const progress = readJsonIfExists(progressPath);
+  const progressRead = readJsonSafe(progressPath);
+  let recoveredFrom = null;
+  let progress = progressRead.ok ? progressRead.value : null;
+  if (!progressRead.ok && !progressRead.missing) {
+    const backupRead = readJsonSafe(backupProgressPath(progressPath));
+    if (backupRead.ok) {
+      progress = backupRead.value;
+      recoveredFrom = 'backup';
+    } else {
+      const gitCheckpoint = latestCheckpointCommitFromGit(sourcePath);
+      if (gitCheckpoint) {
+        const documentHash = sha256File(sourcePath);
+        progress = {
+          schemaVersion: 'semantic-checkpoint-progress/v1',
+          source: normalizePathForReport(sourcePath),
+          mode: 'checkpoint_required',
+          modeDecision: 'checkpoint_required',
+          authoringMode: 'kernel_then_checkpoint',
+          lastCompletedCheckpoint: gitCheckpoint.id,
+          currentCheckpoint: gitCheckpoint.next,
+          lastCommit: gitCheckpoint.commitHash,
+          documentHash,
+          validation: {
+            encoding: 'not_run_by_checkpoint_runner',
+            definitionDrilldown: 'not_applicable',
+            reverseAudit: 'not_run',
+          },
+          blockers: [],
+          next: gitCheckpoint.next,
+          recoveredFrom: 'git_checkpoint',
+          checkpoints: [
+            {
+              id: gitCheckpoint.id,
+              name: checkpointById(gitCheckpoint.id)?.name ?? gitCheckpoint.id,
+              status: 'passed',
+              commitHash: gitCheckpoint.commitHash,
+              documentHash,
+              idempotencyKey: checkpointIdempotencyKey({
+                checkpoint: checkpointById(gitCheckpoint.id),
+                documentHash,
+                commitHash: gitCheckpoint.commitHash,
+              }),
+              completedAt: null,
+              recovered: true,
+            },
+          ],
+        };
+        recoveredFrom = 'git_checkpoint';
+      } else {
+        return fail('progress_record_unreadable', 'checkpoint progress record is corrupt and no backup or git checkpoint could recover it', {
+          progressPath: normalizePathForReport(progressPath),
+          error: progressRead.error,
+        });
+      }
+    }
+  }
   if (!progress) {
     return {
       ok: true,
@@ -824,6 +1040,9 @@ function resumeStatus({ sourcePath, progressPath }) {
     nextCheckpoint: progress.next ?? progress.currentCheckpoint,
     progressPath: normalizePathForReport(progressPath),
     documentHash: currentHash,
+    authoringMode: resolveAuthoringMode({ progress }),
+    recoveredFrom,
+    progress,
   };
 }
 
@@ -839,8 +1058,18 @@ function main(argv) {
     return 1;
   }
   const progressPath = path.resolve(args.progress || defaultProgressPath(sourcePath));
-  const assessment = args.assessment ? readJsonIfExists(args.assessment) : null;
-  const progress = readJsonIfExists(progressPath);
+  const assessment = args.assessment ? readJsonIfExists(args.assessment) : buildAssessment(sourcePath, progressPath);
+  const progressRead = readJsonSafe(progressPath);
+  let progress = progressRead.ok ? progressRead.value : null;
+  let recoveredStatus = null;
+  if (!progressRead.ok && !progressRead.missing) {
+    recoveredStatus = resumeStatus({ sourcePath, progressPath });
+    if (!recoveredStatus.ok) {
+      process.stdout.write(`${JSON.stringify(recoveredStatus, null, 2)}\n`);
+      return 1;
+    }
+    progress = recoveredStatus.progress ?? null;
+  }
   if (args.mode === 'plan') {
     const plan = buildPlan({ sourcePath, assessment, progress });
     process.stdout.write(`${JSON.stringify(plan, null, 2)}\n`);
@@ -864,16 +1093,28 @@ function main(argv) {
     }
     const checkpointId = args.checkpoint || status.nextCheckpoint;
     const result = args.checkpoint
-      ? commitCheckpoint({ sourcePath, checkpointId, progressPath })
-      : runCheckpointLoop({ sourcePath, progressPath, startCheckpointId: checkpointId });
+      ? commitCheckpoint({ sourcePath, checkpointId, progressPath, assessment, priorProgressOverride: status.progress ?? null })
+      : runCheckpointLoop({
+          sourcePath,
+          progressPath,
+          startCheckpointId: checkpointId,
+          assessment,
+          priorProgressOverride: status.progress ?? null,
+        });
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     return result.ok ? 0 : 1;
   }
   const plan = buildPlan({ sourcePath, assessment, progress });
-  const checkpointId = args.checkpoint || plan.nextCheckpoint || CHECKPOINTS[0].id;
+  const checkpointId = args.checkpoint || recoveredStatus?.nextCheckpoint || plan.nextCheckpoint || CHECKPOINTS[0].id;
   const result = args.checkpoint
-    ? commitCheckpoint({ sourcePath, checkpointId, progressPath })
-    : runCheckpointLoop({ sourcePath, progressPath, startCheckpointId: plan.nextCheckpoint });
+    ? commitCheckpoint({ sourcePath, checkpointId, progressPath, assessment, priorProgressOverride: recoveredStatus?.progress ?? null })
+    : runCheckpointLoop({
+        sourcePath,
+        progressPath,
+        startCheckpointId: checkpointId,
+        assessment,
+        priorProgressOverride: recoveredStatus?.progress ?? null,
+      });
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
   return result.ok ? 0 : 1;
 }

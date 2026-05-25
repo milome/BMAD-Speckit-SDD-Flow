@@ -10,12 +10,17 @@ const CONDITIONAL_DOMAINS = [
   'currentTargetMap',
   'scriptsAndHooks',
 ];
+const AUTHORING_MODES = {
+  SINGLE_PASS: 'single_pass',
+  KERNEL_THEN_CHECKPOINT: 'kernel_then_checkpoint',
+  KERNEL_THEN_CHECKPOINT_WITH_AMENDMENT: 'kernel_then_checkpoint_with_amendment',
+};
 
 function usage(exitCode = 0) {
   console.log(`Usage:
   node assess_contract_authoring_scale.js --source <source-document.md> [--progress <progress.json>] [--out <assessment.json>] [--json]
 
-Classifies requirements contract authoring as single_pass or checkpoint_required.`);
+Classifies requirements contract authoring as single_pass or checkpoint_required, with semantic-kernel-first authoringMode.`);
   process.exit(exitCode);
 }
 
@@ -60,6 +65,12 @@ function confirmationSignals(text) {
       evidenceCount: Array.isArray(confirmation.evidence) ? confirmation.evidence.length : 0,
       traceRowCount: Array.isArray(confirmation.traceRows) ? confirmation.traceRows.length : 0,
       requiredCommandCount: Array.isArray(confirmation.requiredCommands) ? confirmation.requiredCommands.length : 0,
+      blockingOpenQuestionCount: Array.isArray(confirmation.openQuestions)
+        ? confirmation.openQuestions.filter((item) => item?.blocksImplementation === true).length
+        : 0,
+      blockingAssumptionCount: Array.isArray(confirmation.blockingAssumptions)
+        ? confirmation.blockingAssumptions.length
+        : 0,
       applicableConditionalDomains: CONDITIONAL_DOMAINS.filter(
         (domain) => confirmation.applicability?.[domain]?.applies === true
       ),
@@ -73,6 +84,8 @@ function confirmationSignals(text) {
       evidenceCount: countMatches(text, /\bEVD-\d{3,}\b/gu),
       traceRowCount: countMatches(text, /\bTRACE-\d{3,}\b/gu),
       requiredCommandCount: countMatches(text, /\bCMD-[A-Z0-9-]+\b/gu),
+      blockingOpenQuestionCount: countMatches(text, /blocksImplementation:\s*true|blocking open question|阻断.*问题/giu),
+      blockingAssumptionCount: countMatches(text, /blockingAssumptions|blocking assumption|阻断.*假设/giu),
       applicableConditionalDomains: inferConditionalDomainsFromText(text),
     };
   }
@@ -103,7 +116,31 @@ function scoreSignals(signals) {
   if (signals.mermaidBlockCount > 5) score += 2;
   if (signals.requiredCommandCount > 8) score += 2;
   if (signals.progressExists) score += 5;
+  if (signals.amendmentRisk) score += 3;
   return score;
+}
+
+function amendmentRiskSignals(text, progressExists, confirmation) {
+  const lowered = String(text).toLowerCase();
+  const amendmentMarkerCount = countMatches(
+    text,
+    /\breconfirm_required\b|\breconfirmation\b|\bamendment\b|\bkernel amendment\b|definition blocker|blocking assumption|阻断|需重新确认|修订/giu
+  );
+  return {
+    amendmentMarkerCount,
+    amendmentRisk:
+      progressExists ||
+      amendmentMarkerCount > 0 ||
+      Number(confirmation.blockingOpenQuestionCount ?? 0) > 0 ||
+      Number(confirmation.blockingAssumptionCount ?? 0) > 0 ||
+      lowered.includes('reconfirm_required'),
+  };
+}
+
+function authoringModeFor(decision, signals) {
+  if (decision === 'single_pass') return AUTHORING_MODES.SINGLE_PASS;
+  if (signals?.amendmentRisk) return AUTHORING_MODES.KERNEL_THEN_CHECKPOINT_WITH_AMENDMENT;
+  return AUTHORING_MODES.KERNEL_THEN_CHECKPOINT;
 }
 
 function defaultProgressPath(sourcePath) {
@@ -126,6 +163,7 @@ function buildAssessment(sourcePath, progressPath = '') {
     ? path.join('_bmad-output', 'runtime', 'requirement-records', recordId, 'authoring', 'semantic-checkpoint-progress.json')
     : defaultProgressPath(absolute));
   const progressExists = fs.existsSync(path.resolve(progress));
+  const amendment = amendmentRiskSignals(text, progressExists, confirmation);
   const signals = {
     lineCount: text.replace(/\r\n/g, '\n').split('\n').length,
     byteLength: Buffer.byteLength(text, 'utf8'),
@@ -134,6 +172,7 @@ function buildAssessment(sourcePath, progressPath = '') {
     progressPath: normalizePathForReport(progress),
     progressExists,
     ...confirmation,
+    ...amendment,
   };
   signals.confirmationIdCount =
     signals.mustCount + signals.negCount + signals.outCount + signals.evidenceCount + signals.traceRowCount;
@@ -144,12 +183,15 @@ function buildAssessment(sourcePath, progressPath = '') {
     signals.confirmationIdCount > 45,
     signals.applicableConditionalDomains.length >= 2,
     progressExists,
+    signals.amendmentRisk,
   ];
   const decision = score >= 6 || hardTriggers.some(Boolean) ? 'checkpoint_required' : 'single_pass';
+  const authoringMode = authoringModeFor(decision, signals);
   return {
     schemaVersion: 'requirements-contract-scale-assessment/v1',
     target: normalizePathForReport(absolute),
     decision,
+    authoringMode,
     riskLevel: score >= 8 ? 'high' : score >= 4 ? 'medium' : 'low',
     score,
     thresholds: {

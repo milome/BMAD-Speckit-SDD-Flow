@@ -22,6 +22,14 @@ const CHECKPOINTS = path.join(
   'scripts',
   'run_semantic_checkpoints.js'
 );
+const RETENTION_CLEANUP = path.join(
+  ROOT,
+  '_bmad',
+  'skills',
+  'requirements-contract-authoring',
+  'scripts',
+  'finalize_requirements_contract_retention.js'
+);
 const CHECKPOINT_REQUIREMENT_DOC = path.join(
   ROOT,
   'docs',
@@ -102,6 +110,32 @@ function writeLargeSource(root = tempDir): string {
   const sections = Array.from({ length: 32 }, (_, index) => `## Section ${index + 1}\n\nGovernance event, runtime recovery, script hook, dashboard score, current target map.\n`).join('\n');
   const ids = Array.from({ length: 28 }, (_, index) => `- MUST-${String(index + 1).padStart(3, '0')} requirement\n`).join('');
   fs.writeFileSync(file, `# Large Requirement\n\n${sections}\n${ids}\n`, 'utf8');
+  return file;
+}
+
+function writeAmendmentRiskSource(root = tempDir): string {
+  const file = path.join(root, 'amendment.md');
+  fs.writeFileSync(
+    file,
+    `# Amendment Risk Requirement
+
+This source has a blocking assumption and requires kernel amendment before materialization.
+
+implementationConfirmation:
+  contractSchemaVersion: 1
+  status: reconfirm_required
+  recordId: REQ-AMENDMENT-RISK
+  requirementSetId: REQSET-AMENDMENT-RISK
+  openQuestions:
+    - id: Q-001
+      text: "Which canonical writer owns record_closed?"
+      blocksImplementation: true
+  blockingAssumptions:
+    - id: ASM-001
+      text: "AI-TDD final runner report schema is not stable yet."
+`,
+    'utf8'
+  );
   return file;
 }
 
@@ -593,6 +627,7 @@ describe('requirements contract checkpoint automation', () => {
 
     expect(result.status).toBe(0);
     expect(json.decision).toBe('single_pass');
+    expect(json.authoringMode).toBe('single_pass');
     expect(json.riskLevel).toBe('low');
     expect(json.recommendedCheckpoints).toEqual([]);
   });
@@ -604,6 +639,7 @@ describe('requirements contract checkpoint automation', () => {
 
     expect(result.status).toBe(0);
     expect(json.decision).toBe('checkpoint_required');
+    expect(json.authoringMode).toBe('kernel_then_checkpoint');
     expect(json.signals.applicableConditionalDomains).toEqual(
       expect.arrayContaining(['governanceEvents', 'runtimeRecovery', 'scriptsAndHooks'])
     );
@@ -619,7 +655,19 @@ describe('requirements contract checkpoint automation', () => {
 
     expect(result.status).toBe(0);
     expect(json.decision).toBe('checkpoint_required');
+    expect(json.authoringMode).toBe('kernel_then_checkpoint_with_amendment');
     expect(json.signals.progressExists).toBe(true);
+  });
+
+  it('routes blocking definition or amendment risk to kernel checkpoint with amendment', () => {
+    const source = writeAmendmentRiskSource();
+
+    const { result, json } = runNode(ASSESS, ['--source', source]);
+
+    expect(result.status).toBe(0);
+    expect(json.decision).toBe('checkpoint_required');
+    expect(json.authoringMode).toBe('kernel_then_checkpoint_with_amendment');
+    expect(json.signals.amendmentRisk).toBe(true);
   });
 
   it('emits checkpoint plan in deterministic pre-render order', () => {
@@ -628,6 +676,7 @@ describe('requirements contract checkpoint automation', () => {
     const { result, json } = runNode(CHECKPOINTS, ['--source', source, '--mode', 'plan']);
 
     expect(result.status).toBe(0);
+    expect(json.authoringMode).toBe('kernel_then_checkpoint');
     expect(json.checkpoints.map((checkpoint: any) => checkpoint.id)).toEqual([
       'cp-01-header-scope-decisions',
       'cp-02-confirmation-core-applicability',
@@ -704,7 +753,106 @@ describe('requirements contract checkpoint automation', () => {
     expect(json.commitHash).toMatch(/^[a-f0-9]{40}$/u);
     expect(fs.existsSync(progress)).toBe(true);
     expect(JSON.parse(fs.readFileSync(progress, 'utf8')).lastCompletedCheckpoint).toBe('cp-01-header-scope-decisions');
+    expect(JSON.parse(fs.readFileSync(progress, 'utf8')).checkpoints[0].idempotencyKey).toMatch(/^[a-f0-9]{64}$/u);
     expect(committedFiles).toEqual(['docs/requirements/source.md']);
+  });
+
+  it('does not create a duplicate checkpoint commit when progress idempotency key already matches current document', () => {
+    initGitRepo(tempDir);
+    const source = path.join(tempDir, 'docs', 'requirements', 'source.md');
+    const progress = path.join(tempDir, 'progress.json');
+    fs.writeFileSync(source, '# Source\n\nCheckpoint content.\n', 'utf8');
+    runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'run', '--checkpoint', 'cp-01-header-scope-decisions'], tempDir);
+    const beforeCount = spawnSync('git', ['rev-list', '--count', 'HEAD'], { cwd: tempDir, encoding: 'utf8' }).stdout.trim();
+
+    const { result, json } = runNode(
+      CHECKPOINTS,
+      ['--source', source, '--progress', progress, '--mode', 'run', '--checkpoint', 'cp-01-header-scope-decisions'],
+      tempDir
+    );
+    const afterCount = spawnSync('git', ['rev-list', '--count', 'HEAD'], { cwd: tempDir, encoding: 'utf8' }).stdout.trim();
+
+    expect(result.status).toBe(0);
+    expect(json.noOp).toBe(true);
+    expect(json.reason).toBe('checkpoint_already_recorded_for_current_document_and_commit');
+    expect(afterCount).toBe(beforeCount);
+  });
+
+  it('recovers status from backup progress when the primary progress record is corrupt', () => {
+    initGitRepo(tempDir);
+    const source = path.join(tempDir, 'docs', 'requirements', 'source.md');
+    const progress = path.join(tempDir, 'progress.json');
+    fs.writeFileSync(source, '# Source\n\nCheckpoint content.\n', 'utf8');
+    runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'run', '--checkpoint', 'cp-01-header-scope-decisions'], tempDir);
+    fs.copyFileSync(progress, `${progress}.bak`);
+    fs.writeFileSync(progress, '{broken json', 'utf8');
+
+    const { result, json } = runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'status'], tempDir);
+
+    expect(result.status).toBe(0);
+    expect(json.status).toBe('ready');
+    expect(json.recoveredFrom).toBe('backup');
+    expect(json.nextCheckpoint).toBe('cp-02-confirmation-core-applicability');
+  });
+
+  it('recovers status from the latest git checkpoint when progress and backup are corrupt', () => {
+    initGitRepo(tempDir);
+    const source = path.join(tempDir, 'docs', 'requirements', 'source.md');
+    const progress = path.join(tempDir, 'progress.json');
+    fs.writeFileSync(source, '# Source\n\nCheckpoint content.\n', 'utf8');
+    runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'run', '--checkpoint', 'cp-01-header-scope-decisions'], tempDir);
+    fs.writeFileSync(progress, '{broken json', 'utf8');
+    fs.writeFileSync(`${progress}.bak`, '{also broken', 'utf8');
+
+    const { result, json } = runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'status'], tempDir);
+
+    expect(result.status).toBe(0);
+    expect(json.status).toBe('ready');
+    expect(json.recoveredFrom).toBe('git_checkpoint');
+    expect(json.nextCheckpoint).toBe('cp-02-confirmation-core-applicability');
+  });
+
+  it('continues run from recovered progress instead of replaying completed checkpoints', () => {
+    initGitRepo(tempDir);
+    const source = writeGloballyConsistentSource(tempDir);
+    const progress = path.join(tempDir, 'progress.json');
+    runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'run', '--checkpoint', 'cp-01-header-scope-decisions'], tempDir);
+    fs.copyFileSync(progress, `${progress}.bak`);
+    fs.writeFileSync(progress, '{broken json', 'utf8');
+
+    const { result, json } = runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'run'], tempDir);
+    const commitCount = spawnSync('git', ['rev-list', '--count', 'HEAD'], { cwd: tempDir, encoding: 'utf8' }).stdout.trim();
+
+    expect(result.status).toBe(0);
+    expect(json.completedCheckpoints.map((item: any) => item.checkpoint)).toEqual([
+      'cp-02-confirmation-core-applicability',
+      'cp-03-must-neg-out-evidence',
+      'cp-04-failure-edge-trace',
+      'cp-05-views',
+      'cp-06-artifacts-commands-closeout',
+      'cp-07-conditional-modules',
+      'cp-08-human-readable-views-dod-reverse-audit',
+    ]);
+    expect(commitCount).toBe('8');
+  });
+
+  it('fails closed when checkpoint progress cannot be written after a checkpoint commit', () => {
+    initGitRepo(tempDir);
+    const source = path.join(tempDir, 'docs', 'requirements', 'source.md');
+    const blockingParent = path.join(tempDir, 'not-a-directory');
+    const progress = path.join(blockingParent, 'progress.json');
+    fs.writeFileSync(source, '# Source\n\nCheckpoint content.\n', 'utf8');
+    fs.writeFileSync(blockingParent, 'blocks progress directory creation\n', 'utf8');
+
+    const { result, json } = runNode(
+      CHECKPOINTS,
+      ['--source', source, '--progress', progress, '--mode', 'run', '--checkpoint', 'cp-01-header-scope-decisions'],
+      tempDir
+    );
+
+    expect(result.status).toBe(1);
+    expect(json.code).toBe('progress_write_failed');
+    expect(json.commitHash).toMatch(/^[a-f0-9]{40}$/u);
   });
 
   it('blocks pre-render readiness when checkpoint logs exist but global consistency is missing', () => {
@@ -822,6 +970,73 @@ describe('requirements contract checkpoint automation', () => {
     expect(json.verdict).toBe('FAIL');
     expect(json.failedChecks).toContain('global_current_target_required_view_pack_missing');
     expect(json.issues.map((issue: any) => issue.code)).toContain('global_current_target_required_view_pack_missing');
+  });
+
+  it('fails retention cleanup when no confirmed retention strategy is provided', () => {
+    initGitRepo(tempDir);
+    const source = path.join(tempDir, 'docs', 'requirements', 'source.md');
+    fs.writeFileSync(source, '# Source\n', 'utf8');
+
+    const { result, json } = runNode(RETENTION_CLEANUP, ['--source', source, '--mode', 'dry-run'], tempDir);
+
+    expect(result.status).toBe(2);
+    expect(json.verdict).toBe('FAIL');
+    expect(json.message).toBe('missing confirmed retention strategy');
+  });
+
+  it('dry-runs retention cleanup without removing the source from index or local disk', () => {
+    initGitRepo(tempDir);
+    const source = path.join(tempDir, 'docs', 'requirements', 'source.md');
+    const receipt = path.join(tempDir, 'retention-receipt.json');
+    fs.writeFileSync(source, '# Source\n', 'utf8');
+    spawnSync('git', ['add', 'docs/requirements/source.md'], { cwd: tempDir, encoding: 'utf8' });
+
+    const { result, json } = runNode(
+      RETENTION_CLEANUP,
+      ['--source', source, '--strategy', 'confirmed-local-only', '--mode', 'dry-run', '--receipt', receipt],
+      tempDir
+    );
+    const staged = spawnSync('git', ['diff', '--cached', '--name-only'], { cwd: tempDir, encoding: 'utf8' }).stdout
+      .split(/\r?\n/u)
+      .filter(Boolean);
+
+    expect(result.status).toBe(0);
+    expect(json.status).toBe('PASS');
+    expect(json.mode).toBe('dry-run');
+    expect(json.localFilePreserved).toBe(true);
+    expect(fs.existsSync(source)).toBe(true);
+    expect(fs.existsSync(receipt)).toBe(true);
+    expect(staged).toEqual(['docs/requirements/source.md']);
+  });
+
+  it('applies retention cleanup by removing only the source from git index while preserving the local file', () => {
+    initGitRepo(tempDir);
+    const source = path.join(tempDir, 'docs', 'requirements', 'source.md');
+    const receipt = path.join(tempDir, 'retention-receipt.json');
+    fs.writeFileSync(source, '# Source\n', 'utf8');
+    spawnSync('git', ['add', 'docs/requirements/source.md'], { cwd: tempDir, encoding: 'utf8' });
+
+    const { result, json } = runNode(
+      RETENTION_CLEANUP,
+      ['--source', source, '--strategy', 'confirmed-local-only', '--mode', 'apply', '--receipt', receipt],
+      tempDir
+    );
+    const staged = spawnSync('git', ['diff', '--cached', '--name-only'], { cwd: tempDir, encoding: 'utf8' }).stdout
+      .split(/\r?\n/u)
+      .filter(Boolean);
+    const untracked = spawnSync('git', ['ls-files', '--others', '--exclude-standard'], { cwd: tempDir, encoding: 'utf8' }).stdout
+      .split(/\r?\n/u)
+      .filter(Boolean);
+
+    expect(result.status).toBe(0);
+    expect(json.status).toBe('PASS');
+    expect(json.mode).toBe('apply');
+    expect(json.command).toEqual(['git', 'rm', '--cached', '--', 'docs/requirements/source.md']);
+    expect(json.localFilePreserved).toBe(true);
+    expect(fs.existsSync(source)).toBe(true);
+    expect(fs.existsSync(receipt)).toBe(true);
+    expect(staged).toEqual([]);
+    expect(untracked).toEqual(['docs/requirements/source.md', 'retention-receipt.json']);
   });
 
   it('keeps target modification paths aligned with reverse audit split implementation scope', () => {
