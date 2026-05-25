@@ -52,6 +52,12 @@ function writeMockMermaidBundle(): string {
 
 function writeSource(overrides = ''): string {
   const file = path.join(tempDir, 'source.md');
+  const acceptanceTestPath = path.join(tempDir, 'tests', 'acceptance', 'reverse-audit.acceptance.test.ts');
+  const e2eTestPath = path.join(tempDir, 'tests', 'e2e', 'reverse-audit.e2e.test.ts');
+  fs.mkdirSync(path.dirname(acceptanceTestPath), { recursive: true });
+  fs.mkdirSync(path.dirname(e2eTestPath), { recursive: true });
+  fs.writeFileSync(acceptanceTestPath, 'import { it } from "vitest"; it("acceptance oracle", () => {});\n', 'utf8');
+  fs.writeFileSync(e2eTestPath, 'import { it } from "vitest"; it("e2e oracle", () => {});\n', 'utf8');
   const missingViews = overrides.includes('MISSING_VIEWS');
   const vague = overrides.includes('VAGUE_REQUIREMENT') ? ' and handle it efficiently as needed' : '';
   const sideEffect = overrides.includes('SIDE_EFFECT') ? ' and write a control file' : '';
@@ -101,29 +107,50 @@ implementationConfirmation:
     currentTargetMap:
       applies: false
       reasonCode: no_current_target_migration_or_governance_comparison_needed
+    aiTddContractGate:
+      applies: true
+      reasonCode: fixture_must_project_contract_execution_manifest
     scriptsAndHooks:
       applies: false
       reasonCode: no_script_hook_report_or_generated_artifact_changes
+  targetModificationPaths:
+    - id: TARGET-MOD-001
+      path: "_bmad/skills/requirements-contract-authoring/scripts/reverse_audit_contract.js"
+      changeType: modify
+      intent: "Keep reverse audit fixture aligned with contract execution manifest projection."
+      ownerModel: requirements_contract_authoring
+      requirementRefs: ["MUST-001", "NEG-001"]
+      traceRefs: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
+      artifactRefs: ["ART-EVD-001"]
+      requiresReconfirmationOnChange: true
   must:
     - id: MUST-001
       text: "The user confirms a scoped behavior${vague}${sideEffect}${contextTerm}."
+      textZh: "用户确认受控范围内的行为。"
       evidenceRefs: ["EVD-001"]
   notDone:
     - id: NEG-001
       text: "The workflow must not treat a smoke-only result as done."
+      textZh: "工作流不得将 smoke-only 结果当作完成。"
       evidenceRefs: ["EVD-001"]
       whyItBlocksCompletion: "Smoke-only evidence can hide missing behavior."
+      whyItBlocksCompletionZh: "Smoke-only 证据可能掩盖缺失行为。"
       negativeAssertionRequired: true
   mustNot:
     - id: OUT-001
       text: "${conflict}"
+      textZh: "不得扩展到该夹具范围之外。"
       scopeBoundary: "fixture only"
+      scopeBoundaryZh: "仅限夹具范围。"
       userApprovalRequiredIfChanged: true
   evidence:
     - id: EVD-001
       text: "Run acceptance with independent oracle."
+      textZh: "使用独立 oracle 运行验收。"
       gate: "npm run test:e2e -- fixture"
       oracle: "Independent persisted state proves the behavior and rejects smoke-only completion."
+      oracleZh: "独立持久化状态证明行为，并拒绝 smoke-only 完成。"
       requiredCommandRefs: ["${commandRef}"]
       artifactRefs: ["ART-EVD-001"]
       acceptanceType: acceptance_e2e
@@ -135,20 +162,28 @@ implementationConfirmation:
   failurePaths:
     - id: FAIL-001
       title: "Smoke-only result rejected"
+      titleZh: "拒绝 smoke-only 结果"
       trigger: "Only exit code, stdout, HTTP 200, page render, or mock calls are available."
+      triggerZh: "只有退出码、标准输出、HTTP 200、页面渲染或 mock 调用可用。"
       expectedBehavior: "Block completion until independent evidence exists."
+      expectedBehaviorZh: "在独立证据存在之前阻断完成。"
       forbiddenBehavior: "Do not mark done from smoke-only proof."
+      forbiddenBehaviorZh: "不得根据 smoke-only 证明标记完成。"
       blocksCompletionWhenViolated: true
       linkedNegIds: ["NEG-001"]
       linkedEvidenceIds: ["EVD-001"]
+      viewRefs: ["EDGEVIEW-001"]
       requiredAssertions:
         - "Smoke-only proof is rejected."
   edgeCases:
     - id: EDGE-001
       category: smoke_only
       condition: "Only page render or mock call exists."
+      conditionZh: "只有页面渲染或 mock 调用存在。"
       expectedBehavior: "Block completion."
+      expectedBehaviorZh: "阻断完成。"
       forbiddenBehavior: "Do not claim completion."
+      forbiddenBehaviorZh: "不得声称完成。"
       linkedFailurePathIds: ["FAIL-001"]
       linkedEvidenceIds: ["EVD-001"]
   traceRows:
@@ -158,10 +193,93 @@ implementationConfirmation:
       evidenceRefs: ["EVD-001"${overrides.includes('BAD_TRACE_EVIDENCE') ? ', "EVD-999"' : ''}]
       contractValidationCommandRefs: ["CMD-001"]
       deliveryEvidenceCommandRefs: ["CMD-001"]
+      acceptanceRefs: ["ACC-001", "E2E-001"${overrides.includes('BAD_ACCEPTANCE_REF') ? ', "ACC-999"' : ''}]
       sequenceViewRefs: ["SEQ-001"]
       boundaryViewRefs: ["BOUNDARY-001"]
       artifactRefs: ["ART-EVD-001"]
       status: PENDING
+  acceptanceTests:
+    - id: ACC-001
+      file: "${acceptanceTestPath.replace(/\\/gu, '/')}"
+      covers: ["MUST-001"${overrides.includes('BAD_ACCEPTANCE_COVER') ? ', "MUST-999"' : ''}]
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
+      commandRefs: ["CMD-001"]
+      failurePathRefs: ["FAIL-001"]
+      positiveControl: true
+      expectedPreImplementationState: expected_red
+      oracle: "Independent persisted state proves the behavior."
+  e2eSuites:
+    - id: E2E-001
+      file: "${e2eTestPath.replace(/\\/gu, '/')}"
+      covers: ["NEG-001"]
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
+      commandRefs: ["CMD-001"]
+      edgeCaseRefs: ["EDGE-001"]
+      negativeControls: ["NEG-001"]
+      expectedPreImplementationState: expected_red
+      oracle: "${overrides.includes('SMOKE_ONLY_ACCEPTANCE') ? 'HTTP 200' : 'Independent persisted state rejects smoke-only completion.'}"
+  currentTargetMap:
+    schemaVersion: current-target-map/v1
+    displayProfile: closed_loop_current_target_map
+    currentSummary:
+      - id: CUR-001
+        text: "Reverse audit wrapper validates confirmation render reports."
+        textZh: "反向审计 wrapper 校验确认页渲染报告。"
+        traceRefs: ["TRACE-001"]
+        evidenceRefs: ["EVD-001"]
+    targetSummary:
+      - id: TAR-001
+        text: "Reverse audit preserves stage semantics and AI-TDD manifest projection."
+        textZh: "反向审计保留阶段语义和 AI-TDD manifest 投影。"
+        traceRefs: ["TRACE-001"]
+        evidenceRefs: ["EVD-001"]
+    diffRows:
+      - id: DIFF-001
+        current: "Wrapper-only reverse audit fixture."
+        target: "Fixture includes explicit AI-TDD manifest surfaces."
+        targetZh: "夹具包含显式 AI-TDD manifest 表面。"
+        traceRefs: ["TRACE-001"]
+        evidenceRefs: ["EVD-001"]
+      - id: DIFF-002
+        current: "Command target can be hidden behind command text."
+        target: "Command target file paths are visible."
+        targetZh: "命令目标文件路径可见。"
+        traceRefs: ["TRACE-001"]
+        evidenceRefs: ["EVD-001"]
+      - id: DIFF-003
+        current: "Legacy smoke-only proof can appear complete."
+        target: "Smoke-only proof is explicitly denied."
+        targetZh: "明确否定 smoke-only 证明。"
+        traceRefs: ["TRACE-001"]
+        evidenceRefs: ["EVD-001"]
+    process:
+      - id: PROC-001
+        from: "Render report"
+        to: "Reverse audit"
+        action: "Validate confirmability while keeping delivery readiness separate."
+        actionZh: "校验可确认性，同时保持交付就绪独立。"
+        traceRefs: ["TRACE-001"]
+        evidenceRefs: ["EVD-001"]
+    artifactPaths:
+      - id: PATH-001
+        path: "_bmad/skills/requirements-contract-authoring/scripts/reverse_audit_contract.js"
+        role: "stage wrapper"
+        traceRefs: ["TRACE-001"]
+        evidenceRefs: ["EVD-001"]
+    canonicalArtifacts:
+      - id: CANON-001
+        targetPathOrField: "_bmad/skills/requirements-contract-authoring/scripts/reverse_audit_contract.js"
+        role: "canonical reverse audit wrapper"
+        traceRefs: ["TRACE-001"]
+        evidenceRefs: ["EVD-001"]
+    existingArtifacts:
+      - id: LEGACY-001
+        currentPath: "_bmad/skills/requirements-contract-authoring/scripts/reverse_audit_contract.js"
+        completionProofPolicy: not_completion_proof
+        traceRefs: ["TRACE-001"]
+        evidenceRefs: ["EVD-001"]
   requirementBoundary:
     business:
       description: "Fixture business behavior."
@@ -218,7 +336,7 @@ ${missingViews ? '' : `    - id: BOUNDARY-001
       trainingDataEligible: false
   requiredCommands:
     - id: CMD-001
-      command: "npm run test:e2e -- fixture"
+      command: "npx vitest run ${acceptanceTestPath.replace(/\\/gu, '/')} ${e2eTestPath.replace(/\\/gu, '/')}"
   suggestedCommands: []
   closeoutReadinessPreview:
     requiredCommands: ["CMD-001"]
@@ -394,7 +512,10 @@ describe('reverse_audit_contract', () => {
 
     const audit = runReverseAudit(source, render.reportPath);
 
-    expect(audit.result.status).toBe(0);
+    expect(audit.result.status, JSON.stringify({
+      failedChecks: audit.report.failedChecks,
+      findings: audit.report.findings,
+    })).toBe(0);
     expect(audit.report.verdict).toBe('PASS');
     expect(audit.report.rendererAuthority.confirmability).toBe('confirmable');
     expect(audit.report.rendererAuthority.deliveryReadiness.ready).toBe(false);
@@ -495,6 +616,23 @@ describe('reverse_audit_contract', () => {
         expect.objectContaining({ code: 'trace_row_unknown_cover_ref', source: 'reverse_audit' }),
         expect.objectContaining({ code: 'trace_row_unknown_evidence_ref', source: 'reverse_audit' }),
         expect.objectContaining({ code: 'trace_row_unknown_task_contract_ref', source: 'reverse_audit' }),
+      ])
+    );
+  });
+
+  it('fails when ACC/E2E refs are missing, unknown, or smoke-only', () => {
+    const source = writeSource('BAD_ACCEPTANCE_REF BAD_ACCEPTANCE_COVER SMOKE_ONLY_ACCEPTANCE');
+    const render = runRenderer(source);
+    patchConfirmationRender(source, render);
+
+    const audit = runReverseAudit(source, render.reportPath);
+
+    expect(audit.result.status).toBe(1);
+    expect(audit.report.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 'trace_row_unknown_acceptance_ref', source: 'reverse_audit' }),
+        expect.objectContaining({ code: 'acceptance_unknown_requirement_ref', source: 'reverse_audit' }),
+        expect.objectContaining({ code: 'acceptance_oracle_smoke_only', source: 'reverse_audit' }),
       ])
     );
   });
