@@ -1384,6 +1384,9 @@ implementationConfirmation:
       canAffectControlFlow: true
       evidenceRefs: [EVD-001, EVD-002, EVD-003, EVD-006, EVD-009]
       traceRows: [TRACE-001, TRACE-004]
+      failureSemantics: "Fail closed before writing outputs when source, manifest, trace binding, red proof plan, or invalid proof policy validation fails."
+      idempotencySemantics: "Repeated runs for the same source and record write deterministic output names and hashes; stale output is overwritten only after validation succeeds."
+      recoverySemantics: "On failure, emit a blocking audit receipt or failure report without marking delivery verified or mutating confirmed source traceRows."
       description: "Primary Node compiler implementation."
     - artifactId: ART-005
       path: "_bmad/skills/req-trace-matrix-prompt-generator/scripts/generate_prompt.py"
@@ -1402,6 +1405,9 @@ implementationConfirmation:
       canAffectControlFlow: true
       evidenceRefs: [EVD-005, EVD-007, EVD-008]
       traceRows: [TRACE-003, TRACE-006]
+      failureSemantics: "Incomplete ContractExecutionManifest sections, missing currentTargetMap, missing error-case closure, or missing red proof plan must block generation."
+      idempotencySemantics: "Validation is read-only and deterministic for the same manifest input."
+      recoverySemantics: "Failures are recovered by fixing manifest fields and rerunning validation; no closeout state is written by this gate."
       description: "AI-TDD ContractExecutionManifest standard consumed by the compiler validator."
     - artifactId: ART-007
       path: ".codex/skills/req-trace-matrix-prompt-generator/SKILL.md"
@@ -1411,6 +1417,9 @@ implementationConfirmation:
       canAffectControlFlow: true
       evidenceRefs: [EVD-011, EVD-012]
       traceRows: [TRACE-008]
+      failureSemantics: "If confirmed-source routing text is absent or inconsistent, skill contract tests must fail."
+      idempotencySemantics: "Surface regeneration must preserve the same compiler routing rule and not duplicate conflicting legacy instructions."
+      recoverySemantics: "Recover by syncing the source skill surface and rerunning skill contract plus encoding gates."
       description: "Project Codex skill surface for execution packet compiler usage."
     - artifactId: ART-008
       path: "_bmad/skills/req-trace-matrix-prompt-generator/SKILL.md"
@@ -1420,6 +1429,9 @@ implementationConfirmation:
       canAffectControlFlow: true
       evidenceRefs: [EVD-011, EVD-012]
       traceRows: [TRACE-008]
+      failureSemantics: "If the BMAD skill surface permits legacy prompt primary routing for confirmed sources, tests must block."
+      idempotencySemantics: "Repeated sync produces the same routing semantics without weakening fallback boundaries."
+      recoverySemantics: "Recover by updating the BMAD surface from the confirmed repository source and rerunning sync checks."
       description: "BMAD skill surface mirrored with compiler routing semantics."
     - artifactId: ART-009
       path: "tests/acceptance/req-trace-confirmation-block-generator.test.ts"
@@ -1438,6 +1450,9 @@ implementationConfirmation:
       canAffectControlFlow: true
       evidenceRefs: [EVD-005, EVD-007, EVD-008]
       traceRows: [TRACE-003, TRACE-005, TRACE-006]
+      failureSemantics: "Regression tests must fail when AI-TDD manifest coverage, currentTargetMap, acceptanceRefs, or redProofPlan is missing."
+      idempotencySemantics: "Test fixtures are deterministic and rerunnable without changing source confirmation state."
+      recoverySemantics: "Recover by fixing manifest validator or fixtures, then rerun command receipts in the current attempt."
       description: "AI-TDD manifest completeness and red-proof-plan regression suite."
     - artifactId: ART-011
       path: "tests/acceptance/requirements-contract-authoring-skill-contract.test.ts"
@@ -1456,6 +1471,9 @@ implementationConfirmation:
       canAffectControlFlow: true
       evidenceRefs: [EVD-011, EVD-012]
       traceRows: [TRACE-008]
+      failureSemantics: "Sync contract must fail if installed or repository skill surfaces diverge on compiler routing."
+      idempotencySemantics: "Repeated sync validation reads the same surfaces and produces the same pass/fail result."
+      recoverySemantics: "Recover by syncing surfaces and rerunning sync plus encoding checks."
       description: "Global skill sync regression for installed and repository surfaces."
   requiredCommands:
     - id: CMD-TEST-001
@@ -1709,6 +1727,19 @@ implementationConfirmation:
         description: "Record self-audit decisions and output hashes while marking receipt as non-closeout proof."
         output: "audit_receipt.json"
         ownerModel: Generator Audit
+    process:
+      - phase: "source validation"
+        input: "confirmed implementationConfirmation and requirement record"
+        output: "sourceAndRecordAuthority"
+        failClosedRule: "Block on draft source, hash mismatch, blocking open question, unknown trace ref, or unknown command ref."
+      - phase: "manifest validation"
+        input: "AI-TDD ContractExecutionManifest projection"
+        output: "manifest validation decision"
+        failClosedRule: "Block on missing applicability, currentTargetMap, error cases, acceptance/e2e, trace closure, redProofPlan, canonical surface, legacy denial, closeout proof, or evidence trust."
+      - phase: "packet compilation"
+        input: "validated source and manifest"
+        output: "model_packet.json, human_prompt.txt, audit_receipt.json"
+        failClosedRule: "Write no executable packet unless all required sections and per-trace fields are present."
     canonicalArtifacts:
       - id: SURFACE-001
         targetPathOrField: "model_packet.json.executionPacketMetadata"
