@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import * as yaml from 'js-yaml';
@@ -142,7 +142,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       const paths = artifacts(root, 'REQ-PRE-CONFIRMATION-E2E');
       expect(result.currentMentalModel).toBe('requirement_confirmation');
       expect(result.lane).toBe('pre_confirmation_drilldown');
-      expect(result.substate).toBe('user_confirmable');
+      expect(result.substate, JSON.stringify(result.blockingIssues, null, 2)).toBe('user_confirmable');
       expect(result.nextMentalModel).toBeNull();
       expect(result.deliveryReadiness.ready).toBe(false);
       expect(result.finalStandards).toMatchObject({
@@ -341,7 +341,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       const receipt6 = path.join(paths.authoring, 'critical-auditor-receipt-round-6.json');
       const mustGate = readJson(paths.mustGate);
 
-      expect(result.substate).toBe('user_confirmable');
+      expect(result.substate, JSON.stringify(result.blockingIssues, null, 2)).toBe('user_confirmable');
       expect(result.confirmability).toBe('confirmable');
       expect(seenRounds).toEqual([1, 2, 3, 4, 5]);
       expect(existsSync(paths.receipt1)).toBe(true);
@@ -403,7 +403,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       const mustGate = readJson(paths.mustGate);
       const sourceText = readFileSync(source, 'utf8');
 
-      expect(result.substate).toBe('user_confirmable');
+      expect(result.substate, JSON.stringify(result.blockingIssues, null, 2)).toBe('user_confirmable');
       expect(result.confirmability).toBe('confirmable');
       expect(seenAuditorInputs.map((input) => input.roundIndex)).toEqual([1, 2, 3, 4]);
       expect(mustGate.criticalAuditor.consecutiveNoNewGapRounds).toBe(3);
@@ -534,6 +534,43 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       ]);
       expect(exitCode).toBe(1);
       expect(existsSync(artifacts(root, 'REQ-PRE-CONFIRMATION-CLI').renderReport)).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('resolves skill-local scripts from a consumer .codex skill install without _bmad skills', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-pre-confirmation-codex-skill-'));
+    try {
+      const sourceSkill = path.join(process.cwd(), '_bmad', 'skills', 'requirements-contract-authoring');
+      const targetSkill = path.join(root, '.codex', 'skills', 'requirements-contract-authoring');
+      mkdirSync(path.dirname(targetSkill), { recursive: true });
+      cpSync(sourceSkill, targetSkill, { recursive: true });
+      const source = writeDraftSource(root);
+
+      const result = runMainAgentPreConfirmationDrilldown(root, {
+        source,
+        recordId: 'REQ-PRE-CONFIRMATION-CODEX-SKILL',
+        requirementSetId: 'REQSET-PRE-CONFIRMATION-CODEX-SKILL',
+        confirmationLanguage: 'zh-CN',
+        criticalAuditorRound: cleanCriticalAuditorRound,
+      });
+
+      const codexSkillArtifacts = artifacts(root, 'REQ-PRE-CONFIRMATION-CODEX-SKILL');
+      expect(
+        result.substate,
+        JSON.stringify(
+          {
+            blockingIssues: result.blockingIssues,
+            renderReport: existsSync(codexSkillArtifacts.renderReport) ? readJson(codexSkillArtifacts.renderReport) : null,
+            mustGate: existsSync(codexSkillArtifacts.mustGate) ? readJson(codexSkillArtifacts.mustGate) : null,
+            globalGate: existsSync(codexSkillArtifacts.globalGate) ? readJson(codexSkillArtifacts.globalGate) : null,
+          },
+          null,
+          2
+        )
+      ).toBe('user_confirmable');
+      expect(existsSync(codexSkillArtifacts.renderReport)).toBe(true);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

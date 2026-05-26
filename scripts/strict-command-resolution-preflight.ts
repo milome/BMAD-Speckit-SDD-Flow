@@ -160,13 +160,30 @@ function looksPlaceholder(command: string): boolean {
     normalized.includes('<source-document.md>') ||
     normalized.includes('<requirement-record.json>') ||
     normalized.includes('<confirmation.html>') ||
+    normalized.includes('<skill-dir>') ||
+    normalized.includes('<encoding-integrity-guardian-dir>') ||
     normalized.includes('placeholder')
   );
+}
+
+function resolveSkillDir(projectRoot: string, skillName: string): string {
+  const home = process.env.USERPROFILE || process.env.HOME || '';
+  const packageRoot = path.resolve(__dirname, '..');
+  const candidates = [
+    path.join(projectRoot, '.codex', 'skills', skillName),
+    path.join(projectRoot, '_bmad', 'skills', skillName),
+    path.join(projectRoot, '.agents', 'skills', skillName),
+    path.join(packageRoot, '.codex', 'skills', skillName),
+    path.join(packageRoot, '_bmad', 'skills', skillName),
+    ...(home ? [path.join(home, '.codex', 'skills', skillName), path.join(home, '.agents', 'skills', skillName)] : []),
+  ];
+  return candidates.find((candidate) => fs.existsSync(path.join(candidate, 'SKILL.md'))) ?? candidates[0];
 }
 
 function commandTemplateValues(input: {
   record: JsonObject;
   confirmation: JsonObject;
+  root: string;
   sourcePath: string;
   recordPath: string;
 }): Record<string, string> {
@@ -182,6 +199,12 @@ function commandTemplateValues(input: {
       text(input.record.requirementSetId) ||
       text(input.confirmation.requirementSetId) ||
       text(input.record.recordId),
+    '<skill-dir>': normalizePathForRecord(
+      resolveSkillDir(input.root, 'requirements-contract-authoring')
+    ),
+    '<encoding-integrity-guardian-dir>': normalizePathForRecord(
+      resolveSkillDir(input.root, 'encoding-integrity-guardian')
+    ),
   };
 }
 
@@ -202,8 +225,12 @@ function resolveCommand(input: {
   const commandId = text(input.command.commandId ?? input.command.id);
   const commandText = resolveCommandTemplate(text(input.command.command), input.replacements);
   const mustResolve = nested(input.command.mustResolve);
-  const entrypoints = strings(input.command.entrypoints);
-  const testGlobs = strings(input.command.testGlobs);
+  const entrypoints = strings(input.command.entrypoints).map((entrypoint) =>
+    resolveCommandTemplate(entrypoint, input.replacements)
+  );
+  const testGlobs = strings(input.command.testGlobs).map((glob) =>
+    resolveCommandTemplate(glob, input.replacements)
+  );
   const scriptNames = strings(input.command.packageScripts);
   const issues: string[] = [];
   const resolvedEntrypoints = entrypoints.map((entrypoint) => ({
@@ -269,6 +296,7 @@ function evaluate(input: {
   const replacements = commandTemplateValues({
     record: input.record,
     confirmation: input.confirmation,
+    root: input.root,
     sourcePath: input.sourcePath,
     recordPath: input.recordPath,
   });

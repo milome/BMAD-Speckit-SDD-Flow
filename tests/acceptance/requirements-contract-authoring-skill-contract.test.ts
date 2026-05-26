@@ -182,6 +182,30 @@ describe('requirements-contract-authoring published contract', () => {
     expect(checkpointWorkflow).toContain('The runner must preserve checkpoint authoring semantics');
   });
 
+  it('keeps skill-local command references portable across installation roots', () => {
+    const skill = readSkillFile('SKILL.md');
+    const template = readSkillFile(path.join('references', 'contract-template.md'));
+    const rendererSpec = readSkillFile(path.join('references', 'html-confirmation-renderer-spec.md'));
+    const checkpointWorkflow = readSkillFile(path.join('references', 'semantic-checkpoint-workflow.md'));
+    const portableDocs = [skill, template, rendererSpec, checkpointWorkflow];
+
+    for (const content of portableDocs) {
+      expect(content).not.toContain('_bmad/skills/requirements-contract-authoring/scripts');
+      expect(content).not.toContain('node _bmad/skills/requirements-contract-authoring');
+      expect(content).toContain('<skill-dir>/scripts/');
+    }
+
+    expect(skill).toContain('## Skill Directory Resolution');
+    expect(skill).toContain('Treat `<skill-dir>` as the directory that contains the `SKILL.md` loaded for this invocation');
+    expect(skill).toContain('Do not assume the skill is installed under `_bmad/skills`, `.codex/skills`, `~/.codex/skills`, or any other fixed root');
+    expect(skill).toContain('Scripts inside this skill must locate sibling files with `__dirname` or the ESM equivalent `import.meta.url`');
+    expect(template).toContain('commandRef:');
+    expect(template).toContain('skill: requirements-contract-authoring');
+    expect(template).toContain('script: scripts/render-requirements-confirmation-html.ts');
+    expect(template).toContain('scriptRef:');
+    expect(template).toContain('scriptPath: "<skill-dir>/scripts/ingest-confirmation-event.js"');
+  });
+
   it('requires the pre-confirmation atomic decomposition loop before any confirmable HTML', () => {
     const skill = readSkillFile('SKILL.md');
     const template = readSkillFile(path.join('references', 'contract-template.md'));

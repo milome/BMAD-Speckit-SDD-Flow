@@ -2157,11 +2157,26 @@ function writePreConfirmationRequirementRecord(input: {
 }
 
 function resolveSkillScript(root: string, relativeScript: string): string {
-  const projectLocal = path.join(root, '_bmad', 'skills', 'requirements-contract-authoring', 'scripts', relativeScript);
-  if (fs.existsSync(projectLocal)) {
-    return projectLocal;
+  const home = process.env.USERPROFILE || process.env.HOME || '';
+  const candidates = [
+    path.join(root, '.codex', 'skills', 'requirements-contract-authoring'),
+    path.join(root, '_bmad', 'skills', 'requirements-contract-authoring'),
+    path.join(root, '.agents', 'skills', 'requirements-contract-authoring'),
+    path.resolve(__dirname, '..', '.codex', 'skills', 'requirements-contract-authoring'),
+    path.resolve(__dirname, '..', '_bmad', 'skills', 'requirements-contract-authoring'),
+    ...(home
+      ? [
+          path.join(home, '.codex', 'skills', 'requirements-contract-authoring'),
+          path.join(home, '.agents', 'skills', 'requirements-contract-authoring'),
+        ]
+      : []),
+  ];
+  for (const skillDir of candidates) {
+    if (!fs.existsSync(path.join(skillDir, 'SKILL.md'))) continue;
+    const scriptPath = path.join(skillDir, 'scripts', relativeScript);
+    if (fs.existsSync(scriptPath)) return scriptPath;
   }
-  return path.resolve(__dirname, '..', '_bmad', 'skills', 'requirements-contract-authoring', 'scripts', relativeScript);
+  return path.join(candidates[0], 'scripts', relativeScript);
 }
 
 function runNodeJson(scriptPath: string, args: string[], cwd: string): {
@@ -2170,9 +2185,17 @@ function runNodeJson(scriptPath: string, args: string[], cwd: string): {
   stderr: string;
   json: Record<string, unknown> | null;
 } {
+  const packageRoot = path.resolve(__dirname, '..');
+  const packageNodeModules = path.join(packageRoot, 'node_modules');
+  const nodePath = [packageNodeModules, process.env.NODE_PATH].filter(Boolean).join(path.delimiter);
   const result = spawnSync(process.execPath, [scriptPath, ...args], {
     cwd,
     encoding: 'utf8',
+    env: {
+      ...process.env,
+      BMAD_SPECKIT_PACKAGE_ROOT: packageRoot,
+      NODE_PATH: nodePath,
+    },
   });
   let json: Record<string, unknown> | null = null;
   const candidate = result.stdout.trim() || result.stderr.trim();
@@ -2190,6 +2213,16 @@ function runNodeJson(scriptPath: string, args: string[], cwd: string): {
     stderr: result.stderr,
     json,
   };
+}
+
+function commandFailureIssue(code: string, scriptPath: string, command: ReturnType<typeof runNodeJson>): PreConfirmationDrilldownIssue {
+  const output = (command.stderr.trim() || command.stdout.trim()).slice(0, 600);
+  return preConfirmationIssue(
+    code,
+    `Skill-local script failed or did not emit its required report: ${scriptPath}${output ? `; output: ${output}` : ''}`,
+    [scriptPath],
+    'skill_script_resolution'
+  );
 }
 
 function collectBlockingIssuesFromReports(...reports: Array<Record<string, unknown> | null>): PreConfirmationDrilldownIssue[] {
@@ -2699,6 +2732,19 @@ export function runMainAgentPreConfirmationDrilldown(
     root
   );
   let mustGateReport = mustGate.json ?? readJsonIfExists(paths.preRenderMustGate);
+  if (!mustGateReport) {
+    return buildPreConfirmationResult({
+      root,
+      sourcePath,
+      recordId: identity.recordId,
+      requirementSetId: identity.requirementSetId,
+      paths,
+      substate: 'blocked_by_render_gate',
+      issues: [commandFailureIssue('pre_render_must_decomposition_gate_report_missing', mustGateScript, mustGate)],
+      sourceDocumentHash: finalMaterialized.sourceDocumentHash,
+      implementationConfirmationHash: finalMaterialized.implementationConfirmationHash,
+    });
+  }
   enhanceArtifactMetadata(paths.reconciliationReport, {
     recordId: identity.recordId,
     sourceDocumentHash: finalMaterialized.sourceDocumentHash,
@@ -2723,6 +2769,20 @@ export function runMainAgentPreConfirmationDrilldown(
     root
   );
   const combinedReport = combinedGate.json;
+  if (!combinedReport) {
+    return buildPreConfirmationResult({
+      root,
+      sourcePath,
+      recordId: identity.recordId,
+      requirementSetId: identity.requirementSetId,
+      paths,
+      substate: 'blocked_by_render_gate',
+      issues: [commandFailureIssue('pre_render_global_consistency_gate_report_missing', checkpointScript, combinedGate)],
+      mustGateReport,
+      sourceDocumentHash: finalMaterialized.sourceDocumentHash,
+      implementationConfirmationHash: finalMaterialized.implementationConfirmationHash,
+    });
+  }
   const globalGateReport =
     (combinedReport?.globalConsistencyGate &&
     typeof combinedReport.globalConsistencyGate === 'object' &&
@@ -2830,6 +2890,21 @@ export function runMainAgentPreConfirmationDrilldown(
       toRootRelativePath(root, paths.confirmationHtml),
     ],
   });
+  if (!renderReport) {
+    return buildPreConfirmationResult({
+      root,
+      sourcePath,
+      recordId: identity.recordId,
+      requirementSetId: identity.requirementSetId,
+      paths,
+      substate: 'blocked_by_render_gate',
+      issues: [commandFailureIssue('confirmation_renderer_report_missing', rendererScript, render)],
+      mustGateReport,
+      globalGateReport,
+      sourceDocumentHash: finalMaterialized.sourceDocumentHash,
+      implementationConfirmationHash: finalMaterialized.implementationConfirmationHash,
+    });
+  }
   const renderIssues = collectBlockingIssuesFromReports(renderReport);
   const substate =
     render.status === 0 && renderReport?.confirmability === 'confirmable' && renderIssues.length === 0

@@ -603,7 +603,10 @@ ${currentTargetMapBlock || `  currentTargetMap:
       canAffectControlFlow: false
   controlledIngestWriterRegistry:
     - writerId: requirements-confirmation-ingest
-      scriptPath: "_bmad/skills/requirements-contract-authoring/scripts/ingest-confirmation-event.js"
+      scriptRef:
+        skill: requirements-contract-authoring
+        script: scripts/ingest-confirmation-event.js
+      scriptPath: "<skill-dir>/scripts/ingest-confirmation-event.js"
       scriptContentHash: "sha256:fixture-confirmation-writer"
       ownerModel: requirement_confirmation
       allowedWriteApis: ["appendControlEvent", "atomicWriteRequirementRecord", "appendArtifactIndex"]
@@ -688,7 +691,7 @@ ${currentTargetMapBlock || `  currentTargetMap:
       artifactType: confirmation_view
       sourceOfTruthRole: projection
       ownerModel: requirements
-      producer: _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts
+      producer: skill://requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts
       consumer: user
       inputArtifacts: ["prd.md"]
       outputArtifacts: ["confirmation-summary.json", "confirmation-render-report.json"]
@@ -2684,7 +2687,7 @@ flowchart TD
         artifactAutomationPlan: [
           {
             artifactId: 'ART-SCRIPT-001',
-            path: '_bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts',
+            path: 'skill://requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts',
             artifactType: 'script',
             sourceOfTruthRole: 'evidence',
             ownerModel: 'requirements',
@@ -2732,7 +2735,7 @@ flowchart TD
     expect(result.status).toBe(0);
     expect(fs.readFileSync(source, 'utf8')).toBe(original);
     const html = fs.readFileSync(out, 'utf8');
-    expect(html).toContain('_bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts');
+    expect(html).toContain('skill://requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts');
     expect(html).toContain('<section class="card current-target-map" id="current-target">');
     const summary = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-summary.json'), 'utf8'));
     const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));

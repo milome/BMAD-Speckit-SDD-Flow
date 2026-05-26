@@ -1,6 +1,6 @@
 # HTML Confirmation Renderer Spec
 
-Use this reference when implementing or invoking `_bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts`.
+Use this reference when implementing or invoking `<skill-dir>/scripts/render-requirements-confirmation-html.ts`.
 
 The renderer is a generic read-only confirmation view generator. It reads an implementation source document and its inline `implementationConfirmation`; it renders HTML plus machine-readable summaries. It must not create, infer, rewrite, merge, shrink, confirm, or mutate requirements.
 
@@ -26,7 +26,7 @@ After exact chat confirmation, agents must run this entry immediately. It calls 
 Architecture confirmation has a skill-local prepare entry that is the normal user-facing workflow:
 
 ```bash
-node _bmad/skills/requirements-contract-authoring/scripts/prepare-architecture-confirmation-page.ts \
+node <skill-dir>/scripts/prepare-architecture-confirmation-page.ts \
   --source <source-document.md> \
   --requirement-record _bmad-output/runtime/requirement-records/<recordId>/requirement-record.json \
   --run-id <runId> \
@@ -46,7 +46,7 @@ The renderer remains read-only. It renders an existing requirement-scoped `archi
 ## CLI Contract
 
 ```bash
-node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts \
+node <skill-dir>/scripts/render-requirements-confirmation-html.ts \
   --source docs/path/source.md \
   --out _bmad-output/runtime/requirement-records/<recordId>/confirmation/confirmation.html \
   --language zh-CN \

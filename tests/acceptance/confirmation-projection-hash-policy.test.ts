@@ -106,13 +106,29 @@ function currentHashes(sourcePath: string): {
   };
 }
 
+function writeText(filePath: string, value: string): void {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, value, 'utf8');
+}
+
+function portablePath(filePath: string): string {
+  return filePath.replace(/\\/gu, '/');
+}
+
 function writeSource(): string {
   const source = path.join(tempDir, 'source.md');
-  fs.writeFileSync(
+  const acceptancePath = path.join(tempDir, 'tests', 'acceptance', 'confirmation-projection-hash-policy.test.ts');
+  const e2ePath = path.join(tempDir, 'tests', 'e2e', 'confirmation-projection-policy.e2e.test.ts');
+  writeText(acceptancePath, 'import { it } from "vitest"; it("projection policy red fixture", () => {});\n');
+  writeText(e2ePath, 'import { it } from "vitest"; it("projection policy e2e red fixture", () => {});\n');
+  writeText(
     source,
     `# Confirmation Projection Policy
 
+Must Not Count As Completion: page hash refresh, stdout-only proof, HTTP 200, page render, and mock calls cannot satisfy implementation readiness.
+
 implementationConfirmation:
+  contractSchemaVersion: 1
   status: draft
   recordId: REQ-PROJECTION-POLICY
   requirementSetId: REQ-PROJECTION-POLICY
@@ -124,26 +140,47 @@ implementationConfirmation:
   confirmedAt: null
   confirmedBy: null
   sourceDocumentHash: null
+  implementationConfirmationHash: null
   confirmationProfile: implementation_confirmation
-  requiredViewPacks: []
+  requiredViewPacks: ["currentTargetMap"]
   optionalViewPacks: []
+  confirmationRender:
+    htmlPath: null
+    summaryPath: null
+    reportPath: null
+    htmlHash: null
+    confirmationPhrase: null
+  applicability:
+    currentTargetMap:
+      applies: true
+      reasonCode: projection_policy_requires_visible_current_target_map
+    aiTddContractGate:
+      applies: true
+      reasonCode: projection_policy_requires_ai_tdd_readiness_gate
   must:
     - id: MUST-050
       text: "Only semantic source or implementation hash drift can require demand reconfirmation."
       evidenceRefs: ["EVD-049"]
+      coveredByTraceRows: ["TRACE-039"]
     - id: MUST-051
       text: "Only architecture or recipe hash drift can require architecture reconfirmation."
       evidenceRefs: ["EVD-050"]
+      coveredByTraceRows: ["TRACE-039"]
     - id: MUST-052
       text: "Projection hash refresh must not mutate semantic confirmation authority."
       evidenceRefs: ["EVD-051"]
+      coveredByTraceRows: ["TRACE-039"]
   notDone:
     - id: NEG-039
       text: "Confirmation page hash drift alone must not mark reconfirm_required."
       evidenceRefs: ["EVD-049"]
+      coveredByTraceRows: ["TRACE-039"]
+      oracle: "projection hash drift alone remains a projection refresh"
     - id: NEG-040
       text: "Projection refresh must not weaken source, implementation, architecture, or recipe hard stops."
       evidenceRefs: ["EVD-050"]
+      coveredByTraceRows: ["TRACE-039"]
+      oracle: "semantic and architecture drift remain hard stops"
   mustNot:
     - id: OUT-001
       text: "Projection refresh is not a closeout decision."
@@ -152,15 +189,40 @@ implementationConfirmation:
       text: "Projection hash drift fixture."
       gate: "npx vitest run tests/acceptance/confirmation-projection-hash-policy.test.ts"
       oracle: "projection refresh does not mutate semantic confirmation authority"
+      requiredCommandRefs: ["CMD-CONFIRMATION-PROJECTION-HASH-POLICY"]
+      artifactRefs: ["CANONICAL-001"]
     - id: EVD-050
       text: "Runtime authority hash boundary fixture."
       gate: "npx vitest run tests/acceptance/confirmation-projection-hash-policy.test.ts"
       oracle: "semantic and architecture hash drift remain hard stops"
+      requiredCommandRefs: ["CMD-CONFIRMATION-PROJECTION-HASH-POLICY"]
+      artifactRefs: ["CANONICAL-001"]
     - id: EVD-051
       text: "Controlled projection refresh ingest fixture."
       gate: "npx vitest run tests/acceptance/confirmation-projection-hash-policy.test.ts"
       oracle: "projection event writes projection ledger only"
+      requiredCommandRefs: ["CMD-CONFIRMATION-PROJECTION-HASH-POLICY"]
+      artifactRefs: ["CANONICAL-001"]
   openQuestions: []
+  failurePaths:
+    - id: FAIL-039
+      title: "Projection refresh weakens semantic authority"
+      trigger: "Only confirmationPageHash changes after a confirmed source."
+      expectedBehavior: "Record a projection refresh without changing user confirmed semantic scope."
+      forbiddenBehavior: "Mark reconfirm_required or mutate implementationConfirmation semantics."
+      blocksCompletionWhenViolated: true
+      linkedNegIds: ["NEG-039", "NEG-040"]
+      linkedEvidenceIds: ["EVD-049", "EVD-050", "EVD-051"]
+      viewRefs: ["EDGEVIEW-039"]
+      requiredAssertions: ["Projection-only refresh cannot satisfy closeout."]
+  edgeCases:
+    - id: EDGE-039
+      category: projection_hash_only_drift
+      condition: "The refreshed confirmation page hash differs while semantic hashes match."
+      expectedBehavior: "Keep status user_confirmed and append confirmationProjectionHistory."
+      forbiddenBehavior: "Demand semantic reconfirmation or architecture reconfirmation."
+      linkedFailurePathIds: ["FAIL-039"]
+      linkedEvidenceIds: ["EVD-049", "EVD-050", "EVD-051"]
   traceRows:
     - id: TRACE-039
       covers: ["MUST-050", "MUST-051", "MUST-052", "NEG-039", "NEG-040"]
@@ -169,20 +231,144 @@ implementationConfirmation:
       boundaryViewRefs: ["BOUNDARY-001"]
       contractValidationCommandRefs: ["CMD-RENDER-CONFIRMATION"]
       deliveryEvidenceCommandRefs: ["CMD-CONFIRMATION-PROJECTION-HASH-POLICY"]
+      acceptanceRefs: ["ACC-039", "E2E-039"]
+      artifactRefs: ["CANONICAL-001"]
       status: PENDING
   requiredCommands:
     - id: CMD-RENDER-CONFIRMATION
-      command: "node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source source.md"
+      commandRef:
+        skill: requirements-contract-authoring
+        script: scripts/render-requirements-confirmation-html.ts
+      command: "node <skill-dir>/scripts/render-requirements-confirmation-html.ts --source source.md"
       purpose: "Render and validate the confirmation projection."
+      oracle: "renderer emits current confirmation projection without mutating semantic authority"
+      traceRows: ["TRACE-039"]
+      evidenceRefs: ["EVD-049"]
     - id: CMD-CONFIRMATION-PROJECTION-HASH-POLICY
       command: "npx vitest run tests/acceptance/confirmation-projection-hash-policy.test.ts"
       purpose: "Validate projection hash policy behavior."
+      oracle: "projection hash refresh preserves semantic and architecture hard stops"
+      traceRows: ["TRACE-039"]
+      evidenceRefs: ["EVD-049", "EVD-050", "EVD-051"]
+  acceptanceTests:
+    - id: ACC-039
+      file: "tests/acceptance/confirmation-projection-hash-policy.test.ts"
+      covers: ["MUST-050", "MUST-051", "MUST-052"]
+      failurePathRefs: ["FAIL-039"]
+      edgeCaseRefs: ["EDGE-039"]
+      traceRows: ["TRACE-039"]
+      evidenceRefs: ["EVD-049", "EVD-051"]
+      commandRefs: ["CMD-CONFIRMATION-PROJECTION-HASH-POLICY"]
+      expectedPreImplementationState: expected_red
+      oracle: "Projection refresh does not mutate source authority."
+  e2eSuites:
+    - id: E2E-039
+      file: "tests/e2e/confirmation-projection-policy.e2e.test.ts"
+      covers: ["NEG-039", "NEG-040"]
+      failurePathRefs: ["FAIL-039"]
+      edgeCaseRefs: ["EDGE-039"]
+      traceRows: ["TRACE-039"]
+      evidenceRefs: ["EVD-049", "EVD-050"]
+      commandRefs: ["CMD-CONFIRMATION-PROJECTION-HASH-POLICY"]
+      negativeControls: ["NEG-039", "NEG-040"]
+      expectedPreImplementationState: expected_red
+      oracle: "Projection refresh does not bypass semantic or architecture hard stops."
+  sequenceViews:
+    - id: SEQ-039
+      title: "Projection refresh sequence"
+      covers: ["MUST-050", "MUST-052", "NEG-039"]
+  flowViews:
+    - id: FLOW-039
+      title: "Projection refresh flow"
+      covers: ["MUST-050", "MUST-051", "MUST-052"]
+  edgeCaseViews:
+    - id: EDGEVIEW-039
+      title: "Projection-only drift edge case"
+      covers: ["NEG-039", "NEG-040"]
+      cases: ["EDGE-039", "FAIL-039"]
+  artifactAutomationPlan:
+    - id: CANONICAL-001
+      artifactType: code
+      path: tests/acceptance/confirmation-projection-hash-policy.test.ts
+      producer: confirmation-projection-policy-test
+      sourceOfTruthRole: implementation
+      traceRows: ["TRACE-039"]
+      evidenceRefs: ["EVD-049", "EVD-050", "EVD-051"]
+  currentTargetMap:
+    schemaVersion: current-target-map/v1
+    displayProfile: closed_loop_current_target_map
+    currentSummary:
+      - id: CUR-039
+        text: "Confirmation projection can drift independently from semantic scope."
+        traceRows: ["TRACE-039"]
+        evidenceRefs: ["EVD-049"]
+    targetSummary:
+      - id: TAR-039
+        text: "Projection refresh records read-model drift while semantic and architecture hashes remain authoritative."
+        traceRows: ["TRACE-039"]
+        evidenceRefs: ["EVD-049", "EVD-050"]
+    diffRows:
+      - id: DIFF-039
+        current: "Projection hash changed."
+        target: "Only confirmationProjectionHistory changes when semantic hashes match."
+        traceRows: ["TRACE-039"]
+        evidenceRefs: ["EVD-049", "EVD-051"]
+    process:
+      - id: PROC-039
+        from: "confirmation render report"
+        to: "controlled projection ledger"
+        action: "ingest projection refresh without source mutation"
+        traceRows: ["TRACE-039"]
+        evidenceRefs: ["EVD-051"]
+    artifactPaths:
+      - id: PATH-039
+        path: tests/acceptance/confirmation-projection-hash-policy.test.ts
+        traceRows: ["TRACE-039"]
+        evidenceRefs: ["EVD-049"]
+    canonicalArtifacts:
+      - id: CANONICAL-001
+        targetPathOrField: tests/acceptance/confirmation-projection-hash-policy.test.ts
+        traceRows: ["TRACE-039"]
+        evidenceRefs: ["EVD-049", "EVD-050", "EVD-051"]
+    existingArtifacts:
+      - id: LEGACY-039
+        currentPath: confirmationPageHash-only-green
+        completionProofPolicy: legacy_only
+        traceRows: ["TRACE-039"]
+        evidenceRefs: ["EVD-049"]
+  targetModificationPaths:
+    - id: TARGET-MOD-039
+      path: tests/acceptance/confirmation-projection-hash-policy.test.ts
+      traceRows: ["TRACE-039"]
+      evidenceRefs: ["EVD-049", "EVD-050", "EVD-051"]
   closeoutReadinessPreview:
     requiredCommands: ["CMD-RENDER-CONFIRMATION", "CMD-CONFIRMATION-PROJECTION-HASH-POLICY"]
+    orphanPolicy: "No orphan projection proof may satisfy readiness."
+    currentAttemptPolicy: "Current attempt proof is required after implementation."
+    recordClosedPolicy: "Projection refresh is never a closeout decision."
   boundaryViews:
     - id: BOUNDARY-001
       title: "Projection refresh boundary"
       covers: ["OUT-001"]
+
+## Reverse Audit Report
+
+Verdict: PASS
+
+### implementationConfirmation Findings
+### HTML Confirmation Findings
+### Reconfirmation Findings
+### ID Reference Findings
+### Diagram And Step Findings
+### Artifact Automation Plan Findings
+### traceRows Findings
+### Row Quality Findings
+### E2E Anti-Smoke Findings
+### Open Findings
+
+## Definition of Done
+
+- Projection hash-only drift is recorded as projection refresh, not semantic reconfirmation.
 `,
     'utf8'
   );
@@ -207,9 +393,27 @@ function writeRenderReport(source: string, pageHash: string, suffix = ''): {
   const hashes = currentHashes(source);
   const reportPath = path.join(confirmationDir, `confirmation-render-report${suffix}.json`);
   const htmlPath = path.join(confirmationDir, `confirmation${suffix}.html`);
+  const drilldownReportPath = path.join(
+    tempDir,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    'REQ-PROJECTION-POLICY',
+    'authoring',
+    `pre-render-must-decomposition-gate-report${suffix}.json`
+  );
+  fs.mkdirSync(path.dirname(drilldownReportPath), { recursive: true });
+  fs.writeFileSync(htmlPath, '<!doctype html><title>confirmation projection policy</title>\n', 'utf8');
+  const confirmText = [
+    '确认以上范围进入下一阶段',
+    `sourceDocumentHash=${hashes.sourceDocumentHash}`,
+    `implementationConfirmationHash=${hashes.implementationConfirmationHash}`,
+    `confirmationPageHash=${pageHash}`,
+  ].join('\n');
   const report = {
     recordId: 'REQ-PROJECTION-POLICY',
     requirementSetId: 'REQ-PROJECTION-POLICY',
+    sourcePath: portablePath(source),
     confirmability: 'confirmable',
     sourceDocumentHash: hashes.sourceDocumentHash,
     sourceDocumentHashScope: 'semantic_source_excluding_confirmation_bookkeeping',
@@ -217,22 +421,55 @@ function writeRenderReport(source: string, pageHash: string, suffix = ''): {
     implementationConfirmationHashScope:
       'semantic_implementation_confirmation_excluding_bookkeeping',
     confirmationPageHash: pageHash,
+    actualHtmlFileHash: pageHash,
+    generatedAt: '2026-05-20T00:00:00.000Z',
+    language: 'zh-CN',
+    deliveryReadiness: { ready: false, status: 'delivery_not_ready_before_implementation' },
+    blockingIssues: [],
+    warnings: [],
+    diagramCoverage: {},
+    traceCoverage: {},
+    artifactAutomationCoverage: {},
+    confirmInstruction: confirmText,
+    renderedSections: ['pre-confirmation-semantic-drilldown'],
+    preConfirmationSemanticDrilldown: {
+      reportPath: portablePath(drilldownReportPath),
+    },
     actualReportHash: sha256(`report:${pageHash}:${suffix}`),
     outPath: htmlPath,
     artifactRef: {
       artifactType: 'confirmation_view',
       sourceOfTruthRole: 'projection',
-      path: htmlPath,
+      path: portablePath(htmlPath),
       hash: pageHash,
     },
   };
-  const confirmText = [
-    '确认以上范围进入下一阶段',
-    `sourceDocumentHash=${hashes.sourceDocumentHash}`,
-    `implementationConfirmationHash=${hashes.implementationConfirmationHash}`,
-    `confirmationPageHash=${pageHash}`,
-  ].join('\n');
   const confirmTextPath = path.join(confirmationDir, `confirm${suffix}.txt`);
+  fs.writeFileSync(
+    drilldownReportPath,
+    `${JSON.stringify(
+      {
+        schemaVersion: 'pre-render-must-decomposition-gate/v1',
+        verdict: 'PASS',
+        confirmability: 'confirmable',
+        sourceDocumentHash: hashes.sourceDocumentHash,
+        implementationConfirmationHash: hashes.implementationConfirmationHash,
+        failedChecks: [],
+        blockingIssues: [],
+        criticalAuditor: {
+          minimumRounds: 3,
+          consecutiveNoNewGapRounds: 3,
+          convergenceVerdict: 'bounded_no_new_gap',
+        },
+        packetSourceReconciliation: {
+          verdict: 'pass',
+        },
+      },
+      null,
+      2
+    )}\n`,
+    'utf8'
+  );
   fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
   fs.writeFileSync(confirmTextPath, confirmText, 'utf8');
   return { reportPath, report, confirmTextPath, confirmText };
@@ -319,6 +556,30 @@ function addActiveArchitectureState(requirementRecord: string): Record<string, u
     },
   ];
   record.contractSummary = { openQuestions: [] };
+  record.aiTddContractGate = {
+    preImplementationRedProofs: [
+      {
+        proofId: 'projection-policy-proof-acc',
+        acceptanceId: 'ACC-039',
+        commandId: 'CMD-CONFIRMATION-PROJECTION-HASH-POLICY',
+        state: 'expected_red',
+        oracle: 'projection refresh cannot mutate semantic authority',
+        failureClass: 'oracle_failure',
+        recordedAt: '2026-05-20T00:00:30.000Z',
+        recordedBy: 'test-agent',
+      },
+      {
+        proofId: 'projection-policy-proof-e2e',
+        acceptanceId: 'E2E-039',
+        commandId: 'CMD-CONFIRMATION-PROJECTION-HASH-POLICY',
+        state: 'expected_red',
+        oracle: 'projection refresh cannot bypass semantic or architecture hard stops',
+        failureClass: 'oracle_failure',
+        recordedAt: '2026-05-20T00:00:31.000Z',
+        recordedBy: 'test-agent',
+      },
+    ],
+  };
   fs.writeFileSync(requirementRecord, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
   return JSON.parse(JSON.stringify(architectureState));
 }
@@ -384,14 +645,74 @@ describe('confirmation projection hash policy', () => {
       },
     });
 
-    const readiness = mainImplementationReadinessGate([
-      '--requirement-record',
-      recordPath(),
-      '--evaluated-at',
-      '2026-05-20T00:01:00.000Z',
-      '--json',
-    ]);
-    expect(readiness).toBe(0);
+    const sourceSkill = path.join(ROOT, '_bmad', 'skills', 'requirements-contract-authoring');
+    const targetSkill = path.join(tempDir, '.codex', 'skills', 'requirements-contract-authoring');
+    fs.mkdirSync(path.dirname(targetSkill), { recursive: true });
+    fs.cpSync(sourceSkill, targetSkill, { recursive: true });
+    fs.cpSync(path.join(ROOT, '_bmad', '_config'), path.join(tempDir, '_bmad', '_config'), {
+      recursive: true,
+    });
+    expect(fs.existsSync(path.join(tempDir, 'tests', 'acceptance', 'confirmation-projection-hash-policy.test.ts'))).toBe(
+      true
+    );
+    const previousCwd = process.cwd();
+    let readiness = 1;
+    try {
+      process.chdir(tempDir);
+      readiness = mainImplementationReadinessGate([
+        '--requirement-record',
+        recordPath(),
+        '--evaluated-at',
+        '2026-05-20T00:01:00.000Z',
+        '--json',
+      ]);
+    } finally {
+      process.chdir(previousCwd);
+    }
+    const readinessRecord = JSON.parse(fs.readFileSync(recordPath(), 'utf8'));
+    const fixtureTestPath = path.join(tempDir, 'tests', 'acceptance', 'confirmation-projection-hash-policy.test.ts');
+    const fixtureE2ePath = path.join(tempDir, 'tests', 'e2e', 'confirmation-projection-policy.e2e.test.ts');
+    const readinessReportPath = path.join(
+      tempDir,
+      '_bmad-output',
+      'runtime',
+      'requirement-records',
+      'REQ-PROJECTION-POLICY',
+      'implementation-readiness-report.json'
+    );
+    const readinessReport = JSON.parse(fs.readFileSync(readinessReportPath, 'utf8'));
+    expect(
+      readiness,
+      JSON.stringify(
+        {
+          gateCheck: readinessRecord.gateChecks?.at(-1),
+          aiTddCheck: readinessReport.checks.find(
+            (check: Record<string, unknown>) => check.id === 'ai-tdd-contract-gate-pre-implementation'
+          ),
+          fixtureExistsAfterGate: {
+            acceptance: fs.existsSync(fixtureTestPath),
+            e2e: fs.existsSync(fixtureE2ePath),
+            acceptancePath: fixtureTestPath,
+            e2ePath: fixtureE2ePath,
+          },
+          redGreenMatrix: readinessReport.checks.find(
+            (check: Record<string, unknown>) => check.id === 'ai-tdd-contract-gate-pre-implementation'
+          )?.redGreenMatrix,
+        },
+        null,
+        2
+      )
+    ).toBe(0);
+    expect(
+      readinessReport.checks.find((check: Record<string, unknown>) => check.id === 'ai-tdd-contract-gate-pre-implementation'),
+      JSON.stringify(readinessReport, null, 2)
+    ).toMatchObject({ passed: true });
+    const stageAuditCheck = readinessRecord.gateChecks
+      .at(-1)
+      .checks.find((check: Record<string, unknown>) => check.id === 'implementation-readiness-stage-audit');
+    expect(portablePath(String(stageAuditCheck.scriptPath))).toContain(
+      '.codex/skills/requirements-contract-authoring/scripts/audit_implementation_readiness.js'
+    );
     const prompt = runPrompt(source, recordPath());
     expect(prompt.status).toBe(0);
     expect(prompt.stdout).toContain('TRACE-039');

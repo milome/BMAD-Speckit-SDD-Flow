@@ -9,7 +9,7 @@ The historical source was `docs/design/2026-05-24-requirements-contract-semantic
 The executable companion is:
 
 ```bash
-node _bmad/skills/requirements-contract-authoring/scripts/run_semantic_checkpoints.js
+node <skill-dir>/scripts/run_semantic_checkpoints.js
 ```
 
 The script should automate the manual steps in this reference where possible. Automation must not remove the core safety property:
@@ -75,7 +75,7 @@ Run:
 
 ```powershell
 git status --short
-node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js
+node <encoding-integrity-guardian-dir>/scripts/check-encoding-integrity.js
 ```
 
 Record whether unrelated worktree changes exist. Unrelated changes must stay unstaged.
@@ -93,7 +93,7 @@ This edit must be a real source-document authoring step. It may add or refine th
 Run:
 
 ```powershell
-node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js
+node <encoding-integrity-guardian-dir>/scripts/check-encoding-integrity.js
 git diff -- docs/requirements/<source-document>.md
 git diff --stat -- docs/requirements/<source-document>.md
 (Get-FileHash -Algorithm SHA256 docs/requirements/<source-document>.md).Hash
@@ -102,7 +102,7 @@ git diff --stat -- docs/requirements/<source-document>.md
 If the checkpoint modifies contract structure, also run the best available contract check for the current maturity level:
 
 ```powershell
-node _bmad/skills/requirements-contract-authoring/scripts/reverse_audit_contract.js docs/requirements/<source-document>.md
+node <skill-dir>/scripts/reverse_audit_contract.js docs/requirements/<source-document>.md
 ```
 
 For early draft checkpoints, a reverse audit `FAIL` is acceptable only when the failure is expected, such as missing user confirmation or missing HTML render. Unexpected structural failures must be repaired before committing.
@@ -153,12 +153,12 @@ The receipt is the human-readable progress ledger. Git is the authoritative diff
 The skill should prefer script automation over manual repetition:
 
 ```bash
-node _bmad/skills/requirements-contract-authoring/scripts/assess_contract_authoring_scale.js \
+node <skill-dir>/scripts/assess_contract_authoring_scale.js \
   --source <source-document.md> \
   --out _bmad-output/runtime/requirement-records/<recordId>/authoring/scale-assessment.json \
   --json
 
-node _bmad/skills/requirements-contract-authoring/scripts/run_semantic_checkpoints.js \
+node <skill-dir>/scripts/run_semantic_checkpoints.js \
   --source <source-document.md> \
   --assessment _bmad-output/runtime/requirement-records/<recordId>/authoring/scale-assessment.json \
   --progress _bmad-output/runtime/requirement-records/<recordId>/authoring/semantic-checkpoint-progress.json \
@@ -187,7 +187,7 @@ Required automation behavior:
 - The pre-render MUST decomposition gate is:
 
 ```bash
-node _bmad/skills/requirements-contract-authoring/scripts/pre_render_must_decomposition_gate.js \
+node <skill-dir>/scripts/pre_render_must_decomposition_gate.js \
   --source <source-document.md> \
   --authoring-dir _bmad-output/runtime/requirement-records/<recordId>/authoring \
   --json
@@ -200,7 +200,7 @@ node _bmad/skills/requirements-contract-authoring/scripts/pre_render_must_decomp
 - The explicit command for this hard gate is:
 
 ```bash
-node _bmad/skills/requirements-contract-authoring/scripts/run_semantic_checkpoints.js \
+node <skill-dir>/scripts/run_semantic_checkpoints.js \
   --source <source-document.md> \
   --progress _bmad-output/runtime/requirement-records/<recordId>/authoring/semantic-checkpoint-progress.json \
   --mode pre-render-gate \

@@ -201,7 +201,10 @@ implementationConfirmation:
 
   requiredCommands:
     - id: CMD-CONTRACT-001
-      command: "node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source <source-document.md> --out _bmad-output/runtime/requirement-records/<recordId>/confirmation/confirmation.html --language zh-CN --record-id <recordId> --entry-flow <entryFlow> --mode confirmation --json"
+      commandRef:
+        skill: requirements-contract-authoring
+        script: scripts/render-requirements-confirmation-html.ts
+      command: "node <skill-dir>/scripts/render-requirements-confirmation-html.ts --source <source-document.md> --out _bmad-output/runtime/requirement-records/<recordId>/confirmation/confirmation.html --language zh-CN --record-id <recordId> --entry-flow <entryFlow> --mode confirmation --json"
       purpose: "Validate source contract and render confirmation HTML."
     - id: CMD-DELIVERY-001
       command: "npm run test:e2e -- upload"
@@ -244,7 +247,7 @@ The renderer and reverse audit must block if these artifacts are missing, stale,
 Run the deterministic gate before rendering:
 
 ```text
-node _bmad/skills/requirements-contract-authoring/scripts/pre_render_must_decomposition_gate.js --source <source-document.md> --authoring-dir _bmad-output/runtime/requirement-records/<recordId>/authoring --json
+node <skill-dir>/scripts/pre_render_must_decomposition_gate.js --source <source-document.md> --authoring-dir _bmad-output/runtime/requirement-records/<recordId>/authoring --json
 ```
 
 Critical Auditor receipt convergence is represented by `consecutiveNoNewGapRounds: 3`; fewer rounds, unresolved validated gaps, stale input hashes, or author claims without critic disposition block confirmation.
@@ -345,7 +348,10 @@ Use this when `applicability.governanceEvents.applies: true`, controlled ingest 
 ```yaml
   controlledIngestWriterRegistry:
     - writerId: requirements-confirmation-ingest
-      scriptPath: "_bmad/skills/requirements-contract-authoring/scripts/ingest-confirmation-event.js"
+      scriptRef:
+        skill: requirements-contract-authoring
+        script: scripts/ingest-confirmation-event.js
+      scriptPath: "<skill-dir>/scripts/ingest-confirmation-event.js"
       scriptContentHash: "sha256:<script-content>"
       ownerModel: requirement_confirmation
       allowedWriteApis:

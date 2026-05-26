@@ -6,7 +6,7 @@ function requireFrom(baseDir) {
 }
 
 function loadJsYaml() {
-  const candidates = [__dirname, process.cwd()];
+  const candidates = [__dirname, process.cwd(), process.env.BMAD_SPECKIT_PACKAGE_ROOT].filter(Boolean);
   const errors = [];
   for (const candidate of candidates) {
     try {
@@ -16,7 +16,7 @@ function loadJsYaml() {
     }
   }
   throw new Error(
-    `Cannot resolve js-yaml from the skill directory or current project root. Install js-yaml in the project running this skill, or run from a workspace that provides it.\n${errors.join('\n')}`
+    `Cannot resolve js-yaml from the skill directory, current project root, or BMAD_SPECKIT_PACKAGE_ROOT. Install js-yaml in the project running this skill, or run through the bmad-speckit package entrypoint.\n${errors.join('\n')}`
   );
 }
 

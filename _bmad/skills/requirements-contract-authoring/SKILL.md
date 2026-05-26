@@ -112,6 +112,20 @@ Do not run broad repository searches before authoring. Prefer exact-symbol searc
 
 For repeated or interrupted authoring, reuse the already collected facts unless relevant files changed. Do not restart with broad discovery after every interruption.
 
+## Skill Directory Resolution
+
+Treat `<skill-dir>` as the directory that contains the `SKILL.md` loaded for this invocation. Resolve all skill-local scripts, references, fixtures, and assets from that directory at execution time.
+
+Do not assume the skill is installed under `_bmad/skills`, `.codex/skills`, `~/.codex/skills`, or any other fixed root. Do not write a fixed local installation root into `implementationConfirmation.requiredCommands[]`, `controlledIngestWriterRegistry[].scriptPath`, receipts, or generated templates. Use `<skill-dir>/scripts/...` for executable command examples, or use a logical reference such as:
+
+```yaml
+commandRef:
+  skill: requirements-contract-authoring
+  script: scripts/render-requirements-confirmation-html.ts
+```
+
+Scripts inside this skill must locate sibling files with `__dirname` or the ESM equivalent `import.meta.url`. Runtime artifacts may keep repository-relative output paths such as `_bmad-output/...`; only the skill installation path must remain unresolved until execution.
+
 ## Chunked Authoring And Resume
 
 Large or high-risk source documents must follow [semantic-checkpoint-workflow.md](references/semantic-checkpoint-workflow.md). That reference is part of this skill and is the normative checkpoint workflow for splitting source-document authoring before HTML render.
@@ -119,7 +133,7 @@ Large or high-risk source documents must follow [semantic-checkpoint-workflow.md
 When scale assessment returns `checkpoint_required`, prefer the skill-local checkpoint runner over manual repetition:
 
 ```bash
-node _bmad/skills/requirements-contract-authoring/scripts/run_semantic_checkpoints.js \
+node <skill-dir>/scripts/run_semantic_checkpoints.js \
   --source <source-document.md> \
   --assessment _bmad-output/runtime/requirement-records/<recordId>/authoring/scale-assessment.json \
   --progress _bmad-output/runtime/requirement-records/<recordId>/authoring/semantic-checkpoint-progress.json \
@@ -495,7 +509,7 @@ Run the deterministic definition drilldown first:
 When authoring a source document, run scale assessment before deciding whether to use a single authoring pass or semantic checkpoint authoring:
 
 ```bash
-node _bmad/skills/requirements-contract-authoring/scripts/assess_contract_authoring_scale.js \
+node <skill-dir>/scripts/assess_contract_authoring_scale.js \
   --source <source-document.md> \
   --out _bmad-output/runtime/requirement-records/<recordId>/authoring/scale-assessment.json \
   --json
@@ -504,7 +518,7 @@ node _bmad/skills/requirements-contract-authoring/scripts/assess_contract_author
 If the decision is `checkpoint_required`, use the semantic checkpoint runner before HTML render. Checkpoint mode must create a single-file Git commit for each completed checkpoint and write a progress record for resume:
 
 ```bash
-node _bmad/skills/requirements-contract-authoring/scripts/run_semantic_checkpoints.js \
+node <skill-dir>/scripts/run_semantic_checkpoints.js \
   --source <source-document.md> \
   --assessment _bmad-output/runtime/requirement-records/<recordId>/authoring/scale-assessment.json \
   --progress _bmad-output/runtime/requirement-records/<recordId>/authoring/semantic-checkpoint-progress.json \
@@ -518,7 +532,7 @@ The runner must stop before commit if staged files contain any path other than t
 Before the HTML renderer can produce a confirmable page, run:
 
 ```bash
-node _bmad/skills/requirements-contract-authoring/scripts/pre_render_must_decomposition_gate.js \
+node <skill-dir>/scripts/pre_render_must_decomposition_gate.js \
   --source <source-document.md> \
   --authoring-dir _bmad-output/runtime/requirement-records/<recordId>/authoring \
   --json
@@ -529,7 +543,7 @@ The gate reads `semantic-kernel.json`, `must_decomposition_packet.json`, `critic
 The gate is deterministic and fail-closed. It verifies schema, source hashes, task split, question coverage, packet projection materialization, Critical Auditor convergence, and two-way packet/source reconciliation. It must block on missing semantic kernel, missing packet, stale packet hash, missing Critical Auditor receipt, fewer than three no-new-gap rounds, unresolved validated gap, incomplete question coverage, `actualTaskCount < expectedTaskCount`, over-broad atomic task, missing packet projection, source row independently invented, packet projection not materialized, missing packet/source reconciliation, or any stale gate report.
 
 ```bash
-node _bmad/skills/requirements-contract-authoring/scripts/pre_render_definition_drilldown.js \
+node <skill-dir>/scripts/pre_render_definition_drilldown.js \
   --source <source-document.md> \
   --out _bmad-output/runtime/requirement-records/<recordId>/confirmation/grill-definition-report.json \
   --previous-report _bmad-output/runtime/requirement-records/<recordId>/confirmation/grill-definition-report.previous.json \
@@ -601,7 +615,7 @@ Rules:
 Before readiness or prompt generation, render a low-burden HTML confirmation page. Use the skill-local renderer:
 
 ```bash
-node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts \
+node <skill-dir>/scripts/render-requirements-confirmation-html.ts \
   --source <source-document.md> \
   --out _bmad-output/runtime/requirement-records/<recordId>/confirmation/confirmation.html \
   --language zh-CN \
@@ -642,7 +656,7 @@ The HTML must answer:
 When the current requirement needs full architecture confirmation or an existing `architectureConfirmationState` is stale, use the skill-local prepare entry. Do not ask the user to run `architecture_confirmation_state_checked`, manually generate architecture JSON, or call the renderer directly as the normal workflow.
 
 ```bash
-node _bmad/skills/requirements-contract-authoring/scripts/prepare-architecture-confirmation-page.ts \
+node <skill-dir>/scripts/prepare-architecture-confirmation-page.ts \
   --source <source-document.md> \
   --requirement-record _bmad-output/runtime/requirement-records/<recordId>/requirement-record.json \
   --run-id <runId> \
@@ -772,7 +786,7 @@ Use the script output as evidence. If it reports `FAIL`, revise the source docum
 
 Use [contract-template.md](references/contract-template.md) as the source-document confirmation template.
 
-Use [html-confirmation-renderer-spec.md](references/html-confirmation-renderer-spec.md) when implementing or invoking `_bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts`.
+Use [html-confirmation-renderer-spec.md](references/html-confirmation-renderer-spec.md) when implementing or invoking `<skill-dir>/scripts/render-requirements-confirmation-html.ts`.
 
 Use [matrix-rules.md](references/matrix-rules.md) when validating diagrams, traceRows, and evidence coverage.
 

@@ -220,7 +220,10 @@ implementationConfirmation:
       covers: ["OUT-001"]
   requiredCommands:
     - id: CMD-CONTRACT-001
-      command: "node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source source.md"
+      commandRef:
+        skill: requirements-contract-authoring
+        script: scripts/render-requirements-confirmation-html.ts
+      command: "node <skill-dir>/scripts/render-requirements-confirmation-html.ts --source source.md"
       purpose: "Validate the confirmation source."
     - id: CMD-DELIVERY-001
       command: "npm run test:e2e -- upload"
@@ -253,7 +256,7 @@ describe('req trace generator confirmation block gate', () => {
     expect(result.stdout).toContain('delivery gates: CMD-DELIVERY-001, CMD-DELIVERY-002');
     expect(result.stdout).toContain('Required commands:');
     expect(result.stdout).toContain('CMD-CONTRACT-001:');
-    expect(result.stdout).toContain('node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source source.md');
+    expect(result.stdout).toContain('node <skill-dir>/scripts/render-requirements-confirmation-html.ts --source source.md');
     expect(result.stdout).toContain('Suggested smoke only, not acceptance by itself:');
     expect(result.stdout).toContain('npm run lint');
     expect(result.stdout).toContain('PASS requires evidence for covered must, notDone, and evidence IDs');

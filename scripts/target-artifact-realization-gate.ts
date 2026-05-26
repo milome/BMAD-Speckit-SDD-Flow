@@ -53,6 +53,35 @@ const CONFIRMATION_BOOKKEEPING_FIELDS = new Set([
   'confirmationRender',
 ]);
 
+function resolveSkillDir(skillName: string): string {
+  const root = process.cwd();
+  const home = process.env.USERPROFILE || process.env.HOME || '';
+  const packageRoot = path.resolve(__dirname, '..');
+  const candidates = [
+    path.join(root, '.codex', 'skills', skillName),
+    path.join(root, '_bmad', 'skills', skillName),
+    path.join(root, '.agents', 'skills', skillName),
+    path.join(packageRoot, '.codex', 'skills', skillName),
+    path.join(packageRoot, '_bmad', 'skills', skillName),
+    ...(home ? [path.join(home, '.codex', 'skills', skillName), path.join(home, '.agents', 'skills', skillName)] : []),
+  ];
+  return candidates.find((candidate) => fs.existsSync(path.join(candidate, 'SKILL.md'))) ?? candidates[0];
+}
+
+function resolveSkillPlaceholders(value: string): string {
+  return value
+    .split('<skill-dir>')
+    .join(normalizePath(resolveSkillDir('requirements-contract-authoring')))
+    .split('<encoding-integrity-guardian-dir>')
+    .join(normalizePath(resolveSkillDir('encoding-integrity-guardian')));
+}
+
+function resolveLogicalSkillRef(value: string): string {
+  const match = /^skill:\/\/([^/]+)\/(.+)$/u.exec(value);
+  if (!match) return value;
+  return path.join(resolveSkillDir(match[1]), match[2]);
+}
+
 function parseArgs(argv: string[]): ParsedArgs {
   const out: ParsedArgs = {};
   for (let index = 0; index < argv.length; index += 1) {
@@ -782,15 +811,21 @@ export function evaluateTargetArtifactRealization(input: {
 
 function extractCommandFileRefs(command: string): string[] {
   const refs = new Set<string>();
-  const normalized = command.replace(/\r?\n/gu, ' ');
+  const normalized = resolveSkillPlaceholders(command).replace(/\r?\n/gu, ' ');
   const matches = normalized.matchAll(
-    /(?<![A-Za-z0-9_@.-])((?:[A-Za-z]:)?[./\\A-Za-z0-9_-][A-Za-z0-9_./\\-]*\.(?:test|spec)\.(?:ts|tsx|js|jsx|mjs|cjs)|[./\\A-Za-z0-9_-][A-Za-z0-9_./\\-]*\.(?:ts|js|json|ya?ml|md))/giu
+    /(?<![A-Za-z0-9_@.-])((?:[A-Za-z]:)?[./\\A-Za-z0-9_-][A-Za-z0-9_./\\-]*\.(?:test|spec)\.(?:tsx|ts|jsx|js|mjs|cjs)|[./\\A-Za-z0-9_-][A-Za-z0-9_./\\-]*\.(?:tsx|ts|jsx|json|mjs|cjs|js|ya?ml|md))(?=$|[^A-Za-z0-9_.-])/giu
   );
   for (const match of matches) {
     const ref = match[1];
     if (/[\\/]/u.test(ref) || /\.(?:test|spec)\./iu.test(ref)) refs.add(ref);
   }
   return [...refs];
+}
+
+function commandFileExists(ref: string): { absolutePath: string; exists: boolean } {
+  const resolved = resolveLogicalSkillRef(resolveSkillPlaceholders(ref));
+  const absolute = path.isAbsolute(resolved) ? resolved : path.resolve(resolved);
+  return { absolutePath: absolute, exists: fs.existsSync(absolute) };
 }
 
 export function evaluateRequiredCommandFileExistence(input: {
@@ -804,12 +839,11 @@ export function evaluateRequiredCommandFileExistence(input: {
   for (const command of objects(confirmation.requiredCommands)) {
     const commandId = text(command.id) || text(command.commandId) || '<missing-command-id>';
     for (const ref of extractCommandFileRefs(text(command.command))) {
-      const absolute = path.isAbsolute(ref) ? ref : path.resolve(ref);
-      const exists = fs.existsSync(absolute);
+      const { absolutePath, exists } = commandFileExists(ref);
       checkedFiles.push({
         commandId,
         path: normalizePath(ref),
-        absolutePath: normalizePath(absolute),
+        absolutePath: normalizePath(absolutePath),
         exists,
       });
       if (!exists)

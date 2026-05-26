@@ -124,6 +124,55 @@ describe('strict command resolution preflight', () => {
     }
   });
 
+  it('resolves portable skill-dir command placeholders in consumer installs', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'strict-command-skill-dir-'));
+    const previousCwd = process.cwd();
+    try {
+      const skillDir = path.join(root, '.codex', 'skills', 'requirements-contract-authoring');
+      mkdirSync(path.join(root, 'scripts'), { recursive: true });
+      mkdirSync(path.join(root, 'tests', 'acceptance'), { recursive: true });
+      writeFileSync(path.join(root, 'scripts', 'example.ts'), 'export {};\n', 'utf8');
+      writeFileSync(path.join(root, 'tests', 'acceptance', 'example.test.ts'), 'export {};\n', 'utf8');
+      mkdirSync(path.join(skillDir, 'scripts'), { recursive: true });
+      writeFileSync(path.join(skillDir, 'SKILL.md'), '---\nname: requirements-contract-authoring\n---\n', 'utf8');
+      writeFileSync(path.join(skillDir, 'scripts', 'render-requirements-confirmation-html.ts'), 'export {};\n', 'utf8');
+      writeJson(path.join(root, 'package.json'), { scripts: {} });
+      const sourcePath = writeSource(
+        root,
+        `
+    - id: CMD-SKILL
+      commandId: CMD-SKILL
+      kind: contract_validation
+      command: node <skill-dir>/scripts/render-requirements-confirmation-html.ts --source <source-document.md>
+      packageScripts: []
+      entrypoints:
+        - <skill-dir>/scripts/render-requirements-confirmation-html.ts
+      testGlobs: []
+      mustResolve:
+        packageScriptsExist: false
+        entrypointsExist: true
+        testFilesExist: false
+`
+      );
+      const recordPath = writeRecord(root, sourcePath);
+      process.chdir(root);
+      const code = mainStrictCommandResolutionPreflight([
+        '--requirement-record',
+        recordPath,
+        '--evaluated-at',
+        '2026-05-22T00:00:02.000Z',
+        '--json',
+      ]);
+      expect(code).toBe(0);
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      const commands = record.gateChecks.at(-1).checks.find((check: any) => check.id === 'command-resolution:CMD-SKILL');
+      expect(commands).toMatchObject({ passed: true, issues: [] });
+    } finally {
+      process.chdir(previousCwd);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('fails closed for missing entrypoints and empty test globs', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'strict-command-block-'));
     const previousCwd = process.cwd();
