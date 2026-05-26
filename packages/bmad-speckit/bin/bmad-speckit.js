@@ -60,6 +60,10 @@ function runRepoScript(scriptName, args, options = {}) {
   process.exit(result.status ?? (result.error ? 1 : 0));
 }
 
+function forwardedArgsFromCommand(command) {
+  return Array.isArray(command?.args) ? [...command.args] : [];
+}
+
 // Show banner for init (including init --help) when in TTY
 if (process.argv.includes('init') && ttyUtils.isTTY()) {
   const { showBanner } = require('../src/commands/init');
@@ -548,36 +552,48 @@ program
   .description('Render the BMAD-Speckit main-agent runtime console')
   .allowUnknownOption(true)
   .allowExcessArguments(true)
-  .action(() => runRepoScript('bmads-renderer.ts', process.argv.slice(3)));
+  .action((_options, command) =>
+    runRepoScript('bmads-renderer.ts', forwardedArgsFromCommand(command))
+  );
 
 program
   .command('bmads-auto')
   .description('Run the BMADS Auto governed orchestration CLI surface')
   .allowUnknownOption(true)
   .allowExcessArguments(true)
-  .action(() => runRepoScript('bmads-auto-cli.ts', process.argv.slice(3)));
+  .action((_options, command) =>
+    runRepoScript('bmads-auto-cli.ts', forwardedArgsFromCommand(command))
+  );
 
 program
   .command('bmad-speckit')
   .description('Alias for bmads: render the BMAD-Speckit main-agent runtime console')
   .allowUnknownOption(true)
   .allowExcessArguments(true)
-  .action(() => runRepoScript('bmads-renderer.ts', process.argv.slice(3)));
+  .action((_options, command) =>
+    runRepoScript('bmads-renderer.ts', forwardedArgsFromCommand(command))
+  );
 
 program
   .command('main-agent-orchestration')
   .description('Run the BMAD main-agent orchestration CLI surface')
   .allowUnknownOption(true)
   .allowExcessArguments(true)
-  .action(() => runRepoScript('main-agent-orchestration.ts', process.argv.slice(3)));
+  .action((_options, command) =>
+    runRepoScript('main-agent-orchestration.ts', forwardedArgsFromCommand(command))
+  );
 
 program
   .command('confirm-scope')
   .description('Confirm requirement scope through controlled ingest after exact chat hash confirmation')
   .allowUnknownOption(true)
   .allowExcessArguments(true)
-  .action(() =>
-    runRepoScript('main-agent-orchestration.ts', ['--action', 'confirm-scope', ...process.argv.slice(3)])
+  .action((_options, command) =>
+    runRepoScript('main-agent-orchestration.ts', [
+      '--action',
+      'confirm-scope',
+      ...forwardedArgsFromCommand(command),
+    ])
   );
 
 program
@@ -585,8 +601,12 @@ program
   .description('Run the BMAD confirmation ingest orchestration surface')
   .allowUnknownOption(true)
   .allowExcessArguments(true)
-  .action(() =>
-    runRepoScript('main-agent-orchestration.ts', ['--action', 'confirm-scope', ...process.argv.slice(3)])
+  .action((_options, command) =>
+    runRepoScript('main-agent-orchestration.ts', [
+      '--action',
+      'confirm-scope',
+      ...forwardedArgsFromCommand(command),
+    ])
   );
 
 program
@@ -594,15 +614,17 @@ program
   .description('Run the diagnostic BMAD help five-layer matrix; use bmad-help for the stable user help renderer')
   .allowUnknownOption(true)
   .allowExcessArguments(true)
-  .action(() => runRepoScript('main-agent-bmad-help-five-layer-matrix.ts', process.argv.slice(3)));
+  .action((_options, command) =>
+    runRepoScript('main-agent-bmad-help-five-layer-matrix.ts', forwardedArgsFromCommand(command))
+  );
 
 program
   .command('main-agent:quality-gate')
   .description('Run the BMAD main-agent quality gate CLI surface')
   .allowUnknownOption(true)
   .allowExcessArguments(true)
-  .action(() =>
-    runRepoScript('main-agent-quality-gate.ts', process.argv.slice(3), {
+  .action((_options, command) =>
+    runRepoScript('main-agent-quality-gate.ts', forwardedArgsFromCommand(command), {
       before: ['ensure-governance-user-story-mapping-fixture.js'],
     })
   );
@@ -612,15 +634,17 @@ program
   .description('Run the BMAD multi-host host matrix PR orchestration CLI surface')
   .allowUnknownOption(true)
   .allowExcessArguments(true)
-  .action(() => runRepoScript('main-agent-host-matrix-pr-orchestrator.ts', process.argv.slice(3)));
+  .action((_options, command) =>
+    runRepoScript('main-agent-host-matrix-pr-orchestrator.ts', forwardedArgsFromCommand(command))
+  );
 
 program
   .command('main-agent:release-gate')
   .description('Run the BMAD main-agent release gate CLI surface')
   .allowUnknownOption(true)
   .allowExcessArguments(true)
-  .action(() =>
-    runRepoScript('main-agent-release-gate.ts', process.argv.slice(3), {
+  .action((_options, command) =>
+    runRepoScript('main-agent-release-gate.ts', forwardedArgsFromCommand(command), {
       before: ['ensure-governance-user-story-mapping-fixture.js'],
     })
   );
@@ -630,27 +654,35 @@ program
   .description('Run the BMAD main-agent delivery truth gate CLI surface')
   .allowUnknownOption(true)
   .allowExcessArguments(true)
-  .action(() => runRepoScript('main-agent-delivery-truth-gate.ts', process.argv.slice(3)));
+  .action((_options, command) =>
+    runRepoScript('main-agent-delivery-truth-gate.ts', forwardedArgsFromCommand(command))
+  );
 
 program
   .command('write-runtime-context')
   .description('Run the BMAD runtime context writer CLI surface')
   .allowUnknownOption(true)
   .allowExcessArguments(true)
-  .action(() => runRepoScript('write-runtime-context.cjs', process.argv.slice(3)));
+  .action((_options, command) =>
+    runRepoScript('write-runtime-context.cjs', forwardedArgsFromCommand(command))
+  );
 
 program
   .command('run-auditor-host')
   .description('Run the BMAD auditor host CLI surface')
   .allowUnknownOption(true)
   .allowExcessArguments(true)
-  .action(() => runRepoScript('run-auditor-host.ts', process.argv.slice(3)));
+  .action((_options, command) =>
+    runRepoScript('run-auditor-host.ts', forwardedArgsFromCommand(command))
+  );
 
 program
   .command('eval-questions')
   .description('Run the BMAD evaluation question CLI surface')
   .allowUnknownOption(true)
   .allowExcessArguments(true)
-  .action(() => runRepoScript('eval-questions-cli.ts', process.argv.slice(3)));
+  .action((_options, command) =>
+    runRepoScript('eval-questions-cli.ts', forwardedArgsFromCommand(command))
+  );
 
 program.parse();

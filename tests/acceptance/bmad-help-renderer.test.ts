@@ -156,8 +156,16 @@ describe('bmad-help and BMADS runtime boundary', () => {
 
     expect(cli).toContain(".command('confirm-scope')");
     expect(cli).toContain(".command('main-agent:confirm-scope')");
-    expect(cli).toContain("'--action', 'confirm-scope'");
+    expect(cli).toMatch(/'--action',\s*'confirm-scope'/u);
     expect(cli).toContain("runRepoScript('main-agent-orchestration.ts'");
+  });
+
+  it('forwards governed command argv from the Commander command object', () => {
+    const cli = fs.readFileSync(path.resolve('packages', 'bmad-speckit', 'bin', 'bmad-speckit.js'), 'utf8');
+
+    expect(cli).toContain('function forwardedArgsFromCommand(command)');
+    expect(cli).toContain('command?.args');
+    expect(cli).not.toContain('process.argv.slice(3)');
   });
 
   it('keeps layer_3 story creation behind epics planning and readiness instead of direct development', () => {
