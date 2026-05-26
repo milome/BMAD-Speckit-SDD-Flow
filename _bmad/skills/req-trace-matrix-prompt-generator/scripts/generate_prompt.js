@@ -573,6 +573,8 @@ function goalDocumentAuditFragments(sourceDocument) {
     'Trace order:',
     'Trace slices summary:',
     'Required commands:',
+    'AI-TDD protocol:',
+    'Runtime write policy:',
     'reconfirm_required',
     '/goal completion is not closeout proof',
     'Strict final acceptance checklist:',
@@ -1135,17 +1137,11 @@ function buildGoalDirective(packet, hints, artifactPaths) {
   const inlinePayload = goalObjectiveFromHints(hints, packet.recordId);
   const inlineCommand = goalCommandFromPayload(inlinePayload);
   const inlineChars = goalCommandLength(inlineCommand);
-  if (inlineChars <= GOAL_COMMAND_SAFE_MAX_CHARS) {
-    return {
-      directive: inlineCommand,
-      goalCommand: goalCommandMeta('native_goal_inline', inlineCommand),
-    };
-  }
 
-  if (!artifactPaths?.goalDocument) {
+  if (!artifactPaths?.goalDocument || !artifactPaths?.modelPacket) {
     throw new BlockedInput(
       'BLOCK: GOAL_DOCUMENT_REQUIRED',
-      `/goal command is ${inlineChars} chars, exceeding safe limit ${GOAL_COMMAND_SAFE_MAX_CHARS}; --out-dir is required to write ${GOAL_DOCUMENT_FILENAME}.`
+      `Native /goal requires --out-dir so ${GOAL_DOCUMENT_FILENAME} and model_packet.json can be written and referenced; refusing to emit a short goal-only objective.`
     );
   }
 
@@ -1296,14 +1292,10 @@ function enforceNoOutDirGoalLength(args, confirmation) {
   const hints = normalizeHostExecutionHints(manifest.hostExecutionHints, confirmation.recordId ?? 'unknown');
   const hostHints = host === 'codex' ? hints.codex : hints.claudeCode;
   if (hostHints?.goalModeAllowed !== true) return;
-  const goalCommand = goalCommandFromPayload(goalObjectiveFromHints(hostHints, confirmation.recordId ?? 'unknown'));
-  const chars = goalCommandLength(goalCommand);
-  if (chars > GOAL_COMMAND_SAFE_MAX_CHARS) {
-    throw new BlockedInput(
-      'BLOCK: GOAL_DOCUMENT_REQUIRED',
-      `/goal command is ${chars} chars, exceeding safe limit ${GOAL_COMMAND_SAFE_MAX_CHARS}; rerun with --out-dir so ${GOAL_DOCUMENT_FILENAME} can be written.`
-    );
-  }
+  throw new BlockedInput(
+    'BLOCK: GOAL_DOCUMENT_REQUIRED',
+    `Native /goal requires --out-dir so ${GOAL_DOCUMENT_FILENAME} and model_packet.json can be written and referenced; rerun with --out-dir or set --goal-command-available false to emit a non-goal full prompt.`
+  );
 }
 
 function ensureGoalDocumentPrepared(promptMeta, packet, artifactPaths, outputs, outputHashes) {
@@ -1359,6 +1351,10 @@ oracle: ${command.oracle || '(none)'}`
 
 function renderHostDirectiveText(directive) {
   const lines = [`Continuation strategy: ${directive.strategy}`, directive.directive];
+  if (directive.goalCommand?.mode === 'native_goal_document_ref') {
+    lines.push('The /goal command is an entry pointer only, not the full task scope.');
+    lines.push('Execution scope is goal_execution.md + model_packet.json.');
+  }
   if (directive.userInstruction) lines.push(`User surface: ${directive.userInstruction}`);
   if (directive.cliCommand) lines.push(`CLI command: ${directive.cliCommand}`);
   if (directive.externalSupervisorLoop) {
@@ -1526,6 +1522,14 @@ ${renderAtomicRows(packet)}
 
 Required commands:
 ${renderPacketRequiredCommands(packet)}
+
+AI-TDD protocol:
+Use RED -> GREEN -> REFACTOR -> CLOSEOUT per trace slice. RED proof must precede GREEN when expectedPreImplementationState is expected_red. Unexpected GREEN must be blocked and investigated before closeout.
+
+Runtime write policy:
+Allowed runtime write targets: ${packet.runtimeWritePolicy.allowedRuntimeWriteTargets.join(', ')}.
+Source traceRows writable: ${packet.runtimeWritePolicy.sourceTraceRowsWritable}.
+Missing evidence behavior: ${packet.runtimeWritePolicy.missingEvidenceBehavior}.
 
 Semantic gap policy:
 semantic gaps -> reconfirm_required.

@@ -685,12 +685,21 @@ describe('req trace generator confirmation block gate', () => {
     expect(result.status).toBe(0);
     const prompt = fs.readFileSync(path.join(outDir, 'human_prompt.txt'), 'utf8');
     const receipt = readJson<Record<string, any>>(path.join(outDir, 'audit_receipt.json'));
-    expect(prompt).toContain('/goal Execute model_packet.json until finalGateMatrix passes');
+    expect(prompt).toContain('/goal Execute REQ-TRACE-001 by following');
+    expect(prompt).toContain('goal_execution.md');
+    expect(prompt).toContain('The /goal command is an entry pointer only, not the full task scope.');
+    expect(prompt).toContain('Execution scope is goal_execution.md + model_packet.json.');
     expect(prompt).not.toContain('\ncontinue nonstop\n');
+    expect(fs.readFileSync(path.join(outDir, 'goal_execution.md'), 'utf8')).toContain('AI-TDD protocol:');
     expect(receipt.continuationDirective).toMatchObject({
       strategy: 'goal_if_available_else_continue_nonstop',
       nativeGoalCommandUsed: true,
     });
+    expect(receipt.goalCommand).toMatchObject({
+      mode: 'native_goal_document_ref',
+      documentHash: expect.stringMatching(/^sha256:/),
+    });
+    expect(receipt.goalCommand.mode).not.toBe('native_goal_inline');
   });
 
   it('projects generic continuation text without /goal for generic hosts', () => {

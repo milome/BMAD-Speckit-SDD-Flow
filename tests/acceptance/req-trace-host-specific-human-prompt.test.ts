@@ -28,7 +28,10 @@ afterEach(() => {
   fs.rmSync(tempDir, { recursive: true, force: true });
 });
 
-function runHost(host: string, extraArgs: string[] = []): { prompt: string; receipt: Record<string, any> } {
+function runHost(
+  host: string,
+  extraArgs: string[] = []
+): { prompt: string; receipt: Record<string, any>; goalDocument?: string } {
   const outDir = path.join(tempDir, host.replace(/[^a-z0-9-]/gi, '-'));
   execFileSync(
     process.execPath,
@@ -47,9 +50,11 @@ function runHost(host: string, extraArgs: string[] = []): { prompt: string; rece
     ],
     { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }
   );
+  const goalDocumentPath = path.join(outDir, 'goal_execution.md');
   return {
     prompt: fs.readFileSync(path.join(outDir, 'human_prompt.txt'), 'utf8'),
     receipt: JSON.parse(fs.readFileSync(path.join(outDir, 'audit_receipt.json'), 'utf8')),
+    goalDocument: fs.existsSync(goalDocumentPath) ? fs.readFileSync(goalDocumentPath, 'utf8') : undefined,
   };
 }
 
@@ -181,7 +186,7 @@ function runLongGoal(extraArgs: string[] = []): { prompt: string; receipt: Recor
 }
 
 describe('req trace host-specific human prompt generation', () => {
-  it('uses /goal for Codex only when explicitly available', () => {
+  it('uses /goal document-reference mode for Codex only when explicitly available', () => {
     const fallback = runHost('codex');
     const goal = runHost('codex', ['--goal-command-available', 'true']);
 
@@ -190,8 +195,18 @@ describe('req trace host-specific human prompt generation', () => {
     expect(fallback.receipt.continuationDirective.nativeGoalCommandUsed).toBe(false);
 
     expect(goal.prompt).toContain('/goal ');
+    expect(goal.prompt).toContain('goal_execution.md');
+    expect(goal.prompt).toContain('The /goal command is an entry pointer only, not the full task scope.');
+    expect(goal.prompt).toContain('Execution scope is goal_execution.md + model_packet.json.');
     expect(goal.prompt).not.toContain('\ncontinue nonstop\n');
     expect(goal.receipt.continuationDirective.nativeGoalCommandUsed).toBe(true);
+    expect(goal.receipt.goalCommand).toMatchObject({
+      mode: 'native_goal_document_ref',
+      documentHash: expect.stringMatching(/^sha256:/),
+    });
+    expect(goal.receipt.goalCommand.mode).not.toBe('native_goal_inline');
+    expect(goal.receipt.outputs.goalDocument).toContain('goal_execution.md');
+    expect(goal.goalDocument).toContain('model_packet.json is the machine-readable execution authority');
   });
 
   it('keeps Cursor IDE and Cursor CLI as separate surfaces', () => {
@@ -217,7 +232,7 @@ describe('req trace host-specific human prompt generation', () => {
     expect(claude.prompt).not.toContain('/goal ');
   });
 
-  it('uses Claude Code /goal only when explicitly available', () => {
+  it('uses Claude Code /goal document-reference mode only when explicitly available', () => {
     const fallback = runHost('claude-code');
     const goal = runHost('claude-code', ['--goal-command-available', 'true']);
 
@@ -226,8 +241,12 @@ describe('req trace host-specific human prompt generation', () => {
     expect(fallback.receipt.continuationDirective.nativeGoalCommandUsed).toBe(false);
 
     expect(goal.prompt).toContain('/goal ');
+    expect(goal.prompt).toContain('goal_execution.md');
+    expect(goal.prompt).toContain('The /goal command is an entry pointer only, not the full task scope.');
     expect(goal.prompt).toContain('claude -p --permission-mode auto --output-format stream-json');
     expect(goal.receipt.continuationDirective.nativeGoalCommandUsed).toBe(true);
+    expect(goal.receipt.goalCommand.mode).toBe('native_goal_document_ref');
+    expect(goal.receipt.goalCommand.mode).not.toBe('native_goal_inline');
   });
 
   it('fails closed for unsupported execution hosts', () => {
@@ -254,12 +273,13 @@ describe('req trace host-specific human prompt generation', () => {
     expect(result.goalDocument).toContain('$executing-plans $verification-before-completion');
     expect(result.goalDocument).toContain('goal_execution.md is not execution authority');
     expect(result.goalDocument).toContain('model_packet.json is the machine-readable execution authority');
+    expect(result.goalDocument).toContain('AI-TDD protocol:');
+    expect(result.goalDocument).toContain('Runtime write policy:');
     expect(result.goalDocument).toContain('Strict final acceptance checklist:');
     expect(result.goalDocument).toContain('Completion Evidence Packet');
   });
 
-  it('blocks long native /goal payloads without --out-dir because no goal document can be written', () => {
-    const fixture = writeLongGoalFixture();
+  it('blocks native /goal without --out-dir because no goal document can be written', () => {
     let stdout = '';
     let status = 0;
     try {
@@ -268,9 +288,9 @@ describe('req trace host-specific human prompt generation', () => {
         [
           SCRIPT,
           '--source-document',
-          fixture.source,
+          SOURCE,
           '--requirement-record',
-          fixture.record,
+          RECORD,
           '--execution-host',
           'codex',
           '--goal-command-available',

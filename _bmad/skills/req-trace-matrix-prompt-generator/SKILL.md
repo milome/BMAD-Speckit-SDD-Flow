@@ -65,9 +65,10 @@ Compatibility aliases are accepted:
 
 - `codex` may emit `/goal` only when the caller passes `--goal-command-available true` and the confirmed host hints allow goal mode; otherwise it emits `continue nonstop`.
 - `claude-code` may emit Claude Code `/goal` only when `--goal-command-available true` and confirmed host hints allow goal mode; otherwise it emits an autonomous prompt contract.
-- Native `/goal` output is length-governed. The generator measures the complete `/goal <payload>` command against a hard 4000-character limit and a 3800-character safe limit.
-- If a native `/goal` payload exceeds the safe limit in `--out-dir` mode, the generator writes `goal_execution.md` and emits a short `/goal` document-reference command instead of truncating.
-- If a native `/goal` payload exceeds the safe limit outside `--out-dir` mode, generation blocks because no audited `goal_execution.md` can be written.
+- Native `/goal` output must be an audited document-reference entry pointer, not a short natural-language task objective.
+- When native `/goal` is available in `--out-dir` mode, the generator always writes `goal_execution.md` and emits a `/goal` command that references `goal_execution.md` and `model_packet.json`.
+- The `/goal` document-reference command is length-governed against a hard 4000-character limit and a 3800-character safe limit. If it exceeds the hard limit, generation blocks.
+- If native `/goal` is requested outside `--out-dir`, generation blocks because `goal_execution.md` and `model_packet.json` cannot be written and referenced.
 - `cursor-ide` is the default Cursor surface. It emits a Cursor IDE Agent mode prompt and must not emit `cursor-agent -p` as the primary instruction.
 - `cursor-cli` is the headless automation surface. It may emit `cursor-agent -p --force --output-format stream-json <prompt>` plus an external supervisor loop contract.
 - `generic` emits a platform-neutral continue-until-final-gates directive.
@@ -116,7 +117,7 @@ Useful options:
 - `--execution-host codex|claude-code|claude|cursor-ide|cursor-cli|cursor|generic` to select host-specific continuation projection.
 - `--prompt-language zh-CN|en-US|bilingual|auto` to select human prompt prose language. `auto` reads `implementationConfirmation.promptLanguage`, then `implementationConfirmation.confirmationLanguage`, then falls back to `zh-CN`.
 - `--human-prompt-profile full|compact` to select human prompt density. `full` is the default for `--out-dir`.
-- `--goal-command-available true|false|auto` to declare whether the active host supports a native `/goal` command. `auto` is conservative and does not emit `/goal`. When true, the generated `/goal` command is length-checked; overlong goal payloads use `goal_execution.md` in `--out-dir` mode or block without `--out-dir`.
+- `--goal-command-available true|false|auto` to declare whether the active host supports a native `/goal` command. `auto` is conservative and does not emit `/goal`. When true, the generated `/goal` command must reference `goal_execution.md` and `model_packet.json`; it requires `--out-dir` and is length-checked.
 - `--no-auto-commit` only when the user explicitly says not to auto-commit after PASS.
 
 If the script emits a `BLOCK:` marker, do not hide it and do not produce an implementation prompt.
@@ -182,7 +183,7 @@ Conversation-only requirements must first be written into an implementation sour
 
 ```text
 BLOCK: GOAL_DOCUMENT_REQUIRED
-Native /goal payload exceeds the safe length limit and --out-dir was not provided, so goal_execution.md cannot be written.
+Native /goal requires --out-dir so goal_execution.md and model_packet.json can be written and referenced.
 ```
 
 ```text
@@ -194,13 +195,13 @@ The generated /goal document-reference command still exceeds the hard length lim
 
 When `--goal-command-available true` is used for `codex` or `claude-code`, apply this decision order:
 
-1. Build the complete `/goal <payload>` command from the confirmed host execution hint.
-2. If the command is at or below 3800 characters, emit it inline and record `goalCommand.mode=native_goal_inline`.
-3. If the command exceeds 3800 characters in `--out-dir` mode, write `goal_execution.md`, emit a short `/goal` command that references `goal_execution.md` and `model_packet.json`, and record `goalCommand.mode=native_goal_document_ref`.
+1. Require `--out-dir` so `goal_execution.md` and `model_packet.json` can be written and referenced.
+2. Build the complete `/goal <payload>` command as a document-reference command that points to `goal_execution.md` and `model_packet.json`.
+3. Record `goalCommand.mode=native_goal_document_ref` for every native `/goal` output, even when the host hint's short objective would fit under 3800 characters.
 4. If the document-reference `/goal` command exceeds 4000 characters, block with `GOAL_COMMAND_TOO_LONG`.
-5. If no `--out-dir` is available for an overlong native `/goal`, block with `GOAL_DOCUMENT_REQUIRED`.
+5. If no `--out-dir` is available for native `/goal`, block with `GOAL_DOCUMENT_REQUIRED`; do not emit a short goal-only objective.
 
-`goal_execution.md` is not execution authority. It is a `/goal`-safe execution entry document. It must reference `model_packet.json`, `human_prompt.txt`, and `audit_receipt.json`, and it must state that `model_packet.json` remains the machine-readable execution authority.
+`goal_execution.md` is not execution authority. It is a `/goal`-safe execution entry document. It must reference `model_packet.json`, `human_prompt.txt`, and `audit_receipt.json`, and it must state that `model_packet.json` remains the machine-readable execution authority. `human_prompt.txt` must state that the `/goal` command is an entry pointer only, not the full task scope, and that execution scope is `goal_execution.md + model_packet.json`.
 
 `audit_receipt.json` must record `goalCommand.mode`, `goalCommand.chars`, `goalCommand.maxChars`, `goalCommand.safeMaxChars`, and, when a goal document is written, `goalCommand.documentPath` plus `goalCommand.documentHash`. It must also record `goalDocumentRequiredFragmentsPassed` and missing fragments.
 
@@ -212,6 +213,9 @@ Use this shape. Adapt only the source path, trace row order, task references, ev
 $executing-plans $verification-before-completion
 
 <host continuation directive>
+
+The /goal command is an entry pointer only, not the full task scope.
+Execution scope is goal_execution.md + model_packet.json.
 
 任务: Strictly execute confirmed traceRows from <source document path>#implementationConfirmation until governed evidence closeout or semantic gap reconfirm_required.
 
@@ -340,8 +344,8 @@ Before returning a prompt, verify all items:
 - Completion Evidence Packet includes closed IDs, open IDs, command results, E2E evidence, audit evidence, residual risks, and scope changes.
 - `audit_receipt.json` records `executionHost`, alias if used, `humanPromptProfile`, `humanPromptLanguage`, `continuationDirective`, and `humanPromptRequiredFragmentsPassed`.
 - If required human prompt fragments are missing, generation must block rather than emit a PASS receipt.
-- If native `/goal` is emitted, the receipt records `goalCommand.mode`, character counts, limits, and whether a goal document was used.
-- If `goal_execution.md` is emitted, it contains `$executing-plans $verification-before-completion`, source authority, `model_packet.json is the machine-readable execution authority`, trace order, trace slice summary, required commands, `reconfirm_required`, proof boundary, strict final acceptance checklist, and Completion Evidence Packet schema.
+- If native `/goal` is emitted, the receipt records `goalCommand.mode=native_goal_document_ref`, character counts, limits, `goalCommand.documentPath`, `goalCommand.documentHash`, and never records `native_goal_inline`.
+- If `goal_execution.md` is emitted, it contains `$executing-plans $verification-before-completion`, source authority, `model_packet.json is the machine-readable execution authority`, trace order, trace slice summary, required commands, AI-TDD protocol, runtime write policy, `reconfirm_required`, proof boundary, strict final acceptance checklist, and Completion Evidence Packet schema.
 - If required goal document fragments are missing, generation must block rather than emit a PASS receipt.
 
 ## Scope Change Request
