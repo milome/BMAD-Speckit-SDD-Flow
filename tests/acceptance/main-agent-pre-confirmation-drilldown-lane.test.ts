@@ -4,6 +4,7 @@ import path from 'node:path';
 import * as yaml from 'js-yaml';
 import { describe, expect, it } from 'vitest';
 import {
+  runMainAgentAuthoringRepair,
   mainMainAgentOrchestration,
   resolveMainAgentOrchestrationSurface,
   runMainAgentPreConfirmationDrilldown,
@@ -65,6 +66,116 @@ function writeSourceDrivenRequirement(root: string, name = 'source-driven.md'): 
   return source;
 }
 
+function writeRichPreserveExistingRequirement(root: string, name = 'rich-preserve-existing.md'): string {
+  const source = path.join(root, 'docs', 'requirements', name);
+  mkdirSync(path.dirname(source), { recursive: true });
+  writeFileSync(
+    source,
+    [
+      '# Rich Preserve Existing Requirement',
+      '',
+      'CUSTOM-PRESERVE-ANCHOR: this prose must not be overwritten by authoring repair.',
+      '',
+      'implementationConfirmation:',
+      '  contractSchemaVersion: 1',
+      '  status: draft',
+      '  recordId: REQ-PRE-CONFIRMATION-PRESERVE-EXISTING',
+      '  requirementSetId: REQSET-PRE-CONFIRMATION-PRESERVE-EXISTING',
+      '  entryFlow: standalone_tasks',
+      '  entryFlowClass: task_packet_entry',
+      '  workflowAdapter: direct',
+      '  contractAuthoringRequired: true',
+      '  confirmationLanguage: zh-CN',
+      '  confirmationProfile: implementation_confirmation',
+      '  requiredViewPacks: ["currentTargetMap"]',
+      '  optionalViewPacks: []',
+      '  confirmedAt: null',
+      '  confirmedBy: null',
+      '  sourceDocumentHash: null',
+      '  confirmationRender:',
+      '    htmlPath: null',
+      '    summaryPath: null',
+      '    reportPath: null',
+      '    htmlHash: null',
+      '    confirmationPhrase: null',
+      '  must:',
+      '    - id: MUST-900',
+      '      text: "Preserve rich implementationConfirmation rows before confirmation rendering."',
+      '      evidenceRefs: ["EVD-900"]',
+      '      coveredByTraceRows: ["TRACE-900"]',
+      '      coveredBySequenceViews: ["SEQ-900"]',
+      '  notDone:',
+      '    - id: NEG-900',
+      '      text: "Do not replace the existing contract with generated simplified YAML."',
+      '      evidenceRefs: ["EVD-900"]',
+      '      whyItBlocksCompletion: "Overwrite loses author intent."',
+      '      negativeAssertionRequired: true',
+      '  mustNot:',
+      '    - id: OUT-900',
+      '      text: "Confirmation renderability is not delivery readiness."',
+      '      scopeBoundary: confirmation_only',
+      '      userApprovalRequiredIfChanged: true',
+      '  evidence:',
+      '    - id: EVD-900',
+      '      text: "Repair emits authoring artifacts without mutating source."',
+      '      gate: "npx vitest run tests/acceptance/main-agent-pre-confirmation-drilldown-lane.test.ts"',
+      '      oracle: "Source content remains unchanged."',
+      '      requiredCommandRefs: ["CMD-900"]',
+      '      artifactRefs: ["ART-900"]',
+      '  traceRows:',
+      '    - id: TRACE-900',
+      '      covers: ["MUST-900", "NEG-900"]',
+      '      taskRefs: []',
+      '      evidenceRefs: ["EVD-900"]',
+      '      contractValidationCommandRefs: ["CMD-900"]',
+      '      deliveryEvidenceCommandRefs: ["CMD-900"]',
+      '      acceptanceRefs: ["ACC-900"]',
+      '      sequenceViewRefs: ["SEQ-900"]',
+      '      boundaryViewRefs: []',
+      '      artifactRefs: ["ART-900"]',
+      '      status: PENDING',
+      '  acceptanceTests:',
+      '    - id: ACC-900',
+      '      file: tests/acceptance/main-agent-pre-confirmation-drilldown-lane.test.ts',
+      '      covers: ["MUST-900"]',
+      '      traceRows: ["TRACE-900"]',
+      '      evidenceRefs: ["EVD-900"]',
+      '      commandRefs: ["CMD-900"]',
+      '      positiveControl: true',
+      '      expectedPreImplementationState: expected_red',
+      '      oracle: "Preserve-existing repair blocks before response artifact."',
+      '  requiredCommands:',
+      '    - id: CMD-900',
+      '      command: "npx vitest run tests/acceptance/main-agent-pre-confirmation-drilldown-lane.test.ts"',
+      '      purpose: "Validate preserve-existing repair entry."',
+      '      expected: "Targeted test passes."',
+      '      targetFiles: ["scripts/main-agent-orchestration.ts"]',
+      '      traceRows: ["TRACE-900"]',
+      '      evidenceRefs: ["EVD-900"]',
+      '  currentTargetMap:',
+      '    schemaVersion: current-target-map/v1',
+      '    displayProfile: closed_loop_current_target_map',
+      '    currentSummary:',
+      '      - title: "Existing source"',
+      '        detail: "Rich source already exists."',
+      '    targetSummary:',
+      '      - title: "Repaired source"',
+      '        detail: "Authoring artifacts are synchronized without source overwrite."',
+      '    diffRows:',
+      '      - dimension: "Authoring repair"',
+      '        currentState: "pre-render gate missing"',
+      '        targetState: "Critical Auditor request emitted"',
+      '        action: "write response artifact"',
+      '  customAuditRows:',
+      '    - id: CUSTOM-ROW-900',
+      '      text: "custom section must stay"',
+      '',
+    ].join('\n'),
+    'utf8'
+  );
+  return source;
+}
+
 function readJson(file: string): any {
   return JSON.parse(readFileSync(file, 'utf8'));
 }
@@ -117,9 +228,21 @@ function artifacts(root: string, recordId: string) {
   };
 }
 
-function cleanCriticalAuditorRound({ roundIndex }: { roundIndex: number }) {
+function cleanCriticalAuditorRound(input: any) {
+  const { roundIndex, gateDryRun, packetProjectionSummary } = input;
   return {
     verdict: 'no_new_valid_gap' as const,
+    gateDryRunHash: gateDryRun.hash,
+    reconciliationIssueCount: gateDryRun.reconciliation.issueCount,
+    checkedProjectionGroups: packetProjectionSummary.projectionGroups,
+    reviewedProjectionRefs: packetProjectionSummary.projectionRefs.slice(0, 1),
+    priorFindingsDisposition: [
+      {
+        findingRef: `ROUND-${roundIndex}-BASELINE`,
+        disposition: roundIndex === 1 ? 'new' : 'unchanged',
+        evidenceRefs: [gateDryRun.reportPath],
+      },
+    ],
     rejectedGapCandidates: [{ id: `REJ-${roundIndex}`, reason: 'no new valid gap detected' }],
     rationale: `Round ${roundIndex} found no new valid gap.`,
   };
@@ -306,6 +429,46 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
     }
   });
 
+  it('authoring-repair preserve-existing keeps a rich implementationConfirmation and blocks with a repair command', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-pre-confirmation-preserve-existing-'));
+    try {
+      const source = writeRichPreserveExistingRequirement(root);
+      const original = readFileSync(source, 'utf8');
+
+      const result = runMainAgentAuthoringRepair(root, {
+        source,
+        recordId: 'REQ-PRE-CONFIRMATION-PRESERVE-EXISTING',
+        requirementSetId: 'REQSET-PRE-CONFIRMATION-PRESERVE-EXISTING',
+        mode: 'preserve-existing',
+      });
+
+      expect(result.status).toBe('blocked');
+      expect(result.blockingStage).toBe('critical_auditor_round_required');
+      expect(result.nextRequiredAction).toBe('write_critical_auditor_round_response');
+      expect(result.repairCommand).toContain('main-agent-orchestration --action authoring-repair --mode preserve-existing');
+      expect(existsSync(path.join(root, result.paths.semanticKernel))).toBe(true);
+      expect(existsSync(path.join(root, result.paths.mustDecompositionPacket))).toBe(true);
+      expect(
+        existsSync(
+          path.join(
+            root,
+            '_bmad-output',
+            'runtime',
+            'requirement-records',
+            'REQ-PRE-CONFIRMATION-PRESERVE-EXISTING',
+            'authoring',
+            'critical-auditor-round-request-1.json'
+          )
+        )
+      ).toBe(true);
+      expect(readFileSync(source, 'utf8')).toBe(original);
+      expect(readFileSync(source, 'utf8')).toContain('CUSTOM-PRESERVE-ANCHOR');
+      expect(readFileSync(source, 'utf8')).toContain('customAuditRows:');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('continues Critical Auditor rounds until three consecutive no-new-gap receipts', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-pre-confirmation-real-audit-loop-'));
     try {
@@ -317,11 +480,23 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
         recordId: 'REQ-PRE-CONFIRMATION-REAL-AUDIT-LOOP',
         requirementSetId: 'REQSET-PRE-CONFIRMATION-REAL-AUDIT-LOOP',
         confirmationLanguage: 'zh-CN',
-        criticalAuditorRound: ({ roundIndex }) => {
+        criticalAuditorRound: (input) => {
+          const { roundIndex } = input;
           seenRounds.push(roundIndex);
           if (roundIndex <= 2) {
             return {
               verdict: 'new_valid_gap',
+              gateDryRunHash: input.gateDryRun.hash,
+              reconciliationIssueCount: input.gateDryRun.reconciliation.issueCount,
+              checkedProjectionGroups: input.packetProjectionSummary.projectionGroups,
+              reviewedProjectionRefs: input.packetProjectionSummary.projectionRefs.slice(0, 1),
+              priorFindingsDisposition: [
+                {
+                  findingRef: `ROUND-${roundIndex}-GAP`,
+                  disposition: 'new',
+                  evidenceRefs: [input.gateDryRun.reportPath],
+                },
+              ],
               gapCandidates: [{ id: `GAP-${roundIndex}`, status: 'resolved' }],
               validatedGaps: [{ id: `GAP-${roundIndex}`, status: 'resolved' }],
               rationale: `Round ${roundIndex} found a valid gap and reset convergence.`,
@@ -329,6 +504,17 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
           }
           return {
             verdict: 'no_new_valid_gap',
+            gateDryRunHash: input.gateDryRun.hash,
+            reconciliationIssueCount: input.gateDryRun.reconciliation.issueCount,
+            checkedProjectionGroups: input.packetProjectionSummary.projectionGroups,
+            reviewedProjectionRefs: input.packetProjectionSummary.projectionRefs.slice(0, 1),
+            priorFindingsDisposition: [
+              {
+                findingRef: `ROUND-${roundIndex}-BASELINE`,
+                disposition: 'unchanged',
+                evidenceRefs: [input.gateDryRun.reportPath],
+              },
+            ],
             rejectedGapCandidates: [{ id: `REJ-${roundIndex}`, reason: 'no new valid gap after repairs' }],
             rationale: `Round ${roundIndex} found no new valid gap.`,
           };
@@ -383,6 +569,17 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
           if (input.roundIndex === 1) {
             return {
               verdict: 'new_valid_gap',
+              gateDryRunHash: input.gateDryRun.hash,
+              reconciliationIssueCount: input.gateDryRun.reconciliation.issueCount,
+              checkedProjectionGroups: input.packetProjectionSummary.projectionGroups,
+              reviewedProjectionRefs: input.packetProjectionSummary.projectionRefs.slice(0, 1),
+              priorFindingsDisposition: [
+                {
+                  findingRef: 'GAP-SOURCE-ROUND-1',
+                  disposition: 'new',
+                  evidenceRefs: [input.gateDryRun.reportPath],
+                },
+              ],
               gapCandidates: [{ id: 'GAP-SOURCE-ROUND-1', status: 'resolved' }],
               validatedGaps: [{ id: 'GAP-SOURCE-ROUND-1', status: 'resolved' }],
               rationale: 'First audit round found a resolved source-driven decomposition gap.',
@@ -390,6 +587,17 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
           }
           return {
             verdict: 'no_new_valid_gap',
+            gateDryRunHash: input.gateDryRun.hash,
+            reconciliationIssueCount: input.gateDryRun.reconciliation.issueCount,
+            checkedProjectionGroups: input.packetProjectionSummary.projectionGroups,
+            reviewedProjectionRefs: input.packetProjectionSummary.projectionRefs.slice(0, 1),
+            priorFindingsDisposition: [
+              {
+                findingRef: `ROUND-${input.roundIndex}-SOURCE`,
+                disposition: 'unchanged',
+                evidenceRefs: [input.gateDryRun.reportPath],
+              },
+            ],
             rejectedGapCandidates: [{ id: `REJ-SOURCE-${input.roundIndex}`, reason: 'all source-derived MUSTs visible' }],
             rationale: `Round ${input.roundIndex} found no new source-derived gap.`,
           };

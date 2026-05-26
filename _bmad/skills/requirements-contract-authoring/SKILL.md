@@ -46,7 +46,17 @@ If older project material says "requirements contract", treat it as a legacy ali
 - Treat `acceptanceTests[]` and `e2eSuites[]` as first-class contract rows. `CMD-*` says how to run, `ACC-*` / `E2E-*` says what is being accepted, `EVD-*` says why the result is trusted, and `TRACE-*` binds the slice.
 - A `MUST-*` is not allowed to be only a sentence-level claim. Every `MUST-*` must first enter `must_decomposition_packet.json`, where it is split into atomic tasks, atomicity drivers, question coverage, and projection rows.
 - `EVD-*`, `TRACE-*`, `ACC-*`, `E2E-*`, `failurePaths[]`, `edgeCases[]`, `currentTargetMap`, and `aiTddContractExecutionManifestProjection` must be same-origin projections from the synchronized `must_decomposition_packet.json`; they must not be independently invented in the source document.
-- Critical Auditor is mandatory for confirmation-ready authoring. Three consecutive no-new-valid-gap rounds, recorded as `consecutiveNoNewGapRounds: 3`, are the only convergence condition for the pre-confirmation atomic decomposition loop.
+- Critical Auditor is mandatory for confirmation-ready authoring. The convergence condition is `3` consecutive no-new-valid-gap receipts bound to the current input hash, plus deterministic `pre_render_must_decomposition_gate` `PASS`, plus packet/source reconciliation `pass`. Receipt count alone is not convergence.
+- Every Critical Auditor round must consume a current deterministic gate dry-run before the request is written. The request must include the dry-run report path, dry-run hash, actionable blocker count, failed checks, reconciliation issue count, checked projection groups, and packet projection refs. If the dry-run exposes actionable blockers, a `no_new_*` response is forbidden unless `falsePositiveProofs[]` covers every blocker with machine-verifiable evidence.
+- Critical Auditor rounds must use fixed attack perspectives instead of repeating the same generic prompt: round 1 checks MUST atomicity, over-broad tasks, and missing decomposition; round 2 checks EVD / TRACE / ACC / E2E / FAIL / EDGE / artifact / command / AI-TDD projection materialization; round 3 checks stale hash, authority bypass, negative boundary, reconfirmation, and delivery-vs-confirmation confusion.
+- Critical Auditor responses are fail-closed. A no-new-gap response must include non-empty `reviewedProjectionRefs`, the current `gateDryRunHash`, the dry-run `reconciliationIssueCount`, all required `checkedProjectionGroups`, and `priorFindingsDisposition[]` entries classified only as `new`, `resolved`, `unchanged`, or `rejected`.
+- If the source document, inline `implementationConfirmation`, semantic kernel, or packet hash changes, `authoring-repair` must automatically archive stale Critical Auditor requests, responses, receipts, and dry-run artifacts, then restart the three-round loop from round 1. Do not ask the user to manually delete or move stale audit artifacts.
+- If the user asks to update an existing implementation source document and the edit changes `implementationConfirmation.must[]`, `notDone[]`, `evidence[]`, `traceRows[]`, `acceptanceTests[]`, `requiredCommands[]`, `currentTargetMap`, `aiTddContractExecutionManifestProjection`, governance event semantics, controlled ingest semantics, or closeout semantics, the agent MUST run `main-agent-orchestration --action authoring-repair --mode preserve-existing --source <source> --json` before reporting completion, unless the user explicitly requested draft-only editing.
+- Draft-only output after a semantic source edit must be labeled exactly as not confirmation-ready:
+  - `status: draft_updated_not_confirmation_ready`
+  - `missing: pre-confirmation drilldown artifacts`
+  - `next: main-agent-orchestration --action authoring-repair --mode preserve-existing --source <source> --json`
+- Scripts may generate Critical Auditor round requests and validate response artifacts, but they must not fabricate no-new-gap receipts without a main-agent/LLM `critical-auditor-round-response-<n>.json` artifact.
 - When governance events apply, require `governanceEventTypeRegistryPolicy` plus `governanceEventTypeRegistry[]`; every event type needs a `payloadContract` that passes the policy.
 - `governanceEventTypeRegistryPolicy` must define `controlFieldVocabulary[]`, `payloadKindContracts[]`, `controlWriteModePolicies[]`, and `eventSpecificRequirements[]`; renderer, ingest, gates, hooks, workers, and tests must not keep a second hardcoded event or payload rule list.
 - `controlFieldVocabulary[]` is the only policy-level vocabulary for control-shaped fields. A transport envelope that carries any vocabulary field at top level or under `payload` must be rejected unless the current event type lists that field in `writesControlFields[]`.
@@ -71,9 +81,9 @@ Do not collapse these modes into one long execution chain. "Generate requirement
 Internal stages are mandatory workflow phases, not user-facing manual commands:
 
 - `semantic-kernel-authoring`: produce `_bmad-output/runtime/requirement-records/<recordId>/authoring/semantic-kernel.json`.
-- `atomic-decomposition-loop`: produce `_bmad-output/runtime/requirement-records/<recordId>/authoring/must_decomposition_packet.json`, invoke Critical Auditor, and iterate until `consecutiveNoNewGapRounds: 3`.
+- `atomic-decomposition-loop`: produce `_bmad-output/runtime/requirement-records/<recordId>/authoring/must_decomposition_packet.json`, invoke Critical Auditor with a current gate dry-run and the fixed round attack perspective, and iterate until current-hash `consecutiveNoNewGapRounds: 3` is reached.
 - `packet-source-materialization`: materialize only synchronized packet projections into inline `implementationConfirmation`.
-- `pre-render-drilldown-gate`: run `pre_render_must_decomposition_gate.js` and block HTML rendering until the gate passes.
+- `pre-render-drilldown-gate`: run `pre_render_must_decomposition_gate.js` after three bound no-new-gap receipts and block HTML rendering until the gate returns `PASS` and packet/source reconciliation returns `pass`.
 
 ## Confirmation-Ready Authoring Target
 
@@ -502,7 +512,7 @@ Rules:
 
 Before rendering HTML, verify the source document against confirmation-page blocking rules:
 
-Run the pre-confirmation atomic decomposition loop first. This loop produces `semantic-kernel.json`, `must_decomposition_packet.json`, Critical Auditor receipts, packet/source reconciliation, and a deterministic pre-render MUST decomposition gate report. The loop is mandatory for both checkpoint and single_pass scale decisions.
+Run the pre-confirmation atomic decomposition loop first. This loop produces `semantic-kernel.json`, `must_decomposition_packet.json`, Critical Auditor requests/responses/receipts, per-round deterministic gate dry-run reports, packet/source reconciliation, and a deterministic pre-render MUST decomposition gate report. The loop is mandatory for both checkpoint and single_pass scale decisions.
 
 Run the deterministic definition drilldown first:
 
@@ -538,9 +548,21 @@ node <skill-dir>/scripts/pre_render_must_decomposition_gate.js \
   --json
 ```
 
-The gate reads `semantic-kernel.json`, `must_decomposition_packet.json`, `critical-auditor-receipt-round-*.json`, inline `implementationConfirmation`, and packet/source reconciliation state. It writes `must_decomposition_receipt.json`, `must_packet_source_reconciliation_report.json`, and `pre-render-must-decomposition-gate-report.json`.
+The gate reads `semantic-kernel.json`, `must_decomposition_packet.json`, `critical-auditor-receipt-round-*.json`, inline `implementationConfirmation`, and packet/source reconciliation state. The final gate writes `must_decomposition_receipt.json`, `must_packet_source_reconciliation_report.json`, and `pre-render-must-decomposition-gate-report.json`. Per-round Critical Auditor dry-runs must write round-scoped dry-run files and must not be treated as final confirmation readiness.
 
 The gate is deterministic and fail-closed. It verifies schema, source hashes, task split, question coverage, packet projection materialization, Critical Auditor convergence, and two-way packet/source reconciliation. It must block on missing semantic kernel, missing packet, stale packet hash, missing Critical Auditor receipt, fewer than three no-new-gap rounds, unresolved validated gap, incomplete question coverage, `actualTaskCount < expectedTaskCount`, over-broad atomic task, missing packet projection, source row independently invented, packet projection not materialized, missing packet/source reconciliation, or any stale gate report.
+
+Each Critical Auditor request must embed the current dry-run summary:
+
+- `gateDryRunHash`
+- dry-run `verdict`, `failedChecks`, `actionableBlockingIssueCount`, and blocker refs
+- reconciliation `verdict`, `issueCount`, and `checkedGroups`
+- all packet projection groups and projection refs
+- the fixed round attack perspective
+
+Each response must echo the dry-run binding and checked surfaces. The response is invalid if `reviewedProjectionRefs[]` is empty, `gateDryRunHash` does not match the request, `reconciliationIssueCount` differs from the dry-run, any required projection group is missing from `checkedProjectionGroups[]`, or `priorFindingsDisposition[]` is absent or uses a value outside `new/resolved/unchanged/rejected`.
+
+Do not count stale or unbound receipts. When source, `implementationConfirmation`, semantic kernel, or packet hash changes, archive existing `critical-auditor-round-request-*.json`, `critical-auditor-round-response-*.json`, `critical-auditor-receipt-round-*.json`, and round dry-run artifacts under a stale Critical Auditor archive directory, then restart at round 1.
 
 ```bash
 node <skill-dir>/scripts/pre_render_definition_drilldown.js \

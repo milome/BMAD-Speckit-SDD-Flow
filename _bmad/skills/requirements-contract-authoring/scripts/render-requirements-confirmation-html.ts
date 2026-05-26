@@ -566,6 +566,15 @@ function defaultPreRenderMustGateReportPath(recordId) {
   return path.join(defaultAuthoringDir(recordId), 'pre-render-must-decomposition-gate-report.json');
 }
 
+function authoringRepairIssue(message, refs = []) {
+  return {
+    ...blocking('pre_confirmation_authoring_repair_required', message, refs),
+    legacyCode: 'missing_pre_confirmation_semantic_drilldown_gate_report',
+    repairAction: 'run_authoring_repair_preserve_existing',
+    repairCommand: 'main-agent-orchestration --action authoring-repair --mode preserve-existing --source <source> --json',
+  };
+}
+
 function loadPreConfirmationSemanticDrilldown(args, confirmation, hashes) {
   const explicitPath =
     args.drilldownGateReport ??
@@ -576,7 +585,7 @@ function loadPreConfirmationSemanticDrilldown(args, confirmation, hashes) {
   const reportPath = explicitPath || (confirmation.recordId ? defaultPreRenderMustGateReportPath(confirmation.recordId) : '');
   const issues = [];
   if (!reportPath) {
-    issues.push(blocking('missing_pre_confirmation_semantic_drilldown_gate_report', 'pre-render MUST decomposition gate report is required before confirmation HTML'));
+    issues.push(authoringRepairIssue('pre-render MUST decomposition gate report is required before confirmation HTML'));
     return {
       status: 'missing',
       reportPath: '',
@@ -589,8 +598,13 @@ function loadPreConfirmationSemanticDrilldown(args, confirmation, hashes) {
   const read = readJsonSafe(reportPath);
   if (!read.ok) {
     issues.push(
-      blocking(
-        read.missing ? 'missing_pre_confirmation_semantic_drilldown_gate_report' : 'pre_confirmation_semantic_drilldown_gate_report_parse_failed',
+      read.missing
+        ? authoringRepairIssue(
+            read.error ?? 'pre-render MUST decomposition gate report is missing or unreadable',
+            [normalizePathForReport(path.resolve(reportPath))]
+          )
+        : blocking(
+        'pre_confirmation_semantic_drilldown_gate_report_parse_failed',
         read.error ?? 'pre-render MUST decomposition gate report is missing or unreadable',
         [normalizePathForReport(path.resolve(reportPath))]
       )
@@ -633,6 +647,13 @@ function loadPreConfirmationSemanticDrilldown(args, confirmation, hashes) {
   }
   if (report.packetSourceReconciliation?.verdict && report.packetSourceReconciliation.verdict !== 'pass') {
     issues.push(blocking('pre_confirmation_semantic_drilldown_reconciliation_failed', 'packet/source reconciliation did not pass'));
+  }
+  if (issues.length) {
+    issues.push(
+      authoringRepairIssue('pre-confirmation authoring repair must be rerun before rendering confirmation HTML', [
+        normalizePathForReport(path.resolve(reportPath)),
+      ])
+    );
   }
   return {
     status: issues.length ? 'blocked' : 'pass',

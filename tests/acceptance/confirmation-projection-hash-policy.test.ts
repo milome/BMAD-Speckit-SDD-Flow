@@ -63,7 +63,9 @@ function stableStringify(value: unknown): string {
     .join(',')}}`;
 }
 
-function semanticConfirmationForHash(confirmation: Record<string, unknown>): Record<string, unknown> {
+function semanticConfirmationForHash(
+  confirmation: Record<string, unknown>
+): Record<string, unknown> {
   return Object.fromEntries(
     Object.entries(confirmation).filter(([key]) => !BOOKKEEPING_FIELDS.has(key))
   );
@@ -117,10 +119,21 @@ function portablePath(filePath: string): string {
 
 function writeSource(): string {
   const source = path.join(tempDir, 'source.md');
-  const acceptancePath = path.join(tempDir, 'tests', 'acceptance', 'confirmation-projection-hash-policy.test.ts');
+  const acceptancePath = path.join(
+    tempDir,
+    'tests',
+    'acceptance',
+    'confirmation-projection-hash-policy.test.ts'
+  );
   const e2ePath = path.join(tempDir, 'tests', 'e2e', 'confirmation-projection-policy.e2e.test.ts');
-  writeText(acceptancePath, 'import { it } from "vitest"; it("projection policy red fixture", () => {});\n');
-  writeText(e2ePath, 'import { it } from "vitest"; it("projection policy e2e red fixture", () => {});\n');
+  writeText(
+    acceptancePath,
+    'import { it } from "vitest"; it("projection policy red fixture", () => {});\n'
+  );
+  writeText(
+    e2ePath,
+    'import { it } from "vitest"; it("projection policy e2e red fixture", () => {});\n'
+  );
   writeText(
     source,
     `# Confirmation Projection Policy
@@ -369,13 +382,17 @@ Verdict: PASS
 ## Definition of Done
 
 - Projection hash-only drift is recorded as projection refresh, not semantic reconfirmation.
-`,
-    'utf8'
+`
   );
   return source;
 }
 
-function writeRenderReport(source: string, pageHash: string, suffix = ''): {
+function writeRenderReport(
+  source: string,
+  pageHash: string,
+  suffix = '',
+  expectedHtmlHash = pageHash
+): {
   reportPath: string;
   report: Record<string, unknown>;
   confirmTextPath: string;
@@ -403,7 +420,11 @@ function writeRenderReport(source: string, pageHash: string, suffix = ''): {
     `pre-render-must-decomposition-gate-report${suffix}.json`
   );
   fs.mkdirSync(path.dirname(drilldownReportPath), { recursive: true });
-  fs.writeFileSync(htmlPath, '<!doctype html><title>confirmation projection policy</title>\n', 'utf8');
+  fs.writeFileSync(
+    htmlPath,
+    '<!doctype html><title>confirmation projection policy</title>\n',
+    'utf8'
+  );
   const confirmText = [
     '确认以上范围进入下一阶段',
     `sourceDocumentHash=${hashes.sourceDocumentHash}`,
@@ -421,7 +442,7 @@ function writeRenderReport(source: string, pageHash: string, suffix = ''): {
     implementationConfirmationHashScope:
       'semantic_implementation_confirmation_excluding_bookkeeping',
     confirmationPageHash: pageHash,
-    actualHtmlFileHash: pageHash,
+    actualHtmlFileHash: expectedHtmlHash,
     generatedAt: '2026-05-20T00:00:00.000Z',
     language: 'zh-CN',
     deliveryReadiness: { ready: false, status: 'delivery_not_ready_before_implementation' },
@@ -486,7 +507,10 @@ function recordPath(): string {
   );
 }
 
-function runNode(script: string, args: string[]): { stdout: string; stderr: string; status: number } {
+function runNode(
+  script: string,
+  args: string[]
+): { stdout: string; stderr: string; status: number } {
   try {
     const stdout = execFileSync(process.execPath, [script, ...args], {
       cwd: ROOT,
@@ -505,17 +529,15 @@ function runNode(script: string, args: string[]): { stdout: string; stderr: stri
 
 function runPrompt(source: string, requirementRecord: string): { stdout: string; status: number } {
   try {
-    const stdout = execFileSync('python', [
-      REQ_TRACE_PROMPT,
-      '--source-document',
-      source,
-      '--requirement-record',
-      requirementRecord,
-    ], {
-      cwd: ROOT,
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
+    const stdout = execFileSync(
+      'python',
+      [REQ_TRACE_PROMPT, '--source-document', source, '--requirement-record', requirementRecord],
+      {
+        cwd: ROOT,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+      }
+    );
     return { stdout, status: 0 };
   } catch (error: any) {
     return { stdout: String(error.stdout ?? ''), status: error.status ?? 1 };
@@ -599,9 +621,15 @@ function ingestConfirmation(source: string, reportPath: string, confirmTextPath:
     '--requirement-record',
     recordPath(),
     '--event-log',
-    path.join(tempDir, '_bmad-output/runtime/requirement-records/REQ-PROJECTION-POLICY/data/mentor-events.jsonl'),
+    path.join(
+      tempDir,
+      '_bmad-output/runtime/requirement-records/REQ-PROJECTION-POLICY/data/mentor-events.jsonl'
+    ),
     '--artifact-index',
-    path.join(tempDir, '_bmad-output/runtime/requirement-records/REQ-PROJECTION-POLICY/artifact-index.jsonl'),
+    path.join(
+      tempDir,
+      '_bmad-output/runtime/requirement-records/REQ-PROJECTION-POLICY/artifact-index.jsonl'
+    ),
     '--confirmed-at',
     '2026-05-20T00:00:00.000Z',
     '--json',
@@ -620,13 +648,22 @@ describe('confirmation projection hash policy', () => {
     const beforeProjectionWithArchitecture = JSON.parse(fs.readFileSync(recordPath(), 'utf8'));
     const refreshed = writeRenderReport(source, NEW_PAGE_HASH, '-refreshed');
 
-    const projectionRefresh = ingestConfirmation(source, refreshed.reportPath, first.confirmTextPath);
-    expect(projectionRefresh.status, `${projectionRefresh.stdout}\n${projectionRefresh.stderr}`).toBe(0);
+    const projectionRefresh = ingestConfirmation(
+      source,
+      refreshed.reportPath,
+      first.confirmTextPath
+    );
+    expect(
+      projectionRefresh.status,
+      `${projectionRefresh.stdout}\n${projectionRefresh.stderr}`
+    ).toBe(0);
     const refreshedRecord = JSON.parse(fs.readFileSync(recordPath(), 'utf8'));
 
     expect(fs.readFileSync(source, 'utf8')).toBe(afterSemanticConfirmationSource);
     expect(refreshedRecord.status).toBe('user_confirmed');
-    expect(refreshedRecord.confirmationHistory).toEqual(beforeProjectionWithArchitecture.confirmationHistory);
+    expect(refreshedRecord.confirmationHistory).toEqual(
+      beforeProjectionWithArchitecture.confirmationHistory
+    );
     expect(refreshedRecord.confirmationHistory).toEqual(beforeProjectionRecord.confirmationHistory);
     expect(refreshedRecord.confirmationProjectionHistory.at(-1)).toMatchObject({
       eventType: 'confirmation_projection_refreshed',
@@ -652,9 +689,11 @@ describe('confirmation projection hash policy', () => {
     fs.cpSync(path.join(ROOT, '_bmad', '_config'), path.join(tempDir, '_bmad', '_config'), {
       recursive: true,
     });
-    expect(fs.existsSync(path.join(tempDir, 'tests', 'acceptance', 'confirmation-projection-hash-policy.test.ts'))).toBe(
-      true
-    );
+    expect(
+      fs.existsSync(
+        path.join(tempDir, 'tests', 'acceptance', 'confirmation-projection-hash-policy.test.ts')
+      )
+    ).toBe(true);
     const previousCwd = process.cwd();
     let readiness = 1;
     try {
@@ -670,8 +709,18 @@ describe('confirmation projection hash policy', () => {
       process.chdir(previousCwd);
     }
     const readinessRecord = JSON.parse(fs.readFileSync(recordPath(), 'utf8'));
-    const fixtureTestPath = path.join(tempDir, 'tests', 'acceptance', 'confirmation-projection-hash-policy.test.ts');
-    const fixtureE2ePath = path.join(tempDir, 'tests', 'e2e', 'confirmation-projection-policy.e2e.test.ts');
+    const fixtureTestPath = path.join(
+      tempDir,
+      'tests',
+      'acceptance',
+      'confirmation-projection-hash-policy.test.ts'
+    );
+    const fixtureE2ePath = path.join(
+      tempDir,
+      'tests',
+      'e2e',
+      'confirmation-projection-policy.e2e.test.ts'
+    );
     const readinessReportPath = path.join(
       tempDir,
       '_bmad-output',
@@ -687,7 +736,8 @@ describe('confirmation projection hash policy', () => {
         {
           gateCheck: readinessRecord.gateChecks?.at(-1),
           aiTddCheck: readinessReport.checks.find(
-            (check: Record<string, unknown>) => check.id === 'ai-tdd-contract-gate-pre-implementation'
+            (check: Record<string, unknown>) =>
+              check.id === 'ai-tdd-contract-gate-pre-implementation'
           ),
           fixtureExistsAfterGate: {
             acceptance: fs.existsSync(fixtureTestPath),
@@ -696,7 +746,8 @@ describe('confirmation projection hash policy', () => {
             e2ePath: fixtureE2ePath,
           },
           redGreenMatrix: readinessReport.checks.find(
-            (check: Record<string, unknown>) => check.id === 'ai-tdd-contract-gate-pre-implementation'
+            (check: Record<string, unknown>) =>
+              check.id === 'ai-tdd-contract-gate-pre-implementation'
           )?.redGreenMatrix,
         },
         null,
@@ -704,12 +755,16 @@ describe('confirmation projection hash policy', () => {
       )
     ).toBe(0);
     expect(
-      readinessReport.checks.find((check: Record<string, unknown>) => check.id === 'ai-tdd-contract-gate-pre-implementation'),
+      readinessReport.checks.find(
+        (check: Record<string, unknown>) => check.id === 'ai-tdd-contract-gate-pre-implementation'
+      ),
       JSON.stringify(readinessReport, null, 2)
     ).toMatchObject({ passed: true });
     const stageAuditCheck = readinessRecord.gateChecks
       .at(-1)
-      .checks.find((check: Record<string, unknown>) => check.id === 'implementation-readiness-stage-audit');
+      .checks.find(
+        (check: Record<string, unknown>) => check.id === 'implementation-readiness-stage-audit'
+      );
     expect(portablePath(String(stageAuditCheck.scriptPath))).toContain(
       '.cursor/skills/requirements-contract-authoring/scripts/audit_implementation_readiness.js'
     );
@@ -724,10 +779,12 @@ describe('confirmation projection hash policy', () => {
     expect(ingestConfirmation(source, first.reportPath, first.confirmTextPath).status).toBe(0);
     fs.writeFileSync(
       source,
-      fs.readFileSync(source, 'utf8').replace(
-        'Only semantic source or implementation hash drift can require demand reconfirmation.',
-        'Changed semantic requirement text requires demand reconfirmation.'
-      ),
+      fs
+        .readFileSync(source, 'utf8')
+        .replace(
+          'Only semantic source or implementation hash drift can require demand reconfirmation.',
+          'Changed semantic requirement text requires demand reconfirmation.'
+        ),
       'utf8'
     );
 

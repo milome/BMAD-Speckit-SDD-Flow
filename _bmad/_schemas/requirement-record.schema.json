@@ -1135,14 +1135,17 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "applies": { "type": "boolean" },
         "required": { "type": "boolean" },
         "enforcementMode": { "enum": ["default_for_confirmed", "explicit_required", "skipped_by_policy"] },
         "lastReportPath": { "$ref": "#/$defs/nonEmptyString" },
         "lastReportHash": { "$ref": "#/$defs/sha256" },
+        "requirementPreImplementationPlan": { "$ref": "#/$defs/aiTddPreImplementationPlan" },
         "preImplementationRedProofs": {
           "type": "array",
           "items": { "$ref": "#/$defs/aiTddRedProof" }
         },
+        "readinessAutoRemediationOverlay": { "$ref": "#/$defs/readinessAutoRemediationOverlay" },
         "acceptanceTests": {
           "type": "array",
           "items": { "$ref": "#/$defs/aiTddAcceptanceSuite" }
@@ -1151,6 +1154,117 @@
           "type": "array",
           "items": { "$ref": "#/$defs/aiTddAcceptanceSuite" }
         }
+      }
+    },
+    "readinessAutoRemediationOverlay": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "sourceMutationPolicy"],
+      "properties": {
+        "schemaVersion": { "const": "readiness-auto-remediation-overlay/v1" },
+        "sourceMutationPolicy": { "const": "non_semantic_projection_only" },
+        "acceptanceBindings": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/readinessOverlayBinding" }
+        },
+        "traceBindings": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/readinessOverlayBinding" }
+        },
+        "evidenceBindings": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/readinessOverlayBinding" }
+        },
+        "commandBindings": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/readinessOverlayBinding" }
+        },
+        "artifactBindings": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/readinessOverlayBinding" }
+        },
+        "derivedFromRequirementRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "derivedFromTraceRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "derivedFromEvidenceRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "derivedFromCommandRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "derivedFromArtifactRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        }
+      }
+    },
+    "readinessOverlayBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmptyString" },
+        "covers": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "evidenceRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "commandRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "requiredCommandRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "acceptanceRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "artifactRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "traceRows": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "traceRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        }
+      }
+    },
+    "aiTddPreImplementationPlan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "status", "acceptanceIds", "requiredProofPolicy", "recordedAt", "recordedBy"],
+      "properties": {
+        "schemaVersion": { "$ref": "#/$defs/nonEmptyString" },
+        "status": { "$ref": "#/$defs/nonEmptyString" },
+        "sourceReportPath": { "$ref": "#/$defs/nonEmptyString" },
+        "sourceReportHash": { "$ref": "#/$defs/sha256" },
+        "acceptanceIds": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "pattern": "^(ACC|E2E)-"
+          }
+        },
+        "requiredProofPolicy": { "$ref": "#/$defs/nonEmptyString" },
+        "recordedAt": { "type": "string", "format": "date-time" },
+        "recordedBy": { "$ref": "#/$defs/nonEmptyString" }
       }
     },
     "aiTddRedProof": {
@@ -1166,6 +1280,7 @@
           "enum": ["expected_red", "unexpected_green", "invalid_red"]
         },
         "oracle": { "$ref": "#/$defs/nonEmptyString" },
+        "proofSource": { "$ref": "#/$defs/nonEmptyString" },
         "failureClass": {
           "enum": ["oracle_failure", "unexpected_pass", "missing_test_file", "runner_crash", "syntax_error", "environment_error", "unbound_oracle"]
         },

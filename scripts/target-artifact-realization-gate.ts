@@ -23,6 +23,9 @@ interface ParsedArgs {
 
 interface TargetItem {
   id: string;
+  aliases?: string[];
+  requirementRefs?: string[];
+  contractBound?: boolean;
   kind: TargetKind;
   sourceSection: string;
   pathOrField: string;
@@ -288,22 +291,27 @@ function resolveDeclaredPath(
   };
 }
 
-function collectLinkedIds(row: JsonObject): { traceRefs: string[]; evidenceRefs: string[] } {
+function collectLinkedIds(row: JsonObject): { traceRefs: string[]; evidenceRefs: string[]; requirementRefs: string[] } {
   const raw = [
     ...strings(row.traceRows),
+    ...strings(row.traceRefs),
     ...strings(row.evidenceRefs),
     ...strings(row.linkedRequirementIds),
+    ...strings(row.linkedRequirements),
     ...strings(row.linkedEvidenceIds),
     ...strings(row.relatedRequirementIds),
+    text(row.derivedFromMustRef),
     ...strings(row.linkedIds),
   ];
   return {
     traceRefs: [...new Set(raw.filter((id) => /^TRACE-/u.test(id)))],
     evidenceRefs: [...new Set(raw.filter((id) => /^EVD-/u.test(id)))],
+    requirementRefs: [...new Set(raw.filter((id) => /^(?:MUST|NEG|OUT)-/u.test(id)))],
   };
 }
 
 function pushTarget(targets: TargetItem[], item: TargetItem): void {
+  item.aliases = [...new Set([item.id, item.pathOrField, ...(item.aliases ?? [])].filter(Boolean))];
   const key = `${item.kind}:${item.pathOrField}:${item.completionProofPolicy ?? ''}`;
   const existing = targets.find(
     (target) =>
@@ -313,12 +321,87 @@ function pushTarget(targets: TargetItem[], item: TargetItem): void {
     targets.push(item);
     return;
   }
+  existing.aliases = [...new Set([...(existing.aliases ?? []), ...(item.aliases ?? [])].filter(Boolean))];
   existing.id = existing.id || item.id;
   existing.traceRefs = [...new Set([...existing.traceRefs, ...item.traceRefs])];
   existing.evidenceRefs = [...new Set([...existing.evidenceRefs, ...item.evidenceRefs])];
+  existing.requirementRefs = [...new Set([...(existing.requirementRefs ?? []), ...(item.requirementRefs ?? [])])];
+  existing.contractBound = existing.contractBound === true || item.contractBound === true;
   existing.expectedProducer = existing.expectedProducer || item.expectedProducer;
   existing.expectedSourceOfTruthRole =
     existing.expectedSourceOfTruthRole || item.expectedSourceOfTruthRole;
+}
+
+function contractBound(row: JsonObject, sourceSection: string): boolean {
+  return (
+    sourceSection.startsWith('currentTargetMap.') ||
+    Boolean(text(row.projectionStatus)) ||
+    Boolean(text(row.derivedFromMustRef)) ||
+    strings(row.linkedRequirements).length > 0 ||
+    strings(row.linkedRequirementIds).length > 0 ||
+    strings(row.relatedRequirementIds).length > 0
+  );
+}
+
+function requirementLinkResolver(
+  confirmation: JsonObject
+): (links: { traceRefs: string[]; evidenceRefs: string[]; requirementRefs: string[] }) => {
+  traceRefs: string[];
+  evidenceRefs: string[];
+  requirementRefs: string[];
+} {
+  const traceRefsByRequirement = new Map<string, string[]>();
+  const evidenceRefsByRequirement = new Map<string, string[]>();
+  const traceRefsByEvidence = new Map<string, string[]>();
+  const add = (map: Map<string, string[]>, key: string, values: string[]): void => {
+    if (!key || values.length === 0) return;
+    map.set(key, [...new Set([...(map.get(key) ?? []), ...values])]);
+  };
+  for (const row of [...objects(confirmation.must), ...objects(confirmation.notDone), ...objects(confirmation.mustNot)]) {
+    const id = text(row.id);
+    add(traceRefsByRequirement, id, [
+      ...strings(row.coveredByTraceRows),
+      ...strings(row.traceRows),
+      ...strings(row.traceRefs),
+    ]);
+    add(evidenceRefsByRequirement, id, [...strings(row.evidenceRefs), ...strings(row.linkedEvidenceIds)]);
+  }
+  for (const trace of objects(confirmation.traceRows)) {
+    const traceId = text(trace.id);
+    if (!traceId) continue;
+    for (const requirementId of strings(trace.covers)) {
+      add(traceRefsByRequirement, requirementId, [traceId]);
+      add(evidenceRefsByRequirement, requirementId, strings(trace.evidenceRefs));
+    }
+    for (const evidenceId of strings(trace.evidenceRefs)) {
+      add(traceRefsByEvidence, evidenceId, [traceId]);
+    }
+  }
+  for (const command of objects(confirmation.requiredCommands)) {
+    const commandTraceRefs = strings(command.traceRows).concat(strings(command.traceRefs));
+    for (const evidenceId of strings(command.evidenceRefs)) {
+      add(traceRefsByEvidence, evidenceId, commandTraceRefs);
+    }
+  }
+  for (const evidence of objects(confirmation.evidence)) {
+    const evidenceId = text(evidence.id);
+    const requirementRefs = [
+      ...strings(evidence.linkedRequirementIds),
+      ...strings(evidence.linkedRequirements),
+      text(evidence.derivedFromMustRef),
+    ].filter((id) => /^(?:MUST|NEG|OUT)-/u.test(id));
+    add(traceRefsByEvidence, evidenceId, requirementRefs.flatMap((id) => traceRefsByRequirement.get(id) ?? []));
+  }
+  return (links) => {
+    const derivedTraceRefs = links.requirementRefs.flatMap((id) => traceRefsByRequirement.get(id) ?? []);
+    const evidenceTraceRefs = links.evidenceRefs.flatMap((id) => traceRefsByEvidence.get(id) ?? []);
+    const derivedEvidenceRefs = links.requirementRefs.flatMap((id) => evidenceRefsByRequirement.get(id) ?? []);
+    return {
+      traceRefs: [...new Set([...links.traceRefs, ...derivedTraceRefs, ...evidenceTraceRefs])],
+      evidenceRefs: [...new Set([...links.evidenceRefs, ...derivedEvidenceRefs])],
+      requirementRefs: links.requirementRefs,
+    };
+  };
 }
 
 function artifactPlanRowDefinesTargetSurface(row: JsonObject): boolean {
@@ -327,41 +410,61 @@ function artifactPlanRowDefinesTargetSurface(row: JsonObject): boolean {
   return (
     role === 'implementation' ||
     role === 'control' ||
+    role === 'projection' ||
+    role === 'generator_self_audit' ||
+    role === 'self_audit_receipt' ||
+    role === 'compatibility_launcher' ||
+    role === 'acceptance_oracle' ||
+    role === 'evidence' ||
+    role === 'current_attempt_command_evidence' ||
+    role === 'failure_evidence_not_completion_proof' ||
+    role === 'controlled_ingest_input' ||
+    role === 'post_closeout_review_evidence' ||
+    role === 'manifest_gate_oracle' ||
+    role === 'contract_manifest_standard' ||
+    role === 'execution_authority' ||
     row.canAffectControlFlow === true ||
-    /^(?:code|script|hook|test|config|schema|control_record)$/iu.test(artifactType)
+    /^(?:code|script|hook|test|config|schema|control_record|execution_packet|prompt_projection|generator_receipt|gate|report|test_report|quality_report|render_report|evidence_bundle|failed_evidence_packet|implementation_evidence_packet|html_projection)$/iu.test(artifactType)
   );
 }
 
 export function deriveTargetArtifactChecklist(confirmation: JsonObject): TargetItem[] {
   const targets: TargetItem[] = [];
+  const resolveLinks = requirementLinkResolver(confirmation);
 
   for (const row of objects(confirmation.artifactAutomationPlan)) {
     if (!artifactPlanRowDefinesTargetSurface(row)) continue;
-    const id = text(row.id) || `artifactAutomationPlan:${targets.length + 1}`;
-    const links = collectLinkedIds(row);
+    const sourceSection = 'artifactAutomationPlan';
+    const id = text(row.id) || text(row.artifactId) || `artifactAutomationPlan:${targets.length + 1}`;
+    const links = resolveLinks(collectLinkedIds(row));
     const rowPath = text(row.path);
     if (rowPath) {
       pushTarget(targets, {
         id,
         kind: rowPath.endsWith('control-events.jsonl') ? 'event_journal' : 'file_artifact',
-        sourceSection: 'artifactAutomationPlan',
+        sourceSection,
         pathOrField: rowPath,
         expectedProducer: text(row.producer),
         expectedSourceOfTruthRole: text(row.sourceOfTruthRole),
         traceRefs: links.traceRefs,
         evidenceRefs: links.evidenceRefs,
+        requirementRefs: links.requirementRefs,
+        contractBound: contractBound(row, sourceSection),
       });
     }
     if (text(row.artifactType) === 'control_record') {
+      const outputSourceSection = 'artifactAutomationPlan.outputArtifacts';
       for (const output of strings(row.outputArtifacts)) {
         if (output && !isPathLike(output)) {
           pushTarget(targets, {
             id: `${id}:${output}`,
             kind: 'record_field',
-            sourceSection: 'artifactAutomationPlan.outputArtifacts',
+            sourceSection: outputSourceSection,
             pathOrField: output.startsWith(RECORD_PREFIX) ? output : `${RECORD_PREFIX}${output}`,
             traceRefs: links.traceRefs,
             evidenceRefs: links.evidenceRefs,
+            requirementRefs: links.requirementRefs,
+            contractBound: contractBound(row, outputSourceSection),
           });
         }
       }
@@ -370,11 +473,12 @@ export function deriveTargetArtifactChecklist(confirmation: JsonObject): TargetI
 
   const currentTargetMap = nested(confirmation.currentTargetMap);
   for (const row of objects(currentTargetMap.canonicalArtifacts)) {
+    const sourceSection = 'currentTargetMap.canonicalArtifacts';
     const id =
       text(row.id) || text(row.targetPathOrField) || `canonicalArtifacts:${targets.length + 1}`;
     const pathOrField = text(row.targetPathOrField);
     if (!pathOrField) continue;
-    const links = collectLinkedIds(row);
+    const links = resolveLinks(collectLinkedIds(row));
     pushTarget(targets, {
       id,
       kind: pathOrField.startsWith(RECORD_PREFIX)
@@ -382,10 +486,12 @@ export function deriveTargetArtifactChecklist(confirmation: JsonObject): TargetI
         : pathOrField.endsWith('control-events.jsonl')
           ? 'event_journal'
           : 'file_artifact',
-      sourceSection: 'currentTargetMap.canonicalArtifacts',
+      sourceSection,
       pathOrField,
       traceRefs: links.traceRefs,
       evidenceRefs: links.evidenceRefs,
+      requirementRefs: links.requirementRefs,
+      contractBound: contractBound(row, sourceSection),
     });
   }
 
@@ -395,44 +501,52 @@ export function deriveTargetArtifactChecklist(confirmation: JsonObject): TargetI
   ]) {
     const declaredPath = text(row.fixedPath) || text(row.path);
     if (!declaredPath) continue;
-    const links = collectLinkedIds(row);
+    const sourceSection = text(row.fixedPath)
+      ? 'currentTargetMap.pathRegistry'
+      : 'currentTargetMap.artifactPaths';
+    const links = resolveLinks(collectLinkedIds(row));
     pushTarget(targets, {
       id: text(row.id) || text(row.category) || declaredPath,
       kind: declaredPath.endsWith('control-events.jsonl') ? 'event_journal' : 'file_artifact',
-      sourceSection: text(row.fixedPath)
-        ? 'currentTargetMap.pathRegistry'
-        : 'currentTargetMap.artifactPaths',
+      sourceSection,
       pathOrField: declaredPath,
       expectedSourceOfTruthRole: text(row.sourceOfTruthRole) || text(row.targetRole),
       traceRefs: links.traceRefs,
       evidenceRefs: links.evidenceRefs,
+      requirementRefs: links.requirementRefs,
+      contractBound: contractBound(row, sourceSection),
     });
   }
 
   for (const row of objects(currentTargetMap.existingArtifacts)) {
+    const sourceSection = 'currentTargetMap.existingArtifacts';
     const currentPath = text(row.currentPath);
     if (!currentPath) continue;
     const policy = text(row.completionProofPolicy);
-    const links = collectLinkedIds(row);
+    const links = resolveLinks(collectLinkedIds(row));
     if (LEGACY_POLICIES.has(policy)) {
       pushTarget(targets, {
         id: text(row.id) || currentPath,
         kind: 'legacy_policy',
-        sourceSection: 'currentTargetMap.existingArtifacts',
+        sourceSection,
         pathOrField: currentPath,
         completionProofPolicy: policy,
         traceRefs: links.traceRefs,
         evidenceRefs: links.evidenceRefs,
+        requirementRefs: links.requirementRefs,
+        contractBound: contractBound(row, sourceSection),
       });
     } else if (REQUIRED_PROOF_POLICIES.has(policy) && isPathLike(currentPath)) {
       pushTarget(targets, {
         id: text(row.id) || currentPath,
         kind: 'file_artifact',
-        sourceSection: 'currentTargetMap.existingArtifacts',
+        sourceSection,
         pathOrField: currentPath,
         completionProofPolicy: policy,
         traceRefs: links.traceRefs,
         evidenceRefs: links.evidenceRefs,
+        requirementRefs: links.requirementRefs,
+        contractBound: contractBound(row, sourceSection),
       });
     }
   }

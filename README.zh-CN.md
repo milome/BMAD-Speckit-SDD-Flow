@@ -32,12 +32,13 @@
 
 ### 主要特性
 
-- **五层交付架构**：Product Def → Epic Planning → Story Dev → Technical Implementation → Finish
-- **强制审计闭环**：每个治理阶段必须通过代码审查才能继续
-- **四信号就绪检查**：实现入口前需满足需求覆盖、冒烟测试就绪、证据链完整、文档可追溯
-- **运行时管控循环**：执行失败不会被静默跳过，而是沿同一条治理链路进入重试或阻塞
-- **执行证据链**：通过、需修复、阻塞、重跑等状态都会留下完整记录
-- **看板、诊断与训练数据**：运行结果自动汇总到可视化面板、问题诊断和模型微调数据集
+- **六心智模型控制面**：需求、架构、就绪、执行、审计、交付都是运行时必须回答的治理问题，而不是松散状态标签
+- **16 子系统生产闭环就绪**：每个生产闭环子系统都必须具备机器可读的输入、输出、状态、证据、哈希与失败处理
+- **受控 RequirementRecord 权威**：`inspect` 先解析活动需求，从受控记录恢复状态并校验 provenance，再决定下一条全局分支
+- **readiness baseline 自愈**：就绪门禁只写受控的 `audit_required` 激活元数据，audit/scoring 管线负责写入带 provenance 的 `implementation_readiness` 评分记录
+- **bounded packet 执行**：只有 `inspect` 明确允许 dispatch 时才生成 `dispatch-plan`；子代理只执行 packet，不能替主控选择全局路线
+- **审计、评分与投影分离**：审计负责评分证据；看板、MCP、诊断、SFT 与 help 都是只读投影，除非被受控 ingest 回写为证据
+- **fail-closed 交付治理**：活动需求歧义、哈希过期、当前 attempt 缺失、baseline 陈旧、证据不足或子系统覆盖不完整，都会阻塞、重跑或进入受控 closeout
 
 > **关于图片**：README 中的图片放在 `docs/assets/` 目录下并纳入 Git 管理。npm 包里的 README 会按 GitHub Flavored Markdown 渲染，因此"仓库内相对路径 + 已跟踪资源"是对 GitHub 和 npm 都最稳定的策略。来源：[About package README files](https://docs.npmjs.com/about-package-readme-files)
 
@@ -45,12 +46,48 @@
 
 ## 运行时管控一览
 
-- **四信号就绪检查**：在进入实现阶段前执行，与实现评分保持独立
-- **先读 `main-agent-orchestration inspect`**：主 Agent 必须先读取 repo-native authoritative surface，再决定下一条全局分支
-- **按需执行 `dispatch-plan`**：只有 surface 明确需要 materialize packet 时，才生成正式派发计划
-- **子代理只执行 `bounded packet`**：子代理只返回 packet 结果，不负责决定下一条全局执行链
-- **`runAuditorHost` 只负责 post-audit close-out**：审计通过后统一写入评分、看板、诊断和训练数据，然后主 Agent 重新读取 `inspect`
-- **旧 worker / 手工 close-out 口径仅保留为历史证据**：可继续审计追溯，但不再是当前 accepted runtime path
+- **先 inspect，失败即关闭推进路径**：主 Agent 从 `main-agent-orchestration inspect` 开始；活动需求缺失、歧义或过期时，不会继续落入实现分支
+- **RequirementRecord 是控制权威**：`requirement-records/index.json` 只是定位投影；当前控制状态必须从需求记录与受控事件历史恢复
+- **readiness gate 激活审计，不直接写评分**：就绪通过后写受控激活元数据，并触发或提示 readiness audit；评分记录仍由 audit/scoring 管线写入
+- **Audit 写评分 provenance**：audit/scoring 管线写入 `stage=implementation_readiness` 等 `RunScoreRecord`，并携带 score、audit、gate、record hash 与命令 provenance
+- **drift baseline 优先级确定**：当前需求 metadata 优先，其次是 requirement-scoped scoring baseline，最后才是 legacy `packages/scoring/data`；禁止 runtime context fallback
+- **dispatch 仍然是条件动作**：只有受控记录说明需要 bounded packet 执行时，才出现 `dispatch-plan`；否则暴露 closeout、audit、rerun 或 blocked 诊断
+- **closeout 绑定当前 attempt**：closeout pass 只能让当前受控 attempt 进入 `completed_no_dispatch`；缺少全局 scoring baseline 本身不能成为实现 blocker
+- **诊断必须对用户可见**：`inspect` 需要说明活动需求缺失、readiness baseline 缺失、baseline 陈旧、投影面不可作为权威、证据不足等原因
+
+### 六心智模型
+
+最新运行时主链围绕六个心智模型组织。它们不是看板标签或状态颜色，而是主 Agent 继续推进前必须从 `requirement-record.json`、`currentMentalModel`、当前 attempt 元数据和 controlled ingest 事件中回答的治理问题。
+
+<p align="center">
+  <img src="docs/assets/readme-six-mental-models-subsystems.zh-CN.svg" alt="六心智模型架构图：展示全部 16 个受控子系统、需求记录权威、失败闭环重跑和只读投影层" width="100%" />
+</p>
+
+<p align="center"><em>图：视觉风格参考 ClawScope README 架构图；内容映射 BMAD-Speckit-SDD-Flow 的六条控制泳道与十六个受控子系统。</em></p>
+
+当前权威链路是：
+
+1. **需求确认**：确认做什么、不做什么，以及哪些证据 ID 可以证明闭合。
+2. **架构确认**：确认实现仍在架构边界、共享契约和风险范围内。
+3. **实施准备**：确认受控记录允许进入或继续实现，包括 readiness baseline 激活。
+4. **执行闭合**：确认当前运行已有 bounded packet、trace closure、命令证据和 artifact index。
+5. **审计复核**：确认 finding、rerun、RCA 与 audit 写入的 `RunScoreRecord` 都带可验证 provenance。
+6. **交付确认**：确认只有当前 closeout attempt 可以授权完成表述和交付关闭。
+
+看板、runtime MCP、评分、诊断和 SFT 输出都只是这条链路上的只读投影。它们提升导航和可观测性，但 dashboard green、score green、task done、SFT generated 或旧 `mainAgentReady` hint 不能关闭需求，也不能替代主控选择下一条全局分支。
+
+下表是主责任映射。一个子系统可以跨多个模型输出证据或投影，但主责任泳道表示它的控制判断归属。
+
+`main_agent_orchestration` 是覆盖全部六个心智模型的横向主控层，不只属于执行闭合。执行闭合负责的是在主控编排下产生的 packet 派发、trace closure 与命令证据。
+
+| 心智模型 | 主责任子系统 | 运行时问题 |
+| --- | --- | --- |
+| 需求确认 | `requirement_confirmation` | 做什么、不做什么、哪些证据 ID 可闭合 |
+| 架构确认 | `architecture_confirmation`, `governance` | 边界、契约、schema、风险是否受控 |
+| 实施准备 | `implementation_readiness` | 是否允许进入或继续实现，readiness baseline 是否当前 |
+| 执行闭合 | `execution_tracking`, `prompt_packet_generation`, `bounded_packet_closure` | 是否只派发 bounded packet，trace、命令证据与重跑路径是否闭合 |
+| 审计复核 | `audit_review`, `rca_improvement`, `scoring`, `data_production`, `eval_sft`, `coach` | finding、RCA、评分 provenance、派生数据与诊断反馈是否受控 |
+| 交付确认 | `delivery_closeout`, `observability`, `dashboard_read_model` | 当前 closeout attempt 是否允许完成表述，观测证据与只读投影是否一致 |
 
 ## 看板与 MCP
 

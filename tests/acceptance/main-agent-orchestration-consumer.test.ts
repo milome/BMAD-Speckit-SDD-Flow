@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -11,19 +12,18 @@ import {
   mainMainAgentOrchestration,
   runMainAgentControlledReadinessAudit,
   runMainAgentAutomaticLoop,
+  runMainAgentAutomaticLoopAsync,
   markMainAgentPacketDispatched,
   resolveMainAgentOrchestrationSurface,
   writeMainAgentRunLoopTaskReport,
 } from '../../scripts/main-agent-orchestration';
+import { runUnifiedIngressAsync } from '../../scripts/main-agent-unified-ingress';
 import { mainImplementationReadinessGate } from '../../scripts/main-agent-implementation-readiness-gate';
 import {
   createDefaultOrchestrationState,
   writeOrchestrationState,
 } from '../../scripts/orchestration-state';
-import {
-  defaultRuntimeContextFile,
-  writeRuntimeContext,
-} from '../../scripts/runtime-context';
+import { defaultRuntimeContextFile, writeRuntimeContext } from '../../scripts/runtime-context';
 import {
   defaultRuntimeContextRegistry,
   readRuntimeContextRegistry,
@@ -34,6 +34,52 @@ import { runAuditorHost } from '../../scripts/run-auditor-host';
 import { writeMinimalRequirementRecordContext } from '../helpers/runtime-registry-fixture';
 import type { ImplementationEntryGate } from '../../scripts/runtime-governance';
 import { resolveArchitectureConfirmationHashRecipe } from '../../scripts/architecture-confirmation-hash-recipe';
+
+const CONFIRMATION_BOOKKEEPING_FIELDS = new Set([
+  'status',
+  'confirmedAt',
+  'confirmedBy',
+  'sourceDocumentHash',
+  'implementationConfirmationHash',
+  'reconfirmationRequest',
+  'confirmationRender',
+]);
+
+function sha256Text(value: string): string {
+  return `sha256:${createHash('sha256').update(value, 'utf8').digest('hex')}`;
+}
+
+function stableStringify(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
+  if (!value || typeof value !== 'object') return JSON.stringify(value);
+  return `{${Object.keys(value as Record<string, unknown>)
+    .sort()
+    .map(
+      (key) => `${JSON.stringify(key)}:${stableStringify((value as Record<string, unknown>)[key])}`
+    )
+    .join(',')}}`;
+}
+
+function semanticConfirmationForHash(
+  confirmation: Record<string, unknown>
+): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(confirmation).filter(([key]) => !CONFIRMATION_BOOKKEEPING_FIELDS.has(key))
+  );
+}
+
+function implementationConfirmationHashFor(confirmation: Record<string, unknown>): string {
+  return sha256Text(stableStringify(semanticConfirmationForHash(confirmation)));
+}
+
+function sourceDocumentHashFor(
+  sourceText: string,
+  blockText: string,
+  confirmation: Record<string, unknown>
+): string {
+  const normalizedBlock = `implementationConfirmation:${stableStringify(semanticConfirmationForHash(confirmation))}`;
+  return sha256Text(sourceText.replace(blockText, normalizedBlock));
+}
 
 function writePacket(root: string, sessionId: string, packet: RecommendationPacket): string {
   const packetPath = path.join(
@@ -48,6 +94,15 @@ function writePacket(root: string, sessionId: string, packet: RecommendationPack
   mkdirSync(path.dirname(packetPath), { recursive: true });
   writeFileSync(packetPath, JSON.stringify(packet, null, 2), 'utf8');
   return packetPath;
+}
+
+function writeTextFixture(filePath: string, value: string): void {
+  mkdirSync(path.dirname(filePath), { recursive: true });
+  writeFileSync(filePath, value, 'utf8');
+}
+
+function writeJsonFixture(filePath: string, value: unknown): void {
+  writeTextFixture(filePath, `${JSON.stringify(value, null, 2)}\n`);
 }
 
 function writeConfirmedReadinessRecord(root: string): string {
@@ -78,6 +133,375 @@ function writeConfirmedReadinessRecord(root: string): string {
     },
   });
   const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+  const recordRoot = path.dirname(recordPath);
+  const sourcePath = path.join(root, 'docs', 'requirements', 'readiness.md');
+  const acceptancePath = path.join(root, 'tests', 'acceptance', 'readiness-bridge.test.ts');
+  const e2ePath = path.join(root, 'tests', 'e2e', 'readiness-bridge.e2e.test.ts');
+  const confirmationDir = path.join(recordRoot, 'confirmation');
+  const renderReportPath = path.join(confirmationDir, 'report.json');
+  const htmlPath = path.join(confirmationDir, 'confirmation.html');
+  const summaryPath = path.join(confirmationDir, 'confirmation-summary.json');
+  const drilldownReportPath = path.join(
+    recordRoot,
+    'authoring',
+    'pre-render-must-decomposition-gate-report.json'
+  );
+  writeTextFixture(
+    acceptancePath,
+    'import { it, expect } from "vitest"; it("expected red bridge acceptance", () => { expect(true).toBe(false); });\n'
+  );
+  writeTextFixture(
+    e2ePath,
+    'import { it, expect } from "vitest"; it("expected red bridge e2e", () => { expect(true).toBe(false); });\n'
+  );
+  const confirmation: Record<string, unknown> = {
+    contractSchemaVersion: 1,
+    status: 'user_confirmed',
+    recordId: record.recordId,
+    requirementSetId: record.requirementSetId,
+    entryFlow: 'standalone_tasks',
+    entryFlowClass: 'task_packet_entry',
+    workflowAdapter: 'direct',
+    contractAuthoringRequired: true,
+    confirmationLanguage: 'zh-CN',
+    confirmationProfile: 'implementation_confirmation',
+    requiredViewPacks: ['currentTargetMap'],
+    optionalViewPacks: [],
+    confirmedAt: '2026-05-20T00:00:00.000Z',
+    confirmedBy: 'user',
+    sourceDocumentHash: '',
+    implementationConfirmationHash: '',
+    confirmationRender: {
+      htmlPath: htmlPath.replace(/\\/gu, '/'),
+      summaryPath: summaryPath.replace(/\\/gu, '/'),
+      reportPath: renderReportPath.replace(/\\/gu, '/'),
+      htmlHash: '',
+      confirmationPhrase: '',
+    },
+    applicability: {
+      currentTargetMap: { applies: true },
+      aiTddContractGate: { applies: true },
+    },
+    must: [
+      {
+        id: 'MUST-001',
+        text: 'Controlled readiness audit must activate current baseline metadata only after readiness gate passes.',
+        evidenceRefs: ['EVD-001'],
+        coveredByTraceRows: ['TRACE-001'],
+      },
+    ],
+    notDone: [
+      {
+        id: 'NEG-001',
+        text: 'Record-only readiness cannot activate baseline metadata.',
+        evidenceRefs: ['EVD-001'],
+        coveredByTraceRows: ['TRACE-001'],
+        oracle:
+          'readiness baseline activation requires gate evidence and controlled audit metadata',
+      },
+    ],
+    mustNot: [
+      {
+        id: 'OUT-001',
+        text: 'Implementation completion evidence is out of scope for readiness audit.',
+      },
+    ],
+    evidence: [
+      {
+        id: 'EVD-001',
+        text: 'Readiness audit bridge evidence.',
+        gate: 'Implementation Readiness Gate',
+        oracle: 'controlled readiness audit records current baseline metadata after pass',
+        requiredCommandRefs: ['CMD-001', 'CMD-002'],
+        artifactRefs: ['ART-001'],
+      },
+    ],
+    traceRows: [
+      {
+        id: 'TRACE-001',
+        covers: ['MUST-001', 'NEG-001'],
+        evidenceRefs: ['EVD-001'],
+        commandRefs: ['CMD-001', 'CMD-002'],
+        acceptanceRefs: ['ACC-001', 'E2E-001'],
+        artifactRefs: ['ART-001'],
+        status: 'PENDING',
+      },
+    ],
+    failurePaths: [
+      {
+        id: 'FAIL-001',
+        title: 'Record-only readiness baseline activation',
+        trigger: 'Gate evidence is absent.',
+        expectedBehavior: 'Block readiness baseline activation.',
+        forbiddenBehavior: 'Activate current metadata from record status alone.',
+        linkedNegIds: ['NEG-001'],
+        linkedEvidenceIds: ['EVD-001'],
+        viewRefs: ['EDGEVIEW-001'],
+      },
+    ],
+    edgeCases: [
+      {
+        id: 'EDGE-001',
+        category: 'readiness_bridge',
+        condition: 'Controlled audit bridge is requested after readiness pass.',
+        expectedBehavior: 'Record current baseline metadata.',
+        forbiddenBehavior: 'Use stale or record-only baseline metadata.',
+        linkedFailurePathIds: ['FAIL-001'],
+        linkedEvidenceIds: ['EVD-001'],
+        viewRefs: ['EDGEVIEW-001'],
+      },
+    ],
+    requiredCommands: [
+      {
+        id: 'CMD-001',
+        command: `npx vitest run ${acceptancePath.replace(/\\/gu, '/')}`,
+        oracle: 'expected-red bridge acceptance fails before implementation',
+        traceRows: ['TRACE-001'],
+        evidenceRefs: ['EVD-001'],
+      },
+      {
+        id: 'CMD-002',
+        command: `npx vitest run ${e2ePath.replace(/\\/gu, '/')}`,
+        oracle: 'expected-red bridge e2e fails before implementation',
+        traceRows: ['TRACE-001'],
+        evidenceRefs: ['EVD-001'],
+      },
+    ],
+    acceptanceTests: [
+      {
+        id: 'ACC-001',
+        file: acceptancePath.replace(/\\/gu, '/'),
+        covers: ['MUST-001'],
+        failurePathRefs: ['FAIL-001'],
+        edgeCaseRefs: ['EDGE-001'],
+        traceRows: ['TRACE-001'],
+        evidenceRefs: ['EVD-001'],
+        commandRefs: ['CMD-001'],
+        expectedPreImplementationState: 'expected_red',
+        oracle: 'expected-red bridge acceptance fails before implementation',
+      },
+    ],
+    e2eSuites: [
+      {
+        id: 'E2E-001',
+        file: e2ePath.replace(/\\/gu, '/'),
+        covers: ['NEG-001'],
+        failurePathRefs: ['FAIL-001'],
+        edgeCaseRefs: ['EDGE-001'],
+        traceRows: ['TRACE-001'],
+        evidenceRefs: ['EVD-001'],
+        commandRefs: ['CMD-002'],
+        negativeControls: ['NEG-001'],
+        expectedPreImplementationState: 'expected_red',
+        oracle: 'expected-red bridge e2e fails before implementation',
+      },
+    ],
+    sequenceViews: [
+      { id: 'SEQ-001', title: 'Readiness bridge sequence', covers: ['MUST-001', 'NEG-001'] },
+    ],
+    flowViews: [
+      { id: 'FLOW-001', title: 'Readiness bridge flow', covers: ['MUST-001', 'NEG-001'] },
+    ],
+    edgeCaseViews: [
+      {
+        id: 'EDGEVIEW-001',
+        title: 'Readiness bridge edge',
+        covers: ['NEG-001'],
+        cases: ['EDGE-001', 'FAIL-001'],
+      },
+    ],
+    boundaryViews: [
+      { id: 'BOUNDARY-001', title: 'Readiness bridge boundary', covers: ['OUT-001'] },
+    ],
+    artifactAutomationPlan: [
+      {
+        id: 'ART-001',
+        artifactType: 'code',
+        path: 'scripts/main-agent-orchestration.ts',
+        producer: 'main-agent-orchestration',
+        sourceOfTruthRole: 'implementation',
+        traceRefs: ['TRACE-001'],
+        evidenceRefs: ['EVD-001'],
+        contractBound: true,
+      },
+    ],
+    currentTargetMap: {
+      schemaVersion: 'current-target-map/v1',
+      displayProfile: 'closed_loop_current_target_map',
+      currentSummary: [
+        {
+          id: 'CUR-001',
+          text: 'Readiness audit bridge requires current metadata.',
+          traceRows: ['TRACE-001'],
+          evidenceRefs: ['EVD-001'],
+        },
+      ],
+      targetSummary: [
+        {
+          id: 'TAR-001',
+          text: 'Current baseline metadata is recorded after gate pass.',
+          traceRows: ['TRACE-001'],
+          evidenceRefs: ['EVD-001'],
+        },
+      ],
+      diffRows: [
+        {
+          id: 'DIFF-001',
+          current: 'record-only baseline',
+          target: 'controlled readiness baseline',
+          traceRows: ['TRACE-001'],
+          evidenceRefs: ['EVD-001'],
+        },
+      ],
+      process: [
+        {
+          id: 'PROC-001',
+          from: 'readiness-pass',
+          to: 'baseline-current',
+          action: 'run controlled readiness audit bridge',
+          traceRows: ['TRACE-001'],
+          evidenceRefs: ['EVD-001'],
+        },
+      ],
+      artifactPaths: [
+        {
+          id: 'PATH-001',
+          path: 'scripts/main-agent-orchestration.ts',
+          traceRows: ['TRACE-001'],
+          evidenceRefs: ['EVD-001'],
+        },
+      ],
+      canonicalArtifacts: [
+        {
+          id: 'ART-001',
+          targetPathOrField: 'scripts/main-agent-orchestration.ts',
+          traceRows: ['TRACE-001'],
+          evidenceRefs: ['EVD-001'],
+        },
+      ],
+      existingArtifacts: [
+        {
+          id: 'LEGACY-001',
+          currentPath: 'record-only-readiness',
+          completionProofPolicy: 'legacy_only',
+          traceRows: ['TRACE-001'],
+          evidenceRefs: ['EVD-001'],
+        },
+      ],
+    },
+    closeoutReadinessPreview: {
+      requiredCommands: ['CMD-001', 'CMD-002'],
+      orphanPolicy: 'no orphan proof may satisfy readiness',
+      currentAttemptPolicy: 'current baseline metadata requires controlled audit',
+      recordClosedPolicy: 'readiness baseline is not closeout evidence',
+    },
+    targetModificationPaths: [
+      {
+        id: 'TARGET-MOD-001',
+        path: 'scripts/main-agent-orchestration.ts',
+        traceRows: ['TRACE-001'],
+        evidenceRefs: ['EVD-001'],
+        artifactRefs: ['ART-001'],
+      },
+    ],
+  };
+  const initialBlock = `implementationConfirmation:\n${JSON.stringify(confirmation, null, 2)
+    .split('\n')
+    .map((line) => `  ${line}`)
+    .join('\n')}`;
+  const sourceTemplate = `# Readiness Bridge\n\nMust Not Count As Completion: exit code only, stdout, HTTP 200, page render, and mock calls cannot satisfy readiness.\n\n\`\`\`yaml\n${initialBlock}\n\`\`\`\n\n\`\`\`mermaid\nsequenceDiagram\n  actor User\n  participant Gate\n  User->>Gate: Confirm readiness bridge [MUST-001][NEG-001][EVD-001][TRACE-001][ACC-001][E2E-001]\n  Gate-->>User: Block record-only baseline [NEG-001][EVD-001]\n\`\`\`\n\n## Reverse Audit Report\n\nVerdict: PASS\n\n### implementationConfirmation Findings\n### HTML Confirmation Findings\n### Reconfirmation Findings\n### ID Reference Findings\n### Diagram And Step Findings\n### Artifact Automation Plan Findings\n### traceRows Findings\n### Row Quality Findings\n### E2E Anti-Smoke Findings\n### Open Findings\n\n## Definition of Done\n\n- Controlled readiness audit records current baseline metadata only after readiness gate pass.\n`;
+  const implementationConfirmationHash = implementationConfirmationHashFor(confirmation);
+  confirmation.implementationConfirmationHash = implementationConfirmationHash;
+  const finalBlock = `implementationConfirmation:\n${JSON.stringify(confirmation, null, 2)
+    .split('\n')
+    .map((line) => `  ${line}`)
+    .join('\n')}`;
+  const sourceHashInput = sourceTemplate.replace(initialBlock, finalBlock);
+  const sourceDocumentHash = sourceDocumentHashFor(sourceHashInput, finalBlock, confirmation);
+  const confirmationPageHash = sha256Text(
+    `confirmation:${sourceDocumentHash}:${implementationConfirmationHash}`
+  );
+  confirmation.sourceDocumentHash = sourceDocumentHash;
+  confirmation.confirmationRender = {
+    ...(confirmation.confirmationRender as Record<string, unknown>),
+    htmlHash: confirmationPageHash,
+    confirmationPhrase: `确认以上范围进入下一阶段\nsourceDocumentHash=${sourceDocumentHash}\nimplementationConfirmationHash=${implementationConfirmationHash}\nconfirmationPageHash=${confirmationPageHash}`,
+  };
+  const confirmedBlock = `implementationConfirmation:\n${JSON.stringify(confirmation, null, 2)
+    .split('\n')
+    .map((line) => `  ${line}`)
+    .join('\n')}`;
+  writeTextFixture(sourcePath, sourceTemplate.replace(initialBlock, confirmedBlock));
+  writeTextFixture(htmlPath, '<!doctype html><title>confirmation</title>');
+  writeJsonFixture(summaryPath, {});
+  writeJsonFixture(renderReportPath, {
+    recordId: record.recordId,
+    requirementSetId: record.requirementSetId,
+    sourcePath: sourcePath.replace(/\\/gu, '/'),
+    sourceDocumentHash,
+    implementationConfirmationHash,
+    confirmationPageHash,
+    actualHtmlFileHash: confirmationPageHash,
+    generatedAt: '2026-05-20T00:00:00.000Z',
+    language: 'zh-CN',
+    confirmability: 'confirmable',
+    deliveryReadiness: { ready: false, status: 'delivery_not_ready' },
+    blockingIssues: [],
+    warnings: [],
+    diagramCoverage: {},
+    traceCoverage: {},
+    artifactAutomationCoverage: {},
+    preConfirmationSemanticDrilldown: {
+      reportPath: drilldownReportPath.replace(/\\/gu, '/'),
+    },
+    renderedSections: ['pre-confirmation-semantic-drilldown'],
+    confirmInstruction: (confirmation.confirmationRender as Record<string, unknown>)
+      .confirmationPhrase,
+    artifactRef: { path: htmlPath.replace(/\\/gu, '/'), hash: confirmationPageHash },
+  });
+  writeJsonFixture(drilldownReportPath, {
+    schemaVersion: 'pre-render-must-decomposition-gate-report/v1',
+    sourceDocumentHash,
+    implementationConfirmationHash,
+    verdict: 'PASS',
+    confirmability: 'confirmable',
+    failedChecks: [],
+    criticalAuditor: {
+      consecutiveNoNewGapRounds: 3,
+    },
+    packetSourceReconciliation: {
+      verdict: 'pass',
+    },
+  });
+  record.sourcePath = sourcePath;
+  record.artifactPath = sourcePath;
+  record.sourceDocumentHash = sourceDocumentHash;
+  record.implementationConfirmationHash = implementationConfirmationHash;
+  record.confirmationPageHash = confirmationPageHash;
+  record.aiTddContractGate = {
+    preImplementationRedProofs: [
+      {
+        proofId: 'readiness-bridge-proof-acc',
+        acceptanceId: 'ACC-001',
+        commandId: 'CMD-001',
+        state: 'expected_red',
+        oracle: 'expected-red bridge acceptance fails before implementation',
+        failureClass: 'oracle_failure',
+        recordedAt: '2026-05-20T00:00:00.000Z',
+        recordedBy: 'test-fixture',
+      },
+      {
+        proofId: 'readiness-bridge-proof-e2e',
+        acceptanceId: 'E2E-001',
+        commandId: 'CMD-002',
+        state: 'expected_red',
+        oracle: 'expected-red bridge e2e fails before implementation',
+        failureClass: 'oracle_failure',
+        recordedAt: '2026-05-20T00:00:00.000Z',
+        recordedBy: 'test-fixture',
+      },
+    ],
+  };
   record.confirmationHistory = [
     {
       eventType: 'confirmation_recorded',
@@ -89,9 +513,10 @@ function writeConfirmedReadinessRecord(root: string): string {
       sourceDocumentHash: record.sourceDocumentHash,
       implementationConfirmationHash: record.implementationConfirmationHash,
       confirmationPageHash: record.confirmationPageHash,
-      confirmationText: 'confirmed',
-      renderReportPath: '_bmad-output/runtime/requirement-records/REQSET-readiness-e2e/confirmation/report.json',
-      htmlPath: '_bmad-output/runtime/requirement-records/REQSET-readiness-e2e/confirmation/confirmation.html',
+      confirmationText: (confirmation.confirmationRender as Record<string, unknown>)
+        .confirmationPhrase,
+      renderReportPath,
+      htmlPath,
     },
   ];
   record.runtimePolicySnapshotRef = {
@@ -101,8 +526,7 @@ function writeConfirmedReadinessRecord(root: string): string {
     recordId: record.recordId,
     requirementSetId: record.requirementSetId,
     path: record.runtimePolicySnapshotRef.path,
-    contentHash:
-      'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    contentHash: 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
     producer: 'test-fixture',
     purpose: 'runtime policy snapshot fixture',
     relatedRequirementIds: ['readiness-e2e'],
@@ -199,6 +623,122 @@ describe('main-agent orchestration consumer', () => {
         effectiveVerdict: 'approved',
         readinessBaselineRunId: result.scoringRunId,
         baselineSource: 'requirement_metadata',
+      });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  }, 40000);
+
+  it('auto-activates readiness baseline from high-level run-loop after readiness pass', async () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-readiness-auto-baseline-'));
+    try {
+      const recordPath = writeConfirmedReadinessRecord(root);
+      const dataPath = path.join(root, '_bmad-output', 'scoring');
+      const gateCode = mainImplementationReadinessGate([
+        '--requirement-record',
+        recordPath,
+        '--evaluated-at',
+        '2026-05-20T00:00:01.000Z',
+        '--json',
+      ]);
+      expect(gateCode).toBe(0);
+      const before = resolveMainAgentOrchestrationSurface({
+        projectRoot: root,
+        flow: 'standalone_tasks',
+        stage: 'implement',
+      });
+      const readinessDiagnostic = before.diagnostics.find(
+        (item) => item.category === 'repairable_readiness_audit_required'
+      );
+      expect(readinessDiagnostic).toMatchObject({
+        automaticRepairAvailable: true,
+        repairAction: 'trigger_controlled_readiness_audit',
+        nextCommand: null,
+      });
+
+      const result = await runMainAgentAutomaticLoopAsync({
+        projectRoot: root,
+        flow: 'standalone_tasks',
+        stage: 'implement',
+        args: { dataPath },
+      });
+
+      expect(result.status).toBe('completed');
+      expect(result.dispatchInstruction).toBeNull();
+      expect(result.taskReport).toMatchObject({
+        status: 'done',
+        downstreamContext: ['implementation readiness passed; readiness baseline activated'],
+      });
+      expect(result.taskReport?.validationsRun).toContain(
+        'main-agent-orchestration:readiness-baseline-activation'
+      );
+      expect(result.taskReport?.validationsRun).toEqual([
+        'main-agent-orchestration:readiness-baseline-activation',
+      ]);
+      expect(result.taskReport?.validationsRun).not.toContain(
+        'controlled-readiness-audit-bridge'
+      );
+      expect(result.taskReport?.evidence).toEqual([
+        'requirement-record:readinessBaselineActivation.status=current',
+        'requirement-record:readinessBaselineMetadata.status=current',
+      ]);
+      expect(result.steps).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            step: 'implementation-readiness-baseline-activation',
+            status: 'pass',
+            summary: 'implementation readiness passed; readiness baseline activated',
+          }),
+        ])
+      );
+      expect(result.finalSurface.diagnostics.map((item) => item.category)).not.toContain(
+        'repairable_readiness_audit_required'
+      );
+      expect(result.finalSurface.diagnostics.some((item) => item.nextCommand)).toBe(false);
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(record.readinessBaselineActivation.status).toBe('current');
+      expect(record.readinessBaselineMetadata).toMatchObject({
+        status: 'current',
+      });
+      expect(record.readinessScoringRecords.at(-1)).toMatchObject({
+        stage: 'implementation_readiness',
+        scenario: 'real_dev',
+      });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  }, 40000);
+
+  it('auto-activates readiness baseline through unified ingress high-level entry', async () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-readiness-unified-baseline-'));
+    try {
+      const recordPath = writeConfirmedReadinessRecord(root);
+      const gateCode = mainImplementationReadinessGate([
+        '--requirement-record',
+        recordPath,
+        '--evaluated-at',
+        '2026-05-20T00:00:01.000Z',
+        '--json',
+      ]);
+      expect(gateCode).toBe(0);
+
+      const receipt = await runUnifiedIngressAsync({
+        projectRoot: root,
+        recordId: 'REQ-readiness-e2e',
+        requirementSetId: 'REQSET-readiness-e2e',
+        hostKind: 'cursor',
+        flow: 'standalone_tasks',
+        stage: 'implement',
+        forceNoHooks: true,
+      });
+
+      expect(receipt.controlPlane).toBe('main-agent-orchestration');
+      expect(receipt.runLoop.status).toBe('completed');
+      expect(receipt.runLoop.finalNextAction).toBe('dispatch_implement');
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(record.readinessBaselineActivation.status).toBe('current');
+      expect(record.readinessBaselineMetadata).toMatchObject({
+        status: 'current',
       });
     } finally {
       rmSync(root, { recursive: true, force: true });
@@ -731,46 +1271,43 @@ describe('main-agent orchestration consumer', () => {
           updatedAt: new Date().toISOString(),
         })
       );
-      writeOrchestrationState(
-        root,
-        {
-          version: 1,
-          sessionId: 'run-14-4',
-          host: 'cursor',
-          flow: 'story',
-          currentPhase: 'implement',
-          nextAction: 'dispatch_implement',
-          pendingPacket: null,
-          originalExecutionPacketId: null,
-          fourSignal: {
-            latestStatus: 'block',
-            latestHits: ['smoke_task_chain'],
-            driftDetected: true,
-            missingEvidence: false,
-          },
-          latestGate: {
-            gateId: 'implementation-readiness',
-            decision: 'pass',
-            reason: 'readiness previously passed',
-          },
-          gatesLoop: {
-            retryCount: 2,
-            maxRetries: 3,
-            noProgressCount: 2,
-            circuitOpen: true,
-            rerunGate: 'implementation-readiness',
-            activePacketId: 'pkt-loop-01',
-            lastResult: 'no-progress',
-          },
-          closeout: {
-            invoked: false,
-            approved: false,
-            scoreWriteResult: null,
-            handoffPersisted: false,
-            resultCode: null,
-          },
-        }
-      );
+      writeOrchestrationState(root, {
+        version: 1,
+        sessionId: 'run-14-4',
+        host: 'cursor',
+        flow: 'story',
+        currentPhase: 'implement',
+        nextAction: 'dispatch_implement',
+        pendingPacket: null,
+        originalExecutionPacketId: null,
+        fourSignal: {
+          latestStatus: 'block',
+          latestHits: ['smoke_task_chain'],
+          driftDetected: true,
+          missingEvidence: false,
+        },
+        latestGate: {
+          gateId: 'implementation-readiness',
+          decision: 'pass',
+          reason: 'readiness previously passed',
+        },
+        gatesLoop: {
+          retryCount: 2,
+          maxRetries: 3,
+          noProgressCount: 2,
+          circuitOpen: true,
+          rerunGate: 'implementation-readiness',
+          activePacketId: 'pkt-loop-01',
+          lastResult: 'no-progress',
+        },
+        closeout: {
+          invoked: false,
+          approved: false,
+          scoreWriteResult: null,
+          handoffPersisted: false,
+          resultCode: null,
+        },
+      });
 
       const surface = resolveMainAgentOrchestrationSurface({
         projectRoot: root,
@@ -935,7 +1472,7 @@ describe('main-agent orchestration consumer', () => {
   });
 
   it('surfaces raw drift fields from latestReviewerCloseout to the main-agent surface', async () => {
-      const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-drift-surface-'));
+    const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-drift-surface-'));
     try {
       const reviewerCloseout = {
         updatedAt: new Date().toISOString(),

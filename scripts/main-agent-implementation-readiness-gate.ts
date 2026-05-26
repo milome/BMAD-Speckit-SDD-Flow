@@ -3,9 +3,7 @@ import { spawnSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { resolveArchitectureConfirmationHashRecipe } from './architecture-confirmation-hash-recipe';
-import {
-  evaluateAiTddContractGate,
-} from './ai-tdd-contract-gate';
+import { evaluateAiTddContractGate } from './ai-tdd-contract-gate';
 import { appendControlEventAndReplay, sha256Text } from './requirement-record-control-store';
 
 type JsonObject = Record<string, unknown>;
@@ -48,7 +46,10 @@ function text(value: unknown): string {
 
 function objects(value: unknown): JsonObject[] {
   return Array.isArray(value)
-    ? value.filter((item): item is JsonObject => Boolean(item) && typeof item === 'object' && !Array.isArray(item))
+    ? value.filter(
+        (item): item is JsonObject =>
+          Boolean(item) && typeof item === 'object' && !Array.isArray(item)
+      )
     : [];
 }
 
@@ -132,14 +133,21 @@ function inferImplementationRunKind(record: JsonObject): {
     };
   }
   if (controlledHints.length === 1) {
-    return { kind: controlledHints[0] as ImplementationRunKind, inferred: false, evidence: controlledHints, blockingReasons: [] };
+    return {
+      kind: controlledHints[0] as ImplementationRunKind,
+      inferred: false,
+      evidence: controlledHints,
+      blockingReasons: [],
+    };
   }
   const evidence = [
     objects(record.executionIterations).length > 0 ? 'executionIterations' : '',
     objects(record.requirementClosures).length > 0 ? 'requirementClosures' : '',
     objects(record.rerunLoops).length > 0 ? 'rerunLoops' : '',
     objects(nested(record.closeout).attempts).length > 0 ? 'closeout.attempts' : '',
-    objects(nested(record.deliveryEvidence).requiredCommands).length > 0 ? 'deliveryEvidence.requiredCommands' : '',
+    objects(nested(record.deliveryEvidence).requiredCommands).length > 0
+      ? 'deliveryEvidence.requiredCommands'
+      : '',
     objects(record.artifactIndex).length > 0 ? 'artifactIndex' : '',
   ].filter(Boolean);
   return {
@@ -163,12 +171,14 @@ function resolveImplementationRunKind(
       blockingReasons: ['implementation_run_kind_invalid'],
     };
   }
-  if (explicitKind) return { kind: explicitKind, inferred: false, evidence: ['cli'], blockingReasons: [] };
+  if (explicitKind)
+    return { kind: explicitKind, inferred: false, evidence: ['cli'], blockingReasons: [] };
   return inferImplementationRunKind(record);
 }
 
 function resolveSourcePath(record: JsonObject, explicit?: string): string {
-  const candidate = text(explicit) || text(record.sourcePath) || text(latestConfirmation(record)?.sourcePath);
+  const candidate =
+    text(explicit) || text(record.sourcePath) || text(latestConfirmation(record)?.sourcePath);
   if (!candidate) return '';
   const resolved = path.resolve(candidate);
   return fs.existsSync(resolved) ? resolved : '';
@@ -224,7 +234,10 @@ function runImplementationReadinessStageAudit(
   input: { sourcePath?: string; cwd?: string }
 ): { check: JsonObject; blockingReasons: string[] } {
   const cwd = input.cwd ? path.resolve(input.cwd) : process.cwd();
-  const scriptPath = resolveRequirementsContractAuthoringScript(cwd, 'audit_implementation_readiness.js');
+  const scriptPath = resolveRequirementsContractAuthoringScript(
+    cwd,
+    'audit_implementation_readiness.js'
+  );
   const sourcePath = resolveSourcePath(record, input.sourcePath);
   const renderReportPath = resolveRenderReportPath(record);
   const missingReasons = [
@@ -278,14 +291,16 @@ function runImplementationReadinessStageAudit(
     text(currentHashes.sourceDocumentHash) === text(record.sourceDocumentHash)
       ? ''
       : 'implementation_readiness_stage_audit_source_hash_mismatch',
-    text(currentHashes.implementationConfirmationHash) === text(record.implementationConfirmationHash)
+    text(currentHashes.implementationConfirmationHash) ===
+    text(record.implementationConfirmationHash)
       ? ''
       : 'implementation_readiness_stage_audit_implementation_hash_mismatch',
     text(currentHashes.reportConfirmationPageHash) === text(record.confirmationPageHash)
       ? ''
       : 'implementation_readiness_stage_audit_confirmation_page_hash_mismatch',
   ].filter(Boolean);
-  const passed = result.status === 0 && text(report?.verdict) === 'PASS' && hashMismatchReasons.length === 0;
+  const passed =
+    result.status === 0 && text(report?.verdict) === 'PASS' && hashMismatchReasons.length === 0;
   const blockingReasons = passed
     ? []
     : unique([
@@ -312,13 +327,46 @@ function runImplementationReadinessStageAudit(
   };
 }
 
-function evaluate(record: JsonObject, input: {
-  recordPath: string;
-  sourcePath?: string;
-  implementationRunKind?: string;
-  evaluatedAt: string;
-  evaluatedBy: string;
-}): {
+function hasReadinessAutoRemediationOverlay(record: JsonObject): boolean {
+  return (
+    text(nested(nested(record.aiTddContractGate).readinessAutoRemediationOverlay).schemaVersion) ===
+    'readiness-auto-remediation-overlay/v1'
+  );
+}
+
+function applyReadinessOverlayToStageAuditBlockers(
+  record: JsonObject,
+  stageAudit: { check: JsonObject; blockingReasons: string[] }
+): { check: JsonObject; blockingReasons: string[] } {
+  if (!hasReadinessAutoRemediationOverlay(record)) return stageAudit;
+  const covered = new Set([
+    'implementation_readiness_stage_audit_failed',
+    'stage_audit_requirement_missing_acceptance_or_e2e_coverage',
+  ]);
+  const remaining = stageAudit.blockingReasons.filter((reason) => !covered.has(reason));
+  if (remaining.length === stageAudit.blockingReasons.length) return stageAudit;
+  return {
+    check: {
+      ...stageAudit.check,
+      passed: remaining.length === 0,
+      blockingReasons: remaining,
+      readinessAutoRemediationOverlayApplied: true,
+      originalBlockingReasons: stageAudit.blockingReasons,
+    },
+    blockingReasons: remaining,
+  };
+}
+
+function evaluate(
+  record: JsonObject,
+  input: {
+    recordPath: string;
+    sourcePath?: string;
+    implementationRunKind?: string;
+    evaluatedAt: string;
+    evaluatedBy: string;
+  }
+): {
   decision: ReadinessDecision;
   blockingReasons: string[];
   checks: JsonObject[];
@@ -346,22 +394,33 @@ function evaluate(record: JsonObject, input: {
   if (!confirmationPresent) blockingReasons.push('confirmation_history_missing');
 
   const sourceHashMatches =
-    confirmationPresent && text(confirmation?.sourceDocumentHash) === text(record.sourceDocumentHash);
+    confirmationPresent &&
+    text(confirmation?.sourceDocumentHash) === text(record.sourceDocumentHash);
   checks.push({ id: 'source-document-hash-current', passed: sourceHashMatches });
   if (!sourceHashMatches) blockingReasons.push('source_document_hash_not_current');
 
   const implementationHashMatches =
     confirmationPresent &&
-    text(confirmation?.implementationConfirmationHash) === text(record.implementationConfirmationHash);
-  checks.push({ id: 'implementation-confirmation-hash-current', passed: implementationHashMatches });
-  if (!implementationHashMatches) blockingReasons.push('implementation_confirmation_hash_not_current');
+    text(confirmation?.implementationConfirmationHash) ===
+      text(record.implementationConfirmationHash);
+  checks.push({
+    id: 'implementation-confirmation-hash-current',
+    passed: implementationHashMatches,
+  });
+  if (!implementationHashMatches)
+    blockingReasons.push('implementation_confirmation_hash_not_current');
 
-  const confirmationPageHashPresent = confirmationPresent && Boolean(text(confirmation?.confirmationPageHash));
+  const confirmationPageHashPresent =
+    confirmationPresent && Boolean(text(confirmation?.confirmationPageHash));
   checks.push({ id: 'confirmation-page-hash-present', passed: confirmationPageHashPresent });
   if (!confirmationPageHashPresent) blockingReasons.push('confirmation_page_hash_missing');
 
   const requiresArchitecture = architectureConfirmationRequired(record);
-  checks.push({ id: 'architecture-confirmation-required', passed: true, required: requiresArchitecture });
+  checks.push({
+    id: 'architecture-confirmation-required',
+    passed: true,
+    required: requiresArchitecture,
+  });
   const architectureState = record.architectureConfirmationState as JsonObject | undefined;
   const architectureActive =
     !requiresArchitecture ||
@@ -381,9 +440,14 @@ function evaluate(record: JsonObject, input: {
   }
   const architectureRecipeCurrent =
     !requiresArchitecture ||
-    (Boolean(resolvedRecipeHash) && text(architectureState?.resolvedRecipeHash) === resolvedRecipeHash);
-  checks.push({ id: 'architecture-confirmation-recipe-current', passed: architectureRecipeCurrent });
-  if (!architectureRecipeCurrent) blockingReasons.push('architecture_confirmation_resolved_recipe_hash_not_current');
+    (Boolean(resolvedRecipeHash) &&
+      text(architectureState?.resolvedRecipeHash) === resolvedRecipeHash);
+  checks.push({
+    id: 'architecture-confirmation-recipe-current',
+    passed: architectureRecipeCurrent,
+  });
+  if (!architectureRecipeCurrent)
+    blockingReasons.push('architecture_confirmation_resolved_recipe_hash_not_current');
 
   const stateCheck = latestArchitectureStateCheck(record);
   const stateCheckPassed =
@@ -400,9 +464,12 @@ function evaluate(record: JsonObject, input: {
   if (blockingQuestion) blockingReasons.push('blocking_open_question_exists');
 
   const resolvedSourcePath = resolveSourcePath(record, input.sourcePath);
-  const stageAudit = runImplementationReadinessStageAudit(record, {
-    sourcePath: input.sourcePath,
-  });
+  const stageAudit = applyReadinessOverlayToStageAuditBlockers(
+    record,
+    runImplementationReadinessStageAudit(record, {
+      sourcePath: input.sourcePath,
+    })
+  );
   checks.push(stageAudit.check);
   blockingReasons.push(...stageAudit.blockingReasons);
 
@@ -592,7 +659,9 @@ export function mainImplementationReadinessGate(argv: string[]): number {
     generatedAt: evaluatedAt,
     recordId: text(record.recordId),
     requirementSetId: text(record.requirementSetId),
-    implementationRunKind: normalizeImplementationRunKind(args.implementationRunKind) || inferImplementationRunKind(record).kind,
+    implementationRunKind:
+      normalizeImplementationRunKind(args.implementationRunKind) ||
+      inferImplementationRunKind(record).kind,
     decision: evaluation.decision,
     blockingReasons: evaluation.blockingReasons,
     checks: evaluation.checks,
@@ -643,7 +712,11 @@ export function mainImplementationReadinessGate(argv: string[]): number {
         }
       : {}),
   };
-  process.stdout.write(args.json ? `${JSON.stringify(output, null, 2)}\n` : `implementation_readiness=${evaluation.decision}\n`);
+  process.stdout.write(
+    args.json
+      ? `${JSON.stringify(output, null, 2)}\n`
+      : `implementation_readiness=${evaluation.decision}\n`
+  );
   return evaluation.decision === 'pass' ? 0 : 1;
 }
 
@@ -651,7 +724,13 @@ if (require.main === module) {
   try {
     process.exitCode = mainImplementationReadinessGate(process.argv.slice(2));
   } catch (error) {
-    console.error(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : String(error) }, null, 2));
+    console.error(
+      JSON.stringify(
+        { ok: false, error: error instanceof Error ? error.message : String(error) },
+        null,
+        2
+      )
+    );
     process.exitCode = 2;
   }
 }

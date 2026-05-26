@@ -45,15 +45,24 @@ function sourceText(input: {
   targetPath?: string;
   nonTestCommand?: boolean;
   omitTargetModificationPaths?: boolean;
+  targetModificationMissingPath?: boolean;
   targetModificationNoRefs?: boolean;
+  targetModificationTraceRefsMissing?: boolean;
+  targetModificationEvidenceRefsMissing?: boolean;
   targetModificationBrokenRefs?: boolean;
   omitCloseoutPreview?: boolean;
   omitLegacyRefs?: boolean;
   brokenRefs?: boolean;
   omitAcc?: boolean;
   omitE2e?: boolean;
+  accCoversNegOnly?: boolean;
   includeOrphans?: boolean;
   omitRequirementRefs?: boolean;
+  omitNotDoneTraceRefs?: boolean;
+  omitTraceRowCovers?: boolean;
+  artifactIdOnly?: boolean;
+  projectionArtifactRole?: boolean;
+  canonicalSurfaceOnly?: boolean;
   omitFailureNegRefs?: boolean;
   omitEdgeFailureRefs?: boolean;
   omitErrorCaseAcceptanceRefs?: boolean;
@@ -71,53 +80,80 @@ function sourceText(input: {
   const acceptance: string[] = [];
   if (!input.omitAcceptance && !input.omitAcc) {
     acceptance.push(
-        '  acceptanceTests:',
-        '    - id: ACC-001',
-        `      file: ${testPath.replace(/\\/gu, '/')}`,
-        `      covers: [${input.brokenRefs ? 'MUST-MISSING' : 'MUST-001'}]`,
-        ...(input.omitErrorCaseAcceptanceRefs ? [] : ['      failurePathRefs: [FAIL-001]', '      edgeCaseRefs: [EDGE-001]']),
-        '      traceRows: [TRACE-001]',
-        '      evidenceRefs: [EVD-001]',
-        '      commandRefs: [CMD-001]',
-        `      expectedPreImplementationState: ${input.acceptanceState ?? 'expected_red'}`,
-        '      oracle: fixture acceptance oracle',
-        ...(input.mockOnly ? ['      mockOnly: true'] : [])
+      '  acceptanceTests:',
+      '    - id: ACC-001',
+      `      file: ${testPath.replace(/\\/gu, '/')}`,
+      `      covers: [${input.brokenRefs ? 'MUST-MISSING' : input.accCoversNegOnly ? 'NEG-001' : 'MUST-001'}]`,
+      ...(input.omitErrorCaseAcceptanceRefs
+        ? []
+        : ['      failurePathRefs: [FAIL-001]', '      edgeCaseRefs: [EDGE-001]']),
+      '      traceRows: [TRACE-001]',
+      '      evidenceRefs: [EVD-001]',
+      '      commandRefs: [CMD-001]',
+      `      expectedPreImplementationState: ${input.acceptanceState ?? 'expected_red'}`,
+      '      oracle: fixture acceptance oracle',
+      ...(input.mockOnly ? ['      mockOnly: true'] : [])
     );
   }
   if (!input.omitAcceptance && !input.omitE2e) {
     acceptance.push(
-        '  e2eSuites:',
-        '    - id: E2E-001',
-        `      file: ${e2eTestPath.replace(/\\/gu, '/')}`,
-        `      covers: [${input.brokenRefs ? 'NEG-MISSING' : 'NEG-001'}]`,
-        ...(input.omitErrorCaseAcceptanceRefs ? [] : ['      failurePathRefs: [FAIL-001]', '      edgeCaseRefs: [EDGE-001]']),
-        '      traceRows: [TRACE-001]',
-        '      evidenceRefs: [EVD-001]',
-        '      commandRefs: [CMD-002]',
-        '      negativeControls: [NEG-001]',
-        `      expectedPreImplementationState: ${input.acceptanceState ?? 'expected_red'}`,
-        '      oracle: fixture e2e negative-control oracle'
+      '  e2eSuites:',
+      '    - id: E2E-001',
+      `      file: ${e2eTestPath.replace(/\\/gu, '/')}`,
+      `      covers: [${input.brokenRefs ? 'NEG-MISSING' : 'NEG-001'}]`,
+      ...(input.omitErrorCaseAcceptanceRefs
+        ? []
+        : ['      failurePathRefs: [FAIL-001]', '      edgeCaseRefs: [EDGE-001]']),
+      '      traceRows: [TRACE-001]',
+      '      evidenceRefs: [EVD-001]',
+      '      commandRefs: [CMD-002]',
+      '      negativeControls: [NEG-001]',
+      `      expectedPreImplementationState: ${input.acceptanceState ?? 'expected_red'}`,
+      '      oracle: fixture e2e negative-control oracle'
     );
   }
   const targetModificationRows = input.omitTargetModificationPaths
     ? []
-    : input.targetModificationNoRefs
+    : input.targetModificationMissingPath
       ? [
           '  targetModificationPaths:',
-          '    - scripts/ai-tdd-contract-gate.ts',
-          '    - tests/acceptance/ai-tdd-contract-gate.test.ts',
+          '    - id: TARGET-MOD-MISSING-PATH',
+          '      traceRows: [TRACE-001]',
+          '      evidenceRefs: [EVD-001]',
         ]
-      : [
-          '  targetModificationPaths:',
-          '    - id: TARGET-MOD-001',
-          '      path: scripts/ai-tdd-contract-gate.ts',
-          `      traceRows: [${input.targetModificationBrokenRefs ? 'TRACE-MISSING' : 'TRACE-001'}]`,
-          `      evidenceRefs: [${input.targetModificationBrokenRefs ? 'EVD-MISSING' : 'EVD-001'}]`,
-          '    - id: TARGET-MOD-002',
-          '      path: tests/acceptance/ai-tdd-contract-gate.test.ts',
-          `      traceRows: [${input.targetModificationBrokenRefs ? 'TRACE-MISSING' : 'TRACE-001'}]`,
-          `      evidenceRefs: [${input.targetModificationBrokenRefs ? 'EVD-MISSING' : 'EVD-001'}]`,
-        ];
+      : input.targetModificationNoRefs
+        ? [
+            '  targetModificationPaths:',
+            '    - scripts/ai-tdd-contract-gate.ts',
+            '    - tests/acceptance/ai-tdd-contract-gate.test.ts',
+          ]
+        : [
+            '  targetModificationPaths:',
+            '    - id: TARGET-MOD-001',
+            '      path: scripts/ai-tdd-contract-gate.ts',
+            ...(input.targetModificationTraceRefsMissing
+              ? []
+              : [
+                  `      traceRows: [${input.targetModificationBrokenRefs ? 'TRACE-MISSING' : 'TRACE-001'}]`,
+                ]),
+            ...(input.targetModificationEvidenceRefsMissing
+              ? []
+              : [
+                  `      evidenceRefs: [${input.targetModificationBrokenRefs ? 'EVD-MISSING' : 'EVD-001'}]`,
+                ]),
+            '    - id: TARGET-MOD-002',
+            '      path: tests/acceptance/ai-tdd-contract-gate.test.ts',
+            ...(input.targetModificationTraceRefsMissing
+              ? []
+              : [
+                  `      traceRows: [${input.targetModificationBrokenRefs ? 'TRACE-MISSING' : 'TRACE-001'}]`,
+                ]),
+            ...(input.targetModificationEvidenceRefsMissing
+              ? []
+              : [
+                  `      evidenceRefs: [${input.targetModificationBrokenRefs ? 'EVD-MISSING' : 'EVD-001'}]`,
+                ]),
+          ];
   const orphanRows = input.includeOrphans
     ? [
         '    - id: EVD-ORPHAN',
@@ -127,7 +163,9 @@ function sourceText(input: {
         '      artifactRefs: []',
       ]
     : [];
-  const legacyRefs = input.omitLegacyRefs ? [] : ['        traceRows: [TRACE-001]', '        evidenceRefs: [EVD-001]'];
+  const legacyRefs = input.omitLegacyRefs
+    ? []
+    : ['        traceRows: [TRACE-001]', '        evidenceRefs: [EVD-001]'];
   const closeoutPreviewRows = input.omitCloseoutPreview
     ? []
     : [
@@ -151,7 +189,9 @@ function sourceText(input: {
     '      text: Missing acceptance coverage cannot close.',
     ...(input.omitRequirementRefs ? [] : ['      evidenceRefs: [EVD-001]']),
     `      oracle: ${input.omitNegativeOracle ? '' : 'negative control oracle'}`,
-    ...(input.omitRequirementRefs ? [] : ['      coveredByTraceRows: [TRACE-001]']),
+    ...(input.omitRequirementRefs || input.omitNotDoneTraceRefs
+      ? []
+      : ['      coveredByTraceRows: [TRACE-001]']),
     '  mustNot:',
     '    - id: OUT-001',
     '      text: Do not mutate source trace rows.',
@@ -160,15 +200,16 @@ function sourceText(input: {
     '      text: Acceptance evidence.',
     '      oracle: current-attempt command with artifact evidence',
     '      requiredCommandRefs: [CMD-001, CMD-002]',
-    '      artifactRefs: [CANONICAL-001, scripts/ai-tdd-contract-gate.ts]',
+    `      artifactRefs: [${input.canonicalSurfaceOnly ? 'scripts/ai-tdd-contract-gate.ts' : input.artifactIdOnly ? 'ART-001, scripts/ai-tdd-contract-gate.ts' : 'CANONICAL-001, scripts/ai-tdd-contract-gate.ts'}]`,
     ...orphanRows,
     '  traceRows:',
     '    - id: TRACE-001',
-    '      covers: [MUST-001, NEG-001]',
+    `      covers: [${input.omitTraceRowCovers ? '' : 'MUST-001, NEG-001'}]`,
     '      evidenceRefs: [EVD-001]',
     '      deliveryEvidenceCommandRefs: [CMD-001, CMD-002]',
     '      acceptanceRefs: [ACC-001, E2E-001]',
-    '      artifactRefs: [CANONICAL-001, scripts/ai-tdd-contract-gate.ts]',
+    `      artifactRefs: [${input.canonicalSurfaceOnly ? 'scripts/ai-tdd-contract-gate.ts' : input.artifactIdOnly ? 'ART-001, scripts/ai-tdd-contract-gate.ts' : 'CANONICAL-001, scripts/ai-tdd-contract-gate.ts'}]`,
+    ...(input.canonicalSurfaceOnly ? ['      canonicalSurfaceRefs: [ART-001]'] : []),
     '  failurePaths:',
     '    - id: FAIL-001',
     '      title: Missing AI-TDD negative coverage',
@@ -213,11 +254,11 @@ function sourceText(input: {
         ]
       : []),
     '  artifactAutomationPlan:',
-    '    - id: ART-001',
+    `    - ${input.artifactIdOnly ? 'artifactId' : 'id'}: ART-001`,
     '      artifactType: report',
     `      path: ${targetPath.replace(/\\/gu, '/')}`,
     '      producer: ai-tdd-fixture',
-    '      sourceOfTruthRole: evidence',
+    `      sourceOfTruthRole: ${input.projectionArtifactRole ? 'projection' : input.artifactIdOnly ? 'implementation' : 'evidence'}`,
     '      traceRows: [TRACE-001]',
     '      evidenceRefs: [EVD-001]',
     ...(input.includeOrphans
@@ -294,27 +335,48 @@ function writeFixture(
     reverseAuditReady?: boolean;
     nonTestCommand?: boolean;
     omitTargetModificationPaths?: boolean;
+    targetModificationMissingPath?: boolean;
     targetModificationNoRefs?: boolean;
+    targetModificationTraceRefsMissing?: boolean;
+    targetModificationEvidenceRefsMissing?: boolean;
     targetModificationBrokenRefs?: boolean;
     omitCloseoutPreview?: boolean;
     omitLegacyRefs?: boolean;
     brokenRefs?: boolean;
     omitAcc?: boolean;
     omitE2e?: boolean;
+    accCoversNegOnly?: boolean;
     includeOrphans?: boolean;
     omitRequirementRefs?: boolean;
+    omitNotDoneTraceRefs?: boolean;
+    omitTraceRowCovers?: boolean;
+    artifactIdOnly?: boolean;
+    projectionArtifactRole?: boolean;
+    canonicalSurfaceOnly?: boolean;
     omitFailureNegRefs?: boolean;
     omitEdgeFailureRefs?: boolean;
     omitErrorCaseAcceptanceRefs?: boolean;
+    projectRootRelativeTestPaths?: boolean;
+    sourceInRequirementsDir?: boolean;
   } = {}
 ) {
   const testPath = path.join(root, 'tests', 'acceptance', 'ai-tdd-fixture.test.ts');
   const e2eTestPath = path.join(root, 'tests', 'e2e', 'ai-tdd-fixture.e2e.test.ts');
-  if (!options.missingTest) writeText(testPath, 'import { it } from "vitest"; it("ok", () => {});\n');
-  if (!options.missingTest) writeText(e2eTestPath, 'import { it } from "vitest"; it("ok", () => {});\n');
+  const testPathRef = options.projectRootRelativeTestPaths
+    ? 'tests/acceptance/ai-tdd-fixture.test.ts'
+    : testPath.replace(/\\/gu, '/');
+  const e2eTestPathRef = options.projectRootRelativeTestPaths
+    ? 'tests/e2e/ai-tdd-fixture.e2e.test.ts'
+    : e2eTestPath.replace(/\\/gu, '/');
+  if (!options.missingTest)
+    writeText(testPath, 'import { it } from "vitest"; it("ok", () => {});\n');
+  if (!options.missingTest)
+    writeText(e2eTestPath, 'import { it } from "vitest"; it("ok", () => {});\n');
   const targetPath = path.join(root, 'evidence', 'target.json');
   writeJson(targetPath, { ok: true });
-  const sourcePath = path.join(root, 'source.md');
+  const sourcePath = options.sourceInRequirementsDir
+    ? path.join(root, 'docs', 'requirements', 'source.md')
+    : path.join(root, 'source.md');
   writeText(
     sourcePath,
     sourceText({
@@ -323,20 +385,29 @@ function writeFixture(
       omitAcceptance: options.omitAcceptance,
       omitNegativeOracle: options.omitNegativeOracle,
       mockOnly: options.mockOnly,
-      testPath,
-      e2eTestPath,
+      testPath: testPathRef,
+      e2eTestPath: e2eTestPathRef,
       targetPath,
       nonTestCommand: options.nonTestCommand,
       omitTargetModificationPaths: options.omitTargetModificationPaths,
+      targetModificationMissingPath: options.targetModificationMissingPath,
       targetModificationNoRefs: options.targetModificationNoRefs,
+      targetModificationTraceRefsMissing: options.targetModificationTraceRefsMissing,
+      targetModificationEvidenceRefsMissing: options.targetModificationEvidenceRefsMissing,
       targetModificationBrokenRefs: options.targetModificationBrokenRefs,
       omitCloseoutPreview: options.omitCloseoutPreview,
       omitLegacyRefs: options.omitLegacyRefs,
       brokenRefs: options.brokenRefs,
       omitAcc: options.omitAcc,
       omitE2e: options.omitE2e,
+      accCoversNegOnly: options.accCoversNegOnly,
       includeOrphans: options.includeOrphans,
       omitRequirementRefs: options.omitRequirementRefs,
+      omitNotDoneTraceRefs: options.omitNotDoneTraceRefs,
+      omitTraceRowCovers: options.omitTraceRowCovers,
+      artifactIdOnly: options.artifactIdOnly,
+      projectionArtifactRole: options.projectionArtifactRole,
+      canonicalSurfaceOnly: options.canonicalSurfaceOnly,
       omitFailureNegRefs: options.omitFailureNegRefs,
       omitEdgeFailureRefs: options.omitEdgeFailureRefs,
       omitErrorCaseAcceptanceRefs: options.omitErrorCaseAcceptanceRefs,
@@ -362,7 +433,9 @@ function writeFixture(
         text: 'Missing acceptance coverage cannot close.',
         ...(options.omitRequirementRefs ? {} : { evidenceRefs: ['EVD-001'] }),
         oracle: options.omitNegativeOracle ? '' : 'negative control oracle',
-        ...(options.omitRequirementRefs ? {} : { coveredByTraceRows: ['TRACE-001'] }),
+        ...(options.omitRequirementRefs || options.omitNotDoneTraceRefs
+          ? {}
+          : { coveredByTraceRows: ['TRACE-001'] }),
       },
     ],
     mustNot: [{ id: 'OUT-001', text: 'Do not mutate source trace rows.' }],
@@ -372,7 +445,11 @@ function writeFixture(
         text: 'Acceptance evidence.',
         oracle: 'current-attempt command with artifact evidence',
         requiredCommandRefs: ['CMD-001'],
-        artifactRefs: ['CANONICAL-001', 'scripts/ai-tdd-contract-gate.ts'],
+        artifactRefs: options.canonicalSurfaceOnly
+          ? ['scripts/ai-tdd-contract-gate.ts']
+          : options.artifactIdOnly
+            ? ['ART-001', 'scripts/ai-tdd-contract-gate.ts']
+            : ['CANONICAL-001', 'scripts/ai-tdd-contract-gate.ts'],
       },
       ...(options.includeOrphans
         ? [
@@ -389,11 +466,16 @@ function writeFixture(
     traceRows: [
       {
         id: 'TRACE-001',
-        covers: ['MUST-001', 'NEG-001'],
+        covers: options.omitTraceRowCovers ? [] : ['MUST-001', 'NEG-001'],
         evidenceRefs: ['EVD-001'],
         deliveryEvidenceCommandRefs: ['CMD-001', 'CMD-002'],
         acceptanceRefs: ['ACC-001', 'E2E-001'],
-        artifactRefs: ['CANONICAL-001', 'scripts/ai-tdd-contract-gate.ts'],
+        artifactRefs: options.canonicalSurfaceOnly
+          ? ['scripts/ai-tdd-contract-gate.ts']
+          : options.artifactIdOnly
+            ? ['ART-001', 'scripts/ai-tdd-contract-gate.ts']
+            : ['CANONICAL-001', 'scripts/ai-tdd-contract-gate.ts'],
+        ...(options.canonicalSurfaceOnly ? { canonicalSurfaceRefs: ['ART-001'] } : {}),
       },
     ],
     failurePaths: [
@@ -433,7 +515,7 @@ function writeFixture(
         id: 'CMD-001',
         command: options.nonTestCommand
           ? 'node scripts/non-test-command.js'
-          : `npx vitest run ${testPath.replace(/\\/gu, '/')}`,
+          : `npx vitest run ${testPathRef}`,
         oracle: 'fixture acceptance oracle',
         traceRows: ['TRACE-001'],
         evidenceRefs: ['EVD-001'],
@@ -442,7 +524,7 @@ function writeFixture(
         id: 'CMD-002',
         command: options.nonTestCommand
           ? 'node scripts/non-test-command.js'
-          : `npx vitest run ${e2eTestPath.replace(/\\/gu, '/')}`,
+          : `npx vitest run ${e2eTestPathRef}`,
         oracle: 'fixture e2e negative-control oracle',
         traceRows: ['TRACE-001'],
         evidenceRefs: ['EVD-001'],
@@ -459,11 +541,15 @@ function writeFixture(
     ],
     artifactAutomationPlan: [
       {
-        id: 'ART-001',
+        ...(options.artifactIdOnly ? { artifactId: 'ART-001' } : { id: 'ART-001' }),
         artifactType: 'report',
         path: targetPath.replace(/\\/gu, '/'),
         producer: 'ai-tdd-fixture',
-        sourceOfTruthRole: 'evidence',
+        sourceOfTruthRole: options.projectionArtifactRole
+          ? 'projection'
+          : options.artifactIdOnly
+            ? 'implementation'
+            : 'evidence',
         traceRows: ['TRACE-001'],
         evidenceRefs: ['EVD-001'],
       },
@@ -496,7 +582,9 @@ function writeFixture(
           id: 'LEGACY-001',
           currentPath: 'legacy_completion_event',
           completionProofPolicy: 'legacy_only',
-          ...(options.omitLegacyRefs ? {} : { traceRows: ['TRACE-001'], evidenceRefs: ['EVD-001'] }),
+          ...(options.omitLegacyRefs
+            ? {}
+            : { traceRows: ['TRACE-001'], evidenceRefs: ['EVD-001'] }),
         },
       ],
     },
@@ -506,32 +594,62 @@ function writeFixture(
           closeoutReadinessPreview: {
             requiredCommands: ['CMD-001', 'CMD-002'],
             orphanPolicy: 'no orphan commands, evidence, or artifacts may satisfy closeout',
-            currentAttemptPolicy: 'closeout consumes only current-attempt command and artifact evidence',
+            currentAttemptPolicy:
+              'closeout consumes only current-attempt command and artifact evidence',
             recordClosedPolicy: 'record_closed is written only after delivery verification',
           },
         }),
     ...(options.omitTargetModificationPaths
       ? {}
       : {
-          targetModificationPaths: options.targetModificationNoRefs
+          targetModificationPaths: options.targetModificationMissingPath
             ? [
-                'scripts/ai-tdd-contract-gate.ts',
-                'tests/acceptance/ai-tdd-contract-gate.test.ts',
+                {
+                  id: 'TARGET-MOD-MISSING-PATH',
+                  traceRows: ['TRACE-001'],
+                  evidenceRefs: ['EVD-001'],
+                },
               ]
-            : [
-                {
-                  id: 'TARGET-MOD-001',
-                  path: 'scripts/ai-tdd-contract-gate.ts',
-                  traceRows: [options.targetModificationBrokenRefs ? 'TRACE-MISSING' : 'TRACE-001'],
-                  evidenceRefs: [options.targetModificationBrokenRefs ? 'EVD-MISSING' : 'EVD-001'],
-                },
-                {
-                  id: 'TARGET-MOD-002',
-                  path: 'tests/acceptance/ai-tdd-contract-gate.test.ts',
-                  traceRows: [options.targetModificationBrokenRefs ? 'TRACE-MISSING' : 'TRACE-001'],
-                  evidenceRefs: [options.targetModificationBrokenRefs ? 'EVD-MISSING' : 'EVD-001'],
-                },
-              ],
+            : options.targetModificationNoRefs
+              ? ['scripts/ai-tdd-contract-gate.ts', 'tests/acceptance/ai-tdd-contract-gate.test.ts']
+              : [
+                  {
+                    id: 'TARGET-MOD-001',
+                    path: 'scripts/ai-tdd-contract-gate.ts',
+                    ...(options.targetModificationTraceRefsMissing
+                      ? {}
+                      : {
+                          traceRows: [
+                            options.targetModificationBrokenRefs ? 'TRACE-MISSING' : 'TRACE-001',
+                          ],
+                        }),
+                    ...(options.targetModificationEvidenceRefsMissing
+                      ? {}
+                      : {
+                          evidenceRefs: [
+                            options.targetModificationBrokenRefs ? 'EVD-MISSING' : 'EVD-001',
+                          ],
+                        }),
+                  },
+                  {
+                    id: 'TARGET-MOD-002',
+                    path: 'tests/acceptance/ai-tdd-contract-gate.test.ts',
+                    ...(options.targetModificationTraceRefsMissing
+                      ? {}
+                      : {
+                          traceRows: [
+                            options.targetModificationBrokenRefs ? 'TRACE-MISSING' : 'TRACE-001',
+                          ],
+                        }),
+                    ...(options.targetModificationEvidenceRefsMissing
+                      ? {}
+                      : {
+                          evidenceRefs: [
+                            options.targetModificationBrokenRefs ? 'EVD-MISSING' : 'EVD-001',
+                          ],
+                        }),
+                  },
+                ],
         }),
     ...(options.omitAcceptance
       ? {}
@@ -542,8 +660,8 @@ function writeFixture(
                 acceptanceTests: [
                   {
                     id: 'ACC-001',
-                    file: testPath.replace(/\\/gu, '/'),
-                    covers: ['MUST-001'],
+                    file: testPathRef,
+                    covers: [options.accCoversNegOnly ? 'NEG-001' : 'MUST-001'],
                     ...(options.omitErrorCaseAcceptanceRefs
                       ? {}
                       : { failurePathRefs: ['FAIL-001'], edgeCaseRefs: ['EDGE-001'] }),
@@ -562,7 +680,7 @@ function writeFixture(
                 e2eSuites: [
                   {
                     id: 'E2E-001',
-                    file: e2eTestPath.replace(/\\/gu, '/'),
+                    file: e2eTestPathRef,
                     covers: ['NEG-001'],
                     ...(options.omitErrorCaseAcceptanceRefs
                       ? {}
@@ -636,7 +754,7 @@ function writeFixture(
     artifactIndex: [artifactRef],
   };
   writeJson(recordPath, record);
-  return { sourcePath, record, recordPath };
+  return { sourcePath, record, recordPath, testPath, e2eTestPath };
 }
 
 describe('ai tdd contract gate', () => {
@@ -652,7 +770,9 @@ describe('ai tdd contract gate', () => {
         attemptId: ATTEMPT,
       });
       expect(report.decision).toBe('blocked');
-      expect(report.blockingReasons).toContain('source_implementation_confirmation_not_user_confirmed');
+      expect(report.blockingReasons).toContain(
+        'source_implementation_confirmation_not_user_confirmed'
+      );
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -671,7 +791,9 @@ describe('ai tdd contract gate', () => {
       });
       expect(report.decision).toBe('blocked');
       expect(report.blockingReasons).toContain('missing_test_plan_blocked');
-      expect(reportArray(reportObject(report, 'missingTestPlan'), 'missingCoverage')).toHaveLength(2);
+      expect(reportArray(reportObject(report, 'missingTestPlan'), 'missingCoverage')).toHaveLength(
+        2
+      );
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -690,7 +812,324 @@ describe('ai tdd contract gate', () => {
       });
       expect(report.decision).toBe('blocked');
       expect(report.blockingReasons).toContain('acceptance_test_file_missing');
-      expect(reportArray(report, 'redGreenMatrix').some((row) => row.currentState === 'missing_test')).toBe(true);
+      expect(
+        reportArray(report, 'redGreenMatrix').some((row) => row.currentState === 'missing_test')
+      ).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('resolves project-root relative test paths from nested requirement sources', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'ai-tdd-project-root-paths-'));
+    try {
+      const fixture = writeFixture(root, {
+        projectRootRelativeTestPaths: true,
+        sourceInRequirementsDir: true,
+      });
+      const record = {
+        ...fixture.record,
+        aiTddContractGate: {
+          ...(fixture.record.aiTddContractGate as Record<string, unknown>),
+          preImplementationRedProofs: [
+            {
+              proofId: 'proof-acc-001',
+              acceptanceId: 'ACC-001',
+              commandId: 'CMD-001',
+              state: 'expected_red',
+              oracle: 'controlled acceptance red proof oracle',
+              failureClass: 'oracle_failure',
+            },
+            {
+              proofId: 'proof-e2e-001',
+              acceptanceId: 'E2E-001',
+              commandId: 'CMD-002',
+              state: 'expected_red',
+              oracle: 'controlled e2e red proof oracle',
+              failureClass: 'oracle_failure',
+            },
+          ],
+        },
+      };
+      const report = evaluateAiTddContractGate({
+        sourcePath: fixture.sourcePath,
+        record,
+        recordPath: fixture.recordPath,
+        mode: 'pre-implementation',
+        attemptId: ATTEMPT,
+      });
+      expect(report.blockingReasons).not.toContain('acceptance_test_file_missing');
+      expect(report.blockingReasons).not.toContain(
+        'required_command_file_missing:tests/acceptance/ai-tdd-fixture.test.ts'
+      );
+      expect(report.blockingReasons).not.toContain(
+        'required_command_file_missing:tests/e2e/ai-tdd-fixture.e2e.test.ts'
+      );
+      expect(report.decision, JSON.stringify(report.blockingReasons)).toBe('pass');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('uses traceRows.covers as reverse coverage for NEG trace refs', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'ai-tdd-neg-reverse-trace-'));
+    try {
+      const fixture = writeFixture(root, { omitNotDoneTraceRefs: true });
+      const report = evaluateAiTddContractGate({
+        sourcePath: fixture.sourcePath,
+        record: {
+          ...fixture.record,
+          aiTddContractGate: {
+            preImplementationRedProofs: [
+              {
+                acceptanceId: 'ACC-001',
+                commandId: 'CMD-001',
+                state: 'expected_red',
+                oracle: 'controlled acceptance red proof oracle',
+                failureClass: 'oracle_failure',
+              },
+              {
+                acceptanceId: 'E2E-001',
+                commandId: 'CMD-002',
+                state: 'expected_red',
+                oracle: 'controlled e2e red proof oracle',
+                failureClass: 'oracle_failure',
+              },
+            ],
+          },
+        },
+        recordPath: fixture.recordPath,
+        mode: 'pre-implementation',
+        attemptId: ATTEMPT,
+      });
+      expect(report.blockingReasons).not.toContain('requirement_trace_refs_missing');
+      expect(report.decision, JSON.stringify(report.blockingReasons)).toBe('pass');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('treats artifactAutomationPlan.artifactId as a resolvable artifact alias', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'ai-tdd-artifact-id-alias-'));
+    try {
+      const fixture = writeFixture(root, { artifactIdOnly: true });
+      const report = evaluateAiTddContractGate({
+        sourcePath: fixture.sourcePath,
+        record: {
+          ...fixture.record,
+          aiTddContractGate: {
+            preImplementationRedProofs: [
+              {
+                acceptanceId: 'ACC-001',
+                commandId: 'CMD-001',
+                state: 'expected_red',
+                oracle: 'controlled acceptance red proof oracle',
+                failureClass: 'oracle_failure',
+              },
+              {
+                acceptanceId: 'E2E-001',
+                commandId: 'CMD-002',
+                state: 'expected_red',
+                oracle: 'controlled e2e red proof oracle',
+                failureClass: 'oracle_failure',
+              },
+            ],
+          },
+        },
+        recordPath: fixture.recordPath,
+        mode: 'pre-implementation',
+        attemptId: ATTEMPT,
+      });
+      expect(report.blockingReasons).not.toContain('artifact_ref_missing');
+      expect(report.blockingReasons).not.toContain('orphan_artifact');
+      expect(report.decision, JSON.stringify(report.blockingReasons)).toBe('pass');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('includes projection artifact plan rows when they are explicitly referenced by evidence', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'ai-tdd-projection-artifact-role-'));
+    try {
+      const fixture = writeFixture(root, { artifactIdOnly: true, projectionArtifactRole: true });
+      const report = evaluateAiTddContractGate({
+        sourcePath: fixture.sourcePath,
+        record: {
+          ...fixture.record,
+          aiTddContractGate: {
+            preImplementationRedProofs: [
+              {
+                acceptanceId: 'ACC-001',
+                commandId: 'CMD-001',
+                state: 'expected_red',
+                oracle: 'controlled acceptance red proof oracle',
+                failureClass: 'oracle_failure',
+              },
+              {
+                acceptanceId: 'E2E-001',
+                commandId: 'CMD-002',
+                state: 'expected_red',
+                oracle: 'controlled e2e red proof oracle',
+                failureClass: 'oracle_failure',
+              },
+            ],
+          },
+        },
+        recordPath: fixture.recordPath,
+        mode: 'pre-implementation',
+        attemptId: ATTEMPT,
+      });
+      expect(report.blockingReasons).not.toContain('artifact_ref_missing');
+      expect(report.blockingReasons).not.toContain('orphan_artifact');
+      expect(report.decision, JSON.stringify(report.blockingReasons)).toBe('pass');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('treats contract-bound report artifacts as resolvable evidence targets', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'ai-tdd-report-artifact-target-'));
+    try {
+      const fixture = writeFixture(root, { artifactIdOnly: true });
+      const reportArtifactPath = path.join(root, 'evidence', 'report-artifact.json');
+      const source = sourceText({
+        artifactIdOnly: true,
+        targetPath: path.join(root, 'evidence', 'target.json'),
+        testPath: fixture.testPath,
+        e2eTestPath: fixture.e2eTestPath,
+      })
+        .replace(
+          '      artifactRefs: [ART-001, scripts/ai-tdd-contract-gate.ts]',
+          '      artifactRefs: [ART-REPORT, ART-001, scripts/ai-tdd-contract-gate.ts]'
+        )
+        .replace(
+          '      artifactRefs: [ART-001, scripts/ai-tdd-contract-gate.ts]',
+          '      artifactRefs: [ART-REPORT, ART-001, scripts/ai-tdd-contract-gate.ts]'
+        )
+        .replace(
+          '  currentTargetMap:',
+          [
+            '    - artifactId: ART-REPORT',
+            '      artifactType: test_report',
+            `      path: ${reportArtifactPath.replace(/\\/gu, '/')}`,
+            '      producer: vitest',
+            '      sourceOfTruthRole: evidence',
+            '      traceRows: [TRACE-001]',
+            '      evidenceRefs: [EVD-001]',
+            '      projectionStatus: synchronized',
+            '  currentTargetMap:',
+          ].join('\n')
+        );
+      writeText(fixture.sourcePath, source);
+      writeJson(reportArtifactPath, { ok: true });
+      const report = evaluateAiTddContractGate({
+        sourcePath: fixture.sourcePath,
+        record: {
+          ...fixture.record,
+          aiTddContractGate: {
+            preImplementationRedProofs: [
+              {
+                acceptanceId: 'ACC-001',
+                commandId: 'CMD-001',
+                state: 'expected_red',
+                oracle: 'controlled acceptance red proof oracle',
+                failureClass: 'oracle_failure',
+              },
+              {
+                acceptanceId: 'E2E-001',
+                commandId: 'CMD-002',
+                state: 'expected_red',
+                oracle: 'controlled e2e red proof oracle',
+                failureClass: 'oracle_failure',
+              },
+            ],
+          },
+        },
+        recordPath: fixture.recordPath,
+        mode: 'pre-implementation',
+        attemptId: ATTEMPT,
+      });
+      expect(report.blockingReasons).not.toContain('artifact_ref_missing');
+      expect(report.blockingReasons).not.toContain('orphan_artifact');
+      expect(report.decision, JSON.stringify(report.blockingReasons)).toBe('pass');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('accepts NEG coverage through ACC rows without requiring direct E2E coverage', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'ai-tdd-neg-acc-coverage-'));
+    try {
+      const fixture = writeFixture(root, {
+        accCoversNegOnly: true,
+        omitE2e: true,
+      });
+      const report = evaluateAiTddContractGate({
+        sourcePath: fixture.sourcePath,
+        record: {
+          ...fixture.record,
+          aiTddContractGate: {
+            preImplementationRedProofs: [
+              {
+                acceptanceId: 'ACC-001',
+                commandId: 'CMD-001',
+                state: 'expected_red',
+                oracle: 'controlled acceptance red proof oracle',
+                failureClass: 'oracle_failure',
+              },
+            ],
+          },
+        },
+        recordPath: fixture.recordPath,
+        mode: 'pre-implementation',
+        attemptId: ATTEMPT,
+      });
+      expect(report.blockingReasons).not.toContain('neg_e2e_coverage_missing');
+      const contractCompletenessReport = report.contractCompletenessReport as {
+        blockingReasons: string[];
+      };
+      expect(contractCompletenessReport.blockingReasons).not.toContain('neg_e2e_coverage_missing');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('treats trace canonicalSurfaceRefs as artifact binding for canonical surfaces', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'ai-tdd-canonical-surface-binding-'));
+    try {
+      const fixture = writeFixture(root, {
+        artifactIdOnly: true,
+        canonicalSurfaceOnly: true,
+      });
+      const report = evaluateAiTddContractGate({
+        sourcePath: fixture.sourcePath,
+        record: {
+          ...fixture.record,
+          aiTddContractGate: {
+            preImplementationRedProofs: [
+              {
+                acceptanceId: 'ACC-001',
+                commandId: 'CMD-001',
+                state: 'expected_red',
+                oracle: 'controlled acceptance red proof oracle',
+                failureClass: 'oracle_failure',
+              },
+              {
+                acceptanceId: 'E2E-001',
+                commandId: 'CMD-002',
+                state: 'expected_red',
+                oracle: 'controlled e2e red proof oracle',
+                failureClass: 'oracle_failure',
+              },
+            ],
+          },
+        },
+        recordPath: fixture.recordPath,
+        mode: 'pre-implementation',
+        attemptId: ATTEMPT,
+      });
+      expect(report.blockingReasons).not.toContain('orphan_artifact');
+      expect(report.decision, JSON.stringify(report.blockingReasons)).toBe('pass');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -710,11 +1149,25 @@ describe('ai tdd contract gate', () => {
         attemptId: ATTEMPT,
       });
       expect(missingTargetPathsReport.decision).toBe('blocked');
-      expect(missingTargetPathsReport.blockingReasons).toContain('contract_completeness_report_blocked');
-      expect(missingTargetPathsReport.blockingReasons).toContain('target_modification_paths_missing');
+      expect(missingTargetPathsReport.blockingReasons).toContain(
+        'contract_completeness_report_blocked'
+      );
+      expect(missingTargetPathsReport.blockingReasons).toContain(
+        'target_modification_paths_missing'
+      );
       expect(reportObject(missingTargetPathsReport, 'contractCompletenessReport')).toMatchObject({
         ready: false,
         decision: 'blocked',
+      });
+      expect(
+        reportObject(
+          reportObject(missingTargetPathsReport, 'contractExecutionManifest'),
+          'targetModificationPathCoverage'
+        )
+      ).toMatchObject({
+        ready: false,
+        decision: 'blocked',
+        blockingReasons: expect.arrayContaining(['target_modification_paths_missing']),
       });
 
       const brokenRefs = writeFixture(path.join(root, 'broken-refs'), { brokenRefs: true });
@@ -728,10 +1181,20 @@ describe('ai tdd contract gate', () => {
       expect(brokenRefsReport.blockingReasons).toEqual(
         expect.arrayContaining(['requirement_ref_missing', 'acceptance_or_e2e_coverage_missing'])
       );
-      expect(reportArray(reportObject(brokenRefsReport, 'contractCompletenessReport'), 'issues')).toEqual(
+      expect(
+        reportArray(reportObject(brokenRefsReport, 'contractCompletenessReport'), 'issues')
+      ).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ category: 'ACC', code: 'requirement_ref_missing', ref: 'MUST-MISSING' }),
-          expect.objectContaining({ category: 'E2E', code: 'requirement_ref_missing', ref: 'NEG-MISSING' }),
+          expect.objectContaining({
+            category: 'ACC',
+            code: 'requirement_ref_missing',
+            ref: 'MUST-MISSING',
+          }),
+          expect.objectContaining({
+            category: 'E2E',
+            code: 'requirement_ref_missing',
+            ref: 'NEG-MISSING',
+          }),
         ])
       );
 
@@ -746,12 +1209,38 @@ describe('ai tdd contract gate', () => {
         attemptId: ATTEMPT,
       });
       expect(
-        reportArray(reportObject(missingRequirementRefsReport, 'contractCompletenessReport'), 'issues')
+        reportArray(
+          reportObject(missingRequirementRefsReport, 'contractCompletenessReport'),
+          'issues'
+        )
       ).toEqual(
         expect.arrayContaining([
           expect.objectContaining({ category: 'MUST', code: 'requirement_evidence_refs_missing' }),
-          expect.objectContaining({ category: 'MUST', code: 'requirement_trace_refs_missing' }),
           expect.objectContaining({ category: 'NEG', code: 'requirement_evidence_refs_missing' }),
+        ])
+      );
+
+      const missingDirectAndReverseTraceRefs = writeFixture(
+        path.join(root, 'missing-direct-and-reverse-trace-refs'),
+        {
+          omitNotDoneTraceRefs: true,
+          omitTraceRowCovers: true,
+        }
+      );
+      const missingDirectAndReverseTraceRefsReport = evaluateAiTddContractGate({
+        sourcePath: missingDirectAndReverseTraceRefs.sourcePath,
+        record: missingDirectAndReverseTraceRefs.record,
+        recordPath: missingDirectAndReverseTraceRefs.recordPath,
+        mode: 'pre-implementation',
+        attemptId: ATTEMPT,
+      });
+      expect(
+        reportArray(
+          reportObject(missingDirectAndReverseTraceRefsReport, 'contractCompletenessReport'),
+          'issues'
+        )
+      ).toEqual(
+        expect.arrayContaining([
           expect.objectContaining({ category: 'NEG', code: 'requirement_trace_refs_missing' }),
         ])
       );
@@ -766,9 +1255,18 @@ describe('ai tdd contract gate', () => {
         mode: 'pre-implementation',
         attemptId: ATTEMPT,
       });
-      expect(reportArray(reportObject(missingFailureNegRefsReport, 'contractCompletenessReport'), 'issues')).toEqual(
+      expect(
+        reportArray(
+          reportObject(missingFailureNegRefsReport, 'contractCompletenessReport'),
+          'issues'
+        )
+      ).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ category: 'FAIL', code: 'failure_path_neg_refs_missing', id: 'FAIL-001' }),
+          expect.objectContaining({
+            category: 'FAIL',
+            code: 'failure_path_neg_refs_missing',
+            id: 'FAIL-001',
+          }),
         ])
       );
 
@@ -783,15 +1281,27 @@ describe('ai tdd contract gate', () => {
         mode: 'pre-implementation',
         attemptId: ATTEMPT,
       });
-      expect(reportArray(reportObject(missingEdgeFailureRefsReport, 'contractCompletenessReport'), 'issues')).toEqual(
+      expect(
+        reportArray(
+          reportObject(missingEdgeFailureRefsReport, 'contractCompletenessReport'),
+          'issues'
+        )
+      ).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ category: 'EDGE', code: 'edge_case_failure_or_neg_missing', id: 'EDGE-001' }),
+          expect.objectContaining({
+            category: 'EDGE',
+            code: 'edge_case_failure_or_neg_missing',
+            id: 'EDGE-001',
+          }),
         ])
       );
 
-      const missingErrorCaseAcceptanceRefs = writeFixture(path.join(root, 'missing-error-case-acceptance-refs'), {
-        omitErrorCaseAcceptanceRefs: true,
-      });
+      const missingErrorCaseAcceptanceRefs = writeFixture(
+        path.join(root, 'missing-error-case-acceptance-refs'),
+        {
+          omitErrorCaseAcceptanceRefs: true,
+        }
+      );
       const missingErrorCaseAcceptanceRefsReport = evaluateAiTddContractGate({
         sourcePath: missingErrorCaseAcceptanceRefs.sourcePath,
         record: missingErrorCaseAcceptanceRefs.record,
@@ -800,11 +1310,22 @@ describe('ai tdd contract gate', () => {
         attemptId: ATTEMPT,
       });
       expect(
-        reportArray(reportObject(missingErrorCaseAcceptanceRefsReport, 'contractCompletenessReport'), 'issues')
+        reportArray(
+          reportObject(missingErrorCaseAcceptanceRefsReport, 'contractCompletenessReport'),
+          'issues'
+        )
       ).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ category: 'FAIL', code: 'failure_path_acceptance_coverage_missing', id: 'FAIL-001' }),
-          expect.objectContaining({ category: 'EDGE', code: 'edge_case_acceptance_coverage_missing', id: 'EDGE-001' }),
+          expect.objectContaining({
+            category: 'FAIL',
+            code: 'failure_path_acceptance_coverage_missing',
+            id: 'FAIL-001',
+          }),
+          expect.objectContaining({
+            category: 'EDGE',
+            code: 'edge_case_acceptance_coverage_missing',
+            id: 'EDGE-001',
+          }),
         ])
       );
 
@@ -818,10 +1339,21 @@ describe('ai tdd contract gate', () => {
         mode: 'pre-implementation',
         attemptId: ATTEMPT,
       });
-      expect(reportArray(reportObject(missingCloseoutPreviewReport, 'contractCompletenessReport'), 'issues')).toEqual(
+      expect(
+        reportArray(
+          reportObject(missingCloseoutPreviewReport, 'contractCompletenessReport'),
+          'issues'
+        )
+      ).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ category: 'CLOSEOUT_PROOF', code: 'closeout_proof_required_commands_missing' }),
-          expect.objectContaining({ category: 'CLOSEOUT_PROOF', code: 'closeout_proof_policies_missing' }),
+          expect.objectContaining({
+            category: 'CLOSEOUT_PROOF',
+            code: 'closeout_proof_required_commands_missing',
+          }),
+          expect.objectContaining({
+            category: 'CLOSEOUT_PROOF',
+            code: 'closeout_proof_policies_missing',
+          }),
         ])
       );
 
@@ -835,9 +1367,14 @@ describe('ai tdd contract gate', () => {
         mode: 'pre-implementation',
         attemptId: ATTEMPT,
       });
-      expect(reportArray(reportObject(missingLegacyRefsReport, 'contractCompletenessReport'), 'issues')).toEqual(
+      expect(
+        reportArray(reportObject(missingLegacyRefsReport, 'contractCompletenessReport'), 'issues')
+      ).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ category: 'LEGACY_DENIAL', code: 'legacy_denial_refs_missing' }),
+          expect.objectContaining({
+            category: 'LEGACY_DENIAL',
+            code: 'legacy_denial_refs_missing',
+          }),
         ])
       );
 
@@ -849,8 +1386,12 @@ describe('ai tdd contract gate', () => {
         mode: 'pre-implementation',
         attemptId: ATTEMPT,
       });
-      expect(reportArray(reportObject(missingAccReport, 'contractCompletenessReport'), 'issues')).toEqual(
-        expect.arrayContaining([expect.objectContaining({ category: 'ACC', code: 'acceptance_tests_missing' })])
+      expect(
+        reportArray(reportObject(missingAccReport, 'contractCompletenessReport'), 'issues')
+      ).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ category: 'ACC', code: 'acceptance_tests_missing' }),
+        ])
       );
 
       const missingTargetRefs = writeFixture(path.join(root, 'missing-target-refs'), {
@@ -863,11 +1404,103 @@ describe('ai tdd contract gate', () => {
         mode: 'pre-implementation',
         attemptId: ATTEMPT,
       });
-      expect(reportArray(reportObject(missingTargetRefsReport, 'contractCompletenessReport'), 'issues')).toEqual(
+      expect(
+        reportArray(reportObject(missingTargetRefsReport, 'contractCompletenessReport'), 'issues')
+      ).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
             category: 'targetModificationPaths',
-            code: 'target_modification_trace_or_evidence_refs_missing',
+            code: 'target_modification_trace_refs_missing',
+          }),
+          expect.objectContaining({
+            category: 'targetModificationPaths',
+            code: 'target_modification_evidence_refs_missing',
+          }),
+        ])
+      );
+      expect(
+        reportObject(
+          reportObject(missingTargetRefsReport, 'contractExecutionManifest'),
+          'targetModificationPathCoverage'
+        )
+      ).toMatchObject({
+        ready: false,
+        decision: 'blocked',
+        blockingReasons: expect.arrayContaining([
+          'target_modification_trace_refs_missing',
+          'target_modification_evidence_refs_missing',
+        ]),
+      });
+
+      const missingTraceRefs = writeFixture(path.join(root, 'missing-target-trace-refs'), {
+        targetModificationTraceRefsMissing: true,
+      });
+      const missingTraceRefsReport = evaluateAiTddContractGate({
+        sourcePath: missingTraceRefs.sourcePath,
+        record: missingTraceRefs.record,
+        recordPath: missingTraceRefs.recordPath,
+        mode: 'pre-implementation',
+        attemptId: ATTEMPT,
+      });
+      expect(
+        reportObject(
+          reportObject(missingTraceRefsReport, 'contractExecutionManifest'),
+          'targetModificationPathCoverage'
+        )
+      ).toMatchObject({
+        ready: false,
+        decision: 'blocked',
+        blockingReasons: expect.arrayContaining(['target_modification_trace_refs_missing']),
+      });
+
+      const missingEvidenceRefs = writeFixture(path.join(root, 'missing-target-evidence-refs'), {
+        targetModificationEvidenceRefsMissing: true,
+      });
+      const missingEvidenceRefsReport = evaluateAiTddContractGate({
+        sourcePath: missingEvidenceRefs.sourcePath,
+        record: missingEvidenceRefs.record,
+        recordPath: missingEvidenceRefs.recordPath,
+        mode: 'pre-implementation',
+        attemptId: ATTEMPT,
+      });
+      expect(
+        reportObject(
+          reportObject(missingEvidenceRefsReport, 'contractExecutionManifest'),
+          'targetModificationPathCoverage'
+        )
+      ).toMatchObject({
+        ready: false,
+        decision: 'blocked',
+        blockingReasons: expect.arrayContaining(['target_modification_evidence_refs_missing']),
+      });
+
+      const missingTargetPath = writeFixture(path.join(root, 'missing-target-path'), {
+        targetModificationMissingPath: true,
+      });
+      const missingTargetPathReport = evaluateAiTddContractGate({
+        sourcePath: missingTargetPath.sourcePath,
+        record: missingTargetPath.record,
+        recordPath: missingTargetPath.recordPath,
+        mode: 'pre-implementation',
+        attemptId: ATTEMPT,
+      });
+      expect(
+        reportObject(
+          reportObject(missingTargetPathReport, 'contractExecutionManifest'),
+          'targetModificationPathCoverage'
+        )
+      ).toMatchObject({
+        ready: false,
+        decision: 'blocked',
+        blockingReasons: expect.arrayContaining(['target_modification_path_missing']),
+      });
+      expect(
+        reportArray(reportObject(missingTargetPathReport, 'contractCompletenessReport'), 'issues')
+      ).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            category: 'targetModificationPaths',
+            code: 'target_modification_path_missing',
           }),
         ])
       );
@@ -882,12 +1515,32 @@ describe('ai tdd contract gate', () => {
         mode: 'pre-implementation',
         attemptId: ATTEMPT,
       });
-      expect(reportArray(reportObject(brokenTargetRefsReport, 'contractCompletenessReport'), 'issues')).toEqual(
+      expect(
+        reportArray(reportObject(brokenTargetRefsReport, 'contractCompletenessReport'), 'issues')
+      ).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ category: 'targetModificationPaths', code: 'trace_ref_missing', ref: 'TRACE-MISSING' }),
-          expect.objectContaining({ category: 'targetModificationPaths', code: 'evidence_ref_missing', ref: 'EVD-MISSING' }),
+          expect.objectContaining({
+            category: 'targetModificationPaths',
+            code: 'trace_ref_missing',
+            ref: 'TRACE-MISSING',
+          }),
+          expect.objectContaining({
+            category: 'targetModificationPaths',
+            code: 'evidence_ref_missing',
+            ref: 'EVD-MISSING',
+          }),
         ])
       );
+      expect(
+        reportObject(
+          reportObject(brokenTargetRefsReport, 'contractExecutionManifest'),
+          'targetModificationPathCoverage'
+        )
+      ).toMatchObject({
+        ready: false,
+        decision: 'blocked',
+        blockingReasons: expect.arrayContaining(['trace_ref_missing', 'evidence_ref_missing']),
+      });
 
       const orphanRows = writeFixture(path.join(root, 'orphan-rows'), { includeOrphans: true });
       const orphanReport = evaluateAiTddContractGate({
@@ -897,7 +1550,9 @@ describe('ai tdd contract gate', () => {
         mode: 'pre-implementation',
         attemptId: ATTEMPT,
       });
-      expect(reportArray(reportObject(orphanReport, 'contractCompletenessReport'), 'issues')).toEqual(
+      expect(
+        reportArray(reportObject(orphanReport, 'contractCompletenessReport'), 'issues')
+      ).toEqual(
         expect.arrayContaining([
           expect.objectContaining({ category: 'EVD', code: 'orphan_evidence', id: 'EVD-ORPHAN' }),
           expect.objectContaining({ category: 'CMD', code: 'orphan_command', id: 'CMD-ORPHAN' }),
@@ -933,7 +1588,9 @@ describe('ai tdd contract gate', () => {
   it('blocks source-declared expected red, unexpected green, and invalid red before implementation', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'ai-tdd-red-states-'));
     try {
-      const expected = writeFixture(path.join(root, 'expected'), { acceptanceState: 'expected_red' });
+      const expected = writeFixture(path.join(root, 'expected'), {
+        acceptanceState: 'expected_red',
+      });
       const expectedReport = evaluateAiTddContractGate({
         sourcePath: expected.sourcePath,
         record: expected.record,
@@ -943,7 +1600,9 @@ describe('ai tdd contract gate', () => {
       });
       expect(expectedReport.decision).toBe('blocked');
       expect(expectedReport.blockingReasons).toContain('pre_implementation_red_proof_missing');
-      expect(expectedReport.blockingReasons).toContain('pre_implementation_valid_expected_red_missing');
+      expect(expectedReport.blockingReasons).toContain(
+        'pre_implementation_valid_expected_red_missing'
+      );
       expect(reportObject(expectedReport, 'preImplementationReadinessReport').ready).toBe(false);
       expect(reportObject(expectedReport, 'closeoutReadinessReport').ready).toBe(false);
 
@@ -1030,7 +1689,9 @@ describe('ai tdd contract gate', () => {
           expect.objectContaining({
             id: 'ACC-001',
             currentState: 'expected_red',
-            refs: expect.arrayContaining(['proof:record.aiTddContractGate.preImplementationRedProofs']),
+            refs: expect.arrayContaining([
+              'proof:record.aiTddContractGate.preImplementationRedProofs',
+            ]),
           }),
           expect.objectContaining({
             id: 'E2E-001',
@@ -1048,10 +1709,19 @@ describe('ai tdd contract gate', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'ai-tdd-execute-red-proof-'));
     try {
       const fixture = writeFixture(root);
-      writeText(path.join(root, 'red-proof.js'), 'process.stderr.write("oracle failed\\n"); process.exit(1);\n');
+      writeText(
+        path.join(root, 'red-proof.js'),
+        'process.stderr.write("oracle failed\\n"); process.exit(1);\n'
+      );
       const source = readFileSync(fixture.sourcePath, 'utf8')
-        .replace(/npx vitest run [^\n]+ai-tdd-fixture\.test\.ts/gu, `node ${path.join(root, 'red-proof.js').replace(/\\/gu, '/')}`)
-        .replace(/npx vitest run [^\n]+ai-tdd-fixture\.e2e\.test\.ts/gu, `node ${path.join(root, 'red-proof.js').replace(/\\/gu, '/')}`);
+        .replace(
+          /npx vitest run [^\n]+ai-tdd-fixture\.test\.ts/gu,
+          `node ${path.join(root, 'red-proof.js').replace(/\\/gu, '/')}`
+        )
+        .replace(
+          /npx vitest run [^\n]+ai-tdd-fixture\.e2e\.test\.ts/gu,
+          `node ${path.join(root, 'red-proof.js').replace(/\\/gu, '/')}`
+        );
       writeText(fixture.sourcePath, source);
       const report = evaluateAiTddContractGate({
         sourcePath: fixture.sourcePath,
@@ -1087,8 +1757,14 @@ describe('ai tdd contract gate', () => {
       const fixture = writeFixture(root);
       writeText(path.join(root, 'green-proof.js'), 'process.exit(0);\n');
       const source = readFileSync(fixture.sourcePath, 'utf8')
-        .replace(/npx vitest run [^\n]+ai-tdd-fixture\.test\.ts/gu, `node ${path.join(root, 'green-proof.js').replace(/\\/gu, '/')}`)
-        .replace(/npx vitest run [^\n]+ai-tdd-fixture\.e2e\.test\.ts/gu, `node ${path.join(root, 'green-proof.js').replace(/\\/gu, '/')}`);
+        .replace(
+          /npx vitest run [^\n]+ai-tdd-fixture\.test\.ts/gu,
+          `node ${path.join(root, 'green-proof.js').replace(/\\/gu, '/')}`
+        )
+        .replace(
+          /npx vitest run [^\n]+ai-tdd-fixture\.e2e\.test\.ts/gu,
+          `node ${path.join(root, 'green-proof.js').replace(/\\/gu, '/')}`
+        );
       writeText(fixture.sourcePath, source);
       const report = evaluateAiTddContractGate({
         sourcePath: fixture.sourcePath,
@@ -1118,7 +1794,9 @@ describe('ai tdd contract gate', () => {
         attemptId: ATTEMPT,
       });
       expect(reportObject(report, 'closeoutReadinessReport').partialOnly).toBe(true);
-      expect(reportArray(report, 'redGreenMatrix').some((row) => row.currentState === 'partial_green')).toBe(true);
+      expect(
+        reportArray(report, 'redGreenMatrix').some((row) => row.currentState === 'partial_green')
+      ).toBe(true);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -1211,18 +1889,41 @@ describe('ai tdd contract gate', () => {
           missingCount: 0,
         },
       });
-      expect(report.contractExecutionManifest.commandTargetCollection).toMatchObject({ ready: true, decision: 'pass' });
-      expect(report.contractExecutionManifest.traceClosureAssertions).toMatchObject({ ready: true, decision: 'pass' });
-      expect(report.contractExecutionManifest.canonicalSurfaceReconciliation).toMatchObject({ ready: true, decision: 'pass' });
-      expect(report.contractExecutionManifest.legacyDenial).toMatchObject({ ready: true, decision: 'pass' });
-      expect(report.contractExecutionManifest.closeoutProof).toMatchObject({ ready: true, decision: 'pass' });
-      expect(report.contractExecutionManifest.evidenceTrustStates).toMatchObject({ ready: true, decision: 'pass' });
+      expect(report.contractExecutionManifest.commandTargetCollection).toMatchObject({
+        ready: true,
+        decision: 'pass',
+      });
+      expect(report.contractExecutionManifest.traceClosureAssertions).toMatchObject({
+        ready: true,
+        decision: 'pass',
+      });
+      expect(report.contractExecutionManifest.canonicalSurfaceReconciliation).toMatchObject({
+        ready: true,
+        decision: 'pass',
+      });
+      expect(report.contractExecutionManifest.targetModificationPathCoverage).toMatchObject({
+        ready: true,
+        decision: 'pass',
+      });
+      expect(report.contractExecutionManifest.legacyDenial).toMatchObject({
+        ready: true,
+        decision: 'pass',
+      });
+      expect(report.contractExecutionManifest.closeoutProof).toMatchObject({
+        ready: true,
+        decision: 'pass',
+      });
+      expect(report.contractExecutionManifest.evidenceTrustStates).toMatchObject({
+        ready: true,
+        decision: 'pass',
+      });
       expect(report.contractExecutionManifest.closeoutGates).toMatchObject({
         decision: 'pass',
         requiredManifestSections: [
           'commandTargetCollection',
           'traceClosureAssertions',
           'currentTargetMap',
+          'targetModificationPathCoverage',
           'canonicalSurfaceReconciliation',
           'legacyDenial',
           'closeoutProof',

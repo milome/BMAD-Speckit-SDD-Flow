@@ -657,6 +657,15 @@ describe('reverse_audit_contract', () => {
 
     expect(audit.result.status).toBe(1);
     expect(audit.report.failedChecks).toContain('missing_pre_confirmation_semantic_drilldown_gate_report');
+    expect(
+      audit.report.findings.find((finding: any) => finding.code === 'missing_pre_confirmation_semantic_drilldown_gate_report')
+    ).toMatchObject({
+      repairAction: 'run_authoring_repair_preserve_existing',
+    });
+    expect(
+      audit.report.findings.find((finding: any) => finding.code === 'missing_pre_confirmation_semantic_drilldown_gate_report')
+        ?.repairCommand
+    ).toContain('main-agent-orchestration --action authoring-repair --mode preserve-existing');
   });
 
   it('fails contract confirmability when the drilldown gate report hash is stale', () => {

@@ -109,8 +109,10 @@ function validRecord() {
           'sha256:3333333333333333333333333333333333333333333333333333333333333333',
         confirmationText:
           '确认以上范围进入下一阶段 sourceDocumentHash=sha256:1111111111111111111111111111111111111111111111111111111111111111 implementationConfirmationHash=sha256:2222222222222222222222222222222222222222222222222222222222222222 confirmationPageHash=sha256:3333333333333333333333333333333333333333333333333333333333333333',
-        renderReportPath: '_bmad-output/runtime/requirement-records/REQ-SCHEMA-001/confirmation/confirmation-render-report.json',
-        htmlPath: '_bmad-output/runtime/requirement-records/REQ-SCHEMA-001/confirmation/confirmation.html',
+        renderReportPath:
+          '_bmad-output/runtime/requirement-records/REQ-SCHEMA-001/confirmation/confirmation-render-report.json',
+        htmlPath:
+          '_bmad-output/runtime/requirement-records/REQ-SCHEMA-001/confirmation/confirmation.html',
         entryFlow: 'story',
         entryFlowClass: 'full_story_entry',
         workflowAdapter: 'bmad',
@@ -309,6 +311,81 @@ describe('requirement-record.schema.json', () => {
     expect(validate(record), JSON.stringify(validate.errors, null, 2)).toBe(true);
   });
 
+  it('accepts AI-TDD pre-implementation readiness metadata', () => {
+    const validate = loadValidator();
+    const record = validRecord() as ReturnType<typeof validRecord> & {
+      aiTddContractGate?: Record<string, unknown>;
+    };
+    record.aiTddContractGate = {
+      applies: true,
+      requirementPreImplementationPlan: {
+        schemaVersion: 'ai-tdd-requirement-pre-implementation-plan/v1',
+        status: 'ready_for_expected_red_validation',
+        sourceReportPath:
+          '_bmad-output/runtime/requirement-records/REQ-SCHEMA-001/ai-tdd-contract-gate-pre-implementation-report.json',
+        acceptanceIds: ['ACC-001', 'E2E-001'],
+        requiredProofPolicy: 'controlled_red_proof_or_execute_red_proof_only',
+        recordedAt: '2026-05-19T00:00:00.000Z',
+        recordedBy: 'codex',
+      },
+      preImplementationRedProofs: [
+        {
+          proofId: 'pre-implementation-red-proof-001',
+          acceptanceId: 'ACC-001',
+          commandId: 'CMD-001',
+          state: 'expected_red',
+          oracle: 'controlled expected-red oracle',
+          failureClass: 'oracle_failure',
+          proofSource: 'record.aiTddContractGate.preImplementationRedProofs',
+          recordedAt: '2026-05-19T00:00:00.000Z',
+          recordedBy: 'codex',
+        },
+      ],
+    };
+
+    expect(validate(record), JSON.stringify(validate.errors, null, 2)).toBe(true);
+  });
+
+  it('accepts AI-TDD readiness auto-remediation projection overlay metadata', () => {
+    const validate = loadValidator();
+    const record = validRecord() as ReturnType<typeof validRecord> & {
+      aiTddContractGate?: Record<string, unknown>;
+    };
+    record.aiTddContractGate = {
+      applies: true,
+      readinessAutoRemediationOverlay: {
+        schemaVersion: 'readiness-auto-remediation-overlay/v1',
+        sourceMutationPolicy: 'non_semantic_projection_only',
+        acceptanceBindings: [
+          { id: 'ACC-001', covers: ['MUST-001'] },
+          { id: 'E2E-001', covers: ['NEG-001'] },
+        ],
+        traceBindings: [
+          {
+            id: 'TRACE-001',
+            covers: ['MUST-001', 'NEG-001'],
+            evidenceRefs: ['EVD-001'],
+            commandRefs: ['CMD-001'],
+            acceptanceRefs: ['ACC-001', 'E2E-001'],
+            artifactRefs: ['ART-001'],
+          },
+        ],
+        evidenceBindings: [
+          { id: 'EVD-001', requiredCommandRefs: ['CMD-001'], artifactRefs: ['ART-001'] },
+        ],
+        commandBindings: [{ id: 'CMD-001', traceRows: ['TRACE-001'], evidenceRefs: ['EVD-001'] }],
+        artifactBindings: [{ id: 'ART-001', traceRows: ['TRACE-001'], evidenceRefs: ['EVD-001'] }],
+        derivedFromRequirementRefs: ['MUST-001', 'NEG-001'],
+        derivedFromTraceRefs: ['TRACE-001'],
+        derivedFromEvidenceRefs: ['EVD-001'],
+        derivedFromCommandRefs: ['CMD-001'],
+        derivedFromArtifactRefs: ['ART-001'],
+      },
+    };
+
+    expect(validate(record), JSON.stringify(validate.errors, null, 2)).toBe(true);
+  });
+
   it('accepts missing architecture confirmation state before first architecture confirmation is recorded', () => {
     const validate = loadValidator();
     const record = validRecord();
@@ -327,12 +404,12 @@ describe('requirement-record.schema.json', () => {
         toStatus: 'missing',
         reasonCode: 'current_confirmation_missing',
         previousHashes:
-          {} as typeof record.architectureConfirmationStateChecks[0]['stateTransition']['previousHashes'],
+          {} as (typeof record.architectureConfirmationStateChecks)[0]['stateTransition']['previousHashes'],
         currentHashes: {
           sourceDocumentHash: record.sourceDocumentHash,
           implementationConfirmationHash: record.implementationConfirmationHash,
           resolvedRecipeHash: resolveArchitectureConfirmationHashRecipe().resolvedRecipeHash,
-        } as typeof record.architectureConfirmationStateChecks[0]['stateTransition']['currentHashes'],
+        } as (typeof record.architectureConfirmationStateChecks)[0]['stateTransition']['currentHashes'],
         mismatchFields: [],
       },
     };
@@ -362,7 +439,11 @@ describe('requirement-record.schema.json', () => {
   it('rejects contractChecks result even when decision is present', () => {
     const validate = loadValidator();
     const record = validRecord();
-    record.contractChecks[0] = { ...record.contractChecks[0], decision: 'pass', result: 'pass' } as never;
+    record.contractChecks[0] = {
+      ...record.contractChecks[0],
+      decision: 'pass',
+      result: 'pass',
+    } as never;
 
     expect(validate(record)).toBe(false);
     expect(JSON.stringify(validate.errors)).toContain('result');

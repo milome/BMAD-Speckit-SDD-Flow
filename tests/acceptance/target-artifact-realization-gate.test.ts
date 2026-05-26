@@ -36,7 +36,7 @@ function sourceDoc(root: string) {
         artifactType: 'report',
         path: artifactPath.replace(/\\/gu, '/'),
         producer: 'fixture-producer',
-        sourceOfTruthRole: 'evidence',
+        sourceOfTruthRole: 'implementation',
         traceRows: ['TRACE-001'],
         evidenceRefs: ['EVD-001'],
       },
@@ -62,7 +62,7 @@ function sourceDoc(root: string) {
       '      artifactType: report',
       `      path: ${artifactPath.replace(/\\/gu, '/')}`,
       '      producer: fixture-producer',
-      '      sourceOfTruthRole: evidence',
+      '      sourceOfTruthRole: implementation',
       '      traceRows: [TRACE-001]',
       '      evidenceRefs: [EVD-001]',
       '  currentTargetMap:',
@@ -91,7 +91,7 @@ function passingRecord(root: string) {
     path: source.artifactPath.replace(/\\/gu, '/'),
     contentHash: sha256File(source.artifactPath),
     producer: 'fixture-producer',
-    sourceOfTruthRole: 'evidence',
+    sourceOfTruthRole: 'implementation',
     status: 'active',
     relatedRequirementIds: ['TRACE-001', 'EVD-001'],
   };
@@ -147,6 +147,108 @@ describe('target artifact realization gate', () => {
       });
       expect(report.decision).toBe('pass');
       expect(report.targetCount).toBeGreaterThanOrEqual(2);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('derives projection targets and traceRefs aliases from confirmation rows', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'target-artifact-projection-role-'));
+    try {
+      const fixture = passingRecord(root);
+      const sourcePath = path.join(root, 'projection-source.md');
+      const projectionPath = path.join(root, 'evidence', 'projection.json');
+      writeJson(projectionPath, { projected: true });
+      const confirmation = {
+        status: 'user_confirmed',
+        artifactAutomationPlan: [
+          {
+            artifactId: 'ART-PROJECTION',
+            artifactType: 'prompt_projection',
+            path: projectionPath.replace(/\\/gu, '/'),
+            producer: 'fixture-producer',
+            sourceOfTruthRole: 'projection',
+            traceRefs: ['TRACE-001'],
+            evidenceRefs: ['EVD-001'],
+          },
+        ],
+        currentTargetMap: {
+          canonicalArtifacts: [
+            {
+              id: 'SURFACE-PROJECTION',
+              targetPathOrField: 'RequirementRecord.genericCanonicalField',
+              traceRefs: ['TRACE-001'],
+              evidenceRefs: ['EVD-001'],
+            },
+          ],
+          pathRegistry: [],
+          existingArtifacts: [
+            {
+              currentPath: 'legacy_completion_event',
+              completionProofPolicy: 'legacy_only',
+            },
+          ],
+        },
+      };
+      writeText(
+        sourcePath,
+        `implementationConfirmation:\n${JSON.stringify(confirmation, null, 2)
+          .split('\n')
+          .map((line) => `  ${line}`)
+          .join('\n')}\n`
+      );
+      const artifact = {
+        artifactType: 'prompt_projection',
+        path: projectionPath.replace(/\\/gu, '/'),
+        contentHash: sha256File(projectionPath),
+        producer: 'fixture-producer',
+        sourceOfTruthRole: 'projection',
+        status: 'active',
+        relatedRequirementIds: ['TRACE-001', 'EVD-001'],
+      };
+      const eventPath = path.join(path.dirname(fixture.recordPath), 'events', 'projection-control-events.jsonl');
+      writeText(
+        eventPath,
+        `${JSON.stringify({
+          eventId: 'artifact_indexed:projection',
+          eventType: 'artifact_indexed',
+          payload: {
+            packet: {
+              closeoutAttemptId: ATTEMPT,
+              artifactRefs: [artifact],
+              traceRows: ['TRACE-001'],
+              evidenceRefs: ['EVD-001'],
+            },
+          },
+        })}\n`
+      );
+      const record = {
+        ...fixture.record,
+        sourcePath,
+        implementationConfirmationHash: implementationConfirmationHash(confirmation),
+        artifactIndex: [artifact],
+        controlStore: { eventLogPath: eventPath.replace(/\\/gu, '/') },
+      };
+      const report = evaluateTargetArtifactRealization({
+        sourcePath,
+        record,
+        recordPath: fixture.recordPath,
+        attemptId: ATTEMPT,
+      });
+      expect(report.targets).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: 'ART-PROJECTION',
+            expectedSourceOfTruthRole: 'projection',
+            traceRefs: ['TRACE-001'],
+          }),
+          expect.objectContaining({
+            id: 'SURFACE-PROJECTION',
+            traceRefs: ['TRACE-001'],
+          }),
+        ])
+      );
+      expect(report.decision).toBe('pass');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

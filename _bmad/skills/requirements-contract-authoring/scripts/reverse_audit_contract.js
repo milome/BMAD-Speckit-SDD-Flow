@@ -162,6 +162,20 @@ function issue(code, message, refs = [], severity = 'blocker', source = 'reverse
   return { code, message, refs, severity, source };
 }
 
+function authoringRepairIssue(sourcePath, message, refs = []) {
+  return {
+    ...issue(
+      'missing_pre_confirmation_semantic_drilldown_gate_report',
+      message,
+      refs,
+      'blocker',
+      'pre_confirmation_semantic_drilldown'
+    ),
+    repairAction: 'run_authoring_repair_preserve_existing',
+    repairCommand: `main-agent-orchestration --action authoring-repair --mode preserve-existing --source ${sourcePath || '<source>'} --json`,
+  };
+}
+
 function reportPathCandidates(sourcePath, confirmation, args) {
   const candidates = [];
   if (args.confirmationDir) {
@@ -212,6 +226,9 @@ function normalizeRendererIssue(raw) {
     refs: stringList(raw.refs),
     severity: raw.severity ?? 'blocker',
     source: 'renderer',
+    ...(raw.legacyCode ? { legacyCode: raw.legacyCode } : {}),
+    ...(raw.repairAction ? { repairAction: raw.repairAction } : {}),
+    ...(raw.repairCommand ? { repairCommand: raw.repairCommand } : {}),
   };
 }
 
@@ -813,12 +830,10 @@ function collectPreConfirmationSemanticDrilldownIssues(args, renderReport, hashe
   const findings = [];
   if (!reportPath) {
     findings.push(
-      issue(
-        'missing_pre_confirmation_semantic_drilldown_gate_report',
+      authoringRepairIssue(
+        args.source,
         'pre-render MUST decomposition gate report is required for contract confirmability audit',
-        ['preConfirmationSemanticDrilldown'],
-        'blocker',
-        'pre_confirmation_semantic_drilldown'
+        ['preConfirmationSemanticDrilldown']
       )
     );
     return { summary: { status: 'missing', reportPath: null }, findings };
@@ -839,12 +854,10 @@ function collectPreConfirmationSemanticDrilldownIssues(args, renderReport, hashe
   }
   if (!report) {
     findings.push(
-      issue(
-        'missing_pre_confirmation_semantic_drilldown_gate_report',
+      authoringRepairIssue(
+        args.source,
         'pre-render MUST decomposition gate report path does not exist',
-        [reportPath],
-        'blocker',
-        'pre_confirmation_semantic_drilldown'
+        [reportPath]
       )
     );
     return { summary: { status: 'missing', reportPath: normalizePathForReport(reportPath) }, findings };

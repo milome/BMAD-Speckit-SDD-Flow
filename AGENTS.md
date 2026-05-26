@@ -22,6 +22,26 @@ node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.j
 
 If the gate reports findings, stop normal implementation. Classify affected files, identify whether they are source or generated surfaces, trace the first polluted commit or generator, and choose `restore`, `regenerate`, or `manual semantic rewrite`. Do not claim that encoding conversion fixed mojibake unless semantic content was restored from a clean source.
 
+## Command Verification Rules
+
+### PowerShell / rg Quoting Rules
+
+- Windows 下调用 `pwsh.exe -Command` 时，`rg` 的 regex pattern 必须用单引号包裹，尤其包含 `|`, `(`, `)`, `$`, `?`, `*` 等 PowerShell / regex 易混字符时。
+- 优先使用脚本块形式：
+
+  ```powershell
+  pwsh.exe -NoLogo -NoProfile -Command "& { rg -n -e 'foo|bar' -- 'path1' 'path2' }"
+  ```
+
+- 不要用 Bash 风格的反斜杠 `\"` 逃逸 PowerShell 字符串；PowerShell 中这经常导致引号提前结束，使 `|` 被解析成 pipeline。
+- 复杂 pattern 优先拆成多个 `-e`：
+
+  ```powershell
+  rg -n -e 'foo' -e 'bar' -- 'path'
+  ```
+
+- 如果只是字面量搜索，优先用 `rg -F` 或多个 `-e`，不要写复杂正则。
+
 ## Karpathy-Inspired Guidelines
 
 - Think Before Coding: Wrong assumptions, hidden confusion, missing tradeoffs

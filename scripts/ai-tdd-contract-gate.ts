@@ -222,7 +222,9 @@ function resolveSkillDir(skillName: string): string {
         ]
       : []),
   ];
-  return candidates.find((candidate) => fs.existsSync(path.join(candidate, 'SKILL.md'))) ?? candidates[0];
+  return (
+    candidates.find((candidate) => fs.existsSync(path.join(candidate, 'SKILL.md'))) ?? candidates[0]
+  );
 }
 
 function resolveSkillPlaceholders(value: string): string {
@@ -240,14 +242,34 @@ function resolveLogicalSkillRef(value: string): string {
 }
 
 let activeSourceRoot = process.cwd();
+let activeProjectRoot = process.cwd();
+
+function findProjectRoot(start: string): string {
+  let current = path.resolve(start);
+  while (true) {
+    if (
+      fs.existsSync(path.join(current, 'package.json')) ||
+      fs.existsSync(path.join(current, '.git')) ||
+      fs.existsSync(path.join(current, '_bmad-output'))
+    ) {
+      return current;
+    }
+    const parent = path.dirname(current);
+    if (parent === current) return path.resolve(start);
+    current = parent;
+  }
+}
 
 function withActiveSourceRoot<T>(sourcePath: string, fn: () => T): T {
-  const previous = activeSourceRoot;
+  const previousSourceRoot = activeSourceRoot;
+  const previousProjectRoot = activeProjectRoot;
   activeSourceRoot = path.dirname(path.resolve(sourcePath));
+  activeProjectRoot = findProjectRoot(activeSourceRoot);
   try {
     return fn();
   } finally {
-    activeSourceRoot = previous;
+    activeSourceRoot = previousSourceRoot;
+    activeProjectRoot = previousProjectRoot;
   }
 }
 
@@ -264,11 +286,32 @@ function extractCommandFileRefs(command: string): string[] {
   return [...refs];
 }
 
-function resolvedFileExistence(ref: string): { absolutePath: string; exists: boolean; parentEntries: string[] } {
+function resolvedFileExistence(ref: string): {
+  absolutePath: string;
+  exists: boolean;
+  parentEntries: string[];
+} {
   const resolved = resolveLogicalSkillRef(resolveSkillPlaceholders(ref));
-  const absolute = path.isAbsolute(resolved) ? resolved : path.resolve(activeSourceRoot, resolved);
+  const candidates = path.isAbsolute(resolved)
+    ? [resolved]
+    : unique([
+        path.resolve(activeSourceRoot, resolved),
+        path.resolve(activeProjectRoot, resolved),
+        path.resolve(process.cwd(), resolved),
+      ]);
+  const absolute = candidates[0];
+  for (const candidate of candidates) {
+    try {
+      if (fs.statSync(candidate).isFile()) {
+        return { absolutePath: candidate, exists: true, parentEntries: [] };
+      }
+    } catch {
+      // Fall through to directory-entry matching below.
+    }
+  }
   try {
-    if (fs.statSync(absolute).isFile()) return { absolutePath: absolute, exists: true, parentEntries: [] };
+    if (fs.statSync(absolute).isFile())
+      return { absolutePath: absolute, exists: true, parentEntries: [] };
   } catch {
     // Fall through to directory-entry matching below.
   }
@@ -303,25 +346,44 @@ function currentAttempt(record: JsonObject, explicit?: string): string {
   const closeout = nested(record.closeout);
   const commands = objects(nested(record.deliveryEvidence).requiredCommands);
   const lastCommandAttempt = commands
-    .map((command) => text(nested(command.lastRunRef).closeoutAttemptId) || text(command.closeoutAttemptId))
+    .map(
+      (command) =>
+        text(nested(command.lastRunRef).closeoutAttemptId) || text(command.closeoutAttemptId)
+    )
     .find(Boolean);
   return text(closeout.currentAttemptId) || lastCommandAttempt || 'ai-tdd-attempt';
 }
 
 function requirementRows(confirmation: JsonObject): RequirementRow[] {
+  const traceRefsByCoveredRequirement = new Map<string, string[]>();
+  for (const trace of objects(confirmation.traceRows)) {
+    const traceId = text(trace.id);
+    if (!traceId) continue;
+    for (const coveredId of strings(trace.covers)) {
+      traceRefsByCoveredRequirement.set(
+        coveredId,
+        unique([...(traceRefsByCoveredRequirement.get(coveredId) ?? []), traceId])
+      );
+    }
+  }
+  const traceRefsFor = (row: JsonObject): string[] =>
+    unique([
+      ...idRefs(row, ['coveredByTraceRows', 'traceRows', 'traceRefs']),
+      ...(traceRefsByCoveredRequirement.get(text(row.id)) ?? []),
+    ]);
   const must = objects(confirmation.must).map((row) => ({
     id: text(row.id),
     kind: 'MUST' as const,
     text: text(row.text),
     evidenceRefs: idRefs(row, ['evidenceRefs', 'linkedEvidenceIds']),
-    traceRefs: idRefs(row, ['coveredByTraceRows', 'traceRows', 'traceRefs']),
+    traceRefs: traceRefsFor(row),
   }));
   const neg = objects(confirmation.notDone).map((row) => ({
     id: text(row.id),
     kind: 'NEG' as const,
     text: text(row.text),
     evidenceRefs: idRefs(row, ['evidenceRefs', 'linkedEvidenceIds']),
-    traceRefs: idRefs(row, ['coveredByTraceRows', 'traceRows', 'traceRefs']),
+    traceRefs: traceRefsFor(row),
   }));
   const out = objects(confirmation.mustNot).map((row) => ({
     id: text(row.id),
@@ -366,7 +428,10 @@ function explicitAcceptanceRows(confirmation: JsonObject): AcceptanceRow[] {
         ...extractCommandFileRefs(text(row.command)),
       ]);
       return {
-        id: text(row.id) || text(row.testId) || `${kind === 'e2e' ? 'E2E' : 'ACC'}-${section}-${index + 1}`,
+        id:
+          text(row.id) ||
+          text(row.testId) ||
+          `${kind === 'e2e' ? 'E2E' : 'ACC'}-${section}-${index + 1}`,
         kind,
         sourceSection: section,
         files,
@@ -376,15 +441,23 @@ function explicitAcceptanceRows(confirmation: JsonObject): AcceptanceRow[] {
         ),
         failurePathRefs: unique([
           ...idRefs(row, ['failurePathRefs', 'linkedFailurePathIds']),
-          ...idRefs(row, ['covers', 'requirementRefs', 'linkedRequirementIds']).filter(isFailurePathId),
+          ...idRefs(row, ['covers', 'requirementRefs', 'linkedRequirementIds']).filter(
+            isFailurePathId
+          ),
         ]),
         edgeCaseRefs: unique([
           ...idRefs(row, ['edgeCaseRefs', 'linkedEdgeCaseIds']),
-          ...idRefs(row, ['covers', 'requirementRefs', 'linkedRequirementIds']).filter(isEdgeCaseId),
+          ...idRefs(row, ['covers', 'requirementRefs', 'linkedRequirementIds']).filter(
+            isEdgeCaseId
+          ),
         ]),
         traceRefs: idRefs(row, ['traceRows', 'traceRefs']),
         evidenceRefs: idRefs(row, ['evidenceRefs', 'linkedEvidenceIds']),
-        negativeControlRefs: idRefs(row, ['negativeControlRefs', 'negativeControls', 'linkedNegIds']),
+        negativeControlRefs: idRefs(row, [
+          'negativeControlRefs',
+          'negativeControls',
+          'linkedNegIds',
+        ]),
         expectedPreImplementationState: normalizePreState(
           row.expectedPreImplementationState ??
             row.preImplementationState ??
@@ -438,7 +511,8 @@ function derivedAcceptanceRows(confirmation: JsonObject): AcceptanceRow[] {
         ),
         oracle: text(command.oracle) || text(command.expectedOutcome) || text(command.description),
         explicit: false,
-        mockOnly: command.mockOnly === true || text(command.proofType).toLowerCase() === 'mock-only',
+        mockOnly:
+          command.mockOnly === true || text(command.proofType).toLowerCase() === 'mock-only',
       },
     ];
   });
@@ -490,7 +564,8 @@ function redProofRows(input: { confirmation: JsonObject; record: JsonObject }): 
   ];
   return rawRows
     .map((row: JsonObject) => {
-      const state = normalizePreState(row.state) ?? normalizePreState(row.expectedPreImplementationState);
+      const state =
+        normalizePreState(row.state) ?? normalizePreState(row.expectedPreImplementationState);
       return {
         acceptanceId: text(row.acceptanceId) || text(row.id) || text(row.testId),
         commandId: text(row.commandId),
@@ -520,6 +595,7 @@ function targetModificationPaths(confirmation: JsonObject): JsonObject[] {
       path: text(row.path) || text(row.targetPath) || text(row.targetPathOrField),
       traceRefs: idRefs(row, ['traceRows', 'traceRefs']),
       evidenceRefs: idRefs(row, ['evidenceRefs']),
+      artifactRefs: idRefs(row, ['artifactRefs']),
       sourceSection: 'targetModificationPaths',
     })),
   ];
@@ -532,13 +608,13 @@ function targetModificationPaths(confirmation: JsonObject): JsonObject[] {
       sourceSection: 'implementationTasks.targetPaths',
     }))
   );
-  return [...directRows, ...taskRows]
-    .map((row) => ({
-      ...row,
-      path: normalizePath(text(row.path)),
-      traceRefs: strings((row as JsonObject).traceRefs),
-      evidenceRefs: strings((row as JsonObject).evidenceRefs),
-    }));
+  return [...directRows, ...taskRows].map((row) => ({
+    ...row,
+    path: normalizePath(text(row.path)),
+    traceRefs: strings((row as JsonObject).traceRefs),
+    evidenceRefs: strings((row as JsonObject).evidenceRefs),
+    artifactRefs: strings((row as JsonObject).artifactRefs),
+  }));
 }
 
 function targetModificationPathCoverage(input: {
@@ -560,10 +636,13 @@ function targetModificationPathCoverage(input: {
       missing.push(issue('targetModificationPaths', 'target_modification_trace_refs_missing', id));
     }
     if (evidenceRefs.length === 0) {
-      missing.push(issue('targetModificationPaths', 'target_modification_evidence_refs_missing', id));
+      missing.push(
+        issue('targetModificationPaths', 'target_modification_evidence_refs_missing', id)
+      );
     }
     for (const ref of traceRefs) {
-      if (!traceIds.has(ref)) missing.push(issue('targetModificationPaths', 'trace_ref_missing', id, { ref }));
+      if (!traceIds.has(ref))
+        missing.push(issue('targetModificationPaths', 'trace_ref_missing', id, { ref }));
     }
     for (const ref of evidenceRefs) {
       if (!evidenceIds.has(ref)) {
@@ -584,7 +663,13 @@ function targetModificationPathCoverage(input: {
   });
   const missing = [
     ...(rows.length === 0
-      ? [issue('targetModificationPaths', 'target_modification_paths_missing', 'targetModificationPaths')]
+      ? [
+          issue(
+            'targetModificationPaths',
+            'target_modification_paths_missing',
+            'targetModificationPaths'
+          ),
+        ]
       : []),
     ...rows.flatMap((row) => objects(row.missing)),
   ];
@@ -602,8 +687,13 @@ function negativeControls(confirmation: JsonObject): JsonObject[] {
     ...objects(confirmation.notDone).map((row) => ({
       id: text(row.id),
       source: 'notDone',
-      oracle: text(row.oracle) || text(row.whyItBlocksCompletion) || strings(row.requiredAssertions).join('; '),
-      linkedIds: [text(row.id), ...idRefs(row, ['evidenceRefs', 'coveredByTraceRows'])].filter(Boolean),
+      oracle:
+        text(row.oracle) ||
+        text(row.whyItBlocksCompletion) ||
+        strings(row.requiredAssertions).join('; '),
+      linkedIds: [text(row.id), ...idRefs(row, ['evidenceRefs', 'coveredByTraceRows'])].filter(
+        Boolean
+      ),
     })),
     ...objects(confirmation.failurePaths).map((row) => ({
       id: text(row.id),
@@ -621,7 +711,9 @@ function negativeControls(confirmation: JsonObject): JsonObject[] {
       linkedIds: idRefs(row, ['linkedFailurePathIds', 'linkedEvidenceIds']),
     })),
     ...objects(nested(confirmation.currentTargetMap).existingArtifacts)
-      .filter((row) => ['legacy_only', 'not_completion_proof'].includes(text(row.completionProofPolicy)))
+      .filter((row) =>
+        ['legacy_only', 'not_completion_proof'].includes(text(row.completionProofPolicy))
+      )
       .map((row) => ({
         id: text(row.id) || text(row.currentPath),
         source: 'legacy_policy',
@@ -688,7 +780,9 @@ function acceptanceRefsFor(
     acceptanceRefs: covering
       .filter((row) => !(row.kind === 'e2e' || row.id.startsWith('E2E-')))
       .map((row) => row.id),
-    e2eRefs: covering.filter((row) => row.kind === 'e2e' || row.id.startsWith('E2E-')).map((row) => row.id),
+    e2eRefs: covering
+      .filter((row) => row.kind === 'e2e' || row.id.startsWith('E2E-'))
+      .map((row) => row.id),
   };
 }
 
@@ -712,13 +806,18 @@ function errorCaseCoverage(confirmation: JsonObject, acceptance: AcceptanceRow[]
         linkedEvidenceIds,
         idRefs(row, ['traceRows', 'traceRefs'])
       );
-      const viewRefs = unique([...idRefs(row, ['viewRefs', 'sequenceViewRefs', 'boundaryViewRefs']), ...(views.get(id) ?? [])]);
+      const viewRefs = unique([
+        ...idRefs(row, ['viewRefs', 'sequenceViewRefs', 'boundaryViewRefs']),
+        ...(views.get(id) ?? []),
+      ]);
       const { acceptanceRefs, e2eRefs } = acceptanceRefsFor(acceptance, 'failurePathRefs', id);
       const missing = [
         ...(linkedNegIds.length > 0 ? [] : ['failure_path_neg_refs_missing']),
         ...(linkedEvidenceIds.length > 0 ? [] : ['failure_path_evidence_refs_missing']),
         ...(traceRefs.length > 0 ? [] : ['failure_path_trace_coverage_missing']),
-        ...(acceptanceRefs.length + e2eRefs.length > 0 ? [] : ['failure_path_acceptance_coverage_missing']),
+        ...(acceptanceRefs.length + e2eRefs.length > 0
+          ? []
+          : ['failure_path_acceptance_coverage_missing']),
         ...(viewRefs.length > 0 ? [] : ['failure_path_view_coverage_missing']),
       ];
       return {
@@ -751,13 +850,20 @@ function errorCaseCoverage(confirmation: JsonObject, acceptance: AcceptanceRow[]
         linkedEvidenceIds,
         idRefs(row, ['traceRows', 'traceRefs'])
       );
-      const viewRefs = unique([...idRefs(row, ['viewRefs', 'sequenceViewRefs', 'boundaryViewRefs']), ...(views.get(id) ?? [])]);
+      const viewRefs = unique([
+        ...idRefs(row, ['viewRefs', 'sequenceViewRefs', 'boundaryViewRefs']),
+        ...(views.get(id) ?? []),
+      ]);
       const { acceptanceRefs, e2eRefs } = acceptanceRefsFor(acceptance, 'edgeCaseRefs', id);
       const missing = [
-        ...(linkedFailurePathIds.length + linkedNegIds.length > 0 ? [] : ['edge_case_failure_or_neg_missing']),
+        ...(linkedFailurePathIds.length + linkedNegIds.length > 0
+          ? []
+          : ['edge_case_failure_or_neg_missing']),
         ...(linkedEvidenceIds.length > 0 ? [] : ['edge_case_evidence_refs_missing']),
         ...(traceRefs.length > 0 ? [] : ['edge_case_trace_coverage_missing']),
-        ...(acceptanceRefs.length + e2eRefs.length > 0 ? [] : ['edge_case_acceptance_coverage_missing']),
+        ...(acceptanceRefs.length + e2eRefs.length > 0
+          ? []
+          : ['edge_case_acceptance_coverage_missing']),
         ...(viewRefs.length > 0 ? [] : ['edge_case_view_coverage_missing']),
       ];
       return {
@@ -800,32 +906,37 @@ function errorCaseCoverage(confirmation: JsonObject, acceptance: AcceptanceRow[]
 
 function commandTargetCollection(confirmation: JsonObject): JsonObject {
   const traceRows = objects(confirmation.traceRows);
-  const rows = objects(confirmation.requiredCommands).map((row) => {
-    const id = commandId(row);
-    const traceRefs = idRefs(row, ['traceRows', 'traceRefs']);
-    const evidenceRefs = idRefs(row, ['evidenceRefs', 'linkedEvidenceIds']);
-    const files = extractCommandFileRefs(text(row.command));
-    const linkedTraceRows = traceRows.filter((trace) => commandRefs(trace).includes(id));
-    const collectedTraceRefs = unique([...traceRefs, ...linkedTraceRows.map((trace) => text(trace.id))]);
-    const collectedEvidenceRefs = unique([
-      ...evidenceRefs,
-      ...linkedTraceRows.flatMap((trace) => strings(trace.evidenceRefs)),
-    ]);
-    const missing = [
-      ...(files.length > 0 ? [] : ['command_target_files_missing']),
-      ...(collectedTraceRefs.length > 0 ? [] : ['command_target_trace_refs_missing']),
-      ...(collectedEvidenceRefs.length > 0 ? [] : ['command_target_evidence_refs_missing']),
-    ];
-    return {
-      id,
-      command: text(row.command),
-      files: files.map(normalizePath),
-      traceRefs: collectedTraceRefs,
-      evidenceRefs: collectedEvidenceRefs,
-      missing,
-      ready: missing.length === 0,
-    };
-  }).filter((row) => row.id);
+  const rows = objects(confirmation.requiredCommands)
+    .map((row) => {
+      const id = commandId(row);
+      const traceRefs = idRefs(row, ['traceRows', 'traceRefs']);
+      const evidenceRefs = idRefs(row, ['evidenceRefs', 'linkedEvidenceIds']);
+      const files = extractCommandFileRefs(text(row.command));
+      const linkedTraceRows = traceRows.filter((trace) => commandRefs(trace).includes(id));
+      const collectedTraceRefs = unique([
+        ...traceRefs,
+        ...linkedTraceRows.map((trace) => text(trace.id)),
+      ]);
+      const collectedEvidenceRefs = unique([
+        ...evidenceRefs,
+        ...linkedTraceRows.flatMap((trace) => strings(trace.evidenceRefs)),
+      ]);
+      const missing = [
+        ...(files.length > 0 ? [] : ['command_target_files_missing']),
+        ...(collectedTraceRefs.length > 0 ? [] : ['command_target_trace_refs_missing']),
+        ...(collectedEvidenceRefs.length > 0 ? [] : ['command_target_evidence_refs_missing']),
+      ];
+      return {
+        id,
+        command: text(row.command),
+        files: files.map(normalizePath),
+        traceRefs: collectedTraceRefs,
+        evidenceRefs: collectedEvidenceRefs,
+        missing,
+        ready: missing.length === 0,
+      };
+    })
+    .filter((row) => row.id);
   const missing = rows.flatMap((row) =>
     strings(row.missing).map((code) => ({ id: text(row.id), code, category: 'CMD_TARGET' }))
   );
@@ -833,7 +944,16 @@ function commandTargetCollection(confirmation: JsonObject): JsonObject {
     decision: rows.length > 0 && missing.length === 0 ? 'pass' : 'blocked',
     ready: rows.length > 0 && missing.length === 0,
     rows,
-    missing: rows.length === 0 ? [{ id: 'requiredCommands', code: 'command_target_collection_missing', category: 'CMD_TARGET' }] : missing,
+    missing:
+      rows.length === 0
+        ? [
+            {
+              id: 'requiredCommands',
+              code: 'command_target_collection_missing',
+              category: 'CMD_TARGET',
+            },
+          ]
+        : missing,
     summary: {
       commandCount: rows.length,
       coveredCommandCount: rows.filter((row) => row.ready === true).length,
@@ -843,32 +963,37 @@ function commandTargetCollection(confirmation: JsonObject): JsonObject {
 }
 
 function traceClosureAssertions(confirmation: JsonObject): JsonObject {
-  const rows = objects(confirmation.traceRows).map((row) => {
-    const id = text(row.id);
-    const covers = strings(row.covers);
-    const evidenceRefs = strings(row.evidenceRefs);
-    const commandRefsForRow = commandRefs(row);
-    const acceptanceRefs = strings(row.acceptanceRefs);
-    const artifactRefs = strings(row.artifactRefs);
-    const missing = [
-      ...(covers.length > 0 ? [] : ['trace_closure_requirement_refs_missing']),
-      ...(evidenceRefs.length > 0 ? [] : ['trace_closure_evidence_refs_missing']),
-      ...(commandRefsForRow.length > 0 ? [] : ['trace_closure_command_refs_missing']),
-      ...(acceptanceRefs.length > 0 ? [] : ['trace_closure_acceptance_refs_missing']),
-      ...(artifactRefs.length > 0 ? [] : ['trace_closure_artifact_refs_missing']),
-    ];
-    return {
-      id,
-      covers,
-      evidenceRefs,
-      commandRefs: commandRefsForRow,
-      acceptanceRefs,
-      artifactRefs,
-      closureAssertion: text(row.closureAssertion) || text(row.oracle) || 'target-state closure requires current command, evidence, acceptance, and artifact binding',
-      missing,
-      ready: missing.length === 0,
-    };
-  }).filter((row) => row.id);
+  const rows = objects(confirmation.traceRows)
+    .map((row) => {
+      const id = text(row.id);
+      const covers = strings(row.covers);
+      const evidenceRefs = strings(row.evidenceRefs);
+      const commandRefsForRow = commandRefs(row);
+      const acceptanceRefs = strings(row.acceptanceRefs);
+      const artifactRefs = strings(row.artifactRefs);
+      const missing = [
+        ...(covers.length > 0 ? [] : ['trace_closure_requirement_refs_missing']),
+        ...(evidenceRefs.length > 0 ? [] : ['trace_closure_evidence_refs_missing']),
+        ...(commandRefsForRow.length > 0 ? [] : ['trace_closure_command_refs_missing']),
+        ...(acceptanceRefs.length > 0 ? [] : ['trace_closure_acceptance_refs_missing']),
+        ...(artifactRefs.length > 0 ? [] : ['trace_closure_artifact_refs_missing']),
+      ];
+      return {
+        id,
+        covers,
+        evidenceRefs,
+        commandRefs: commandRefsForRow,
+        acceptanceRefs,
+        artifactRefs,
+        closureAssertion:
+          text(row.closureAssertion) ||
+          text(row.oracle) ||
+          'target-state closure requires current command, evidence, acceptance, and artifact binding',
+        missing,
+        ready: missing.length === 0,
+      };
+    })
+    .filter((row) => row.id);
   const missing = rows.flatMap((row) =>
     strings(row.missing).map((code) => ({ id: text(row.id), code, category: 'TRACE_CLOSURE' }))
   );
@@ -876,7 +1001,10 @@ function traceClosureAssertions(confirmation: JsonObject): JsonObject {
     decision: rows.length > 0 && missing.length === 0 ? 'pass' : 'blocked',
     ready: rows.length > 0 && missing.length === 0,
     rows,
-    missing: rows.length === 0 ? [{ id: 'traceRows', code: 'trace_closure_assertions_missing', category: 'TRACE_CLOSURE' }] : missing,
+    missing:
+      rows.length === 0
+        ? [{ id: 'traceRows', code: 'trace_closure_assertions_missing', category: 'TRACE_CLOSURE' }]
+        : missing,
     summary: {
       traceCount: rows.length,
       closedByPlanCount: rows.filter((row) => row.ready === true).length,
@@ -885,7 +1013,10 @@ function traceClosureAssertions(confirmation: JsonObject): JsonObject {
   };
 }
 
-function canonicalSurfaceReconciliation(confirmation: JsonObject, targetArtifacts: JsonObject[]): JsonObject {
+function canonicalSurfaceReconciliation(
+  confirmation: JsonObject,
+  targetArtifacts: JsonObject[]
+): JsonObject {
   const currentTargetMap = nested(confirmation.currentTargetMap);
   const rows = targetArtifacts
     .filter((row) => text(row.kind) !== 'legacy_policy')
@@ -915,9 +1046,20 @@ function canonicalSurfaceReconciliation(confirmation: JsonObject, targetArtifact
   return {
     decision: rows.length > 0 && missing.length === 0 ? 'pass' : 'blocked',
     ready: rows.length > 0 && missing.length === 0,
-    applies: nested(confirmation.applicability).currentTargetMap ? nested(nested(confirmation.applicability).currentTargetMap).applies === true : Object.keys(currentTargetMap).length > 0,
+    applies: nested(confirmation.applicability).currentTargetMap
+      ? nested(nested(confirmation.applicability).currentTargetMap).applies === true
+      : Object.keys(currentTargetMap).length > 0,
     rows,
-    missing: rows.length === 0 ? [{ id: 'currentTargetMap', code: 'canonical_surface_reconciliation_missing', category: 'CANONICAL_SURFACE' }] : missing,
+    missing:
+      rows.length === 0
+        ? [
+            {
+              id: 'currentTargetMap',
+              code: 'canonical_surface_reconciliation_missing',
+              category: 'CANONICAL_SURFACE',
+            },
+          ]
+        : missing,
     summary: {
       canonicalSurfaceCount: rows.length,
       reconciledByPlanCount: rows.filter((row) => row.ready === true).length,
@@ -940,14 +1082,26 @@ function currentTargetMapSection(confirmation: JsonObject): JsonObject {
   const missing: JsonObject[] = [];
   for (const [groupName, rows] of requiredGroups) {
     if (rows.length === 0) {
-      missing.push({ id: groupName, code: 'current_target_map_group_missing', category: 'CURRENT_TARGET_MAP' });
+      missing.push({
+        id: groupName,
+        code: 'current_target_map_group_missing',
+        category: 'CURRENT_TARGET_MAP',
+      });
     }
   }
   if (text(map.schemaVersion) !== 'current-target-map/v1') {
-    missing.push({ id: 'schemaVersion', code: 'current_target_map_schema_version_missing_or_invalid', category: 'CURRENT_TARGET_MAP' });
+    missing.push({
+      id: 'schemaVersion',
+      code: 'current_target_map_schema_version_missing_or_invalid',
+      category: 'CURRENT_TARGET_MAP',
+    });
   }
   if (text(map.displayProfile) !== 'closed_loop_current_target_map') {
-    missing.push({ id: 'displayProfile', code: 'current_target_map_display_profile_missing_or_invalid', category: 'CURRENT_TARGET_MAP' });
+    missing.push({
+      id: 'displayProfile',
+      code: 'current_target_map_display_profile_missing_or_invalid',
+      category: 'CURRENT_TARGET_MAP',
+    });
   }
   const rows = requiredGroups.map(([groupName, groupRows]) => ({
     id: groupName,
@@ -974,41 +1128,63 @@ function currentTargetMapSection(confirmation: JsonObject): JsonObject {
   };
 }
 
-function legacyDenial(confirmation: JsonObject, targetArtifacts: JsonObject[], controls: JsonObject[]): JsonObject {
+function legacyDenial(
+  confirmation: JsonObject,
+  targetArtifacts: JsonObject[],
+  controls: JsonObject[]
+): JsonObject {
   const legacyRows = [
     ...targetArtifacts.filter((row) => text(row.kind) === 'legacy_policy'),
     ...controls.filter((row) => text(row.source) === 'legacy_policy'),
   ];
-  const rows = legacyRows.map((row) => {
-    const id = text(row.id);
-    const traceRefs = strings(row.traceRefs);
-    const evidenceRefs = strings(row.evidenceRefs);
-    const linkedIds = strings(row.linkedIds);
-    const oracle = text(row.oracle) || `Must not use ${text(row.pathOrField)} as completion proof`;
-    const missing = [
-      ...(oracle ? [] : ['legacy_denial_oracle_missing']),
-      ...(traceRefs.length + evidenceRefs.length + linkedIds.length > 0 ? [] : ['legacy_denial_refs_missing']),
-    ];
-    return {
-      id,
-      pathOrField: text(row.pathOrField),
-      completionProofPolicy: text(row.completionProofPolicy) || 'legacy_only',
-      oracle,
-      traceRefs,
-      evidenceRefs,
-      linkedIds,
-      missing,
-      ready: missing.length === 0,
-    };
-  }).filter((row) => row.id || row.pathOrField);
+  const rows = legacyRows
+    .map((row) => {
+      const id = text(row.id);
+      const traceRefs = strings(row.traceRefs);
+      const evidenceRefs = strings(row.evidenceRefs);
+      const linkedIds = strings(row.linkedIds);
+      const oracle =
+        text(row.oracle) || `Must not use ${text(row.pathOrField)} as completion proof`;
+      const missing = [
+        ...(oracle ? [] : ['legacy_denial_oracle_missing']),
+        ...(traceRefs.length + evidenceRefs.length + linkedIds.length > 0
+          ? []
+          : ['legacy_denial_refs_missing']),
+      ];
+      return {
+        id,
+        pathOrField: text(row.pathOrField),
+        completionProofPolicy: text(row.completionProofPolicy) || 'legacy_only',
+        oracle,
+        traceRefs,
+        evidenceRefs,
+        linkedIds,
+        missing,
+        ready: missing.length === 0,
+      };
+    })
+    .filter((row) => row.id || row.pathOrField);
   const missing = rows.flatMap((row) =>
-    strings(row.missing).map((code) => ({ id: text(row.id) || text(row.pathOrField), code, category: 'LEGACY_DENIAL' }))
+    strings(row.missing).map((code) => ({
+      id: text(row.id) || text(row.pathOrField),
+      code,
+      category: 'LEGACY_DENIAL',
+    }))
   );
   return {
     decision: rows.length > 0 && missing.length === 0 ? 'pass' : 'blocked',
     ready: rows.length > 0 && missing.length === 0,
     rows,
-    missing: rows.length === 0 ? [{ id: 'currentTargetMap.existingArtifacts', code: 'legacy_denial_missing', category: 'LEGACY_DENIAL' }] : missing,
+    missing:
+      rows.length === 0
+        ? [
+            {
+              id: 'currentTargetMap.existingArtifacts',
+              code: 'legacy_denial_missing',
+              category: 'LEGACY_DENIAL',
+            },
+          ]
+        : missing,
     summary: {
       legacyDenialCount: rows.length,
       coveredLegacyDenialCount: rows.filter((row) => row.ready === true).length,
@@ -1040,7 +1216,11 @@ function closeoutProof(confirmation: JsonObject, targetArtifacts: JsonObject[]):
     requiredCommands,
     policies,
     targetRefs,
-    missing: missing.map((code) => ({ id: 'closeoutReadinessPreview', code, category: 'CLOSEOUT_PROOF' })),
+    missing: missing.map((code) => ({
+      id: 'closeoutReadinessPreview',
+      code,
+      category: 'CLOSEOUT_PROOF',
+    })),
     summary: {
       requiredCommandCount: requiredCommands.length,
       policyCount: policies.length,
@@ -1052,27 +1232,29 @@ function closeoutProof(confirmation: JsonObject, targetArtifacts: JsonObject[]):
 
 function evidenceTrustStates(confirmation: JsonObject): JsonObject {
   const evidenceRows = objects(confirmation.evidence);
-  const rows = evidenceRows.map((row) => {
-    const id = text(row.id);
-    const requiredCommandRefs = idRefs(row, ['requiredCommandRefs', 'commandRefs']);
-    const artifactRefs = idRefs(row, ['artifactRefs']);
-    const missing = [
-      ...(text(row.oracle) ? [] : ['evidence_trust_oracle_missing']),
-      ...(requiredCommandRefs.length > 0 ? [] : ['evidence_trust_command_refs_missing']),
-      ...(artifactRefs.length > 0 ? [] : ['evidence_trust_artifact_refs_missing']),
-    ];
-    return {
-      id,
-      initialState: 'planned',
-      allowedStates: ['planned', 'observed', 'assertion_validated', 'delivery_verified'],
-      closeoutConsumableState: 'delivery_verified',
-      requiredCommandRefs,
-      artifactRefs,
-      oracle: text(row.oracle),
-      missing,
-      ready: missing.length === 0,
-    };
-  }).filter((row) => row.id);
+  const rows = evidenceRows
+    .map((row) => {
+      const id = text(row.id);
+      const requiredCommandRefs = idRefs(row, ['requiredCommandRefs', 'commandRefs']);
+      const artifactRefs = idRefs(row, ['artifactRefs']);
+      const missing = [
+        ...(text(row.oracle) ? [] : ['evidence_trust_oracle_missing']),
+        ...(requiredCommandRefs.length > 0 ? [] : ['evidence_trust_command_refs_missing']),
+        ...(artifactRefs.length > 0 ? [] : ['evidence_trust_artifact_refs_missing']),
+      ];
+      return {
+        id,
+        initialState: 'planned',
+        allowedStates: ['planned', 'observed', 'assertion_validated', 'delivery_verified'],
+        closeoutConsumableState: 'delivery_verified',
+        requiredCommandRefs,
+        artifactRefs,
+        oracle: text(row.oracle),
+        missing,
+        ready: missing.length === 0,
+      };
+    })
+    .filter((row) => row.id);
   const missing = rows.flatMap((row) =>
     strings(row.missing).map((code) => ({ id: text(row.id), code, category: 'EVIDENCE_TRUST' }))
   );
@@ -1080,12 +1262,97 @@ function evidenceTrustStates(confirmation: JsonObject): JsonObject {
     decision: rows.length > 0 && missing.length === 0 ? 'pass' : 'blocked',
     ready: rows.length > 0 && missing.length === 0,
     rows,
-    missing: rows.length === 0 ? [{ id: 'evidence', code: 'evidence_trust_states_missing', category: 'EVIDENCE_TRUST' }] : missing,
+    missing:
+      rows.length === 0
+        ? [{ id: 'evidence', code: 'evidence_trust_states_missing', category: 'EVIDENCE_TRUST' }]
+        : missing,
     summary: {
       evidenceCount: rows.length,
       trustedByPlanCount: rows.filter((row) => row.ready === true).length,
       missingCount: rows.length === 0 ? 1 : missing.length,
     },
+  };
+}
+
+function mergeUniqueRefs(row: JsonObject, key: string, refs: string[]): JsonObject {
+  const merged = unique([...strings(row[key]), ...refs]);
+  return merged.length > 0 ? { ...row, [key]: merged } : row;
+}
+
+function applyOverlayRows(
+  rows: JsonObject[],
+  overlayRows: JsonObject[],
+  merge: (row: JsonObject, overlay: JsonObject) => JsonObject
+): JsonObject[] {
+  if (overlayRows.length === 0) return rows;
+  const overlaysById = new Map<string, JsonObject>();
+  for (const row of overlayRows) {
+    const id = text(row.id);
+    if (id) overlaysById.set(id, row);
+  }
+  return rows.map((row) => {
+    const overlay = overlaysById.get(text(row.id));
+    return overlay ? merge(row, overlay) : row;
+  });
+}
+
+function applyReadinessAutoRemediationOverlay(
+  confirmation: JsonObject,
+  record: JsonObject
+): JsonObject {
+  const overlay = nested(nested(record.aiTddContractGate).readinessAutoRemediationOverlay);
+  if (text(overlay.schemaVersion) !== 'readiness-auto-remediation-overlay/v1') return confirmation;
+  const sourceMutationPolicy = text(overlay.sourceMutationPolicy);
+  if (sourceMutationPolicy && sourceMutationPolicy !== 'non_semantic_projection_only')
+    return confirmation;
+  return {
+    ...confirmation,
+    acceptanceTests: applyOverlayRows(
+      objects(confirmation.acceptanceTests),
+      objects(overlay.acceptanceBindings),
+      (row, patch) => mergeUniqueRefs(row, 'covers', strings(patch.covers))
+    ),
+    e2eSuites: applyOverlayRows(
+      objects(confirmation.e2eSuites),
+      objects(overlay.acceptanceBindings),
+      (row, patch) => mergeUniqueRefs(row, 'covers', strings(patch.covers))
+    ),
+    traceRows: applyOverlayRows(
+      objects(confirmation.traceRows),
+      objects(overlay.traceBindings),
+      (row, patch) => {
+        let out = mergeUniqueRefs(row, 'covers', strings(patch.covers));
+        out = mergeUniqueRefs(out, 'evidenceRefs', strings(patch.evidenceRefs));
+        out = mergeUniqueRefs(out, 'commandRefs', strings(patch.commandRefs));
+        out = mergeUniqueRefs(out, 'acceptanceRefs', strings(patch.acceptanceRefs));
+        return mergeUniqueRefs(out, 'artifactRefs', strings(patch.artifactRefs));
+      }
+    ),
+    evidence: applyOverlayRows(
+      objects(confirmation.evidence),
+      objects(overlay.evidenceBindings),
+      (row, patch) => {
+        let out = mergeUniqueRefs(row, 'requiredCommandRefs', strings(patch.requiredCommandRefs));
+        return mergeUniqueRefs(out, 'artifactRefs', strings(patch.artifactRefs));
+      }
+    ),
+    requiredCommands: applyOverlayRows(
+      objects(confirmation.requiredCommands),
+      objects(overlay.commandBindings),
+      (row, patch) => {
+        let out = mergeUniqueRefs(row, 'traceRows', strings(patch.traceRows));
+        return mergeUniqueRefs(out, 'evidenceRefs', strings(patch.evidenceRefs));
+      }
+    ),
+    artifactAutomationPlan: applyOverlayRows(
+      objects(confirmation.artifactAutomationPlan),
+      objects(overlay.artifactBindings),
+      (row, patch) => {
+        let out = mergeUniqueRefs(row, 'traceRows', strings(patch.traceRows));
+        out = mergeUniqueRefs(out, 'traceRefs', strings(patch.traceRefs));
+        return mergeUniqueRefs(out, 'evidenceRefs', strings(patch.evidenceRefs));
+      }
+    ),
   };
 }
 
@@ -1096,31 +1363,39 @@ function buildManifest(input: {
   recordPath: string;
   attemptId: string;
 }): JsonObject {
-  const acceptance = acceptanceRows(input.confirmation);
+  const confirmation = applyReadinessAutoRemediationOverlay(input.confirmation, input.record);
+  const acceptance = acceptanceRows(confirmation);
   const redProofs = redProofRows({ confirmation: input.confirmation, record: input.record });
-  const targetArtifacts = deriveTargetArtifactChecklist(input.confirmation);
-  const controls = negativeControls(input.confirmation);
-  const errorCoverage = errorCaseCoverage(input.confirmation, acceptance);
-  const commandTargets = commandTargetCollection(input.confirmation);
-  const traceClosures = traceClosureAssertions(input.confirmation);
-  const currentTargetMapManifest = currentTargetMapSection(input.confirmation);
-  const canonicalSurfaces = canonicalSurfaceReconciliation(input.confirmation, targetArtifacts as unknown as JsonObject[]);
-  const legacyControls = legacyDenial(input.confirmation, targetArtifacts as unknown as JsonObject[], controls);
-  const closeoutProofPlan = closeoutProof(input.confirmation, targetArtifacts as unknown as JsonObject[]);
-  const evidenceTrust = evidenceTrustStates(input.confirmation);
-  const targetModificationRows = targetModificationPaths(input.confirmation);
+  const targetArtifacts = deriveTargetArtifactChecklist(confirmation);
+  const controls = negativeControls(confirmation);
+  const errorCoverage = errorCaseCoverage(confirmation, acceptance);
+  const commandTargets = commandTargetCollection(confirmation);
+  const traceClosures = traceClosureAssertions(confirmation);
+  const currentTargetMapManifest = currentTargetMapSection(confirmation);
+  const canonicalSurfaces = canonicalSurfaceReconciliation(
+    confirmation,
+    targetArtifacts as unknown as JsonObject[]
+  );
+  const legacyControls = legacyDenial(
+    confirmation,
+    targetArtifacts as unknown as JsonObject[],
+    controls
+  );
+  const closeoutProofPlan = closeoutProof(confirmation, targetArtifacts as unknown as JsonObject[]);
+  const evidenceTrust = evidenceTrustStates(confirmation);
+  const targetModificationRows = targetModificationPaths(confirmation);
   const targetModificationCoverage = targetModificationPathCoverage({
     targetModificationPaths: targetModificationRows,
-    traceRows: objects(input.confirmation.traceRows),
-    evidenceRows: objects(input.confirmation.evidence),
+    traceRows: objects(confirmation.traceRows),
+    evidenceRows: objects(confirmation.evidence),
   });
   return {
     sourcePath: normalizePath(path.resolve(input.sourcePath)),
     recordPath: normalizePath(path.resolve(input.recordPath)),
     currentAttemptId: input.attemptId,
     implementationConfirmationHash: implementationConfirmationHash(input.confirmation),
-    requirements: requirementRows(input.confirmation),
-    evidence: objects(input.confirmation.evidence).map((row) => ({
+    requirements: requirementRows(confirmation),
+    evidence: objects(confirmation.evidence).map((row) => ({
       id: text(row.id),
       text: text(row.text),
       gate: text(row.gate),
@@ -1128,16 +1403,19 @@ function buildManifest(input: {
       requiredCommandRefs: idRefs(row, ['requiredCommandRefs', 'commandRefs']),
       artifactRefs: idRefs(row, ['artifactRefs']),
     })),
-    traceRows: objects(input.confirmation.traceRows).map((row) => ({
+    traceRows: objects(confirmation.traceRows).map((row) => ({
       id: text(row.id),
       covers: strings(row.covers),
       evidenceRefs: strings(row.evidenceRefs),
       commandRefs: commandRefs(row),
       artifactRefs: strings(row.artifactRefs),
+      canonicalSurfaceRefs: strings(row.canonicalSurfaceRefs),
+      currentTargetMapRefs: strings(row.currentTargetMapRefs),
+      targetModificationPaths: strings(row.targetModificationPaths),
       acceptanceRefs: strings(row.acceptanceRefs),
       status: text(row.status),
     })),
-    requiredCommands: objects(input.confirmation.requiredCommands).map((row) => ({
+    requiredCommands: objects(confirmation.requiredCommands).map((row) => ({
       id: commandId(row),
       command: text(row.command),
       role: text(row.role) || text(row.commandRole) || text(row.gate),
@@ -1163,19 +1441,18 @@ function buildManifest(input: {
     closeoutProof: closeoutProofPlan,
     evidenceTrustStates: evidenceTrust,
     closeoutGates: {
-      decision:
-        [
-          commandTargets,
-          traceClosures,
-          currentTargetMapManifest,
-          targetModificationCoverage,
-          canonicalSurfaces,
-          legacyControls,
-          closeoutProofPlan,
-          evidenceTrust,
-        ].every((section) => section.ready === true)
-          ? 'pass'
-          : 'blocked',
+      decision: [
+        commandTargets,
+        traceClosures,
+        currentTargetMapManifest,
+        targetModificationCoverage,
+        canonicalSurfaces,
+        legacyControls,
+        closeoutProofPlan,
+        evidenceTrust,
+      ].every((section) => section.ready === true)
+        ? 'pass'
+        : 'blocked',
       requiredManifestSections: [
         'commandTargetCollection',
         'traceClosureAssertions',
@@ -1191,8 +1468,8 @@ function buildManifest(input: {
 }
 
 function missingTestPlan(manifest: JsonObject): JsonObject {
-  const requirements = (objects(manifest.requirements) as unknown as RequirementRow[]).filter((row) =>
-    ['MUST', 'NEG'].includes(row.kind)
+  const requirements = (objects(manifest.requirements) as unknown as RequirementRow[]).filter(
+    (row) => ['MUST', 'NEG'].includes(row.kind)
   );
   const acceptance = acceptanceFromManifest(manifest);
   const covered = new Set(acceptance.flatMap((row) => row.covers));
@@ -1202,7 +1479,11 @@ function missingTestPlan(manifest: JsonObject): JsonObject {
   const missingFiles = acceptance.flatMap((row) =>
     row.files
       .filter((file) => !fileExists(file))
-      .map((file) => ({ id: row.id, file: normalizePath(file), reason: 'acceptance_test_file_missing' }))
+      .map((file) => ({
+        id: row.id,
+        file: normalizePath(file),
+        reason: 'acceptance_test_file_missing',
+      }))
   );
   return {
     decision: missingCoverage.length === 0 && missingFiles.length === 0 ? 'pass' : 'blocked',
@@ -1228,8 +1509,7 @@ function targetArtifactPlan(manifest: JsonObject): JsonObject {
   return {
     decision: targets.length > 0 ? 'pass' : 'blocked',
     targets,
-    missingPlan:
-      targets.length === 0 ? [{ reason: 'target_artifact_plan_empty' }] : [],
+    missingPlan: targets.length === 0 ? [{ reason: 'target_artifact_plan_empty' }] : [],
   };
 }
 
@@ -1251,7 +1531,9 @@ function contractCompletenessReport(manifest: JsonObject): JsonObject {
   const commands = objects(manifest.requiredCommands);
   const acceptance = objects(manifest.acceptanceSuites);
   const explicitAcceptance = acceptance.filter((row) => row.explicit !== false);
-  const e2e = explicitAcceptance.filter((row) => text(row.kind) === 'e2e' || text(row.id).startsWith('E2E-'));
+  const e2e = explicitAcceptance.filter(
+    (row) => text(row.kind) === 'e2e' || text(row.id).startsWith('E2E-')
+  );
   const acc = explicitAcceptance.filter(
     (row) => !(text(row.kind) === 'e2e' || text(row.id).startsWith('E2E-'))
   );
@@ -1276,19 +1558,56 @@ function contractCompletenessReport(manifest: JsonObject): JsonObject {
   const traceIds = idSet(traceRows);
   const commandIds = idSet(commands);
   const acceptanceIds = idSet(acceptance);
+  const closeoutCommandRefs = new Set(strings(nested(manifest.closeoutProof).requiredCommands));
   const artifactIds = new Set(
     proofArtifacts
-      .flatMap((row) => [text(row.id), text(row.pathOrField)])
+      .flatMap((row) => [text(row.id), text(row.pathOrField), ...strings(row.aliases)])
       .filter(Boolean)
   );
-  const artifactReferenced = (artifact: JsonObject): boolean => {
-    const aliases = [text(artifact.id), text(artifact.pathOrField)].filter(Boolean);
-    return aliases.some(
-      (id) =>
-        evidence.some((evd) => strings(evd.artifactRefs).includes(id)) ||
-        traceRows.some((trace) => strings(trace.artifactRefs).includes(id))
+  const isContractBoundArtifact = (artifact: JsonObject): boolean => {
+    const traceRefs = strings(artifact.traceRefs);
+    const evidenceRefs = strings(artifact.evidenceRefs);
+    return (
+      artifact.contractBound === true &&
+      traceRefs.length > 0 &&
+      evidenceRefs.length > 0 &&
+      traceRefs.every((ref) => traceIds.has(ref)) &&
+      evidenceRefs.every((ref) => evidenceIds.has(ref))
     );
   };
+  const artifactReferenced = (artifact: JsonObject): boolean => {
+    const aliases = [
+      text(artifact.id),
+      text(artifact.pathOrField),
+      ...strings(artifact.aliases),
+    ].filter(Boolean);
+    return (
+      isContractBoundArtifact(artifact) ||
+      aliases.some(
+        (id) =>
+          evidence.some((evd) => strings(evd.artifactRefs).includes(id)) ||
+          traceRows.some((trace) =>
+            [
+              ...strings(trace.artifactRefs),
+              ...strings(trace.canonicalSurfaceRefs),
+              ...strings(trace.currentTargetMapRefs),
+            ].includes(id)
+          ) ||
+          targetModifications.some((target) => strings(target.artifactRefs).includes(id))
+      )
+    );
+  };
+  const evidenceReferenced = (id: string): boolean =>
+    requirements.some((req) => strings(req.evidenceRefs).includes(id)) ||
+    traceRows.some((trace) => strings(trace.evidenceRefs).includes(id)) ||
+    commands.some((command) => strings(command.evidenceRefs).includes(id)) ||
+    proofArtifacts.some(
+      (artifact) => isContractBoundArtifact(artifact) && strings(artifact.evidenceRefs).includes(id)
+    );
+  const commandReferenced = (id: string): boolean =>
+    acceptance.some((accRow) => strings(accRow.commandRefs).includes(id)) ||
+    traceRows.some((trace) => strings(trace.commandRefs).includes(id)) ||
+    closeoutCommandRefs.has(id);
   const issues: JsonObject[] = [];
 
   if (must.length === 0) issues.push(issue('MUST', 'must_missing', 'MUST-*'));
@@ -1323,7 +1642,8 @@ function contractCompletenessReport(manifest: JsonObject): JsonObject {
   for (const row of requirements) {
     const id = text(row.id) || '<missing-requirement-id>';
     if (!text(row.id)) issues.push(issue(text(row.kind) || 'REQ', 'requirement_id_missing', id));
-    if (!text(row.text)) issues.push(issue(text(row.kind) || 'REQ', 'requirement_text_missing', id));
+    if (!text(row.text))
+      issues.push(issue(text(row.kind) || 'REQ', 'requirement_text_missing', id));
     if (['MUST', 'NEG'].includes(text(row.kind)) && strings(row.evidenceRefs).length === 0) {
       issues.push(issue(text(row.kind), 'requirement_evidence_refs_missing', id));
     }
@@ -1331,10 +1651,12 @@ function contractCompletenessReport(manifest: JsonObject): JsonObject {
       issues.push(issue(text(row.kind), 'requirement_trace_refs_missing', id));
     }
     for (const ref of strings(row.evidenceRefs)) {
-      if (!evidenceIds.has(ref)) issues.push(issue(text(row.kind) || 'REQ', 'evidence_ref_missing', id, { ref }));
+      if (!evidenceIds.has(ref))
+        issues.push(issue(text(row.kind) || 'REQ', 'evidence_ref_missing', id, { ref }));
     }
     for (const ref of strings(row.traceRefs)) {
-      if (!traceIds.has(ref)) issues.push(issue(text(row.kind) || 'REQ', 'trace_ref_missing', id, { ref }));
+      if (!traceIds.has(ref))
+        issues.push(issue(text(row.kind) || 'REQ', 'trace_ref_missing', id, { ref }));
     }
   }
 
@@ -1356,7 +1678,8 @@ function contractCompletenessReport(manifest: JsonObject): JsonObject {
     const id = text(row.id) || '<missing-trace-id>';
     if (!text(row.id)) issues.push(issue('TRACE', 'trace_id_missing', id));
     for (const ref of strings(row.covers)) {
-      if (!requirementIds.has(ref)) issues.push(issue('TRACE', 'requirement_ref_missing', id, { ref }));
+      if (!requirementIds.has(ref))
+        issues.push(issue('TRACE', 'requirement_ref_missing', id, { ref }));
     }
     for (const ref of strings(row.evidenceRefs)) {
       if (!evidenceIds.has(ref)) issues.push(issue('TRACE', 'evidence_ref_missing', id, { ref }));
@@ -1365,7 +1688,8 @@ function contractCompletenessReport(manifest: JsonObject): JsonObject {
       if (!commandIds.has(ref)) issues.push(issue('TRACE', 'command_ref_missing', id, { ref }));
     }
     for (const ref of strings(row.acceptanceRefs)) {
-      if (!acceptanceIds.has(ref)) issues.push(issue('TRACE', 'acceptance_ref_missing', id, { ref }));
+      if (!acceptanceIds.has(ref))
+        issues.push(issue('TRACE', 'acceptance_ref_missing', id, { ref }));
     }
     for (const ref of strings(row.artifactRefs)) {
       if (!artifactIds.has(ref)) issues.push(issue('TRACE', 'artifact_ref_missing', id, { ref }));
@@ -1400,10 +1724,12 @@ function contractCompletenessReport(manifest: JsonObject): JsonObject {
     const id = text(row.id) || '<missing-acceptance-id>';
     const category = text(row.kind) === 'e2e' || id.startsWith('E2E-') ? 'E2E' : 'ACC';
     if (!text(row.id)) issues.push(issue(category, 'acceptance_id_missing', id));
-    if (strings(row.files).length === 0) issues.push(issue(category, 'acceptance_test_file_ref_missing', id));
+    if (strings(row.files).length === 0)
+      issues.push(issue(category, 'acceptance_test_file_ref_missing', id));
     if (!text(row.oracle)) issues.push(issue(category, 'acceptance_oracle_missing', id));
     for (const ref of strings(row.covers)) {
-      if (!mustNegIds.has(ref)) issues.push(issue(category, 'requirement_ref_missing', id, { ref }));
+      if (!mustNegIds.has(ref))
+        issues.push(issue(category, 'requirement_ref_missing', id, { ref }));
     }
     for (const ref of strings(row.traceRefs)) {
       if (!traceIds.has(ref)) issues.push(issue(category, 'trace_ref_missing', id, { ref }));
@@ -1423,12 +1749,6 @@ function contractCompletenessReport(manifest: JsonObject): JsonObject {
       issues.push(issue(text(row.kind), 'acceptance_or_e2e_coverage_missing', id));
     }
   }
-  const e2eCovered = new Set(e2e.flatMap((row) => strings(row.covers)));
-  for (const row of neg) {
-    const id = text(row.id);
-    if (id && !e2eCovered.has(id)) issues.push(issue('E2E', 'neg_e2e_coverage_missing', id));
-  }
-
   for (const row of proofArtifacts) {
     const id = text(row.id) || '<missing-artifact-id>';
     if (!text(row.id)) issues.push(issue('ART', 'artifact_id_missing', id));
@@ -1445,13 +1765,13 @@ function contractCompletenessReport(manifest: JsonObject): JsonObject {
 
   for (const row of evidence) {
     const id = text(row.id);
-    if (id && !requirements.some((req) => strings(req.evidenceRefs).includes(id)) && !traceRows.some((trace) => strings(trace.evidenceRefs).includes(id))) {
+    if (id && !evidenceReferenced(id)) {
       issues.push(issue('EVD', 'orphan_evidence', id));
     }
   }
   for (const row of commands) {
     const id = text(row.id);
-    if (id && !acceptance.some((acc) => strings(acc.commandRefs).includes(id)) && !traceRows.some((trace) => strings(trace.commandRefs).includes(id))) {
+    if (id && !commandReferenced(id)) {
       issues.push(issue('CMD', 'orphan_command', id));
     }
   }
@@ -1480,12 +1800,15 @@ function contractCompletenessReport(manifest: JsonObject): JsonObject {
       E2E: e2e.length,
       ART: proofArtifacts.length,
       targetModificationPaths: targetModifications.length,
-      errorCaseCoverage: objects(errorCoverage.failurePaths).length + objects(errorCoverage.edgeCases).length,
+      errorCaseCoverage:
+        objects(errorCoverage.failurePaths).length + objects(errorCoverage.edgeCases).length,
       commandTargetCollection: objects(nested(manifest.commandTargetCollection).rows).length,
       traceClosureAssertions: objects(nested(manifest.traceClosureAssertions).rows).length,
       currentTargetMap: objects(nested(manifest.currentTargetMap).rows).length,
-      targetModificationPathCoverage: objects(nested(manifest.targetModificationPathCoverage).rows).length,
-      canonicalSurfaceReconciliation: objects(nested(manifest.canonicalSurfaceReconciliation).rows).length,
+      targetModificationPathCoverage: objects(nested(manifest.targetModificationPathCoverage).rows)
+        .length,
+      canonicalSurfaceReconciliation: objects(nested(manifest.canonicalSurfaceReconciliation).rows)
+        .length,
       legacyDenial: objects(nested(manifest.legacyDenial).rows).length,
       closeoutProof: strings(nested(manifest.closeoutProof).requiredCommands).length,
       evidenceTrustStates: objects(nested(manifest.evidenceTrustStates).rows).length,
@@ -1501,7 +1824,11 @@ function commandRunsForAttempt(record: JsonObject, attemptId: string): JsonObjec
   );
 }
 
-function commandEvidence(record: JsonObject, commandIdValue: string, attemptId: string): JsonObject {
+function commandEvidence(
+  record: JsonObject,
+  commandIdValue: string,
+  attemptId: string
+): JsonObject {
   const runs = commandRunsForAttempt(record, attemptId);
   const run = runs.find((item) => text(item.commandId) === commandIdValue);
   const deliveryCommand = objects(nested(record.deliveryEvidence).requiredCommands).find(
@@ -1515,11 +1842,13 @@ function commandEvidence(record: JsonObject, commandIdValue: string, attemptId: 
     const staleRun = objects(record.executionIterations)
       .flatMap((iteration) => objects(iteration.commandRunRefs))
       .find((item) => text(item.commandId) === commandIdValue);
-    return { state: staleRun ? 'stale' : 'blocked', reason: staleRun ? 'stale_attempt' : 'current_attempt_command_missing' };
+    return {
+      state: staleRun ? 'stale' : 'blocked',
+      reason: staleRun ? 'stale_attempt' : 'current_attempt_command_missing',
+    };
   }
   if (run.exitCode !== 0) return { state: 'blocked', reason: 'current_attempt_command_failed' };
-  if (artifactRefs.length === 0)
-    return { state: 'blocked', reason: 'exitCode_only_proof' };
+  if (artifactRefs.length === 0) return { state: 'blocked', reason: 'exitCode_only_proof' };
   return { state: 'green', reason: 'current_attempt_command_with_evidence' };
 }
 
@@ -1601,10 +1930,7 @@ function preImplementationState(
     controlledProof?.failureClass && INVALID_RED_FAILURE_CLASSES.has(controlledProof.failureClass)
       ? 'invalid_red'
       : controlledProof?.state;
-  const state =
-    missingFiles.length > 0
-      ? 'missing_test'
-      : proofState ?? 'missing_plan';
+  const state = missingFiles.length > 0 ? 'missing_test' : (proofState ?? 'missing_plan');
   const reasons =
     state === 'expected_red'
       ? controlledProof && !controlledProof.oracle
@@ -1679,11 +2005,30 @@ function modeMatrix(input: {
   const acceptanceRows =
     input.mode === 'pre-implementation'
       ? acceptance.map((row) => preImplementationState(row, input.manifest, preOptions))
-      : acceptance.map((row) => acceptanceRuntimeMatrix(row, input.record, input.attemptId, input.mode));
-  const commandRows = requiredCommandMatrixRows(input.manifest, input.record, input.attemptId, input.mode);
+      : acceptance.map((row) =>
+          acceptanceRuntimeMatrix(row, input.record, input.attemptId, input.mode)
+        );
+  const commandRows = requiredCommandMatrixRows(
+    input.manifest,
+    input.record,
+    input.attemptId,
+    input.mode
+  );
   const artifactRows = artifactMatrixRows(input.manifest, input.subReports, input.mode);
-  const traceRows = traceMatrixRows(input.manifest, acceptanceRows, commandRows, artifactRows, input.mode);
-  const evidenceRows = evidenceMatrixRows(input.manifest, acceptanceRows, commandRows, artifactRows, input.mode);
+  const traceRows = traceMatrixRows(
+    input.manifest,
+    acceptanceRows,
+    commandRows,
+    artifactRows,
+    input.mode
+  );
+  const evidenceRows = evidenceMatrixRows(
+    input.manifest,
+    acceptanceRows,
+    commandRows,
+    artifactRows,
+    input.mode
+  );
   const requirementRowsAll = requirementMatrixRows(input.manifest, acceptanceRows, input.mode);
   const gateRows = input.subReports.map((report) =>
     matrixRow({
@@ -1694,12 +2039,35 @@ function modeMatrix(input: {
     })
   );
   if (input.mode === 'pre-implementation') {
-    return [...requirementRowsAll, ...evidenceRows, ...traceRows, ...commandRows, ...acceptanceRows, ...artifactRows];
+    return [
+      ...requirementRowsAll,
+      ...evidenceRows,
+      ...traceRows,
+      ...commandRows,
+      ...acceptanceRows,
+      ...artifactRows,
+    ];
   }
   if (input.mode === 'pre-rerun') {
-    return [...requirementRowsAll, ...evidenceRows, ...traceRows, ...commandRows, ...acceptanceRows, ...artifactRows, ...gateRows];
+    return [
+      ...requirementRowsAll,
+      ...evidenceRows,
+      ...traceRows,
+      ...commandRows,
+      ...acceptanceRows,
+      ...artifactRows,
+      ...gateRows,
+    ];
   }
-  return [...requirementRowsAll, ...evidenceRows, ...traceRows, ...commandRows, ...acceptanceRows, ...artifactRows, ...gateRows];
+  return [
+    ...requirementRowsAll,
+    ...evidenceRows,
+    ...traceRows,
+    ...commandRows,
+    ...acceptanceRows,
+    ...artifactRows,
+    ...gateRows,
+  ];
 }
 
 function requirementMatrixRows(
@@ -1707,64 +2075,62 @@ function requirementMatrixRows(
   acceptanceRows: MatrixRow[],
   mode: AiTddMode
 ): MatrixRow[] {
-  return (objects(manifest.requirements) as unknown as RequirementRow[])
-    .map((req) => {
-      if (req.kind === 'OUT') {
-        return matrixRow({
-          id: req.id,
-          category: req.kind,
-          refs: [...req.evidenceRefs, ...req.traceRefs],
-          currentState: 'not_applicable',
-          oracle: 'scope boundary tracked outside executable acceptance coverage',
-        });
-      }
-      const covering = acceptanceRows.filter((row) => row.refs.includes(req.id));
-      if (covering.length === 0) {
-        return matrixRow({
-          id: req.id,
-          category: req.kind,
-          refs: [...req.evidenceRefs, ...req.traceRefs],
-          currentState: 'missing_plan',
-          blockingReasons: ['acceptance_or_e2e_coverage_missing'],
-        });
-      }
-      if (mode === 'pre-implementation') {
-        const states = covering.map((row) => row.currentState);
-        const bad = states.find((state) => state !== 'expected_red');
-        return matrixRow({
-          id: req.id,
-          category: req.kind,
-          refs: covering.map((row) => row.id),
-          currentState: bad ?? 'expected_red',
-          blockingReasons: bad ? [`requirement_pre_implementation_${bad}`] : [],
-        });
-      }
+  return (objects(manifest.requirements) as unknown as RequirementRow[]).map((req) => {
+    if (req.kind === 'OUT') {
+      return matrixRow({
+        id: req.id,
+        category: req.kind,
+        refs: [...req.evidenceRefs, ...req.traceRefs],
+        currentState: 'not_applicable',
+        oracle: 'scope boundary tracked outside executable acceptance coverage',
+      });
+    }
+    const covering = acceptanceRows.filter((row) => row.refs.includes(req.id));
+    if (covering.length === 0) {
+      return matrixRow({
+        id: req.id,
+        category: req.kind,
+        refs: [...req.evidenceRefs, ...req.traceRefs],
+        currentState: 'missing_plan',
+        blockingReasons: ['acceptance_or_e2e_coverage_missing'],
+      });
+    }
+    if (mode === 'pre-implementation') {
+      const states = covering.map((row) => row.currentState);
+      const bad = states.find((state) => state !== 'expected_red');
       return matrixRow({
         id: req.id,
         category: req.kind,
         refs: covering.map((row) => row.id),
-        currentState:
-          mode === 'iteration'
-            ? covering.some((row) => ['green', 'partial_green'].includes(row.currentState))
-              ? 'partial_green'
-              : 'blocked'
-            : covering.every((row) => row.currentState === 'green')
-              ? 'green'
-              : 'blocked',
-        attemptBinding:
-          covering.every((row) => row.attemptBinding === 'current')
-            ? 'current'
-            : covering.some((row) => row.attemptBinding === 'stale')
-              ? 'stale'
-              : 'missing',
-        blockingReasons:
-          mode === 'iteration'
-            ? []
-            : covering.every((row) => row.currentState === 'green')
-              ? []
-              : ['requirement_closeout_requires_acceptance_runtime_green'],
+        currentState: bad ?? 'expected_red',
+        blockingReasons: bad ? [`requirement_pre_implementation_${bad}`] : [],
       });
+    }
+    return matrixRow({
+      id: req.id,
+      category: req.kind,
+      refs: covering.map((row) => row.id),
+      currentState:
+        mode === 'iteration'
+          ? covering.some((row) => ['green', 'partial_green'].includes(row.currentState))
+            ? 'partial_green'
+            : 'blocked'
+          : covering.every((row) => row.currentState === 'green')
+            ? 'green'
+            : 'blocked',
+      attemptBinding: covering.every((row) => row.attemptBinding === 'current')
+        ? 'current'
+        : covering.some((row) => row.attemptBinding === 'stale')
+          ? 'stale'
+          : 'missing',
+      blockingReasons:
+        mode === 'iteration'
+          ? []
+          : covering.every((row) => row.currentState === 'green')
+            ? []
+            : ['requirement_closeout_requires_acceptance_runtime_green'],
     });
+  });
 }
 
 function acceptanceRuntimeMatrix(
@@ -1797,7 +2163,11 @@ function acceptanceRuntimeMatrix(
   }
   const proofs = row.commandRefs.map((ref) => commandEvidence(record, ref, attemptId));
   const bad = proofs.find((proof) => text(proof.state) !== 'green');
-  const state = bad ? (text(bad.state) as MatrixState) : mode === 'iteration' ? 'partial_green' : 'green';
+  const state = bad
+    ? (text(bad.state) as MatrixState)
+    : mode === 'iteration'
+      ? 'partial_green'
+      : 'green';
   return matrixRow({
     id: row.id,
     category: row.id.startsWith('E2E-') || row.kind === 'e2e' ? 'E2E' : 'ACC',
@@ -1846,15 +2216,16 @@ function requiredCommandMatrixRows(
       refs: [...strings(command.traceRefs), ...strings(command.evidenceRefs)],
       currentState: state === 'green' && mode === 'iteration' ? 'partial_green' : state,
       commandRefs: [id],
-      attemptBinding:
-        state === 'green' ? 'current' : state === 'stale' ? 'stale' : 'missing',
+      attemptBinding: state === 'green' ? 'current' : state === 'stale' ? 'stale' : 'missing',
       blockingReasons: state === 'green' ? [] : [text(proof.reason)],
     });
   });
 }
 
 function artifactIssueIndex(subReports: JsonObject[]): Map<string, string[]> {
-  const targetReport = subReports.find((report) => text(report.reportType) === 'target_artifact_realization_report');
+  const targetReport = subReports.find(
+    (report) => text(report.reportType) === 'target_artifact_realization_report'
+  );
   const out = new Map<string, string[]>();
   for (const issueRow of objects(targetReport?.issues)) {
     const code = text(issueRow.code);
@@ -1888,9 +2259,18 @@ function artifactMatrixRows(
       id,
       category: 'ART',
       refs: [...strings(artifact.traceRefs), ...strings(artifact.evidenceRefs)],
-      currentState: issues.length === 0 ? (mode === 'iteration' ? 'partial_green' : 'green') : 'missing_artifact',
+      currentState:
+        issues.length === 0
+          ? mode === 'iteration'
+            ? 'partial_green'
+            : 'green'
+          : 'missing_artifact',
       artifactRefs: [text(artifact.pathOrField)],
-      attemptBinding: issues.includes('target_artifact_attempt_binding_missing') ? 'missing' : issues.length ? 'missing' : 'current',
+      attemptBinding: issues.includes('target_artifact_attempt_binding_missing')
+        ? 'missing'
+        : issues.length
+          ? 'missing'
+          : 'current',
       blockingReasons: issues,
     });
   });
@@ -1909,11 +2289,15 @@ function traceMatrixRows(
       ...acceptanceRows.filter((row) => strings(trace.acceptanceRefs).includes(row.id)),
       ...acceptanceRows.filter((row) => row.refs.includes(id)),
       ...commandRows.filter((row) => strings(trace.commandRefs).includes(row.id)),
-      ...artifactRows.filter((row) => strings(trace.artifactRefs).includes(row.id) || row.refs.includes(id)),
+      ...artifactRows.filter(
+        (row) => strings(trace.artifactRefs).includes(row.id) || row.refs.includes(id)
+      ),
     ];
     const blockers = unique(linked.flatMap((row) => row.blockingReasons));
     const allGreen = linked.length > 0 && linked.every((row) => row.currentState === 'green');
-    const hasPartial = linked.some((row) => ['green', 'partial_green', 'expected_red'].includes(row.currentState));
+    const hasPartial = linked.some((row) =>
+      ['green', 'partial_green', 'expected_red'].includes(row.currentState)
+    );
     return matrixRow({
       id,
       category: 'TRACE',
@@ -1937,7 +2321,9 @@ function traceMatrixRows(
               ? 'green'
               : 'blocked',
       attemptBinding:
-        linked.length && linked.every((row) => row.attemptBinding === 'current') ? 'current' : 'missing',
+        linked.length && linked.every((row) => row.attemptBinding === 'current')
+          ? 'current'
+          : 'missing',
       blockingReasons:
         mode === 'pre-implementation'
           ? hasPartial
@@ -1963,12 +2349,18 @@ function evidenceMatrixRows(
     const id = text(evidence.id) || '<missing-evidence-id>';
     const linked = [
       ...acceptanceRows.filter((row) => row.refs.includes(id)),
-      ...commandRows.filter((row) => strings(evidence.requiredCommandRefs).includes(row.id) || row.refs.includes(id)),
-      ...artifactRows.filter((row) => strings(evidence.artifactRefs).includes(row.id) || row.refs.includes(id)),
+      ...commandRows.filter(
+        (row) => strings(evidence.requiredCommandRefs).includes(row.id) || row.refs.includes(id)
+      ),
+      ...artifactRows.filter(
+        (row) => strings(evidence.artifactRefs).includes(row.id) || row.refs.includes(id)
+      ),
     ];
     const blockers = unique(linked.flatMap((row) => row.blockingReasons));
     const allGreen = linked.length > 0 && linked.every((row) => row.currentState === 'green');
-    const hasPartial = linked.some((row) => ['green', 'partial_green', 'expected_red'].includes(row.currentState));
+    const hasPartial = linked.some((row) =>
+      ['green', 'partial_green', 'expected_red'].includes(row.currentState)
+    );
     return matrixRow({
       id,
       category: 'EVD',
@@ -1989,7 +2381,9 @@ function evidenceMatrixRows(
       commandRefs: strings(evidence.requiredCommandRefs),
       artifactRefs: strings(evidence.artifactRefs),
       attemptBinding:
-        linked.length && linked.every((row) => row.attemptBinding === 'current') ? 'current' : 'missing',
+        linked.length && linked.every((row) => row.attemptBinding === 'current')
+          ? 'current'
+          : 'missing',
       blockingReasons:
         mode === 'pre-implementation'
           ? text(evidence.oracle)
@@ -2062,7 +2456,13 @@ function closeoutReadinessReport(input: {
       partialOnly: false,
       notReadyReason: 'implementation_not_started',
       blockingReasons: unique(['implementation_not_started', ...blockers]),
-      invalidProofTypes: ['legacy_proof', 'exitCode_only', 'mock_only', 'self_certification', 'stale_evidence'],
+      invalidProofTypes: [
+        'legacy_proof',
+        'exitCode_only',
+        'mock_only',
+        'self_certification',
+        'stale_evidence',
+      ],
     };
   }
   return {
@@ -2070,7 +2470,13 @@ function closeoutReadinessReport(input: {
     mode: input.mode,
     partialOnly: modeAllowsPartial,
     blockingReasons: unique(blockers),
-    invalidProofTypes: ['legacy_proof', 'exitCode_only', 'mock_only', 'self_certification', 'stale_evidence'],
+    invalidProofTypes: [
+      'legacy_proof',
+      'exitCode_only',
+      'mock_only',
+      'self_certification',
+      'stale_evidence',
+    ],
   };
 }
 
@@ -2092,7 +2498,9 @@ function preImplementationReadinessReport(input: {
       blockingReasons: ['pre_implementation_readiness_not_applicable_for_mode'],
     };
   }
-  const acceptanceRows = input.matrix.filter((row) => row.category === 'ACC' || row.category === 'E2E');
+  const acceptanceRows = input.matrix.filter(
+    (row) => row.category === 'ACC' || row.category === 'E2E'
+  );
   const validExpectedRed =
     acceptanceRows.length > 0 && acceptanceRows.every((row) => row.currentState === 'expected_red');
   const matrixBlockingRows = input.matrix.filter((row) => row.blockingReasons.length > 0);
@@ -2208,11 +2616,16 @@ export function evaluateAiTddContractGate(input: {
     });
     const closeoutBlockers = input.mode === 'closeout' ? strings(closeout.blockingReasons) : [];
     const preImplementationBlockers =
-      input.mode === 'pre-implementation' ? strings(preImplementationReadiness.blockingReasons) : [];
+      input.mode === 'pre-implementation'
+        ? strings(preImplementationReadiness.blockingReasons)
+        : [];
     const contractCompletenessBlockers =
       contractCompleteness.ready === true
         ? []
-        : ['contract_completeness_report_blocked', ...strings(contractCompleteness.blockingReasons)];
+        : [
+            'contract_completeness_report_blocked',
+            ...strings(contractCompleteness.blockingReasons),
+          ];
     const blockers = unique([
       ...baseBlockers,
       ...contractCompletenessBlockers,
@@ -2222,31 +2635,31 @@ export function evaluateAiTddContractGate(input: {
       ...preImplementationBlockers,
     ]);
     return {
-    reportType: 'ai_tdd_contract_gate_report',
-    generatedAt: evaluatedAt,
-    generatedBy: evaluatedBy,
-    mode: input.mode,
-    sourcePath: normalizePath(source.sourcePath),
-    recordPath: normalizePath(path.resolve(input.recordPath)),
-    currentAttemptId: attemptId,
-    decision: blockers.length === 0 ? 'pass' : 'blocked',
-    blockingReasons: blockers,
-    contractExecutionManifest: manifest,
-    redGreenMatrix: matrix,
-    missingTestPlan: missingPlan,
-    acceptanceE2eTestPlan: acceptancePlan,
-    contractCompletenessReport: contractCompleteness,
-    targetArtifactPlan: targetPlan,
-    negativeControlPlan: negativePlan,
-    preImplementationReadinessReport: preImplementationReadiness,
-    closeoutReadinessReport: closeout,
-    subReports,
-    mutationPolicy: {
-      writesPass: false,
-      closesTrace: false,
-      writesRecordClosed: false,
-      modifiesSourceTraceRows: false,
-    },
+      reportType: 'ai_tdd_contract_gate_report',
+      generatedAt: evaluatedAt,
+      generatedBy: evaluatedBy,
+      mode: input.mode,
+      sourcePath: normalizePath(source.sourcePath),
+      recordPath: normalizePath(path.resolve(input.recordPath)),
+      currentAttemptId: attemptId,
+      decision: blockers.length === 0 ? 'pass' : 'blocked',
+      blockingReasons: blockers,
+      contractExecutionManifest: manifest,
+      redGreenMatrix: matrix,
+      missingTestPlan: missingPlan,
+      acceptanceE2eTestPlan: acceptancePlan,
+      contractCompletenessReport: contractCompleteness,
+      targetArtifactPlan: targetPlan,
+      negativeControlPlan: negativePlan,
+      preImplementationReadinessReport: preImplementationReadiness,
+      closeoutReadinessReport: closeout,
+      subReports,
+      mutationPolicy: {
+        writesPass: false,
+        closesTrace: false,
+        writesRecordClosed: false,
+        modifiesSourceTraceRows: false,
+      },
     };
   });
 }
@@ -2300,7 +2713,8 @@ export function aiTddContractGateRequired(record: JsonObject, sourcePath?: strin
   if (text(nested(record.aiTddContractGate).enforcementMode) === 'skipped_by_policy') return false;
   if (nested(record.aiTddContractGate).required === true) return true;
   if (nested(record.closeout).aiTddContractGateRequired === true) return true;
-  if (text(record.status) === 'user_confirmed' && (text(sourcePath) || text(record.sourcePath))) return true;
+  if (text(record.status) === 'user_confirmed' && (text(sourcePath) || text(record.sourcePath)))
+    return true;
   return objects(nested(record.deliveryEvidence).requiredCommands).some((command) =>
     AI_TDD_COMMAND_IDS.has(text(command.commandId) || text(command.id))
   );

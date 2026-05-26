@@ -3060,7 +3060,13 @@ flowchart TD
     const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
     expect(report.confirmability).toBe('blocked');
     expect(report.renderedSections).toContain('pre-confirmation-semantic-drilldown');
-    expect(report.blockingIssues.map((issue: any) => issue.code)).toContain('missing_pre_confirmation_semantic_drilldown_gate_report');
+    expect(report.blockingIssues.map((issue: any) => issue.code)).toContain('pre_confirmation_authoring_repair_required');
+    expect(report.blockingIssues.find((issue: any) => issue.code === 'pre_confirmation_authoring_repair_required')).toMatchObject({
+      repairAction: 'run_authoring_repair_preserve_existing',
+    });
+    expect(
+      report.blockingIssues.find((issue: any) => issue.code === 'pre_confirmation_authoring_repair_required')?.repairCommand
+    ).toContain('main-agent-orchestration --action authoring-repair --mode preserve-existing');
     expect(html).toContain('Pre-Confirmation Semantic Drilldown');
   });
 

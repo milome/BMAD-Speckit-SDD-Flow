@@ -128,6 +128,10 @@ function confirmationTextFromArgs(args) {
 }
 
 function updateSourceDocument(sourceText, extracted, update) {
+  const confirmationPhrase =
+    typeof update.confirmInstruction === 'string' && update.confirmInstruction.trim()
+      ? update.confirmInstruction
+      : update.confirmationText;
   const nextConfirmation = {
     ...extracted.confirmation,
     status: 'user_confirmed',
@@ -142,7 +146,7 @@ function updateSourceDocument(sourceText, extracted, update) {
       summaryPath: update.summaryPath,
       reportPath: update.reportPath,
       htmlHash: update.confirmationPageHash,
-      confirmationPhrase: update.confirmationText,
+      confirmationPhrase,
     },
   };
   const dumped = yaml.dump(
@@ -385,6 +389,7 @@ function main(argv) {
       ...event,
       reportPath: normalizePathForReport(reportPath),
       summaryPath: normalizePathForReport(summaryPath),
+      confirmInstruction: report.confirmInstruction,
     });
     fs.writeFileSync(sourcePath, nextSource, 'utf8');
   }

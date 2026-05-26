@@ -174,8 +174,8 @@
     }
   ],
   "confirmationProjectionHistory": [],
-  "lastEventType": "execution_iteration_recorded",
-  "updatedAt": "2026-05-24T18:21:36.101Z",
+  "lastEventType": "closeout_recorded",
+  "updatedAt": "2026-05-24T20:35:00.000Z",
   "architectureConfirmations": [],
   "architectureConfirmationStateChecks": [],
   "executionIterations": [
@@ -26905,6 +26905,23 @@
       ],
       "recordedAt": "2026-05-24T18:21:36.101Z",
       "recordedBy": "codex"
+    },
+    {
+      "eventType": "gate_check_recorded",
+      "checkId": "delivery-closeout:closure-integrity-stopgap-proof",
+      "gate": "Delivery Closeout Gate",
+      "decision": "blocked",
+      "blockingReasons": [],
+      "checks": [],
+      "sourceRefs": [
+        {
+          "sourceType": "closeout_attempt",
+          "id": "closure-integrity-stopgap-proof"
+        }
+      ],
+      "commandRunRefs": [],
+      "recordedAt": "2026-05-24T20:35:00.000Z",
+      "recordedBy": "agent"
     }
   ],
   "contractChecks": [
@@ -27477,8 +27494,92 @@
       "recordedBy": "codex"
     }
   ],
-  "failureRecords": [],
-  "rcaRecords": [],
+  "failureRecords": [
+    {
+      "eventType": "failure_recorded",
+      "failureId": "closure-integrity-REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE-001",
+      "type": "closure_integrity_incident",
+      "status": "open",
+      "blockingReasons": [
+        "required_test_files_missing_but_command_passed",
+        "canonical_fields_missing_from_schema_reducer",
+        "closeout_gate_reads_legacy_control_flow",
+        "reverse_audit_delivery_not_ready_ignored",
+        "legacy_events_still_drive_control_flow"
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "seal_audit",
+          "id": "independent-seal-audit-2026-05-25"
+        },
+        {
+          "sourceType": "completion_evidence_packet",
+          "id": "run-FINAL-REQUIRED-COMMANDS-20260524T182425Z"
+        },
+        {
+          "sourceType": "command_run",
+          "id": "CMD-DELIVERY-015"
+        },
+        {
+          "sourceType": "reverse_audit",
+          "id": "CMD-CONTRACT-001"
+        }
+      ],
+      "recordedAt": "2026-05-24T20:34:13.654Z",
+      "recordedBy": "codex-closure-integrity-stopgap"
+    },
+    {
+      "eventType": "failure_recorded",
+      "failureId": "failure:closure-integrity-stopgap-proof",
+      "type": "delivery_closeout_blocked",
+      "status": "open",
+      "closeoutAttemptId": "closure-integrity-stopgap-proof",
+      "blockingReasons": [
+        "implementation_readiness_gate_not_passed",
+        "deliveryEvidence.requiredCommands_current_attempt_missing",
+        "failure_case_coverage_artifact_missing",
+        "production_subsystem_extension_ref_missing",
+        "production_loop_ready_report_artifact_missing",
+        "dataset_manifest_missing",
+        "dataset_release_report_missing",
+        "negative_or_regression_command_missing",
+        "open_failure_record_exists",
+        "open_rca_action_exists"
+      ],
+      "sourceRefs": [
+        {
+          "sourceType": "closeout_attempt",
+          "id": "closure-integrity-stopgap-proof"
+        },
+        {
+          "sourceType": "gate_check",
+          "id": "delivery-closeout:closure-integrity-stopgap-proof"
+        },
+        {
+          "sourceType": "rca_record",
+          "id": "rca-closure-integrity-REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE-001"
+        }
+      ],
+      "recordedAt": "2026-05-24T20:35:00.000Z",
+      "recordedBy": "agent"
+    }
+  ],
+  "rcaRecords": [
+    {
+      "eventType": "rca_created",
+      "rcaId": "rca-closure-integrity-REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE-001",
+      "type": "closure_integrity_incident",
+      "status": "open",
+      "sourceRefs": [
+        {
+          "sourceType": "failure_record",
+          "id": "closure-integrity-REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE-001"
+        }
+      ],
+      "recordedAt": "2026-05-24T20:34:13.654Z",
+      "recordedBy": "canonical-reducer"
+    }
+  ],
   "rerunLoops": [],
   "artifactIndex": [
     {
@@ -31363,17 +31464,141 @@
     ]
   },
   "schemaVersion": "requirement-record/v1",
-  "recordHash": "sha256:e61c88bb8a64e4e9b0a8d1c2c3ba9794b18cf180213ef0bb6d3b0a3a1f9a8e8f",
-  "lastAppliedEventId": "implementation_evidence_ingested:2026-05-24T18:21:36.101Z:b44767aee4ee",
-  "lastAppliedEventHash": "sha256:031027f3945a56c5714e841c2ad96d8ad358229c8bd9689824447d07c165c5b5",
-  "eventChainHead": "sha256:031027f3945a56c5714e841c2ad96d8ad358229c8bd9689824447d07c165c5b5",
-  "eventCount": 18,
+  "recordHash": "sha256:06d38cd2eb4f0aa781a1ba1c33f21150ded7c8288ba6c7a0b1e7e56a2714b4f5",
+  "lastAppliedEventId": "closeout_recorded:2026-05-24T20:35:00.000Z:9fbc670d9187",
+  "lastAppliedEventHash": "sha256:f6e57ad3ea79f197045feeb47e333239e5138a2510da39da016cd19d43f75bdc",
+  "eventChainHead": "sha256:f6e57ad3ea79f197045feeb47e333239e5138a2510da39da016cd19d43f75bdc",
+  "eventCount": 20,
   "controlStore": {
     "schemaVersion": "control-store/v1",
     "eventLogPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE/events/control-events.jsonl",
-    "lastEventId": "implementation_evidence_ingested:2026-05-24T18:21:36.101Z:b44767aee4ee",
-    "lastEventHash": "sha256:031027f3945a56c5714e841c2ad96d8ad358229c8bd9689824447d07c165c5b5",
+    "lastEventId": "closeout_recorded:2026-05-24T20:35:00.000Z:9fbc670d9187",
+    "lastEventHash": "sha256:f6e57ad3ea79f197045feeb47e333239e5138a2510da39da016cd19d43f75bdc",
     "reducer": "canonical-requirement-record-reducer/v1",
     "atomicCommitter": "requirement-record-control-store/v1"
+  },
+  "closeout": {
+    "currentAttemptId": "closure-integrity-stopgap-proof",
+    "decision": "blocked",
+    "updatedAt": "2026-05-24T20:35:00.000Z",
+    "attempts": [
+      {
+        "eventType": "closeout_check_recorded",
+        "closeoutAttemptId": "closure-integrity-stopgap-proof",
+        "decision": "blocked",
+        "blockingReasons": [
+          "implementation_readiness_gate_not_passed",
+          "deliveryEvidence.requiredCommands_current_attempt_missing",
+          "failure_case_coverage_artifact_missing",
+          "production_subsystem_extension_ref_missing",
+          "production_loop_ready_report_artifact_missing",
+          "dataset_manifest_missing",
+          "dataset_release_report_missing",
+          "negative_or_regression_command_missing",
+          "open_failure_record_exists",
+          "open_rca_action_exists"
+        ],
+        "checks": [
+          {
+            "id": "implementation-readiness-gate-passed",
+            "passed": false
+          },
+          {
+            "id": "architecture-confirmation-current",
+            "passed": true,
+            "issueCount": 0
+          },
+          {
+            "id": "delivery-required-commands-present",
+            "passed": true,
+            "count": 17,
+            "currentAttemptCount": 0
+          },
+          {
+            "id": "score-gates-not-blocking-closeout",
+            "passed": true
+          },
+          {
+            "id": "hook-reconciliation-valid",
+            "passed": true,
+            "issueCount": 0
+          },
+          {
+            "id": "delivery-truth-gate-current",
+            "passed": true,
+            "reportPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/gates/main-agent-delivery-truth-gate-report.json",
+            "completionAllowed": true,
+            "deliveryStatus": "complete",
+            "failedEvidenceCount": 0,
+            "missingEvidenceCount": 0,
+            "generatedAt": "2026-05-21T23:37:29.671Z",
+            "issueCount": 0
+          },
+          {
+            "id": "failure-case-coverage-complete",
+            "passed": false,
+            "issueCount": 1
+          },
+          {
+            "id": "production-subsystem-extension-current",
+            "passed": false,
+            "issueCount": 1,
+            "extensionRefPath": null
+          },
+          {
+            "id": "production-loop-ready-report-current",
+            "passed": false,
+            "issueCount": 1
+          },
+          {
+            "id": "dataset-release-artifacts-current",
+            "passed": false,
+            "issueCount": 2
+          },
+          {
+            "id": "subagent-current-attempt-revalidation",
+            "passed": true,
+            "required": false
+          },
+          {
+            "id": "parallel-mission-evidence-integration-current",
+            "passed": true,
+            "required": false
+          },
+          {
+            "id": "negative-or-regression-required",
+            "passed": false
+          },
+          {
+            "id": "requirement-closures-terminal",
+            "passed": true,
+            "openCount": 0
+          },
+          {
+            "id": "rerun-loops-closed",
+            "passed": true,
+            "openCount": 0
+          },
+          {
+            "id": "rerun-loops-source-authority-valid",
+            "passed": true,
+            "invalidCount": 0
+          },
+          {
+            "id": "failure-records-closed",
+            "passed": false,
+            "openCount": 1
+          },
+          {
+            "id": "rca-actions-closed",
+            "passed": false,
+            "openCount": 1
+          }
+        ],
+        "reportPath": "D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE/delivery-closeout-report.json",
+        "evaluatedAt": "2026-05-24T20:35:00.000Z",
+        "evaluatedBy": "agent"
+      }
+    ]
   }
 }

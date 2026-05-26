@@ -71,7 +71,7 @@ function writeRecord(root: string): string {
             checkedBy: 'test',
           },
         ],
-        aiTddContractGate: { enforcementMode: 'skipped_by_policy' },
+        aiTddContractGate: {},
       },
       null,
       2
@@ -82,7 +82,7 @@ function writeRecord(root: string): string {
 }
 
 describe('implementation readiness gate activation metadata', () => {
-  it('writes audit_required readiness baseline activation on pass without scoring record', () => {
+  it('blocks record-only readiness and does not activate baseline without mandatory stage audit and AI-TDD gate proof', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'readiness-gate-unit-'));
     try {
       const recordPath = writeRecord(root);
@@ -96,20 +96,20 @@ describe('implementation readiness gate activation metadata', () => {
         '--json',
       ]);
 
-      expect(code).toBe(0);
+      expect(code).toBe(1);
       const record = JSON.parse(readFileSync(recordPath, 'utf8'));
       expect(record.gateChecks.at(-1)).toMatchObject({
         gate: 'Implementation Readiness Gate',
-        decision: 'pass',
+        decision: 'blocked',
       });
-      expect(record.readinessBaselineActivation).toMatchObject({
-        status: 'audit_required',
-        sourceGateCheckId: 'implementation-readiness:2026-05-20T00:00:00.000Z',
-        readinessGateRecipeVersion: 'implementation-readiness-gate/v1',
-      });
-      expect(record.readinessBaselineActivation.sourceReportHash).toMatch(
-        /^sha256:[a-f0-9]{64}$/u
+      expect(record.gateChecks.at(-1).blockingReasons).toEqual(
+        expect.arrayContaining([
+          'implementation_readiness_stage_audit_source_missing',
+          'implementation_readiness_stage_audit_render_report_missing',
+          'ai_tdd_contract_gate_source_missing',
+        ])
       );
+      expect(record.readinessBaselineActivation).toBeUndefined();
       expect(record.readinessScoringRecords ?? []).toEqual([]);
       expect(JSON.stringify(record)).not.toContain('"stage":"implementation_readiness"');
     } finally {
