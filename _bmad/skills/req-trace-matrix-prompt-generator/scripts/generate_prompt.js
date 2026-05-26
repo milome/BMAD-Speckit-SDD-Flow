@@ -33,11 +33,17 @@ function parseArgs(argv) {
     finalGate: [],
     extraRule: [],
     noAutoCommit: false,
+    json: false,
+    executionHost: 'codex',
   };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === '--no-auto-commit') {
       args.noAutoCommit = true;
+      continue;
+    }
+    if (arg === '--json') {
+      args.json = true;
       continue;
     }
     if (!arg.startsWith('--')) {
@@ -69,6 +75,16 @@ function readText(file) {
 
 function readJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
+}
+
+function writeJson(file, value) {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+}
+
+function writeText(file, value) {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, value, 'utf8');
 }
 
 function displayPath(file) {
@@ -229,6 +245,7 @@ function validateRequirementRecord(args, sourceText, blockText, confirmation) {
       `Latest confirmationHistory[] hash does not match current source document: ${mismatches.join(', ')}`
     );
   }
+  return { record, event, sourceDocumentHash: sourceHash, implementationConfirmationHash: confirmationHash };
 }
 
 function ids(items) {
@@ -497,6 +514,650 @@ function auditPrompt(prompt) {
   return requiredFragments.filter((fragment) => !prompt.includes(fragment));
 }
 
+function objectById(items) {
+  const result = new Map();
+  for (const item of objects(items)) {
+    if (item.id) result.set(String(item.id), item);
+  }
+  return result;
+}
+
+function failIf(condition, reasons, code) {
+  if (condition) reasons.push(code);
+}
+
+function refValue(value, pathKey = 'path') {
+  if (!value) return '';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'object') return String(value[pathKey] ?? value.reportPath ?? value.ref ?? '').trim();
+  return '';
+}
+
+function drilldownReceiptRefs(drilldown) {
+  const direct = strings(drilldown?.criticalAuditorReceiptRefs);
+  if (direct.length > 0) return direct;
+  const minimum = Number(drilldown?.criticalAuditor?.minimumRounds ?? 0);
+  const consecutive = Number(drilldown?.criticalAuditor?.consecutiveNoNewGapRounds ?? 0);
+  if (minimum >= 3 && consecutive >= 3) {
+    return Array.from({ length: consecutive }, (_, index) => `criticalAuditor.consecutiveNoNewGapRounds:${index + 1}`);
+  }
+  return [];
+}
+
+function reconciliationRef(drilldown) {
+  return refValue(drilldown?.reconciliationReportRef) || refValue(drilldown?.packetSourceReconciliation, 'reportPath');
+}
+
+function reconciliationPassed(drilldown) {
+  const verdict = String(drilldown?.packetSourceReconciliation?.verdict ?? '').toLowerCase();
+  return !verdict || verdict === 'pass';
+}
+
+function preRenderGateRef(drilldown) {
+  return refValue(drilldown?.preRenderGateReportRef) || refValue(drilldown?.preRenderGateReportPath);
+}
+
+function setFromIds(items) {
+  return new Set(objects(items).map((item) => String(item.id ?? '')).filter(Boolean));
+}
+
+function hasAny(values) {
+  return strings(values).length > 0;
+}
+
+function requirementClosureFor(confirmation, id) {
+  const traceRows = objects(confirmation.traceRows).filter((row) => strings(row.covers).includes(id));
+  const evidenceRows = objects(confirmation.evidence).filter(
+    (row) => strings(row.covers).includes(id) || strings(row.derivedFromMustRef).includes(id)
+  );
+  const acceptanceRows = [...objects(confirmation.acceptanceTests), ...objects(confirmation.e2eSuites)].filter((row) =>
+    strings(row.covers).includes(id)
+  );
+  const commandRows = objects(confirmation.requiredCommands).filter(
+    (row) =>
+      acceptanceRows.some((acceptance) => strings(acceptance.commandRefs).includes(commandId(row))) ||
+      evidenceRows.some((evidence) => strings(evidence.requiredCommandRefs).includes(commandId(row))) ||
+      traceRows.some((trace) =>
+        [...strings(trace.contractValidationCommandRefs), ...strings(trace.deliveryEvidenceCommandRefs)].includes(
+          commandId(row)
+        )
+      )
+  );
+  return { traceRows, evidenceRows, acceptanceRows, commandRows };
+}
+
+function validateCompilerContract(confirmation, record = {}) {
+  const reasons = [];
+  const manifest = confirmation.aiTddContractExecutionManifestProjection;
+  const requiredSections = strings(manifest?.requiredSections);
+  const drilldown = confirmation.preConfirmationDrilldown;
+  const traceRows = objects(confirmation.traceRows);
+  const acceptanceRows = [...objects(confirmation.acceptanceTests), ...objects(confirmation.e2eSuites)];
+  const taskRows = objects(confirmation.atomicImplementationTaskList);
+  const requiredMaps = manifest?.atomicImplementationTaskLineage?.requiredMaps;
+  const applicability = confirmation.applicability;
+  const acceptanceIds = new Set([
+    ...objects(confirmation.acceptanceTests).map((row) => String(row.id)),
+    ...objects(confirmation.e2eSuites).map((row) => String(row.id)),
+  ]);
+  const failureIds = setFromIds(confirmation.failurePaths);
+  const edgeIds = setFromIds(confirmation.edgeCases);
+  const evidenceIds = setFromIds(confirmation.evidence);
+  const negIds = setFromIds(confirmation.notDone);
+
+  failIf(!drilldown || typeof drilldown !== 'object', reasons, 'PRE_CONFIRMATION_DRILLDOWN_REQUIRED');
+  failIf(!refValue(drilldown?.semanticKernelRef), reasons, 'PRE_CONFIRMATION_DRILLDOWN_REQUIRED');
+  failIf(!refValue(drilldown?.mustDecompositionPacketRef), reasons, 'PRE_CONFIRMATION_DRILLDOWN_REQUIRED');
+  failIf(drilldownReceiptRefs(drilldown).length < 3, reasons, 'CRITICAL_AUDITOR_THREE_ROUNDS_REQUIRED');
+  failIf(!reconciliationRef(drilldown) || !reconciliationPassed(drilldown), reasons, 'PACKET_SOURCE_RECONCILIATION_REQUIRED');
+  failIf(!preRenderGateRef(drilldown), reasons, 'PRE_RENDER_GATE_REPORT_REQUIRED');
+
+  failIf(taskRows.length === 0, reasons, 'ATOMIC_TASK_LINEAGE_REQUIRED');
+  failIf(!confirmation.mustToAtomicTaskMap || typeof confirmation.mustToAtomicTaskMap !== 'object', reasons, 'ATOMIC_TASK_LINEAGE_REQUIRED');
+  failIf(!confirmation.atomicTaskToTraceMap || typeof confirmation.atomicTaskToTraceMap !== 'object', reasons, 'ATOMIC_TASK_LINEAGE_REQUIRED');
+  failIf(strings(requiredMaps).some((field) => !confirmation[field]), reasons, 'ATOMIC_TASK_LINEAGE_REQUIRED');
+
+  failIf(!applicability || typeof applicability !== 'object', reasons, 'MISSING_APPLICABILITY_DECLARATION');
+  failIf(applicability?.aiTddContractGate?.applies !== true, reasons, 'AI_TDD_APPLICABILITY_REQUIRED');
+  failIf(applicability?.currentTargetMap?.applies !== true, reasons, 'CURRENT_TARGET_MAP_APPLICABILITY_REQUIRED');
+  failIf(!manifest || typeof manifest !== 'object' || manifest.applies !== true, reasons, 'AI_TDD_MANIFEST_REQUIRED');
+  for (const section of [
+    'preConfirmationDrilldownInputs',
+    'atomicImplementationTaskLineage',
+    'errorCaseCoverage',
+    'commandTargets',
+    'traceClosureAssertions',
+    'currentTargetMap',
+    'canonicalSurfaceReconciliation',
+    'legacyDenial',
+    'finalGateMatrix',
+    'executionLoopProtocol',
+    'semanticGapPolicy',
+    'hostExecutionHints',
+    'closeoutProof',
+    'evidenceTrustStates',
+  ]) {
+    failIf(!requiredSections.includes(section), reasons, `MANIFEST_SECTION_REQUIRED:${section}`);
+  }
+  failIf(!manifest?.finalGateMatrix, reasons, 'FINAL_GATE_MATRIX_REQUIRED');
+  failIf(!manifest?.executionLoopProtocol, reasons, 'EXECUTION_LOOP_PROTOCOL_REQUIRED');
+  failIf(!manifest?.semanticGapPolicy, reasons, 'SEMANTIC_GAP_POLICY_REQUIRED');
+  failIf(!manifest?.hostExecutionHints, reasons, 'HOST_EXECUTION_HINTS_REQUIRED');
+  failIf(!confirmation.currentTargetMap, reasons, 'CURRENT_TARGET_MAP_REQUIRED');
+  failIf(objects(confirmation.acceptanceTests).length === 0, reasons, 'ACCEPTANCE_TESTS_REQUIRED');
+  failIf(objects(confirmation.e2eSuites).length === 0, reasons, 'E2E_SUITES_REQUIRED');
+
+  failIf(objects(confirmation.failurePaths).length === 0, reasons, 'ERROR_CASE_COVERAGE_REQUIRED');
+  failIf(objects(confirmation.edgeCases).length === 0, reasons, 'ERROR_CASE_COVERAGE_REQUIRED');
+  for (const row of traceRows) {
+    const rowId = String(row.id ?? 'TRACE-UNKNOWN');
+    failIf(strings(row.acceptanceRefs).length === 0, reasons, `ACCEPTANCE_BINDING_REQUIRED:${rowId}`);
+    failIf(strings(row.failurePathRefs).length === 0, reasons, `FAILURE_PATH_BINDING_REQUIRED:${rowId}`);
+    failIf(strings(row.edgeCaseRefs).length === 0, reasons, `EDGE_CASE_BINDING_REQUIRED:${rowId}`);
+    for (const ref of strings(row.acceptanceRefs)) {
+      failIf(!acceptanceIds.has(ref), reasons, `TRACE_ACCEPTANCE_REF_INVALID:${rowId}:${ref}`);
+    }
+    for (const ref of strings(row.failurePathRefs)) {
+      failIf(!failureIds.has(ref), reasons, `TRACE_FAILURE_REF_INVALID:${rowId}:${ref}`);
+    }
+    for (const ref of strings(row.edgeCaseRefs)) {
+      failIf(!edgeIds.has(ref), reasons, `TRACE_EDGE_REF_INVALID:${rowId}:${ref}`);
+    }
+  }
+  for (const row of acceptanceRows) {
+    const rowId = String(row.id ?? 'ACC-UNKNOWN');
+    failIf(row.expectedPreImplementationState !== 'expected_red', reasons, `PRE_IMPLEMENTATION_RED_PROOF_PLAN_REQUIRED:${rowId}`);
+    failIf(!String(row.redProofPlan ?? '').trim(), reasons, `PRE_IMPLEMENTATION_RED_PROOF_PLAN_REQUIRED:${rowId}`);
+    for (const ref of strings(row.failurePathRefs)) {
+      failIf(!failureIds.has(ref), reasons, `ACCEPTANCE_FAILURE_REF_INVALID:${rowId}:${ref}`);
+    }
+    for (const ref of strings(row.edgeCaseRefs)) {
+      failIf(!edgeIds.has(ref), reasons, `ACCEPTANCE_EDGE_REF_INVALID:${rowId}:${ref}`);
+    }
+  }
+
+  for (const row of [...objects(confirmation.must), ...objects(confirmation.notDone)]) {
+    const rowId = String(row.id);
+    const closure = requirementClosureFor(confirmation, rowId);
+    failIf(closure.traceRows.length === 0, reasons, `REQUIREMENT_COVERAGE_INCOMPLETE:${rowId}:TRACE`);
+    failIf(!hasAny(row.evidenceRefs) && closure.evidenceRows.length === 0, reasons, `REQUIREMENT_COVERAGE_INCOMPLETE:${rowId}:EVD`);
+    failIf(closure.acceptanceRows.length === 0, reasons, `REQUIREMENT_COVERAGE_INCOMPLETE:${rowId}:ACC_OR_E2E`);
+    failIf(closure.commandRows.length === 0, reasons, `REQUIREMENT_COVERAGE_INCOMPLETE:${rowId}:CMD`);
+  }
+
+  for (const row of objects(confirmation.failurePaths)) {
+    const rowId = String(row.id);
+    failIf(!strings(row.linkedNegIds).some((id) => negIds.has(id)), reasons, `ERROR_CASE_CLOSURE_INCOMPLETE:${rowId}:NEG`);
+    failIf(!strings(row.linkedEvidenceIds).some((id) => evidenceIds.has(id)), reasons, `ERROR_CASE_CLOSURE_INCOMPLETE:${rowId}:EVD`);
+    failIf(!traceRows.some((trace) => strings(trace.failurePathRefs).includes(rowId)), reasons, `ERROR_CASE_CLOSURE_INCOMPLETE:${rowId}:TRACE`);
+    failIf(!acceptanceRows.some((acceptance) => strings(acceptance.failurePathRefs).includes(rowId)), reasons, `ERROR_CASE_CLOSURE_INCOMPLETE:${rowId}:ACC_OR_E2E`);
+  }
+  for (const row of objects(confirmation.edgeCases)) {
+    const rowId = String(row.id);
+    failIf(
+      !strings(row.linkedFailurePathIds).some((id) => failureIds.has(id)),
+      reasons,
+      `ERROR_CASE_CLOSURE_INCOMPLETE:${rowId}:FAIL`
+    );
+    failIf(!strings(row.linkedEvidenceIds).some((id) => evidenceIds.has(id)), reasons, `ERROR_CASE_CLOSURE_INCOMPLETE:${rowId}:EVD`);
+    failIf(!traceRows.some((trace) => strings(trace.edgeCaseRefs).includes(rowId)), reasons, `ERROR_CASE_CLOSURE_INCOMPLETE:${rowId}:TRACE`);
+    failIf(!acceptanceRows.some((acceptance) => strings(acceptance.edgeCaseRefs).includes(rowId)), reasons, `ERROR_CASE_CLOSURE_INCOMPLETE:${rowId}:ACC_OR_E2E`);
+  }
+
+  for (const row of objects(confirmation.targetModificationPaths)) {
+    const rowId = String(row.id ?? row.path ?? 'TARGET-MOD-UNKNOWN');
+    failIf(!hasAny(row.traceRows) && !hasAny(row.traceRefs), reasons, `TARGET_MODIFICATION_TRACE_BINDING_REQUIRED:${rowId}`);
+    failIf(!hasAny(row.evidenceRefs), reasons, `TARGET_MODIFICATION_EVIDENCE_BINDING_REQUIRED:${rowId}`);
+  }
+
+  const allowedAuthorities = strings(manifest?.closeoutProof?.allowedAuthorities);
+  const invalidAuthorities = new Set([
+    'audit_receipt_json',
+    'completion_packet_self_certification',
+    'exitCode_only',
+    'stdout_only',
+    'prompt_text',
+    'goal_completion',
+    'continuation_text',
+    'stale_attempt',
+    'mock_only',
+    'smoke_only',
+  ]);
+  for (const authority of allowedAuthorities) {
+    failIf(invalidAuthorities.has(authority), reasons, `INVALID_CLOSEOUT_PROOF_POLICY:${authority}`);
+  }
+  failIf(!record.controlStore || typeof record.controlStore !== 'object', reasons, 'CONTROL_STORE_NOT_READY');
+
+  return unique(reasons);
+}
+
+function normalizeRefPath(sourcePath, ref) {
+  const value = String(ref ?? '').trim();
+  if (!value) return value;
+  if (path.isAbsolute(value)) return normalizePathSafe(value);
+  return normalizePathSafe(path.resolve(path.dirname(path.resolve(sourcePath)), value));
+}
+
+function normalizePathSafe(file) {
+  return file.split(path.sep).join('/');
+}
+
+function optionalArtifactRef(sourcePath, ref) {
+  const normalized = normalizeRefPath(sourcePath, ref);
+  if (!normalized) return null;
+  const diskPath = path.resolve(normalized);
+  if (!fs.existsSync(diskPath)) return { ref, path: normalized, exists: false };
+  const content = readText(diskPath);
+  return { ref, path: normalized, exists: true, contentHash: sha256(content) };
+}
+
+function compilerInputContext(args) {
+  if (args.sourceFile) {
+    throw new BlockedInput(
+      'BLOCK: SESSION_INPUT_NEEDS_SOURCE_DOCUMENT',
+      'Conversation-only requirements must first be written into an implementation source document with implementationConfirmation.status=draft and then explicitly confirmed by the user.'
+    );
+  }
+  const sourcePath = args.sourceDocument || args.contract;
+  const sourceText = readText(sourcePath);
+  const blockText = extractConfirmationBlock(sourceText);
+  const confirmation = validateConfirmation(parseConfirmation(blockText));
+  const recordValidation = validateRequirementRecord(args, sourceText, blockText, confirmation);
+  validateRequiredCommandDefinitions(confirmation);
+  const registry = commandRegistry(confirmation);
+  validateCommandReferences(confirmation, registry);
+  const gates = parseCommands(confirmation, args.finalGate, registry);
+  if (gates.length === 0) {
+    throw new BlockedInput(
+      'BLOCK: FINAL_GATES_REQUIRED',
+      'Final gate commands must be derived from implementationConfirmation.requiredCommands, closeoutReadinessPreview.requiredCommands, evidence, or --final-gate before PASS.'
+    );
+  }
+  return {
+    sourcePath,
+    sourceText,
+    blockText,
+    confirmation,
+    record: recordValidation.record,
+    latestConfirmationEvent: recordValidation.event,
+    sourceDocumentHash: recordValidation.sourceDocumentHash,
+    implementationConfirmationHash: recordValidation.implementationConfirmationHash,
+    registry,
+    gates,
+  };
+}
+
+function buildTraceSlices(confirmation) {
+  const acceptance = objectById(confirmation.acceptanceTests);
+  const e2e = objectById(confirmation.e2eSuites);
+  return objects(confirmation.traceRows).map((row) => {
+    const acceptanceRefs = strings(row.acceptanceRefs);
+    const tddRows = acceptanceRefs.map((ref) => acceptance.get(ref) ?? e2e.get(ref)).filter(Boolean);
+    return {
+      traceId: String(row.id ?? 'TRACE-UNKNOWN'),
+      covers: strings(row.covers),
+      requirementRefs: strings(row.covers).filter((id) => String(id).startsWith('MUST-')),
+      negativeRequirementRefs: strings(row.covers).filter((id) => !String(id).startsWith('MUST-')),
+      taskRefs: strings(row.taskRefs),
+      evidenceRefs: strings(row.evidenceRefs),
+      acceptanceRefs,
+      e2eRefs: strings(row.e2eRefs).length > 0 ? strings(row.e2eRefs) : acceptanceRefs.filter((id) => String(id).startsWith('E2E-')),
+      failurePathRefs: strings(row.failurePathRefs),
+      edgeCaseRefs: strings(row.edgeCaseRefs),
+      commandRefs: unique([
+        ...strings(row.contractValidationCommandRefs),
+        ...strings(row.deliveryEvidenceCommandRefs),
+      ]),
+      deliveryCommandRefs: strings(row.deliveryEvidenceCommandRefs),
+      artifactRefs: strings(row.artifactRefs),
+      targetModificationPaths: strings(row.targetModificationPaths),
+      currentTargetMapRefs: strings(row.currentTargetMapRefs),
+      canonicalSurfaceRefs: strings(row.canonicalSurfaceRefs),
+      legacyDenialRefs: strings(row.legacyDenialRefs),
+      expectedRedProofs: strings(row.expectedRedProofs),
+      greenExitCriteria: row.greenExitCriteria ?? '',
+      refactorGuards: row.refactorGuards ?? '',
+      allowedRuntimeWrites: strings(row.allowedRuntimeWrites),
+      forbiddenProofTypes: strings(row.forbiddenProofTypes),
+      tddProtocol: {
+        states: ['RED', 'GREEN', 'REFACTOR', 'CLOSEOUT'],
+        redRequiredBeforeGreen: true,
+        expectedPreImplementationState: 'expected_red',
+        redProofPlans: tddRows.map((item) => ({
+          id: item.id,
+          redProofPlan: item.redProofPlan,
+          oracle: item.oracle,
+        })),
+        unexpectedGreenAction: 'block_and_investigate_before_green',
+        currentAttemptEvidenceRequired: true,
+      },
+    };
+  });
+}
+
+function buildPreConfirmationDrilldown(sourcePath, confirmation) {
+  const drilldown = confirmation.preConfirmationDrilldown ?? {};
+  return {
+    ...drilldown,
+    semanticKernel: optionalArtifactRef(sourcePath, refValue(drilldown.semanticKernelRef)),
+    mustDecompositionPacket: optionalArtifactRef(sourcePath, refValue(drilldown.mustDecompositionPacketRef)),
+    reconciliationReport: optionalArtifactRef(sourcePath, reconciliationRef(drilldown)),
+    preRenderGateReport: optionalArtifactRef(sourcePath, preRenderGateRef(drilldown)),
+    criticalAuditorReceipts: drilldownReceiptRefs(drilldown).map((ref) => optionalArtifactRef(sourcePath, ref)),
+    artifactProofPolicy: 'input_lineage_only_not_delivery_or_closeout_proof',
+  };
+}
+
+function buildModelPacket(context, args) {
+  const confirmation = context.confirmation;
+  const sourceLabel = args.sourceLabel || displayPath(context.sourcePath);
+  const manifest = confirmation.aiTddContractExecutionManifestProjection ?? {};
+  return {
+    schemaVersion: 'req-trace-ai-tdd-model-packet/v1',
+    artifactRole: 'execution_authority',
+    recordId: context.record.recordId ?? confirmation.recordId ?? 'unknown',
+    sourceDocument: sourceLabel,
+    sourceDocumentHash: context.sourceDocumentHash,
+    implementationConfirmationHash: context.implementationConfirmationHash,
+    requirementRecordPath: normalizePathSafe(path.resolve(args.requirementRecord)),
+    latestConfirmationEvent: {
+      eventType: context.latestConfirmationEvent.eventType,
+      confirmedAt: context.latestConfirmationEvent.confirmedAt,
+      confirmationPageHash: context.latestConfirmationEvent.confirmationPageHash,
+    },
+    authorityPolicy: {
+      primaryAuthority: 'model_packet.json',
+      humanPromptRole: 'projection_only',
+      auditReceiptRole: 'generator_self_audit_only_not_delivery_proof',
+      sourceTraceMutationPolicy: 'confirmed_source_traceRows_status_must_not_be_rewritten',
+    },
+    traceOrder: objects(confirmation.traceRows).map((row) => String(row.id)),
+    traceSlices: buildTraceSlices(confirmation),
+    atomicImplementationTaskList: objects(confirmation.atomicImplementationTaskList),
+    mustToAtomicTaskMap: confirmation.mustToAtomicTaskMap,
+    atomicTaskToTraceMap: confirmation.atomicTaskToTraceMap,
+    requirements: {
+      must: objects(confirmation.must),
+      notDone: objects(confirmation.notDone),
+      mustNot: objects(confirmation.mustNot),
+      evidence: objects(confirmation.evidence),
+    },
+    errorCaseCoverage: {
+      failurePaths: objects(confirmation.failurePaths),
+      edgeCases: objects(confirmation.edgeCases),
+      acceptanceTests: objects(confirmation.acceptanceTests),
+      e2eSuites: objects(confirmation.e2eSuites),
+    },
+    runtimeWritePolicy: {
+      sourceTraceRowsWritable: false,
+      sourceEvidenceWritable: false,
+      requirementRecordRequired: true,
+      allowedRuntimeWriteTargets: [
+        'executionIterations',
+        'requirementClosures',
+        'gateChecks',
+        'contractChecks',
+        'deliveryEvidence.requiredCommands',
+        'artifactIndex',
+      ],
+      missingEvidenceBehavior: 'remain_open_or_record_MISSING_EVIDENCE',
+    },
+    preConfirmationDrilldown: buildPreConfirmationDrilldown(context.sourcePath, confirmation),
+    contractExecutionManifest: {
+      schemaVersion: manifest.schemaVersion ?? 'contract-execution-manifest/v1',
+      requiredSections: strings(manifest.requiredSections),
+      preConfirmationDrilldownInputs: manifest.preConfirmationDrilldownInputs,
+      atomicImplementationTaskLineage: manifest.atomicImplementationTaskLineage,
+      errorCaseCoverage: manifest.errorCaseCoverage,
+      commandTargets: manifest.commandTargets,
+      traceClosureAssertions: manifest.traceClosureAssertions,
+      currentTargetMap: confirmation.currentTargetMap,
+      currentTargetMapRefs: strings(manifest.currentTargetMapRefs),
+      canonicalSurfaceRefs: strings(manifest.canonicalSurfaceRefs),
+      canonicalSurfaceReconciliation: manifest.canonicalSurfaceReconciliation ?? {
+        source: 'implementationConfirmation.currentTargetMap.canonicalArtifacts',
+        canonicalArtifacts: objects(confirmation.currentTargetMap?.canonicalArtifacts),
+      },
+      legacyDenial: manifest.legacyDenial,
+      finalGateMatrix: manifest.finalGateMatrix,
+      executionLoopProtocol: manifest.executionLoopProtocol,
+      semanticGapPolicy: manifest.semanticGapPolicy,
+      hostExecutionHints: manifest.hostExecutionHints,
+      closeoutProof: manifest.closeoutProof,
+      evidenceTrustStates: manifest.evidenceTrustStates,
+    },
+    requiredCommands: objects(confirmation.requiredCommands).map((command) => ({
+      id: commandId(command),
+      command: commandText(command),
+      traceRows: strings(command.traceRows),
+      evidenceRefs: strings(command.evidenceRefs),
+      oracle: command.oracle ?? command.purpose ?? '',
+    })),
+    finalGateMatrix: manifest.finalGateMatrix,
+    executionLoopProtocol: manifest.executionLoopProtocol,
+    semanticGapPolicy: manifest.semanticGapPolicy,
+    hostExecutionHints: manifest.hostExecutionHints,
+    blockingDecisionTable: [
+      { code: 'SEMANTIC_GAP_RECONFIRM_REQUIRED', action: 'halt_for_reconfirmation', source: 'semanticGapPolicy' },
+      { code: 'NON_SEMANTIC_GAP_REPAIR_AND_RERUN', action: 'repair_and_rerun_same_trace_slice', source: 'semanticGapPolicy' },
+      { code: 'FINAL_GATE_MATRIX_BLOCKED', action: 'continue_repair_loop', source: 'finalGateMatrix' },
+      { code: 'INVALID_PROOF_TYPE', action: 'block_closeout', source: 'closeoutProof' },
+    ],
+    completionEvidencePacketSchema: {
+      artifactRole: 'evidence_index_only_not_closeout_authority',
+      requiredFields: ['closedIds', 'openIds', 'commandResults', 'e2eEvidence', 'auditEvidence', 'residualRisks', 'scopeChanges'],
+      forbiddenAuthorities: manifest.closeoutProof?.forbiddenAuthorities ?? [],
+    },
+    proofBoundary: {
+      notDeliveryProof: ['model_packet.json', 'human_prompt.txt', 'audit_receipt.json', 'exitCode_0', 'stdout', 'goal_completion'],
+      closeoutAuthorities: manifest.closeoutProof?.allowedAuthorities ?? [
+        'AI_TDD_gate_report',
+        'delivery_verification_report',
+        'closeout_integrity_report',
+      ],
+    },
+  };
+}
+
+function renderHostContinuation(packet, executionHost) {
+  const hints = packet.hostExecutionHints ?? {};
+  if (executionHost === 'codex' && hints.codexCapable?.goalModeAllowed === true) {
+    return `/goal ${hints.codexCapable.goalObjectiveTemplate}`;
+  }
+  const instruction = String(
+    hints.nonCodex?.instruction ?? 'continue repair and rerun without goal-mode commands.'
+  ).replace(/\/goal/gu, 'goal-mode');
+  return `Use branch-specific continuation instructions: ${instruction}`;
+}
+
+function renderHumanPromptFromPacket(packet, args) {
+  const continuation = renderHostContinuation(packet, args.executionHost);
+  const goalProofText =
+    args.executionHost === 'codex' ? '/goal completion' : 'goal-mode completion';
+  const traceRows = packet.traceSlices
+    .map(
+      (row) => `- ${row.traceId}: covers=${row.covers.join(', ') || '(none)'} tasks=${
+        row.taskRefs.join(', ') || '(none)'
+      } gates=${row.commandRefs.join(', ') || '(none)'}`
+    )
+    .join('\n');
+  const atomicRows = packet.atomicImplementationTaskList
+    .map((task) => `- ${task.id}: ${task.title ?? ''} -> traces=${strings(task.traceRefs).join(', ')}`)
+    .join('\n');
+  return `Primary authority: model_packet.json
+Human prompt role: projection-only over model_packet.json. Do not introduce requirements absent from the packet.
+Source: ${packet.sourceDocument}
+Record: ${packet.recordId}
+Trace order: ${packet.traceOrder.join(' -> ')}
+
+Continuation:
+${continuation}
+
+Atomic implementation task lineage:
+${atomicRows}
+
+Trace slices:
+${traceRows}
+
+executionLoopProtocol: repair and rerun the same trace slice on non-semantic gate failures until finalGateMatrix permits stop.
+finalGateMatrix stop authority: all required current-attempt gates must pass, including AI-TDD gate, delivery verification, and closeout integrity.
+semanticGapPolicy: semantic gaps -> reconfirm_required; non-semantic execution gaps -> repair_and_rerun.
+
+Proof boundary:
+audit_receipt.json is generator self-audit only and not delivery or closeout proof.
+Completion Evidence Packet, exitCode=0, stdout, prompt completion, and ${goalProofText} are not closeout authorities.
+Confirmed source traceRows.status must not be rewritten as runtime PASS or MISSING_EVIDENCE.
+`;
+}
+
+function receiptHashFor(receipt) {
+  const clone = { ...receipt };
+  delete clone.receiptHash;
+  return sha256(stableStringify(clone));
+}
+
+function buildPassReceipt(args, context, packet, outputHashes, outputs) {
+  const validationReasons = validateCompilerContract(context.confirmation, context.record);
+  const receipt = {
+    schemaVersion: 'req-trace-ai-tdd-compiler-audit-receipt/v1',
+    recordId: packet.recordId,
+    decision: validationReasons.length === 0 ? 'pass' : 'blocked',
+    blockingReasons: validationReasons,
+    sourceDocumentHash: context.sourceDocumentHash,
+    implementationConfirmationHash: context.implementationConfirmationHash,
+    createdBy: 'req-trace-matrix-prompt-generator',
+    createdAt: new Date().toISOString(),
+    inputRefs: {
+      sourceDocument: normalizePathSafe(path.resolve(context.sourcePath)),
+      requirementRecord: normalizePathSafe(path.resolve(args.requirementRecord)),
+    },
+    inputValidation: {
+      sourceConfirmed: context.confirmation.status === 'user_confirmed',
+      requirementRecordConfirmed: context.latestConfirmationEvent.eventType === 'confirmation_recorded',
+      hashesMatch: true,
+      commandReferencesValid: true,
+      preConfirmationDrilldownPassed: validationReasons.every((reason) => !reason.includes('DRILLDOWN') && !reason.includes('GATE') && !reason.includes('RECONCILIATION')),
+      aiTddManifestComplete: validationReasons.every((reason) => !reason.startsWith('MANIFEST_SECTION_REQUIRED') && reason !== 'AI_TDD_MANIFEST_REQUIRED'),
+      atomicTaskLineageComplete: !validationReasons.includes('ATOMIC_TASK_LINEAGE_REQUIRED'),
+      finalGateMatrixPresent: !validationReasons.includes('FINAL_GATE_MATRIX_REQUIRED'),
+      semanticGapPolicyPresent: !validationReasons.includes('SEMANTIC_GAP_POLICY_REQUIRED'),
+    },
+    coverageLedger: {
+      traceRows: packet.traceOrder,
+      atomicTasks: packet.atomicImplementationTaskList.map((task) => task.id),
+      mustIds: packet.requirements.must.map((item) => item.id),
+      evidenceIds: packet.requirements.evidence.map((item) => item.id),
+      requiredManifestSections: packet.contractExecutionManifest.requiredSections,
+    },
+    outputs,
+    outputHashes,
+    proofBoundary: packet.proofBoundary,
+  };
+  receipt.receiptHash = receiptHashFor(receipt);
+  return receipt;
+}
+
+function buildBlockedReceipt(args, context, blockingReasons, message) {
+  const recordId = context?.record?.recordId ?? context?.confirmation?.recordId ?? 'unknown';
+  const receipt = {
+    schemaVersion: 'req-trace-ai-tdd-compiler-audit-receipt/v1',
+    recordId,
+    decision: 'blocked',
+    blockingReasons: unique(blockingReasons),
+    message,
+    sourceDocumentHash: context?.sourceDocumentHash ?? null,
+    implementationConfirmationHash: context?.implementationConfirmationHash ?? null,
+    createdBy: 'req-trace-matrix-prompt-generator',
+    createdAt: new Date().toISOString(),
+    inputRefs: {
+      sourceDocument: args.sourceDocument || args.contract || args.sourceFile || null,
+      requirementRecord: args.requirementRecord || null,
+    },
+    inputValidation: {
+      sourceConfirmed: context?.confirmation?.status === 'user_confirmed',
+      requirementRecordConfirmed: context?.latestConfirmationEvent?.eventType === 'confirmation_recorded',
+      preConfirmationDrilldownPassed: false,
+      aiTddManifestComplete: false,
+      atomicTaskLineageComplete: false,
+    },
+    outputs: {},
+    outputHashes: {},
+    proofBoundary: {
+      auditReceiptRole: 'generator_self_audit_only_not_delivery_proof',
+    },
+  };
+  receipt.receiptHash = receiptHashFor(receipt);
+  return receipt;
+}
+
+function compileArtifacts(args) {
+  let context;
+  const outDir = path.resolve(args.outDir);
+  try {
+    context = compilerInputContext(args);
+    const blockingReasons = validateCompilerContract(context.confirmation, context.record);
+    if (blockingReasons.length > 0) {
+      const receipt = buildBlockedReceipt(
+        args,
+        context,
+        blockingReasons,
+        'Compiler contract validation failed before writing execution packet artifacts.'
+      );
+      writeJson(path.join(outDir, 'audit_receipt.json'), receipt);
+      return {
+        status: 3,
+        summary: {
+          decision: 'blocked',
+          blockingReasons,
+          outputs: { auditReceipt: normalizePathSafe(path.join(outDir, 'audit_receipt.json')) },
+          outputHashes: { auditReceiptHash: sha256(stableStringify(receipt)) },
+        },
+      };
+    }
+
+    const packet = buildModelPacket(context, args);
+    const packetPath = path.join(outDir, 'model_packet.json');
+    writeJson(packetPath, packet);
+    const modelPacketHash = sha256(readText(packetPath));
+
+    const prompt = renderHumanPromptFromPacket(packet, args);
+    const promptPath = path.join(outDir, 'human_prompt.txt');
+    writeText(promptPath, prompt);
+    const humanPromptHash = sha256(readText(promptPath));
+
+    const receiptPath = path.join(outDir, 'audit_receipt.json');
+    const outputs = {
+      modelPacket: normalizePathSafe(packetPath),
+      humanPrompt: normalizePathSafe(promptPath),
+      auditReceipt: normalizePathSafe(receiptPath),
+    };
+    const outputHashes = { modelPacketHash, humanPromptHash };
+    const receipt = buildPassReceipt(args, context, packet, outputHashes, outputs);
+    writeJson(receiptPath, receipt);
+    outputHashes.auditReceiptHash = sha256(readText(receiptPath));
+    const summary = {
+      decision: receipt.decision,
+      blockingReasons: receipt.blockingReasons,
+      outputs,
+      outputHashes,
+    };
+    return { status: receipt.decision === 'pass' ? 0 : 3, summary };
+  } catch (error) {
+    if (!(error instanceof BlockedInput)) throw error;
+    const receipt = buildBlockedReceipt(args, context, [error.code.replace(/^BLOCK:\s*/u, '')], error.message);
+    writeJson(path.join(outDir, 'audit_receipt.json'), receipt);
+    return {
+      status: 3,
+      summary: {
+        decision: 'blocked',
+        blockingReasons: receipt.blockingReasons,
+        outputs: { auditReceipt: normalizePathSafe(path.join(outDir, 'audit_receipt.json')) },
+        outputHashes: { auditReceiptHash: sha256(stableStringify(receipt)) },
+      },
+    };
+  }
+}
+
 function buildPrompt(args) {
   if (args.sourceFile) {
     throw new BlockedInput(
@@ -588,7 +1249,14 @@ ${renderFinalGates(gates)}
 
 function main() {
   try {
-    process.stdout.write(`${buildPrompt(parseArgs(process.argv.slice(2)))}\n`);
+    const args = parseArgs(process.argv.slice(2));
+    if (args.outDir) {
+      const result = compileArtifacts(args);
+      if (args.json) process.stdout.write(`${JSON.stringify(result.summary, null, 2)}\n`);
+      else process.stdout.write(`${result.summary.decision.toUpperCase()}: ${JSON.stringify(result.summary)}\n`);
+      return result.status;
+    }
+    process.stdout.write(`${buildPrompt(args)}\n`);
     return 0;
   } catch (error) {
     if (error instanceof BlockedInput) {

@@ -1,6 +1,6 @@
 ---
 name: req-trace-matrix-prompt-generator
-description: Generate strict nonstop execution prompts only from implementation source documents that contain an inline implementationConfirmation block with status=user_confirmed. Use when converting confirmed PRD/BUGFIX/TASKS source documents and traceRows into implementation prompts. Block conversation-only requirements, ordinary prose, unconfirmed confirmation blocks, standalone contracts, invalid trace references, sidecars, amendments, MVP downgrades, stubs, mock-only coverage, scope reduction, or changed requirement intent.
+description: Generate strict execution prompts and synchronized model_packet/human_prompt/audit_receipt artifacts only from implementation source documents that contain an inline implementationConfirmation block with status=user_confirmed. Use when converting confirmed PRD/BUGFIX/TASKS source documents and traceRows into implementation prompts for Codex, Cursor, Claude, or generic branches. Block conversation-only requirements, ordinary prose, unconfirmed confirmation blocks, standalone contracts, invalid trace references, sidecars, amendments, MVP downgrades, stubs, mock-only coverage, scope reduction, or changed requirement intent.
 ---
 
 # Req Trace Matrix Prompt Generator
@@ -50,12 +50,35 @@ Generated prompts must keep runtime closure in the controlled requirement record
 
 ## Script Usage
 
+## Path And Agent Branch Portability
+
+Treat `<skill-dir>` as the directory that contains this `SKILL.md` after installation. Do not replace it with `_bmad/skills/...`, `.codex/skills/...`, `.cursor/skills/...`, `.claude/skills/...`, a home-directory path, or a machine-specific drive path in skill instructions, generated templates, or script examples.
+
+Resolve bundled scripts from `<skill-dir>/scripts/...`. Resolve consumer project inputs and outputs from the current project working directory or explicit CLI paths such as `--source-document`, `--requirement-record`, and `--out-dir`.
+
+Use `--execution-host codex|cursor|claude|generic` when compiling packet artifacts with `--out-dir`:
+
+- `codex` may emit `/goal` only when the confirmed `hostExecutionHints.codexCapable.goalModeAllowed` is true.
+- `cursor`, `claude`, and `generic` must emit branch-specific continuation text and must not leak `/goal`.
+- Host execution hints are not delivery or closeout proof.
+
 Prefer the bundled Node/js-yaml generator for local source documents:
 
 ```bash
 node <skill-dir>/scripts/generate_prompt.js \
   --source-document docs/prd.md \
   --requirement-record _bmad-output/runtime/requirement-records/<recordId>/requirement-record.json
+```
+
+Compile synchronized packet artifacts when the confirmed source includes AI-TDD and pre-confirmation drilldown projections:
+
+```bash
+node <skill-dir>/scripts/generate_prompt.js \
+  --source-document docs/prd.md \
+  --requirement-record _bmad-output/runtime/requirement-records/<recordId>/requirement-record.json \
+  --out-dir _bmad-output/runtime/requirement-records/<recordId>/trace-execution \
+  --execution-host codex \
+  --json
 ```
 
 The legacy Python path is kept only as a backward-compatible launcher. It delegates to the Node/js-yaml implementation and must not parse YAML itself:
@@ -76,6 +99,8 @@ Useful options:
 - `--final-gate "npm run test:e2e"` to append a final gate supplied outside the source document.
 - `--extra-rule "..."` to append a hard priority rule from the user.
 - `--source-label "..."` to override the displayed source.
+- `--out-dir <path>` to compile `model_packet.json`, `human_prompt.txt`, and `audit_receipt.json`.
+- `--execution-host codex|cursor|claude|generic` to select host-specific continuation projection.
 - `--no-auto-commit` only when the user explicitly says not to auto-commit after PASS.
 
 If the script emits a `BLOCK:` marker, do not hide it and do not produce an implementation prompt.

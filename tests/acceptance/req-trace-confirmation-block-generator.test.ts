@@ -23,6 +23,8 @@ const NODE_SCRIPT = path.join(
   'scripts',
   'generate_prompt.js'
 );
+const CANONICAL_SKILL_DIR = path.join(ROOT, '_bmad', 'skills', 'req-trace-matrix-prompt-generator');
+const HOST_SKILL_SURFACES = ['.codex', '.cursor', '.claude'] as const;
 
 let tempDir: string;
 
@@ -125,6 +127,12 @@ function writeRequirementRecord(
       {
         recordId: 'REQ-TRACE-001',
         status: 'user_confirmed',
+        controlStore: {
+          schemaVersion: 'control-store/v1',
+          eventLogPath: path.join(tempDir, 'events', 'control-events.jsonl').replace(/\\/g, '/'),
+          reducer: 'canonical-requirement-record-reducer/v1',
+          atomicCommitter: 'requirement-record-control-store/v1',
+        },
         ...hashes,
         confirmationHistory: [
           {
@@ -174,6 +182,10 @@ function runNodePrompt(args: string[]): { stdout: string; status: number } {
   } catch (error: any) {
     return { stdout: String(error.stdout ?? ''), status: error.status ?? 1 };
   }
+}
+
+function readJson<T = Record<string, unknown>>(file: string): T {
+  return JSON.parse(fs.readFileSync(file, 'utf8')) as T;
 }
 
 function validSource(overrides = ''): string {
@@ -240,7 +252,620 @@ implementationConfirmation:
 ${overrides}`;
 }
 
+function validCompilerSource(overrides = ''): string {
+  return `# Compiler Source
+
+implementationConfirmation:
+  status: user_confirmed
+  confirmedAt: "2026-05-10"
+  confirmedBy: "user"
+  sourceDocumentHash: "hash"
+  applicability:
+    currentTargetMap:
+      applies: true
+      reasonCode: "compiler_requires_current_target_map"
+    aiTddContractGate:
+      applies: true
+      reasonCode: "compiler_requires_ai_tdd_packet"
+  preConfirmationDrilldown:
+    semanticKernelRef: authoring/semantic-kernel.json
+    mustDecompositionPacketRef: authoring/must_decomposition_packet.json
+    reconciliationReportRef: authoring/must_packet_source_reconciliation_report.json
+    preRenderGateReportRef: authoring/pre-render-must-decomposition-gate-report.json
+    criticalAuditorReceiptRefs:
+      - authoring/critical-auditor-receipt-round-1.json
+      - authoring/critical-auditor-receipt-round-2.json
+      - authoring/critical-auditor-receipt-round-3.json
+  must:
+    - id: MUST-001
+      text: "Compile synchronized execution artifacts."
+      evidenceRefs: ["EVD-001"]
+  notDone:
+    - id: NEG-001
+      text: "Prompt-only output cannot close execution."
+      evidenceRefs: ["EVD-001"]
+  mustNot:
+    - id: OUT-004
+      text: "Do not change bugfix, standalone task, story, or other agent prompt routing."
+  evidence:
+    - id: EVD-001
+      text: "Compiler output artifacts are hash-linked and complete."
+      requiredCommandRefs: ["CMD-TEST-001"]
+      oracle: "model packet, prompt, and receipt share hashes"
+  failurePaths:
+    - id: FAIL-001
+      title: "Prompt-only compiler path"
+      trigger: "Only human prompt is emitted."
+      expectedBehavior: "Fail closed."
+      forbiddenBehavior: "Treat prompt text as execution authority."
+      blocksCompletionWhenViolated: true
+      linkedNegIds: ["NEG-001"]
+      linkedEvidenceIds: ["EVD-001"]
+  edgeCases:
+    - id: EDGE-001
+      category: prompt_projection_authority
+      condition: "Human prompt includes content not present in model packet."
+      expectedBehavior: "Fail closed."
+      forbiddenBehavior: "Use prompt-only requirement semantics."
+      linkedFailurePathIds: ["FAIL-001"]
+      linkedEvidenceIds: ["EVD-001"]
+  traceRows:
+    - id: TRACE-001
+      covers: ["MUST-001", "NEG-001"]
+      taskRefs: ["TASK-001"]
+      evidenceRefs: ["EVD-001"]
+      contractValidationCommandRefs: ["CMD-TEST-001"]
+      deliveryEvidenceCommandRefs: ["CMD-TEST-001"]
+      acceptanceRefs: ["ACC-001", "E2E-001"]
+      e2eRefs: ["E2E-001"]
+      failurePathRefs: ["FAIL-001"]
+      edgeCaseRefs: ["EDGE-001"]
+      artifactRefs: ["ART-001"]
+      targetModificationPaths: ["_bmad/skills/req-trace-matrix-prompt-generator/scripts/generate_prompt.js"]
+      currentTargetMapRefs: ["CTM-001"]
+      canonicalSurfaceRefs: ["SURFACE-001"]
+      legacyDenialRefs: ["LEGACY-001"]
+      expectedRedProofs: ["ACC-001", "E2E-001"]
+      greenExitCriteria: "Artifacts are synchronized."
+      refactorGuards: "Do not change packet authority."
+      allowedRuntimeWrites: ["artifactIndex"]
+      forbiddenProofTypes: ["audit_receipt_only", "completion_packet_only"]
+      status: PENDING
+  atomicImplementationTaskList:
+    - id: TASK-001
+      title: "Compile synchronized packet artifacts"
+      mustRefs: ["MUST-001"]
+      traceRefs: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
+      targetFiles:
+        - _bmad/skills/req-trace-matrix-prompt-generator/scripts/generate_prompt.js
+      redProofPlan: "Assert --out-dir does not produce all artifacts before implementation."
+      derivedFromProjectionRef: "must_decomposition_packet:atomicImplementationTaskList[TASK-001]"
+  mustToAtomicTaskMap:
+    MUST-001: ["TASK-001"]
+  atomicTaskToTraceMap:
+    TASK-001: ["TRACE-001"]
+  acceptanceTests:
+    - id: ACC-001
+      file: tests/acceptance/req-trace-confirmation-block-generator.test.ts
+      covers: ["MUST-001"]
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
+      commandRefs: ["CMD-TEST-001"]
+      failurePathRefs: ["FAIL-001"]
+      edgeCaseRefs: ["EDGE-001"]
+      expectedPreImplementationState: expected_red
+      redProofPlan: "Before implementation, --out-dir lacks synchronized outputs."
+      oracle: "Artifacts are hash linked."
+  e2eSuites:
+    - id: E2E-001
+      file: tests/acceptance/req-trace-confirmation-block-generator.test.ts
+      covers: ["MUST-001", "NEG-001"]
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
+      commandRefs: ["CMD-TEST-001"]
+      failurePathRefs: ["FAIL-001"]
+      edgeCaseRefs: ["EDGE-001"]
+      expectedPreImplementationState: expected_red
+      redProofPlan: "Before implementation, compiler does not emit model_packet.json."
+      oracle: "Valid confirmed source produces model packet, prompt, and receipt."
+      negativeControls: ["NEG-001"]
+  artifactAutomationPlan:
+    - id: ART-001
+      artifactType: json
+      path: model_packet.json
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
+  targetModificationPaths:
+    - id: TARGET-MOD-001
+      path: _bmad/skills/req-trace-matrix-prompt-generator/scripts/generate_prompt.js
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
+  requiredCommands:
+    - id: CMD-TEST-001
+      command: "npx vitest run tests/acceptance/req-trace-confirmation-block-generator.test.ts"
+      oracle: "acceptance test pass"
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
+  closeoutReadinessPreview:
+    requiredCommands: ["CMD-TEST-001"]
+  currentTargetMap:
+    schemaVersion: current-target-map/v1
+    displayProfile: closed_loop_current_target_map
+    canonicalArtifacts:
+      - id: SURFACE-001
+        targetPathOrField: model_packet.json
+        traceRows: ["TRACE-001"]
+        evidenceRefs: ["EVD-001"]
+    existingArtifacts:
+      - id: LEGACY-001
+        currentPath: trace-execution-prompt.txt
+        completionProofPolicy: not_completion_proof
+        traceRows: ["TRACE-001"]
+        evidenceRefs: ["EVD-001"]
+  aiTddContractExecutionManifestProjection:
+    schemaVersion: contract-execution-manifest/v1
+    applies: true
+    requiredSections:
+      - preConfirmationDrilldownInputs
+      - atomicImplementationTaskLineage
+      - errorCaseCoverage
+      - commandTargets
+      - traceClosureAssertions
+      - currentTargetMap
+      - canonicalSurfaceReconciliation
+      - legacyDenial
+      - finalGateMatrix
+      - executionLoopProtocol
+      - semanticGapPolicy
+      - hostExecutionHints
+      - closeoutProof
+      - evidenceTrustStates
+    preConfirmationDrilldownInputs:
+      semanticKernelRequired: true
+      synchronizedMustDecompositionPacketRequired: true
+      criticalAuditorConsecutiveNoNewGapRounds: 3
+      packetSourceReconciliationVerdict: pass
+      preRenderGateReportVerdict: PASS
+    atomicImplementationTaskLineage:
+      requiredMaps: ["atomicImplementationTaskList", "mustToAtomicTaskMap", "atomicTaskToTraceMap"]
+    errorCaseCoverage:
+      failurePaths: ["FAIL-001"]
+      edgeCases: ["EDGE-001"]
+      acceptanceRefs: ["ACC-001", "E2E-001"]
+    commandTargets:
+      commandRefs: ["CMD-TEST-001"]
+      atomicTaskCommandBindings:
+        TASK-001: ["CMD-TEST-001"]
+    traceClosureAssertions:
+      - traceId: TRACE-001
+        assertion: "Artifacts are synchronized."
+        evidenceRefs: ["EVD-001"]
+    currentTargetMapRefs: ["CTM-001"]
+    canonicalSurfaceRefs: ["SURFACE-001"]
+    legacyDenial:
+      - id: LEGACY-001
+        deniedSurface: prompt-only output
+        replacement: model_packet.json
+    finalGateMatrix:
+      requiredCurrentAttemptGates:
+        - gateId: final-required-commands
+          commandRefs: ["CMD-TEST-001"]
+          passRequired: true
+        - gateId: ai-tdd-contract-gate
+          authority: AI_TDD_gate_report
+          passRequired: true
+        - gateId: delivery-verification
+          authority: delivery_verification_report
+          passRequired: true
+        - gateId: closeout-integrity
+          authority: closeout_integrity_report
+          passRequired: true
+      stopCondition: all_required_current_attempt_gates_pass
+      forbiddenStopConditions: ["partial_green", "exitCode_only", "prompt_completion", "goal_completion"]
+    executionLoopProtocol:
+      mode: bounded_until_final_acceptance
+      authority: packet_only
+      iterationRules:
+        onGateFailure: repair_and_retry_same_trace_slice
+        onSemanticGap: halt_for_reconfirmation
+      stopConditions: ["finalGateMatrix_allows_closeout"]
+      forbiddenStopConditions: ["prompt_only_completion_claim", "partial_green_without_final_acceptance"]
+    semanticGapPolicy:
+      semanticGapClasses: ["requirement_boundary_change", "acceptance_oracle_change"]
+      nonSemanticExecutionGapClasses: ["implementation_bug", "test_failure"]
+      semanticGapAction: reconfirm_required
+      nonSemanticGapAction: repair_and_rerun
+    hostExecutionHints:
+      codexCapable:
+        goalModeAllowed: true
+        preferredContinuationMechanism: /goal
+        goalObjectiveTemplate: "Execute model_packet.json until finalGateMatrix passes; halt for reconfirm_required on semantic gaps."
+      nonCodex:
+        goalModeAllowed: false
+        preferredContinuationMechanism: branch_specific_future_work
+        instruction: "Use branch-specific continuation instructions without emitting /goal."
+      proofPolicy: execution_hint_only_not_delivery_or_closeout_proof
+    closeoutProof:
+      allowedAuthorities: ["AI_TDD_gate_report", "delivery_verification_report", "closeout_integrity_report"]
+      forbiddenAuthorities: ["audit_receipt_json", "exitCode_only", "goal_completion"]
+    evidenceTrustStates:
+      trusted: ["current_attempt_controlled_report"]
+      diagnosticOnly: ["audit_receipt_json", "executionLoopProtocol_state"]
+      forbidden: ["mock_only", "self_certification"]
+${overrides}`;
+}
+
 describe('req trace generator confirmation block gate', () => {
+  it('keeps Codex, Cursor, and Claude skill surfaces script-complete and synced from the canonical skill', () => {
+    const requiredRelativeFiles = [
+      'SKILL.md',
+      path.join('scripts', 'generate_prompt.js'),
+      path.join('scripts', 'generate_prompt.py'),
+      path.join('scripts', 'load-js-yaml.js'),
+    ];
+
+    for (const surface of HOST_SKILL_SURFACES) {
+      const hostSkillDir = path.join(ROOT, surface, 'skills', 'req-trace-matrix-prompt-generator');
+      for (const relativeFile of requiredRelativeFiles) {
+        const canonicalPath = path.join(CANONICAL_SKILL_DIR, relativeFile);
+        const hostPath = path.join(hostSkillDir, relativeFile);
+        expect(fs.existsSync(hostPath), `${surface} is missing ${relativeFile}`).toBe(true);
+        expect(fs.readFileSync(hostPath, 'utf8'), `${surface} has stale ${relativeFile}`).toBe(
+          fs.readFileSync(canonicalPath, 'utf8')
+        );
+      }
+      expect(fs.existsSync(path.join(hostSkillDir, 'scripts', '__pycache__'))).toBe(false);
+    }
+  });
+
+  it('keeps skill docs and scripts free of fixed install roots while preserving portable refs', () => {
+    const files = [
+      path.join(CANONICAL_SKILL_DIR, 'SKILL.md'),
+      path.join(CANONICAL_SKILL_DIR, 'scripts', 'generate_prompt.js'),
+      path.join(CANONICAL_SKILL_DIR, 'scripts', 'generate_prompt.py'),
+      path.join(CANONICAL_SKILL_DIR, 'scripts', 'load-js-yaml.js'),
+    ];
+    const forbiddenFixedRootFragments = [
+      'D:/',
+      'D:\\',
+      'C:/',
+      'C:\\',
+      '_bmad/skills/req-trace-matrix-prompt-generator',
+      '_bmad\\skills\\req-trace-matrix-prompt-generator',
+      '.codex/skills/req-trace-matrix-prompt-generator',
+      '.codex\\skills\\req-trace-matrix-prompt-generator',
+      '.cursor/skills/req-trace-matrix-prompt-generator',
+      '.cursor\\skills\\req-trace-matrix-prompt-generator',
+      '.claude/skills/req-trace-matrix-prompt-generator',
+      '.claude\\skills\\req-trace-matrix-prompt-generator',
+    ];
+
+    for (const file of files) {
+      const content = fs.readFileSync(file, 'utf8');
+      for (const fragment of forbiddenFixedRootFragments) {
+        expect(content, `${path.relative(ROOT, file)} contains fixed install root ${fragment}`).not.toContain(
+          fragment
+        );
+      }
+    }
+    expect(fs.readFileSync(path.join(CANONICAL_SKILL_DIR, 'SKILL.md'), 'utf8')).toContain('<skill-dir>/scripts/generate_prompt.js');
+  });
+
+  it('compiles synchronized model packet, human prompt, and audit receipt artifacts', () => {
+    const source = writeSource(validCompilerSource());
+    const record = writeRequirementRecord(source);
+    const outDir = path.join(tempDir, 'trace-execution');
+    const result = runNodePrompt([
+      '--source-document',
+      source,
+      '--requirement-record',
+      record,
+      '--out-dir',
+      outDir,
+      '--execution-host',
+      'codex',
+      '--json',
+    ]);
+
+    expect(result.status, result.stdout).toBe(0);
+    const summary = JSON.parse(result.stdout);
+    expect(summary.outputs).toMatchObject({
+      modelPacket: expect.stringContaining('model_packet.json'),
+      humanPrompt: expect.stringContaining('human_prompt.txt'),
+      auditReceipt: expect.stringContaining('audit_receipt.json'),
+    });
+
+    const packet = readJson<Record<string, any>>(path.join(outDir, 'model_packet.json'));
+    const prompt = fs.readFileSync(path.join(outDir, 'human_prompt.txt'), 'utf8');
+    const receipt = readJson<Record<string, any>>(path.join(outDir, 'audit_receipt.json'));
+
+    expect(packet.artifactRole).toBe('execution_authority');
+    expect(packet.sourceDocumentHash).toBe(currentHashes(source).sourceDocumentHash);
+    expect(packet.implementationConfirmationHash).toBe(currentHashes(source).implementationConfirmationHash);
+    expect(packet.preConfirmationDrilldown).toMatchObject({
+      semanticKernelRef: 'authoring/semantic-kernel.json',
+      preRenderGateReportRef: 'authoring/pre-render-must-decomposition-gate-report.json',
+    });
+    expect(packet.atomicImplementationTaskList).toHaveLength(1);
+    expect(packet.mustToAtomicTaskMap).toMatchObject({ 'MUST-001': ['TASK-001'] });
+    expect(packet.atomicTaskToTraceMap).toMatchObject({ 'TASK-001': ['TRACE-001'] });
+    expect(packet.contractExecutionManifest).toMatchObject({
+      schemaVersion: 'contract-execution-manifest/v1',
+      finalGateMatrix: expect.any(Object),
+      executionLoopProtocol: expect.any(Object),
+      semanticGapPolicy: expect.any(Object),
+      hostExecutionHints: expect.any(Object),
+    });
+    expect(packet.traceSlices[0]).toMatchObject({
+      traceId: 'TRACE-001',
+      requirementRefs: ['MUST-001'],
+      negativeRequirementRefs: ['NEG-001'],
+      acceptanceRefs: ['ACC-001', 'E2E-001'],
+      e2eRefs: ['E2E-001'],
+      failurePathRefs: ['FAIL-001'],
+      edgeCaseRefs: ['EDGE-001'],
+      artifactRefs: ['ART-001'],
+      targetModificationPaths: ['_bmad/skills/req-trace-matrix-prompt-generator/scripts/generate_prompt.js'],
+      deliveryCommandRefs: ['CMD-TEST-001'],
+      tddProtocol: {
+        states: ['RED', 'GREEN', 'REFACTOR', 'CLOSEOUT'],
+      },
+    });
+    expect(packet.runtimeWritePolicy).toMatchObject({
+      sourceTraceRowsWritable: false,
+      requirementRecordRequired: true,
+    });
+    expect(packet.blockingDecisionTable).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 'SEMANTIC_GAP_RECONFIRM_REQUIRED' }),
+        expect.objectContaining({ code: 'NON_SEMANTIC_GAP_REPAIR_AND_RERUN' }),
+      ])
+    );
+    expect(packet.completionEvidencePacketSchema).toMatchObject({
+      artifactRole: 'evidence_index_only_not_closeout_authority',
+    });
+
+    expect(prompt).toContain('Primary authority: model_packet.json');
+    expect(prompt).toContain('/goal Execute model_packet.json until finalGateMatrix passes');
+    expect(prompt).toContain('semanticGapPolicy: semantic gaps -> reconfirm_required');
+    expect(prompt).toContain('audit_receipt.json is generator self-audit only');
+    expect(prompt).not.toContain('continue nonstop');
+
+    expect(receipt.decision).toBe('pass');
+    expect(receipt.outputHashes.modelPacketHash).toBe(summary.outputHashes.modelPacketHash);
+    expect(receipt.outputHashes.humanPromptHash).toBe(summary.outputHashes.humanPromptHash);
+    expect(receipt.inputValidation).toMatchObject({
+      sourceConfirmed: true,
+      requirementRecordConfirmed: true,
+      preConfirmationDrilldownPassed: true,
+      aiTddManifestComplete: true,
+      atomicTaskLineageComplete: true,
+    });
+  });
+
+  it('projects branch-specific continuation text without /goal for non-Codex hosts', () => {
+    const source = writeSource(validCompilerSource());
+    const record = writeRequirementRecord(source);
+    const outDir = path.join(tempDir, 'generic-trace-execution');
+    const result = runNodePrompt([
+      '--source-document',
+      source,
+      '--requirement-record',
+      record,
+      '--out-dir',
+      outDir,
+      '--execution-host',
+      'generic',
+    ]);
+
+    expect(result.status).toBe(0);
+    const prompt = fs.readFileSync(path.join(outDir, 'human_prompt.txt'), 'utf8');
+    expect(prompt).toContain('branch-specific continuation instructions');
+    expect(prompt).not.toContain('/goal');
+  });
+
+  it('writes a blocked audit receipt when drilldown or atomic lineage is missing', () => {
+    const source = writeSource(
+      validCompilerSource()
+        .replace(/ {2}preConfirmationDrilldown:[\s\S]*? {2}must:\n/u, '  must:\n')
+        .replace(/ {2}atomicImplementationTaskList:[\s\S]*? {2}acceptanceTests:\n/u, '  acceptanceTests:\n')
+    );
+    const record = writeRequirementRecord(source);
+    const outDir = path.join(tempDir, 'blocked-trace-execution');
+    const result = runNodePrompt([
+      '--source-document',
+      source,
+      '--requirement-record',
+      record,
+      '--out-dir',
+      outDir,
+      '--json',
+    ]);
+
+    expect(result.status).toBe(3);
+    const receipt = readJson<Record<string, any>>(path.join(outDir, 'audit_receipt.json'));
+    expect(receipt.decision).toBe('blocked');
+    expect(receipt.blockingReasons).toEqual(
+      expect.arrayContaining(['PRE_CONFIRMATION_DRILLDOWN_REQUIRED', 'ATOMIC_TASK_LINEAGE_REQUIRED'])
+    );
+    expect(fs.existsSync(path.join(outDir, 'model_packet.json'))).toBe(false);
+    expect(fs.existsSync(path.join(outDir, 'human_prompt.txt'))).toBe(false);
+  });
+
+  it('accepts object-shaped pre-confirmation drilldown refs from controlled records', () => {
+    const source = writeSource(
+      validCompilerSource().replace(
+        / {2}preConfirmationDrilldown:[\s\S]*? {2}must:\n/u,
+        `  preConfirmationDrilldown:
+    semanticKernelRef:
+      path: authoring/semantic-kernel.json
+      hash: null
+    mustDecompositionPacketRef:
+      path: authoring/must_decomposition_packet.json
+      hash: null
+      status: synchronized
+    criticalAuditor:
+      minimumRounds: 3
+      consecutiveNoNewGapRounds: 3
+      convergenceVerdict: bounded_no_new_gap
+    packetSourceReconciliation:
+      reportPath: authoring/must_packet_source_reconciliation_report.json
+      verdict: pass
+    preRenderGateReportPath: authoring/pre-render-must-decomposition-gate-report.json
+  must:\n`
+      )
+    );
+    const record = writeRequirementRecord(source);
+    const outDir = path.join(tempDir, 'object-drilldown-trace-execution');
+    const result = runNodePrompt([
+      '--source-document',
+      source,
+      '--requirement-record',
+      record,
+      '--out-dir',
+      outDir,
+      '--json',
+    ]);
+
+    expect(result.status).toBe(0);
+    const receipt = readJson<Record<string, any>>(path.join(outDir, 'audit_receipt.json'));
+    expect(receipt.decision).toBe('pass');
+    const packet = readJson<Record<string, any>>(path.join(outDir, 'model_packet.json'));
+    expect(packet.preConfirmationDrilldown.criticalAuditor.consecutiveNoNewGapRounds).toBe(3);
+  });
+
+  it('blocks missing AI-TDD/currentTargetMap applicability and missing E2E suites', () => {
+    const source = writeSource(
+      validCompilerSource()
+        .replace(
+          / {2}applicability:[\s\S]*? {2}preConfirmationDrilldown:\n/u,
+          '  preConfirmationDrilldown:\n'
+        )
+        .replace(/ {2}e2eSuites:[\s\S]*? {2}artifactAutomationPlan:\n/u, '  artifactAutomationPlan:\n')
+    );
+    const record = writeRequirementRecord(source);
+    const outDir = path.join(tempDir, 'missing-applicability-trace-execution');
+    const result = runNodePrompt([
+      '--source-document',
+      source,
+      '--requirement-record',
+      record,
+      '--out-dir',
+      outDir,
+      '--json',
+    ]);
+
+    expect(result.status).toBe(3);
+    const receipt = readJson<Record<string, any>>(path.join(outDir, 'audit_receipt.json'));
+    expect(receipt.blockingReasons).toEqual(
+      expect.arrayContaining([
+        'MISSING_APPLICABILITY_DECLARATION',
+        'AI_TDD_APPLICABILITY_REQUIRED',
+        'CURRENT_TARGET_MAP_APPLICABILITY_REQUIRED',
+        'E2E_SUITES_REQUIRED',
+      ])
+    );
+  });
+
+  it('blocks invalid acceptance references and incomplete MUST/NEG command coverage', () => {
+    const source = writeSource(
+      validCompilerSource()
+        .replace('acceptanceRefs: ["ACC-001", "E2E-001"]', 'acceptanceRefs: ["ACC-MISSING"]')
+        .replace('requiredCommandRefs: ["CMD-TEST-001"]', 'requiredCommandRefs: []')
+        .replace('contractValidationCommandRefs: ["CMD-TEST-001"]', 'contractValidationCommandRefs: []')
+        .replace('deliveryEvidenceCommandRefs: ["CMD-TEST-001"]', 'deliveryEvidenceCommandRefs: []')
+        .replace(/commandRefs: \["CMD-TEST-001"\]/g, 'commandRefs: []')
+    );
+    const record = writeRequirementRecord(source);
+    const outDir = path.join(tempDir, 'invalid-acceptance-trace-execution');
+    const result = runNodePrompt([
+      '--source-document',
+      source,
+      '--requirement-record',
+      record,
+      '--out-dir',
+      outDir,
+      '--json',
+    ]);
+
+    expect(result.status).toBe(3);
+    const receipt = readJson<Record<string, any>>(path.join(outDir, 'audit_receipt.json'));
+    expect(receipt.blockingReasons).toEqual(
+      expect.arrayContaining([
+        'TRACE_ACCEPTANCE_REF_INVALID:TRACE-001:ACC-MISSING',
+        'REQUIREMENT_COVERAGE_INCOMPLETE:MUST-001:CMD',
+        'REQUIREMENT_COVERAGE_INCOMPLETE:NEG-001:CMD',
+      ])
+    );
+  });
+
+  it('blocks incomplete failure and edge-case closure', () => {
+    const source = writeSource(
+      validCompilerSource()
+        .replace('linkedNegIds: ["NEG-001"]', 'linkedNegIds: []')
+        .replace('linkedEvidenceIds: ["EVD-001"]', 'linkedEvidenceIds: []')
+        .replace('linkedFailurePathIds: ["FAIL-001"]', 'linkedFailurePathIds: []')
+    );
+    const record = writeRequirementRecord(source);
+    const outDir = path.join(tempDir, 'incomplete-error-case-trace-execution');
+    const result = runNodePrompt([
+      '--source-document',
+      source,
+      '--requirement-record',
+      record,
+      '--out-dir',
+      outDir,
+      '--json',
+    ]);
+
+    expect(result.status).toBe(3);
+    const receipt = readJson<Record<string, any>>(path.join(outDir, 'audit_receipt.json'));
+    expect(receipt.blockingReasons).toEqual(
+      expect.arrayContaining([
+        'ERROR_CASE_CLOSURE_INCOMPLETE:FAIL-001:NEG',
+        'ERROR_CASE_CLOSURE_INCOMPLETE:FAIL-001:EVD',
+        'ERROR_CASE_CLOSURE_INCOMPLETE:EDGE-001:FAIL',
+      ])
+    );
+  });
+
+  it('blocks missing target modification bindings, invalid proof policy, and missing control store', () => {
+    const source = writeSource(
+      validCompilerSource()
+        .replace('      traceRows: ["TRACE-001"]\n      evidenceRefs: ["EVD-001"]\n  requiredCommands:', '  requiredCommands:')
+        .replace(
+          'allowedAuthorities: ["AI_TDD_gate_report", "delivery_verification_report", "closeout_integrity_report"]',
+          'allowedAuthorities: ["audit_receipt_json"]'
+        )
+    );
+    const record = writeRequirementRecord(source);
+    const recordData = readJson<Record<string, any>>(record);
+    delete recordData.controlStore;
+    fs.writeFileSync(record, `${JSON.stringify(recordData, null, 2)}\n`, 'utf8');
+    const outDir = path.join(tempDir, 'invalid-policy-trace-execution');
+    const result = runNodePrompt([
+      '--source-document',
+      source,
+      '--requirement-record',
+      record,
+      '--out-dir',
+      outDir,
+      '--json',
+    ]);
+
+    expect(result.status).toBe(3);
+    const receipt = readJson<Record<string, any>>(path.join(outDir, 'audit_receipt.json'));
+    expect(receipt.blockingReasons).toEqual(
+      expect.arrayContaining([
+        'TARGET_MODIFICATION_TRACE_BINDING_REQUIRED:TARGET-MOD-001',
+        'TARGET_MODIFICATION_EVIDENCE_BINDING_REQUIRED:TARGET-MOD-001',
+        'INVALID_CLOSEOUT_PROOF_POLICY:audit_receipt_json',
+        'CONTROL_STORE_NOT_READY',
+      ])
+    );
+  });
+
   it('generates a prompt only from a confirmed source document', () => {
     const source = writeSource(validSource());
     const record = writeRequirementRecord(source);
