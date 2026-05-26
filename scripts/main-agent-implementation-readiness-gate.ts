@@ -194,13 +194,19 @@ function resolveRequirementsContractAuthoringScript(cwd: string, relativeScript:
   const packageRoot = path.resolve(__dirname, '..');
   const candidates = [
     path.join(cwd, '.codex', 'skills', 'requirements-contract-authoring'),
+    path.join(cwd, '.cursor', 'skills', 'requirements-contract-authoring'),
+    path.join(cwd, '.claude', 'skills', 'requirements-contract-authoring'),
     path.join(cwd, '_bmad', 'skills', 'requirements-contract-authoring'),
     path.join(cwd, '.agents', 'skills', 'requirements-contract-authoring'),
     path.join(packageRoot, '.codex', 'skills', 'requirements-contract-authoring'),
+    path.join(packageRoot, '.cursor', 'skills', 'requirements-contract-authoring'),
+    path.join(packageRoot, '.claude', 'skills', 'requirements-contract-authoring'),
     path.join(packageRoot, '_bmad', 'skills', 'requirements-contract-authoring'),
     ...(home
       ? [
           path.join(home, '.codex', 'skills', 'requirements-contract-authoring'),
+          path.join(home, '.cursor', 'skills', 'requirements-contract-authoring'),
+          path.join(home, '.claude', 'skills', 'requirements-contract-authoring'),
           path.join(home, '.agents', 'skills', 'requirements-contract-authoring'),
         ]
       : []),

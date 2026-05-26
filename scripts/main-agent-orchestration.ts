@@ -2160,13 +2160,19 @@ function resolveSkillScript(root: string, relativeScript: string): string {
   const home = process.env.USERPROFILE || process.env.HOME || '';
   const candidates = [
     path.join(root, '.codex', 'skills', 'requirements-contract-authoring'),
+    path.join(root, '.cursor', 'skills', 'requirements-contract-authoring'),
+    path.join(root, '.claude', 'skills', 'requirements-contract-authoring'),
     path.join(root, '_bmad', 'skills', 'requirements-contract-authoring'),
     path.join(root, '.agents', 'skills', 'requirements-contract-authoring'),
     path.resolve(__dirname, '..', '.codex', 'skills', 'requirements-contract-authoring'),
+    path.resolve(__dirname, '..', '.cursor', 'skills', 'requirements-contract-authoring'),
+    path.resolve(__dirname, '..', '.claude', 'skills', 'requirements-contract-authoring'),
     path.resolve(__dirname, '..', '_bmad', 'skills', 'requirements-contract-authoring'),
     ...(home
       ? [
           path.join(home, '.codex', 'skills', 'requirements-contract-authoring'),
+          path.join(home, '.cursor', 'skills', 'requirements-contract-authoring'),
+          path.join(home, '.claude', 'skills', 'requirements-contract-authoring'),
           path.join(home, '.agents', 'skills', 'requirements-contract-authoring'),
         ]
       : []),

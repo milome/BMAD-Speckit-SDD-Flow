@@ -539,38 +539,41 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
     }
   });
 
-  it('resolves skill-local scripts from a consumer .codex skill install without _bmad skills', () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-pre-confirmation-codex-skill-'));
+  it.each(['.codex', '.cursor', '.claude'])(
+    'resolves skill-local scripts from a consumer %s skill install without _bmad skills',
+    (surface) => {
+    const root = mkdtempSync(path.join(os.tmpdir(), `main-agent-pre-confirmation-${surface.slice(1)}-skill-`));
     try {
       const sourceSkill = path.join(process.cwd(), '_bmad', 'skills', 'requirements-contract-authoring');
-      const targetSkill = path.join(root, '.codex', 'skills', 'requirements-contract-authoring');
+      const targetSkill = path.join(root, surface, 'skills', 'requirements-contract-authoring');
       mkdirSync(path.dirname(targetSkill), { recursive: true });
       cpSync(sourceSkill, targetSkill, { recursive: true });
       const source = writeDraftSource(root);
+      const recordId = `REQ-PRE-CONFIRMATION-${surface.slice(1).toUpperCase()}-SKILL`;
 
       const result = runMainAgentPreConfirmationDrilldown(root, {
         source,
-        recordId: 'REQ-PRE-CONFIRMATION-CODEX-SKILL',
-        requirementSetId: 'REQSET-PRE-CONFIRMATION-CODEX-SKILL',
+        recordId,
+        requirementSetId: `${recordId}-SET`,
         confirmationLanguage: 'zh-CN',
         criticalAuditorRound: cleanCriticalAuditorRound,
       });
 
-      const codexSkillArtifacts = artifacts(root, 'REQ-PRE-CONFIRMATION-CODEX-SKILL');
+      const skillArtifacts = artifacts(root, recordId);
       expect(
         result.substate,
         JSON.stringify(
           {
             blockingIssues: result.blockingIssues,
-            renderReport: existsSync(codexSkillArtifacts.renderReport) ? readJson(codexSkillArtifacts.renderReport) : null,
-            mustGate: existsSync(codexSkillArtifacts.mustGate) ? readJson(codexSkillArtifacts.mustGate) : null,
-            globalGate: existsSync(codexSkillArtifacts.globalGate) ? readJson(codexSkillArtifacts.globalGate) : null,
+            renderReport: existsSync(skillArtifacts.renderReport) ? readJson(skillArtifacts.renderReport) : null,
+            mustGate: existsSync(skillArtifacts.mustGate) ? readJson(skillArtifacts.mustGate) : null,
+            globalGate: existsSync(skillArtifacts.globalGate) ? readJson(skillArtifacts.globalGate) : null,
           },
           null,
           2
         )
       ).toBe('user_confirmable');
-      expect(existsSync(codexSkillArtifacts.renderReport)).toBe(true);
+      expect(existsSync(skillArtifacts.renderReport)).toBe(true);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

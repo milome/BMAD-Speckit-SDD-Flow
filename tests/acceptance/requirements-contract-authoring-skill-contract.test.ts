@@ -206,6 +206,34 @@ describe('requirements-contract-authoring published contract', () => {
     expect(template).toContain('scriptPath: "<skill-dir>/scripts/ingest-confirmation-event.js"');
   });
 
+  it('keeps skill resolver candidates aligned with supported host surfaces', () => {
+    const resolverFiles = [
+      'scripts/main-agent-orchestration.ts',
+      'scripts/main-agent-implementation-readiness-gate.ts',
+      'scripts/ai-tdd-contract-gate.ts',
+      'scripts/strict-command-resolution-preflight.ts',
+      'scripts/target-artifact-realization-gate.ts',
+    ];
+
+    for (const relativePath of resolverFiles) {
+      const content = fs.readFileSync(path.join(ROOT, relativePath), 'utf8');
+      for (const surface of ['.codex', '.cursor', '.claude', '.agents']) {
+        expect(content, `${relativePath} should resolve ${surface}/skills`).toContain(
+          `'${surface}', 'skills'`
+        );
+      }
+      expect(content, `${relativePath} should retain source skill fallback`).toContain(
+        "'_bmad', 'skills'"
+      );
+      expect(content, `${relativePath} should resolve global Cursor skills`).toContain(
+        "path.join(home, '.cursor', 'skills'"
+      );
+      expect(content, `${relativePath} should resolve global Claude skills`).toContain(
+        "path.join(home, '.claude', 'skills'"
+      );
+    }
+  });
+
   it('requires the pre-confirmation atomic decomposition loop before any confirmable HTML', () => {
     const skill = readSkillFile('SKILL.md');
     const template = readSkillFile(path.join('references', 'contract-template.md'));

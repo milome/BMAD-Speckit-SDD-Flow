@@ -646,7 +646,7 @@ describe('confirmation projection hash policy', () => {
     });
 
     const sourceSkill = path.join(ROOT, '_bmad', 'skills', 'requirements-contract-authoring');
-    const targetSkill = path.join(tempDir, '.codex', 'skills', 'requirements-contract-authoring');
+    const targetSkill = path.join(tempDir, '.cursor', 'skills', 'requirements-contract-authoring');
     fs.mkdirSync(path.dirname(targetSkill), { recursive: true });
     fs.cpSync(sourceSkill, targetSkill, { recursive: true });
     fs.cpSync(path.join(ROOT, '_bmad', '_config'), path.join(tempDir, '_bmad', '_config'), {
@@ -711,7 +711,7 @@ describe('confirmation projection hash policy', () => {
       .at(-1)
       .checks.find((check: Record<string, unknown>) => check.id === 'implementation-readiness-stage-audit');
     expect(portablePath(String(stageAuditCheck.scriptPath))).toContain(
-      '.codex/skills/requirements-contract-authoring/scripts/audit_implementation_readiness.js'
+      '.cursor/skills/requirements-contract-authoring/scripts/audit_implementation_readiness.js'
     );
     const prompt = runPrompt(source, recordPath());
     expect(prompt.status).toBe(0);

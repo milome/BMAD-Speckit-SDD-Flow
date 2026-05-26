@@ -59,11 +59,22 @@ function resolveSkillDir(skillName: string): string {
   const packageRoot = path.resolve(__dirname, '..');
   const candidates = [
     path.join(root, '.codex', 'skills', skillName),
+    path.join(root, '.cursor', 'skills', skillName),
+    path.join(root, '.claude', 'skills', skillName),
     path.join(root, '_bmad', 'skills', skillName),
     path.join(root, '.agents', 'skills', skillName),
     path.join(packageRoot, '.codex', 'skills', skillName),
+    path.join(packageRoot, '.cursor', 'skills', skillName),
+    path.join(packageRoot, '.claude', 'skills', skillName),
     path.join(packageRoot, '_bmad', 'skills', skillName),
-    ...(home ? [path.join(home, '.codex', 'skills', skillName), path.join(home, '.agents', 'skills', skillName)] : []),
+    ...(home
+      ? [
+          path.join(home, '.codex', 'skills', skillName),
+          path.join(home, '.cursor', 'skills', skillName),
+          path.join(home, '.claude', 'skills', skillName),
+          path.join(home, '.agents', 'skills', skillName),
+        ]
+      : []),
   ];
   return candidates.find((candidate) => fs.existsSync(path.join(candidate, 'SKILL.md'))) ?? candidates[0];
 }
