@@ -56,10 +56,21 @@ Treat `<skill-dir>` as the directory that contains this `SKILL.md` after install
 
 Resolve bundled scripts from `<skill-dir>/scripts/...`. Resolve consumer project inputs and outputs from the current project working directory or explicit CLI paths such as `--source-document`, `--requirement-record`, and `--out-dir`.
 
-Use `--execution-host codex|cursor|claude|generic` when compiling packet artifacts with `--out-dir`:
+Use `--execution-host codex|claude-code|cursor-ide|cursor-cli|generic` when compiling packet artifacts with `--out-dir`.
 
-- `codex` may emit `/goal` only when the confirmed `hostExecutionHints.codexCapable.goalModeAllowed` is true.
-- `cursor`, `claude`, and `generic` must emit branch-specific continuation text and must not leak `/goal`.
+Compatibility aliases are accepted:
+
+- `claude` resolves to `claude-code`.
+- `cursor` resolves to `cursor-ide`.
+
+- `codex` may emit `/goal` only when the caller passes `--goal-command-available true` and the confirmed host hints allow goal mode; otherwise it emits `continue nonstop`.
+- `claude-code` may emit Claude Code `/goal` only when `--goal-command-available true` and confirmed host hints allow goal mode; otherwise it emits an autonomous prompt contract.
+- Native `/goal` output is length-governed. The generator measures the complete `/goal <payload>` command against a hard 4000-character limit and a 3800-character safe limit.
+- If a native `/goal` payload exceeds the safe limit in `--out-dir` mode, the generator writes `goal_execution.md` and emits a short `/goal` document-reference command instead of truncating.
+- If a native `/goal` payload exceeds the safe limit outside `--out-dir` mode, generation blocks because no audited `goal_execution.md` can be written.
+- `cursor-ide` is the default Cursor surface. It emits a Cursor IDE Agent mode prompt and must not emit `cursor-agent -p` as the primary instruction.
+- `cursor-cli` is the headless automation surface. It may emit `cursor-agent -p --force --output-format stream-json <prompt>` plus an external supervisor loop contract.
+- `generic` emits a platform-neutral continue-until-final-gates directive.
 - Host execution hints are not delivery or closeout proof.
 
 Prefer the bundled Node/js-yaml generator for local source documents:
@@ -78,6 +89,8 @@ node <skill-dir>/scripts/generate_prompt.js \
   --requirement-record _bmad-output/runtime/requirement-records/<recordId>/requirement-record.json \
   --out-dir _bmad-output/runtime/requirement-records/<recordId>/trace-execution \
   --execution-host codex \
+  --prompt-language auto \
+  --human-prompt-profile full \
   --json
 ```
 
@@ -99,8 +112,11 @@ Useful options:
 - `--final-gate "npm run test:e2e"` to append a final gate supplied outside the source document.
 - `--extra-rule "..."` to append a hard priority rule from the user.
 - `--source-label "..."` to override the displayed source.
-- `--out-dir <path>` to compile `model_packet.json`, `human_prompt.txt`, and `audit_receipt.json`.
-- `--execution-host codex|cursor|claude|generic` to select host-specific continuation projection.
+- `--out-dir <path>` to compile `model_packet.json`, `human_prompt.txt`, `audit_receipt.json`, and, when needed, `goal_execution.md`.
+- `--execution-host codex|claude-code|claude|cursor-ide|cursor-cli|cursor|generic` to select host-specific continuation projection.
+- `--prompt-language zh-CN|en-US|bilingual|auto` to select human prompt prose language. `auto` reads `implementationConfirmation.promptLanguage`, then `implementationConfirmation.confirmationLanguage`, then falls back to `zh-CN`.
+- `--human-prompt-profile full|compact` to select human prompt density. `full` is the default for `--out-dir`.
+- `--goal-command-available true|false|auto` to declare whether the active host supports a native `/goal` command. `auto` is conservative and does not emit `/goal`. When true, the generated `/goal` command is length-checked; overlong goal payloads use `goal_execution.md` in `--out-dir` mode or block without `--out-dir`.
 - `--no-auto-commit` only when the user explicitly says not to auto-commit after PASS.
 
 If the script emits a `BLOCK:` marker, do not hide it and do not produce an implementation prompt.
@@ -164,6 +180,30 @@ BLOCK: SESSION_INPUT_NEEDS_SOURCE_DOCUMENT
 Conversation-only requirements must first be written into an implementation source document with implementationConfirmation.status=draft and then explicitly confirmed by the user.
 ```
 
+```text
+BLOCK: GOAL_DOCUMENT_REQUIRED
+Native /goal payload exceeds the safe length limit and --out-dir was not provided, so goal_execution.md cannot be written.
+```
+
+```text
+BLOCK: GOAL_COMMAND_TOO_LONG
+The generated /goal document-reference command still exceeds the hard length limit.
+```
+
+## Goal Length Governance
+
+When `--goal-command-available true` is used for `codex` or `claude-code`, apply this decision order:
+
+1. Build the complete `/goal <payload>` command from the confirmed host execution hint.
+2. If the command is at or below 3800 characters, emit it inline and record `goalCommand.mode=native_goal_inline`.
+3. If the command exceeds 3800 characters in `--out-dir` mode, write `goal_execution.md`, emit a short `/goal` command that references `goal_execution.md` and `model_packet.json`, and record `goalCommand.mode=native_goal_document_ref`.
+4. If the document-reference `/goal` command exceeds 4000 characters, block with `GOAL_COMMAND_TOO_LONG`.
+5. If no `--out-dir` is available for an overlong native `/goal`, block with `GOAL_DOCUMENT_REQUIRED`.
+
+`goal_execution.md` is not execution authority. It is a `/goal`-safe execution entry document. It must reference `model_packet.json`, `human_prompt.txt`, and `audit_receipt.json`, and it must state that `model_packet.json` remains the machine-readable execution authority.
+
+`audit_receipt.json` must record `goalCommand.mode`, `goalCommand.chars`, `goalCommand.maxChars`, `goalCommand.safeMaxChars`, and, when a goal document is written, `goalCommand.documentPath` plus `goalCommand.documentHash`. It must also record `goalDocumentRequiredFragmentsPassed` and missing fragments.
+
 ## Required Prompt Shape
 
 Use this shape. Adapt only the source path, trace row order, task references, evidence IDs, gates, and explicit user rules.
@@ -171,12 +211,15 @@ Use this shape. Adapt only the source path, trace row order, task references, ev
 ```text
 $executing-plans $verification-before-completion
 
-continue nonstop
+<host continuation directive>
 
-任务：严格执行 <source document path>#implementationConfirmation 的 confirmed traceRows，直到闭环验收完成。
+任务: Strictly execute confirmed traceRows from <source document path>#implementationConfirmation until governed evidence closeout or semantic gap reconfirm_required.
 
 Source of authority:
 Only <source document path>#implementationConfirmation is authoritative.
+Primary authority: model_packet.json.
+model_packet.json is the machine-readable execution authority.
+Human prompt role: projection-only over model_packet.json. Do not introduce requirements absent from the packet.
 Do not implement prose, diagrams, or conversation content unless it is referenced by implementationConfirmation IDs.
 
 Trace closure authority:
@@ -187,28 +230,46 @@ The executor must not rewrite confirmed source traceRows.status or source eviden
 Trace order:
 <TRACE-001> -> <TRACE-002>
 
-范围与意图锁定:
-1. 只能实施 implementationConfirmation 中的 must/notDone/evidence/traceRows IDs。
-2. 禁止缩减范围、替换范围、改变原始需求、把原始需求解释成更小交付。
-3. 禁止 MVP downgrade、stub、mock-only、happy-path-only、representative-only coverage、later-batch coverage、seed-only coverage 或局部样例冒充完整交付。
+Atomic implementation task lineage:
+<TASK-001> -> <TRACE-001>
 
-执行切片:
+Trace slices:
 TRACE-001
 covers: MUST-001, NEG-001
 evidenceRefs: EVD-001, EVD-002
 taskRefs: TASK-001
-contract gates: CMD-CONTRACT-001
-delivery gates: CMD-DELIVERY-001, CMD-DELIVERY-002
+acceptanceRefs: ACC-001
+e2eRefs: E2E-001
+failurePathRefs: FAIL-001
+edgeCaseRefs: EDGE-001
+required command refs: CMD-CONTRACT-001
+delivery command refs: CMD-DELIVERY-001, CMD-DELIVERY-002
 
 Required commands:
 CMD-CONTRACT-001:
-node _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts --source <source-document.md> --out <confirmation.html> --language zh-CN --record-id <recordId> --entry-flow <entryFlow> --mode confirmation
+node <skill-dir>/scripts/render-requirements-confirmation-html.ts --source <source-document.md> --out <confirmation.html> --language zh-CN --record-id <recordId> --entry-flow <entryFlow> --mode confirmation
 
 CMD-DELIVERY-001:
 npm run test:e2e -- upload
 
-Suggested smoke only, not acceptance by itself:
-npm run lint
+AI-TDD protocol:
+Use RED -> GREEN -> REFACTOR -> CLOSEOUT per trace slice. RED proof must precede GREEN when expectedPreImplementationState is expected_red.
+
+Runtime write policy:
+Allowed runtime write targets: executionIterations, requirementClosures, gateChecks, contractChecks, deliveryEvidence.requiredCommands, artifactIndex.
+Missing evidence behavior: remain_open_or_record_MISSING_EVIDENCE.
+
+Semantic gap policy:
+semantic gaps -> reconfirm_required.
+non-semantic execution gaps -> repair_and_rerun_same_trace_slice.
+
+Final gate matrix:
+Stop only when all required current-attempt gates pass, including AI-TDD gate, delivery verification, closeout integrity, and post-closeout review when applicable.
+
+范围与意图锁定:
+1. 只能实施 implementationConfirmation 中的 must/notDone/evidence/traceRows IDs。
+2. 禁止缩减范围、替换范围、改变原始需求、把原始需求解释成更小交付。
+3. 禁止 MVP downgrade、stub、mock-only、happy-path-only、representative-only coverage、later-batch coverage、seed-only coverage 或局部样例冒充完整交付。
 
 强制执行规则:
 1. 以 traceRows 为唯一主执行切片，按 <TRACE order> 顺序推进。
@@ -221,6 +282,13 @@ npm run lint
 8. 每个 TRACE 切片结束必须运行对应 gate。
 9. 最终必须运行并记录由 closeoutReadinessPreview.requiredCommands 或 requiredCommands 推导出的 final gates。
 10. 全部完成后输出 Completion Evidence Packet，至少包含关闭 IDs、开放 IDs、命令结果、E2E 证据、审计证据、残留风险和 scope changes。
+
+Proof boundary:
+audit_receipt.json is generator self-audit only and not delivery or closeout proof.
+Confirmed source traceRows.status must not be rewritten as runtime PASS or MISSING_EVIDENCE.
+
+Completion Evidence Packet:
+requiredFields: closedIds, openIds, commandResults, e2eEvidence, auditEvidence, residualRisks, scopeChanges
 
 现在开始执行，不要等待中途确认，直到最终验收闭环或触发真实阻塞条件。
 ```
@@ -247,9 +315,10 @@ Conversation-only requirements must first be written into an implementation sour
 Before returning a prompt, verify all items:
 
 - The first line contains `$executing-plans $verification-before-completion`.
-- The prompt contains `continue nonstop`.
+- The prompt contains exactly one host continuation directive: `/goal`, `continue nonstop`, Cursor IDE Agent mode continuation text, Cursor CLI external supervisor loop, Claude Code continuation text, or generic continuation text.
 - The prompt names the exact source document path.
 - The source of authority says only `<source document path>#implementationConfirmation` is authoritative.
+- The prompt states `model_packet.json` is the machine-readable execution authority.
 - `implementationConfirmation.status` is `user_confirmed`.
 - `requirement-record.json.confirmationHistory[]` exists.
 - Latest `confirmationHistory[]` event is `confirmation_recorded`.
@@ -269,6 +338,11 @@ Before returning a prompt, verify all items:
 - No-evidence runtime closure remains open/`PENDING` or records `MISSING_EVIDENCE`.
 - Semantic changes require `reconfirm_required` and stop.
 - Completion Evidence Packet includes closed IDs, open IDs, command results, E2E evidence, audit evidence, residual risks, and scope changes.
+- `audit_receipt.json` records `executionHost`, alias if used, `humanPromptProfile`, `humanPromptLanguage`, `continuationDirective`, and `humanPromptRequiredFragmentsPassed`.
+- If required human prompt fragments are missing, generation must block rather than emit a PASS receipt.
+- If native `/goal` is emitted, the receipt records `goalCommand.mode`, character counts, limits, and whether a goal document was used.
+- If `goal_execution.md` is emitted, it contains `$executing-plans $verification-before-completion`, source authority, `model_packet.json is the machine-readable execution authority`, trace order, trace slice summary, required commands, `reconfirm_required`, proof boundary, strict final acceptance checklist, and Completion Evidence Packet schema.
+- If required goal document fragments are missing, generation must block rather than emit a PASS receipt.
 
 ## Scope Change Request
 

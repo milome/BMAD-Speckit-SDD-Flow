@@ -19,6 +19,9 @@ const COMMAND_PREFIXES = [
   'pwsh ',
   'powershell ',
 ];
+const GOAL_COMMAND_MAX_CHARS = 4000;
+const GOAL_COMMAND_SAFE_MAX_CHARS = 3800;
+const GOAL_DOCUMENT_FILENAME = 'goal_execution.md';
 
 class BlockedInput extends Error {
   constructor(code, message) {
@@ -35,6 +38,9 @@ function parseArgs(argv) {
     noAutoCommit: false,
     json: false,
     executionHost: 'codex',
+    promptLanguage: 'auto',
+    humanPromptProfile: 'full',
+    goalCommandAvailable: 'auto',
   };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
@@ -66,7 +72,29 @@ function parseArgs(argv) {
   if (sourceInputs.length !== 1) {
     throw new Error('Provide exactly one of --source-document, --contract, or --source-file');
   }
+  normalizeArgs(args);
   return args;
+}
+
+function normalizeArgs(args) {
+  const allowedHosts = new Set(['codex', 'claude-code', 'claude', 'cursor-ide', 'cursor-cli', 'cursor', 'generic']);
+  const allowedLanguages = new Set(['zh-CN', 'en-US', 'bilingual', 'auto']);
+  const allowedProfiles = new Set(['full', 'compact']);
+  const allowedGoalAvailability = new Set(['true', 'false', 'auto']);
+
+  if (!allowedHosts.has(args.executionHost)) {
+    throw new Error(`Unsupported --execution-host: ${args.executionHost}`);
+  }
+  if (!allowedLanguages.has(args.promptLanguage)) {
+    throw new Error(`Unsupported --prompt-language: ${args.promptLanguage}`);
+  }
+  if (!allowedProfiles.has(args.humanPromptProfile)) {
+    throw new Error(`Unsupported --human-prompt-profile: ${args.humanPromptProfile}`);
+  }
+  args.goalCommandAvailable = String(args.goalCommandAvailable ?? 'auto');
+  if (!allowedGoalAvailability.has(args.goalCommandAvailable)) {
+    throw new Error(`Unsupported --goal-command-available: ${args.goalCommandAvailable}`);
+  }
 }
 
 function readText(file) {
@@ -494,7 +522,6 @@ function renderSuggestedCommands(confirmation) {
 function auditPrompt(prompt) {
   const requiredFragments = [
     SKILL_LINE,
-    'continue nonstop',
     '#implementationConfirmation',
     'Only ',
     'Do not implement prose, diagrams, or conversation content',
@@ -512,6 +539,51 @@ function auditPrompt(prompt) {
     'Completion Evidence Packet',
   ];
   return requiredFragments.filter((fragment) => !prompt.includes(fragment));
+}
+
+function promptAuditFragments(sourceDocument, profile = 'full') {
+  const authorityFragments = [
+    SKILL_LINE,
+    `Only ${sourceDocument}#implementationConfirmation is authoritative`,
+    'model_packet.json is the machine-readable execution authority',
+    'confirmed source traceRows are contract projection only',
+    'Runtime closure authority is the requirement-record/control store',
+    'Required commands:',
+    'PASS requires evidence for covered must, notDone, and evidence IDs',
+    'MISSING_EVIDENCE',
+    'reconfirm_required',
+    'Completion Evidence Packet',
+  ];
+  if (profile === 'compact') return authorityFragments;
+  return authorityFragments;
+}
+
+function auditHumanPrompt(prompt, sourceDocument, profile) {
+  const fragments = promptAuditFragments(sourceDocument, profile);
+  const missing = fragments.filter((fragment) => !prompt.includes(fragment));
+  return { fragments, missing, passed: missing.length === 0 };
+}
+
+function goalDocumentAuditFragments(sourceDocument) {
+  return [
+    SKILL_LINE,
+    `Only ${sourceDocument}#implementationConfirmation is authoritative`,
+    'model_packet.json is the machine-readable execution authority',
+    'goal_execution.md is not execution authority',
+    'Trace order:',
+    'Trace slices summary:',
+    'Required commands:',
+    'reconfirm_required',
+    '/goal completion is not closeout proof',
+    'Strict final acceptance checklist:',
+    'Completion Evidence Packet',
+  ];
+}
+
+function auditGoalDocument(documentText, sourceDocument) {
+  const fragments = goalDocumentAuditFragments(sourceDocument);
+  const missing = fragments.filter((fragment) => !documentText.includes(fragment));
+  return { fragments, missing, passed: missing.length === 0 };
 }
 
 function objectById(items) {
@@ -848,14 +920,80 @@ function buildPreConfirmationDrilldown(sourcePath, confirmation) {
   };
 }
 
+function goalObjectiveFromHints(hints, recordId) {
+  return String(
+    hints?.goalObjectiveTemplate ??
+      hints?.codexCapable?.goalObjectiveTemplate ??
+      `Execute ${recordId} confirmed traceRows until governed evidence closeout or semantic gap reconfirm_required.`
+  );
+}
+
+function normalizeHostExecutionHints(rawHints, recordId) {
+  const hints = rawHints && typeof rawHints === 'object' ? rawHints : {};
+  const legacyGoalAllowed = hints.codexCapable?.goalModeAllowed === true;
+  const legacyObjective = goalObjectiveFromHints(hints.codexCapable ?? hints, recordId);
+  const legacyNonCodex = String(
+    hints.nonCodex?.instruction ??
+      'Use model_packet.json as execution authority; continue repair/rerun loops without goal-mode commands.'
+  ).replace(/\/goal/gu, 'goal-mode');
+
+  return {
+    ...hints,
+    codex: {
+      strategy: 'goal_if_available_else_continue_nonstop',
+      goalModeAllowed: hints.codex?.goalModeAllowed ?? legacyGoalAllowed,
+      goalObjectiveTemplate: goalObjectiveFromHints(hints.codex ?? hints.codexCapable, recordId),
+      fallbackDirective: hints.codex?.fallbackDirective ?? 'continue nonstop',
+      ...(hints.codex ?? {}),
+    },
+    claudeCode: {
+      strategy: 'goal_if_available_else_prompt_loop',
+      goalModeAllowed: hints.claudeCode?.goalModeAllowed ?? legacyGoalAllowed,
+      goalObjectiveTemplate: goalObjectiveFromHints(hints.claudeCode ?? hints.codexCapable, recordId),
+      fallbackDirective:
+        hints.claudeCode?.fallbackDirective ??
+        'Continue autonomously until all final gates pass or semantic gap requires reconfirm_required.',
+      ...(hints.claudeCode ?? {}),
+    },
+    cursorIde: {
+      strategy: 'agent_panel_autonomous_prompt',
+      nativeGoalCommandAvailable: false,
+      preferredSurface: 'Cursor IDE Agent mode',
+      fallbackDirective:
+        hints.cursorIde?.fallbackDirective ??
+        'Continue autonomously within Cursor IDE Agent mode until all final gates pass or semantic gap requires reconfirm_required.',
+      ...(hints.cursorIde ?? {}),
+    },
+    cursorCli: {
+      strategy: 'headless_command_with_external_supervisor_loop',
+      nativeGoalCommandAvailable: false,
+      preferredCommandTemplate:
+        hints.cursorCli?.preferredCommandTemplate ??
+        'cursor-agent -p --force --output-format stream-json <prompt>',
+      externalSupervisorRequired: true,
+      fallbackDirective: hints.cursorCli?.fallbackDirective ?? legacyNonCodex,
+      ...(hints.cursorCli ?? {}),
+    },
+    generic: {
+      strategy: 'prompt_contract_only',
+      fallbackDirective:
+        hints.generic?.fallbackDirective ??
+        'Continue until all final gates pass or semantic gap requires reconfirm_required.',
+      ...(hints.generic ?? {}),
+    },
+  };
+}
+
 function buildModelPacket(context, args) {
   const confirmation = context.confirmation;
   const sourceLabel = args.sourceLabel || displayPath(context.sourcePath);
   const manifest = confirmation.aiTddContractExecutionManifestProjection ?? {};
+  const recordId = context.record.recordId ?? confirmation.recordId ?? 'unknown';
+  const hostExecutionHints = normalizeHostExecutionHints(manifest.hostExecutionHints, recordId);
   return {
     schemaVersion: 'req-trace-ai-tdd-model-packet/v1',
     artifactRole: 'execution_authority',
-    recordId: context.record.recordId ?? confirmation.recordId ?? 'unknown',
+    recordId,
     sourceDocument: sourceLabel,
     sourceDocumentHash: context.sourceDocumentHash,
     implementationConfirmationHash: context.implementationConfirmationHash,
@@ -922,7 +1060,7 @@ function buildModelPacket(context, args) {
       finalGateMatrix: manifest.finalGateMatrix,
       executionLoopProtocol: manifest.executionLoopProtocol,
       semanticGapPolicy: manifest.semanticGapPolicy,
-      hostExecutionHints: manifest.hostExecutionHints,
+      hostExecutionHints,
       closeoutProof: manifest.closeoutProof,
       evidenceTrustStates: manifest.evidenceTrustStates,
     },
@@ -936,7 +1074,7 @@ function buildModelPacket(context, args) {
     finalGateMatrix: manifest.finalGateMatrix,
     executionLoopProtocol: manifest.executionLoopProtocol,
     semanticGapPolicy: manifest.semanticGapPolicy,
-    hostExecutionHints: manifest.hostExecutionHints,
+    hostExecutionHints,
     blockingDecisionTable: [
       { code: 'SEMANTIC_GAP_RECONFIRM_REQUIRED', action: 'halt_for_reconfirmation', source: 'semanticGapPolicy' },
       { code: 'NON_SEMANTIC_GAP_REPAIR_AND_RERUN', action: 'repair_and_rerun_same_trace_slice', source: 'semanticGapPolicy' },
@@ -959,55 +1097,472 @@ function buildModelPacket(context, args) {
   };
 }
 
-function renderHostContinuation(packet, executionHost) {
-  const hints = packet.hostExecutionHints ?? {};
-  if (executionHost === 'codex' && hints.codexCapable?.goalModeAllowed === true) {
-    return `/goal ${hints.codexCapable.goalObjectiveTemplate}`;
-  }
-  const instruction = String(
-    hints.nonCodex?.instruction ?? 'continue repair and rerun without goal-mode commands.'
-  ).replace(/\/goal/gu, 'goal-mode');
-  return `Use branch-specific continuation instructions: ${instruction}`;
+function normalizeExecutionHost(executionHost) {
+  const host = executionHost || 'codex';
+  if (host === 'cursor') return { host: 'cursor-ide', aliasUsed: 'cursor' };
+  if (host === 'claude') return { host: 'claude-code', aliasUsed: 'claude' };
+  return { host, aliasUsed: null };
 }
 
-function renderHumanPromptFromPacket(packet, args) {
-  const continuation = renderHostContinuation(packet, args.executionHost);
-  const goalProofText =
-    args.executionHost === 'codex' ? '/goal completion' : 'goal-mode completion';
-  const traceRows = packet.traceSlices
+function resolvePromptLanguage(confirmation, args) {
+  if (args.promptLanguage && args.promptLanguage !== 'auto') return args.promptLanguage;
+  return confirmation.promptLanguage || confirmation.confirmationLanguage || 'zh-CN';
+}
+
+function goalCommandLength(text) {
+  return Array.from(String(text ?? '')).length;
+}
+
+function goalCommandFromPayload(payload) {
+  return `/goal ${payload}`;
+}
+
+function goalCommandMeta(mode, commandText, extra = {}) {
+  return {
+    mode,
+    chars: goalCommandLength(commandText),
+    maxChars: GOAL_COMMAND_MAX_CHARS,
+    safeMaxChars: GOAL_COMMAND_SAFE_MAX_CHARS,
+    ...extra,
+  };
+}
+
+function goalDocumentRefPayload(packet, artifactPaths) {
+  return `Execute ${packet.recordId} by following ${artifactPaths.goalDocument}; use ${artifactPaths.modelPacket} as authority; stop only on final pass or reconfirm_required.`;
+}
+
+function buildGoalDirective(packet, hints, artifactPaths) {
+  const inlinePayload = goalObjectiveFromHints(hints, packet.recordId);
+  const inlineCommand = goalCommandFromPayload(inlinePayload);
+  const inlineChars = goalCommandLength(inlineCommand);
+  if (inlineChars <= GOAL_COMMAND_SAFE_MAX_CHARS) {
+    return {
+      directive: inlineCommand,
+      goalCommand: goalCommandMeta('native_goal_inline', inlineCommand),
+    };
+  }
+
+  if (!artifactPaths?.goalDocument) {
+    throw new BlockedInput(
+      'BLOCK: GOAL_DOCUMENT_REQUIRED',
+      `/goal command is ${inlineChars} chars, exceeding safe limit ${GOAL_COMMAND_SAFE_MAX_CHARS}; --out-dir is required to write ${GOAL_DOCUMENT_FILENAME}.`
+    );
+  }
+
+  const documentPayload = goalDocumentRefPayload(packet, artifactPaths);
+  const documentCommand = goalCommandFromPayload(documentPayload);
+  const documentChars = goalCommandLength(documentCommand);
+  if (documentChars > GOAL_COMMAND_MAX_CHARS) {
+    throw new BlockedInput(
+      'BLOCK: GOAL_COMMAND_TOO_LONG',
+      `/goal document reference command is ${documentChars} chars, exceeding hard limit ${GOAL_COMMAND_MAX_CHARS}.`
+    );
+  }
+  return {
+    directive: documentCommand,
+    goalCommand: goalCommandMeta('native_goal_document_ref', documentCommand, {
+      originalInlineChars: inlineChars,
+      documentPath: artifactPaths.goalDocument,
+      documentHash: null,
+    }),
+  };
+}
+
+function fallbackGoalCommandMeta(directive) {
+  return goalCommandMeta('fallback_prompt_contract', directive, {
+    documentPath: null,
+    documentHash: null,
+  });
+}
+
+function buildHostContinuationDirective(packet, args, artifactPaths = {}) {
+  const { host, aliasUsed } = normalizeExecutionHost(args.executionHost);
+  const hints = packet.hostExecutionHints ?? {};
+  const goalAvailable = args.goalCommandAvailable === 'true';
+
+  if (host === 'codex') {
+    const codex = hints.codex ?? {};
+    if (goalAvailable && codex.goalModeAllowed === true) {
+      const goalDirective = buildGoalDirective(packet, codex, artifactPaths);
+      return {
+        host,
+        aliasUsed,
+        strategy: 'goal_if_available_else_continue_nonstop',
+        nativeGoalCommandUsed: true,
+        directive: goalDirective.directive,
+        goalCommand: goalDirective.goalCommand,
+        proofText: '/goal completion',
+      };
+    }
+    const directive = codex.fallbackDirective ?? 'continue nonstop';
+    return {
+      host,
+      aliasUsed,
+      strategy: 'goal_if_available_else_continue_nonstop',
+      nativeGoalCommandUsed: false,
+      directive,
+      goalCommand: fallbackGoalCommandMeta(directive),
+      proofText: goalAvailable ? '/goal completion' : 'prompt completion',
+    };
+  }
+
+  if (host === 'claude-code') {
+    const claude = hints.claudeCode ?? {};
+    if (goalAvailable && claude.goalModeAllowed === true) {
+      const goalDirective = buildGoalDirective(packet, claude, artifactPaths);
+      return {
+        host,
+        aliasUsed,
+        strategy: 'goal_if_available_else_prompt_loop',
+        nativeGoalCommandUsed: true,
+        directive: goalDirective.directive,
+        cliCommand: `claude -p --permission-mode auto --output-format stream-json "${goalDirective.directive}"`,
+        goalCommand: goalDirective.goalCommand,
+        proofText: '/goal completion',
+      };
+    }
+    const directive =
+      claude.fallbackDirective ??
+      'Continue autonomously until all final gates pass or semantic gap requires reconfirm_required.';
+    return {
+      host,
+      aliasUsed,
+      strategy: 'goal_if_available_else_prompt_loop',
+      nativeGoalCommandUsed: false,
+      directive,
+      cliCommand: 'claude -p --permission-mode auto --output-format stream-json "<full prompt>"',
+      goalCommand: fallbackGoalCommandMeta(directive),
+      proofText: 'prompt completion',
+    };
+  }
+
+  if (host === 'cursor-ide') {
+    const cursorIde = hints.cursorIde ?? {};
+    return {
+      host,
+      aliasUsed,
+      strategy: 'agent_panel_autonomous_prompt',
+      nativeGoalCommandUsed: false,
+      directive:
+        cursorIde.fallbackDirective ??
+        'Continue autonomously within Cursor IDE Agent mode until all final gates pass or semantic gap requires reconfirm_required.',
+      userInstruction:
+        'Open Cursor IDE Agent mode, paste this full prompt, and allow the Agent to continue repairing and rerunning gates until all final gates pass or a semantic gap requires reconfirm_required.',
+      goalCommand: fallbackGoalCommandMeta(cursorIde.fallbackDirective ?? 'Cursor IDE Agent mode prompt contract'),
+      proofText: 'Cursor Agent prompt completion',
+    };
+  }
+
+  if (host === 'cursor-cli') {
+    const cursorCli = hints.cursorCli ?? {};
+    return {
+      host,
+      aliasUsed,
+      strategy: 'headless_command_with_external_supervisor_loop',
+      nativeGoalCommandUsed: false,
+      directive:
+        'Use cursor-agent headless automation only with an external deterministic supervisor loop; do not treat cursor-agent output as closeout proof.',
+      cliCommand: cursorCli.preferredCommandTemplate ?? 'cursor-agent -p --force --output-format stream-json <prompt>',
+      externalSupervisorLoop: [
+        'Run cursor-agent with the full prompt.',
+        'Run deterministic gates from model_packet.json.',
+        'If final gates pass, stop.',
+        'If a semantic gap is detected, mark reconfirm_required and stop.',
+        'If only non-semantic failures remain, run a repair continuation prompt and rerun the same trace slice.',
+      ],
+      goalCommand: fallbackGoalCommandMeta(cursorCli.fallbackDirective ?? 'cursor-agent external supervisor loop contract'),
+      proofText: 'cursor-agent output',
+    };
+  }
+
+  const generic = hints.generic ?? {};
+  const directive = generic.fallbackDirective ?? 'Continue until all final gates pass or semantic gap requires reconfirm_required.';
+  return {
+    host: 'generic',
+    aliasUsed,
+    strategy: 'prompt_contract_only',
+    nativeGoalCommandUsed: false,
+    directive,
+    goalCommand: fallbackGoalCommandMeta(directive),
+    proofText: 'prompt completion',
+  };
+}
+
+function enforceNoOutDirGoalLength(args, confirmation) {
+  if (args.goalCommandAvailable !== 'true') return;
+  const { host } = normalizeExecutionHost(args.executionHost);
+  if (host !== 'codex' && host !== 'claude-code') return;
+  const manifest = confirmation.aiTddContractExecutionManifestProjection ?? {};
+  const hints = normalizeHostExecutionHints(manifest.hostExecutionHints, confirmation.recordId ?? 'unknown');
+  const hostHints = host === 'codex' ? hints.codex : hints.claudeCode;
+  if (hostHints?.goalModeAllowed !== true) return;
+  const goalCommand = goalCommandFromPayload(goalObjectiveFromHints(hostHints, confirmation.recordId ?? 'unknown'));
+  const chars = goalCommandLength(goalCommand);
+  if (chars > GOAL_COMMAND_SAFE_MAX_CHARS) {
+    throw new BlockedInput(
+      'BLOCK: GOAL_DOCUMENT_REQUIRED',
+      `/goal command is ${chars} chars, exceeding safe limit ${GOAL_COMMAND_SAFE_MAX_CHARS}; rerun with --out-dir so ${GOAL_DOCUMENT_FILENAME} can be written.`
+    );
+  }
+}
+
+function ensureGoalDocumentPrepared(promptMeta, packet, artifactPaths, outputs, outputHashes) {
+  if (promptMeta.hostDirective.goalCommand?.mode !== 'native_goal_document_ref') {
+    promptMeta.goalDocumentAudit = { fragments: [], missing: [], passed: true };
+    return;
+  }
+  const goalDocument = renderGoalExecutionDocumentFromPacket(packet, artifactPaths);
+  writeText(artifactPaths.goalDocumentDiskPath, goalDocument);
+  const goalDocumentHash = sha256(readText(artifactPaths.goalDocumentDiskPath));
+  promptMeta.hostDirective.goalCommand.documentHash = goalDocumentHash;
+  promptMeta.goalDocumentAudit = auditGoalDocument(goalDocument, packet.sourceDocument);
+  outputs.goalDocument = artifactPaths.goalDocument;
+  outputHashes.goalDocumentHash = goalDocumentHash;
+}
+
+function renderTraceSliceRows(packet) {
+  return packet.traceSlices
     .map(
-      (row) => `- ${row.traceId}: covers=${row.covers.join(', ') || '(none)'} tasks=${
-        row.taskRefs.join(', ') || '(none)'
-      } gates=${row.commandRefs.join(', ') || '(none)'}`
+      (row) => `${row.traceId}
+covers: ${row.covers.join(', ') || '(none)'}
+evidenceRefs: ${row.evidenceRefs.join(', ') || '(none)'}
+taskRefs: ${row.taskRefs.join(', ') || '(none)'}
+acceptanceRefs: ${row.acceptanceRefs.join(', ') || '(none)'}
+e2eRefs: ${row.e2eRefs.join(', ') || '(none)'}
+failurePathRefs: ${row.failurePathRefs.join(', ') || '(none)'}
+edgeCaseRefs: ${row.edgeCaseRefs.join(', ') || '(none)'}
+required command refs: ${row.commandRefs.join(', ') || '(none)'}
+delivery command refs: ${row.deliveryCommandRefs.join(', ') || '(none)'}
+artifactRefs: ${row.artifactRefs.join(', ') || '(none)'}`
     )
-    .join('\n');
-  const atomicRows = packet.atomicImplementationTaskList
+    .join('\n\n');
+}
+
+function renderAtomicRows(packet) {
+  return packet.atomicImplementationTaskList
     .map((task) => `- ${task.id}: ${task.title ?? ''} -> traces=${strings(task.traceRefs).join(', ')}`)
     .join('\n');
-  return `Primary authority: model_packet.json
-Human prompt role: projection-only over model_packet.json. Do not introduce requirements absent from the packet.
-Source: ${packet.sourceDocument}
-Record: ${packet.recordId}
-Trace order: ${packet.traceOrder.join(' -> ')}
+}
 
-Continuation:
-${continuation}
+function renderPacketRequiredCommands(packet) {
+  if (!packet.requiredCommands.length) return '(none)';
+  return packet.requiredCommands
+    .map(
+      (command) => `${command.id}:
+${command.command}
+traceRows: ${command.traceRows.join(', ') || '(none)'}
+evidenceRefs: ${command.evidenceRefs.join(', ') || '(none)'}
+oracle: ${command.oracle || '(none)'}`
+    )
+    .join('\n\n');
+}
+
+function renderHostDirectiveText(directive) {
+  const lines = [`Continuation strategy: ${directive.strategy}`, directive.directive];
+  if (directive.userInstruction) lines.push(`User surface: ${directive.userInstruction}`);
+  if (directive.cliCommand) lines.push(`CLI command: ${directive.cliCommand}`);
+  if (directive.externalSupervisorLoop) {
+    lines.push('External supervisor loop:');
+    directive.externalSupervisorLoop.forEach((step, index) => lines.push(`${index + 1}. ${step}`));
+  }
+  return lines.join('\n');
+}
+
+function languageLabels(language) {
+  if (language === 'en-US') {
+    return {
+      task: 'Task',
+      start: 'Start now and do not stop until final acceptance closes or a real blocker is reached.',
+      scope: 'Scope and intent lock',
+      rules: 'Mandatory execution rules',
+    };
+  }
+  if (language === 'bilingual') {
+    return {
+      task: '任务 / Task',
+      start:
+        '现在开始执行，不要等待中途确认，直到最终验收闭环或触发真实阻塞条件。 / Start now and do not stop until final acceptance closes or a real blocker is reached.',
+      scope: '范围与意图锁定 / Scope and intent lock',
+      rules: '强制执行规则 / Mandatory execution rules',
+    };
+  }
+  return {
+    task: '任务',
+    start: '现在开始执行，不要等待中途确认，直到最终验收闭环或触发真实阻塞条件。',
+    scope: '范围与意图锁定',
+    rules: '强制执行规则',
+  };
+}
+
+function renderFullHumanPromptFromPacket(packet, args, hostDirective, language) {
+  const labels = languageLabels(language);
+  const sourceAuthority = `${packet.sourceDocument}#implementationConfirmation`;
+  return `${SKILL_LINE}
+
+${renderHostDirectiveText(hostDirective)}
+
+${labels.task}: Strictly execute confirmed traceRows from ${sourceAuthority} until governed evidence closeout or semantic gap reconfirm_required.
+
+Source of authority:
+Only ${sourceAuthority} is authoritative.
+Primary authority: model_packet.json.
+model_packet.json is the machine-readable execution authority.
+Human prompt role: projection-only over model_packet.json. Do not introduce requirements absent from the packet.
+Do not implement prose, diagrams, or conversation content unless it is referenced by implementationConfirmation IDs.
+
+Trace closure authority:
+confirmed source traceRows are contract projection only.
+Runtime closure authority is the requirement-record/control store: record closure evidence through executionIterations, requirementClosures, gateChecks, contractChecks, deliveryEvidence.requiredCommands, artifactIndex, or project-equivalent governed fields.
+The executor must not rewrite confirmed source traceRows.status or source evidence fields to represent runtime PASS/MISSING_EVIDENCE.
+
+Trace order:
+${packet.traceOrder.join(' -> ')}
 
 Atomic implementation task lineage:
-${atomicRows}
+${renderAtomicRows(packet)}
 
 Trace slices:
-${traceRows}
+${renderTraceSliceRows(packet)}
 
-executionLoopProtocol: repair and rerun the same trace slice on non-semantic gate failures until finalGateMatrix permits stop.
-finalGateMatrix stop authority: all required current-attempt gates must pass, including AI-TDD gate, delivery verification, and closeout integrity.
-semanticGapPolicy: semantic gaps -> reconfirm_required; non-semantic execution gaps -> repair_and_rerun.
+Required commands:
+${renderPacketRequiredCommands(packet)}
+
+AI-TDD protocol:
+Use RED -> GREEN -> REFACTOR -> CLOSEOUT per trace slice. RED proof must precede GREEN when expectedPreImplementationState is expected_red. Unexpected GREEN must be blocked and investigated before closeout.
+
+Runtime write policy:
+Allowed runtime write targets: ${packet.runtimeWritePolicy.allowedRuntimeWriteTargets.join(', ')}.
+Source traceRows writable: ${packet.runtimeWritePolicy.sourceTraceRowsWritable}.
+Missing evidence behavior: ${packet.runtimeWritePolicy.missingEvidenceBehavior}.
+
+Semantic gap policy:
+semantic gaps -> reconfirm_required.
+non-semantic execution gaps -> repair_and_rerun_same_trace_slice.
+
+Final gate matrix:
+Stop only when all required current-attempt gates pass, including AI-TDD gate, delivery verification, closeout integrity, and post-closeout review when applicable.
+Required final authorities: ${packet.proofBoundary.closeoutAuthorities.join(', ')}.
+
+${labels.scope}:
+1. Only implement IDs present in model_packet.json and confirmed implementationConfirmation projections.
+2. Do not reduce, replace, reinterpret, or shrink confirmed scope.
+3. No MVP downgrade, stub, mock-only, happy-path-only, representative-only, later-batch, seed-only, or partial sample proof may close a requirement.
+
+${labels.rules}:
+1. Use traceRows as the only primary execution slices and follow the declared Trace order.
+2. Each trace slice may close only its referenced covers, evidenceRefs, taskRefs, acceptanceRefs, failurePathRefs, edgeCaseRefs, and required command refs.
+3. taskRefs completion does not equal requirement PASS.
+4. PASS requires evidence for covered must, notDone, and evidence IDs.
+5. Every trace slice must record governed runtime closure evidence in the requirement-record/control store.
+6. Without evidence, runtime closure must remain open/PENDING or record MISSING_EVIDENCE.
+7. If implementation requires semantic changes to must/notDone/mustNot/evidence/failurePaths/edgeCases/traceRows/acceptanceTests/e2eSuites/requiredCommands/currentTargetMap/aiTddContractExecutionManifestProjection, set reconfirm_required and stop.
+8. On non-semantic gate failure, repair and rerun the same trace slice until it passes or a semantic gap is proven.
+9. Final closeout requires deterministic current-attempt gate evidence; ${hostDirective.proofText}, stdout, exitCode=0, prompt completion, and audit_receipt.json are not closeout authorities.
 
 Proof boundary:
 audit_receipt.json is generator self-audit only and not delivery or closeout proof.
-Completion Evidence Packet, exitCode=0, stdout, prompt completion, and ${goalProofText} are not closeout authorities.
+Not delivery proof: ${packet.proofBoundary.notDeliveryProof.join(', ')}.
+Closeout authorities: ${packet.proofBoundary.closeoutAuthorities.join(', ')}.
 Confirmed source traceRows.status must not be rewritten as runtime PASS or MISSING_EVIDENCE.
+
+Completion Evidence Packet:
+artifactRole: ${packet.completionEvidencePacketSchema.artifactRole}
+requiredFields: ${packet.completionEvidencePacketSchema.requiredFields.join(', ')}
+forbiddenAuthorities: ${packet.completionEvidencePacketSchema.forbiddenAuthorities.join(', ') || '(none)'}
+
+${labels.start}
 `;
+}
+
+function renderCompactHumanPromptFromPacket(packet, args, hostDirective, language) {
+  const sourceAuthority = `${packet.sourceDocument}#implementationConfirmation`;
+  return `${SKILL_LINE}
+
+${renderHostDirectiveText(hostDirective)}
+
+Only ${sourceAuthority} is authoritative. model_packet.json is the machine-readable execution authority.
+Human prompt role: projection-only over model_packet.json. Do not introduce requirements absent from the packet.
+Trace order: ${packet.traceOrder.join(' -> ')}
+Required commands: ${packet.requiredCommands.map((command) => command.id).join(', ') || '(none)'}
+confirmed source traceRows are contract projection only.
+Runtime closure authority is the requirement-record/control store.
+PASS requires evidence for covered must, notDone, and evidence IDs.
+Missing evidence remains open/PENDING or MISSING_EVIDENCE.
+Semantic gaps require reconfirm_required; non-semantic failures require repair and rerun.
+Completion Evidence Packet must include ${packet.completionEvidencePacketSchema.requiredFields.join(', ')}.
+Full details are in model_packet.json.
+`;
+}
+
+function renderGoalExecutionDocumentFromPacket(packet, artifactPaths) {
+  const sourceAuthority = `${packet.sourceDocument}#implementationConfirmation`;
+  return `# Goal Execution Plan for ${packet.recordId}
+
+${SKILL_LINE}
+
+Goal runner directive:
+Execute ${packet.recordId} by following this document and ${artifactPaths.modelPacket}. Stop only when all final gates pass with governed evidence, or when a semantic gap requires reconfirm_required.
+
+Source of authority:
+Only ${sourceAuthority} is authoritative.
+model_packet.json is the machine-readable execution authority.
+goal_execution.md is not execution authority; it is a /goal-safe execution entry document.
+human_prompt.txt is a host-specific projection only.
+audit_receipt.json is generator self-audit only and not delivery proof.
+
+Authoritative artifacts:
+- model_packet.json: ${artifactPaths.modelPacket}
+- human_prompt.txt: ${artifactPaths.humanPrompt}
+- audit_receipt.json: ${artifactPaths.auditReceipt}
+
+Trace order:
+${packet.traceOrder.join(' -> ')}
+
+Trace slices summary:
+${renderTraceSliceRows(packet)}
+
+Atomic implementation task lineage:
+${renderAtomicRows(packet)}
+
+Required commands:
+${renderPacketRequiredCommands(packet)}
+
+Semantic gap policy:
+semantic gaps -> reconfirm_required.
+non-semantic execution gaps -> repair_and_rerun_same_trace_slice.
+
+Proof boundary:
+/goal completion is not closeout proof.
+Not delivery proof: ${packet.proofBoundary.notDeliveryProof.join(', ')}.
+Closeout authorities: ${packet.proofBoundary.closeoutAuthorities.join(', ')}.
+
+Strict final acceptance checklist:
+1. Execute only trace rows and IDs present in model_packet.json.
+2. Do not shrink, reinterpret, or replace confirmed source scope.
+3. Run required commands for every covered trace slice.
+4. PASS requires evidence for covered must, notDone, and evidence IDs.
+5. Missing evidence remains open/PENDING or records MISSING_EVIDENCE.
+6. Write runtime closure evidence only to the requirement-record/control store or governed equivalent fields.
+7. Do not rewrite confirmed source traceRows.status as runtime PASS or MISSING_EVIDENCE.
+8. Final closeout requires deterministic current-attempt gate evidence.
+
+Completion Evidence Packet:
+artifactRole: ${packet.completionEvidencePacketSchema.artifactRole}
+requiredFields: ${packet.completionEvidencePacketSchema.requiredFields.join(', ')}
+forbiddenAuthorities: ${packet.completionEvidencePacketSchema.forbiddenAuthorities.join(', ') || '(none)'}
+`;
+}
+
+function renderHumanPromptFromPacket(packet, args, context) {
+  const language = resolvePromptLanguage(context.confirmation, args);
+  const hostDirective = buildHostContinuationDirective(packet, args, context.artifactPaths);
+  const profile = args.humanPromptProfile || 'full';
+  const prompt =
+    profile === 'compact'
+      ? renderCompactHumanPromptFromPacket(packet, args, hostDirective, language)
+      : renderFullHumanPromptFromPacket(packet, args, hostDirective, language);
+  const audit = auditHumanPrompt(prompt, packet.sourceDocument, profile);
+  return { prompt, language, profile, hostDirective, audit };
 }
 
 function receiptHashFor(receipt) {
@@ -1016,8 +1571,14 @@ function receiptHashFor(receipt) {
   return sha256(stableStringify(clone));
 }
 
-function buildPassReceipt(args, context, packet, outputHashes, outputs) {
-  const validationReasons = validateCompilerContract(context.confirmation, context.record);
+function buildPassReceipt(args, context, packet, outputHashes, outputs, promptMeta) {
+  const validationReasons = [
+    ...validateCompilerContract(context.confirmation, context.record),
+    ...promptMeta.audit.missing.map((fragment) => `HUMAN_PROMPT_REQUIRED_FRAGMENT_MISSING:${fragment}`),
+    ...(promptMeta.goalDocumentAudit?.missing ?? []).map(
+      (fragment) => `GOAL_DOCUMENT_REQUIRED_FRAGMENT_MISSING:${fragment}`
+    ),
+  ];
   const receipt = {
     schemaVersion: 'req-trace-ai-tdd-compiler-audit-receipt/v1',
     recordId: packet.recordId,
@@ -1042,6 +1603,24 @@ function buildPassReceipt(args, context, packet, outputHashes, outputs) {
       finalGateMatrixPresent: !validationReasons.includes('FINAL_GATE_MATRIX_REQUIRED'),
       semanticGapPolicyPresent: !validationReasons.includes('SEMANTIC_GAP_POLICY_REQUIRED'),
     },
+    executionHost: promptMeta.hostDirective.host,
+    executionHostAliasUsed: promptMeta.hostDirective.aliasUsed,
+    humanPromptProfile: promptMeta.profile,
+    humanPromptLanguage: promptMeta.language,
+    continuationDirective: {
+      strategy: promptMeta.hostDirective.strategy,
+      nativeGoalCommandUsed: promptMeta.hostDirective.nativeGoalCommandUsed,
+      directive: promptMeta.hostDirective.directive,
+      cliCommand: promptMeta.hostDirective.cliCommand,
+      externalSupervisorRequired: Boolean(promptMeta.hostDirective.externalSupervisorLoop),
+    },
+    goalCommand: promptMeta.hostDirective.goalCommand,
+    humanPromptRequiredFragmentsPassed: promptMeta.audit.passed,
+    humanPromptRequiredFragments: promptMeta.audit.fragments,
+    humanPromptMissingRequiredFragments: promptMeta.audit.missing,
+    goalDocumentRequiredFragmentsPassed: promptMeta.goalDocumentAudit?.passed ?? null,
+    goalDocumentRequiredFragments: promptMeta.goalDocumentAudit?.fragments ?? [],
+    goalDocumentMissingRequiredFragments: promptMeta.goalDocumentAudit?.missing ?? [],
     coverageLedger: {
       traceRows: packet.traceOrder,
       atomicTasks: packet.atomicImplementationTaskList.map((task) => task.id),
@@ -1117,22 +1696,31 @@ function compileArtifacts(args) {
 
     const packet = buildModelPacket(context, args);
     const packetPath = path.join(outDir, 'model_packet.json');
+    const promptPath = path.join(outDir, 'human_prompt.txt');
+    const receiptPath = path.join(outDir, 'audit_receipt.json');
+    const goalDocumentPath = path.join(outDir, GOAL_DOCUMENT_FILENAME);
+    context.artifactPaths = {
+      modelPacket: normalizePathSafe(packetPath),
+      humanPrompt: normalizePathSafe(promptPath),
+      auditReceipt: normalizePathSafe(receiptPath),
+      goalDocument: normalizePathSafe(goalDocumentPath),
+      goalDocumentDiskPath: goalDocumentPath,
+    };
     writeJson(packetPath, packet);
     const modelPacketHash = sha256(readText(packetPath));
 
-    const prompt = renderHumanPromptFromPacket(packet, args);
-    const promptPath = path.join(outDir, 'human_prompt.txt');
-    writeText(promptPath, prompt);
+    const promptMeta = renderHumanPromptFromPacket(packet, args, context);
+    writeText(promptPath, promptMeta.prompt);
     const humanPromptHash = sha256(readText(promptPath));
 
-    const receiptPath = path.join(outDir, 'audit_receipt.json');
     const outputs = {
       modelPacket: normalizePathSafe(packetPath),
       humanPrompt: normalizePathSafe(promptPath),
       auditReceipt: normalizePathSafe(receiptPath),
     };
     const outputHashes = { modelPacketHash, humanPromptHash };
-    const receipt = buildPassReceipt(args, context, packet, outputHashes, outputs);
+    ensureGoalDocumentPrepared(promptMeta, packet, context.artifactPaths, outputs, outputHashes);
+    const receipt = buildPassReceipt(args, context, packet, outputHashes, outputs, promptMeta);
     writeJson(receiptPath, receipt);
     outputHashes.auditReceiptHash = sha256(readText(receiptPath));
     const summary = {
@@ -1171,6 +1759,7 @@ function buildPrompt(args) {
   const blockText = extractConfirmationBlock(sourceText);
   const confirmation = validateConfirmation(parseConfirmation(blockText));
   validateRequirementRecord(args, sourceText, blockText, confirmation);
+  enforceNoOutDirGoalLength(args, confirmation);
   const sourceLabel = args.sourceLabel || displayPath(sourcePath);
   const sourceAuthority = `${sourceLabel}#implementationConfirmation`;
 

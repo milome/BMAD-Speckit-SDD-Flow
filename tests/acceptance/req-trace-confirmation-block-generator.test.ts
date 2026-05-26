@@ -626,13 +626,33 @@ describe('req trace generator confirmation block gate', () => {
       artifactRole: 'evidence_index_only_not_closeout_authority',
     });
 
+    expect(packet.hostExecutionHints).toMatchObject({
+      codex: expect.objectContaining({ strategy: 'goal_if_available_else_continue_nonstop' }),
+      cursorIde: expect.objectContaining({ strategy: 'agent_panel_autonomous_prompt' }),
+      cursorCli: expect.objectContaining({ strategy: 'headless_command_with_external_supervisor_loop' }),
+    });
+
+    expect(prompt).toContain('$executing-plans $verification-before-completion');
     expect(prompt).toContain('Primary authority: model_packet.json');
-    expect(prompt).toContain('/goal Execute model_packet.json until finalGateMatrix passes');
-    expect(prompt).toContain('semanticGapPolicy: semantic gaps -> reconfirm_required');
+    expect(prompt).toContain('continue nonstop');
+    expect(prompt).toContain('Trace slices:');
+    expect(prompt).toContain('Required commands:');
+    expect(prompt).toContain('PASS requires evidence for covered must, notDone, and evidence IDs');
+    expect(prompt).toContain('Semantic gap policy:');
+    expect(prompt).toContain('semantic gaps -> reconfirm_required');
     expect(prompt).toContain('audit_receipt.json is generator self-audit only');
-    expect(prompt).not.toContain('continue nonstop');
+    expect(prompt).not.toContain('/goal Execute model_packet.json until finalGateMatrix passes');
 
     expect(receipt.decision).toBe('pass');
+    expect(receipt.executionHost).toBe('codex');
+    expect(receipt.humanPromptProfile).toBe('full');
+    expect(receipt.humanPromptLanguage).toBe('zh-CN');
+    expect(receipt.continuationDirective).toMatchObject({
+      strategy: 'goal_if_available_else_continue_nonstop',
+      nativeGoalCommandUsed: false,
+      directive: 'continue nonstop',
+    });
+    expect(receipt.humanPromptRequiredFragmentsPassed).toBe(true);
     expect(receipt.outputHashes.modelPacketHash).toBe(summary.outputHashes.modelPacketHash);
     expect(receipt.outputHashes.humanPromptHash).toBe(summary.outputHashes.humanPromptHash);
     expect(receipt.inputValidation).toMatchObject({
@@ -644,7 +664,36 @@ describe('req trace generator confirmation block gate', () => {
     });
   });
 
-  it('projects branch-specific continuation text without /goal for non-Codex hosts', () => {
+  it('uses /goal for Codex only when explicitly available and allowed', () => {
+    const source = writeSource(validCompilerSource());
+    const record = writeRequirementRecord(source);
+    const outDir = path.join(tempDir, 'codex-goal-trace-execution');
+    const result = runNodePrompt([
+      '--source-document',
+      source,
+      '--requirement-record',
+      record,
+      '--out-dir',
+      outDir,
+      '--execution-host',
+      'codex',
+      '--goal-command-available',
+      'true',
+      '--json',
+    ]);
+
+    expect(result.status).toBe(0);
+    const prompt = fs.readFileSync(path.join(outDir, 'human_prompt.txt'), 'utf8');
+    const receipt = readJson<Record<string, any>>(path.join(outDir, 'audit_receipt.json'));
+    expect(prompt).toContain('/goal Execute model_packet.json until finalGateMatrix passes');
+    expect(prompt).not.toContain('\ncontinue nonstop\n');
+    expect(receipt.continuationDirective).toMatchObject({
+      strategy: 'goal_if_available_else_continue_nonstop',
+      nativeGoalCommandUsed: true,
+    });
+  });
+
+  it('projects generic continuation text without /goal for generic hosts', () => {
     const source = writeSource(validCompilerSource());
     const record = writeRequirementRecord(source);
     const outDir = path.join(tempDir, 'generic-trace-execution');
@@ -661,8 +710,86 @@ describe('req trace generator confirmation block gate', () => {
 
     expect(result.status).toBe(0);
     const prompt = fs.readFileSync(path.join(outDir, 'human_prompt.txt'), 'utf8');
-    expect(prompt).toContain('branch-specific continuation instructions');
+    const receipt = readJson<Record<string, any>>(path.join(outDir, 'audit_receipt.json'));
+    expect(prompt).toContain('Continue until all final gates pass or semantic gap requires reconfirm_required');
     expect(prompt).not.toContain('/goal');
+    expect(receipt.executionHost).toBe('generic');
+    expect(receipt.continuationDirective.strategy).toBe('prompt_contract_only');
+  });
+
+  it('defaults cursor alias to Cursor IDE prompt and reserves cursor-agent for cursor-cli', () => {
+    const source = writeSource(validCompilerSource());
+    const record = writeRequirementRecord(source);
+    const ideOutDir = path.join(tempDir, 'cursor-ide-trace-execution');
+    const cliOutDir = path.join(tempDir, 'cursor-cli-trace-execution');
+    const ideResult = runNodePrompt([
+      '--source-document',
+      source,
+      '--requirement-record',
+      record,
+      '--out-dir',
+      ideOutDir,
+      '--execution-host',
+      'cursor',
+      '--json',
+    ]);
+    const cliResult = runNodePrompt([
+      '--source-document',
+      source,
+      '--requirement-record',
+      record,
+      '--out-dir',
+      cliOutDir,
+      '--execution-host',
+      'cursor-cli',
+      '--json',
+    ]);
+
+    expect(ideResult.status).toBe(0);
+    expect(cliResult.status).toBe(0);
+    const idePrompt = fs.readFileSync(path.join(ideOutDir, 'human_prompt.txt'), 'utf8');
+    const cliPrompt = fs.readFileSync(path.join(cliOutDir, 'human_prompt.txt'), 'utf8');
+    const ideReceipt = readJson<Record<string, any>>(path.join(ideOutDir, 'audit_receipt.json'));
+    const cliReceipt = readJson<Record<string, any>>(path.join(cliOutDir, 'audit_receipt.json'));
+    expect(idePrompt).toContain('Cursor IDE Agent mode');
+    expect(idePrompt).not.toContain('cursor-agent -p');
+    expect(ideReceipt.executionHost).toBe('cursor-ide');
+    expect(ideReceipt.executionHostAliasUsed).toBe('cursor');
+    expect(cliPrompt).toContain('cursor-agent -p --force --output-format stream-json');
+    expect(cliPrompt).toContain('External supervisor loop:');
+    expect(cliReceipt.executionHost).toBe('cursor-cli');
+  });
+
+  it('resolves prompt language and supports compact human prompt profile', () => {
+    const source = writeSource(validCompilerSource());
+    const record = writeRequirementRecord(source);
+    const outDir = path.join(tempDir, 'english-compact-trace-execution');
+    const result = runNodePrompt([
+      '--source-document',
+      source,
+      '--requirement-record',
+      record,
+      '--out-dir',
+      outDir,
+      '--execution-host',
+      'claude',
+      '--prompt-language',
+      'en-US',
+      '--human-prompt-profile',
+      'compact',
+      '--json',
+    ]);
+
+    expect(result.status).toBe(0);
+    const prompt = fs.readFileSync(path.join(outDir, 'human_prompt.txt'), 'utf8');
+    const receipt = readJson<Record<string, any>>(path.join(outDir, 'audit_receipt.json'));
+    expect(prompt).toContain('Only ');
+    expect(prompt).toContain('Full details are in model_packet.json');
+    expect(receipt.executionHost).toBe('claude-code');
+    expect(receipt.executionHostAliasUsed).toBe('claude');
+    expect(receipt.humanPromptProfile).toBe('compact');
+    expect(receipt.humanPromptLanguage).toBe('en-US');
+    expect(receipt.humanPromptRequiredFragmentsPassed).toBe(true);
   });
 
   it('writes a blocked audit receipt when drilldown or atomic lineage is missing', () => {
