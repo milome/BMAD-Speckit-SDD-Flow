@@ -205,6 +205,37 @@ When `--goal-command-available true` is used for `codex` or `claude-code`, apply
 
 `audit_receipt.json` must record `goalCommand.mode`, `goalCommand.chars`, `goalCommand.maxChars`, `goalCommand.safeMaxChars`, and, when a goal document is written, `goalCommand.documentPath` plus `goalCommand.documentHash`. It must also record `goalDocumentRequiredFragmentsPassed` and missing fragments.
 
+## Shared Goal Contract Rendering
+
+Native `/goal` document generation is governed by the shared goal-contract assets:
+
+- `_bmad/shared/goal-contract/goal-execution-contract-template.md` is the human/model-readable canonical Markdown template.
+- `_bmad/shared/goal-contract/goal-contract-profile.json` is the machine-readable structure, slot, invariant, and compatibility index.
+- `_bmad/shared/goal-contract/scripts/render-goal-contract.js` is the deterministic slot renderer.
+
+Req-trace must use the shared renderer to create `goal_execution.md`. It must not generate the full goal document from JSON alone, and it must not use a req-trace-local hardcoded Markdown template as a fallback when shared rendering fails.
+
+Rendering rules:
+
+- `model_packet.json` remains the machine-readable execution authority.
+- `goal_execution.md` is a human-facing `/goal` execution contract projection, not execution authority.
+- The renderer may replace only declared `goal-slot:*` regions in the shared Markdown template.
+- Static template prose outside slots must remain template-owned.
+- Profile compatibility must pass before native `/goal` artifacts are emitted.
+- Missing template, missing profile, unsupported profile major version, profile hash mismatch, missing required slot handlers, missing required sections, or missing invariant fragments must block generation.
+
+When native `/goal` mode succeeds, `audit_receipt.json.goalContractTemplate` must record:
+
+- `templatePath`
+- `templateHash`
+- `profileVersion`
+- `profileHash`
+- `rendererVersion`
+- `compatibilityDecision`
+- required slot, section, and invariant audit results
+
+If any required goal-contract audit field fails, emit a `BLOCK:` response instead of `goal_execution.md`, `human_prompt.txt`, or a PASS receipt.
+
 ## Required Prompt Shape
 
 Use this shape. Adapt only the source path, trace row order, task references, evidence IDs, gates, and explicit user rules.

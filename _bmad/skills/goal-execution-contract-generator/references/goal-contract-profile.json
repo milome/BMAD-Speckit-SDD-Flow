@@ -1,0 +1,86 @@
+{
+  "schemaVersion": "goal-contract-profile.schema/v1",
+  "profileId": "bmad-speckit-goal-execution-contract",
+  "profileVersion": "1.1.0",
+  "contractVersion": "goal-execution-contract/v1",
+  "templatePath": "_bmad/shared/goal-contract/goal-execution-contract-template.md",
+  "templateHash": "sha256:0d02ab3c6481008f8135b8c3a3f1aed733a943b55d9061706493f2d06d92524d",
+  "profileHash": "sha256:a1971090837806dd1c36fa5dc4c32da9cc7d92cc77289e82ad6ce135e27f62f5",
+  "requiredSections": [
+    "/goal Entry",
+    "Contract Freeze Rules",
+    "Contract Completeness Gate",
+    "Non-Negotiable Execution Rules",
+    "Authority Model",
+    "Root Cause To Fix",
+    "Domain-Specific Contract Addenda",
+    "Implementation Tasks",
+    "Strict Acceptance Checklist",
+    "Acceptance Traceability Matrix",
+    "Required Test Commands",
+    "Manual Verification Scenarios",
+    "Completion Evidence Packet",
+    "Stop Conditions"
+  ],
+  "requiredFrontMatterFields": [
+    "goalContractVersion",
+    "goalContractProfileVersion",
+    "goalContractProfileHash",
+    "contractMode",
+    "rewritePolicy",
+    "executionMode",
+    "sourcePlanPath",
+    "sourcePlanHash",
+    "runtimeRecordId",
+    "entryFlow",
+    "taskRange",
+    "acceptanceRange",
+    "completionGate",
+    "repairPolicy",
+    "stopPolicy",
+    "generatedBy",
+    "generatedAt"
+  ],
+  "requiredSlots": [
+    "frontMatter",
+    "goalEntry",
+    "authorityModel",
+    "rootCause",
+    "domainAddenda",
+    "implementationTasks",
+    "strictAcceptanceChecklist",
+    "acceptanceTraceabilityMatrix",
+    "requiredTestCommands",
+    "manualVerificationScenarios",
+    "completionEvidencePacket",
+    "stopConditions"
+  ],
+  "optionalSlots": [],
+  "invariantFragments": [
+    "model_packet.json is the machine-readable execution authority",
+    "goal_execution.md is not execution authority",
+    "/goal completion is not closeout proof"
+  ],
+  "compatibility": {
+    "semverPolicy": {
+      "patch": "wording or example changes without required structure changes",
+      "minor": "optional slot or optional section additions",
+      "major": "required slot, required section, front matter, authority, stop policy, or completion semantics changes"
+    },
+    "rendererId": "req-trace-goal-contract-renderer",
+    "minimumRendererVersion": "1.0.0",
+    "supportedMajorVersions": [
+      1
+    ]
+  },
+  "governanceRules": {
+    "profileIsGenerationSource": false,
+    "templateIsHumanCanonical": true,
+    "rendererMayReplaceOnlySlots": true,
+    "eachAddendumMustMapTo": [
+      "task",
+      "acceptance",
+      "matrixRow"
+    ]
+  }
+}

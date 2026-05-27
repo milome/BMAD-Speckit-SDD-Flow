@@ -1,6 +1,6 @@
 ---
 name: goal-execution-contract-generator
-description: Generate strict frozen /goal execution contract documents from conversation requirements or existing requirement documents using the skill-local references/goal-execution-contract-template.md reference. Use when the user asks for a /goal-ready execution contract, strict goal plan, autonomous implementation contract, or docs/plans goal execution document; includes docs-review dependency adaptation, auto-install when missing, and audit/fix iteration until 3 consecutive no-gap rounds.
+description: Generate strict frozen /goal execution contract documents from conversation requirements or existing requirement documents using the shared goal-contract template projection. Use when the user asks for a /goal-ready execution contract, strict goal plan, autonomous implementation contract, or docs/plans goal execution document; includes docs-review dependency adaptation, auto-install when missing, and audit/fix iteration until 3 consecutive no-gap rounds.
 ---
 
 # Goal Execution Contract Generator
@@ -15,10 +15,12 @@ Create a frozen `/goal` execution contract. This skill only generates and audits
 2. Resolve the output path:
    - Default: `docs/plans/YYYY-MM-DD-<slug>-goal-execution-plan.md`.
    - Use the user-provided path if present.
-3. Load the contract template:
-   - Use the skill-local reference `references/goal-execution-contract-template.md`.
-   - Resolve it relative to this skill directory.
-   - If missing, stop with `goal_contract_template_missing`.
+3. Load the contract template and profile:
+   - In this repository, the canonical assets live under `_bmad/shared/goal-contract/`.
+   - In an installed skill, use the skill-local projections under `references/`.
+   - Resolve `references/goal-execution-contract-template.md` and `references/goal-contract-profile.json` relative to this skill directory.
+   - If the template is missing, stop with `goal_contract_template_missing`.
+   - If the profile is missing, continue only for manual contract authoring, and report `goal_contract_profile_missing` as a packaging defect.
 4. Run docs-review dependency adaptation before writing the contract:
    - Run `node <skill-dir>/scripts/check-docs-review-dependency.js --auto-install`, replacing `<skill-dir>` with this skill's installed directory.
    - If it reports `available` or `installed`, continue.
@@ -30,6 +32,11 @@ Create a frozen `/goal` execution contract. This skill only generates and audits
 
 ## Contract Generation Rules
 
+- Treat Markdown as the human/model-readable canonical prose and structure.
+- Treat JSON profile as a machine-readable index and compatibility contract only.
+- Do not generate the contract from JSON profile alone.
+- Do not rewrite the template's static prose unless the user explicitly asks to update the template itself.
+- Fill or replace only the dynamic content needed for this concrete goal.
 - Preserve the template contract mode:
   - `goalContractVersion: goal-execution-contract/v1`
   - `contractMode: frozen`
@@ -46,6 +53,23 @@ Create a frozen `/goal` execution contract. This skill only generates and audits
 - Do not copy classifier-specific, reconfirmation-specific, renderer-specific, or project-specific addendum content into unrelated contracts.
 - Prefer scoped acceptance groups such as `Domain Behavior Acceptance`, `Integration Surface Acceptance`, or `Operational Surface Acceptance` when they make the contract clearer; do not force these group names when the goal is simple.
 - If the source is underspecified, generate a contract that stops with the appropriate amendment condition instead of inventing semantic requirements.
+
+## Shared Asset Governance
+
+Inside this repository:
+
+- `_bmad/shared/goal-contract/goal-execution-contract-template.md` is the canonical Markdown template.
+- `_bmad/shared/goal-contract/goal-contract-profile.json` is the canonical machine-readable profile.
+- `_bmad/shared/goal-contract/scripts/render-goal-contract.js` is the deterministic renderer used by req-trace.
+- `_bmad/shared/goal-contract/scripts/verify-goal-contract-profile.js` validates template/profile/lock/reference consistency.
+
+Inside installed skill surfaces:
+
+- `references/goal-execution-contract-template.md` is a projection of the shared canonical template.
+- `references/goal-contract-profile.json` is a projection of the shared canonical profile.
+- The skill may use these local projections when `_bmad/shared/goal-contract` is unavailable.
+
+If the shared canonical template changes, update the skill references from the shared assets and rerun the shared verifier before packaging or installing surfaces.
 
 ## Contract Completeness Gate
 

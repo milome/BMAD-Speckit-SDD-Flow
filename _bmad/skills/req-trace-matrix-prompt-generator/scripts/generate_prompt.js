@@ -27,6 +27,9 @@ const COMMAND_PREFIXES = [
 const GOAL_COMMAND_MAX_CHARS = 4000;
 const GOAL_COMMAND_SAFE_MAX_CHARS = 3800;
 const GOAL_DOCUMENT_FILENAME = 'goal_execution.md';
+const GOAL_CONTRACT_TEMPLATE_PATH = '_bmad/shared/goal-contract/goal-execution-contract-template.md';
+const GOAL_CONTRACT_PROFILE_PATH = '_bmad/shared/goal-contract/goal-contract-profile.json';
+const GOAL_CONTRACT_RENDERER_PATH = '_bmad/shared/goal-contract/scripts/render-goal-contract.js';
 
 class BlockedInput extends Error {
   constructor(code, message) {
@@ -585,16 +588,18 @@ function goalDocumentAuditFragments(sourceDocument) {
   return [
     SKILL_LINE,
     `Only ${sourceDocument}#implementationConfirmation is authoritative`,
+    'goalContractVersion: goal-execution-contract/v1',
+    'goalContractProfileVersion:',
+    'goalContractProfileHash:',
     'model_packet.json is the machine-readable execution authority',
     'goal_execution.md is not execution authority',
-    'Trace order:',
-    'Trace slices summary:',
-    'Required commands:',
-    'AI-TDD protocol:',
-    'Runtime write policy:',
-    'reconfirm_required',
     '/goal completion is not closeout proof',
-    'Strict final acceptance checklist:',
+    'Trace order:',
+    'Acceptance Traceability Matrix',
+    'Required Test Commands',
+    'Runtime write targets:',
+    'reconfirm_required',
+    'Strict Acceptance Checklist',
     'Completion Evidence Packet',
   ];
 }
@@ -603,6 +608,60 @@ function auditGoalDocument(documentText, sourceDocument) {
   const fragments = goalDocumentAuditFragments(sourceDocument);
   const missing = fragments.filter((fragment) => !documentText.includes(fragment));
   return { fragments, missing, passed: missing.length === 0 };
+}
+
+function repoRoot() {
+  return path.resolve(__dirname, '..', '..', '..', '..');
+}
+
+function repoPath(relativePath) {
+  return path.join(repoRoot(), ...relativePath.split('/'));
+}
+
+function readGoalContractTemplate() {
+  const templatePath = repoPath(GOAL_CONTRACT_TEMPLATE_PATH);
+  if (!fs.existsSync(templatePath)) {
+    throw new BlockedInput(
+      'BLOCK: GOAL_CONTRACT_PROFILE_MISSING',
+      `${GOAL_CONTRACT_TEMPLATE_PATH} is required for native /goal document rendering.`
+    );
+  }
+  return readText(templatePath);
+}
+
+function readGoalContractProfile() {
+  const profilePath = repoPath(GOAL_CONTRACT_PROFILE_PATH);
+  if (!fs.existsSync(profilePath)) {
+    throw new BlockedInput(
+      'BLOCK: GOAL_CONTRACT_PROFILE_MISSING',
+      `${GOAL_CONTRACT_PROFILE_PATH} is required for native /goal document rendering.`
+    );
+  }
+  return readJson(profilePath);
+}
+
+function loadGoalContractRenderer() {
+  const localRendererPath = path.resolve(__dirname, '..', '..', '..', 'shared', 'goal-contract', 'scripts', 'render-goal-contract.js');
+  const repoRendererPath = repoPath(GOAL_CONTRACT_RENDERER_PATH);
+  const rendererPath = fs.existsSync(localRendererPath) ? localRendererPath : repoRendererPath;
+  if (!fs.existsSync(rendererPath)) {
+    throw new BlockedInput(
+      'BLOCK: GOAL_CONTRACT_PROFILE_MISSING',
+      `${GOAL_CONTRACT_RENDERER_PATH} is required for native /goal document rendering.`
+    );
+  }
+  return require(rendererPath);
+}
+
+function mapGoalContractError(error) {
+  const code = String(error?.code ?? '');
+  if (code === 'GOAL_CONTRACT_PROFILE_MISSING') return code;
+  if (code === 'GOAL_CONTRACT_PROFILE_HASH_MISMATCH') return code;
+  if (code === 'GOAL_CONTRACT_PROFILE_UNSUPPORTED') return code;
+  if (code === 'GOAL_CONTRACT_INCOMPLETE') return code;
+  if (/GOAL_CONTRACT_PROFILE_HASH_MISMATCH/u.test(error?.message ?? '')) return 'GOAL_CONTRACT_PROFILE_HASH_MISMATCH';
+  if (/GOAL_CONTRACT_PROFILE_UNSUPPORTED/u.test(error?.message ?? '')) return 'GOAL_CONTRACT_PROFILE_UNSUPPORTED';
+  return 'GOAL_CONTRACT_INCOMPLETE';
 }
 
 function objectById(items) {
@@ -854,6 +913,9 @@ function compilerInputContext(args) {
   const blockText = extractConfirmationBlock(sourceText);
   const parsed = parseConfirmation(blockText);
   const confirmationCandidate = parsed.implementationConfirmation;
+  if (!args.requirementRecord) {
+    validateConfirmation(parsed, null);
+  }
   const recordValidation = validateRequirementRecord(args, sourceText, blockText, confirmationCandidate);
   enforceNoOutDirGoalLength(args, confirmationCandidate);
   const driftClassification = classifyConfirmationDrift({
@@ -1331,13 +1393,16 @@ function enforceNoOutDirGoalLength(args, confirmation) {
 function ensureGoalDocumentPrepared(promptMeta, packet, artifactPaths, outputs, outputHashes) {
   if (promptMeta.hostDirective.goalCommand?.mode !== 'native_goal_document_ref') {
     promptMeta.goalDocumentAudit = { fragments: [], missing: [], passed: true };
+    promptMeta.goalContractTemplate = null;
     return;
   }
-  const goalDocument = renderGoalExecutionDocumentFromPacket(packet, artifactPaths);
+  const goalDocumentResult = renderGoalExecutionDocumentFromPacket(packet, artifactPaths);
+  const goalDocument = goalDocumentResult.document;
   writeText(artifactPaths.goalDocumentDiskPath, goalDocument);
   const goalDocumentHash = sha256(readText(artifactPaths.goalDocumentDiskPath));
   promptMeta.hostDirective.goalCommand.documentHash = goalDocumentHash;
   promptMeta.goalDocumentAudit = auditGoalDocument(goalDocument, packet.sourceDocument);
+  promptMeta.goalContractTemplate = goalDocumentResult.audit;
   outputs.goalDocument = artifactPaths.goalDocument;
   outputHashes.goalDocumentHash = goalDocumentHash;
 }
@@ -1520,19 +1585,43 @@ Full details are in model_packet.json.
 `;
 }
 
-function renderGoalExecutionDocumentFromPacket(packet, artifactPaths) {
+function renderGoalFrontMatter(packet, profile, artifactPaths) {
+  const sourcePlanHash = packet.sourceDocumentHash || 'sha256:0000000000000000000000000000000000000000000000000000000000000000';
+  return `\`\`\`yaml
+goalContractVersion: ${profile.contractVersion}
+goalContractProfileVersion: ${profile.profileVersion}
+goalContractProfileHash: ${profile.profileHash}
+contractMode: frozen
+rewritePolicy: forbidden
+executionMode: execute_only
+sourcePlanPath: ${artifactPaths.modelPacket}
+sourcePlanHash: ${sourcePlanHash}
+runtimeRecordId: ${packet.recordId}
+entryFlow: req_trace_compiled_execution
+taskRange: G00-G${String(packet.traceSlices.length + 1).padStart(2, '0')}
+acceptanceRange: AC-01-AC-${String(Math.max(packet.traceSlices.length, 1)).padStart(2, '0')}
+completionGate: required
+repairPolicy: fix_in_place
+stopPolicy: stop_only_on_success_or_true_blocker
+generatedBy: req-trace-matrix-prompt-generator
+generatedAt: ${new Date().toISOString()}
+\`\`\``;
+}
+
+function renderGoalEntry(packet, artifactPaths) {
+  return `\`\`\`text
+/goal Execute ${packet.recordId} by following ${artifactPaths.goalDocument}; use ${artifactPaths.modelPacket} as authority; stop only on final pass or reconfirm_required.
+\`\`\``;
+}
+
+function renderGoalAuthorityModel(packet, artifactPaths) {
   const sourceAuthority = `${packet.sourceDocument}#implementationConfirmation`;
-  return `# Goal Execution Plan for ${packet.recordId}
-
-${SKILL_LINE}
-
-Goal runner directive:
-Execute ${packet.recordId} by following this document and ${artifactPaths.modelPacket}. Stop only when all final gates pass with governed evidence, or when a semantic gap requires reconfirm_required.
+  return `${SKILL_LINE}
 
 Source of authority:
 Only ${sourceAuthority} is authoritative.
 model_packet.json is the machine-readable execution authority.
-goal_execution.md is not execution authority; it is a /goal-safe execution entry document.
+goal_execution.md is not execution authority.
 human_prompt.txt is a host-specific projection only.
 audit_receipt.json is generator self-audit only and not delivery proof.
 
@@ -1540,18 +1629,36 @@ Authoritative artifacts:
 - model_packet.json: ${artifactPaths.modelPacket}
 - human_prompt.txt: ${artifactPaths.humanPrompt}
 - audit_receipt.json: ${artifactPaths.auditReceipt}
+- goal_execution.md: ${artifactPaths.goalDocument}
 
-Trace order:
-${packet.traceOrder.join(' -> ')}
+Runtime closure authority is the requirement-record/control store.
+Confirmed source traceRows.status must not be rewritten as runtime PASS or MISSING_EVIDENCE.`;
+}
 
-Trace slices summary:
-${renderTraceSliceRows(packet)}
+function renderGoalRootCause(packet) {
+  return `Current behavior to avoid:
+- Prompt-only or goal-document-only execution can drift from the synchronized model packet.
+- Generated entry text can be mistaken for closeout proof.
 
-Atomic implementation task lineage:
-${renderAtomicRows(packet)}
+Required behavior:
+- Execute only trace rows and IDs present in model_packet.json.
+- Keep semantic gaps as reconfirm_required.
+- Repair non-semantic execution gaps and rerun the same trace slice.
 
-Required commands:
-${renderPacketRequiredCommands(packet)}
+Failure mode to prevent:
+- Do not treat goal_execution.md, human_prompt.txt, audit_receipt.json, stdout, exitCode=0, or /goal completion as delivery or closeout proof.`;
+}
+
+function renderGoalDomainAddenda(packet) {
+  return `### Req-Trace Compiled Execution Contract
+
+- Record ID: ${packet.recordId}
+- Trace order: ${packet.traceOrder.join(' -> ')}
+- Required manifest sections: ${packet.contractExecutionManifest.requiredSections.join(', ') || '(none)'}
+- Runtime write targets: ${packet.runtimeWritePolicy.allowedRuntimeWriteTargets.join(', ')}
+- Missing evidence behavior: ${packet.runtimeWritePolicy.missingEvidenceBehavior}
+- Semantic gap action: reconfirm_required
+- Non-semantic gap action: repair_and_rerun_same_trace_slice
 
 AI-TDD protocol:
 Use RED -> GREEN -> REFACTOR -> CLOSEOUT per trace slice. RED proof must precede GREEN when expectedPreImplementationState is expected_red. Unexpected GREEN must be blocked and investigated before closeout.
@@ -1560,15 +1667,6 @@ Runtime write policy:
 Allowed runtime write targets: ${packet.runtimeWritePolicy.allowedRuntimeWriteTargets.join(', ')}.
 Source traceRows writable: ${packet.runtimeWritePolicy.sourceTraceRowsWritable}.
 Missing evidence behavior: ${packet.runtimeWritePolicy.missingEvidenceBehavior}.
-
-Semantic gap policy:
-semantic gaps -> reconfirm_required.
-non-semantic execution gaps -> repair_and_rerun_same_trace_slice.
-
-Proof boundary:
-/goal completion is not closeout proof.
-Not delivery proof: ${packet.proofBoundary.notDeliveryProof.join(', ')}.
-Closeout authorities: ${packet.proofBoundary.closeoutAuthorities.join(', ')}.
 
 Strict final acceptance checklist:
 1. Execute only trace rows and IDs present in model_packet.json.
@@ -1580,11 +1678,194 @@ Strict final acceptance checklist:
 7. Do not rewrite confirmed source traceRows.status as runtime PASS or MISSING_EVIDENCE.
 8. Final closeout requires deterministic current-attempt gate evidence.
 
-Completion Evidence Packet:
-artifactRole: ${packet.completionEvidencePacketSchema.artifactRole}
+### Proof Boundary
+
+- /goal completion is not closeout proof.
+- Not delivery proof: ${packet.proofBoundary.notDeliveryProof.join(', ')}.
+- Closeout authorities: ${packet.proofBoundary.closeoutAuthorities.join(', ')}.`;
+}
+
+function renderGoalImplementationTasks(packet) {
+  const traceTasks = packet.traceSlices
+    .map((row, index) => {
+      const taskId = `G${String(index + 1).padStart(2, '0')}`;
+      return `### ${taskId} Execute ${row.traceId}
+
+**Purpose:** Implement and close the confirmed trace slice without changing requirement semantics.
+
+**Files:**
+
+- Modify: only files required by model_packet.json trace and target bindings.
+- Evidence: requirement-record/control store or governed equivalent runtime fields.
+
+**Steps:**
+
+1. Read ${row.traceId} from model_packet.json.
+2. Implement only covered IDs: ${row.covers.join(', ') || '(none)'}.
+3. Produce evidence for evidenceRefs: ${row.evidenceRefs.join(', ') || '(none)'}.
+4. Run contract and delivery commands for this slice.
+5. Record runtime closure evidence without rewriting confirmed source traceRows.status.
+
+**Validation:**
+
+${renderCommandsForRefs(packet, [...row.commandRefs, ...row.deliveryCommandRefs])}
+
+**Acceptance:**
+
+- PASS requires evidence for covered must, notDone, and evidence IDs.
+- Semantic gaps stop as reconfirm_required.
+- Mapped acceptance: \`AC-${String(index + 1).padStart(2, '0')}\`.`;
+    })
+    .join('\n\n');
+  return `### G00 Baseline Packet Audit
+
+**Purpose:** Confirm the synchronized execution packet and proof boundary before implementation.
+
+**Files:**
+
+- Read: model_packet.json
+- Read: goal_execution.md
+- Read: human_prompt.txt
+- Read: audit_receipt.json
+- Modify: none
+
+**Steps:**
+
+1. Confirm model_packet.json is present.
+2. Confirm trace order is ${packet.traceOrder.join(' -> ')}.
+3. Confirm goal_execution.md is not execution authority.
+4. Confirm audit_receipt.json is generator self-audit only.
+
+**Validation:**
+
+\`\`\`powershell
+Get-Content ${packet.recordId ? 'model_packet.json' : 'model_packet.json'}
+\`\`\`
+
+**Acceptance:**
+
+- model_packet.json is the machine-readable execution authority.
+- /goal completion is not closeout proof.
+- Mapped acceptance: \`AC-01\`.
+
+${traceTasks}`;
+}
+
+function renderCommandsForRefs(packet, refs) {
+  const refSet = new Set(refs.filter(Boolean));
+  const commands = packet.requiredCommands.filter((command) => refSet.has(command.id));
+  if (commands.length === 0) return '```powershell\n# No command refs declared for this slice; use required final commands from model_packet.json.\n```';
+  return commands
+    .map((command) => `\`\`\`powershell\n${command.command}\n\`\`\``)
+    .join('\n\n');
+}
+
+function renderGoalAcceptanceChecklist(packet) {
+  return packet.traceSlices
+    .map((row, index) => {
+      const acId = `AC-${String(index + 1).padStart(2, '0')}`;
+      return `- [ ] \`${acId}\` ${row.traceId} has governed evidence for covers ${row.covers.join(', ') || '(none)'} and evidenceRefs ${row.evidenceRefs.join(', ') || '(none)'}.`;
+    })
+    .join('\n');
+}
+
+function renderGoalAcceptanceMatrix(packet) {
+  const rows = packet.traceSlices
+    .map((row, index) => {
+      const acId = `AC-${String(index + 1).padStart(2, '0')}`;
+      const commands = [...row.commandRefs, ...row.deliveryCommandRefs].join(', ') || '(none)';
+      return `| ${acId} | Close ${row.traceId} with trace, evidence, runtime write policy, and closeout authority respected. | G${String(index + 1).padStart(2, '0')} | \`${commands}\` |`;
+    })
+    .join('\n');
+  return `| AC ID | Requirement | Owning Task | Evidence Command |
+| --- | --- | --- | --- |
+${rows}`;
+}
+
+function renderGoalRequiredCommands(packet) {
+  return packet.requiredCommands
+    .map((command) => `\`\`\`powershell\n${command.command}\n\`\`\``)
+    .join('\n\n');
+}
+
+function renderGoalManualScenarios(packet) {
+  return `### Scenario A: Confirmed Packet Happy Path
+
+- Setup: Valid model_packet.json for ${packet.recordId}.
+- Expected: Execute every trace row and required command until final gates pass.
+- Forbidden: Treat goal_execution.md as machine-readable execution authority.
+
+### Scenario B: Semantic Gap
+
+- Setup: Implementation requires changing confirmed must/notDone/mustNot/evidence/traceRows semantics.
+- Expected: Stop with reconfirm_required.
+- Forbidden: Shrink or reinterpret confirmed source scope.
+
+### Scenario C: Non-Semantic Execution Gap
+
+- Setup: A test, build, audit, or delivery command fails without changing semantics.
+- Expected: Repair and rerun the same trace slice.
+- Forbidden: Stop solely because a declared validation command failed.`;
+}
+
+function renderGoalCompletionEvidencePacket(packet) {
+  return `artifactRole: ${packet.completionEvidencePacketSchema.artifactRole}
 requiredFields: ${packet.completionEvidencePacketSchema.requiredFields.join(', ')}
 forbiddenAuthorities: ${packet.completionEvidencePacketSchema.forbiddenAuthorities.join(', ') || '(none)'}
-`;
+
+Final evidence must include closed IDs, open IDs, command results, E2E evidence, audit evidence, residual risks, and scope changes.`;
+}
+
+function renderGoalStopConditions(packet) {
+  return `Stop and ask the user only if:
+
+- A required semantic decision cannot be derived from ${packet.sourceDocument}#implementationConfirmation.
+- The required write scope must expand outside model_packet.json.
+- A destructive Git or filesystem operation is required.
+- A shared contract/schema migration is unavoidable and has multiple valid incompatible designs.
+- A required validation command is unavailable and no equivalent command exists in model_packet.json.
+
+Do not stop merely because:
+
+- Existing implementation is partial.
+- Tests need fixtures.
+- Generated artifacts are stale.
+- A validation command fails inside declared scope.
+- Non-semantic execution gaps require repair and rerun.
+
+In those cases, repair inside the declared scope and rerun the same validation command.`;
+}
+
+function buildGoalSlotData(packet, artifactPaths, profile) {
+  return {
+    frontMatter: renderGoalFrontMatter(packet, profile, artifactPaths),
+    goalEntry: renderGoalEntry(packet, artifactPaths),
+    authorityModel: renderGoalAuthorityModel(packet, artifactPaths),
+    rootCause: renderGoalRootCause(packet),
+    domainAddenda: renderGoalDomainAddenda(packet),
+    implementationTasks: renderGoalImplementationTasks(packet),
+    strictAcceptanceChecklist: renderGoalAcceptanceChecklist(packet),
+    acceptanceTraceabilityMatrix: renderGoalAcceptanceMatrix(packet),
+    requiredTestCommands: renderGoalRequiredCommands(packet),
+    manualVerificationScenarios: renderGoalManualScenarios(packet),
+    completionEvidencePacket: renderGoalCompletionEvidencePacket(packet),
+    stopConditions: renderGoalStopConditions(packet),
+  };
+}
+
+function renderGoalExecutionDocumentFromPacket(packet, artifactPaths) {
+  const templateText = readGoalContractTemplate();
+  const profile = readGoalContractProfile();
+  try {
+    const { renderGoalContract } = loadGoalContractRenderer();
+    return renderGoalContract({
+      templateText,
+      profile,
+      slotData: buildGoalSlotData(packet, artifactPaths, profile),
+    });
+  } catch (error) {
+    throw new BlockedInput(`BLOCK: ${mapGoalContractError(error)}`, error.message);
+  }
 }
 
 function renderHumanPromptFromPacket(packet, args, context) {
@@ -1655,6 +1936,7 @@ function buildPassReceipt(args, context, packet, outputHashes, outputs, promptMe
     goalDocumentRequiredFragmentsPassed: promptMeta.goalDocumentAudit?.passed ?? null,
     goalDocumentRequiredFragments: promptMeta.goalDocumentAudit?.fragments ?? [],
     goalDocumentMissingRequiredFragments: promptMeta.goalDocumentAudit?.missing ?? [],
+    goalContractTemplate: promptMeta.goalContractTemplate,
     coverageLedger: {
       traceRows: packet.traceOrder,
       atomicTasks: packet.atomicImplementationTaskList.map((task) => task.id),
@@ -1793,6 +2075,9 @@ function buildPrompt(args) {
   const blockText = extractConfirmationBlock(sourceText);
   const parsed = parseConfirmation(blockText);
   const confirmationCandidate = parsed.implementationConfirmation;
+  if (!args.requirementRecord) {
+    validateConfirmation(parsed, null);
+  }
   const recordValidation = validateRequirementRecord(args, sourceText, blockText, confirmationCandidate);
   enforceNoOutDirGoalLength(args, confirmationCandidate);
   const driftClassification = classifyConfirmationDrift({
