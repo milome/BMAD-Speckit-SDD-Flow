@@ -1997,6 +1997,12 @@ describe('ai tdd contract gate', () => {
       ]);
       expect(code).toBe(1);
       const report = JSON.parse(readFileSync(reportPath, 'utf8'));
+      expect(report.contractExecutionManifest).toMatchObject({
+        schemaVersion: 'contract-execution-manifest/v1',
+        builderVersion: 'contract-execution-manifest-builder/v1',
+        manifestHash: expect.stringMatching(/^sha256:[a-f0-9]{64}$/u),
+        sourceProjectionHash: expect.stringMatching(/^sha256:[a-f0-9]{64}$/u),
+      });
       expect(report.contractExecutionManifest.acceptanceTests).toHaveLength(1);
       expect(report.contractExecutionManifest.e2eSuites).toHaveLength(1);
       expect(report.contractExecutionManifest.acceptanceSuites).toHaveLength(2);

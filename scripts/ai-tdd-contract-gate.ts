@@ -2,6 +2,7 @@
 import { spawnSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { createRequire } from 'node:module';
 import {
   deriveTargetArtifactChecklist,
   evaluateCanonicalEventRegistryGate,
@@ -16,6 +17,22 @@ import {
   type JsonObject,
 } from './target-artifact-realization-gate';
 import { evaluateStrictCloseoutProof } from './strict-closeout-proof-gate';
+
+const requireCommonJs = createRequire(__filename);
+const { buildDerivedContractExecutionManifest } = requireCommonJs(
+  '../_bmad/shared/contract-execution-manifest/build-contract-execution-manifest.js'
+) as {
+  buildDerivedContractExecutionManifest(input: {
+    confirmation: JsonObject;
+    manifest: JsonObject;
+    record?: JsonObject;
+    sourcePath?: string;
+    recordPath?: string;
+    attemptId?: string;
+    sourceDocumentHash?: string;
+    implementationConfirmationHash?: string;
+  }): JsonObject;
+};
 
 type AiTddMode = 'pre-implementation' | 'pre-rerun' | 'iteration' | 'closeout';
 type Decision = 'pass' | 'blocked';
@@ -1433,10 +1450,11 @@ function buildManifest(input: {
     traceRows: objects(confirmation.traceRows),
     evidenceRows: objects(confirmation.evidence),
   });
-  return {
+  const rawManifest = {
     sourcePath: normalizePath(path.resolve(input.sourcePath)),
     recordPath: normalizePath(path.resolve(input.recordPath)),
     currentAttemptId: input.attemptId,
+    sourceDocumentHash: text(input.record.sourceDocumentHash),
     implementationConfirmationHash: implementationConfirmationHash(input.confirmation),
     requirements: requirementRows(confirmation),
     evidence: objects(confirmation.evidence).map((row) => ({
@@ -1509,6 +1527,16 @@ function buildManifest(input: {
       ],
     },
   };
+  return buildDerivedContractExecutionManifest({
+    confirmation: input.confirmation,
+    manifest: rawManifest,
+    record: input.record,
+    sourcePath: normalizePath(path.resolve(input.sourcePath)),
+    recordPath: normalizePath(path.resolve(input.recordPath)),
+    attemptId: input.attemptId,
+    sourceDocumentHash: text(input.record.sourceDocumentHash),
+    implementationConfirmationHash: implementationConfirmationHash(input.confirmation),
+  });
 }
 
 function missingTestPlan(manifest: JsonObject): JsonObject {

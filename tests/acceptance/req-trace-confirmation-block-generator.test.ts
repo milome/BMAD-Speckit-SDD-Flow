@@ -592,11 +592,16 @@ describe('req trace generator confirmation block gate', () => {
     expect(packet.atomicTaskToTraceMap).toMatchObject({ 'TASK-001': ['TRACE-001'] });
     expect(packet.contractExecutionManifest).toMatchObject({
       schemaVersion: 'contract-execution-manifest/v1',
+      builderVersion: 'contract-execution-manifest-builder/v1',
+      manifestHash: expect.stringMatching(/^sha256:[a-f0-9]{64}$/u),
+      sourceProjectionHash: expect.stringMatching(/^sha256:[a-f0-9]{64}$/u),
+      commandTargetCollection: expect.any(Object),
       finalGateMatrix: expect.any(Object),
       executionLoopProtocol: expect.any(Object),
       semanticGapPolicy: expect.any(Object),
       hostExecutionHints: expect.any(Object),
     });
+    expect(packet.contractExecutionManifest).not.toHaveProperty('commandTargets');
     expect(packet.traceSlices[0]).toMatchObject({
       traceId: 'TRACE-001',
       requirementRefs: ['MUST-001'],
@@ -644,6 +649,12 @@ describe('req trace generator confirmation block gate', () => {
     expect(prompt).not.toContain('/goal Execute model_packet.json until finalGateMatrix passes');
 
     expect(receipt.decision).toBe('pass');
+    expect(receipt.contractExecutionManifest).toMatchObject({
+      schemaVersion: 'contract-execution-manifest/v1',
+      builderVersion: 'contract-execution-manifest-builder/v1',
+      manifestHash: packet.contractExecutionManifest.manifestHash,
+      sourceProjectionHash: packet.contractExecutionManifest.sourceProjectionHash,
+    });
     expect(receipt.executionHost).toBe('codex');
     expect(receipt.humanPromptProfile).toBe('full');
     expect(receipt.humanPromptLanguage).toBe('zh-CN');

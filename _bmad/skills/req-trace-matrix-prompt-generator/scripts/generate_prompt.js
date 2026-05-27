@@ -30,6 +30,27 @@ const GOAL_DOCUMENT_FILENAME = 'goal_execution.md';
 const GOAL_CONTRACT_TEMPLATE_PATH = '_bmad/shared/goal-contract/goal-execution-contract-template.md';
 const GOAL_CONTRACT_PROFILE_PATH = '_bmad/shared/goal-contract/goal-contract-profile.json';
 const GOAL_CONTRACT_RENDERER_PATH = '_bmad/shared/goal-contract/scripts/render-goal-contract.js';
+const CONTRACT_MANIFEST_BUILDER_RELATIVE_PATH = path.join(
+  'contract-execution-manifest',
+  'build-contract-execution-manifest.js'
+);
+
+function requireContractExecutionManifestBuilder() {
+  const candidates = [
+    path.resolve(process.cwd(), '_bmad', 'shared', CONTRACT_MANIFEST_BUILDER_RELATIVE_PATH),
+    path.resolve(__dirname, '..', 'references', CONTRACT_MANIFEST_BUILDER_RELATIVE_PATH),
+    path.resolve(__dirname, '..', '..', '..', 'shared', CONTRACT_MANIFEST_BUILDER_RELATIVE_PATH),
+  ];
+  const found = candidates.find((candidate) => fs.existsSync(candidate));
+  if (!found) {
+    throw new Error(
+      `ContractExecutionManifest shared builder not found. Checked: ${candidates.join(', ')}`
+    );
+  }
+  return require(found);
+}
+
+const { buildDerivedContractExecutionManifest } = requireContractExecutionManifestBuilder();
 
 class BlockedInput extends Error {
   constructor(code, message) {
@@ -1083,6 +1104,23 @@ function buildModelPacket(context, args) {
   const manifest = confirmation.aiTddContractExecutionManifestProjection ?? {};
   const recordId = context.record.recordId ?? confirmation.recordId ?? 'unknown';
   const hostExecutionHints = normalizeHostExecutionHints(manifest.hostExecutionHints, recordId);
+  const contractExecutionManifest = buildDerivedContractExecutionManifest({
+    confirmation,
+    manifest: {
+      ...manifest,
+      currentTargetMap: confirmation.currentTargetMap,
+      canonicalSurfaceReconciliation: manifest.canonicalSurfaceReconciliation ?? {
+        source: 'implementationConfirmation.currentTargetMap.canonicalArtifacts',
+        canonicalArtifacts: objects(confirmation.currentTargetMap?.canonicalArtifacts),
+      },
+      hostExecutionHints,
+    },
+    record: context.record,
+    sourcePath: normalizePathSafe(path.resolve(context.sourcePath)),
+    recordPath: normalizePathSafe(path.resolve(args.requirementRecord)),
+    sourceDocumentHash: context.sourceDocumentHash,
+    implementationConfirmationHash: context.implementationConfirmationHash,
+  });
   return {
     schemaVersion: 'req-trace-ai-tdd-model-packet/v1',
     artifactRole: 'execution_authority',
@@ -1134,29 +1172,7 @@ function buildModelPacket(context, args) {
       missingEvidenceBehavior: 'remain_open_or_record_MISSING_EVIDENCE',
     },
     preConfirmationDrilldown: buildPreConfirmationDrilldown(context.sourcePath, confirmation),
-    contractExecutionManifest: {
-      schemaVersion: manifest.schemaVersion ?? 'contract-execution-manifest/v1',
-      requiredSections: strings(manifest.requiredSections),
-      preConfirmationDrilldownInputs: manifest.preConfirmationDrilldownInputs,
-      atomicImplementationTaskLineage: manifest.atomicImplementationTaskLineage,
-      errorCaseCoverage: manifest.errorCaseCoverage,
-      commandTargets: manifest.commandTargets,
-      traceClosureAssertions: manifest.traceClosureAssertions,
-      currentTargetMap: confirmation.currentTargetMap,
-      currentTargetMapRefs: strings(manifest.currentTargetMapRefs),
-      canonicalSurfaceRefs: strings(manifest.canonicalSurfaceRefs),
-      canonicalSurfaceReconciliation: manifest.canonicalSurfaceReconciliation ?? {
-        source: 'implementationConfirmation.currentTargetMap.canonicalArtifacts',
-        canonicalArtifacts: objects(confirmation.currentTargetMap?.canonicalArtifacts),
-      },
-      legacyDenial: manifest.legacyDenial,
-      finalGateMatrix: manifest.finalGateMatrix,
-      executionLoopProtocol: manifest.executionLoopProtocol,
-      semanticGapPolicy: manifest.semanticGapPolicy,
-      hostExecutionHints,
-      closeoutProof: manifest.closeoutProof,
-      evidenceTrustStates: manifest.evidenceTrustStates,
-    },
+    contractExecutionManifest,
     requiredCommands: objects(confirmation.requiredCommands).map((command) => ({
       id: commandId(command),
       command: commandText(command),
@@ -1943,6 +1959,13 @@ function buildPassReceipt(args, context, packet, outputHashes, outputs, promptMe
       mustIds: packet.requirements.must.map((item) => item.id),
       evidenceIds: packet.requirements.evidence.map((item) => item.id),
       requiredManifestSections: packet.contractExecutionManifest.requiredSections,
+    },
+    contractExecutionManifest: {
+      schemaVersion: packet.contractExecutionManifest.schemaVersion,
+      builderVersion: packet.contractExecutionManifest.builderVersion,
+      manifestHash: packet.contractExecutionManifest.manifestHash,
+      sourceProjectionHash: packet.contractExecutionManifest.sourceProjectionHash,
+      aliasAudit: packet.contractExecutionManifest.aliasAudit,
     },
     outputs,
     outputHashes,

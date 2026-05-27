@@ -236,6 +236,30 @@ When native `/goal` mode succeeds, `audit_receipt.json.goalContractTemplate` mus
 
 If any required goal-contract audit field fails, emit a `BLOCK:` response instead of `goal_execution.md`, `human_prompt.txt`, or a PASS receipt.
 
+## Shared Contract Execution Manifest Rendering
+
+Req-trace must build `model_packet.json.contractExecutionManifest` through the shared `ContractExecutionManifest` builder.
+
+Inside this repository:
+
+- Canonical shared assets live under `_bmad/shared/contract-execution-manifest/`.
+- `schema/contract-execution-manifest.schema.json` defines the canonical JSON shape.
+- `build-contract-execution-manifest.js` normalizes source projection data and emits `schemaVersion`, `builderVersion`, `manifestHash`, `sourceProjectionHash`, and `implementationConfirmationHash`.
+- `audit-contract-execution-manifest.js` compares source projection, req-trace packet, and AI-TDD gate report through canonical hashes.
+
+Inside installed skill surfaces:
+
+- Use `references/contract-execution-manifest/` only when the consumer project does not expose `_bmad/shared/contract-execution-manifest/`.
+- The current project `_bmad/shared/contract-execution-manifest/` takes precedence over skill-local references.
+
+Rendering rules:
+
+- YAML `implementationConfirmation.aiTddContractExecutionManifestProjection` is an authoring projection only.
+- Canonical JSON `ContractExecutionManifest` is the machine-readable manifest authority shared by req-trace and AI-TDD gate.
+- `human_prompt.txt` and `goal_execution.md` must render manifest semantics from `model_packet.json`, not by directly reading source YAML or local ad hoc projection code.
+- Legacy aliases such as `commandTargets` must normalize into canonical fields such as `commandTargetCollection`.
+- Missing schema version, missing manifest hash, missing source projection hash, alias conflicts, identity mismatches, or unresolved `closeoutProof.requiredCommands[]` must block generation or audit.
+
 ## Required Prompt Shape
 
 Use this shape. Adapt only the source path, trace row order, task references, evidence IDs, gates, and explicit user rules.
