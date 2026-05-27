@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { createRequire } from 'node:module';
 import * as crypto from 'node:crypto';
 import * as yaml from 'js-yaml';
 import type {
@@ -59,6 +60,9 @@ import {
 import { appendControlEventAndReplay } from './requirement-record-control-store';
 import { mainImplementationReadinessGate } from './main-agent-implementation-readiness-gate';
 import { evaluateAiTddContractGate } from './ai-tdd-contract-gate';
+import { resolveRuntimeScoringDataPath } from './runtime-scoring-data-path';
+
+const requireCommonJs = createRequire(__filename);
 
 export type MainAgentContinueDecision = 'continue' | 'rerun' | 'blocked' | null;
 export type MainAgentOrchestrationSource =
@@ -269,6 +273,22 @@ function deriveNextActionFromTaskType(
   }
 }
 
+function deriveNextActionFromFailedTaskType(
+  taskType: 'implement' | 'audit' | 'remediate' | 'document',
+  status: TaskReport['status']
+): OrchestrationNextAction {
+  if (taskType === 'implement') {
+    return status === 'partial' ? 'dispatch_remediation' : 'dispatch_implement';
+  }
+  if (taskType === 'audit') {
+    return 'dispatch_remediation';
+  }
+  if (taskType === 'remediate') {
+    return 'rerun_gate';
+  }
+  return 'dispatch_implement';
+}
+
 export interface ResolveMainAgentOrchestrationInput {
   projectRoot?: string;
   runtimeContext?: Partial<RuntimeContextFile> | null;
@@ -313,6 +333,23 @@ function sharedPathScore(left: string, right: string): number {
   }
 
   return score;
+}
+
+function isTerminalPendingPacketStatus(status: unknown): boolean {
+  return status === 'completed' || status === 'invalidated';
+}
+
+function isRecordScopedOrchestrationStatePath(
+  candidate: string,
+  runtimeContext: Partial<RuntimeContextFile> | null
+): boolean {
+  const recordPath = resolvedContext(runtimeContext)?.recordPath;
+  if (!recordPath) {
+    return false;
+  }
+  return candidate.startsWith(
+    path.join(path.dirname(recordPath), 'orchestration', 'orchestration-state')
+  );
 }
 
 function loadRuntimeContextForMainAgent(
@@ -483,6 +520,8 @@ function resolveScopedOrchestrationState(
   }
 
   const hints = [
+    resolvedContext(runtimeContext)?.requirementSetId,
+    resolvedContext(runtimeContext)?.recordId,
     runtimeContext?.runId,
     runtimeContext?.storyId,
     runtimeContext?.epicId,
@@ -491,6 +530,12 @@ function resolveScopedOrchestrationState(
   ]
     .map((value) => normalizeText(value))
     .filter(Boolean);
+  const strictRequirementScope = [
+    'explicit_args',
+    'explicit_args_without_index',
+    'index_match',
+    'record_scan_match',
+  ].includes(normalizeText(resolvedContext(runtimeContext)?.resolutionSource));
 
   const scored = candidates
     .map((candidate) => {
@@ -501,6 +546,11 @@ function resolveScopedOrchestrationState(
       }
 
       let score = 0;
+      let requirementMatchScore = 0;
+      const addRequirementMatchScore = (value: number): void => {
+        score += value;
+        requirementMatchScore += value;
+      };
       if (runtimeContext?.flow && state.flow === runtimeContext.flow) {
         score += 50;
       }
@@ -510,24 +560,45 @@ function resolveScopedOrchestrationState(
       for (const hint of hints) {
         const hintLower = hint.toLowerCase();
         if (sessionId.toLowerCase().includes(hintLower)) {
-          score += 100;
+          addRequirementMatchScore(100);
         }
         if (state.pendingPacket?.packetPath) {
           const packetPath = state.pendingPacket.packetPath.toLowerCase();
           if (packetPath.includes(hintLower)) {
-            score += 80;
+            addRequirementMatchScore(80);
           }
-          score += sharedPathScore(packetPath, hint) * 10;
+          addRequirementMatchScore(sharedPathScore(packetPath, hint) * 10);
         }
+      }
+      const recordScopedStatePath = isRecordScopedOrchestrationStatePath(candidate, runtimeContext);
+      if (recordScopedStatePath) {
+        addRequirementMatchScore(250);
+      }
+      if (
+        resolvedContext(runtimeContext)?.recordPath &&
+        state.pendingPacket?.packetPath?.startsWith(path.dirname(resolvedContext(runtimeContext)!.recordPath))
+      ) {
+        addRequirementMatchScore(120);
       }
       if (state.pendingPacket?.status === 'ready_for_main_agent') {
         score += 25;
+      }
+      if (strictRequirementScope && !recordScopedStatePath && requirementMatchScore === 0) {
+        return null;
+      }
+      if (
+        strictRequirementScope &&
+        isTerminalPendingPacketStatus(state.pendingPacket?.status) &&
+        requirementMatchScore === 0
+      ) {
+        return null;
       }
       return {
         sessionId,
         statePath: candidate,
         state,
         score,
+        requirementMatchScore,
         mtimeMs: fs.statSync(candidate).mtimeMs,
       };
     })
@@ -680,6 +751,33 @@ function pendingPacketMatchesNextAction(surface: MainAgentOrchestrationSurface):
   }
   const packetKind = surface.orchestrationState?.pendingPacket?.packetKind;
   return packetKind === 'resume' || packetKind === 'recommendation';
+}
+
+function isCodexSmokeOnlyTaskReport(report: TaskReport): boolean {
+  return (
+    report.validationsRun.some((validation) => normalizeText(validation) === 'codex-worker-adapter-smoke') ||
+    report.evidence.some((evidence) => normalizeText(evidence).startsWith('codex-smoke:'))
+  );
+}
+
+function blockSmokeOnlyImplementationReport(
+  report: TaskReport,
+  instruction: MainAgentDispatchInstruction
+): TaskReport {
+  if (instruction.taskType !== 'implement' || !isCodexSmokeOnlyTaskReport(report)) {
+    return report;
+  }
+  return {
+    ...report,
+    status: 'blocked',
+    downstreamContext: [
+      ...report.downstreamContext,
+      'Codex smoke validates the worker adapter only; implementation dispatch remains open for real execution.',
+    ],
+    driftFlags: [
+      ...new Set([...(report.driftFlags ?? []), 'codex-smoke-non-delivery-evidence']),
+    ],
+  };
 }
 
 function writePacketFile(
@@ -5243,7 +5341,7 @@ function readinessDiagnostics(input: {
         sourceChecked: [
           input.recordPath ?? 'requirement-record',
           'readinessBaselineMetadata',
-          'packages/scoring/data',
+          '_bmad-output/scoring',
         ],
         repairAction:
           activationStatus === 'audit_required'
@@ -5381,7 +5479,7 @@ function deriveDriftSurface(
   }
 
   try {
-    const records = loadAndDedupeRecords(path.join(projectRoot, 'packages', 'scoring', 'data'));
+    const records = loadAndDedupeRecords(resolveRuntimeScoringDataPath({ root: projectRoot }));
     const projection = buildReadinessDriftProjection({ allRecords: records });
     if (
       projection.drift_signals.length === 0 &&
@@ -5692,8 +5790,15 @@ function deriveNextActionFromRequirementRecord(input: {
   const requirementTaskType = taskTypeFromNextAction(requirementNextAction);
   const stateNextAction = input.state?.nextAction ?? null;
   const stateTaskType = taskTypeFromNextAction(stateNextAction);
+  const lastTaskReportStatus = input.state?.lastTaskReport?.status ?? null;
   const canReuseStateTransition =
-    stateNextAction === requirementNextAction || Boolean(input.state?.lastTaskReport);
+    stateNextAction === requirementNextAction ||
+    lastTaskReportStatus === 'done' ||
+    (lastTaskReportStatus === 'partial' && stateNextAction === 'dispatch_remediation') ||
+    (lastTaskReportStatus === 'blocked' &&
+      (stateNextAction === 'dispatch_implement' ||
+        stateNextAction === 'dispatch_remediation' ||
+        stateNextAction === 'rerun_gate'));
   if (
     input.state &&
     input.state.pendingPacket?.packetKind !== 'recommendation' &&
@@ -5716,6 +5821,13 @@ function deriveNextActionFromRequirementRecord(input: {
     (input.pendingPacketStatus === 'completed' || input.pendingPacketStatus === 'invalidated') &&
     input.state.lastTaskReport
   ) {
+    if (input.state.lastTaskReport.status !== 'done') {
+      return {
+        nextAction: requirementNextAction,
+        ready: true,
+        blockingReasonRefs,
+      };
+    }
     return {
       nextAction: input.state.nextAction,
       ready: input.state.nextAction !== 'await_user' && input.state.nextAction !== 'blocked',
@@ -6045,7 +6157,9 @@ export function ingestMainAgentTaskReport(
 
   const nextAction =
     options.nextActionHint ??
-    deriveNextActionFromTaskType(taskType, options.currentStage ?? state.currentPhase);
+    (report.status === 'done'
+      ? deriveNextActionFromTaskType(taskType, options.currentStage ?? state.currentPhase)
+      : deriveNextActionFromFailedTaskType(taskType, report.status));
 
   if (report.status === 'done') {
     completePendingPacket(projectRoot, sessionId, report.packetId);
@@ -6315,6 +6429,34 @@ export function buildMainAgentDispatchInstruction(
   };
 }
 
+const MAIN_AGENT_CLI_ACTIONS = new Set([
+  'inspect',
+  'step',
+  'dispatch-plan',
+  'run-loop',
+  'claim',
+  'dispatch',
+  'complete',
+  'invalidate',
+  'route-intake',
+  'adaptive-intake',
+  'confirm-scope',
+  'confirmation-ingest',
+  'route-confirmation-drift',
+  'confirmation-drift-route',
+  'repair-confirmation-bookkeeping',
+  'confirmation-bookkeeping-repair',
+  'pre-confirmation-drilldown',
+  'pre_confirmation_drilldown',
+  'authoring-repair',
+  'authoring_repair',
+  'controlled-readiness-audit',
+]);
+
+function isMainAgentCliAction(value: string): boolean {
+  return MAIN_AGENT_CLI_ACTIONS.has(value);
+}
+
 function parseArgs(argv: string[]): Record<string, string | undefined> {
   const out: Record<string, string | undefined> = {};
   const positional: string[] = [];
@@ -6408,7 +6550,12 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
       positional.push(token);
     }
   }
-  if (!out.cwd && positional[0]) out.cwd = positional[0];
+  const positionalAction = positional.find(isMainAgentCliAction);
+  if (!out.action && positionalAction) {
+    out.action = positionalAction;
+  }
+  const cwdCandidate = positional.find((item) => item !== positionalAction);
+  if (!out.cwd && cwdCandidate) out.cwd = cwdCandidate;
   return out;
 }
 
@@ -6434,11 +6581,19 @@ function pushOptionalArg(
 
 export interface MainAgentConfirmScopeResult {
   ok: boolean;
-  action: 'confirm-scope';
+  action:
+    | 'confirm-scope'
+    | 'repair-confirmation-bookkeeping'
+    | 'route-confirmation-drift';
   delegatedEntry: string;
   exitCode: number;
   stdout?: unknown;
   stderr?: string;
+  route?: string;
+  block?: string;
+  nextRequiredAction?: string;
+  classification?: Record<string, unknown>;
+  delegatedResult?: MainAgentConfirmScopeResult;
 }
 
 export function runMainAgentConfirmScope(
@@ -6497,6 +6652,243 @@ export function runMainAgentConfirmScope(
     exitCode: step.status ?? 2,
     ...(parsedStdout !== undefined ? { stdout: parsedStdout } : {}),
     ...(step.stderr.trim() ? { stderr: step.stderr.trim() } : {}),
+  };
+}
+
+export function runMainAgentConfirmationBookkeepingRepair(
+  root: string,
+  args: Record<string, string | undefined>
+): MainAgentConfirmScopeResult {
+  const entry = resolveSkillScript(root, 'confirm-requirements-scope.js');
+  if (!fs.existsSync(entry)) {
+    throw new Error(`controlled confirmation repair entry missing: ${entry}`);
+  }
+  const source = normalizeText(args.source);
+  if (!source) {
+    throw new Error('repair-confirmation-bookkeeping requires --source <source-document.md>');
+  }
+  const requirementRecord = normalizeText(args.requirementRecord);
+  if (!requirementRecord) {
+    throw new Error('repair-confirmation-bookkeeping requires --requirement-record <path>');
+  }
+
+  const delegatedArgs = [
+    '--action',
+    'repair-bookkeeping',
+    '--source',
+    path.resolve(root, stripWrappingQuotes(source)),
+    '--requirement-record',
+    path.resolve(root, stripWrappingQuotes(requirementRecord)),
+    '--confirmed-by',
+    args.confirmedBy ?? 'main-agent-orchestration',
+    '--json',
+  ];
+  pushOptionalArg(delegatedArgs, '--confirmed-at', args.confirmedAt, root);
+  pushOptionalArg(delegatedArgs, '--record-id', args.recordId, root);
+  pushOptionalArg(delegatedArgs, '--requirement-set-id', args.requirementSetId, root);
+  pushOptionalArg(delegatedArgs, '--event-log', args.eventLog, root, true);
+  pushOptionalArg(delegatedArgs, '--artifact-index', args.artifactIndex, root, true);
+  pushOptionalArg(delegatedArgs, '--update-source', args.updateSource, root);
+
+  const step = spawnSync(process.execPath, [entry, ...delegatedArgs], {
+    cwd: root,
+    encoding: 'utf8',
+  });
+  let parsedStdout: unknown = undefined;
+  if (step.stdout.trim()) {
+    try {
+      parsedStdout = JSON.parse(step.stdout);
+    } catch {
+      parsedStdout = step.stdout.trim();
+    }
+  }
+  return {
+    ok: step.status === 0,
+    action: 'repair-confirmation-bookkeeping',
+    delegatedEntry: path.relative(root, entry).replace(/\\/g, '/'),
+    exitCode: step.status ?? 2,
+    ...(parsedStdout !== undefined ? { stdout: parsedStdout } : {}),
+    ...(step.stderr.trim() ? { stderr: step.stderr.trim() } : {}),
+  };
+}
+
+function loadConfirmationDriftClassifier(root: string): {
+  classifyConfirmationDrift: (input: Record<string, unknown>) => Record<string, unknown>;
+} {
+  const classifierPath = resolveSkillScript(root, 'confirmation_drift_classifier.js');
+  if (!fs.existsSync(classifierPath)) {
+    throw new Error(`confirmation drift classifier missing: ${classifierPath}`);
+  }
+  return requireCommonJs(classifierPath) as {
+    classifyConfirmationDrift: (input: Record<string, unknown>) => Record<string, unknown>;
+  };
+}
+
+function currentConfirmationHashes(sourcePath: string): {
+  confirmation: Record<string, unknown>;
+  sourceDocumentHash: string;
+  implementationConfirmationHash: string;
+} {
+  const sourceText = fs.readFileSync(sourcePath, 'utf8');
+  const extraction = extractImplementationConfirmationBlock(sourceText);
+  if (!extraction) {
+    throw new Error(`implementationConfirmation block missing: ${sourcePath}`);
+  }
+  return {
+    confirmation: extraction.confirmation,
+    sourceDocumentHash: sourceDocumentHashForPreConfirmation(
+      sourceText,
+      extraction.blockText,
+      extraction.confirmation
+    ),
+    implementationConfirmationHash: implementationConfirmationHashForPreConfirmation(
+      extraction.confirmation
+    ),
+  };
+}
+
+function confirmationTextFromRenderReport(report: Record<string, unknown>): string {
+  const sourceDocumentHash = normalizeText(report.sourceDocumentHash);
+  const implementationConfirmationHash = normalizeText(report.implementationConfirmationHash);
+  const confirmationPageHash = normalizeText(report.confirmationPageHash);
+  if (!sourceDocumentHash || !implementationConfirmationHash || !confirmationPageHash) {
+    throw new Error(
+      'route-confirmation-drift projection refresh requires render report hashes'
+    );
+  }
+  return [
+    `sourceDocumentHash=${sourceDocumentHash}`,
+    `implementationConfirmationHash=${implementationConfirmationHash}`,
+    `confirmationPageHash=${confirmationPageHash}`,
+  ].join('\n');
+}
+
+export function runMainAgentConfirmationDriftRoute(
+  root: string,
+  args: Record<string, string | undefined>
+): MainAgentConfirmScopeResult {
+  const source = normalizeText(args.source);
+  if (!source) {
+    throw new Error('route-confirmation-drift requires --source <source-document.md>');
+  }
+  const requirementRecord = normalizeText(args.requirementRecord);
+  if (!requirementRecord) {
+    throw new Error('route-confirmation-drift requires --requirement-record <path>');
+  }
+  const sourcePath = path.resolve(root, stripWrappingQuotes(source));
+  const recordPath = path.resolve(root, stripWrappingQuotes(requirementRecord));
+  const record = fs.existsSync(recordPath) ? readJsonIfExists(recordPath) ?? {} : {};
+  const renderReportPath = normalizeText(args.renderReport)
+    ? path.resolve(root, stripWrappingQuotes(normalizeText(args.renderReport)))
+    : null;
+  const renderReport = renderReportPath ? readJsonIfExists(renderReportPath) ?? {} : {};
+  const hashes = currentConfirmationHashes(sourcePath);
+  const { classifyConfirmationDrift } = loadConfirmationDriftClassifier(root);
+  const classification = classifyConfirmationDrift({
+    confirmation: hashes.confirmation,
+    requirementRecord: record,
+    renderReport,
+    currentHashes: {
+      sourceDocumentHash: hashes.sourceDocumentHash,
+      implementationConfirmationHash: hashes.implementationConfirmationHash,
+    },
+  });
+  const kind = normalizeText(classification.kind);
+
+  if (kind === 'confirmed_current') {
+    return {
+      ok: true,
+      action: 'route-confirmation-drift',
+      delegatedEntry: path.relative(root, resolveSkillScript(root, 'confirmation_drift_classifier.js')).replace(/\\/g, '/'),
+      exitCode: 0,
+      route: 'confirmed_current',
+      classification,
+    };
+  }
+
+  if (kind === 'stale_bookkeeping_repair_required') {
+    const delegatedResult = runMainAgentConfirmationBookkeepingRepair(root, args);
+    return {
+      ok: delegatedResult.ok,
+      action: 'route-confirmation-drift',
+      delegatedEntry: delegatedResult.delegatedEntry,
+      exitCode: delegatedResult.exitCode,
+      route: 'bookkeeping_repair',
+      classification,
+      delegatedResult,
+    };
+  }
+
+  if (kind === 'projection_refresh_required') {
+    if (!renderReportPath) {
+      return {
+        ok: false,
+        action: 'route-confirmation-drift',
+        delegatedEntry: path.relative(root, resolveSkillScript(root, 'confirm-requirements-scope.js')).replace(/\\/g, '/'),
+        exitCode: 3,
+        route: 'projection_refresh',
+        block: 'PROJECTION_REFRESH_RENDER_REPORT_REQUIRED',
+        classification,
+      };
+    }
+    const latestConfirmation = Array.isArray((record as { confirmationHistory?: unknown[] }).confirmationHistory)
+      ? (record as { confirmationHistory: Record<string, unknown>[] }).confirmationHistory
+          .filter((event) => normalizeText(event?.eventType) === 'confirmation_recorded')
+          .at(-1)
+      : null;
+    const confirmationPageHash = normalizeText(latestConfirmation?.confirmationPageHash);
+    if (!confirmationPageHash) {
+      return {
+        ok: false,
+        action: 'route-confirmation-drift',
+        delegatedEntry: path.relative(root, resolveSkillScript(root, 'confirm-requirements-scope.js')).replace(/\\/g, '/'),
+        exitCode: 3,
+        route: 'projection_refresh',
+        block: 'PROJECTION_REFRESH_CONFIRMED_PAGE_HASH_REQUIRED',
+        classification,
+      };
+    }
+    const delegatedResult = runMainAgentConfirmScope(root, {
+      ...args,
+      renderReport: renderReportPath,
+      confirmationText: confirmationTextFromRenderReport({
+        ...renderReport,
+        confirmationPageHash,
+      }),
+      updateSource: 'false',
+    });
+    return {
+      ok: delegatedResult.ok,
+      action: 'route-confirmation-drift',
+      delegatedEntry: delegatedResult.delegatedEntry,
+      exitCode: delegatedResult.exitCode,
+      route: 'projection_refresh',
+      classification,
+      delegatedResult,
+    };
+  }
+
+  if (kind === 'semantic_reconfirmation_required') {
+    return {
+      ok: false,
+      action: 'route-confirmation-drift',
+      delegatedEntry: path.relative(root, resolveSkillScript(root, 'confirmation_drift_classifier.js')).replace(/\\/g, '/'),
+      exitCode: 3,
+      route: 'semantic_reconfirmation_required',
+      block: 'CONFIRMATION_REQUIRED',
+      nextRequiredAction: 'author_reconfirmation_evidence_and_render_confirmation_page',
+      classification,
+    };
+  }
+
+  return {
+    ok: false,
+    action: 'route-confirmation-drift',
+    delegatedEntry: path.relative(root, resolveSkillScript(root, 'confirmation_drift_classifier.js')).replace(/\\/g, '/'),
+    exitCode: 3,
+    route: 'unknown',
+    block: 'UNKNOWN_CONFIRMATION_DRIFT_CLASSIFICATION',
+    classification,
   };
 }
 
@@ -7672,6 +8064,7 @@ export function runMainAgentAutomaticLoop(input: {
       finalSurface,
     };
   }
+  taskReport = blockSmokeOnlyImplementationReport(taskReport, instruction);
   const completedState = ingestMainAgentTaskReport(
     input.projectRoot,
     instruction.sessionId,
@@ -7874,6 +8267,39 @@ export function mainMainAgentOrchestration(argv: string[]): number {
     } catch (error) {
       console.error(
         `main-agent-orchestration confirm-scope: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+      return 1;
+    }
+  }
+
+  if (action === 'route-confirmation-drift' || action === 'confirmation-drift-route') {
+    try {
+      const result = runMainAgentConfirmationDriftRoute(root, args);
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return result.ok ? 0 : result.exitCode;
+    } catch (error) {
+      console.error(
+        `main-agent-orchestration route-confirmation-drift: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+      return 1;
+    }
+  }
+
+  if (
+    action === 'repair-confirmation-bookkeeping' ||
+    action === 'confirmation-bookkeeping-repair'
+  ) {
+    try {
+      const result = runMainAgentConfirmationBookkeepingRepair(root, args);
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return result.ok ? 0 : result.exitCode;
+    } catch (error) {
+      console.error(
+        `main-agent-orchestration repair-confirmation-bookkeeping: ${
           error instanceof Error ? error.message : String(error)
         }`
       );

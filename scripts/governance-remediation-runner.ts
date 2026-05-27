@@ -48,6 +48,7 @@ import type { JourneyContractRemediationHint } from '../packages/scoring/analyti
 import { buildGateRemediationHints } from '../packages/scoring/gate/remediation-hints';
 import { loadAndDedupeRecords } from '../packages/scoring/query/loader';
 import { parseEpicStoryFromRecord } from '../packages/scoring/query';
+import { resolveRuntimeScoringDataPath } from './runtime-scoring-data-path';
 
 export type GovernanceHostKind = 'cursor' | 'claude' | 'codex' | 'generic';
 export type GovernanceExecutionMode =
@@ -225,18 +226,7 @@ function resolveAbsolutePath(projectRoot: string, targetPath: string): string {
 }
 
 function resolveGovernanceScoringDataPath(projectRoot: string): string {
-  const envPath = process.env.SCORING_DATA_PATH;
-  if (envPath && envPath.trim() !== '') {
-    return path.isAbsolute(envPath) ? envPath : path.resolve(projectRoot, envPath);
-  }
-
-  const candidates = [
-    path.join(projectRoot, 'packages', 'scoring', 'data'),
-    path.join(projectRoot, 'scoring', 'data'),
-    path.join(projectRoot, '_bmad-output', 'scoring'),
-  ];
-
-  return candidates.find((candidate) => fs.existsSync(candidate)) ?? candidates[0]!;
+  return resolveRuntimeScoringDataPath({ root: projectRoot });
 }
 
 function nowIso(): string {

@@ -8,6 +8,7 @@ import {
   sha256Json,
   sha256Text,
 } from './requirement-record-control-store';
+import { resolveRuntimeScoringDataPath } from './runtime-scoring-data-path';
 
 type JsonObject = Record<string, unknown>;
 
@@ -95,6 +96,23 @@ function writeReadinessAuditReport(recordPath: string, auditRequestId: string, r
   return out;
 }
 
+function sha256File(filePath: string): string | null {
+  if (!fs.existsSync(filePath)) {
+    return null;
+  }
+  return sha256Text(fs.readFileSync(filePath, 'utf8'));
+}
+
+function writeReadinessAuditManifest(
+  recordPath: string,
+  manifest: JsonObject
+): string {
+  const out = path.join(recordRoot(recordPath), 'readiness-audit', 'manifest.json');
+  fs.mkdirSync(path.dirname(out), { recursive: true });
+  fs.writeFileSync(out, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
+  return out;
+}
+
 function requireActivation(record: JsonObject): JsonObject {
   const activation = object(record.readinessBaselineActivation);
   if (text(activation.status) !== 'audit_required') {
@@ -150,6 +168,10 @@ export async function runControlledReadinessAuditBridge(input: {
   const auditRequestId = `readiness-audit:${text(initialRecord.requirementSetId)}:${now}`;
   const baselineId = `readiness-baseline:${text(initialRecord.requirementSetId)}:${now}`;
   const scoringRunId = input.scoringRunId ?? `${text(initialRecord.requirementSetId)}-readiness-${now.replace(/[^0-9]/gu, '').slice(0, 14)}`;
+  const dataPath = resolveRuntimeScoringDataPath({
+    root,
+    dataPath: input.dataPath,
+  });
   const sourceRequirementRecordHash = sha256Json(initialRecord);
   const traceDir = path.join(recordRoot(recordPath), 'readiness-audit');
   fs.mkdirSync(traceDir, { recursive: true });
@@ -194,7 +216,7 @@ export async function runControlledReadinessAuditBridge(input: {
     runId: scoringRunId,
     scenario: 'real_dev',
     writeMode: 'single_file',
-    dataPath: input.dataPath ?? path.join(root, 'packages', 'scoring', 'data'),
+    dataPath,
     sourceHashFilePath: recordPath,
     artifactDocPath: relativeOrAbsolute(root, readinessAuditReportPath),
     tool_trace_ref: toolTraceRef,
@@ -202,10 +224,10 @@ export async function runControlledReadinessAuditBridge(input: {
     triggerStage: 'controlled_readiness_audit',
     gitCwd: root,
   });
-  const scoringRecordPath = path.join(
-    input.dataPath ?? path.join(root, 'packages', 'scoring', 'data'),
-    `${scoringRunId}.json`
-  );
+  const scoringRecordPath = path.join(dataPath, `${scoringRunId}.json`);
+  const scoringRecordHash = sha256File(scoringRecordPath);
+  const patchSnapshotPath = text(scoreRecord.patch_snapshot_path);
+  const patchSnapshotHash = patchSnapshotPath ? sha256File(patchSnapshotPath) : null;
   const dimensionScores = (scoreRecord.dimension_scores ?? []) as DimensionScore[];
   if (scoreRecord.stage !== 'implementation_readiness' || scoreRecord.scenario !== 'real_dev') {
     throw new Error('controlled readiness audit wrote invalid scoring stage/scenario');
@@ -237,6 +259,13 @@ export async function runControlledReadinessAuditBridge(input: {
     activationId,
     scoringRunId,
     scoringRecordPath: relativeOrAbsolute(root, scoringRecordPath),
+    scoringRecordHash,
+    ...(patchSnapshotPath
+      ? {
+          patchSnapshotPath: relativeOrAbsolute(root, patchSnapshotPath),
+          patchSnapshotHash,
+        }
+      : {}),
     auditTraceHash: toolTraceRef,
     sourceRequirementRecordHash,
     stage: 'implementation_readiness',
@@ -247,6 +276,30 @@ export async function runControlledReadinessAuditBridge(input: {
     triggerStage: 'controlled_readiness_audit',
     gitCwd: normalizePathForRecord(root),
   };
+  const manifestPath = writeReadinessAuditManifest(recordPath, {
+    schemaVersion: 'readiness-audit-manifest/v1',
+    recordId: text(initialRecord.recordId),
+    requirementSetId: text(initialRecord.requirementSetId),
+    auditRequestId,
+    activationId,
+    baselineId,
+    scoringRunId,
+    scoringRecordPath: relativeOrAbsolute(root, scoringRecordPath),
+    scoringRecordHash,
+    ...(patchSnapshotPath
+      ? {
+          patchSnapshotPath: relativeOrAbsolute(root, patchSnapshotPath),
+          patchSnapshotHash,
+        }
+      : {}),
+    readinessAuditReportPath: relativeOrAbsolute(root, readinessAuditReportPath),
+    readinessAuditReportHash,
+    toolTracePath: relativeOrAbsolute(root, toolTracePath),
+    auditTraceHash: toolTraceRef,
+    sourceRequirementRecordHash,
+    generatedAt: now,
+  });
+  const manifestHash = sha256Text(fs.readFileSync(manifestPath, 'utf8'));
   appendEvent(recordPath, {
     writerId: 'readiness-audit-scoring-bridge',
     eventType: 'readiness_scoring_record_written',
@@ -262,6 +315,15 @@ export async function runControlledReadinessAuditBridge(input: {
     status: 'current',
     scoringRunId,
     scoringRecordPath: relativeOrAbsolute(root, scoringRecordPath),
+    scoringRecordHash,
+    ...(patchSnapshotPath
+      ? {
+          patchSnapshotPath: relativeOrAbsolute(root, patchSnapshotPath),
+          patchSnapshotHash,
+        }
+      : {}),
+    readinessAuditManifestPath: relativeOrAbsolute(root, manifestPath),
+    readinessAuditManifestHash: manifestHash,
     sourceRequirementRecordHash,
     auditTraceHash: toolTraceRef,
     readinessGateRecipeVersion: text(activation.readinessGateRecipeVersion) || 'implementation-readiness-gate/v1',

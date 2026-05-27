@@ -33,11 +33,11 @@ describe('getScoringDataPath', () => {
     else delete process.env.SCORING_DATA_PATH;
   });
 
-  it('默认返回 scoring/data', () => {
+  it('默认返回 _bmad-output/scoring', () => {
     delete process.env.SCORING_DATA_PATH;
     const p = getScoringDataPath();
+    expect(p).toContain('_bmad-output');
     expect(p).toContain('scoring');
-    expect(p).toContain('data');
   });
 
   it('SCORING_DATA_PATH 覆盖时使用该路径', () => {

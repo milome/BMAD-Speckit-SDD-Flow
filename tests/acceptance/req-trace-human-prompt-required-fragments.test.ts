@@ -83,10 +83,25 @@ describe('req trace human prompt required fragment audit', () => {
     fs.mkdirSync(patchedScriptDir, { recursive: true });
     const patchedScript = path.join(patchedScriptDir, 'generate_prompt.js');
     fs.copyFileSync(path.join(ROOT, '_bmad', 'skills', 'req-trace-matrix-prompt-generator', 'scripts', 'load-js-yaml.js'), path.join(patchedScriptDir, 'load-js-yaml.js'));
+    fs.copyFileSync(
+      path.join(
+        ROOT,
+        '_bmad',
+        'skills',
+        'requirements-contract-authoring',
+        'scripts',
+        'confirmation_drift_classifier.js'
+      ),
+      path.join(patchedScriptDir, 'confirmation_drift_classifier.js')
+    );
     fs.writeFileSync(
       patchedScript,
       fs
         .readFileSync(SCRIPT, 'utf8')
+        .replace(
+          '../../requirements-contract-authoring/scripts/confirmation_drift_classifier',
+          './confirmation_drift_classifier'
+        )
         .replace(
           'model_packet.json is the machine-readable execution authority.',
           'model packet json is the machine readable execution authority.'

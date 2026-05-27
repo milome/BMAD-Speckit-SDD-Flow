@@ -11,6 +11,7 @@ import {
   generatePromptSuggestions,
   formatPromptSuggestionsMarkdown,
 } from '../packages/scoring/analytics/prompt-optimizer';
+import { getScoringDataPath } from '../packages/scoring/constants/path';
 import type { RunScoreRecord } from '../packages/scoring/writer/types';
 import type { WeaknessCluster } from '../packages/scoring/analytics/cluster-weaknesses';
 
@@ -73,7 +74,7 @@ function loadClusters(clustersPath: string): WeaknessCluster[] {
 
 function main(): void {
   const args = parseArgs(process.argv.slice(2));
-  const dataPath = args.dataPath ?? args.data ?? path.join(process.cwd(), 'packages', 'scoring', 'data');
+  const dataPath = args.dataPath ?? args.data ?? getScoringDataPath();
   const clustersPath = args.clustersPath ?? args.clusters;
 
   let clusters: WeaknessCluster[];

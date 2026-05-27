@@ -5,6 +5,7 @@ import { parseEpicStoryFromRecord } from '../query';
 import { loadAndDedupeRecords } from '../query/loader';
 import { computeStringHash, getGitHeadHashFull } from '../utils/hash';
 import { readPatchSnapshot } from '../utils/patch-snapshot';
+import { getScoringDataPath } from '../constants/path';
 import type { GovernanceRerunHistoryEntry, RunScoreRecord } from '../writer/types';
 import {
   extractAssistantTarget,
@@ -831,7 +832,7 @@ export async function buildCanonicalCandidatesFromRecords(
 export function buildCanonicalCandidatesSync(
   options: BuildCanonicalCandidatesOptions = {}
 ): CanonicalCandidateBuildResult {
-  const dataPath = options.dataPath ?? path.join(process.cwd(), 'packages', 'scoring', 'data');
+  const dataPath = options.dataPath ?? getScoringDataPath();
   const records = loadAndDedupeRecords(dataPath);
   return buildCanonicalCandidatesFromRecordsSync(records, options);
 }

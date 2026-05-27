@@ -1,9 +1,9 @@
 import { createHash } from 'node:crypto';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
-import type { RecommendationPacket } from '../../scripts/orchestration-dispatch-contract';
+import type { ExecutionPacket, RecommendationPacket } from '../../scripts/orchestration-dispatch-contract';
 import {
   buildMainAgentDispatchInstruction,
   claimMainAgentPendingPacket,
@@ -81,7 +81,7 @@ function sourceDocumentHashFor(
   return sha256Text(sourceText.replace(blockText, normalizedBlock));
 }
 
-function writePacket(root: string, sessionId: string, packet: RecommendationPacket): string {
+function writePacket(root: string, sessionId: string, packet: RecommendationPacket | ExecutionPacket): string {
   const packetPath = path.join(
     root,
     '_bmad-output',
@@ -569,7 +569,6 @@ describe('main-agent orchestration consumer', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-readiness-bridge-'));
     try {
       const recordPath = writeConfirmedReadinessRecord(root);
-      const dataPath = path.join(root, '_bmad-output', 'scoring');
       const gateCode = mainImplementationReadinessGate([
         '--requirement-record',
         recordPath,
@@ -587,12 +586,16 @@ describe('main-agent orchestration consumer', () => {
         'repairable_readiness_audit_required'
       );
 
-      const result = await runMainAgentControlledReadinessAudit(root, {
-        dataPath,
-      });
+      const result = await runMainAgentControlledReadinessAudit(root, {});
 
       expect(result.scoreRecord.stage).toBe('implementation_readiness');
       expect(result.scoreRecord.scenario).toBe('real_dev');
+      expect(result.scoringRecordPath.replace(/\\/g, '/')).toContain(
+        '/_bmad-output/scoring/'
+      );
+      expect(
+        existsSync(path.join(root, 'packages', 'scoring', 'data', `${result.scoringRunId}.json`))
+      ).toBe(false);
       expect(result.scoreRecord.tool_trace_ref).toMatch(/^sha256:[a-f0-9]{64}$/u);
       expect(result.scoreRecord.tool_trace_path).toContain('readiness-audit');
       expect(result.scoreRecord.dimension_scores?.map((item) => item.dimension)).toEqual([
@@ -607,12 +610,33 @@ describe('main-agent orchestration consumer', () => {
         status: 'current',
         scoringRunId: result.scoringRunId,
         scoringRecordPath: path.relative(root, result.scoringRecordPath).replace(/\\/g, '/'),
+        scoringRecordHash: expect.stringMatching(/^sha256:[a-f0-9]{64}$/u),
         auditTraceHash: result.scoreRecord.tool_trace_ref,
       });
+      expect(record.readinessBaselineMetadata.readinessAuditManifestPath).toBe(
+        '_bmad-output/runtime/requirement-records/REQSET-readiness-e2e/readiness-audit/manifest.json'
+      );
+      expect(record.readinessBaselineMetadata.readinessAuditManifestHash).toMatch(
+        /^sha256:[a-f0-9]{64}$/u
+      );
       expect(record.readinessScoringRecords.at(-1)).toMatchObject({
         stage: 'implementation_readiness',
         scenario: 'real_dev',
         scoringRunId: result.scoringRunId,
+        scoringRecordHash: record.readinessBaselineMetadata.scoringRecordHash,
+      });
+      const manifestPath = path.join(
+        root,
+        record.readinessBaselineMetadata.readinessAuditManifestPath
+      );
+      const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+      expect(manifest).toMatchObject({
+        recordId: 'REQ-readiness-e2e',
+        requirementSetId: 'REQSET-readiness-e2e',
+        scoringRunId: result.scoringRunId,
+        baselineId: result.baselineId,
+        scoringRecordPath: path.relative(root, result.scoringRecordPath).replace(/\\/g, '/'),
+        scoringRecordHash: record.readinessBaselineMetadata.scoringRecordHash,
       });
       surface = resolveMainAgentOrchestrationSurface({
         projectRoot: root,
@@ -929,6 +953,302 @@ describe('main-agent orchestration consumer', () => {
       );
       expect(policy.mainAgentNextAction).toBe('dispatch_implement');
       expect(policy.mainAgentReady).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('ignores unrelated completed global orchestration state for an explicit requirement-set dispatch plan', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-explicit-record-dispatch-'));
+    try {
+      const recordPath = writeMinimalRequirementRecordContext(root, {
+        flow: 'standalone_tasks',
+        stage: 'implement',
+        runId: 'req-trace-packet-compiler',
+        artifactPath:
+          'docs/requirements/2026-05-25-req-trace-matrix-ai-tdd-execution-packet-compiler.md',
+        implementationEntryGate: {
+          gateName: 'implementation-readiness',
+          requestedFlow: 'standalone_tasks',
+          recommendedFlow: 'standalone_tasks',
+          decision: 'pass',
+          readinessStatus: 'ready_clean',
+          blockerCodes: [],
+          blockerSummary: [],
+          rerouteRequired: false,
+          rerouteReason: null,
+          evidenceSources: {
+            readinessReportPath: null,
+            remediationArtifactPath: null,
+            executionRecordPath: null,
+            authoritativeAuditReportPath: null,
+          },
+          semanticFingerprint: 'req-trace-packet-compiler',
+          evaluatedAt: '2026-05-26T00:00:00.000Z',
+        },
+      });
+      const record = JSON.parse(readFileSync(recordPath, 'utf8')) as Record<string, unknown>;
+      const staleSessionId = 'story-story-1-eval-system-scoring-core';
+      const stalePacket: RecommendationPacket = {
+        packetId: 'audit-stale-completed',
+        parentSessionId: staleSessionId,
+        flow: 'story',
+        phase: 'implement',
+        recommendedRole: 'code-reviewer',
+        recommendedTaskType: 'audit',
+        inputArtifacts: [],
+        allowedWriteScope: ['scripts/**'],
+        expectedDelta: 'old story audit packet',
+        successCriteria: ['old story task report returned'],
+        stopConditions: ['old story blocker detected'],
+      };
+      const stalePacketPath = writePacket(root, staleSessionId, stalePacket);
+      const staleState = createDefaultOrchestrationState({
+        sessionId: staleSessionId,
+        host: 'cursor',
+        flow: 'story',
+        currentPhase: 'implement',
+        nextAction: 'await_user',
+        pendingPacket: {
+          packetId: stalePacket.packetId,
+          packetPath: stalePacketPath,
+          packetKind: 'execution',
+          status: 'completed',
+          createdAt: '2026-04-27T21:08:38.570Z',
+        },
+      });
+      staleState.lastTaskReport = {
+        packetId: stalePacket.packetId,
+        status: 'done',
+        filesChanged: [],
+        validationsRun: ['legacy-story-audit'],
+        evidence: ['legacy-story-report'],
+      };
+      writeJsonFixture(
+        path.join(
+          root,
+          '_bmad-output',
+          'runtime',
+          'governance',
+          'orchestration-state',
+          `${staleSessionId}.json`
+        ),
+        staleState
+      );
+
+      const surface = resolveMainAgentOrchestrationSurface({
+        projectRoot: root,
+        flow: 'standalone_tasks',
+        stage: 'implement',
+        recordId: String(record.recordId),
+        requirementSetId: String(record.requirementSetId),
+      });
+
+      expect(surface.source).toBe('requirement_record');
+      expect(surface.sessionId).toBeNull();
+      expect(surface.pendingPacketStatus).toBe('none');
+      expect(surface.mainAgentNextAction).toBe('dispatch_implement');
+      expect(surface.mainAgentReady).toBe(true);
+
+      const instruction = buildMainAgentDispatchInstruction({
+        projectRoot: root,
+        flow: 'standalone_tasks',
+        stage: 'implement',
+        recordId: String(record.recordId),
+        requirementSetId: String(record.requirementSetId),
+        host: 'codex',
+        hydratePacket: true,
+      });
+      if (!instruction) {
+        throw new Error('expected explicit requirement dispatch instruction');
+      }
+      expect(instruction.nextAction).toBe('dispatch_implement');
+      expect(instruction.sessionId).toBe(record.requirementSetId);
+      expect(instruction.packetPath.replace(/\\/g, '/')).toContain(
+        `${record.requirementSetId}/prompts/prompt-packets/implement-`
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('does not reuse blocked invalidated implementation state to dispatch review for an explicit requirement-set', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-blocked-state-recovery-'));
+    try {
+      const recordPath = writeMinimalRequirementRecordContext(root, {
+        flow: 'standalone_tasks',
+        stage: 'implement',
+        runId: 'blocked-implementation-recovery',
+        implementationEntryGate: {
+          gateName: 'implementation-readiness',
+          requestedFlow: 'standalone_tasks',
+          recommendedFlow: 'standalone_tasks',
+          decision: 'pass',
+          readinessStatus: 'ready_clean',
+          blockerCodes: [],
+          blockerSummary: [],
+          rerouteRequired: false,
+          rerouteReason: null,
+          evidenceSources: {
+            readinessReportPath: null,
+            remediationArtifactPath: null,
+            executionRecordPath: null,
+            authoritativeAuditReportPath: null,
+          },
+          semanticFingerprint: 'blocked-implementation-recovery',
+          evaluatedAt: '2026-05-26T00:00:00.000Z',
+        },
+      });
+      const record = JSON.parse(readFileSync(recordPath, 'utf8')) as Record<string, unknown>;
+      const packet: RecommendationPacket = {
+        packetId: 'implement-blocked',
+        parentSessionId: String(record.requirementSetId),
+        flow: 'standalone_tasks',
+        phase: 'implement',
+        recommendedRole: 'implementation-worker',
+        recommendedTaskType: 'implement',
+        inputArtifacts: [recordPath],
+        allowedWriteScope: ['scripts/**'],
+        expectedDelta: 'blocked implementation packet',
+        successCriteria: ['should be regenerated'],
+        stopConditions: ['true blocker detected'],
+      };
+      const packetPath = writePacket(root, String(record.requirementSetId), packet);
+      const state = createDefaultOrchestrationState({
+        sessionId: String(record.requirementSetId),
+        host: 'codex',
+        flow: 'standalone_tasks',
+        currentPhase: 'implement',
+        nextAction: 'dispatch_review',
+        pendingPacket: {
+          packetId: packet.packetId,
+          packetPath,
+          packetKind: 'execution',
+          status: 'invalidated',
+          createdAt: '2026-05-26T00:00:00.000Z',
+        },
+      });
+      state.lastTaskReport = {
+        packetId: packet.packetId,
+        status: 'blocked',
+        filesChanged: [],
+        validationsRun: ['codex-worker-adapter'],
+        evidence: ['codex did not produce task report'],
+      };
+      writeJsonFixture(
+        path.join(
+          path.dirname(recordPath),
+          'orchestration',
+          'orchestration-state',
+          `${record.requirementSetId}.json`
+        ),
+        state
+      );
+
+      const instruction = buildMainAgentDispatchInstruction({
+        projectRoot: root,
+        flow: 'standalone_tasks',
+        stage: 'implement',
+        recordId: String(record.recordId),
+        requirementSetId: String(record.requirementSetId),
+        host: 'codex',
+        hydratePacket: true,
+      });
+
+      expect(instruction?.nextAction).toBe('dispatch_implement');
+      expect(instruction?.taskType).toBe('implement');
+      expect(instruction?.packetId).toMatch(/^implement-/u);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('does not reuse ready audit packet after a blocked implement report for an explicit requirement-set', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-blocked-ready-audit-recovery-'));
+    try {
+      const recordPath = writeMinimalRequirementRecordContext(root, {
+        flow: 'standalone_tasks',
+        stage: 'implement',
+        runId: 'blocked-ready-audit-recovery',
+        implementationEntryGate: {
+          gateName: 'implementation-readiness',
+          requestedFlow: 'standalone_tasks',
+          recommendedFlow: 'standalone_tasks',
+          decision: 'pass',
+          readinessStatus: 'ready_clean',
+          blockerCodes: [],
+          blockerSummary: [],
+          rerouteRequired: false,
+          rerouteReason: null,
+          evidenceSources: {
+            readinessReportPath: null,
+            remediationArtifactPath: null,
+            executionRecordPath: null,
+            authoritativeAuditReportPath: null,
+          },
+          semanticFingerprint: 'blocked-ready-audit-recovery',
+          evaluatedAt: '2026-05-26T00:00:00.000Z',
+        },
+      });
+      const record = JSON.parse(readFileSync(recordPath, 'utf8')) as Record<string, unknown>;
+      const auditPacket: ExecutionPacket = {
+        packetId: 'audit-stale-ready',
+        parentSessionId: String(record.requirementSetId),
+        flow: 'standalone_tasks',
+        phase: 'implement',
+        taskType: 'audit',
+        role: 'code-reviewer',
+        inputArtifacts: [recordPath],
+        allowedWriteScope: ['scripts/**'],
+        expectedDelta: 'stale audit packet created after a blocked implementation',
+        successCriteria: ['must not be reused'],
+        stopConditions: ['true blocker detected'],
+      };
+      const packetPath = writePacket(root, String(record.requirementSetId), auditPacket);
+      const state = createDefaultOrchestrationState({
+        sessionId: String(record.requirementSetId),
+        host: 'codex',
+        flow: 'standalone_tasks',
+        currentPhase: 'implement',
+        nextAction: 'dispatch_review',
+        pendingPacket: {
+          packetId: auditPacket.packetId,
+          packetPath,
+          packetKind: 'execution',
+          status: 'ready_for_main_agent',
+          createdAt: '2026-05-26T00:00:00.000Z',
+        },
+      });
+      state.lastTaskReport = {
+        packetId: 'implement-blocked-before-audit',
+        status: 'blocked',
+        filesChanged: [],
+        validationsRun: ['codex-worker-adapter'],
+        evidence: ['codex did not produce task report'],
+      };
+      writeJsonFixture(
+        path.join(
+          path.dirname(recordPath),
+          'orchestration',
+          'orchestration-state',
+          `${record.requirementSetId}.json`
+        ),
+        state
+      );
+
+      const instruction = buildMainAgentDispatchInstruction({
+        projectRoot: root,
+        flow: 'standalone_tasks',
+        stage: 'implement',
+        recordId: String(record.recordId),
+        requirementSetId: String(record.requirementSetId),
+        host: 'codex',
+        hydratePacket: true,
+      });
+
+      expect(instruction?.nextAction).toBe('dispatch_implement');
+      expect(instruction?.taskType).toBe('implement');
+      expect(instruction?.packetId).toMatch(/^implement-/u);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

@@ -289,12 +289,93 @@ describe('main-agent automatic run-loop', () => {
         args: { codexSmoke: 'true' },
       });
 
-      expect(result.status).toBe('completed');
+      expect(result.status).toBe('blocked');
       expect(result.steps.some((step) => step.step === 'codex-worker-adapter')).toBe(true);
       expect(result.taskReport?.validationsRun).toContain('codex-worker-adapter-smoke');
       expect(result.taskReport?.validationsRun).not.toContain('main-agent:run-loop-task-report');
+      expect(result.taskReport?.driftFlags).toContain('codex-smoke-non-delivery-evidence');
       expect(result.dispatchInstruction?.host).toBe('codex');
-      expect(result.finalSurface.pendingPacketStatus).toBe('completed');
+      expect(result.finalSurface.pendingPacketStatus).toBe('invalidated');
+      expect(result.finalSurface.mainAgentNextAction).toBe('dispatch_implement');
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('accepts dispatch-plan as a positional CLI action without treating it as cwd', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'main-agent-run-loop-cli-positional-'));
+    try {
+      writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
+      writeRuntimeContext(
+        root,
+        defaultRuntimeContextFile({
+          flow: 'story',
+          stage: 'implement',
+          sourceMode: 'full_bmad',
+          contextScope: 'story',
+          storyId: 'S-cli-positional',
+          runId: 'run-loop-cli-positional-test',
+        })
+      );
+
+      const dispatchOutput = execFileSync(
+        process.execPath,
+        [
+          path.join(process.cwd(), 'node_modules', 'ts-node', 'dist', 'bin.js'),
+          '--project',
+          'tsconfig.node.json',
+          '--transpile-only',
+          'scripts/main-agent-orchestration.ts',
+          'dispatch-plan',
+          '--cwd',
+          root,
+        ],
+        { cwd: process.cwd(), encoding: 'utf8' }
+      );
+      const dispatch = JSON.parse(dispatchOutput) as { taskType: string; packetId: string };
+
+      expect(dispatch.taskType).toBe('implement');
+      expect(dispatch.packetId).toMatch(/^implement-/);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('does not advance blocked implementation task reports to review', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'main-agent-run-loop-blocked-implement-'));
+    try {
+      writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
+      writeRuntimeContext(
+        root,
+        defaultRuntimeContextFile({
+          flow: 'story',
+          stage: 'implement',
+          sourceMode: 'full_bmad',
+          contextScope: 'story',
+          storyId: 'S-blocked-implement',
+          runId: 'blocked-implement-test',
+        })
+      );
+
+      const result = runMainAgentAutomaticLoop({
+        projectRoot: root,
+        flow: 'story',
+        stage: 'implement',
+        executor: ({ instruction }) => ({
+          packetId: instruction.packetId,
+          status: 'blocked',
+          filesChanged: [],
+          validationsRun: ['blocked-implementation-worker'],
+          evidence: ['implementation worker blocked before producing code'],
+          downstreamContext: [instruction.expectedDelta],
+        }),
+      });
+
+      expect(result.status).toBe('blocked');
+      expect(result.finalSurface.pendingPacketStatus).toBe('invalidated');
+      expect(result.finalSurface.orchestrationState?.lastTaskReport?.status).toBe('blocked');
+      expect(result.finalSurface.mainAgentNextAction).not.toBe('dispatch_review');
+      expect(result.finalSurface.mainAgentNextAction).toBe('dispatch_implement');
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }

@@ -5,6 +5,7 @@
  */
 import * as path from 'path';
 import { extractSftDataset } from '../packages/scoring/analytics/sft-extractor';
+import { getScoringDataPath } from '../packages/scoring/constants/path';
 
 function parseArgs(argv: string[]): Record<string, string> {
   const args: Record<string, string> = {};
@@ -28,7 +29,7 @@ function parseArgs(argv: string[]): Record<string, string> {
 
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
-  const dataPath = args.dataPath ?? args.data ?? path.join(process.cwd(), 'packages', 'scoring', 'data');
+  const dataPath = args.dataPath ?? args.data ?? getScoringDataPath();
   const output = args.output ?? path.join(dataPath, 'sft-dataset.jsonl');
 
   const result = await extractSftDataset(dataPath, output);

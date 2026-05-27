@@ -4,6 +4,11 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const yaml = require('./load-js-yaml');
+const {
+  classifyConfirmationDrift,
+  STALE_BOOKKEEPING_REPAIR_REQUIRED,
+  PROJECTION_REFRESH_REQUIRED,
+} = require('../../requirements-contract-authoring/scripts/confirmation_drift_classifier');
 
 const SKILL_LINE = '$executing-plans $verification-before-completion';
 const COMMAND_PREFIXES = [
@@ -281,7 +286,7 @@ function ids(items) {
   return new Set(items.filter((item) => item && item.id).map((item) => String(item.id)));
 }
 
-function validateConfirmation(parsed) {
+function validateConfirmation(parsed, driftClassification = null) {
   const confirmation = parsed.implementationConfirmation;
   if (!confirmation || typeof confirmation !== 'object') {
     throw new BlockedInput(
@@ -291,6 +296,18 @@ function validateConfirmation(parsed) {
   }
 
   if (confirmation.status !== 'user_confirmed') {
+    if (driftClassification?.kind === STALE_BOOKKEEPING_REPAIR_REQUIRED) {
+      throw new BlockedInput(
+        'BLOCK: STALE_BOOKKEEPING_REPAIR_REQUIRED',
+        `implementationConfirmation status/bookkeeping is stale but semantic confirmation hashes match: ${(driftClassification.repairableReasons ?? []).join(', ')}`
+      );
+    }
+    if (driftClassification?.kind === PROJECTION_REFRESH_REQUIRED) {
+      throw new BlockedInput(
+        'BLOCK: PROJECTION_REFRESH_REQUIRED',
+        'confirmation projection hash changed without semantic confirmation drift; record projection refresh before prompt generation.'
+      );
+    }
     throw new BlockedInput('BLOCK: CONFIRMATION_REQUIRED', 'implementationConfirmation.status is not user_confirmed.');
   }
 
@@ -835,8 +852,20 @@ function compilerInputContext(args) {
   const sourcePath = args.sourceDocument || args.contract;
   const sourceText = readText(sourcePath);
   const blockText = extractConfirmationBlock(sourceText);
-  const confirmation = validateConfirmation(parseConfirmation(blockText));
-  const recordValidation = validateRequirementRecord(args, sourceText, blockText, confirmation);
+  const parsed = parseConfirmation(blockText);
+  const confirmationCandidate = parsed.implementationConfirmation;
+  const recordValidation = validateRequirementRecord(args, sourceText, blockText, confirmationCandidate);
+  enforceNoOutDirGoalLength(args, confirmationCandidate);
+  const driftClassification = classifyConfirmationDrift({
+    confirmation: confirmationCandidate,
+    requirementRecord: recordValidation.record,
+    renderReport: null,
+    currentHashes: {
+      sourceDocumentHash: recordValidation.sourceDocumentHash,
+      implementationConfirmationHash: recordValidation.implementationConfirmationHash,
+    },
+  });
+  const confirmation = validateConfirmation(parsed, driftClassification);
   validateRequiredCommandDefinitions(confirmation);
   const registry = commandRegistry(confirmation);
   validateCommandReferences(confirmation, registry);
@@ -1286,6 +1315,7 @@ function buildHostContinuationDirective(packet, args, artifactPaths = {}) {
 
 function enforceNoOutDirGoalLength(args, confirmation) {
   if (args.goalCommandAvailable !== 'true') return;
+  if (args.outDir) return;
   const { host } = normalizeExecutionHost(args.executionHost);
   if (host !== 'codex' && host !== 'claude-code') return;
   const manifest = confirmation.aiTddContractExecutionManifestProjection ?? {};
@@ -1761,9 +1791,20 @@ function buildPrompt(args) {
   const sourcePath = args.sourceDocument || args.contract;
   const sourceText = readText(sourcePath);
   const blockText = extractConfirmationBlock(sourceText);
-  const confirmation = validateConfirmation(parseConfirmation(blockText));
-  validateRequirementRecord(args, sourceText, blockText, confirmation);
-  enforceNoOutDirGoalLength(args, confirmation);
+  const parsed = parseConfirmation(blockText);
+  const confirmationCandidate = parsed.implementationConfirmation;
+  const recordValidation = validateRequirementRecord(args, sourceText, blockText, confirmationCandidate);
+  enforceNoOutDirGoalLength(args, confirmationCandidate);
+  const driftClassification = classifyConfirmationDrift({
+    confirmation: confirmationCandidate,
+    requirementRecord: recordValidation.record,
+    renderReport: null,
+    currentHashes: {
+      sourceDocumentHash: recordValidation.sourceDocumentHash,
+      implementationConfirmationHash: recordValidation.implementationConfirmationHash,
+    },
+  });
+  const confirmation = validateConfirmation(parsed, driftClassification);
   const sourceLabel = args.sourceLabel || displayPath(sourcePath);
   const sourceAuthority = `${sourceLabel}#implementationConfirmation`;
 

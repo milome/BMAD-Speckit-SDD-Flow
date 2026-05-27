@@ -50,7 +50,7 @@ async function main() {
       scenario: 'real_dev',
       event: 'post_audit_passed',
       writeMode: 'single_file',
-      dataPath: 'packages/scoring/data',
+      dataPath: '_bmad-output/scoring',
       artifactDocPath,
       skipTriggerCheck: true,
     });

@@ -12,6 +12,7 @@ import {
 import type { RuntimeFlowId } from './runtime-governance';
 import { loadAndDedupeRecords } from '../packages/scoring/query/loader';
 import { buildReadinessDriftProjection } from '../packages/scoring/governance/readiness-drift';
+import { resolveRuntimeScoringDataPath } from './runtime-scoring-data-path';
 
 interface BmadProgress {
   version?: string;
@@ -96,7 +97,7 @@ export function collectReviewerProjectionDiagnosis(root: string): ReviewerProjec
 
 export function collectReadinessProjectionDiagnosis(root: string): ReadinessProjectionDiagnosis {
   try {
-    const records = loadAndDedupeRecords(path.join(root, 'packages', 'scoring', 'data'));
+    const records = loadAndDedupeRecords(resolveRuntimeScoringDataPath({ root }));
     const projection = buildReadinessDriftProjection({ allRecords: records });
 
     return {

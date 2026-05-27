@@ -46,6 +46,8 @@ tests/acceptance/bmads-auto-*.quarantined.ts
 packages/scoring/data/dev-*.json
 packages/scoring/data/cli-*.json
 packages/scoring/data/audit-*.json
+packages/scoring/data/*-readiness-*.json
+packages/scoring/data/_patch-snapshots/
 packages/scoring/data/prompt-optimization-suggestions.md
 packages/scoring/outputs/
 

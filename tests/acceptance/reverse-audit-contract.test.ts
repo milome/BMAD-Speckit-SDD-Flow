@@ -770,11 +770,18 @@ describe('reverse_audit_contract', () => {
     fs.writeFileSync(source, text, 'utf8');
     const render = runRenderer(source);
     patchConfirmationRender(source, render);
+    const drifted = fs
+      .readFileSync(source, 'utf8')
+      .replace(`sourceDocumentHash: "${render.report.sourceDocumentHash}"`, 'sourceDocumentHash: "sha256:old-source"')
+      .replace(
+        `implementationConfirmationHash: "${render.report.implementationConfirmationHash}"`,
+        'implementationConfirmationHash: "sha256:old-confirmation"'
+      );
+    fs.writeFileSync(source, drifted, 'utf8');
 
     const audit = runReverseAudit(source, render.reportPath);
 
     expect(audit.result.status).toBe(1);
-    expect(audit.report.failedChecks).toContain('reconfirmation_required_unresolved');
     expect(audit.report.failedChecks).toContain('missing_reconfirmation_request');
   });
 

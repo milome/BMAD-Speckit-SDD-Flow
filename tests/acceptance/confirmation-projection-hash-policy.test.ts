@@ -7,6 +7,7 @@ import yaml from 'js-yaml';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { resolveArchitectureConfirmationHashRecipe } from '../../scripts/architecture-confirmation-hash-recipe';
 import { mainImplementationReadinessGate } from '../../scripts/main-agent-implementation-readiness-gate';
+import { runMainAgentConfirmationDriftRoute } from '../../scripts/main-agent-orchestration';
 
 const ROOT = process.cwd();
 const INGEST = path.join(
@@ -636,6 +637,28 @@ function ingestConfirmation(source: string, reportPath: string, confirmTextPath:
   ]);
 }
 
+function routeConfirmationDriftWithMainAgent(source: string, renderReport?: string) {
+  const result = runMainAgentConfirmationDriftRoute(ROOT, {
+    source,
+    requirementRecord: recordPath(),
+    ...(renderReport ? { renderReport } : {}),
+    eventLog: path.join(
+      tempDir,
+      '_bmad-output/runtime/requirement-records/REQ-PROJECTION-POLICY/data/mentor-events.jsonl'
+    ),
+    artifactIndex: path.join(
+      tempDir,
+      '_bmad-output/runtime/requirement-records/REQ-PROJECTION-POLICY/artifact-index.jsonl'
+    ),
+    confirmedBy: 'main-agent-orchestration',
+  });
+  return {
+    stdout: JSON.stringify(result, null, 2),
+    stderr: result.stderr ?? '',
+    status: result.ok ? 0 : result.exitCode,
+  };
+}
+
 describe('confirmation projection hash policy', () => {
   it('records confirmationPageHash-only drift as projection refresh without semantic mutation or readiness block', () => {
     const source = writeSource();
@@ -648,11 +671,7 @@ describe('confirmation projection hash policy', () => {
     const beforeProjectionWithArchitecture = JSON.parse(fs.readFileSync(recordPath(), 'utf8'));
     const refreshed = writeRenderReport(source, NEW_PAGE_HASH, '-refreshed');
 
-    const projectionRefresh = ingestConfirmation(
-      source,
-      refreshed.reportPath,
-      first.confirmTextPath
-    );
+    const projectionRefresh = routeConfirmationDriftWithMainAgent(source, refreshed.reportPath);
     expect(
       projectionRefresh.status,
       `${projectionRefresh.stdout}\n${projectionRefresh.stderr}`
@@ -675,10 +694,21 @@ describe('confirmation projection hash policy', () => {
     expect(refreshedRecord.architectureConfirmationState).toEqual(architectureState);
     expect(refreshedRecord.reconfirmationRequest ?? null).toBeNull();
     expect(JSON.parse(projectionRefresh.stdout)).toMatchObject({
-      event: null,
-      sourceUpdated: false,
-      projectionEvent: {
-        eventType: 'confirmation_projection_refreshed',
+      ok: true,
+      action: 'route-confirmation-drift',
+      route: 'projection_refresh',
+      classification: {
+        kind: 'projection_refresh_required',
+        requiresUserReconfirmation: false,
+      },
+      delegatedResult: {
+        stdout: {
+          event: null,
+          sourceUpdated: false,
+          projectionEvent: {
+            eventType: 'confirmation_projection_refreshed',
+          },
+        },
       },
     });
 
@@ -793,6 +823,117 @@ describe('confirmation projection hash policy', () => {
     expect(prompt.stdout).toContain('BLOCK: CONFIRMATION_RECORD_HASH_MISMATCH');
     expect(prompt.stdout).toContain('sourceDocumentHash');
     expect(prompt.stdout).toContain('implementationConfirmationHash');
+  });
+
+  it('repairs stale source reconfirmation bookkeeping through the main agent without semantic reconfirmation', () => {
+    const source = writeSource();
+    const first = writeRenderReport(source, OLD_PAGE_HASH);
+    expect(ingestConfirmation(source, first.reportPath, first.confirmTextPath).status).toBe(0);
+    const sourceBeforeStalePatch = fs.readFileSync(source, 'utf8');
+    const staleSource = sourceBeforeStalePatch
+      .replace('status: user_confirmed', 'status: reconfirm_required')
+      .replace(
+        'reconfirmationRequest: null',
+        `reconfirmationRequest:
+    required: true
+    reason: false_positive_bookkeeping_drift
+    previousSourceDocumentHash: ${first.report.sourceDocumentHash}
+    currentSourceDocumentHash: ${first.report.sourceDocumentHash}
+    previousImplementationConfirmationHash: ${first.report.implementationConfirmationHash}
+    currentImplementationConfirmationHash: ${first.report.implementationConfirmationHash}
+    diffSummary: []
+    impactedIds: ["MUST-039"]
+    allowedUserActions: ["confirm_current_version"]`
+      );
+    fs.writeFileSync(source, staleSource, 'utf8');
+    const beforeRecord = JSON.parse(fs.readFileSync(recordPath(), 'utf8'));
+    const confirmationCount = beforeRecord.confirmationHistory.filter(
+      (event: Record<string, unknown>) => event.eventType === 'confirmation_recorded'
+    ).length;
+
+    const repair = routeConfirmationDriftWithMainAgent(source);
+
+    expect(repair.status, `${repair.stdout}\n${repair.stderr}`).toBe(0);
+    const repairPayload = JSON.parse(repair.stdout);
+    expect(repairPayload).toMatchObject({
+      ok: true,
+      action: 'route-confirmation-drift',
+      route: 'bookkeeping_repair',
+      classification: {
+        kind: 'stale_bookkeeping_repair_required',
+        requiresUserReconfirmation: false,
+      },
+      delegatedResult: {
+        action: 'repair-confirmation-bookkeeping',
+        stdout: {
+          repairEvent: {
+            eventType: 'confirmation_bookkeeping_repaired',
+            classifier: {
+              kind: 'stale_bookkeeping_repair_required',
+              requiresUserReconfirmation: false,
+            },
+          },
+          internalSteps: [
+            {
+              label: 'controlled_confirmation_bookkeeping_repair',
+              status: 0,
+              eventType: 'confirmation_bookkeeping_repaired',
+            },
+          ],
+        },
+      },
+    });
+    const repairedSource = fs.readFileSync(source, 'utf8');
+    expect(repairedSource).toContain('status: user_confirmed');
+    expect(repairedSource).toContain('reconfirmationRequest: null');
+    expect(repairedSource).toContain(`htmlHash: ${OLD_PAGE_HASH}`);
+    const repairedRecord = JSON.parse(fs.readFileSync(recordPath(), 'utf8'));
+    expect(
+      repairedRecord.confirmationHistory.filter(
+        (event: Record<string, unknown>) => event.eventType === 'confirmation_recorded'
+      ).length
+    ).toBe(confirmationCount);
+    expect(repairedRecord.bookkeepingRepairHistory.at(-1)).toMatchObject({
+      eventType: 'confirmation_bookkeeping_repaired',
+      classifier: {
+        kind: 'stale_bookkeeping_repair_required',
+      },
+    });
+    const prompt = runPrompt(source, recordPath());
+    expect(prompt.status).toBe(0);
+    expect(prompt.stdout).toContain('TRACE-039');
+  });
+
+  it('routes true semantic drift to confirmation-required blocker without repair', () => {
+    const source = writeSource();
+    const first = writeRenderReport(source, OLD_PAGE_HASH);
+    expect(ingestConfirmation(source, first.reportPath, first.confirmTextPath).status).toBe(0);
+    const beforeRecord = fs.readFileSync(recordPath(), 'utf8');
+    const beforeSource = fs.readFileSync(source, 'utf8');
+    fs.writeFileSync(
+      source,
+      beforeSource.replace(
+        'Only semantic source or implementation hash drift can require demand reconfirmation.',
+        'Semantic scope changes must require demand reconfirmation before implementation.'
+      ),
+      'utf8'
+    );
+
+    const route = routeConfirmationDriftWithMainAgent(source);
+
+    expect(route.status, `${route.stdout}\n${route.stderr}`).toBe(3);
+    expect(JSON.parse(route.stdout)).toMatchObject({
+      ok: false,
+      action: 'route-confirmation-drift',
+      route: 'semantic_reconfirmation_required',
+      block: 'CONFIRMATION_REQUIRED',
+      nextRequiredAction: 'author_reconfirmation_evidence_and_render_confirmation_page',
+      classification: {
+        kind: 'semantic_reconfirmation_required',
+        requiresUserReconfirmation: true,
+      },
+    });
+    expect(fs.readFileSync(recordPath(), 'utf8')).toBe(beforeRecord);
   });
 
   it('keeps architecture and recipe drift as architecture readiness hard stops', () => {

@@ -671,6 +671,10 @@ describe('controlled confirmation ingest', () => {
     expect(output.userFacingNextStep).toBe(
       'requirement_record_ingested_then_prompt_generation_allowed'
     );
+    expect(output.confirmationDriftClassification).toMatchObject({
+      kind: 'confirmed_current',
+      requiresUserReconfirmation: false,
+    });
     expect(output.internalSteps).toEqual([
       {
         label: 'controlled_confirmation_ingest',
@@ -692,7 +696,8 @@ describe('controlled confirmation ingest', () => {
     const source = writeSource();
     const blockedPrompt = runPython(REQ_TRACE_PROMPT, ['--source-document', source]);
     expect(blockedPrompt.status).toBe(3);
-    expect(blockedPrompt.stdout).toContain('BLOCK: CONFIRMATION_REQUIRED');
+    expect(blockedPrompt.stdout).toContain('BLOCK: CONFIRMATION_RECORD_REQUIRED');
+    expect(blockedPrompt.stdout).toContain('--requirement-record is required');
 
     const { reportPath, report } = render(source);
     const recordPath = path.join(tempDir, '_bmad-output/runtime/requirement-records/REQ-CONFIRM-INGEST/requirement-record.json');

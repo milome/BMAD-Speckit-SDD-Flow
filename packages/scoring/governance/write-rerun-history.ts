@@ -1,4 +1,3 @@
-import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { loadAndDedupeRecords } from '../query/loader';
 import { parseEpicStoryFromRecord } from '../query/parse-epic-story';
@@ -89,14 +88,7 @@ function resolveScoringDataPath(projectRoot: string): string {
   if (envPath && envPath.trim() !== '') {
     return path.isAbsolute(envPath) ? envPath : path.resolve(projectRoot, envPath);
   }
-
-  const candidates = [
-    path.join(projectRoot, 'packages', 'scoring', 'data'),
-    path.join(projectRoot, 'scoring', 'data'),
-    path.join(projectRoot, '_bmad-output', 'scoring'),
-  ];
-
-  return candidates.find((candidate) => fs.existsSync(candidate)) ?? candidates[0]!;
+  return path.resolve(projectRoot, '_bmad-output', 'scoring');
 }
 
 function parseEpicStoryFromRuntimeContext(

@@ -12,8 +12,9 @@ import type {
 import { resolveBmadHelpRuntimePolicy } from './bmad-config';
 import type { StageName } from './bmad-config';
 import { loadPolicyContextFromRegistry } from './emit-runtime-policy';
-import type { RuntimeFlowId } from './runtime-governance';
+import type { ImplementationEntryGate, RuntimeFlowId } from './runtime-governance';
 import { stableStringifyPolicy } from './stable-runtime-policy-json';
+import { resolveMainAgentOrchestrationSurface } from './main-agent-orchestration';
 import {
   governanceEventTypeRegistryPolicyHash,
   governanceEventTypeRegistryHash,
@@ -68,12 +69,35 @@ interface RuntimeGovernanceResolution {
 
 function parseArgs(argv: string[]): Record<string, string | undefined> {
   const out: Record<string, string | undefined> = {};
+  const aliases: Record<string, string> = {
+    'record-id': 'recordId',
+    'requirement-set-id': 'requirementSetId',
+    'run-id': 'runId',
+    'parent-closeout-attempt-id': 'parentCloseoutAttemptId',
+    'source-document-hash': 'sourceDocumentHash',
+    'implementation-confirmation-hash': 'implementationConfirmationHash',
+    'packet-path': 'packetPath',
+    'task-report-path': 'taskReportPath',
+    'smoke-target-path': 'smokeTargetPath',
+    'timeout-ms': 'timeoutMs',
+    'codex-binary': 'codexBinary',
+    'governance-event-type-registry-policy-path': 'governanceEventTypeRegistryPolicyPath',
+    'governance-event-type-registry-path': 'governanceEventTypeRegistryPath',
+    'governance-event-type-registry-policy-hash': 'governanceEventTypeRegistryPolicyHash',
+    'governance-event-type-registry-hash': 'governanceEventTypeRegistryHash',
+    'architecture-confirmation-hash': 'architectureConfirmationHash',
+    'trace-rows': 'traceRows',
+    'covered-requirement-ids': 'coveredRequirementIds',
+    'task-refs': 'taskRefs',
+    'report-path': 'reportPath',
+  };
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index];
     if (token === '--smoke') {
       out.smoke = 'true';
     } else if (token.startsWith('--') && argv[index + 1]) {
-      out[token.slice(2)] = argv[++index];
+      const key = token.slice(2);
+      out[aliases[key] ?? key] = argv[++index];
     }
   }
   return out;
@@ -178,10 +202,18 @@ function resolveCodexAgentSpec(
 
 function resolveRuntimeGovernanceBlock(
   projectRoot: string,
-  options?: { recordId?: string; requirementSetId?: string; runId?: string }
+  options?: { recordId?: string; requirementSetId?: string; runId?: string; packet?: Packet }
 ): RuntimeGovernanceResolution {
   try {
     const loaded = loadPolicyContextFromRegistry(projectRoot, options);
+    const currentSurface = resolveMainAgentOrchestrationSurface({
+      projectRoot,
+      recordId: options?.recordId,
+      requirementSetId: options?.requirementSetId,
+      runId: options?.runId,
+      flow: loaded.flow as RuntimeFlowId,
+      stage: loaded.stage as StageName,
+    });
     const policy = resolveBmadHelpRuntimePolicy({
       flow: loaded.flow as RuntimeFlowId,
       stage: loaded.stage as StageName,
@@ -194,10 +226,15 @@ function resolveRuntimeGovernanceBlock(
       ...(loaded.runId ? { runId: loaded.runId } : {}),
       ...(loaded.artifactRoot ? { artifactRoot: loaded.artifactRoot } : {}),
     });
+    const governance = alignPolicyWithCurrentDispatchSurface(
+      policy as unknown as Record<string, unknown>,
+      currentSurface,
+      options?.packet
+    );
     return {
       status: 'resolved',
       content: stableStringifyPolicy({
-        ...policy,
+        ...governance,
         flow: loaded.runtimeContext.flow,
         stage: loaded.runtimeContext.stage,
         runtimeContextPath: loaded.resolvedContextPath,
@@ -219,6 +256,120 @@ function resolveRuntimeGovernanceBlock(
       error: message,
     };
   }
+}
+
+function passImplementationEntryGateFromSurface(
+  surface: ReturnType<typeof resolveMainAgentOrchestrationSurface>
+): ImplementationEntryGate | null {
+  if (surface.latestGate?.gateId !== 'implementation-readiness') {
+    return null;
+  }
+  if (surface.latestGate.decision !== 'pass') {
+    return null;
+  }
+  const flow =
+    surface.orchestrationState?.flow === 'bugfix' || surface.orchestrationState?.flow === 'standalone_tasks'
+      ? surface.orchestrationState.flow
+      : 'story';
+  return {
+    gateName: 'implementation-readiness',
+    requestedFlow: flow,
+    recommendedFlow: flow,
+    decision: 'pass',
+    readinessStatus: 'ready_clean',
+    blockerCodes: [],
+    blockerSummary: [],
+    rerouteRequired: false,
+    rerouteReason: null,
+    evidenceSources: {
+      readinessReportPath: null,
+      remediationArtifactPath: null,
+      executionRecordPath: null,
+      authoritativeAuditReportPath: null,
+    },
+    semanticFingerprint: null,
+    evaluatedAt: new Date().toISOString(),
+  };
+}
+
+function alignPolicyWithCurrentDispatchSurface(
+  policy: Record<string, unknown>,
+  surface: ReturnType<typeof resolveMainAgentOrchestrationSurface>,
+  packet?: Packet
+): Record<string, unknown> {
+  const packetTaskType = packet && 'taskType' in packet ? packet.taskType : null;
+  const activePacketStatus = surface.orchestrationState?.pendingPacket?.status ?? null;
+  const activeDispatchPacketMatches =
+    Boolean(packet) &&
+    surface.orchestrationState?.pendingPacket?.packetId === packet?.packetId &&
+    (activePacketStatus === 'ready_for_main_agent' ||
+      activePacketStatus === 'claimed_by_main_agent' ||
+      activePacketStatus === 'dispatched');
+  const activeImplementDispatchPacket =
+    activeDispatchPacketMatches && packetTaskType === 'implement';
+  const packetImpliesImplement =
+    (surface.mainAgentNextAction === 'dispatch_implement' && surface.mainAgentReady === true) ||
+    activeImplementDispatchPacket;
+  if (!packetImpliesImplement) {
+    return policy;
+  }
+  const alignedSurface = activeImplementDispatchPacket
+    ? {
+        ...surface,
+        mainAgentNextAction: 'dispatch_implement',
+        mainAgentReady: true,
+        ...(surface.runtimeResumeProjection
+          ? {
+              runtimeResumeProjection: {
+                ...surface.runtimeResumeProjection,
+                runtimeNextAction: 'dispatch_implement',
+                ready: true,
+              },
+            }
+          : {}),
+      }
+    : surface;
+
+  const gate =
+    passImplementationEntryGateFromSurface(alignedSurface) ??
+    (policy.implementationEntryGate &&
+    typeof policy.implementationEntryGate === 'object' &&
+    !Array.isArray(policy.implementationEntryGate)
+      ? (policy.implementationEntryGate as ImplementationEntryGate)
+      : null);
+  const nextPolicy = {
+    ...policy,
+    implementationReadinessStatus: 'ready_clean',
+    implementationEntryRecommended: true,
+    implementationEntryDecision: 'pass',
+    ...(gate ? { implementationEntryGate: { ...gate, decision: 'pass' } } : {}),
+    mainAgentCanContinue: alignedSurface.mainAgentCanContinue,
+    continueDecision: alignedSurface.continueDecision,
+    mainAgentNextAction: alignedSurface.mainAgentNextAction,
+    mainAgentReady: alignedSurface.mainAgentReady,
+    mainAgentOrchestration: alignedSurface,
+  };
+  const helpRouting =
+    policy.helpRouting && typeof policy.helpRouting === 'object' && !Array.isArray(policy.helpRouting)
+      ? (policy.helpRouting as Record<string, unknown>)
+      : null;
+  return helpRouting
+    ? {
+        ...nextPolicy,
+        helpRouting: {
+          ...helpRouting,
+          implementationReadinessStatus: 'ready_clean',
+          implementationEntryRecommended: true,
+          implementationEntryDecision: 'pass',
+          ...(gate ? { implementationEntryGate: { ...gate, decision: 'pass' } } : {}),
+          mainAgentCanContinue: alignedSurface.mainAgentCanContinue,
+          continueDecision: alignedSurface.continueDecision,
+          mainAgentNextAction: alignedSurface.mainAgentNextAction,
+          mainAgentReady: alignedSurface.mainAgentReady,
+          mainAgentOrchestration: alignedSurface,
+        },
+      }
+    : nextPolicy;
 }
 
 function buildPrompt(input: {
@@ -679,6 +830,7 @@ export function runCodexWorkerAdapter(input: {
     recordId: input.recordId,
     requirementSetId: input.requirementSetId,
     runId: input.runId,
+    packet,
   });
   if (
     runtimeGovernance.status === 'blocked' &&

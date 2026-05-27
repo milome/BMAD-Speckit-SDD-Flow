@@ -13,6 +13,12 @@ const {
   stringList,
   unique,
 } = require('./pre_render_definition_drilldown_lib');
+const {
+  classifyConfirmationDrift,
+  SEMANTIC_RECONFIRMATION_REQUIRED,
+  STALE_BOOKKEEPING_REPAIR_REQUIRED,
+  PROJECTION_REFRESH_REQUIRED,
+} = require('./confirmation_drift_classifier');
 
 const CORE_REPORT_SECTIONS = [
   'implementationConfirmation Findings',
@@ -388,9 +394,6 @@ function collectConfirmationStateIssues(confirmation, currentHashes) {
       ])
     );
   }
-  if (confirmation.status === 'reconfirm_required') {
-    findings.push(issue('reconfirmation_required_unresolved', 'reconfirmation_required must be resolved before readiness'));
-  }
   if (confirmation.status === 'user_confirmed') {
     if (!confirmation.sourceDocumentHash || confirmation.sourceDocumentHash === 'null') {
       findings.push(issue('missing_confirmed_source_document_hash', 'user_confirmed source must record sourceDocumentHash'));
@@ -442,18 +445,85 @@ function collectConfirmationStateIssues(confirmation, currentHashes) {
   return findings;
 }
 
-function collectReconfirmationRequestIssues(text, confirmation, currentHashes) {
+function collectReconfirmationRequestIssues(text, confirmation, currentHashes, driftClassification, renderReport) {
   const findings = [];
-  if (confirmation.status !== 'reconfirm_required') {
+  if (driftClassification?.kind === STALE_BOOKKEEPING_REPAIR_REQUIRED) {
+    findings.push(
+      issue(
+        'stale_bookkeeping_repair_required',
+        'source confirmation bookkeeping is stale but semantic hashes match the latest controlled confirmation',
+        driftClassification.repairableReasons ?? [],
+        'warning',
+        'reverse_audit'
+      )
+    );
+    return findings;
+  }
+  if (driftClassification?.kind === PROJECTION_REFRESH_REQUIRED) {
+    findings.push(
+      issue(
+        'confirmation_projection_refresh_required',
+        'confirmation projection hash changed without semantic hash drift',
+        driftClassification.repairableReasons ?? [],
+        'warning',
+        'reverse_audit'
+      )
+    );
+    return findings;
+  }
+  if (driftClassification?.kind !== SEMANTIC_RECONFIRMATION_REQUIRED) {
     return findings;
   }
   const request = confirmation.reconfirmationRequest;
   if (!request || typeof request !== 'object') {
-    findings.push(issue('missing_reconfirmation_request', 'reconfirm_required requires reconfirmationRequest'));
+    findings.push(issue('missing_reconfirmation_request', 'semantic drift requires reconfirmationRequest'));
     return findings;
   }
   if (request.required !== true) {
     findings.push(issue('missing_reconfirmation_required_flag', 'reconfirmationRequest.required must be true'));
+  }
+  for (const [field, code] of [
+    ['reasonCode', 'missing_reconfirmation_reason_code'],
+    ['userFacingSummary', 'missing_reconfirmation_user_facing_summary'],
+  ]) {
+    if (!request[field] || request[field] === 'null') {
+      findings.push(issue(code, `reconfirmationRequest.${field} is required`, [`reconfirmationRequest.${field}`]));
+    }
+  }
+  const rationale = request.persuasiveRationale && typeof request.persuasiveRationale === 'object'
+    ? request.persuasiveRationale
+    : {};
+  for (const field of ['whyReconfirmNow', 'riskIfSkipped', 'whyEvidenceIsSufficient']) {
+    if (!rationale[field] || rationale[field] === 'null') {
+      findings.push(
+        issue(
+          `missing_reconfirmation_${field}`,
+          `reconfirmationRequest.persuasiveRationale.${field} is required`,
+          [`reconfirmationRequest.persuasiveRationale.${field}`]
+        )
+      );
+    }
+  }
+  const evidenceBundle = request.evidenceBundle && typeof request.evidenceBundle === 'object'
+    ? request.evidenceBundle
+    : {};
+  if (evidenceBundle.sufficiencyVerdict !== 'sufficient') {
+    findings.push(
+      issue(
+        'reconfirmation_evidence_not_sufficient',
+        'reconfirmationRequest.evidenceBundle.sufficiencyVerdict must be sufficient',
+        ['reconfirmationRequest.evidenceBundle.sufficiencyVerdict']
+      )
+    );
+  }
+  if (!Array.isArray(evidenceBundle.items) || evidenceBundle.items.length === 0) {
+    findings.push(
+      issue(
+        'missing_reconfirmation_evidence_items',
+        'reconfirmationRequest.evidenceBundle.items[] is required',
+        ['reconfirmationRequest.evidenceBundle.items']
+      )
+    );
   }
   for (const [field, code] of [
     ['previousSourceDocumentHash', 'missing_reconfirmation_previous_source_hash'],
@@ -484,6 +554,30 @@ function collectReconfirmationRequestIssues(text, confirmation, currentHashes) {
   }
   if (!Array.isArray(request.allowedUserActions) || request.allowedUserActions.length === 0) {
     findings.push(issue('missing_reconfirmation_allowed_actions', 'reconfirmationRequest.allowedUserActions must be non-empty'));
+  }
+  const sectionOrder = Array.isArray(renderReport?.renderedSectionOrder)
+    ? renderReport.renderedSectionOrder
+    : [];
+  if (sectionOrder.length) {
+    const reconfirmationIndex = sectionOrder.indexOf('reconfirmation-request');
+    const coreDesignIndex = sectionOrder.indexOf('core-design');
+    if (reconfirmationIndex < 0 || coreDesignIndex < 0 || reconfirmationIndex > coreDesignIndex) {
+      findings.push(
+        issue(
+          'reconfirmation_request_not_before_core_design',
+          'reconfirmation-request must be rendered before core-design',
+          ['renderedSectionOrder']
+        )
+      );
+    }
+  } else {
+    findings.push(
+      issue(
+        'missing_rendered_section_order',
+        'render report must include renderedSectionOrder[] for reconfirmation placement audit',
+        ['renderedSectionOrder']
+      )
+    );
   }
   if (/(?:manually|manual|手工|手动).{0,60}(?:sourceDocumentHash|implementationConfirmationHash|confirmationPageHash|confirmationHistory|status)/iu.test(text)) {
     findings.push(
@@ -1190,6 +1284,15 @@ function main(argv) {
     renderReportPath,
   });
   findings.push(...integrity.findings);
+  const driftClassification = classifyConfirmationDrift({
+    confirmation,
+    requirementRecord: null,
+    renderReport,
+    currentHashes: {
+      sourceDocumentHash: integrity.currentSourceHash,
+      implementationConfirmationHash: integrity.currentImplementationHash,
+    },
+  });
   findings.push(
     ...collectConfirmationStateIssues(confirmation, {
       sourceDocumentHash: integrity.currentSourceHash,
@@ -1200,7 +1303,7 @@ function main(argv) {
     ...collectReconfirmationRequestIssues(text, confirmation, {
       sourceDocumentHash: integrity.currentSourceHash,
       implementationConfirmationHash: integrity.currentImplementationHash,
-    })
+    }, driftClassification, renderReport)
   );
   findings.push(...collectConfirmationRenderBookkeepingIssues(confirmation, renderReportPath, renderReport));
   findings.push(...collectReportShapeIssues(text));

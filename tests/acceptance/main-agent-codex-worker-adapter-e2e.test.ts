@@ -4,6 +4,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   buildMainAgentDispatchInstruction,
+  markMainAgentPacketDispatched,
   runMainAgentAutomaticLoop,
 } from '../../scripts/main-agent-orchestration';
 import { main, runCodexWorkerAdapter } from '../../scripts/main-agent-codex-worker-adapter';
@@ -120,6 +121,90 @@ function writeTestRequirementRecord(root: string): void {
             requirementSetId,
             runId: 'codex-worker-run',
             recordPath: `_bmad-output/runtime/requirement-records/${requirementSetId}/requirement-record.json`,
+          },
+        ],
+      },
+      null,
+      2
+    )}\n`,
+    'utf8'
+  );
+}
+
+function writeStandaloneRecordWithoutImplementationEntryGate(root: string): void {
+  const requirementSetId = 'REQ-STANDALONE-CODEX-WORKER';
+  const base = path.join(root, '_bmad-output', 'runtime', 'requirement-records', requirementSetId);
+  fs.mkdirSync(path.join(base, 'recovery'), { recursive: true });
+  const record = {
+    recordId: requirementSetId,
+    requirementSetId,
+    status: 'user_confirmed',
+    flow: 'standalone_tasks',
+    stage: 'implement',
+    entryFlow: 'standalone_tasks',
+    entryFlowClass: 'task_packet_entry',
+    workflowAdapter: 'direct',
+    sourceMode: 'standalone_story',
+    sourcePath: 'docs/requirements/standalone-worker.md',
+    artifactPath: 'docs/requirements/standalone-worker.md',
+    sourceDocumentHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+    implementationConfirmationHash:
+      'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+    architectureConfirmationState: {
+      status: 'active',
+      currentArchitectureConfirmationHash:
+        'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    },
+    runId: 'standalone-codex-worker-run',
+    gateChecks: [
+      {
+        eventType: 'gate_check_recorded',
+        checkId: 'implementation-readiness:2026-05-26T00:00:00.000Z',
+        gate: 'Implementation Readiness Gate',
+        decision: 'pass',
+        blockingReasons: [],
+      },
+    ],
+    runtimePolicySnapshotRef: {
+      path: `_bmad-output/runtime/requirement-records/${requirementSetId}/recovery/runtime-policy-snapshot.json`,
+    },
+    recoveryContextRef: {
+      path: `_bmad-output/runtime/requirement-records/${requirementSetId}/recovery/recovery-context.json`,
+    },
+    taskBindings: [
+      {
+        taskRef: 'TASK-STANDALONE-CODEX-WORKER',
+        status: 'planned',
+        allowedWriteScope: ['scripts/**', 'tests/acceptance/**', '_bmad/_config/**'],
+        acceptanceRefs: ['EVD-STANDALONE-CODEX-WORKER'],
+      },
+    ],
+  };
+  fs.writeFileSync(path.join(base, 'requirement-record.json'), `${JSON.stringify(record, null, 2)}\n`, 'utf8');
+  fs.writeFileSync(
+    path.join(base, 'recovery', 'runtime-policy-snapshot.json'),
+    `${JSON.stringify({ kind: 'runtime-policy-snapshot', flow: 'standalone_tasks', stage: 'implement' }, null, 2)}\n`,
+    'utf8'
+  );
+  fs.writeFileSync(path.join(base, 'recovery', 'recovery-context.json'), '{"kind":"recovery-context"}\n', 'utf8');
+  const indexPath = path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'index.json');
+  fs.mkdirSync(path.dirname(indexPath), { recursive: true });
+  fs.writeFileSync(
+    indexPath,
+    `${JSON.stringify(
+      {
+        version: 1,
+        active: {
+          recordId: requirementSetId,
+          requirementSetId,
+          runId: 'standalone-codex-worker-run',
+        },
+        records: [
+          {
+            recordId: requirementSetId,
+            requirementSetId,
+            runId: 'standalone-codex-worker-run',
+            recordPath: path.relative(root, path.join(base, 'requirement-record.json')).replace(/\\/g, '/'),
           },
         ],
       },
@@ -314,9 +399,11 @@ describe('main-agent codex worker adapter e2e', () => {
         args: { taskReportPath },
       });
 
-      expect(result.status).toBe('completed');
+      expect(result.status).toBe('blocked');
       expect(result.taskReport?.packetId).toBe(instruction!.packetId);
-      expect(result.finalSurface.pendingPacketStatus).toBe('completed');
+      expect(result.taskReport?.driftFlags).toContain('codex-smoke-non-delivery-evidence');
+      expect(result.finalSurface.pendingPacketStatus).toBe('invalidated');
+      expect(result.finalSurface.mainAgentNextAction).toBe('dispatch_implement');
       expect(result.finalSurface.orchestrationState?.lastTaskReport?.evidence).toContain(
         `codex-smoke:${codexSmokeArtifactPath(instruction!.packetId)}`
       );
@@ -673,6 +760,117 @@ describe('main-agent codex worker adapter e2e', () => {
     }
   });
 
+  it('aligns Runtime Governance JSON with the current dispatch packet for requirement-scoped implement work', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'main-agent-codex-policy-align-'));
+    try {
+      writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
+      writeRuntimeContext(
+        root,
+        defaultRuntimeContextFile({
+          flow: 'standalone_tasks',
+          stage: 'implement',
+          sourceMode: 'standalone_story',
+          contextScope: 'run',
+          runId: 'standalone-codex-worker-run',
+          artifactPath: 'docs/requirements/standalone-worker.md',
+        })
+      );
+      writeStandaloneRecordWithoutImplementationEntryGate(root);
+      writeTestCodexAgentSpec(root, '.codex/agents');
+
+      const instruction = buildMainAgentDispatchInstruction({
+        projectRoot: root,
+        flow: 'standalone_tasks',
+        stage: 'implement',
+        host: 'codex',
+        requirementSetId: 'REQ-STANDALONE-CODEX-WORKER',
+        hydratePacket: true,
+      });
+      expect(instruction?.nextAction).toBe('dispatch_implement');
+
+      const adapter = runBoundCodexWorkerAdapter({
+        projectRoot: root,
+        requirementSetId: 'REQ-STANDALONE-CODEX-WORKER',
+        packetPath: instruction!.packetPath,
+        taskReportPath: path.join(root, 'policy-align-task-report.json'),
+        smoke: false,
+        timeoutMs: 1,
+      });
+
+      expect(adapter.stdinPath).toBeTruthy();
+      const prompt = fs.readFileSync(adapter.stdinPath!, 'utf8');
+      const start = prompt.indexOf('--- Runtime Governance JSON ---');
+      const end = prompt.indexOf('--- End Runtime Governance JSON ---');
+      const governance = JSON.parse(
+        prompt.slice(start + '--- Runtime Governance JSON ---'.length, end).trim()
+      ) as Record<string, any>;
+      expect(governance.implementationEntryDecision).toBe('pass');
+      expect(governance.mainAgentNextAction).toBe('dispatch_implement');
+      expect(governance.mainAgentOrchestration?.mainAgentNextAction).toBe('dispatch_implement');
+      expect(governance.mainAgentOrchestration?.runtimeResumeProjection?.runtimeNextAction).toBe(
+        'dispatch_implement'
+      );
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('keeps Runtime Governance JSON aligned after an implement packet has been dispatched', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'main-agent-codex-policy-dispatched-align-'));
+    try {
+      writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
+      writeRuntimeContext(
+        root,
+        defaultRuntimeContextFile({
+          flow: 'standalone_tasks',
+          stage: 'implement',
+          sourceMode: 'standalone_story',
+          contextScope: 'run',
+          runId: 'standalone-codex-worker-run',
+          artifactPath: 'docs/requirements/standalone-worker.md',
+        })
+      );
+      writeStandaloneRecordWithoutImplementationEntryGate(root);
+      writeTestCodexAgentSpec(root, '.codex/agents');
+
+      const instruction = buildMainAgentDispatchInstruction({
+        projectRoot: root,
+        flow: 'standalone_tasks',
+        stage: 'implement',
+        host: 'codex',
+        requirementSetId: 'REQ-STANDALONE-CODEX-WORKER',
+        hydratePacket: true,
+      });
+      expect(instruction?.nextAction).toBe('dispatch_implement');
+      markMainAgentPacketDispatched(root, instruction!.sessionId, instruction!.packetId);
+
+      const adapter = runBoundCodexWorkerAdapter({
+        projectRoot: root,
+        requirementSetId: 'REQ-STANDALONE-CODEX-WORKER',
+        packetPath: instruction!.packetPath,
+        taskReportPath: path.join(root, 'policy-dispatched-align-task-report.json'),
+        smoke: false,
+        timeoutMs: 1,
+      });
+
+      expect(adapter.stdinPath).toBeTruthy();
+      const prompt = fs.readFileSync(adapter.stdinPath!, 'utf8');
+      const start = prompt.indexOf('--- Runtime Governance JSON ---');
+      const end = prompt.indexOf('--- End Runtime Governance JSON ---');
+      const governance = JSON.parse(
+        prompt.slice(start + '--- Runtime Governance JSON ---'.length, end).trim()
+      ) as Record<string, any>;
+      expect(governance.implementationEntryDecision).toBe('pass');
+      expect(governance.mainAgentNextAction).toBe('dispatch_implement');
+      expect(governance.mainAgentOrchestration?.mainAgentNextAction).toBe('dispatch_implement');
+      expect(governance.mainAgentOrchestration?.runtimeResumeProjection?.runtimeNextAction).toBe(
+        'dispatch_implement'
+      );
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('accepts UTF-8 BOM dispatch packets written by Windows tooling', () => {
     const root = prepareCodexRoot();
     try {
@@ -908,6 +1106,57 @@ describe('main-agent codex worker adapter e2e', () => {
       };
       expect(report.packetPath).toBe(instruction!.packetPath);
       expect(report.mode).toBe('smoke');
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('accepts kebab-case requirement identity flags on the CLI', () => {
+    const root = prepareCodexRoot();
+    try {
+      const instruction = buildMainAgentDispatchInstruction({
+        projectRoot: root,
+        flow: 'story',
+        stage: 'implement',
+        host: 'codex',
+        hydratePacket: true,
+      });
+      const reportPath = path.join(root, 'adapter-kebab-report.json');
+      const taskReportPath = path.join(root, 'task-report-kebab.json');
+      const registryPath = writeRegistryBindingFile(root);
+      const policyPath = writeRegistryPolicyBindingFile(root);
+      const exitCode = main([
+        '--cwd',
+        root,
+        '--requirement-set-id',
+        'REQ-CODEX-WORKER',
+        '--packet-path',
+        instruction!.packetPath,
+        '--smoke',
+        '--task-report-path',
+        taskReportPath,
+        '--report-path',
+        reportPath,
+        '--governance-event-type-registry-policy-path',
+        policyPath,
+        '--governance-event-type-registry-policy-hash',
+        REGISTRY_BINDING.governanceEventTypeRegistryPolicyHash,
+        '--governance-event-type-registry-path',
+        registryPath,
+        '--governance-event-type-registry-hash',
+        REGISTRY_BINDING.governanceEventTypeRegistryHash,
+        '--architecture-confirmation-hash',
+        REGISTRY_BINDING.architectureConfirmationHash,
+      ]);
+
+      expect(exitCode).toBe(0);
+      const report = JSON.parse(fs.readFileSync(reportPath, 'utf8')) as {
+        taskReport: { packetId: string; status: string };
+        transportEnvelope: { requirementSetId: string } | null;
+      };
+      expect(report.taskReport.packetId).toBe(instruction!.packetId);
+      expect(report.taskReport.status).toBe('done');
+      expect(report.transportEnvelope?.requirementSetId).toBe('REQ-CODEX-WORKER');
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }

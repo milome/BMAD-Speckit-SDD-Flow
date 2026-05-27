@@ -21,7 +21,7 @@ import { writeScoreRecordSync } from '../writer';
 import type { WriteMode } from '../writer';
 import { applyTierAndVeto } from '../veto';
 import { evaluateReadinessDrift } from '../governance/readiness-drift';
-import { resolveRulesDir } from '../constants/path';
+import { getScoringDataPath, resolveRulesDir } from '../constants/path';
 import { computeContentHash, computeStringHash, getGitHeadHash } from '../utils/hash';
 import { persistPatchSnapshot } from '../utils/patch-snapshot';
 import type { CheckItem, DimensionScore, IterationRecord, JourneyContractSignals, RunScoreRecord } from '../writer/types';
@@ -73,7 +73,7 @@ export interface ParseAndWriteScoreOptions {
 
 function resolveScoreDataPath(dataPath?: string): string {
   if (dataPath == null || dataPath === '') {
-    return path.resolve(process.cwd(), 'packages', 'scoring', 'data');
+    return getScoringDataPath();
   }
   return path.isAbsolute(dataPath) ? dataPath : path.resolve(process.cwd(), dataPath);
 }

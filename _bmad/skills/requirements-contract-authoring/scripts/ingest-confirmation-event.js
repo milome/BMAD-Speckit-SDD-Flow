@@ -4,6 +4,10 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const yaml = require('./load-js-yaml');
+const {
+  STALE_BOOKKEEPING_REPAIR_REQUIRED,
+  classifyConfirmationDrift,
+} = require('./confirmation_drift_classifier');
 
 const BOOKKEEPING_FIELDS = new Set([
   'status',
@@ -109,6 +113,12 @@ function parseConfirmationText(text) {
 }
 
 function validateArgs(args) {
+  if (args.action === 'repair-bookkeeping') {
+    const required = ['source', 'requirementRecord'];
+    const missing = required.filter((key) => !args[key]);
+    if (missing.length) throw new Error(`missing required args: ${missing.join(', ')}`);
+    return;
+  }
   const required = ['source', 'renderReport', 'confirmedBy'];
   const missing = required.filter((key) => !args[key]);
   if (missing.length) throw new Error(`missing required args: ${missing.join(', ')}`);
@@ -147,6 +157,39 @@ function updateSourceDocument(sourceText, extracted, update) {
       reportPath: update.reportPath,
       htmlHash: update.confirmationPageHash,
       confirmationPhrase,
+    },
+  };
+  const dumped = yaml.dump(
+    { implementationConfirmation: nextConfirmation },
+    { lineWidth: 120, noRefs: true, sortKeys: false }
+  ).trimEnd();
+  const trailingBlankLines = extracted.blockText.match(/\n+$/u)?.[0].length ?? 0;
+  const replacementLines = dumped.split('\n');
+  for (let i = 0; i < trailingBlankLines; i += 1) {
+    replacementLines.push('');
+  }
+  const lines = [...extracted.lines];
+  lines.splice(extracted.start, extracted.end - extracted.start, ...replacementLines);
+  return lines.join('\n');
+}
+
+function updateSourceBookkeeping(sourceText, extracted, update) {
+  const nextConfirmation = {
+    ...extracted.confirmation,
+    status: 'user_confirmed',
+    confirmedAt: update.confirmedAt,
+    confirmedBy: update.confirmedBy,
+    sourceDocumentHash: update.sourceDocumentHash,
+    implementationConfirmationHash: update.implementationConfirmationHash,
+    reconfirmationRequest: null,
+    confirmationRender: {
+      ...(extracted.confirmation.confirmationRender ?? {}),
+      htmlPath: update.htmlPath ?? extracted.confirmation.confirmationRender?.htmlPath ?? null,
+      summaryPath: update.summaryPath ?? extracted.confirmation.confirmationRender?.summaryPath ?? null,
+      reportPath: update.reportPath ?? extracted.confirmation.confirmationRender?.reportPath ?? null,
+      htmlHash: update.confirmationPageHash ?? extracted.confirmation.confirmationRender?.htmlHash ?? null,
+      confirmationPhrase:
+        update.confirmationPhrase ?? extracted.confirmation.confirmationRender?.confirmationPhrase ?? null,
     },
   };
   const dumped = yaml.dump(
@@ -276,13 +319,212 @@ function appendJsonl(file, value) {
   fs.appendFileSync(file, `${JSON.stringify(value)}\n`, 'utf8');
 }
 
+function latestConfirmationRecord(record) {
+  return Array.isArray(record?.confirmationHistory)
+    ? record.confirmationHistory
+        .filter((item) => item && typeof item === 'object' && item.eventType === 'confirmation_recorded')
+        .at(-1)
+    : null;
+}
+
+function latestProjectionRecord(record) {
+  return Array.isArray(record?.confirmationProjectionHistory)
+    ? record.confirmationProjectionHistory
+        .filter((item) => item && typeof item === 'object' && item.eventType === 'confirmation_projection_refreshed')
+        .at(-1)
+    : null;
+}
+
+function repairBookkeeping(args) {
+  const sourcePath = path.resolve(args.source);
+  const sourceText = fs.readFileSync(sourcePath, 'utf8');
+  const extracted = extractImplementationConfirmation(sourceText);
+  const sourceDocumentHash = sourceDocumentHashFor(sourceText, extracted.blockText, extracted.confirmation);
+  const implementationConfirmationHash = implementationConfirmationHashFor(extracted.confirmation);
+  const recordPath = path.resolve(args.requirementRecord);
+  const existingRecord = fs.existsSync(recordPath) ? readJson(recordPath) : {};
+  const driftClassification = classifyConfirmationDrift({
+    confirmation: extracted.confirmation,
+    requirementRecord: existingRecord,
+    renderReport: null,
+    currentHashes: {
+      sourceDocumentHash,
+      implementationConfirmationHash,
+    },
+  });
+
+  if (driftClassification.kind !== STALE_BOOKKEEPING_REPAIR_REQUIRED) {
+    console.error(
+      JSON.stringify(
+        {
+          ok: false,
+          mismatches: ['bookkeeping_repair_not_allowed'],
+          classification: driftClassification,
+        },
+        null,
+        2
+      )
+    );
+    return 3;
+  }
+
+  const confirmedAt = args.confirmedAt ?? new Date().toISOString();
+  const latestConfirmation = latestConfirmationRecord(existingRecord);
+  const latestProjection = latestProjectionRecord(existingRecord);
+  const latestProjectionHash =
+    existingRecord.latestConfirmationProjectionHash ??
+    latestProjection?.newProjectionHash ??
+    existingRecord.confirmationPageHash ??
+    latestConfirmation?.confirmationPageHash ??
+    extracted.confirmation.confirmationRender?.htmlHash ??
+    null;
+  const reportPath =
+    latestProjection?.renderReportRef ??
+    latestConfirmation?.renderReportPath ??
+    extracted.confirmation.confirmationRender?.reportPath ??
+    null;
+  const htmlPath =
+    latestProjection?.htmlPath ??
+    latestConfirmation?.htmlPath ??
+    extracted.confirmation.confirmationRender?.htmlPath ??
+    null;
+  const summaryPath =
+    extracted.confirmation.confirmationRender?.summaryPath ??
+    (reportPath ? path.join(path.dirname(reportPath), 'confirmation-summary.json') : null);
+  const confirmationPhrase =
+    extracted.confirmation.confirmationRender?.confirmationPhrase ??
+    latestConfirmation?.confirmationText ??
+    null;
+  const beforeBookkeeping = {
+    status: extracted.confirmation.status ?? null,
+    confirmedAt: extracted.confirmation.confirmedAt ?? null,
+    confirmedBy: extracted.confirmation.confirmedBy ?? null,
+    sourceDocumentHash: extracted.confirmation.sourceDocumentHash ?? null,
+    implementationConfirmationHash: extracted.confirmation.implementationConfirmationHash ?? null,
+    reconfirmationRequest: extracted.confirmation.reconfirmationRequest ?? null,
+    confirmationRender: extracted.confirmation.confirmationRender ?? null,
+  };
+
+  const nextSource = updateSourceBookkeeping(sourceText, extracted, {
+    confirmedAt: latestConfirmation?.confirmedAt ?? extracted.confirmation.confirmedAt ?? confirmedAt,
+    confirmedBy: latestConfirmation?.confirmedBy ?? extracted.confirmation.confirmedBy ?? args.confirmedBy ?? 'controlled_bookkeeping_repair',
+    sourceDocumentHash,
+    implementationConfirmationHash,
+    confirmationPageHash: latestProjectionHash,
+    htmlPath,
+    summaryPath,
+    reportPath,
+    confirmationPhrase,
+  });
+  if (args.updateSource !== 'false') {
+    fs.writeFileSync(sourcePath, nextSource, 'utf8');
+  }
+
+  const repairEvent = {
+    eventType: 'confirmation_bookkeeping_repaired',
+    recordId: existingRecord.recordId ?? extracted.confirmation.recordId ?? args.recordId ?? 'unrecorded',
+    requirementSetId:
+      existingRecord.requirementSetId ??
+      extracted.confirmation.requirementSetId ??
+      args.requirementSetId ??
+      existingRecord.recordId ??
+      extracted.confirmation.recordId ??
+      'unrecorded',
+    repairedAt: confirmedAt,
+    repairedBy: args.confirmedBy ?? 'controlled_bookkeeping_repair',
+    sourcePath: normalizePathForReport(sourcePath),
+    sourceDocumentHash,
+    implementationConfirmationHash,
+    latestProjectionHash,
+    classifier: driftClassification,
+    beforeBookkeeping,
+    afterBookkeeping: {
+      status: 'user_confirmed',
+      sourceDocumentHash,
+      implementationConfirmationHash,
+      reconfirmationRequest: null,
+      confirmationRender: {
+        htmlPath,
+        summaryPath,
+        reportPath,
+        htmlHash: latestProjectionHash,
+        confirmationPhrase,
+      },
+    },
+  };
+
+  const nextRecord = {
+    ...existingRecord,
+    status: 'user_confirmed',
+    sourceDocumentHash,
+    implementationConfirmationHash,
+    latestConfirmationProjectionHash: latestProjectionHash ?? existingRecord.latestConfirmationProjectionHash,
+    reconfirmationRequest: null,
+    bookkeepingRepairHistory: [
+      ...(Array.isArray(existingRecord.bookkeepingRepairHistory)
+        ? existingRecord.bookkeepingRepairHistory
+        : []),
+      repairEvent,
+    ],
+    lastEventType: 'confirmation_bookkeeping_repaired',
+    updatedAt: confirmedAt,
+  };
+  const shouldWrite = args.updateSource !== 'false';
+  if (shouldWrite) {
+    fs.mkdirSync(path.dirname(recordPath), { recursive: true });
+    fs.writeFileSync(recordPath, `${JSON.stringify(nextRecord, null, 2)}\n`, 'utf8');
+  }
+
+  const eventLogPath = path.resolve(
+    args.eventLog ??
+      path.join(process.cwd(), '_bmad-output', 'runtime', 'requirement-records', 'mentor-events.jsonl')
+  );
+  if (shouldWrite) appendJsonl(eventLogPath, repairEvent);
+
+  const artifactIndexPath = path.resolve(
+    args.artifactIndex ??
+      path.join(process.cwd(), '_bmad-output', 'runtime', 'requirement-records', 'artifact-index.jsonl')
+  );
+  if (shouldWrite) {
+    appendJsonl(artifactIndexPath, {
+      artifactType: 'requirement_record',
+      sourceOfTruthRole: 'control',
+      recordId: repairEvent.recordId,
+      requirementSetId: repairEvent.requirementSetId,
+      path: normalizePathForReport(recordPath),
+      eventType: 'confirmation_bookkeeping_repaired',
+      contentHash: sha256(JSON.stringify(nextRecord)),
+    });
+  }
+
+  const result = {
+    ok: true,
+    event: repairEvent,
+    requirementRecordPath: normalizePathForReport(recordPath),
+    eventLogPath: normalizePathForReport(eventLogPath),
+    artifactIndexPath: normalizePathForReport(artifactIndexPath),
+    sourceUpdated: shouldWrite,
+    dryRun: !shouldWrite,
+  };
+  if (args.json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+  else {
+    console.log(`confirmation_bookkeeping_repaired=${repairEvent.recordId}`);
+    console.log(`requirement-record.json=${normalizePathForReport(recordPath)}`);
+  }
+  return 0;
+}
+
 function main(argv) {
   const args = parseArgs(argv);
   if (args.help) {
-    console.log(`Usage: node ingest-confirmation-event.js --source <source.md> --render-report <confirmation-render-report.json> --confirmation-text <exact text> --confirmed-by <user> [--record-id <id>] [--requirement-record <path>] [--json]`);
+    console.log(`Usage: node ingest-confirmation-event.js --source <source.md> --render-report <confirmation-render-report.json> --confirmation-text <exact text> --confirmed-by <user> [--record-id <id>] [--requirement-record <path>] [--json]
+       node ingest-confirmation-event.js --action repair-bookkeeping --source <source.md> --requirement-record <path> [--confirmed-by <agent>] [--json]`);
     return 0;
   }
   validateArgs(args);
+  if (args.action === 'repair-bookkeeping') {
+    return repairBookkeeping(args);
+  }
 
   const sourcePath = path.resolve(args.source);
   const reportPath = path.resolve(args.renderReport);

@@ -24,6 +24,7 @@ import type {
 import type { JourneyContractRemediationHint } from '../packages/scoring/analytics/journey-contract-remediation';
 import { buildReadinessDriftProjection } from '../packages/scoring/governance/readiness-drift';
 import { loadAndDedupeRecords } from '../packages/scoring/query/loader';
+import { resolveRuntimeScoringDataPath } from './runtime-scoring-data-path';
 
 export interface GovernanceRemediationArtifactInput {
   projectRoot: string;
@@ -522,7 +523,7 @@ function buildExecutorRoutingLines(
 
 function buildReadinessProjectionLines(projectRoot: string): string[] {
   try {
-    const records = loadAndDedupeRecords(path.join(projectRoot, 'packages', 'scoring', 'data'));
+    const records = loadAndDedupeRecords(resolveRuntimeScoringDataPath({ root: projectRoot }));
     const projection = buildReadinessDriftProjection({ allRecords: records });
     return [
       `- Readiness Baseline Run ID: ${projection.readiness_baseline_run_id ?? '(none)'}`,
