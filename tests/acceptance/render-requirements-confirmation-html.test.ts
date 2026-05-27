@@ -41,6 +41,7 @@ afterEach(() => {
 
 function writeSource(overrides = ''): string {
   const includeChineseConfirmationText = !overrides.includes('ENGLISH_ONLY_CONFIRMATION_TEXT');
+  const includeCloseoutReviewPolicy = overrides.includes('CLOSEOUT_REVIEW_POLICY_FIXTURE');
   const acceptanceTestPath = path.join(tempDir, 'tests', 'acceptance', 'upload.acceptance.test.ts');
   const e2eTestPath = path.join(tempDir, 'tests', 'e2e', 'upload-invalid.e2e.test.ts');
   fs.mkdirSync(path.dirname(acceptanceTestPath), { recursive: true });
@@ -72,15 +73,18 @@ function writeSource(overrides = ''): string {
       - title: "Target fixture record"
         detail: "Governed fixture record"
     diffRows:
-      - dimension: "Fixture diff"
+      - id: DIFF-001
+        dimension: "Fixture diff"
         currentState: "current fixture"
         targetState: "target fixture"
         action: "source-provided action"
-      - dimension: "Fixture diff two"
+      - id: DIFF-002
+        dimension: "Fixture diff two"
         currentState: "current fixture two"
         targetState: "target fixture two"
         action: "source-provided action two"
-      - dimension: "Fixture diff three"
+      - id: DIFF-003
+        dimension: "Fixture diff three"
         currentState: "current fixture three"
         targetState: "target fixture three"
         action: "source-provided action three"
@@ -167,7 +171,8 @@ function writeSource(overrides = ''): string {
       - currentState: "fixture current fact"
         targetState: "fixture target fact"
     process:
-      - phase: "Fixture phase"
+      - id: PROCESS-001
+        phase: "Fixture phase"
         currentState: "fixture current phase"
         targetState: "fixture target phase"
     artifactPaths:
@@ -285,6 +290,16 @@ ${includeChineseConfirmationText ? '      textZh: "运行无效上传验收，�
 ${includeChineseConfirmationText ? '      oracleZh: "独立存储查询显示没有新增文件记录。"\n' : ''}      requiredCommandRefs: ["CMD-002"]
       artifactRefs: ["ART-EVD-002"]
       acceptanceType: adversarial_e2e
+${includeCloseoutReviewPolicy ? `    - id: EVD-010
+      text: "Unbound source projection gap fixture that must not be treated as runtime closeout missing evidence."
+      textZh: "未绑定的源投影诊断证据，只能作为 source_projection_gap 展示，不能当作 closeout runtime 证据缺失。"
+      gate: "diagnostic only"
+      oracle: "Renderer labels this as source_projection_gap because no traceRows[].evidenceRefs row binds it."
+      oracleZh: "渲染器应将该项标记为 source_projection_gap，因为没有 traceRows[].evidenceRefs 绑定它。"
+      requiredCommandRefs: ["CMD-SUGGESTED-FULL-AI-TDD-CLOSEOUT"]
+      artifactRefs: ["ART-EVD-010"]
+      acceptanceType: diagnostic_projection
+` : ''}
   openQuestions: []
   failurePaths:${overrides.includes('MISSING_FAILURE_PATHS') ? ' []' : ''}
 ${overrides.includes('MISSING_FAILURE_PATHS') ? '' : `    - id: FAIL-001
@@ -385,6 +400,17 @@ ${overrides.includes('MISSING_TARGET_MODIFICATION_PATHS') ? '' : `    - id: TARG
       evidenceRefs: ["EVD-001"]
       artifactRefs: []
       requiresReconfirmationOnChange: false
+${includeCloseoutReviewPolicy ? `    - id: TARGET-MOD-005
+      path: "scripts/main-agent-delivery-closeout-gate.ts"
+      changeType: validation_only
+      intent: "Fixture target for suggested closeout command policy projection."
+      ownerModel: delivery_closeout
+      requirementRefs: ["MUST-001"]
+      traceRefs: ["TRACE-001"]
+      evidenceRefs: ["EVD-010"]
+      artifactRefs: []
+      requiresReconfirmationOnChange: false
+` : ''}
 `}
   sequenceViews:${overrides.includes('EMPTY_REQUIRED_VIEWS') ? ' []' : ''}
 ${overrides.includes('EMPTY_REQUIRED_VIEWS') ? '' : `
@@ -429,20 +455,24 @@ ${currentTargetMapBlock || `  currentTargetMap:
       - title: "Target upload path"
         detail: "Upload behavior is implemented only when target code, evidence, and negative paths match this map."
     diffRows:
-      - dimension: "Positive upload"
+      - id: DIFF-001
+        dimension: "Positive upload"
         currentState: "Unconfirmed behavior or smoke-only proof."
         targetState: "Persisted file appears in the file list."
         action: "Implement and verify MUST-001."
-      - dimension: "Empty upload"
+      - id: DIFF-002
+        dimension: "Empty upload"
         currentState: "May be falsely accepted by smoke-only proof."
         targetState: "Validation error with no persistent side effect."
         action: "Implement and verify NEG-001."
-      - dimension: "Completion proof"
+      - id: DIFF-003
+        dimension: "Completion proof"
         currentState: "Legacy report may exist as diagnostic context."
         targetState: "Only current-attempt acceptance evidence can close traces."
         action: "Reject legacy completion proof."
     process:
-      - phase: "Confirm source"
+      - id: PROCESS-001
+        phase: "Confirm source"
         currentState: "Draft source document."
         targetState: "Confirmed source with visible current/target map."
     artifactPaths:
@@ -765,11 +795,65 @@ ${currentTargetMapBlock || `  currentTargetMap:
   suggestedCommands:
     - id: CMD-SUG-001
       command: "npm run lint"
+${includeCloseoutReviewPolicy ? `    - id: CMD-SUGGESTED-FULL-AI-TDD-CLOSEOUT
+      command: "node scripts/main-agent-delivery-closeout-gate.ts --record REQ-UPLOAD-001 --json"
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-010"]
+` : ''}
   closeoutReadinessPreview:
+${includeCloseoutReviewPolicy ? `    deliveryReady: false
+    readinessState: "diagnostic_until_closeout_record_passes"
+    requiredCommandAuthority: "deliveryEvidence.requiredCommands"
+    requiredCommandsMirrorPolicy: "suggestedCommands are advisory and must mirror controlled required commands before closeout."
+` : ''}
     requiredCommands: ["CMD-001", "CMD-002"]
     orphanPolicy: "No orphan command, evidence, artifact, or report may satisfy closeout."
     currentAttemptPolicy: "Only current-attempt evidence with current source and implementation hashes may close trace rows."
     recordClosedPolicy: "record_closed may be written only after delivery verification is verified."
+${includeCloseoutReviewPolicy ? `    blockingConditions: ["missing_current_attempt_evidence", "unbound_source_projection_gap"]
+  postCloseoutConfirmationReview:
+    rendererMode: closeout-review
+    preservesOriginalConfirmationState: true
+    mustNotMutate: ["sourceDocument", "implementationConfirmation", "requirementRecord"]
+    requiredColumns: ["originalConfirmationStatus", "preCloseoutRuntimeStatus", "postCloseoutRuntimeStatus", "finalAcceptanceStatus", "transitionLegality"]
+    legalTransitionPolicy: "PENDING may become accepted_success only when current attempt is pass and record_closed proof exists."
+  mustDerivedProjectionMap:
+    - id: MDPM-AI-TDD-MANIFEST
+      mustRefs: ["MUST-001"]
+      projectionRefs: ["TRACE-001", "ACC-001", "E2E-001"]
+      policy: "fixture ai-tdd manifest projection is source-derived"
+    - id: MDPM-CURRENT-TARGET-MAP
+      mustRefs: ["MUST-001"]
+      projectionRefs: ["DIFF-001", "PROCESS-001"]
+      policy: "current target map rows preserve source projection IDs"
+    - id: MDPM-CLOSEOUT-PREVIEW
+      mustRefs: ["MUST-001"]
+      projectionRefs: ["CMD-SUGGESTED-FULL-AI-TDD-CLOSEOUT", "EVD-010"]
+      policy: "closeout preview exposes source projection gaps as diagnostics"
+  aiTddContractExecutionManifestProjection:
+    schemaVersion: ai-tdd-contract-execution-manifest/v1
+    applies: true
+    requiredSections: ["atomicImplementationTaskLineage", "finalGateMatrix", "executionLoopProtocol"]
+    atomicImplementationTaskLineage:
+      - taskId: TASK-001
+        mustRefs: ["MUST-001"]
+        traceRows: ["TRACE-001"]
+    finalGateMatrix:
+      - gateId: GATE-FINAL-001
+        required: true
+        commandRefs: ["CMD-001", "CMD-002"]
+    executionLoopProtocol:
+      maxIterations: 15
+      stopOnSemanticGap: true
+    semanticGapPolicy:
+      action: stop_and_require_reconfirmation
+    hostExecutionHints:
+      codex: "use /goal when available"
+      cursor: "use IDE prompt execution"
+    evidenceTrustStates:
+      current_pass: "trusted"
+      source_projection_gap: "diagnostic_only"
+` : ''}
   architectureImpacts:
     - component: "upload module"
       currentState: "no confirmed contract"
@@ -1048,7 +1132,6 @@ describe('render-requirements-confirmation-html', () => {
     const firstReport = JSON.parse(
       fs.readFileSync(path.join(path.dirname(firstOut), 'confirmation-render-report.json'), 'utf8')
     );
-
     fs.writeFileSync(
       recordPath,
       JSON.stringify(
@@ -1152,6 +1235,10 @@ describe('render-requirements-confirmation-html', () => {
     const firstReport = JSON.parse(
       fs.readFileSync(path.join(path.dirname(firstOut), 'confirmation-render-report.json'), 'utf8')
     );
+    const originalConfirmationRenderReportText = fs.readFileSync(
+      path.join(path.dirname(firstOut), 'confirmation-render-report.json'),
+      'utf8'
+    );
 
     fs.writeFileSync(
       recordPath,
@@ -1222,6 +1309,463 @@ describe('render-requirements-confirmation-html', () => {
     });
     expect(report.deliveryReadiness.ready).toBe(true);
     expect(report.deliveryReadiness.currentPassTraceRows).toBe(1);
+  });
+
+  it('renders closeout review as final acceptance only after record_closed and current trace proof', () => {
+    const source = writeSource('CLOSEOUT_REVIEW_POLICY_FIXTURE');
+    const mermaidBundle = writeMockMermaidBundle();
+    const recordPath = path.join(tempDir, 'requirement-record-closeout-review.json');
+    const firstOut = path.join(tempDir, 'confirmation-closeout-review-first.html');
+    const firstResult = runRenderer([
+      '--source',
+      source,
+      '--out',
+      firstOut,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+      '--requirement-record',
+      recordPath,
+      '--strict',
+      'false',
+      '--json',
+    ]);
+    expect(firstResult.status).toBe(0);
+    const firstReport = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(firstOut), 'confirmation-render-report.json'), 'utf8')
+    );
+    const originalConfirmationRenderReportText = fs.readFileSync(
+      path.join(path.dirname(firstOut), 'confirmation-render-report.json'),
+      'utf8'
+    );
+
+    fs.writeFileSync(
+      recordPath,
+      JSON.stringify(
+        {
+          recordId: 'REQ-UPLOAD-001',
+          requirementSetId: 'REQSET-UPLOAD',
+          sourceDocumentHash: firstReport.sourceDocumentHash,
+          implementationConfirmationHash: firstReport.implementationConfirmationHash,
+          lastEventType: 'confirmation_projection_refreshed',
+          lastAppliedEventId: 'record_closed:fixture',
+          closeout: {
+            currentAttemptId: 'closeout-review-pass',
+            decision: 'pass',
+            attempts: [
+              {
+                eventType: 'closeout_check_recorded',
+                closeoutAttemptId: 'closeout-review-blocked-001',
+                decision: 'blocked',
+                blockingReasons: ['open_rca_action_exists'],
+                checks: [
+                  { id: 'delivery-truth-gate-current', passed: true },
+                  { id: 'rca-actions-closed', passed: false, openCount: 1 },
+                ],
+                reportPath: path.join(path.dirname(recordPath), 'delivery-closeout-report.json'),
+                evaluatedAt: '2026-05-27T07:00:00.000Z',
+              },
+              {
+                eventType: 'closeout_check_recorded',
+                closeoutAttemptId: 'closeout-review-pass',
+                decision: 'pass',
+                blockingReasons: [],
+                checks: [
+                  { id: 'delivery-truth-gate-current', passed: true, issueCount: 0 },
+                  { id: 'ai-tdd-contract-gate-closeout', passed: true, blockingReasons: [] },
+                  { id: 'required-command:CMD-CLOSEOUT-REVIEW', passed: true, openCount: 0 },
+                  { id: 'requirement-closures-terminal', passed: true, openCount: 0 },
+                  { id: 'failure-records-closed', passed: true, openCount: 0 },
+                  { id: 'rca-actions-closed', passed: true, openCount: 0 },
+                ],
+                reportPath: path.join(path.dirname(recordPath), 'delivery-closeout-report.json'),
+                evaluatedAt: '2026-05-27T08:00:00.000Z',
+              },
+            ],
+          },
+          deliveryEvidence: {
+            requiredCommands: [
+              {
+                commandId: 'CMD-CLOSEOUT-REVIEW',
+                command: 'verify closeout review',
+                blockingIfMissing: true,
+                negativeOrRegression: true,
+                closeoutAttemptId: 'closeout-review-pass',
+                lastRunRef: {
+                  commandId: 'CMD-CLOSEOUT-REVIEW',
+                  runId: 'run-closeout-review-pass',
+                  closeoutAttemptId: 'closeout-review-pass',
+                },
+                traceRows: ['TRACE-001'],
+                evidenceRefs: ['EVD-001', 'EVD-002'],
+                artifactRefs: [
+                  {
+                    artifactType: 'command_output',
+                    sourceOfTruthRole: 'evidence',
+                    path: 'evidence/closeout-review.txt',
+                    hash: 'sha256:closeout-review',
+                  },
+                ],
+              },
+            ],
+          },
+          requirementClosures: [
+            {
+              eventType: 'requirement_closure_recorded',
+              requirementId: 'MUST-001',
+              status: 'pass',
+              traceRows: ['TRACE-001'],
+              evidenceRefs: ['EVD-001', 'EVD-002'],
+              sourceDocumentHash: firstReport.sourceDocumentHash,
+              implementationConfirmationHash: firstReport.implementationConfirmationHash,
+              commandRunRefs: [
+                {
+                  commandId: 'CMD-CLOSEOUT-REVIEW',
+                  runId: 'run-closeout-review-pass',
+                  closeoutAttemptId: 'closeout-review-pass',
+                  exitCode: 0,
+                },
+              ],
+            },
+          ],
+          executionIterations: [{ status: 'closed', closeoutAttemptId: 'closeout-review-pass' }],
+          gateChecks: [{ status: 'pass', closeoutAttemptId: 'closeout-review-pass' }],
+          contractChecks: [{ status: 'pass', closeoutAttemptId: 'closeout-review-pass' }],
+          failureRecords: [{ status: 'closed', closeoutAttemptId: 'closeout-review-pass' }],
+          rcaRecords: [{ status: 'closed', closeoutAttemptId: 'closeout-review-pass' }],
+          rerunLoops: [{ status: 'closed', closeoutAttemptId: 'closeout-review-pass' }],
+          artifactIndex: [{ path: 'evidence/closeout-review.txt', hash: 'sha256:closeout-review' }],
+          readinessAuditRequests: [{ status: 'closed', auditId: 'readiness-request-001' }],
+          readinessAuditResults: [{ status: 'pass', auditId: 'readiness-result-001' }],
+          readinessScoringRecords: [{ status: 'pass', scoreId: 'readiness-score-001' }],
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+    fs.writeFileSync(
+      path.join(path.dirname(recordPath), 'delivery-closeout-report.json'),
+      JSON.stringify(
+        {
+          currentAttemptId: 'closeout-review-pass',
+          decision: 'pass',
+          generatedAt: '2026-05-27T08:00:00.000Z',
+          checks: [
+            { id: 'delivery-truth-gate-current', passed: true, issueCount: 0, openCount: 0 },
+            { id: 'ai-tdd-contract-gate-closeout', passed: true, blockingReasons: [] },
+            { id: 'required-command:CMD-CLOSEOUT-REVIEW', passed: true, openCount: 0, missingEvidenceCount: 0 },
+            { id: 'requirement-closures-terminal', passed: true, openCount: 0 },
+            { id: 'failure-records-closed', passed: true, openCount: 0 },
+            { id: 'rca-actions-closed', passed: true, openCount: 0 },
+          ],
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+
+    const out = path.join(tempDir, 'closeout-review.html');
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+      '--requirement-record',
+      recordPath,
+      '--mode',
+      'closeout-review',
+      '--json',
+    ]);
+
+    expect(result.status).toBe(0);
+    const html = fs.readFileSync(out, 'utf8');
+    const reportPath = path.join(path.dirname(out), 'closeout-review.render-report.json');
+    const summaryPath = path.join(path.dirname(out), 'closeout-review.summary.json');
+    expect(fs.existsSync(reportPath)).toBe(true);
+    expect(fs.existsSync(summaryPath)).toBe(true);
+    expect(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')).toBe(
+      originalConfirmationRenderReportText
+    );
+    const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+    expect(html).toContain('id="final-acceptance-review"');
+    expect(html).toContain('Original Confirmation Status');
+    expect(html).toContain('Pre-Closeout Runtime Status');
+    expect(html).toContain('Post-Closeout Runtime Status');
+    expect(html).toContain('Final Acceptance Status');
+    expect(html).toContain('Transition Legality');
+    expect(html).toContain('accepted_success');
+    expect(html).toContain('legal_transition');
+    expect(html).toContain('run-closeout-review-pass');
+    expect(html).toContain('Closeout Delivery Verdict');
+    expect(html).toContain('final_acceptance_ready');
+    expect(html).toContain('Pre-Closeout Diagnostic');
+    expect(html).toContain('source_projection_gap');
+    expect(html).toContain('EVD-010');
+    expect(html).toContain('source evidence[] entry exists but no source traceRows[].evidenceRefs row binds it');
+    expect(html).toContain('Closeout Gate Result Matrix');
+    expect(html).toContain('delivery-truth-gate-current');
+    expect(html).toContain('ai-tdd-contract-gate-closeout');
+    expect(html).toContain('required-command:CMD-CLOSEOUT-REVIEW');
+    expect(html).toContain('Closeout Attempt History');
+    expect(html).toContain('closeout-review-blocked-001');
+    expect(html).toContain('open_rca_action_exists');
+    expect(html).toContain('Runtime Evidence Closure Summary');
+    expect(html).toContain('requirementClosures');
+    expect(html).toContain('readinessScoringRecords');
+    expect(html).toContain('Source Closeout Policy');
+    expect(html).toContain('rendererMode');
+    expect(html).toContain('preservesOriginalConfirmationState');
+    expect(html).toContain('requiredCommandsMirrorPolicy');
+    expect(html).toContain('CMD-SUGGESTED-FULL-AI-TDD-CLOSEOUT');
+    expect(html).toContain('MDPM-AI-TDD-MANIFEST');
+    expect(html).toContain('atomicImplementationTaskLineage');
+    expect(html).toContain('finalGateMatrix');
+    expect(html).toContain('hostExecutionHints');
+    expect(html).toContain('DIFF-001');
+    expect(html).toContain('PROCESS-001');
+    expect(html).toContain('class="tag green">accepted_success</span>');
+    expect(html).toContain('class="tag green">current_pass</span>');
+    expect(html).toContain('class="tag green">legal_transition</span>');
+    expect(html).toContain('closeout-trace-acceptance-table');
+    expect(report.mode).toBe('closeout-review');
+    expect(report.renderedSectionOrder).toEqual(
+      expect.arrayContaining([
+        'closeout-gate-result-matrix',
+        'closeout-attempt-history',
+        'runtime-evidence-closure-summary',
+        'source-closeout-policy',
+      ])
+    );
+    expect(report.closeoutDeliveryVerdict).toMatchObject({
+      applies: true,
+      ready: true,
+      status: 'final_acceptance_ready',
+      label: 'final_acceptance_ready',
+      closeoutReportDecision: 'pass',
+      closeoutCheckCount: 6,
+      closeoutFailedCheckCount: 0,
+      sourceProjectionGapCount: 1,
+    });
+    expect(report.preCloseoutDiagnostic).toMatchObject({
+      ready: false,
+      missingEvidenceCount: 1,
+    });
+    expect(report.sourceProjectionDiagnostics.unboundEvidence[0]).toMatchObject({
+      id: 'EVD-010',
+      diagnosticType: 'source_projection_gap',
+      proofState: 'source_evidence_unbound_to_trace',
+    });
+    expect(report.closeoutGateMatrix.rows.map((row: any) => row.id)).toEqual(
+      expect.arrayContaining([
+        'delivery-truth-gate-current',
+        'ai-tdd-contract-gate-closeout',
+        'required-command:CMD-CLOSEOUT-REVIEW',
+        'requirement-closures-terminal',
+        'failure-records-closed',
+        'rca-actions-closed',
+      ])
+    );
+    expect(report.closeoutAttemptHistory).toMatchObject({
+      totalCount: 2,
+      blockedCount: 1,
+      passedCount: 1,
+    });
+    expect(report.runtimeEvidenceClosureSummary.rows).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: 'requirementClosures', totalCount: 1, openCount: 0 }),
+        expect.objectContaining({ name: 'gateChecks', totalCount: 1, openCount: 0 }),
+        expect.objectContaining({ name: 'contractChecks', totalCount: 1, openCount: 0 }),
+        expect.objectContaining({ name: 'failureRecords', totalCount: 1, openCount: 0 }),
+        expect.objectContaining({ name: 'rcaRecords', totalCount: 1, openCount: 0 }),
+        expect.objectContaining({ name: 'rerunLoops', totalCount: 1, openCount: 0 }),
+        expect.objectContaining({ name: 'artifactIndex', totalCount: 1, openCount: 0 }),
+        expect.objectContaining({ name: 'readinessAuditRequests', totalCount: 1, openCount: 0 }),
+        expect.objectContaining({ name: 'readinessAuditResults', totalCount: 1, openCount: 0 }),
+        expect.objectContaining({ name: 'readinessScoringRecords', totalCount: 1, openCount: 0 }),
+      ])
+    );
+    expect(report.sourceCloseoutPolicyCoverage).toMatchObject({
+      suggestedCommandIds: expect.arrayContaining(['CMD-SUGGESTED-FULL-AI-TDD-CLOSEOUT']),
+      mustDerivedProjectionMapIds: expect.arrayContaining(['MDPM-AI-TDD-MANIFEST']),
+      aiTddContractExecutionManifestProjectionFields: expect.arrayContaining([
+        'atomicImplementationTaskLineage',
+        'finalGateMatrix',
+        'executionLoopProtocol',
+        'semanticGapPolicy',
+        'hostExecutionHints',
+        'evidenceTrustStates',
+      ]),
+    });
+    expect(report.finalAcceptanceReview).toMatchObject({
+      applies: true,
+      ready: true,
+      status: 'final_acceptance_ready',
+      currentAttemptId: 'closeout-review-pass',
+      recordClosed: true,
+      attemptDecision: 'pass',
+    });
+    expect(report.finalAcceptanceReview.recordClosedProof).toMatchObject({
+      recordClosed: true,
+      proofKind: 'terminal_record_closed_proof',
+    });
+    expect(report.finalAcceptanceReview.lastEventType).toBe('confirmation_projection_refreshed');
+    expect(report.finalAcceptanceReview.rows['TRACE-001']).toMatchObject({
+      originalConfirmationStatus: 'PENDING',
+      preCloseoutRuntimeStatus: 'open_before_closeout',
+      postCloseoutRuntimeStatus: 'current_pass',
+      finalAcceptanceStatus: 'accepted_success',
+      transitionLegality: 'legal_transition',
+      runId: 'run-closeout-review-pass',
+      closeoutAttemptId: 'closeout-review-pass',
+    });
+    expect(report.finalAcceptanceReview.requiredCommandEvidence).toMatchObject({
+      totalCount: 1,
+      currentAttemptCount: 1,
+      artifactBoundCount: 1,
+    });
+    const summary = JSON.parse(fs.readFileSync(summaryPath, 'utf8'));
+    expect(summary.closeoutDeliveryVerdict).toMatchObject({ ready: true, status: 'final_acceptance_ready' });
+    expect(summary.preCloseoutDiagnostic).toMatchObject({ ready: false, missingEvidenceCount: 1 });
+    expect(summary.renderedSectionOrder).toContain('source-closeout-policy');
+  });
+
+  it('fails closed in closeout-review mode without a terminal record_closed event', () => {
+    const source = writeSource();
+    const mermaidBundle = writeMockMermaidBundle();
+    const recordPath = path.join(tempDir, 'requirement-record-closeout-review-blocked.json');
+    const firstOut = path.join(tempDir, 'confirmation-closeout-review-blocked-first.html');
+    const firstResult = runRenderer([
+      '--source',
+      source,
+      '--out',
+      firstOut,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+      '--requirement-record',
+      recordPath,
+      '--json',
+    ]);
+    expect(firstResult.status).toBe(0);
+    const firstReport = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(firstOut), 'confirmation-render-report.json'), 'utf8')
+    );
+
+    fs.writeFileSync(
+      recordPath,
+      JSON.stringify(
+        {
+          recordId: 'REQ-UPLOAD-001',
+          requirementSetId: 'REQSET-UPLOAD',
+          sourceDocumentHash: firstReport.sourceDocumentHash,
+          implementationConfirmationHash: firstReport.implementationConfirmationHash,
+          lastEventType: 'closeout_check_recorded',
+          closeout: {
+            currentAttemptId: 'closeout-review-not-closed',
+            decision: 'pass',
+            attempts: [
+              {
+                closeoutAttemptId: 'closeout-review-not-closed',
+                decision: 'pass',
+                blockingReasons: [],
+              },
+            ],
+          },
+          deliveryEvidence: {
+            requiredCommands: [
+              {
+                commandId: 'CMD-CLOSEOUT-REVIEW',
+                negativeOrRegression: true,
+                closeoutAttemptId: 'closeout-review-not-closed',
+                lastRunRef: {
+                  commandId: 'CMD-CLOSEOUT-REVIEW',
+                  runId: 'run-closeout-review-not-closed',
+                  closeoutAttemptId: 'closeout-review-not-closed',
+                },
+                traceRows: ['TRACE-001'],
+                evidenceRefs: ['EVD-001', 'EVD-002'],
+                artifactRefs: [{ path: 'evidence/closeout-review.txt', hash: 'sha256:closeout-review' }],
+              },
+            ],
+          },
+          requirementClosures: [
+            {
+              eventType: 'requirement_closure_recorded',
+              requirementId: 'MUST-001',
+              status: 'pass',
+              traceRows: ['TRACE-001'],
+              evidenceRefs: ['EVD-001', 'EVD-002'],
+              sourceDocumentHash: firstReport.sourceDocumentHash,
+              implementationConfirmationHash: firstReport.implementationConfirmationHash,
+              commandRunRefs: [
+                {
+                  commandId: 'CMD-CLOSEOUT-REVIEW',
+                  runId: 'run-closeout-review-not-closed',
+                  closeoutAttemptId: 'closeout-review-not-closed',
+                  exitCode: 0,
+                },
+              ],
+            },
+          ],
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+
+    const out = path.join(tempDir, 'closeout-review-blocked.html');
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+      '--requirement-record',
+      recordPath,
+      '--mode',
+      'closeout-review',
+      '--json',
+    ]);
+
+    expect(result.status).toBe(3);
+    const html = fs.readFileSync(out, 'utf8');
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'closeout-review-blocked.render-report.json'), 'utf8')
+    );
+    expect(html).toContain('final_acceptance_ready=false');
+    expect(html).toContain('final_acceptance_record_closed_missing');
+    expect(report.finalAcceptanceReview.ready).toBe(false);
+    expect(report.finalAcceptanceReview.blockingIssues.map((issue: any) => issue.code)).toContain(
+      'final_acceptance_record_closed_missing'
+    );
   });
 
   it('preserves id-badge mini as trusted HTML inside requirement boundary tables', () => {

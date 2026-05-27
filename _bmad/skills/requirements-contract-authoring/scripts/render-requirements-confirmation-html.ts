@@ -25,6 +25,7 @@ const VALID_ENTRY_FLOW_CLASSES = new Set([
 ]);
 const VALID_WORKFLOW_ADAPTERS = new Set(['direct', 'legacy', 'bmad', 'speckit']);
 const VALID_THEMES = new Set(['readable', 'compact', 'audit']);
+const VALID_RENDER_MODES = new Set(['confirmation', 'closeout-review']);
 const ID_PATTERN = /\b(MUST|NEG|OUT|EVD|TRACE|ACC|E2E|Q)-[A-Za-z0-9_.:-]+\b/g;
 const SELF_PAGE_HASH_PLACEHOLDER = 'sha256:SELF_CONFIRMATION_PAGE_HASH';
 const GENERATED_AT_HASH_PLACEHOLDER = 'CONFIRMATION_GENERATED_AT_HASH_PLACEHOLDER';
@@ -140,10 +141,11 @@ const CURRENT_TARGET_TABLE_PROFILES = {
     className: 'compact-map-table profile-diff-rows',
     emptyStateText: '源文档未提供 diffRows[]。',
     fields: [
+      { key: 'id', header: 'ID', cell: 'code', width: '12%', required: false },
       { key: 'dimension', header: '维度', cell: 'text', width: '18%', required: true },
-      { key: 'currentState', header: '当前', cell: 'text', width: '32%', required: true },
-      { key: 'targetState', header: '目标', cell: 'text', width: '32%', required: true },
-      { key: 'action', header: '动作', cell: 'tag', width: '18%', required: true },
+      { key: 'currentState', header: '当前', cell: 'text', width: '27%', required: true },
+      { key: 'targetState', header: '目标', cell: 'text', width: '27%', required: true },
+      { key: 'action', header: '动作', cell: 'tag', width: '16%', required: true },
     ],
   },
   targetFlow: {
@@ -268,9 +270,10 @@ const CURRENT_TARGET_TABLE_PROFILES = {
     className: 'compact-map-table profile-process',
     emptyStateText: '源文档未提供 process[]。',
     fields: [
-      { key: 'phase', header: '阶段', cell: 'text', width: '22%', required: true },
-      { key: 'currentState', header: '当前', cell: 'text', width: '39%', required: true },
-      { key: 'targetState', header: '目标', cell: 'text', width: '39%', required: true },
+      { key: 'id', header: 'ID', cell: 'code', width: '12%', required: false },
+      { key: 'phase', header: '阶段', cell: 'text', width: '20%', required: true },
+      { key: 'currentState', header: '当前', cell: 'text', width: '34%', required: true },
+      { key: 'targetState', header: '目标', cell: 'text', width: '34%', required: true },
     ],
   },
   artifactPaths: {
@@ -2788,6 +2791,9 @@ function validateInput(args) {
       )
     );
   }
+  if (args.mode && !VALID_RENDER_MODES.has(args.mode)) {
+    issues.push(blocking('invalid_mode', `--mode must be ${[...VALID_RENDER_MODES].join('|')}`));
+  }
   if (args.theme && !VALID_THEMES.has(args.theme)) {
     issues.push(blocking('invalid_theme', `--theme must be ${[...VALID_THEMES].join('|')}`));
   }
@@ -4190,6 +4196,20 @@ function renderStatusBadge(label, tone = 'blue') {
   return `<span class="tag ${tone}">${escapeHtml(label)}</span>`;
 }
 
+function statusBadgeTone(value) {
+  const text = String(value ?? '').toLowerCase();
+  if (/accepted_success|current_pass|legal_transition|final_acceptance_ready|delivery_ready|pass|passed|true|closed/u.test(text)) {
+    return 'green';
+  }
+  if (/blocked|false|missing|illegal|unproven|open_or_unaccepted|no_controlled|failed/u.test(text)) {
+    return 'red';
+  }
+  if (/open_before_closeout|pending|diagnostic|source_projection_gap/u.test(text)) {
+    return 'gold';
+  }
+  return 'blue';
+}
+
 function renderCompactIdBadges(values, limit = 8) {
   const ids = stringList(values);
   if (!ids.length) return '<span class="muted">无</span>';
@@ -5144,14 +5164,176 @@ function collectCommandRefs(entry) {
 }
 
 function collectArtifactRefs(entry) {
+  const primitiveRefs = (value) =>
+    asArray(value).filter((item) => item === null || typeof item !== 'object').map((item) => String(item));
   return unique([
-    ...stringList(entry?.artifactRefs),
-    ...stringList(entry?.evidenceArtifactRefs),
+    ...primitiveRefs(entry?.artifactRefs),
+    ...primitiveRefs(entry?.evidenceArtifactRefs),
     ...asArray(entry?.evidenceArtifactRefs).map((ref) => ref?.artifactId ?? ref?.path ?? ref?.contentHash ?? '').filter(Boolean),
     ...asArray(entry?.artifactRefs)
       .map((ref) => (typeof ref === 'object' ? ref.artifactId ?? ref.path ?? ref.hash : ref))
       .filter(Boolean),
   ].map((item) => String(item)));
+}
+
+function collectArtifactObjects(entry) {
+  return [
+    ...asArray(entry?.artifactRefs),
+    ...asArray(entry?.evidenceArtifactRefs),
+  ].filter((item) => item && typeof item === 'object' && !Array.isArray(item));
+}
+
+function artifactIsBound(artifact) {
+  if (!artifact || typeof artifact !== 'object' || Array.isArray(artifact)) return false;
+  return Boolean(
+    firstString(artifact.path, artifact.artifactId, artifact.hash, artifact.contentHash) &&
+      firstString(artifact.hash, artifact.contentHash)
+  );
+}
+
+function closeoutAttempts(record) {
+  return asArray(record?.closeout?.attempts);
+}
+
+function latestCloseoutAttempt(record, currentAttemptId) {
+  const attempts = closeoutAttempts(record);
+  if (currentAttemptId) {
+    const matched = attempts.find((attempt) => firstString(attempt?.closeoutAttemptId, attempt?.attemptId) === currentAttemptId);
+    if (matched) return matched;
+  }
+  return attempts.at(-1) ?? null;
+}
+
+function deliveryEvidenceObject(record) {
+  return record?.deliveryEvidence && typeof record.deliveryEvidence === 'object' && !Array.isArray(record.deliveryEvidence)
+    ? record.deliveryEvidence
+    : {};
+}
+
+function commandSelectedForAttempt(command, attemptId) {
+  if (!attemptId) return false;
+  if (firstString(command?.closeoutAttemptId) === attemptId) return true;
+  const lastRunRef = command?.lastRunRef;
+  return Boolean(
+    lastRunRef &&
+      typeof lastRunRef === 'object' &&
+      !Array.isArray(lastRunRef) &&
+      firstString(lastRunRef.closeoutAttemptId) === attemptId
+  );
+}
+
+function requiredCommandsForAttempt(record, attemptId) {
+  return asArray(deliveryEvidenceObject(record).requiredCommands).filter((command) =>
+    commandSelectedForAttempt(command, attemptId)
+  );
+}
+
+function commandRunId(command) {
+  const lastRunRef = command?.lastRunRef;
+  return firstString(
+    command?.runId,
+    lastRunRef && typeof lastRunRef === 'object' && !Array.isArray(lastRunRef) ? lastRunRef.runId : ''
+  );
+}
+
+function defaultCloseoutReportPath(requirementRecordState) {
+  if (!requirementRecordState?.path) return '';
+  return path.join(path.dirname(path.resolve(requirementRecordState.path)), 'delivery-closeout-report.json');
+}
+
+function readCloseoutReport(args, requirementRecordState) {
+  const requestedPath = args.closeoutReport
+    ? path.resolve(args.closeoutReport)
+    : defaultCloseoutReportPath(requirementRecordState);
+  if (!requestedPath) {
+    return { found: false, path: '', report: null, loadError: null, source: 'unresolved' };
+  }
+  if (!fs.existsSync(requestedPath)) {
+    return {
+      found: false,
+      path: normalizePathForReport(requestedPath),
+      report: null,
+      loadError: null,
+      source: args.closeoutReport ? 'explicit' : 'default',
+    };
+  }
+  try {
+    return {
+      found: true,
+      path: normalizePathForReport(requestedPath),
+      report: readDataFile(requestedPath),
+      loadError: null,
+      source: args.closeoutReport ? 'explicit' : 'default',
+    };
+  } catch (error) {
+    return {
+      found: false,
+      path: normalizePathForReport(requestedPath),
+      report: null,
+      loadError: error instanceof Error ? error.message : String(error),
+      source: args.closeoutReport ? 'explicit' : 'default',
+    };
+  }
+}
+
+function currentCloseoutChecks(closeoutReportState, attempt) {
+  const reportChecks = asArray(closeoutReportState?.report?.checks);
+  if (reportChecks.length) return reportChecks;
+  return asArray(attempt?.checks);
+}
+
+function checkPassed(check) {
+  if (check?.passed === true) return true;
+  if (check?.passed === false) return false;
+  const status = String(check?.status ?? check?.decision ?? '').toLowerCase();
+  if (!status) return false;
+  return ['pass', 'passed', 'ready', 'complete', 'completed', 'closed', 'true'].includes(status);
+}
+
+function checkIssueCount(check) {
+  return Number(check?.issueCount ?? check?.failedEvidenceCount ?? check?.missingEvidenceCount ?? check?.openCount ?? 0) || 0;
+}
+
+function closeoutReportDecision(closeoutReportState, attemptDecision) {
+  return String(closeoutReportState?.report?.decision ?? closeoutReportState?.report?.closeoutReadyDecision ?? attemptDecision ?? '').toLowerCase();
+}
+
+function hasTerminalRecordClosedProof(record, currentAttemptId, attempt) {
+  if (!record || !currentAttemptId) {
+    return { recordClosed: false, proofKind: 'missing_record_or_attempt', proofRefs: [] };
+  }
+  const refs = [];
+  const closeoutAttemptMatches = firstString(record?.closeout?.currentAttemptId) === currentAttemptId;
+  const closeoutDecisionPass = String(record?.closeout?.decision ?? '').toLowerCase() === 'pass';
+  const attemptDecisionPass = String(attempt?.decision ?? '').toLowerCase() === 'pass';
+  if (record.lastEventType === 'record_closed') refs.push('record.lastEventType=record_closed');
+  if (String(record.lastAppliedEventId ?? '').startsWith('record_closed:')) {
+    refs.push(`record.lastAppliedEventId=${record.lastAppliedEventId}`);
+  }
+  if (attempt?.eventType === 'record_closed') refs.push('closeout.attempt.eventType=record_closed');
+  const recordClosed =
+    closeoutAttemptMatches &&
+    (closeoutDecisionPass || attemptDecisionPass) &&
+    (record.lastEventType === 'record_closed' ||
+      String(record.lastAppliedEventId ?? '').startsWith('record_closed:') ||
+      attempt?.eventType === 'record_closed');
+  return {
+    recordClosed,
+    proofKind: recordClosed ? 'terminal_record_closed_proof' : 'record_closed_proof_missing',
+    proofRefs: refs,
+  };
+}
+
+function terminalStatus(value) {
+  return ['pass', 'passed', 'closed', 'done', 'completed', 'resolved', 'success'].includes(String(value ?? '').toLowerCase());
+}
+
+function countOpenItems(rows) {
+  return asArray(rows).filter((row) => {
+    const status = row?.status ?? row?.decision ?? row?.state ?? row?.result;
+    if (status === undefined || status === null || status === '') return false;
+    return !terminalStatus(status);
+  }).length;
 }
 
 function firstString(...values) {
@@ -5597,6 +5779,276 @@ function buildDeliveryReadiness(progressDelta, traceExecutionState, ui) {
     missingEvidenceCount,
     staleProofCount,
     nonCurrentPassTraceRows,
+  };
+}
+
+function buildSourceProjectionDiagnostics(confirmation, traceRows) {
+  const idToTraceRows = buildIdToTraceRows(traceRows);
+  const evidenceRows = asArray(confirmation?.evidence);
+  const unboundEvidence = evidenceRows
+    .filter((row) => row?.id && !asArray(idToTraceRows[row.id]).length)
+    .map((row) => ({
+      id: row.id,
+      diagnosticType: 'source_projection_gap',
+      proofState: 'source_evidence_unbound_to_trace',
+      explanation:
+        'source evidence[] entry exists but no source traceRows[].evidenceRefs row binds it; this is not closeout runtime evidence missing',
+      requiredCommandRefs: stringList(row.requiredCommandRefs),
+      artifactRefs: stringList(row.artifactRefs),
+    }));
+  return {
+    unboundEvidenceCount: unboundEvidence.length,
+    unboundEvidence,
+  };
+}
+
+function buildCloseoutGateMatrix(closeoutReportState, attempt) {
+  const checks = currentCloseoutChecks(closeoutReportState, attempt);
+  const rows = checks.map((check) => ({
+    id: firstString(check?.id, check?.checkId, check?.name),
+    passed: checkPassed(check),
+    issueCount: Number(check?.issueCount ?? 0) || 0,
+    openCount: Number(check?.openCount ?? 0) || 0,
+    missingEvidenceCount: Number(check?.missingEvidenceCount ?? 0) || 0,
+    failedEvidenceCount: Number(check?.failedEvidenceCount ?? 0) || 0,
+    deliveryStatus: firstString(check?.deliveryStatus, check?.status, check?.decision),
+    reportPath: firstString(check?.reportPath, closeoutReportState?.report?.reportPath, attempt?.reportPath, closeoutReportState?.path),
+    blockingReasons: stringList(check?.blockingReasons),
+  })).filter((row) => row.id);
+  return {
+    reportFound: closeoutReportState?.found === true,
+    reportPath: closeoutReportState?.path ?? '',
+    reportDecision: closeoutReportDecision(closeoutReportState, attempt?.decision),
+    reportLoadError: closeoutReportState?.loadError ?? null,
+    totalCount: rows.length,
+    passedCount: rows.filter((row) => row.passed).length,
+    failedCount: rows.filter((row) => !row.passed).length,
+    rows,
+  };
+}
+
+function buildCloseoutAttemptHistory(record) {
+  const attempts = closeoutAttempts(record).map((attempt, index) => {
+    const checks = asArray(attempt?.checks);
+    return {
+      index: index + 1,
+      closeoutAttemptId: firstString(attempt?.closeoutAttemptId, attempt?.attemptId),
+      decision: firstString(attempt?.decision, attempt?.status),
+      blockingReasons: stringList(attempt?.blockingReasons),
+      checkCount: checks.length,
+      passedCheckCount: checks.filter(checkPassed).length,
+      failedCheckCount: checks.filter((check) => !checkPassed(check)).length,
+      reportPath: firstString(attempt?.reportPath),
+      evaluatedAt: firstString(attempt?.evaluatedAt, attempt?.updatedAt, attempt?.generatedAt),
+    };
+  });
+  return {
+    totalCount: attempts.length,
+    blockedCount: attempts.filter((attempt) => String(attempt.decision).toLowerCase() === 'blocked').length,
+    passedCount: attempts.filter((attempt) => String(attempt.decision).toLowerCase() === 'pass').length,
+    attempts,
+  };
+}
+
+function buildRuntimeEvidenceClosureSummary(record) {
+  const requirementClosures = asArray(record?.requirementClosures);
+  const gateChecks = asArray(record?.gateChecks);
+  const contractChecks = asArray(record?.contractChecks);
+  const failureRecords = asArray(record?.failureRecords);
+  const rcaRecords = asArray(record?.rcaRecords);
+  const rerunLoops = asArray(record?.rerunLoops);
+  const artifactIndex = asArray(record?.artifactIndex);
+  const readinessAuditRequests = asArray(record?.readinessAuditRequests);
+  const readinessAuditResults = asArray(record?.readinessAuditResults);
+  const readinessScoringRecords = asArray(record?.readinessScoringRecords);
+  const executionIterations = asArray(record?.executionIterations);
+  const deliveryRequiredCommands = asArray(record?.deliveryEvidence?.requiredCommands);
+  const rows = [
+    ['executionIterations', executionIterations.length, countOpenItems(executionIterations)],
+    ['requirementClosures', requirementClosures.length, countOpenItems(requirementClosures)],
+    ['gateChecks', gateChecks.length, countOpenItems(gateChecks)],
+    ['contractChecks', contractChecks.length, countOpenItems(contractChecks)],
+    ['failureRecords', failureRecords.length, countOpenItems(failureRecords)],
+    ['rcaRecords', rcaRecords.length, countOpenItems(rcaRecords)],
+    ['rerunLoops', rerunLoops.length, countOpenItems(rerunLoops)],
+    ['artifactIndex', artifactIndex.length, 0],
+    ['readinessAuditRequests', readinessAuditRequests.length, countOpenItems(readinessAuditRequests)],
+    ['readinessAuditResults', readinessAuditResults.length, countOpenItems(readinessAuditResults)],
+    ['readinessScoringRecords', readinessScoringRecords.length, countOpenItems(readinessScoringRecords)],
+    ['deliveryRequiredCommands', deliveryRequiredCommands.length, countOpenItems(deliveryRequiredCommands)],
+    ['closeoutAttempts', closeoutAttempts(record).length, 0],
+  ].map(([name, totalCount, openCount]) => ({
+    name,
+    totalCount,
+    openCount,
+    status: Number(openCount) === 0 ? 'closed_or_not_applicable' : 'open_items_present',
+  }));
+  return { rows };
+}
+
+function buildFinalAcceptanceReview(input) {
+  const { args, traceRows, traceExecutionState, requirementRecordState, deliveryReadiness } = input;
+  const applies = args.mode === 'closeout-review';
+  const record = requirementRecordState?.record;
+  const currentAttemptId = traceExecutionState?.currentAttemptId ?? '';
+  const attempt = latestCloseoutAttempt(record, currentAttemptId);
+  const attemptDecision = String(attempt?.decision ?? record?.closeout?.decision ?? '').toLowerCase();
+  const attemptBlockingReasons = stringList(attempt?.blockingReasons);
+  const recordClosedProof = hasTerminalRecordClosedProof(record, currentAttemptId, attempt);
+  const recordClosed = requirementRecordState?.found === true && recordClosedProof.recordClosed;
+  const allRequiredCommands = asArray(deliveryEvidenceObject(record).requiredCommands);
+  const currentAttemptCommands = requiredCommandsForAttempt(record, currentAttemptId);
+  const artifactBoundCommands = currentAttemptCommands.filter((command) =>
+    collectArtifactObjects(command).some(artifactIsBound)
+  );
+  const requiredCommandEvidence = {
+    totalCount: allRequiredCommands.length,
+    currentAttemptCount: currentAttemptCommands.length,
+    artifactBoundCount: artifactBoundCommands.length,
+    currentAttemptCommandIds: currentAttemptCommands.map((command) => firstString(command.commandId, command.id)),
+    artifactBoundCommandIds: artifactBoundCommands.map((command) => firstString(command.commandId, command.id)),
+  };
+  const rows = {};
+  const rowIssues = [];
+  for (const row of asArray(traceRows)) {
+    const state = traceExecutionState?.rows?.[row.id] ?? {};
+    const originalConfirmationStatus = String(row.status ?? 'PENDING');
+    const finalAcceptanceStatus = state.status === 'current_pass' ? 'accepted_success' : 'open_or_unaccepted';
+    const transitionLegality =
+      recordClosed &&
+      attemptDecision === 'pass' &&
+      attemptBlockingReasons.length === 0 &&
+      state.status === 'current_pass' &&
+      state.validity === 'current'
+        ? 'legal_transition'
+        : 'illegal_or_unproven_transition';
+    if (finalAcceptanceStatus !== 'accepted_success' || transitionLegality !== 'legal_transition') {
+      rowIssues.push(
+        blocking(
+          'final_acceptance_trace_not_accepted',
+          `${row.id} final acceptance is ${finalAcceptanceStatus}/${transitionLegality}`,
+          [row.id]
+        )
+      );
+    }
+    rows[row.id] = {
+      traceId: row.id,
+      originalConfirmationStatus,
+      preCloseoutRuntimeStatus: originalConfirmationStatus === 'PASS' ? 'already_terminal_before_closeout' : 'open_before_closeout',
+      postCloseoutRuntimeStatus: state.status ?? 'no_controlled_record',
+      finalAcceptanceStatus,
+      transitionLegality,
+      evidenceRefs: state.evidenceRefs ?? [],
+      commandRefs: state.commandRefs ?? [],
+      artifactRefs: state.artifactRefs ?? [],
+      runId: state.runId ?? '',
+      closeoutAttemptId: state.closeoutAttemptId ?? currentAttemptId,
+      blockingReason:
+        finalAcceptanceStatus === 'accepted_success' && transitionLegality === 'legal_transition'
+          ? ''
+          : state.reason || 'trace_not_current_pass_after_record_closed',
+    };
+  }
+
+  const blockingIssues = [];
+  if (applies && !requirementRecordState?.found) {
+    blockingIssues.push(blocking('final_acceptance_requirement_record_missing', 'requirement-record.json is required for closeout review'));
+  }
+  if (applies && !recordClosed) {
+    blockingIssues.push(
+      blocking(
+        'final_acceptance_record_closed_missing',
+        'closeout-review requires terminal record_closed proof for the current attempt'
+      )
+    );
+  }
+  if (applies && !currentAttemptId) {
+    blockingIssues.push(blocking('final_acceptance_current_attempt_missing', 'closeout currentAttemptId is required'));
+  }
+  if (applies && attemptDecision !== 'pass') {
+    blockingIssues.push(
+      blocking('final_acceptance_attempt_not_passed', `current closeout attempt decision is ${attemptDecision || '<missing>'}`)
+    );
+  }
+  if (applies && attemptBlockingReasons.length) {
+    blockingIssues.push(
+      blocking(
+        'final_acceptance_attempt_has_blocking_reasons',
+        `current closeout attempt still has blockers: ${attemptBlockingReasons.join(', ')}`
+      )
+    );
+  }
+  if (applies && allRequiredCommands.length === 0) {
+    blockingIssues.push(
+      blocking('final_acceptance_required_commands_missing', 'deliveryEvidence.requiredCommands[] is required for closeout review')
+    );
+  }
+  if (applies && allRequiredCommands.length > 0 && currentAttemptCommands.length === 0) {
+    blockingIssues.push(
+      blocking(
+        'final_acceptance_required_commands_current_attempt_missing',
+        'no deliveryEvidence.requiredCommands[] entry is bound to the current closeout attempt'
+      )
+    );
+  }
+  if (applies && currentAttemptCommands.length > 0 && artifactBoundCommands.length !== currentAttemptCommands.length) {
+    blockingIssues.push(
+      blocking(
+        'final_acceptance_required_commands_not_artifact_bound',
+        `${artifactBoundCommands.length}/${currentAttemptCommands.length} current-attempt required commands have artifact-bound evidence`
+      )
+    );
+  }
+  if (applies) blockingIssues.push(...rowIssues);
+  const ready = applies ? blockingIssues.length === 0 : false;
+  return {
+    applies,
+    ready,
+    status: ready ? 'final_acceptance_ready' : applies ? 'final_acceptance_ready=false' : 'not_applicable',
+    recordClosed,
+    recordClosedProof,
+    lastEventType: record?.lastEventType ?? '',
+    lastAppliedEventId: record?.lastAppliedEventId ?? '',
+    currentAttemptId,
+    attemptDecision,
+    attemptBlockingReasons,
+    deliveryReadinessDiagnostic: deliveryReadiness ?? null,
+    requiredCommandEvidence,
+    blockingIssues,
+    rows,
+  };
+}
+
+function buildCloseoutDeliveryVerdict(input) {
+  const { args, finalAcceptanceReview, closeoutGateMatrix, sourceProjectionDiagnostics } = input;
+  const applies = args.mode === 'closeout-review';
+  const failedChecks = asArray(closeoutGateMatrix?.rows).filter((row) => !row.passed);
+  const reportDecision = String(closeoutGateMatrix?.reportDecision ?? '').toLowerCase();
+  const reportReady = closeoutGateMatrix?.reportFound === true && reportDecision === 'pass' && failedChecks.length === 0;
+  const reasons = [];
+  if (applies && !finalAcceptanceReview?.ready) reasons.push('finalAcceptanceReview_not_ready');
+  if (applies && !closeoutGateMatrix?.reportFound) reasons.push('delivery_closeout_report_missing');
+  if (applies && closeoutGateMatrix?.reportLoadError) reasons.push(`delivery_closeout_report_load_error:${closeoutGateMatrix.reportLoadError}`);
+  if (applies && closeoutGateMatrix?.reportFound && reportDecision !== 'pass') {
+    reasons.push(`delivery_closeout_report_decision_${reportDecision || 'missing'}`);
+  }
+  if (applies && failedChecks.length) {
+    reasons.push(`delivery_closeout_report_failed_checks:${failedChecks.map((row) => row.id).join(',')}`);
+  }
+  const ready = applies && finalAcceptanceReview?.ready === true && reportReady;
+  return {
+    applies,
+    ready,
+    status: !applies ? 'not_applicable' : ready ? 'final_acceptance_ready' : 'final_acceptance_blocked',
+    label: !applies ? 'not_applicable' : ready ? 'final_acceptance_ready' : 'final_acceptance_blocked',
+    reasons,
+    currentAttemptId: finalAcceptanceReview?.currentAttemptId ?? '',
+    finalAcceptanceStatus: finalAcceptanceReview?.status ?? 'not_applicable',
+    closeoutReportPath: closeoutGateMatrix?.reportPath ?? '',
+    closeoutReportDecision: closeoutGateMatrix?.reportDecision ?? '',
+    closeoutCheckCount: closeoutGateMatrix?.totalCount ?? 0,
+    closeoutFailedCheckCount: failedChecks.length,
+    sourceProjectionGapCount: sourceProjectionDiagnostics?.unboundEvidenceCount ?? 0,
   };
 }
 
@@ -6257,7 +6709,9 @@ function renderCoreDesignSummary(input) {
     warnings,
     confirmability,
     deliveryReadiness,
+    closeoutDeliveryVerdict,
   } = input;
+  const primaryDelivery = closeoutDeliveryVerdict?.applies ? closeoutDeliveryVerdict : deliveryReadiness;
   const controlArtifacts = artifactPlan.filter(
     (item) => item.canAffectControlFlow || item.sourceOfTruthRole === 'control'
   ).length;
@@ -6277,7 +6731,7 @@ function renderCoreDesignSummary(input) {
     <div class="metric-grid">
       ${metrics.map(([value, label]) => `<div class="metric"><strong>${escapeHtml(value)}</strong><span>${escapeHtml(label)}</span></div>`).join('')}
       <div class="metric status-metric"><strong class="status-${confirmability}">${escapeHtml(confirmability)}</strong><span>${escapeHtml(ui.confirmability)}</span></div>
-      <div class="metric status-metric ${deliveryReadiness.ready ? 'green' : 'danger'}"><strong class="status-${deliveryReadiness.ready ? 'confirmable' : 'blocked'}">${escapeHtml(deliveryReadiness.label)}</strong><span>${escapeHtml(ui.deliveryReadiness)}</span></div>
+      <div class="metric status-metric ${primaryDelivery.ready ? 'green' : 'danger'}"><strong class="status-${primaryDelivery.ready ? 'confirmable' : 'blocked'}">${escapeHtml(primaryDelivery.label)}</strong><span>${escapeHtml(closeoutDeliveryVerdict?.applies ? 'Closeout Delivery Verdict' : ui.deliveryReadiness)}</span></div>
       <div class="metric"><strong>${traceRows.length}</strong><span>traceRows</span></div>
       <div class="metric"><strong>${artifactPlan.length}</strong><span>工件计划项</span></div>
       <div class="metric"><strong>${controlArtifacts}</strong><span>影响控制流的工件</span></div>
@@ -6290,7 +6744,43 @@ function renderCoreDesignSummary(input) {
   </section>`;
 }
 
-function renderDeliveryReadiness(deliveryReadiness, ui) {
+function renderDeliveryReadiness(deliveryReadiness, ui, closeoutDeliveryVerdict = null, sourceProjectionDiagnostics = null) {
+  if (closeoutDeliveryVerdict?.applies) {
+    const diagnosticRows = deliveryReadiness.reasons.length
+      ? deliveryReadiness.reasons.map((reason, index) => [`${String(index + 1).padStart(2, '0')}`, reason])
+      : [['--', 'preCloseoutDiagnostic has no blocking reason']];
+    const sourceGapRows = asArray(sourceProjectionDiagnostics?.unboundEvidence).map((row) => [
+      row.id,
+      renderStatusBadge(row.diagnosticType, 'gold'),
+      row.explanation,
+      renderIdBadges(row.requiredCommandRefs),
+      renderIdBadges(row.artifactRefs),
+    ]);
+    const verdictReasonRows = closeoutDeliveryVerdict.reasons.length
+      ? closeoutDeliveryVerdict.reasons.map((reason, index) => [`${String(index + 1).padStart(2, '0')}`, reason])
+      : [['--', 'final_acceptance_ready']];
+    return `<section class="card" id="delivery-readiness">
+      <h2>Closeout Delivery Verdict</h2>
+      <p class="section-lead">closeout-review 模式下，本区主状态来自最终验收和受控 closeout report；旧 deliveryReadiness 只作为 preCloseoutDiagnostic 展示。</p>
+      <div class="metric-grid">
+        <div class="metric status-metric ${closeoutDeliveryVerdict.ready ? 'green' : 'danger'}"><strong class="status-${closeoutDeliveryVerdict.ready ? 'confirmable' : 'blocked'}">${escapeHtml(closeoutDeliveryVerdict.label)}</strong><span>closeoutDeliveryVerdict</span></div>
+        <div class="metric"><strong>${escapeHtml(closeoutDeliveryVerdict.currentAttemptId)}</strong><span>current closeout attempt</span></div>
+        <div class="metric"><strong>${escapeHtml(closeoutDeliveryVerdict.closeoutReportDecision || '')}</strong><span>closeout report decision</span></div>
+        <div class="metric"><strong>${escapeHtml(closeoutDeliveryVerdict.closeoutCheckCount)}</strong><span>closeout checks</span></div>
+        <div class="metric danger"><strong>${escapeHtml(closeoutDeliveryVerdict.closeoutFailedCheckCount)}</strong><span>failed closeout checks</span></div>
+        <div class="metric warn"><strong>${escapeHtml(closeoutDeliveryVerdict.sourceProjectionGapCount)}</strong><span>source projection gaps</span></div>
+      </div>
+      <h3>Closeout Verdict Reasons</h3>
+      ${renderTable(['reasonId', 'reason'], verdictReasonRows, { className: 'compact-map-table' })}
+      <h3>Pre-Closeout Diagnostic</h3>
+      <p class="muted">以下诊断来自 source trace/evidence projection，不是 closeout runtime acceptance verdict。</p>
+      ${renderTable(['reasonId', 'reason'], diagnosticRows, { className: 'compact-map-table' })}
+      <h3>Source Projection Gap Diagnostic</h3>
+      ${sourceGapRows.length
+        ? renderTable(['Evidence', 'Diagnostic', 'Explanation', 'Commands', 'Artifacts'], sourceGapRows, { className: 'compact-map-table source-projection-gap-table' })
+        : '<p class="empty-state">No source evidence projection gaps detected.</p>'}
+    </section>`;
+  }
   const reasonRows = deliveryReadiness.reasons.length
     ? deliveryReadiness.reasons.map((reason, index) => [`${String(index + 1).padStart(2, '0')}`, reason])
     : [['--', ui.deliveryReady]];
@@ -6305,6 +6795,205 @@ function renderDeliveryReadiness(deliveryReadiness, ui) {
       <div class="metric warn"><strong>${escapeHtml(deliveryReadiness.staleProofCount)}</strong><span>${escapeHtml(ui.staleProofNeedsRecheck)}</span></div>
     </div>
     <div class="table-wrap">${renderTable(['reasonId', 'reason'], reasonRows)}</div>
+  </section>`;
+}
+
+function renderFinalAcceptanceReview(finalAcceptanceReview) {
+  if (!finalAcceptanceReview?.applies) return '';
+  const issueRows = finalAcceptanceReview.blockingIssues.length
+    ? finalAcceptanceReview.blockingIssues.map((issue) => [
+        issue.code ?? 'final_acceptance_blocker',
+        issue.message ?? '',
+        renderIdBadges(issue.refs ?? []),
+      ])
+    : [['--', 'final_acceptance_ready=true', '<span class="muted">无</span>']];
+  const traceRows = Object.values(finalAcceptanceReview.rows).map((row) => [
+    row.traceId,
+    renderStatusBadge(row.originalConfirmationStatus, statusBadgeTone(row.originalConfirmationStatus)),
+    renderStatusBadge(row.preCloseoutRuntimeStatus, statusBadgeTone(row.preCloseoutRuntimeStatus)),
+    renderStatusBadge(row.postCloseoutRuntimeStatus, statusBadgeTone(row.postCloseoutRuntimeStatus)),
+    renderStatusBadge(row.finalAcceptanceStatus, statusBadgeTone(row.finalAcceptanceStatus)),
+    renderStatusBadge(row.transitionLegality, statusBadgeTone(row.transitionLegality)),
+    renderIdBadges(row.evidenceRefs),
+    renderIdBadges(row.commandRefs),
+    renderIdBadges(row.artifactRefs),
+    row.runId,
+    row.closeoutAttemptId,
+    row.blockingReason,
+  ]);
+  return `<section class="card" id="final-acceptance-review">
+    <h2>Final Acceptance Review</h2>
+    <p class="section-lead">Closeout review is a read-only post-closeout projection. It preserves the original confirmation status and adds runtime/final acceptance columns from the controlled requirement record.</p>
+    <div class="metric-grid">
+      <div class="metric status-metric ${finalAcceptanceReview.ready ? 'green' : 'danger'}"><strong class="status-${finalAcceptanceReview.ready ? 'confirmable' : 'blocked'}">${escapeHtml(finalAcceptanceReview.status)}</strong><span>finalAcceptanceReview.ready</span></div>
+      <div class="metric"><strong>${escapeHtml(finalAcceptanceReview.currentAttemptId)}</strong><span>current closeout attempt</span></div>
+      <div class="metric"><strong>${escapeHtml(String(finalAcceptanceReview.recordClosed))}</strong><span>recordClosed</span></div>
+      <div class="metric"><strong>${escapeHtml(finalAcceptanceReview.attemptDecision || '')}</strong><span>attemptDecision</span></div>
+      <div class="metric"><strong>${escapeHtml(finalAcceptanceReview.requiredCommandEvidence.currentAttemptCount)}</strong><span>current-attempt commands</span></div>
+      <div class="metric"><strong>${escapeHtml(finalAcceptanceReview.requiredCommandEvidence.artifactBoundCount)}</strong><span>artifact-bound commands</span></div>
+    </div>
+    ${renderTable(['Field', 'Value'], [
+      ['lastEventType', finalAcceptanceReview.lastEventType],
+      ['lastAppliedEventId', finalAcceptanceReview.lastAppliedEventId],
+      ['attemptBlockingReasons', finalAcceptanceReview.attemptBlockingReasons.join(', ') || 'none'],
+      ['requiredCommandIds', renderIdBadges(finalAcceptanceReview.requiredCommandEvidence.currentAttemptCommandIds)],
+      ['artifactBoundCommandIds', renderIdBadges(finalAcceptanceReview.requiredCommandEvidence.artifactBoundCommandIds)],
+    ], { className: 'compact-map-table' })}
+    <h3>Final Acceptance Blockers</h3>
+    ${renderTable(['code', 'message', 'refs'], issueRows, { className: 'compact-map-table' })}
+    <h3>Closeout Trace Acceptance Matrix</h3>
+    ${renderTable([
+      'Trace',
+      'Original Confirmation Status',
+      'Pre-Closeout Runtime Status',
+      'Post-Closeout Runtime Status',
+      'Final Acceptance Status',
+      'Transition Legality',
+      'Evidence',
+      'Command',
+      'Artifact',
+      'Run ID',
+      'Closeout Attempt ID',
+      'Blocking Reason',
+    ], traceRows, { className: 'closeout-trace-acceptance-table' })}
+  </section>`;
+}
+
+function renderStructuredValue(value) {
+  if (value === null || value === undefined || value === '') return '<span class="muted">无</span>';
+  if (Array.isArray(value)) {
+    const scalarItems = value.filter((item) => item === null || typeof item !== 'object').map((item) => String(item));
+    if (scalarItems.length === value.length) return renderIdBadges(scalarItems);
+    return `<code>${escapeHtml(JSON.stringify(value))}</code>`;
+  }
+  if (typeof value === 'object') return `<code>${escapeHtml(JSON.stringify(value))}</code>`;
+  if (typeof value === 'boolean') return renderStatusBadge(String(value), value ? 'green' : 'red');
+  return inlineCode(String(value));
+}
+
+function objectRows(value, keys = null) {
+  const source = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+  const selectedKeys = keys ?? Object.keys(source);
+  return selectedKeys.map((key) => [key, renderStructuredValue(source[key])]);
+}
+
+function renderCloseoutGateResultMatrix(closeoutGateMatrix) {
+  const rows = asArray(closeoutGateMatrix?.rows).map((row) => [
+    row.id,
+    renderStatusBadge(String(row.passed), row.passed ? 'green' : 'red'),
+    String(row.issueCount),
+    String(row.openCount),
+    String(row.missingEvidenceCount),
+    String(row.failedEvidenceCount),
+    row.deliveryStatus || '',
+    row.reportPath || '',
+    stringList(row.blockingReasons).join(', ') || 'none',
+  ]);
+  return `<section class="card" id="closeout-gate-result-matrix">
+    <h2>Closeout Gate Result Matrix</h2>
+    <p class="section-lead">本区渲染当前 closeout report 的每个 check。它是 closeoutDeliveryVerdict 的主要运行态证据来源。</p>
+    <div class="metric-grid">
+      <div class="metric status-metric ${closeoutGateMatrix?.failedCount ? 'danger' : 'green'}"><strong class="status-${closeoutGateMatrix?.failedCount ? 'blocked' : 'confirmable'}">${escapeHtml(closeoutGateMatrix?.reportDecision || 'missing')}</strong><span>closeout report decision</span></div>
+      <div class="metric"><strong>${escapeHtml(closeoutGateMatrix?.totalCount ?? 0)}</strong><span>checks total</span></div>
+      <div class="metric"><strong>${escapeHtml(closeoutGateMatrix?.passedCount ?? 0)}</strong><span>checks passed</span></div>
+      <div class="metric danger"><strong>${escapeHtml(closeoutGateMatrix?.failedCount ?? 0)}</strong><span>checks failed</span></div>
+    </div>
+    ${rows.length
+      ? renderTable(['Check ID', 'Passed', 'Issue Count', 'Open Count', 'Missing Evidence', 'Failed Evidence', 'Delivery Status', 'Report Path', 'Blocking Reasons'], rows, { className: 'compact-map-table closeout-gate-result-table' })
+      : '<p class="empty-state">No closeout checks were available from delivery-closeout-report.json or the current closeout attempt.</p>'}
+  </section>`;
+}
+
+function renderCloseoutAttemptHistory(closeoutAttemptHistory) {
+  const rows = asArray(closeoutAttemptHistory?.attempts).map((attempt) => [
+    String(attempt.index),
+    attempt.closeoutAttemptId,
+    renderStatusBadge(attempt.decision || 'missing', statusBadgeTone(attempt.decision)),
+    stringList(attempt.blockingReasons).join(', ') || 'none',
+    String(attempt.checkCount),
+    String(attempt.passedCheckCount),
+    String(attempt.failedCheckCount),
+    attempt.evaluatedAt || '',
+    attempt.reportPath || '',
+  ]);
+  return `<section class="card" id="closeout-attempt-history">
+    <h2>Closeout Attempt History</h2>
+    <p class="section-lead">本区保留所有 closeout attempt，让审核者看到 blocked 到 pass 的合法演进。</p>
+    ${rows.length
+      ? renderTable(['#', 'Attempt ID', 'Decision', 'Blocking Reasons', 'Checks', 'Passed', 'Failed', 'Evaluated At', 'Report Path'], rows, { className: 'compact-map-table closeout-attempt-history-table' })
+      : '<p class="empty-state">No closeout attempt history found.</p>'}
+  </section>`;
+}
+
+function renderRuntimeEvidenceClosureSummary(runtimeEvidenceClosureSummary) {
+  const rows = asArray(runtimeEvidenceClosureSummary?.rows).map((row) => [
+    row.name,
+    String(row.totalCount),
+    String(row.openCount),
+    renderStatusBadge(row.status, statusBadgeTone(row.status)),
+  ]);
+  return `<section class="card" id="runtime-evidence-closure-summary">
+    <h2>Runtime Evidence Closure Summary</h2>
+    <p class="section-lead">本区按 requirement record 汇总运行态闭环证据数量，帮助判断 open 状态是否已经合法关闭。</p>
+    ${renderTable(['Record Area', 'Total Count', 'Open Count', 'Status'], rows, { className: 'compact-map-table runtime-evidence-summary-table' })}
+  </section>`;
+}
+
+function renderSourceCloseoutPolicy(confirmation, sourceProjectionDiagnostics) {
+  const postCloseout = confirmation.postCloseoutConfirmationReview ?? {};
+  const preview = confirmation.closeoutReadinessPreview ?? {};
+  const suggestedRows = asArray(confirmation.suggestedCommands).map((row) => [
+    row.id ?? row.commandId ?? '',
+    row.command ?? '',
+    renderIdBadges(row.traceRows),
+    renderIdBadges(row.evidenceRefs),
+  ]);
+  const projectionRows = asArray(confirmation.mustDerivedProjectionMap).map((row) => [
+    row.id ?? '',
+    renderStructuredValue(row.mustRefs ?? row.mustIds ?? row.sourceRefs),
+    renderStructuredValue(row.projectionRefs ?? row.targetRefs ?? row.traceRefs),
+    row.policy ?? row.status ?? row.text ?? '',
+  ]);
+  const manifest = confirmation.aiTddContractExecutionManifestProjection ?? {};
+  const manifestRows = objectRows(manifest, [
+    'schemaVersion',
+    'applies',
+    'requiredSections',
+    'atomicImplementationTaskLineage',
+    'finalGateMatrix',
+    'executionLoopProtocol',
+    'semanticGapPolicy',
+    'hostExecutionHints',
+    'evidenceTrustStates',
+  ]);
+  const gapRows = asArray(sourceProjectionDiagnostics?.unboundEvidence).map((row) => [
+    row.id,
+    renderStatusBadge(row.diagnosticType, 'gold'),
+    row.explanation,
+    renderIdBadges(row.requiredCommandRefs),
+    renderIdBadges(row.artifactRefs),
+  ]);
+  return `<section class="card" id="source-closeout-policy">
+    <h2>Source Closeout Policy</h2>
+    <p class="section-lead">本区渲染 source-defined closeout policy。它解释页面必须如何保留原确认状态、增加最终验收列，并避免把 source projection gap 误报为 runtime closeout blocker。</p>
+    <h3>postCloseoutConfirmationReview</h3>
+    ${renderTable(['Field', 'Value'], objectRows(postCloseout), { className: 'compact-map-table source-closeout-policy-table' })}
+    <h3>closeoutReadinessPreview</h3>
+    ${renderTable(['Field', 'Value'], objectRows(preview), { className: 'compact-map-table source-closeout-policy-table' })}
+    <h3>suggestedCommands</h3>
+    ${suggestedRows.length
+      ? renderTable(['Command ID', 'Command', 'Trace Rows', 'Evidence'], suggestedRows, { className: 'compact-map-table' })
+      : '<p class="empty-state">源文档未提供 suggestedCommands[]。</p>'}
+    <h3>mustDerivedProjectionMap</h3>
+    ${projectionRows.length
+      ? renderTable(['ID', 'MUST Refs', 'Projection Refs', 'Policy'], projectionRows, { className: 'compact-map-table' })
+      : '<p class="empty-state">源文档未提供 mustDerivedProjectionMap[]。</p>'}
+    <h3>AI-TDD Closeout Projection Policy</h3>
+    ${renderTable(['Field', 'Value'], manifestRows, { className: 'compact-map-table' })}
+    <h3>Source Projection Gap Diagnostic</h3>
+    ${gapRows.length
+      ? renderTable(['Evidence', 'Diagnostic', 'Explanation', 'Commands', 'Artifacts'], gapRows, { className: 'compact-map-table source-projection-gap-table' })
+      : '<p class="empty-state">No source projection gaps detected.</p>'}
   </section>`;
 }
 
@@ -6624,6 +7313,7 @@ main{padding:${compact ? '22px' : '44px'} min(6vw,88px) 86px;min-width:0;max-wid
 .status-confirmable{background:var(--green-soft);color:var(--green);padding:5px 9px;border-radius:3px;font-weight:700}.status-blocked{background:var(--red-soft);color:var(--red);padding:5px 9px;border-radius:3px;font-weight:700}
 .confirm-box{background:#191815;color:#fff;border-radius:0;border-left:4px solid var(--gold);padding:18px 20px}.confirm-box pre{white-space:pre-wrap;font-family:var(--mono)}button.copy{padding:8px 12px;border-radius:3px;border:1px solid var(--gold);background:#f8efd7;color:#2b2110;cursor:pointer}
 .table-wrap{overflow-x:auto;overflow-y:auto;border:1px solid var(--line);border-radius:0;min-width:0;max-width:100%;scrollbar-gutter:stable;background:#fff}.table-wrap table{width:max-content;min-width:100%;border-collapse:collapse;background:#fff;table-layout:auto}.table-wrap th,.table-wrap td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left;min-width:140px;max-width:560px;overflow-wrap:break-word}.table-wrap th{position:sticky;top:0;background:#efe7d8;cursor:pointer;text-align:left;font-size:12px;letter-spacing:.02em}.table-wrap tr:nth-child(even) td{background:#fbf8f1}.table-wrap code,.table-wrap .id-badge{white-space:nowrap}.compact-map-table{min-width:1100px}.id-badge{display:inline-block;font-family:var(--mono);font-size:11px;margin:2px;padding:2px 6px;border-radius:3px;background:var(--blue-soft);color:var(--blue)}
+.closeout-trace-acceptance-table{width:100%!important;min-width:1320px!important;table-layout:fixed!important}.closeout-trace-acceptance-table th,.closeout-trace-acceptance-table td{min-width:0!important;max-width:none!important;overflow-wrap:anywhere!important;word-break:break-word!important}.closeout-trace-acceptance-table code,.closeout-trace-acceptance-table .id-badge,.closeout-trace-acceptance-table .tag,.closeout-gate-result-table code,.closeout-gate-result-table .id-badge,.closeout-gate-result-table .tag,.closeout-attempt-history-table code,.closeout-attempt-history-table .id-badge,.closeout-attempt-history-table .tag{white-space:normal!important;overflow-wrap:anywhere!important;word-break:break-word!important}.source-projection-gap-table td{overflow-wrap:anywhere;word-break:break-word}
 .issue-list{padding-left:18px}.blocking{background:var(--red-soft);border-left:4px solid var(--red);padding:8px;margin:8px 0}.warning{background:var(--gold-soft);border-left:4px solid var(--gold);padding:8px;margin:8px 0}.ok{background:var(--green-soft);color:var(--green);padding:10px;border-radius:0}.blocked{background:var(--red-soft);color:var(--red);padding:10px;border-radius:0}.muted{color:var(--muted)}
 .split{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;min-width:0}.review-flow{display:grid;gap:0;margin-top:22px;min-width:0;border-top:1px solid var(--line)}.review-step{border-top:0;border-bottom:1px solid var(--line);padding:18px 0;min-width:0}.review-step:first-child{border-top:0}.review-step h3{margin-top:0}.panel-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.tag{display:inline-flex;align-items:center;border-radius:3px;padding:4px 8px;font-size:11px;font-weight:800;background:var(--blue-soft);color:var(--blue);border:1px solid rgba(49,95,134,.16);white-space:nowrap}.tag.red{background:var(--red-soft);color:var(--red)}.tag.green{background:var(--green-soft);color:var(--green)}.tag.blue{background:var(--blue-soft);color:var(--blue)}.tag.gold{background:var(--gold-soft);color:var(--gold)}.list{display:grid;gap:0;margin:0;padding:0;list-style:none;min-width:0;border-top:1px solid var(--line)}.list li{display:grid;gap:4px;border-left:0;border-bottom:1px solid var(--line);padding:10px 0;background:transparent;border-radius:0;min-width:0}.list strong{font-size:14px}.list span{color:var(--muted);font-size:13px;overflow-wrap:anywhere}.current li{border-left-color:var(--red)}.target li{border-left-color:var(--green)}.current-target-map h3{margin:22px 0 8px}.current-target-map .table-wrap{margin:0 0 14px;border-radius:0}.current-target-map .compact-map-table{width:100%;min-width:960px;table-layout:fixed;font-size:12px;line-height:1.34}.current-target-map .compact-map-table th,.current-target-map .compact-map-table td{min-width:0;max-width:none;padding:6px 8px;overflow-wrap:anywhere;word-break:break-word;hyphens:auto}.current-target-map .compact-map-table th{font-size:11px;text-transform:uppercase;letter-spacing:.02em}.current-target-map .compact-map-table code,.current-target-map code{display:inline;max-width:100%;font-family:var(--mono);font-size:11px;background:#f7efe3;border:1px solid rgba(120,104,78,.2);border-radius:3px;padding:1px 4px;white-space:normal;overflow-wrap:anywhere;word-break:break-word}.current-target-map .compact-map-table .tag{max-width:100%;white-space:normal;overflow-wrap:anywhere;word-break:break-word}.metric-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;margin:18px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);min-width:0}.metric.compact{padding:10px 12px;border-radius:0}.metric.compact strong{font-size:24px}.metric.compact span{text-transform:none}.footnote{font-family:var(--mono);font-size:12px;color:var(--blue)!important}.diff-deck{display:grid;gap:0;margin:18px 0;min-width:0;border-top:1px solid var(--line)}.compact-diff-deck{grid-template-columns:1fr;align-items:stretch}.diff-card{border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;overflow:hidden;min-width:0}.diff-card-title{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid rgba(120,104,78,.18);background:transparent}.diff-card-title strong{font-family:Georgia,"Noto Serif SC",serif;font-size:16px}.diff-card-title span{font-family:var(--mono);font-size:10.5px;color:var(--blue);text-align:right;overflow-wrap:anywhere}.diff-compare{display:grid;grid-template-columns:1fr 1fr;min-width:0}.diff-side{padding:10px 12px;min-height:72px;min-width:0}.diff-side b{display:block;font-family:var(--mono);font-size:11px;margin-bottom:5px}.diff-side p{margin:0;color:var(--muted);font-size:12px;line-height:1.38;overflow-wrap:anywhere}.diff-minus{background:rgba(248,221,215,.42);border-right:1px solid rgba(120,104,78,.18)}.diff-minus b{color:var(--red)}.diff-plus{background:rgba(223,240,231,.48)}.diff-plus b{color:var(--green)}.target-flow{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;align-items:stretch;margin:20px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);min-width:0}.flow-step{border-radius:0;border:0;border-right:1px solid var(--line);background:transparent;padding:12px;position:relative;min-width:0}.flow-step:last-child{border-right:0}.flow-step span{display:block;color:var(--muted);font-size:12px;margin-top:6px;overflow-wrap:anywhere}.flow-step::after{content:"";position:absolute}.callout{border-radius:0;border:0;border-left:4px solid var(--red);background:rgba(247,223,216,.36);padding:11px 14px;margin:10px 0;overflow-wrap:anywhere}
 .diagram-viewer{border:1px solid var(--line);border-radius:0;background:#fbf8f1;padding:14px;margin:18px 0 28px}.diagram-toolbar{display:flex;gap:12px;justify-content:space-between;align-items:center;margin-bottom:12px;border-bottom:1px solid var(--line);padding-bottom:10px}.diagram-tabs{display:flex;gap:6px;flex-wrap:wrap}.diagram-actions{display:flex;gap:8px;flex-wrap:wrap}.diagram-tab,.diagram-actions button{border:1px solid rgba(120,104,78,.34);background:#fffdf8;color:var(--ink);border-radius:3px;padding:7px 10px;font-size:12px;font-weight:800;cursor:pointer}.diagram-tab.active,.diagram-actions button:hover{background:#24211b;color:#fff;border-color:#24211b}.mermaid-runtime-status{margin:0 0 12px}.diagram-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:12px}.diagram-viewer[data-diagram-mode="single"] .diagram-grid{display:block}.diagram-viewer[data-diagram-mode="single"] .diagram-card{display:none}.diagram-viewer[data-diagram-mode="single"] .diagram-card.active{display:block}.diagram-viewer[data-diagram-mode="all"] .diagram-card{display:block}.diagram-card{border:0;border-top:1px solid var(--line);border-radius:0;padding:12px 0;background:transparent;box-shadow:none;overflow:hidden}.diagram-viewer[data-diagram-mode="single"] .diagram-card{max-width:none;margin:0}.diagram-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;border-bottom:1px solid rgba(120,104,78,.2);padding-bottom:7px}.diagram-title strong{display:block;font-family:Georgia,"Noto Serif SC",serif;font-size:17px;line-height:1}.diagram-title span{display:block;margin-top:4px;color:var(--muted);font-family:var(--mono);font-size:10px}.diagram-meta{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;max-width:58%}.diagram-rendered{background:#fffdf8;border:1px solid var(--line);border-radius:0;padding:16px 18px 22px;margin-top:9px;overflow:auto;max-height:520px;min-height:300px;text-align:left;resize:vertical;scrollbar-gutter:stable both-edges}.diagram-viewer[data-diagram-mode="all"] .diagram-rendered{max-height:360px;min-height:260px}.diagram-rendered h4{margin:0 0 12px;font-size:11px;color:var(--gold);letter-spacing:.08em;text-transform:uppercase}.mermaid-source-native{display:none}.mermaid-native-render{display:block;min-width:max-content;min-height:210px;text-align:left;transform-origin:top left}.mermaid-native-render svg{display:block;margin:0 !important;max-width:none !important;overflow:visible}.mermaid-native-render .actor,.mermaid-native-render .messageText,.mermaid-native-render .noteText,.mermaid-native-render text{font-size:12px !important}.mermaid-runtime-error{margin:12px 0}.fallback-diagram{margin-top:14px;border-top:1px dashed rgba(120,104,78,.35);padding-top:10px}.fallback-diagram summary{cursor:pointer;color:var(--muted);font-weight:800}.fallback-diagram:not([open]){opacity:.72}.rendered-mermaid{background:transparent;border-radius:0}.diagram-legend{display:flex;gap:10px;align-items:center;flex-wrap:wrap;color:var(--muted);font-size:10.5px;margin:0 0 7px}.legend-dot{width:8px;height:8px;border-radius:99px;background:var(--blue);display:inline-block}.legend-dot.pass{background:var(--green)}.legend-dot.warn{background:var(--red)}.compact-lanes{min-width:max(600px,100%);display:grid;grid-template-columns:repeat(var(--lane-count),minmax(118px,1fr));gap:7px}.diagram-viewer[data-diagram-mode="single"] .compact-lanes{min-width:max(820px,100%)}.compact-lane{border:1px solid rgba(120,104,78,.22);border-radius:0;background:rgba(255,255,255,.5);padding:7px;position:relative;min-height:158px}.compact-lane::before{content:"";position:absolute;top:42px;bottom:9px;left:50%;border-left:2px dashed rgba(36,33,27,.13)}.compact-lane h4{position:relative;z-index:2;margin:0 0 7px;background:var(--paper);border:1px solid rgba(120,104,78,.18);border-radius:0;padding:6px;text-align:center;font-size:11px;line-height:1.2}.compact-event{position:relative;z-index:2;margin:7px 0;padding:7px;border-radius:0;border:1px solid rgba(36,33,27,.11);background:var(--paper);box-shadow:none;font-size:11px}.compact-event strong{display:block;font-size:11px;line-height:1.25;margin-bottom:4px}.compact-event small{color:var(--muted);font-family:var(--mono);font-size:9.5px;line-height:1.2}.compact-event.warn,.flow-step-card.warn{border-color:rgba(166,61,47,.28);background:#fff6f3}.compact-event.pass,.flow-step-card.pass{border-color:rgba(47,111,84,.28);background:#f3fbf6}.event-ids{margin-top:5px}.id-badge.mini{font-size:10px;padding:1px 5px;margin:1px}.id-more{display:inline-block;font-family:var(--mono);font-size:10px;margin:1px;padding:1px 5px;border-radius:3px;background:var(--gold-soft);color:var(--gold)}.compact-flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:7px}.diagram-viewer[data-diagram-mode="single"] .compact-flow{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}.flow-step-card{border-radius:0;border:1px solid rgba(47,111,84,.22);background:var(--green-soft);padding:8px;position:relative;min-height:78px}.flow-step-card::after{content:"";position:absolute}.flow-step-card.muted-card{background:#f8f3e9;border-style:dashed}.step-index{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:3px;background:#fff;color:var(--green);font-weight:800;margin-bottom:5px;font-size:10px}.flow-step-card strong{display:block;font-size:11.5px;line-height:1.25}.mermaid,pre{background:#181713;color:#fff;border-radius:0;padding:14px;overflow:auto}.answers{display:grid;grid-template-columns:1fr;gap:0;border-top:1px solid var(--line)}.answer{border:0;border-bottom:1px solid var(--line);background:transparent;padding:12px 0;border-radius:0}
@@ -6661,6 +7351,12 @@ function buildHtml(input) {
     traceExecutionState,
     progressDelta,
     deliveryReadiness,
+    closeoutDeliveryVerdict,
+    closeoutGateMatrix,
+    closeoutAttemptHistory,
+    runtimeEvidenceClosureSummary,
+    sourceProjectionDiagnostics,
+    finalAcceptanceReview,
     reconfirmationState,
     resumeFailureRegistry,
     controlledIngestWriters,
@@ -6688,9 +7384,25 @@ function buildHtml(input) {
         warnings,
         confirmability,
         deliveryReadiness,
+        closeoutDeliveryVerdict,
       }),
     ],
-    ['delivery-readiness', renderDeliveryReadiness(deliveryReadiness, ui)],
+    ['delivery-readiness', renderDeliveryReadiness(deliveryReadiness, ui, closeoutDeliveryVerdict, sourceProjectionDiagnostics)],
+    finalAcceptanceReview?.applies
+      ? ['final-acceptance-review', renderFinalAcceptanceReview(finalAcceptanceReview)]
+      : null,
+    closeoutDeliveryVerdict?.applies
+      ? ['closeout-gate-result-matrix', renderCloseoutGateResultMatrix(closeoutGateMatrix)]
+      : null,
+    closeoutDeliveryVerdict?.applies
+      ? ['closeout-attempt-history', renderCloseoutAttemptHistory(closeoutAttemptHistory)]
+      : null,
+    closeoutDeliveryVerdict?.applies
+      ? ['runtime-evidence-closure-summary', renderRuntimeEvidenceClosureSummary(runtimeEvidenceClosureSummary)]
+      : null,
+    closeoutDeliveryVerdict?.applies
+      ? ['source-closeout-policy', renderSourceCloseoutPolicy(confirmation, sourceProjectionDiagnostics)]
+      : null,
     ['progress-delta', renderProgressDelta(progressDelta, reconfirmationState, ui)],
     ['pre-confirmation-semantic-drilldown', renderPreConfirmationSemanticDrilldown(preConfirmationSemanticDrilldown)],
     ['decision-summary', `<section class="card" id="decision-summary"><h2>${escapeHtml(ui.decisionSummary)}</h2>${renderTable(
@@ -6738,6 +7450,11 @@ function buildHtml(input) {
     fingerprint: ui.fingerprint,
     'core-design': ui.coreDesign,
     'delivery-readiness': ui.deliveryReadiness,
+    'final-acceptance-review': 'Final Acceptance Review',
+    'closeout-gate-result-matrix': 'Closeout Gate Result Matrix',
+    'closeout-attempt-history': 'Closeout Attempt History',
+    'runtime-evidence-closure-summary': 'Runtime Evidence Closure Summary',
+    'source-closeout-policy': 'Source Closeout Policy',
     'progress-delta': ui.progressDelta,
     'pre-confirmation-semantic-drilldown': 'Pre-Confirmation Semantic Drilldown',
     'reconfirmation-request': '重新确认请求',
@@ -6784,7 +7501,11 @@ function buildHtml(input) {
     ['optionalViewPacks', confirmationProfile.optionalViewPacks.join(', ')],
     [ui.currentStatus, confirmation.status ?? 'unknown'],
     [ui.confirmability, confirmability],
-    [ui.deliveryReadiness, deliveryReadiness.label],
+    [
+      closeoutDeliveryVerdict?.applies ? 'closeoutDeliveryVerdict' : ui.deliveryReadiness,
+      closeoutDeliveryVerdict?.applies ? closeoutDeliveryVerdict.label : deliveryReadiness.label,
+    ],
+    ['finalAcceptanceReview', finalAcceptanceReview?.applies ? finalAcceptanceReview.status : 'not_applicable'],
   ];
   return `<!doctype html>
 <html lang="${attr(args.language === 'en-US' ? 'en' : 'zh-CN')}">
@@ -6835,6 +7556,7 @@ function buildReport(input) {
     actualHtmlFileHash: input.actualHtmlFileHash,
     generatedAt: input.generatedAt,
     language: input.args.language,
+    mode: input.args.mode,
     confirmationProfile: input.confirmationProfile?.confirmationProfile ?? DEFAULT_CONFIRMATION_PROFILE,
     requiredViewPacks: input.confirmationProfile?.requiredViewPacks ?? CORE_VIEW_PACKS,
     optionalViewPacks: input.confirmationProfile?.optionalViewPacks ?? [],
@@ -6845,6 +7567,31 @@ function buildReport(input) {
     scopeConfirmability: input.confirmability,
     preConfirmationSemanticDrilldown: input.preConfirmationSemanticDrilldown,
     deliveryReadiness: input.deliveryReadiness,
+    preCloseoutDiagnostic: input.args.mode === 'closeout-review' ? input.deliveryReadiness : null,
+    closeoutDeliveryVerdict: input.closeoutDeliveryVerdict ?? null,
+    closeoutGateMatrix: input.closeoutGateMatrix ?? null,
+    closeoutAttemptHistory: input.closeoutAttemptHistory ?? null,
+    runtimeEvidenceClosureSummary: input.runtimeEvidenceClosureSummary ?? null,
+    sourceProjectionDiagnostics: input.sourceProjectionDiagnostics ?? null,
+    sourceCloseoutPolicyCoverage:
+      input.args.mode === 'closeout-review'
+        ? {
+            postCloseoutConfirmationReviewFields: Object.keys(
+              input.confirmation?.postCloseoutConfirmationReview ?? {}
+            ),
+            closeoutReadinessPreviewFields: Object.keys(input.confirmation?.closeoutReadinessPreview ?? {}),
+            suggestedCommandIds: asArray(input.confirmation?.suggestedCommands).map((row) =>
+              firstString(row?.id, row?.commandId)
+            ),
+            mustDerivedProjectionMapIds: asArray(input.confirmation?.mustDerivedProjectionMap).map((row) =>
+              firstString(row?.id)
+            ),
+            aiTddContractExecutionManifestProjectionFields: Object.keys(
+              input.confirmation?.aiTddContractExecutionManifestProjection ?? {}
+            ),
+          }
+        : null,
+    finalAcceptanceReview: input.finalAcceptanceReview,
     blockingIssues: input.blockingIssues,
     warnings: input.warnings,
     diagramCoverage: input.coverage.diagramCoverage,
@@ -6932,7 +7679,7 @@ function buildReport(input) {
       format: input.mermaidRuntime?.format ?? null,
       issues: input.mermaidRuntime?.issues ?? [],
     },
-    renderedSections: renderedSectionsForProfile(input.confirmationProfile),
+    renderedSections: renderedSectionOrder,
   };
 }
 
@@ -6950,6 +7697,15 @@ function buildSummary(report, confirmation, views, artifactPlan) {
     preConfirmationSemanticDrilldown: report.preConfirmationSemanticDrilldown,
     blockingIssues: report.blockingIssues,
     deliveryReadiness: report.deliveryReadiness,
+    preCloseoutDiagnostic: report.preCloseoutDiagnostic ?? null,
+    closeoutDeliveryVerdict: report.closeoutDeliveryVerdict ?? null,
+    closeoutGateMatrix: report.closeoutGateMatrix ?? null,
+    closeoutAttemptHistory: report.closeoutAttemptHistory ?? null,
+    runtimeEvidenceClosureSummary: report.runtimeEvidenceClosureSummary ?? null,
+    sourceProjectionDiagnostics: report.sourceProjectionDiagnostics ?? null,
+    sourceCloseoutPolicyCoverage: report.sourceCloseoutPolicyCoverage ?? null,
+    finalAcceptanceReview: report.finalAcceptanceReview ?? null,
+    renderedSectionOrder: report.renderedSectionOrder ?? [],
     warnings: report.warnings,
     mermaidRuntime: report.mermaidRuntime,
     aiTddContractManifestCoverage: report.aiTddContractManifestCoverage,
@@ -6971,6 +7727,21 @@ function buildSummary(report, confirmation, views, artifactPlan) {
       aiTddManifestSections: Object.keys(report.aiTddContractManifestCoverage?.sections ?? {}).length,
       artifactPlanItems: artifactPlan.length,
     },
+  };
+}
+
+function companionOutputPaths(outPath, mode) {
+  if (mode === 'closeout-review') {
+    const parsed = path.parse(outPath);
+    const basename = path.join(parsed.dir, parsed.name);
+    return {
+      summaryPath: `${basename}.summary.json`,
+      reportPath: `${basename}.render-report.json`,
+    };
+  }
+  return {
+    summaryPath: path.join(path.dirname(outPath), 'confirmation-summary.json'),
+    reportPath: path.join(path.dirname(outPath), 'confirmation-render-report.json'),
   };
 }
 
@@ -7065,6 +7836,15 @@ function main(argv) {
     ui,
   });
   const deliveryReadiness = buildDeliveryReadiness(progressDelta, traceExecutionState, ui);
+  const closeoutReportState = readCloseoutReport(args, requirementRecordState);
+  const currentCloseoutAttempt = latestCloseoutAttempt(
+    requirementRecordState.record,
+    traceExecutionState.currentAttemptId
+  );
+  const sourceProjectionDiagnostics = buildSourceProjectionDiagnostics(confirmation, traceRows);
+  const closeoutGateMatrix = buildCloseoutGateMatrix(closeoutReportState, currentCloseoutAttempt);
+  const closeoutAttemptHistory = buildCloseoutAttemptHistory(requirementRecordState.record);
+  const runtimeEvidenceClosureSummary = buildRuntimeEvidenceClosureSummary(requirementRecordState.record);
   const externalCurrentTargetMap = args.currentTargetMap ? readDataFile(path.resolve(args.currentTargetMap)) : null;
   const currentTargetRequired = currentTargetMapApplies(confirmation);
   const currentTargetMap = mergeCurrentTargetMaps(confirmation.currentTargetMap, externalCurrentTargetMap, {
@@ -7081,6 +7861,19 @@ function main(argv) {
     targetModificationPaths,
     mermaidBlocks,
     reconfirmationState,
+  });
+  const finalAcceptanceReview = buildFinalAcceptanceReview({
+    args,
+    traceRows,
+    traceExecutionState,
+    requirementRecordState,
+    deliveryReadiness,
+  });
+  const closeoutDeliveryVerdict = buildCloseoutDeliveryVerdict({
+    args,
+    finalAcceptanceReview,
+    closeoutGateMatrix,
+    sourceProjectionDiagnostics,
   });
   coverage.blockingIssues.push(...validateConfirmationProfile(confirmation, confirmationProfile, currentTargetMap));
   coverage.blockingIssues.push(...validateOwnerModelPolicy(confirmation, artifactPlan));
@@ -7154,6 +7947,12 @@ function main(argv) {
     traceExecutionState,
     progressDelta,
     deliveryReadiness,
+    closeoutDeliveryVerdict,
+    closeoutGateMatrix,
+    closeoutAttemptHistory,
+    runtimeEvidenceClosureSummary,
+    sourceProjectionDiagnostics,
+    finalAcceptanceReview,
     reconfirmationState,
     resumeFailureRegistry,
     controlledIngestWriters,
@@ -7167,6 +7966,15 @@ function main(argv) {
     ...(reconfirmationState?.required ? ['reconfirmation-request'] : []),
     'core-design',
     'delivery-readiness',
+    ...(finalAcceptanceReview.applies ? ['final-acceptance-review'] : []),
+    ...(closeoutDeliveryVerdict.applies
+      ? [
+          'closeout-gate-result-matrix',
+          'closeout-attempt-history',
+          'runtime-evidence-closure-summary',
+          'source-closeout-policy',
+        ]
+      : []),
     'progress-delta',
     'pre-confirmation-semantic-drilldown',
     'decision-summary',
@@ -7222,6 +8030,11 @@ function main(argv) {
     confirmation,
     confirmability,
     deliveryReadiness,
+    closeoutDeliveryVerdict,
+    closeoutGateMatrix,
+    closeoutAttemptHistory,
+    runtimeEvidenceClosureSummary,
+    sourceProjectionDiagnostics,
     confirmInstruction: finalConfirmInstruction,
     blockingIssues: coverage.blockingIssues,
     warnings: coverage.warnings,
@@ -7236,6 +8049,7 @@ function main(argv) {
     traceExecutionState,
     progressDelta,
     deliveryReadiness,
+    finalAcceptanceReview,
     governanceEventTypeRegistry: Object.fromEntries(governanceEventTypes.definitions.entries()),
     governanceEventTypeSchemaIssues: governanceEventTypes.schemaIssues,
     controlledIngestWriterRegistry: controlledIngestWriters.rows,
@@ -7250,8 +8064,7 @@ function main(argv) {
   };
   const report = buildReport(common);
   const summary = buildSummary(report, confirmation, views, artifactPlan);
-  const summaryPath = path.join(path.dirname(outPath), 'confirmation-summary.json');
-  const reportPath = path.join(path.dirname(outPath), 'confirmation-render-report.json');
+  const { summaryPath, reportPath } = companionOutputPaths(outPath, args.mode);
   fs.writeFileSync(summaryPath, `${JSON.stringify(summary, null, 2)}\n`, 'utf8');
   fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
 
@@ -7265,7 +8078,12 @@ function main(argv) {
     console.log(`deliveryReadiness=${deliveryReadiness.label}`);
   }
 
-  if (args.strict !== false && coverage.blockingIssues.length) {
+  if (
+    args.strict !== false &&
+    (coverage.blockingIssues.length ||
+      (finalAcceptanceReview.applies && !finalAcceptanceReview.ready) ||
+      (closeoutDeliveryVerdict.applies && !closeoutDeliveryVerdict.ready))
+  ) {
     return 3;
   }
   return 0;
