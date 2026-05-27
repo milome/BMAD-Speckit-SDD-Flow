@@ -1352,6 +1352,15 @@ describe('render-requirements-confirmation-html', () => {
           requirementSetId: 'REQSET-UPLOAD',
           sourceDocumentHash: firstReport.sourceDocumentHash,
           implementationConfirmationHash: firstReport.implementationConfirmationHash,
+          confirmationPageHash: firstReport.confirmationPageHash,
+          confirmationHistory: [
+            {
+              eventType: 'confirmation_recorded',
+              sourceDocumentHash: firstReport.sourceDocumentHash,
+              implementationConfirmationHash: firstReport.implementationConfirmationHash,
+              confirmationPageHash: firstReport.confirmationPageHash,
+            },
+          ],
           lastEventType: 'confirmation_projection_refreshed',
           lastAppliedEventId: 'record_closed:fixture',
           closeout: {
@@ -1512,7 +1521,9 @@ describe('render-requirements-confirmation-html', () => {
     expect(html).toContain('legal_transition');
     expect(html).toContain('run-closeout-review-pass');
     expect(html).toContain('Closeout Delivery Verdict');
+    expect(html).toContain('closeout-verdict-metrics');
     expect(html).toContain('final_acceptance_ready');
+    expect(html).toContain('final-acceptance-metrics');
     expect(html).toContain('Pre-Closeout Diagnostic');
     expect(html).toContain('source_projection_gap');
     expect(html).toContain('EVD-010');
@@ -1542,7 +1553,36 @@ describe('render-requirements-confirmation-html', () => {
     expect(html).toContain('class="tag green">current_pass</span>');
     expect(html).toContain('class="tag green">legal_transition</span>');
     expect(html).toContain('closeout-trace-acceptance-table');
+    expect(html).toContain('确认最终验收并关闭需求');
+    expect(html).toContain('closeoutAttemptId=closeout-review-pass');
+    expect(html).toContain('closeoutConfirmationPageHash=sha256:');
+    expect(html).toContain('deliveryCloseoutReportHash=sha256:');
+    expect(html).toContain('目标态实现核实层');
+    expect(html).toContain('source_target');
+    expect(html).toContain('runtime_evidence');
+    expect(html).toContain('verification_status');
+    expect(html).toContain('evidence_refs');
+    expect(html).toContain('legal_transition');
+    expect(html).toContain('achieved');
     expect(report.mode).toBe('closeout-review');
+    expect(report.confirmationPageHashScope).toBe('scope_confirmation_hash_compatibility_field_not_closeout_authority');
+    expect(report.closeoutConfirmationPageHash).toMatch(/^sha256:/);
+    expect(report.confirmationPageHash).toBe(firstReport.confirmationPageHash);
+    expect(report.closeoutConfirmationPageHash).not.toBe(report.confirmationPageHash);
+    expect(report.closeoutConfirmationHashScope).toBe(
+      'closeout_html_normalized_with_self_hash_placeholder_and_generated_at_excluded'
+    );
+    expect(report.closeoutConfirmInstruction).toContain('确认最终验收并关闭需求');
+    expect(report.closeoutConfirmInstruction).toContain('closeoutAttemptId=closeout-review-pass');
+    expect(report.closeoutConfirmInstruction).toContain(`closeoutConfirmationPageHash=${report.closeoutConfirmationPageHash}`);
+    expect(report.closeoutConfirmInstruction).toContain(`deliveryCloseoutReportHash=${report.deliveryCloseoutReportHash}`);
+    expect(report.deliveryCloseoutReportHash).toMatch(/^sha256:/);
+    expect(report.closeoutProjectionIdentity).toMatchObject({
+      closeoutAttemptId: 'closeout-review-pass',
+      currentAliasPath: '_bmad-output/runtime/requirement-records/REQ-UPLOAD-001/confirmation/closeout-confirmation-current.html',
+      canonicalPath: '_bmad-output/runtime/requirement-records/REQ-UPLOAD-001/confirmation/closeout-confirmation-closeout-review-pass.html',
+      preservesScopeConfirmation: true,
+    });
     expect(report.renderedSectionOrder).toEqual(
       expect.arrayContaining([
         'closeout-gate-result-matrix',
@@ -1562,9 +1602,15 @@ describe('render-requirements-confirmation-html', () => {
       sourceProjectionGapCount: 1,
     });
     expect(report.preCloseoutDiagnostic).toMatchObject({
-      ready: false,
-      missingEvidenceCount: 1,
+      ready: true,
+      missingEvidenceCount: 0,
     });
+    expect(report.progressDelta.idStatuses['EVD-010']).toMatchObject({
+      proofState: 'source_projection_gap',
+      label: 'source_projection_gap',
+      tone: 'gold',
+    });
+    expect(report.progressDelta.missingEvidenceIds).not.toContain('EVD-010');
     expect(report.sourceProjectionDiagnostics.unboundEvidence[0]).toMatchObject({
       id: 'EVD-010',
       diagnosticType: 'source_projection_gap',
@@ -1638,9 +1684,22 @@ describe('render-requirements-confirmation-html', () => {
       currentAttemptCount: 1,
       artifactBoundCount: 1,
     });
+    expect(report.currentTargetRealization.summary).toMatchObject({
+      achieved: expect.any(Number),
+      not_achieved: 0,
+      not_evaluable: 0,
+    });
+    expect(report.currentTargetRealization.rows[0]).toMatchObject({
+      source_target: expect.any(String),
+      verification_status: 'achieved',
+      legal_transition: true,
+    });
     const summary = JSON.parse(fs.readFileSync(summaryPath, 'utf8'));
     expect(summary.closeoutDeliveryVerdict).toMatchObject({ ready: true, status: 'final_acceptance_ready' });
-    expect(summary.preCloseoutDiagnostic).toMatchObject({ ready: false, missingEvidenceCount: 1 });
+    expect(summary.preCloseoutDiagnostic).toMatchObject({ ready: true, missingEvidenceCount: 0 });
+    expect(summary.closeoutConfirmationPageHash).toBe(report.closeoutConfirmationPageHash);
+    expect(summary.closeoutConfirmInstruction).toBe(report.closeoutConfirmInstruction);
+    expect(summary.currentTargetRealization.summary.achieved).toBeGreaterThan(0);
     expect(summary.renderedSectionOrder).toContain('source-closeout-policy');
   });
 
@@ -1766,6 +1825,256 @@ describe('render-requirements-confirmation-html', () => {
     expect(report.finalAcceptanceReview.blockingIssues.map((issue: any) => issue.code)).toContain(
       'final_acceptance_record_closed_missing'
     );
+  });
+
+  it('keeps real missing runtime evidence blocking even when source projection gaps exist', () => {
+    const source = writeSource('CLOSEOUT_REVIEW_POLICY_FIXTURE');
+    const mermaidBundle = writeMockMermaidBundle();
+    const recordPath = path.join(tempDir, 'requirement-record-closeout-review-missing-runtime.json');
+    const firstOut = path.join(tempDir, 'confirmation-closeout-review-missing-runtime-first.html');
+    const firstResult = runRenderer([
+      '--source',
+      source,
+      '--out',
+      firstOut,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+      '--requirement-record',
+      recordPath,
+      '--strict',
+      'false',
+      '--json',
+    ]);
+    expect(firstResult.status).toBe(0);
+    const firstReport = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(firstOut), 'confirmation-render-report.json'), 'utf8')
+    );
+
+    fs.writeFileSync(
+      recordPath,
+      JSON.stringify(
+        {
+          recordId: 'REQ-UPLOAD-001',
+          requirementSetId: 'REQSET-UPLOAD',
+          sourceDocumentHash: firstReport.sourceDocumentHash,
+          implementationConfirmationHash: firstReport.implementationConfirmationHash,
+          lastEventType: 'record_closed',
+          lastAppliedEventId: 'record_closed:closeout-review-missing-runtime',
+          closeout: {
+            currentAttemptId: 'closeout-review-missing-runtime',
+            decision: 'pass',
+            attempts: [
+              {
+                eventType: 'record_closed',
+                closeoutAttemptId: 'closeout-review-missing-runtime',
+                decision: 'pass',
+                blockingReasons: [],
+              },
+            ],
+          },
+          deliveryEvidence: {
+            requiredCommands: [
+              {
+                commandId: 'CMD-CLOSEOUT-REVIEW',
+                closeoutAttemptId: 'closeout-review-missing-runtime',
+                lastRunRef: {
+                  commandId: 'CMD-CLOSEOUT-REVIEW',
+                  runId: 'run-closeout-review-missing-runtime',
+                  closeoutAttemptId: 'closeout-review-missing-runtime',
+                },
+                traceRows: ['TRACE-001'],
+                evidenceRefs: ['EVD-001'],
+                artifactRefs: [{ path: 'evidence/closeout-review.txt', hash: 'sha256:closeout-review' }],
+              },
+            ],
+          },
+          requirementClosures: [],
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+    fs.writeFileSync(
+      path.join(path.dirname(recordPath), 'delivery-closeout-report.json'),
+      JSON.stringify(
+        {
+          currentAttemptId: 'closeout-review-missing-runtime',
+          decision: 'pass',
+          checks: [{ id: 'delivery-truth-gate-current', passed: true, issueCount: 0, openCount: 0 }],
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+
+    const out = path.join(tempDir, 'closeout-review-missing-runtime.html');
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+      '--requirement-record',
+      recordPath,
+      '--mode',
+      'closeout-review',
+      '--json',
+    ]);
+
+    expect(result.status).toBe(3);
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'closeout-review-missing-runtime.render-report.json'), 'utf8')
+    );
+    expect(report.finalAcceptanceReview.ready).toBe(false);
+    expect(report.finalAcceptanceReview.blockingIssues.map((issue: any) => issue.code)).toContain(
+      'final_acceptance_trace_not_accepted'
+    );
+    expect(report.progressDelta.idStatuses['EVD-010']).toMatchObject({
+      proofState: 'missing_evidence',
+    });
+    expect(report.progressDelta.missingEvidenceIds).toContain('EVD-010');
+  });
+
+  it('does not claim target realization achieved from source prose without runtime acceptance evidence', () => {
+    const source = writeSource('CLOSEOUT_REVIEW_POLICY_FIXTURE');
+    const mermaidBundle = writeMockMermaidBundle();
+    const recordPath = path.join(tempDir, 'requirement-record-closeout-review-target-not-achieved.json');
+    const firstOut = path.join(tempDir, 'confirmation-closeout-review-target-not-achieved-first.html');
+    const firstResult = runRenderer([
+      '--source',
+      source,
+      '--out',
+      firstOut,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+      '--requirement-record',
+      recordPath,
+      '--strict',
+      'false',
+      '--json',
+    ]);
+    expect(firstResult.status).toBe(0);
+    const firstReport = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(firstOut), 'confirmation-render-report.json'), 'utf8')
+    );
+
+    fs.writeFileSync(
+      recordPath,
+      JSON.stringify(
+        {
+          recordId: 'REQ-UPLOAD-001',
+          requirementSetId: 'REQSET-UPLOAD',
+          sourceDocumentHash: firstReport.sourceDocumentHash,
+          implementationConfirmationHash: firstReport.implementationConfirmationHash,
+          lastEventType: 'record_closed',
+          lastAppliedEventId: 'record_closed:closeout-review-target-not-achieved',
+          closeout: {
+            currentAttemptId: 'closeout-review-target-not-achieved',
+            decision: 'pass',
+            attempts: [
+              {
+                eventType: 'record_closed',
+                closeoutAttemptId: 'closeout-review-target-not-achieved',
+                decision: 'pass',
+                blockingReasons: [],
+              },
+            ],
+          },
+          deliveryEvidence: {
+            requiredCommands: [
+              {
+                commandId: 'CMD-CLOSEOUT-REVIEW',
+                closeoutAttemptId: 'closeout-review-target-not-achieved',
+                lastRunRef: {
+                  commandId: 'CMD-CLOSEOUT-REVIEW',
+                  runId: 'run-closeout-review-target-not-achieved',
+                  closeoutAttemptId: 'closeout-review-target-not-achieved',
+                },
+                traceRows: ['TRACE-001'],
+                evidenceRefs: ['EVD-001'],
+                artifactRefs: [{ path: 'evidence/closeout-review.txt', hash: 'sha256:closeout-review' }],
+              },
+            ],
+          },
+          requirementClosures: [
+            {
+              eventType: 'requirement_closure_recorded',
+              requirementId: 'MUST-001',
+              status: 'pass',
+              traceRows: ['TRACE-001'],
+              evidenceRefs: ['EVD-001'],
+              sourceDocumentHash: firstReport.sourceDocumentHash,
+              implementationConfirmationHash: 'sha256:stale',
+              commandRunRefs: [
+                {
+                  commandId: 'CMD-CLOSEOUT-REVIEW',
+                  runId: 'run-closeout-review-target-not-achieved',
+                  closeoutAttemptId: 'closeout-review-target-not-achieved',
+                  exitCode: 0,
+                },
+              ],
+            },
+          ],
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+
+    const out = path.join(tempDir, 'closeout-review-target-not-achieved.html');
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+      '--requirement-record',
+      recordPath,
+      '--mode',
+      'closeout-review',
+      '--json',
+    ]);
+
+    expect(result.status).toBe(3);
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'closeout-review-target-not-achieved.render-report.json'), 'utf8')
+    );
+    expect(report.finalAcceptanceReview.ready).toBe(false);
+    expect(report.currentTargetRealization.summary.achieved).toBe(0);
+    expect(report.currentTargetRealization.summary.not_achieved).toBeGreaterThan(0);
+    expect(report.currentTargetRealization.rows[0]).toMatchObject({
+      verification_status: 'not_achieved',
+      legal_transition: false,
+    });
   });
 
   it('preserves id-badge mini as trusted HTML inside requirement boundary tables', () => {
