@@ -4326,15 +4326,15 @@ function writePreConfirmationRequirementRecord(input: {
 function resolveSkillScript(root: string, relativeScript: string): string {
   const home = process.env.USERPROFILE || process.env.HOME || '';
   const candidates = [
+    path.join(root, '_bmad', 'skills', 'requirements-contract-authoring'),
     path.join(root, '.codex', 'skills', 'requirements-contract-authoring'),
     path.join(root, '.cursor', 'skills', 'requirements-contract-authoring'),
     path.join(root, '.claude', 'skills', 'requirements-contract-authoring'),
-    path.join(root, '_bmad', 'skills', 'requirements-contract-authoring'),
     path.join(root, '.agents', 'skills', 'requirements-contract-authoring'),
+    path.resolve(__dirname, '..', '_bmad', 'skills', 'requirements-contract-authoring'),
     path.resolve(__dirname, '..', '.codex', 'skills', 'requirements-contract-authoring'),
     path.resolve(__dirname, '..', '.cursor', 'skills', 'requirements-contract-authoring'),
     path.resolve(__dirname, '..', '.claude', 'skills', 'requirements-contract-authoring'),
-    path.resolve(__dirname, '..', '_bmad', 'skills', 'requirements-contract-authoring'),
     ...(home
       ? [
           path.join(home, '.codex', 'skills', 'requirements-contract-authoring'),
@@ -6449,6 +6449,8 @@ const MAIN_AGENT_CLI_ACTIONS = new Set([
   'adaptive-intake',
   'confirm-scope',
   'confirmation-ingest',
+  'confirm-closeout-acceptance',
+  'closeout-acceptance-ingest',
   'post-close-defect-intake',
   'route-confirmation-drift',
   'confirmation-drift-route',
@@ -6599,6 +6601,7 @@ export interface MainAgentConfirmScopeResult {
   ok: boolean;
   action:
     | 'confirm-scope'
+    | 'confirm-closeout-acceptance'
     | 'repair-confirmation-bookkeeping'
     | 'route-confirmation-drift';
   delegatedEntry: string;
@@ -6610,6 +6613,72 @@ export interface MainAgentConfirmScopeResult {
   nextRequiredAction?: string;
   classification?: Record<string, unknown>;
   delegatedResult?: MainAgentConfirmScopeResult;
+}
+
+export function runMainAgentConfirmCloseoutAcceptance(
+  root: string,
+  args: Record<string, string | undefined>
+): MainAgentConfirmScopeResult {
+  const entry = resolveSkillScript(root, 'ingest-confirmation-event.js');
+  if (!fs.existsSync(entry)) {
+    throw new Error(`controlled closeout acceptance entry missing: ${entry}`);
+  }
+  const source = normalizeText(args.source);
+  if (!source) {
+    throw new Error('confirm-closeout-acceptance requires --source <source-document.md>');
+  }
+  if (!normalizeText(args.renderReport)) {
+    throw new Error('confirm-closeout-acceptance requires --render-report <closeout-render-report.json>');
+  }
+  if (!normalizeText(args.confirmationText) && !normalizeText(args.confirmationTextFile)) {
+    throw new Error(
+      'confirm-closeout-acceptance requires --confirmation-text <exact closeout confirmation> or --confirmation-text-file <file>'
+    );
+  }
+
+  const delegatedArgs = [
+    '--action',
+    'confirm-closeout-acceptance',
+    '--source',
+    path.resolve(root, stripWrappingQuotes(source)),
+    '--json',
+  ];
+  pushOptionalArg(delegatedArgs, '--render-report', args.renderReport, root, true);
+  pushOptionalArg(delegatedArgs, '--confirmation-text', args.confirmationText, root);
+  pushOptionalArg(delegatedArgs, '--confirmation-text-file', args.confirmationTextFile, root, true);
+  pushOptionalArg(
+    delegatedArgs,
+    '--confirmed-by',
+    args.confirmedBy ?? 'main-agent-orchestration',
+    root
+  );
+  pushOptionalArg(delegatedArgs, '--confirmed-at', args.confirmedAt, root);
+  pushOptionalArg(delegatedArgs, '--record-id', args.recordId, root);
+  pushOptionalArg(delegatedArgs, '--requirement-set-id', args.requirementSetId, root);
+  pushOptionalArg(delegatedArgs, '--requirement-record', args.requirementRecord, root, true);
+  pushOptionalArg(delegatedArgs, '--event-log', args.eventLog, root, true);
+  pushOptionalArg(delegatedArgs, '--artifact-index', args.artifactIndex, root, true);
+
+  const step = spawnSync(process.execPath, [entry, ...delegatedArgs], {
+    cwd: root,
+    encoding: 'utf8',
+  });
+  let parsedStdout: unknown = undefined;
+  if (step.stdout.trim()) {
+    try {
+      parsedStdout = JSON.parse(step.stdout);
+    } catch {
+      parsedStdout = step.stdout.trim();
+    }
+  }
+  return {
+    ok: step.status === 0,
+    action: 'confirm-closeout-acceptance',
+    delegatedEntry: path.relative(root, entry).replace(/\\/g, '/'),
+    exitCode: step.status ?? 2,
+    ...(parsedStdout !== undefined ? { stdout: parsedStdout } : {}),
+    ...(step.stderr.trim() ? { stderr: step.stderr.trim() } : {}),
+  };
 }
 
 export function runMainAgentConfirmScope(
@@ -8828,6 +8897,21 @@ export function mainMainAgentOrchestration(argv: string[]): number {
     } catch (error) {
       console.error(
         `main-agent-orchestration confirm-scope: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+      return 1;
+    }
+  }
+
+  if (action === 'confirm-closeout-acceptance' || action === 'closeout-acceptance-ingest') {
+    try {
+      const result = runMainAgentConfirmCloseoutAcceptance(root, args);
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return result.ok ? 0 : result.exitCode;
+    } catch (error) {
+      console.error(
+        `main-agent-orchestration confirm-closeout-acceptance: ${
           error instanceof Error ? error.message : String(error)
         }`
       );

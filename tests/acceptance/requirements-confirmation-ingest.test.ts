@@ -30,6 +30,7 @@ const CONFIRM_SCOPE = path.join(
   'scripts',
   'confirm-requirements-scope.js'
 );
+const MAIN_AGENT_ORCHESTRATION = path.join(ROOT, 'scripts', 'main-agent-orchestration.ts');
 const REQ_TRACE_PROMPT = path.join(
   ROOT,
   '_bmad',
@@ -481,6 +482,14 @@ function runNode(script: string, args: string[]) {
   });
 }
 
+function runTsx(script: string, args: string[]) {
+  return spawnSync('npx', ['--no-install', 'tsx', script, ...args], {
+    cwd: ROOT,
+    encoding: 'utf8',
+    shell: process.platform === 'win32',
+  });
+}
+
 function runPython(script: string, args: string[]) {
   return spawnSync('python', [script, ...args], {
     cwd: ROOT,
@@ -559,6 +568,41 @@ function render(source: string) {
   expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
   const reportPath = path.join(path.dirname(out), 'confirmation-render-report.json');
   return { out, reportPath, report: JSON.parse(fs.readFileSync(reportPath, 'utf8')) };
+}
+
+function writeCloseoutRenderReport(input: {
+  report: { sourceDocumentHash: string; implementationConfirmationHash: string };
+  recordPath: string;
+  attemptId?: string;
+  closeoutConfirmationPageHash?: string;
+  deliveryCloseoutReportHash?: string;
+}) {
+  const attemptId = input.attemptId ?? 'attempt-closeout-001';
+  const closeoutConfirmationPageHash = input.closeoutConfirmationPageHash ?? fixedHash('c');
+  const deliveryCloseoutReportHash = input.deliveryCloseoutReportHash ?? fixedHash('d');
+  const reportPath = path.join(path.dirname(input.recordPath), 'closeout-confirmation-current.render-report.json');
+  const closeoutReport = {
+    mode: 'closeout-review',
+    recordId: 'REQ-CONFIRM-INGEST',
+    requirementSetId: 'REQSET-CONFIRM-INGEST',
+    sourceDocumentHash: input.report.sourceDocumentHash,
+    implementationConfirmationHash: input.report.implementationConfirmationHash,
+    closeoutConfirmationPageHash,
+    deliveryCloseoutReportHash,
+    closeoutDeliveryVerdict: { ready: true, currentAttemptId: attemptId },
+    finalAcceptanceReview: { ready: true, currentAttemptId: attemptId },
+    artifactRef: { path: path.join(path.dirname(input.recordPath), 'closeout-confirmation-current.html') },
+  };
+  fs.writeFileSync(reportPath, `${JSON.stringify(closeoutReport, null, 2)}\n`, 'utf8');
+  const confirmationText = [
+    '确认最终验收并关闭需求',
+    `sourceDocumentHash=${input.report.sourceDocumentHash}`,
+    `implementationConfirmationHash=${input.report.implementationConfirmationHash}`,
+    `closeoutAttemptId=${attemptId}`,
+    `closeoutConfirmationPageHash=${closeoutConfirmationPageHash}`,
+    `deliveryCloseoutReportHash=${deliveryCloseoutReportHash}`,
+  ].join('\n');
+  return { reportPath, report: closeoutReport, confirmationText };
 }
 
 describe('controlled confirmation ingest', () => {
@@ -907,5 +951,186 @@ describe('controlled confirmation ingest', () => {
     expect(result.stderr).toContain('confirmation_text_source_hash_mismatch');
     expect(fs.readFileSync(source, 'utf8')).toBe(before);
     expect(fs.existsSync(recordPath)).toBe(false);
+  });
+
+  it('records closeout_acceptance_confirmed only after exact closeout phrase and record_closed proof', () => {
+    const source = writeSource();
+    const recordPath = path.join(tempDir, '_bmad-output/runtime/requirement-records/REQ-CONFIRM-INGEST/requirement-record.json');
+    const eventLogPath = path.join(tempDir, '_bmad-output/runtime/requirement-records/mentor-events.jsonl');
+    const artifactIndexPath = path.join(tempDir, '_bmad-output/runtime/requirement-records/artifact-index.jsonl');
+    const closeoutReportPath = path.join(path.dirname(recordPath), 'delivery-closeout-report.json');
+    fs.mkdirSync(path.dirname(recordPath), { recursive: true });
+    const { report } = render(source);
+    fs.writeFileSync(
+      recordPath,
+      JSON.stringify(
+        {
+          recordId: 'REQ-CONFIRM-INGEST',
+          requirementSetId: 'REQSET-CONFIRM-INGEST',
+          sourceDocumentHash: report.sourceDocumentHash,
+          implementationConfirmationHash: report.implementationConfirmationHash,
+          lastEventType: 'confirmation_projection_refreshed',
+          lastAppliedEventId: 'record_closed:attempt-closeout-001',
+          closeout: {
+            currentAttemptId: 'attempt-closeout-001',
+            decision: 'pass',
+            attempts: [
+              {
+                eventType: 'closeout_check_recorded',
+                closeoutAttemptId: 'attempt-closeout-001',
+                decision: 'pass',
+                blockingReasons: [],
+                reportPath: closeoutReportPath,
+                checks: [{ id: 'delivery-truth-gate-current', passed: true }],
+              },
+            ],
+          },
+          deliveryEvidence: {
+            requiredCommands: [
+              {
+                commandId: 'CMD-CLOSEOUT-ACCEPTANCE',
+                closeoutAttemptId: 'attempt-closeout-001',
+                lastRunRef: { runId: 'run-closeout-acceptance', closeoutAttemptId: 'attempt-closeout-001' },
+                traceRows: ['TRACE-001'],
+                evidenceRefs: ['EVD-001'],
+                artifactRefs: [{ path: 'evidence/closeout.txt', hash: 'sha256:closeout' }],
+              },
+            ],
+          },
+          requirementClosures: [
+            {
+              status: 'pass',
+              traceRows: ['TRACE-001'],
+              evidenceRefs: ['EVD-001'],
+              sourceDocumentHash: report.sourceDocumentHash,
+              implementationConfirmationHash: report.implementationConfirmationHash,
+              commandRunRefs: [{ commandId: 'CMD-CLOSEOUT-ACCEPTANCE', runId: 'run-closeout-acceptance', closeoutAttemptId: 'attempt-closeout-001' }],
+            },
+          ],
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+    fs.writeFileSync(
+      closeoutReportPath,
+      JSON.stringify(
+        {
+          currentAttemptId: 'attempt-closeout-001',
+          decision: 'pass',
+          checks: [{ id: 'delivery-truth-gate-current', passed: true, issueCount: 0, openCount: 0 }],
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+    const closeoutReport = writeCloseoutRenderReport({ report, recordPath });
+    const closeoutConfirmationTextFile = path.join(tempDir, 'closeout-confirmation.txt');
+    fs.writeFileSync(closeoutConfirmationTextFile, closeoutReport.confirmationText, 'utf8');
+    const result = runTsx(MAIN_AGENT_ORCHESTRATION, [
+      '--action',
+      'confirm-closeout-acceptance',
+      '--cwd',
+      ROOT,
+      '--source',
+      source,
+      '--render-report',
+      closeoutReport.reportPath,
+      '--confirmation-text-file',
+      closeoutConfirmationTextFile,
+      '--confirmed-by',
+      'test-user',
+      '--record-id',
+      'REQ-CONFIRM-INGEST',
+      '--requirement-record',
+      recordPath,
+      '--event-log',
+      eventLogPath,
+      '--artifact-index',
+      artifactIndexPath,
+      '--confirmed-at',
+      '2026-05-27T10:00:00.000Z',
+      '--json',
+    ]);
+
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    const output = JSON.parse(result.stdout);
+    expect(output.action).toBe('confirm-closeout-acceptance');
+    expect(output.delegatedEntry).toBe('_bmad/skills/requirements-contract-authoring/scripts/ingest-confirmation-event.js');
+    expect(output.ok).toBe(true);
+    const record = JSON.parse(fs.readFileSync(recordPath, 'utf8'));
+    expect(record.closeoutAcceptance).toMatchObject({
+      status: 'user_accepted_closeout',
+      closeoutAttemptId: 'attempt-closeout-001',
+      closeoutConfirmationPageHash: closeoutReport.report.closeoutConfirmationPageHash,
+      deliveryCloseoutReportHash: closeoutReport.report.deliveryCloseoutReportHash,
+    });
+    expect(record.closeoutAcceptanceHistory.at(-1)).toMatchObject({
+      eventType: 'closeout_acceptance_confirmed',
+      confirmedBy: 'test-user',
+      beforeRecordHash: expect.stringMatching(/^sha256:/),
+      afterRecordHash: expect.stringMatching(/^sha256:/),
+    });
+    expect(record.confirmationHistory ?? []).toEqual([]);
+    expect(fs.readFileSync(eventLogPath, 'utf8')).toContain('closeout_acceptance_confirmed');
+    expect(fs.readFileSync(artifactIndexPath, 'utf8')).toContain('closeout_acceptance_confirmed');
+  });
+
+  it('rejects closeout acceptance when only record_closed exists but the closeout phrase hash is stale', () => {
+    const source = writeSource();
+    const recordPath = path.join(tempDir, '_bmad-output/runtime/requirement-records/REQ-CONFIRM-INGEST/requirement-record.json');
+    const { report } = render(source);
+    fs.mkdirSync(path.dirname(recordPath), { recursive: true });
+    fs.writeFileSync(
+      recordPath,
+      JSON.stringify(
+        {
+          recordId: 'REQ-CONFIRM-INGEST',
+          requirementSetId: 'REQSET-CONFIRM-INGEST',
+          sourceDocumentHash: report.sourceDocumentHash,
+          implementationConfirmationHash: report.implementationConfirmationHash,
+          lastEventType: 'record_closed',
+          lastAppliedEventId: 'record_closed:attempt-closeout-001',
+          closeout: { currentAttemptId: 'attempt-closeout-001', decision: 'pass', attempts: [{ closeoutAttemptId: 'attempt-closeout-001', decision: 'pass' }] },
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+    const closeoutReport = writeCloseoutRenderReport({ report, recordPath });
+    const badText = [
+      '确认最终验收并关闭需求',
+      `sourceDocumentHash=${report.sourceDocumentHash}`,
+      `implementationConfirmationHash=${report.implementationConfirmationHash}`,
+      'closeoutAttemptId=attempt-closeout-001',
+      'closeoutConfirmationPageHash=sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      'deliveryCloseoutReportHash=sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+    ].join('\n');
+    const result = runNode(INGEST, [
+      '--action',
+      'confirm-closeout-acceptance',
+      '--source',
+      source,
+      '--render-report',
+      closeoutReport.reportPath,
+      '--confirmation-text',
+      badText,
+      '--confirmed-by',
+      'test-user',
+      '--record-id',
+      'REQ-CONFIRM-INGEST',
+      '--requirement-record',
+      recordPath,
+      '--json',
+    ]);
+
+    expect(result.status).toBe(3);
+    expect(result.stderr).toContain('closeout_confirmation_page_hash_mismatch');
+    expect(result.stderr).toContain('delivery_closeout_report_hash_mismatch');
+    const record = JSON.parse(fs.readFileSync(recordPath, 'utf8'));
+    expect(record.closeoutAcceptance).toBeUndefined();
   });
 });
