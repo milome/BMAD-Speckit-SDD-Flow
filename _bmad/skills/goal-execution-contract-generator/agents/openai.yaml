@@ -1,0 +1,4 @@
+interface:
+  display_name: "Goal Execution Contract Generator"
+  short_description: "Generate frozen /goal execution contracts"
+  default_prompt: "Use $goal-execution-contract-generator to generate a strict frozen /goal execution contract from this requirement."
