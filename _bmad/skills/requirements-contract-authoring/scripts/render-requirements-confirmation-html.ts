@@ -9,6 +9,12 @@ const yaml = require('./load-js-yaml');
 const {
   evaluateTargetModificationPathCoverage,
 } = require('./target_modification_path_coverage');
+const {
+  classifyConfirmationDrift,
+  SEMANTIC_RECONFIRMATION_REQUIRED,
+  STALE_BOOKKEEPING_REPAIR_REQUIRED,
+  PROJECTION_REFRESH_REQUIRED,
+} = require('./confirmation_drift_classifier');
 
 const VALID_LANGUAGES = new Set(['zh-CN', 'en-US', 'bilingual']);
 const VALID_ENTRY_FLOWS = new Set(['bugfix', 'standalone_tasks', 'story']);
@@ -1101,6 +1107,7 @@ function sanitizeMermaidTransitionLabel(label) {
   return String(label ?? '')
     .replace(/\[([A-Z]+-\d+[A-Z]*)\]/gu, '$1')
     .replace(/[<>{}]/gu, ' ')
+    .replace(/;/gu, ' and')
     .replace(/\s+/gu, ' ')
     .trim();
 }
@@ -1113,9 +1120,27 @@ function sanitizeMermaidStateLine(line) {
 
 function sanitizeMermaidSequenceNoteLine(line) {
   return String(line ?? '').replace(/^(\s*Note\s+(?:over|right of|left of)\s+[^:]+:\s*)(.+)$/iu, (_match, prefix, label) => {
-    const safeLabel = sanitizeMermaidTransitionLabel(label).replace(/;/gu, ' and').trim();
+    const safeLabel = sanitizeMermaidTransitionLabel(label);
     return `${prefix}${safeLabel}`;
   });
+}
+
+function sanitizeMermaidSequenceMessageLine(line) {
+  return String(line ?? '').replace(
+    /^(\s*\S+\s*(?:-{1,2}|={1,2})(?:>>|>|x|\){1,2})?\s*\S+\s*:\s*)(.+)$/u,
+    (_match, prefix, label) => {
+      const safeLabel = sanitizeMermaidTransitionLabel(label);
+      return `${prefix}${safeLabel}`;
+    }
+  );
+}
+
+function sanitizeMermaidSequenceLine(line) {
+  if (/^\s*Note\s+/iu.test(line)) return sanitizeMermaidSequenceNoteLine(line);
+  if (/^\s*\S+\s*(?:-{1,2}|={1,2})(?:>>|>|x|\){1,2})?\s*\S+\s*:/u.test(line)) {
+    return sanitizeMermaidSequenceMessageLine(line);
+  }
+  return line;
 }
 
 function mermaidRenderSource(source) {
@@ -1123,7 +1148,7 @@ function mermaidRenderSource(source) {
   if (/^\s*sequenceDiagram\b/imu.test(text)) {
     return text
       .split(/\r?\n/u)
-      .map((line) => (/^\s*Note\s+/iu.test(line) ? sanitizeMermaidSequenceNoteLine(line) : line))
+      .map((line) => sanitizeMermaidSequenceLine(line))
       .join('\n');
   }
   if (!/^\s*(flowchart|graph|stateDiagram|stateDiagram-v2)\b/imu.test(text)) return text;
@@ -2963,43 +2988,55 @@ function validateConfirmationLanguageContent(confirmation, language) {
   return issues;
 }
 
-function buildReconfirmationState(confirmation, currentHashes) {
+function buildReconfirmationState(confirmation, currentHashes, driftClassification = null) {
   const request = confirmation.reconfirmationRequest && typeof confirmation.reconfirmationRequest === 'object'
     ? confirmation.reconfirmationRequest
     : {};
   const previousSourceDocumentHash =
-    request.previousSourceDocumentHash ?? confirmation.sourceDocumentHash ?? null;
+    driftClassification?.latestConfirmedSourceDocumentHash ??
+    request.previousSourceDocumentHash ??
+    confirmation.sourceDocumentHash ??
+    null;
   const previousImplementationConfirmationHash =
-    request.previousImplementationConfirmationHash ?? confirmation.implementationConfirmationHash ?? null;
+    driftClassification?.latestConfirmedImplementationConfirmationHash ??
+    request.previousImplementationConfirmationHash ??
+    confirmation.implementationConfirmationHash ??
+    null;
   const currentSourceDocumentHash =
-    request.currentSourceDocumentHash ?? currentHashes.sourceDocumentHash;
+    driftClassification?.currentSourceDocumentHash ?? request.currentSourceDocumentHash ?? currentHashes.sourceDocumentHash;
   const currentImplementationConfirmationHash =
-    request.currentImplementationConfirmationHash ?? currentHashes.implementationConfirmationHash;
-  const sourceChanged =
-    Boolean(previousSourceDocumentHash) && previousSourceDocumentHash !== currentHashes.sourceDocumentHash;
-  const implementationChanged =
-    Boolean(previousImplementationConfirmationHash) &&
-    previousImplementationConfirmationHash !== currentHashes.implementationConfirmationHash;
-  const required = Boolean(request.required) || sourceChanged || implementationChanged || confirmation.status === 'reconfirm_required';
-  const allowedUserActions = stringList(request.allowedUserActions).length
-    ? stringList(request.allowedUserActions)
-    : [
-        'confirm_current_version',
-        'reject_current_changes_restore_last_confirmed',
-        'accept_partial_changes_create_followup',
-        'regenerate_confirmation_view',
-      ];
+    driftClassification?.currentImplementationConfirmationHash ??
+    request.currentImplementationConfirmationHash ??
+    currentHashes.implementationConfirmationHash;
+  const sourceChanged = driftClassification
+    ? driftClassification.sourceChanged === true
+    : Boolean(previousSourceDocumentHash) && previousSourceDocumentHash !== currentHashes.sourceDocumentHash;
+  const implementationChanged = driftClassification
+    ? driftClassification.implementationChanged === true
+    : Boolean(previousImplementationConfirmationHash) &&
+      previousImplementationConfirmationHash !== currentHashes.implementationConfirmationHash;
+  const required = driftClassification
+    ? driftClassification.kind === SEMANTIC_RECONFIRMATION_REQUIRED
+    : Boolean(request.required) || sourceChanged || implementationChanged;
+  const allowedUserActions = stringList(request.allowedUserActions);
   return {
     required,
     reason:
+      request.reasonCode ??
       request.reason ??
       (sourceChanged
         ? 'sourceDocumentHash_changed'
         : implementationChanged
           ? 'implementationConfirmationHash_changed'
-          : confirmation.status === 'reconfirm_required'
-            ? 'status_reconfirm_required'
-            : null),
+          : null),
+    reasonCode: request.reasonCode ?? null,
+    userFacingTitle: request.userFacingTitle ?? null,
+    userFacingSummary: request.userFacingSummary ?? null,
+    persuasiveRationale: request.persuasiveRationale ?? null,
+    evidenceBundle: request.evidenceBundle ?? null,
+    driftClassification: driftClassification ?? null,
+    bookkeepingRepairRequired: driftClassification?.kind === STALE_BOOKKEEPING_REPAIR_REQUIRED,
+    projectionRefreshRequired: driftClassification?.kind === PROJECTION_REFRESH_REQUIRED,
     sourceChanged,
     implementationChanged,
     previousSourceDocumentHash,
@@ -3247,6 +3284,7 @@ function buildCoverage(input) {
   if (!flowViews.length) blockingIssues.push(blocking('missing_flow_views', 'flowViews[] is required'));
   if (!edgeCaseViews.length) blockingIssues.push(blocking('missing_edge_case_views', 'edgeCaseViews[] is required'));
   if (!boundaryViews.length) blockingIssues.push(blocking('missing_boundary_views', 'boundaryViews[] is required'));
+  blockingIssues.push(...collectReconfirmationEvidenceIssues(reconfirmationState, knownIds));
   const requirementBoundary = inferRequirementBoundary(
     confirmation,
     { sequenceViews, flowViews, edgeCaseViews, boundaryViews },
@@ -3505,6 +3543,79 @@ function buildEmptyCurrentTargetMap() {
     schemaIssues: [],
     tableCoverage: {},
   };
+}
+
+function collectReconfirmationEvidenceIssues(reconfirmationState, knownIds) {
+  if (!reconfirmationState?.required) return [];
+  const findings = [];
+  const issueFor = (code, message, refs = []) => blocking(code, message, refs);
+  if (!reconfirmationState.reasonCode) {
+    findings.push(issueFor('reconfirmation_missing_reason_code', 'reconfirmationRequest.reasonCode is required'));
+  }
+  if (!String(reconfirmationState.userFacingSummary ?? '').trim()) {
+    findings.push(issueFor('reconfirmation_missing_user_facing_summary', 'reconfirmationRequest.userFacingSummary is required'));
+  }
+  const rationale = reconfirmationState.persuasiveRationale ?? {};
+  for (const field of ['whyReconfirmNow', 'riskIfSkipped', 'whyEvidenceIsSufficient']) {
+    if (!String(rationale[field] ?? '').trim()) {
+      findings.push(
+        issueFor(
+          `reconfirmation_missing_${field}`,
+          `reconfirmationRequest.persuasiveRationale.${field} is required`
+        )
+      );
+    }
+  }
+  const evidenceBundle = reconfirmationState.evidenceBundle ?? {};
+  if (evidenceBundle.sufficiencyVerdict !== 'sufficient') {
+    findings.push(
+      issueFor(
+        'reconfirmation_evidence_not_sufficient',
+        'reconfirmationRequest.evidenceBundle.sufficiencyVerdict must be sufficient'
+      )
+    );
+  }
+  const items = asArray(evidenceBundle.items);
+  if (!items.length) {
+    findings.push(
+      issueFor(
+        'reconfirmation_missing_evidence_items',
+        'reconfirmationRequest.evidenceBundle.items[] is required'
+      )
+    );
+  }
+  for (const item of items) {
+    const refs = [...stringList(item?.sourceRefs), ...stringList(item?.proofRefs)];
+    if (!refs.length) {
+      findings.push(
+        issueFor(
+          'reconfirmation_evidence_item_missing_refs',
+          `${item?.id ?? 'reconfirmation evidence item'} must include sourceRefs[] or proofRefs[]`
+        )
+      );
+      continue;
+    }
+    for (const ref of refs) {
+      if (!knownIds.has(ref) && !/^ART-|^CMD-/u.test(ref)) {
+        findings.push(
+          issueFor(
+            'reconfirmation_evidence_item_unknown_ref',
+            `${item?.id ?? 'reconfirmation evidence item'} references unknown ID ${ref}`,
+            [ref]
+          )
+        );
+      }
+    }
+  }
+  if (!stringList(reconfirmationState.allowedUserActions).length) {
+    findings.push(
+      issueFor(
+        'reconfirmation_missing_allowed_user_actions',
+        'reconfirmationRequest.allowedUserActions[] is required'
+      )
+    );
+  }
+  return findings;
 }
 
 const CURRENT_TARGET_ARRAY_FIELDS = [
@@ -6092,8 +6203,22 @@ function renderScoringDashboardSft(confirmation) {
 
 function renderReconfirmationPanel(reconfirmationState) {
   if (!reconfirmationState?.required) return '';
+  const rationale = reconfirmationState.persuasiveRationale ?? {};
+  const evidenceBundle = reconfirmationState.evidenceBundle ?? {};
+  const evidenceRows = asArray(evidenceBundle.items).map((item, index) => [
+    item.id ?? `RCEVD-${String(index + 1).padStart(3, '0')}`,
+    item.kind ?? 'evidence',
+    item.title ?? '未命名证据',
+    item.summary ?? '',
+    renderIdBadges([...(stringList(item.sourceRefs)), ...(stringList(item.proofRefs))]),
+  ]);
   const rows = [
-    ['reason', reconfirmationState.reason ?? 'reconfirmation_required'],
+    ['reasonCode', reconfirmationState.reasonCode ?? reconfirmationState.reason ?? 'reconfirmation_required'],
+    ['userFacingSummary', reconfirmationState.userFacingSummary ?? '未提供'],
+    ['whyReconfirmNow', rationale.whyReconfirmNow ?? '未提供'],
+    ['riskIfSkipped', rationale.riskIfSkipped ?? '未提供'],
+    ['whyEvidenceIsSufficient', rationale.whyEvidenceIsSufficient ?? '未提供'],
+    ['evidenceSufficiency', evidenceBundle.sufficiencyVerdict ?? '未提供'],
     ['previousSourceDocumentHash', reconfirmationState.previousSourceDocumentHash ?? '未提供'],
     ['currentSourceDocumentHash', reconfirmationState.currentSourceDocumentHash ?? '未提供'],
     ['previousImplementationConfirmationHash', reconfirmationState.previousImplementationConfirmationHash ?? '未提供'],
@@ -6112,9 +6237,11 @@ function renderReconfirmationPanel(reconfirmationState) {
     ];
   });
   return `<section class="card" id="reconfirmation-request">
-    <h2>重新确认请求</h2>
-    <p class="blocked">检测到确认边界漂移。用户只需要确认业务意图，不应手工修改 hash、status 或 confirmationHistory。</p>
+    <h2>${escapeHtml(reconfirmationState.userFacingTitle ?? '需要重新确认')}</h2>
+    <p class="blocked">检测到确认边界语义漂移。用户只需要确认业务意图，不应手工修改 hash、status 或 confirmationHistory。</p>
     ${renderTable(['字段', '值'], rows)}
+    <h3>重新确认证据</h3>
+    ${evidenceRows.length ? renderTable(['证据 ID', '类型', '标题', '说明', '绑定引用'], evidenceRows) : '<p class="empty-state">源文档未提供 reconfirmationRequest.evidenceBundle.items[]。</p>'}
     <h3>差异摘要</h3>
     ${diffRows.length ? renderTable(['项', '变化'], diffRows) : '<p class="empty-state">源文档未提供 reconfirmationRequest.diffSummary[]。</p>'}
   </section>`;
@@ -6549,6 +6676,7 @@ function buildHtml(input) {
       ? confirmation.nextStageAfterConfirmation ?? ui.nextStageReadyFallback
       : ui.nextStageBlocked;
   const sectionHtml = [
+    reconfirmationState?.required ? ['reconfirmation-request', renderReconfirmationPanel(reconfirmationState)] : null,
     [
       'core-design',
       renderCoreDesignSummary({
@@ -6565,7 +6693,6 @@ function buildHtml(input) {
     ['delivery-readiness', renderDeliveryReadiness(deliveryReadiness, ui)],
     ['progress-delta', renderProgressDelta(progressDelta, reconfirmationState, ui)],
     ['pre-confirmation-semantic-drilldown', renderPreConfirmationSemanticDrilldown(preConfirmationSemanticDrilldown)],
-    reconfirmationState?.required ? ['reconfirmation-request', renderReconfirmationPanel(reconfirmationState)] : null,
     ['decision-summary', `<section class="card" id="decision-summary"><h2>${escapeHtml(ui.decisionSummary)}</h2>${renderTable(
       [ui.decisionQuestion, ui.decisionAnswer],
       [
@@ -6688,6 +6815,9 @@ ${sectionHtml.map(([, html]) => html).join('\n')}
 function buildReport(input) {
   const currentTargetEnabled =
     currentTargetMapApplies(input.confirmation) || viewPackEnabled(input.confirmationProfile, 'currentTargetMap');
+  const renderedSectionOrder = Array.isArray(input.renderedSectionOrder)
+    ? input.renderedSectionOrder
+    : renderedSectionsForProfile(input.confirmationProfile);
   return {
     recordId: input.recordId,
     requirementSetId: input.requirementSetId,
@@ -6742,6 +6872,14 @@ function buildReport(input) {
     },
     controlledIngestWriterSchemaIssues: input.controlledIngestWriterSchemaIssues ?? [],
     reconfirmationRequest: input.reconfirmationState ?? null,
+    confirmationDriftClassification: input.reconfirmationState?.driftClassification ?? null,
+    renderedSectionOrder,
+    reconfirmationBannerRendered: renderedSectionOrder.includes('reconfirmation-request'),
+    reconfirmationEvidenceVerdict:
+      input.reconfirmationState?.evidenceBundle?.sufficiencyVerdict ?? null,
+    reconfirmationPrimaryProofRefs: asArray(
+      input.reconfirmationState?.evidenceBundle?.items
+    ).flatMap((item) => stringList(item?.proofRefs)),
     resumeFailureCaseCoverage: {
       status: input.resumeFailureRegistry?.status ?? null,
       caseCount: input.resumeFailureRegistry?.cases?.length ?? 0,
@@ -6876,10 +7014,6 @@ function main(argv) {
   const sourceType = inferSourceType(sourcePath, sourceText, entryFlow);
   const sourceDocumentHash = sourceDocumentHashFor(sourceText, blockText, confirmation);
   const implementationConfirmationHash = implementationConfirmationHashFor(confirmation);
-  const reconfirmationState = buildReconfirmationState(confirmation, {
-    sourceDocumentHash,
-    implementationConfirmationHash,
-  });
   const confirmationProfile = resolveConfirmationProfile(confirmation);
   const governanceEventTypes = normalizeGovernanceEventTypeRegistry(confirmation);
   const controlledIngestWriters = normalizeControlledIngestWriterRegistry(confirmation, governanceEventTypes);
@@ -6898,6 +7032,23 @@ function main(argv) {
   const requirementBoundary = inferRequirementBoundary(confirmation, views, mermaidBlocks);
   const traceRows = enrichTraceRowsWithBoundaryCoverage(confirmation.traceRows, views.boundaryViews);
   const requirementRecordState = readRequirementRecord(args, recordId);
+  const driftClassification = classifyConfirmationDrift({
+    confirmation,
+    requirementRecord: requirementRecordState,
+    renderReport: null,
+    currentHashes: {
+      sourceDocumentHash,
+      implementationConfirmationHash,
+    },
+  });
+  const reconfirmationState = buildReconfirmationState(
+    confirmation,
+    {
+      sourceDocumentHash,
+      implementationConfirmationHash,
+    },
+    driftClassification
+  );
   const traceExecutionState = buildTraceExecutionState({
     traceRows,
     requirementRecordState,
@@ -7011,6 +7162,34 @@ function main(argv) {
     preConfirmationSemanticDrilldown,
     coverage,
   });
+  const renderedSectionOrder = [
+    'fingerprint',
+    ...(reconfirmationState?.required ? ['reconfirmation-request'] : []),
+    'core-design',
+    'delivery-readiness',
+    'progress-delta',
+    'pre-confirmation-semantic-drilldown',
+    'decision-summary',
+    'confirm-instruction',
+    'requirements',
+    'requirement-boundary',
+    'business-visuals',
+    'governance-visuals',
+    'resume-failure-cases',
+    'trace-matrix',
+    ...(viewPackEnabled(confirmationProfile, 'currentTargetMap') ? ['current-target'] : []),
+    'ai-tdd-contract-manifest',
+    'target-modification-paths',
+    'artifact-plan',
+    'controlled-ingest-writers',
+    'architecture-impact',
+    'entry-flow',
+    'scoring-dashboard-sft',
+    'closeout-preview',
+    'blocking-issues',
+    'warnings',
+    'eight-questions',
+  ];
   const confirmationPageHash = confirmationPageHashFor(htmlWithSelfHashPlaceholder, generatedAt);
   const finalConfirmInstruction = confirmInstruction.replaceAll(
     SELF_PAGE_HASH_PLACEHOLDER,
@@ -7067,6 +7246,7 @@ function main(argv) {
     mermaidRuntime,
     requirementBoundary,
     preConfirmationSemanticDrilldown,
+    renderedSectionOrder,
   };
   const report = buildReport(common);
   const summary = buildSummary(report, confirmation, views, artifactPlan);

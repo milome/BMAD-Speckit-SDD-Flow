@@ -1340,7 +1340,23 @@ describe('render-requirements-confirmation-html', () => {
   implementationConfirmationHash: sha256:old-confirmation
   reconfirmationRequest:
     required: true
+    reasonCode: source_hash_changed
     reason: sourceDocumentHash_changed
+    userFacingTitle: "需要重新确认本次需求"
+    userFacingSummary: "MUST-001 的证据命令说明发生语义变化，需要用户确认新边界。"
+    persuasiveRationale:
+      whyReconfirmNow: "当前语义 hash 已不同于上次确认，不能沿用历史确认。"
+      riskIfSkipped: "跳过会把未确认的 MUST-001 证据命令变化当作已确认范围执行。"
+      whyEvidenceIsSufficient: "差异摘要、MUST/EVD/TRACE 引用和命令引用共同指向同一变化。"
+    evidenceBundle:
+      sufficiencyVerdict: sufficient
+      items:
+        - id: RCEVD-001
+          kind: evidence
+          title: "MUST-001 evidence command clarification"
+          summary: "MUST-001 的证据命令被澄清并绑定到 EVD-001 与 TRACE-001。"
+          sourceRefs: ["MUST-001"]
+          proofRefs: ["EVD-001", "TRACE-001", "CMD-CONTRACT-001"]
     previousSourceDocumentHash: sha256:old-source
     currentSourceDocumentHash: sha256:pending-render
     previousImplementationConfirmationHash: sha256:old-confirmation
@@ -1386,6 +1402,7 @@ describe('render-requirements-confirmation-html', () => {
       fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
     );
     expect(html).toContain('重新确认请求');
+    expect(html.indexOf('id="reconfirmation-request"')).toBeLessThan(html.indexOf('id="core-design"'));
     expect(html).toContain('id="progress-delta"');
     expect(html).toContain('class="review-flow"');
     expect(html).toContain('class="review-step"');
@@ -1394,8 +1411,11 @@ describe('render-requirements-confirmation-html', () => {
     expect(html).toContain('重点验收焦点');
     expect(html).toContain('新增 / 变更');
     expect(html).toContain('userStatus');
-    expect(html).toContain('检测到确认边界漂移');
+    expect(html).toContain('检测到确认边界语义漂移');
     expect(html).toContain('sourceDocumentHash_changed');
+    expect(html).toContain('MUST-001 evidence command clarification');
+    expect(html).toContain('当前语义 hash 已不同于上次确认');
+    expect(html).toContain('跳过会把未确认的 MUST-001');
     expect(html).toContain('confirm_current_version');
     expect(html).toContain('reject_current_changes_restore_last_confirmed');
     expect(html).toContain('accept_partial_changes_create_followup');
@@ -1410,6 +1430,15 @@ describe('render-requirements-confirmation-html', () => {
     expect(progressDeltaSection.match(/class="review-step"/g)?.length).toBeGreaterThanOrEqual(3);
     expect(progressDeltaSection).not.toContain('class="split"');
     expect(report.confirmability).toBe('confirmable');
+    expect(report.confirmationDriftClassification).toMatchObject({
+      kind: 'semantic_reconfirmation_required',
+      requiresUserReconfirmation: true,
+    });
+    expect(report.renderedSectionOrder.indexOf('reconfirmation-request')).toBeLessThan(
+      report.renderedSectionOrder.indexOf('core-design')
+    );
+    expect(report.reconfirmationBannerRendered).toBe(true);
+    expect(report.reconfirmationEvidenceVerdict).toBe('sufficient');
     expect(report.blockingIssues.map((issue: { code: string }) => issue.code)).not.toEqual(
       expect.arrayContaining([
         'sourceDocumentHash_changed',
@@ -1418,7 +1447,8 @@ describe('render-requirements-confirmation-html', () => {
     );
     expect(report.reconfirmationRequest).toMatchObject({
       required: true,
-      reason: 'sourceDocumentHash_changed',
+      reason: 'source_hash_changed',
+      reasonCode: 'source_hash_changed',
       previousSourceDocumentHash: 'sha256:old-source',
       previousImplementationConfirmationHash: 'sha256:old-confirmation',
       allowedUserActions: expect.arrayContaining([
@@ -2299,6 +2329,49 @@ flowchart TD
     expect(html).toContain('--&gt;|&quot;already quoted edge&quot;|');
     expect(html).toContain('D[&quot;Done MUST-001&quot;]');
     expect(html).toContain('A[Start ingest [MUST-001][EVD-001]]');
+  });
+
+  it('normalizes sequence message labels with semicolons for native Mermaid rendering only', () => {
+    const source = writeSource('MERMAID_SEQUENCE_SEMICOLON_RENDER_SOURCE');
+    fs.appendFileSync(
+      source,
+      `
+
+\`\`\`mermaid
+sequenceDiagram
+  participant Review
+  participant Source
+  Review-->>Source: Preserve traceRows.status; do not mutate confirmation state [NEG-001]
+\`\`\`
+`,
+      'utf8'
+    );
+    const mermaidBundle = writeMockMermaidBundle();
+    const out = path.join(tempDir, 'safe-sequence-render-source.html');
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+    ]);
+
+    expect(result.status).toBe(0);
+    const html = fs.readFileSync(out, 'utf8');
+    expect(html).toContain('data-mermaid-normalized="true"');
+    expect(html).toContain(
+      'Review--&gt;&gt;Source: Preserve traceRows.status and do not mutate confirmation state NEG-001'
+    );
+    expect(html).toContain(
+      'Review--&gt;&gt;Source: Preserve traceRows.status; do not mutate confirmation state [NEG-001]'
+    );
   });
 
   it('fails strict mode when required views and bindings are missing, but still writes blocked artifacts', () => {
