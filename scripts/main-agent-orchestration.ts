@@ -60,6 +60,9 @@ import {
 import { appendControlEventAndReplay } from './requirement-record-control-store';
 import { mainImplementationReadinessGate } from './main-agent-implementation-readiness-gate';
 import { evaluateAiTddContractGate } from './ai-tdd-contract-gate';
+import { mainRunRequiredCommandsFromAiTddManifest } from './run-required-commands-from-ai-tdd-manifest';
+import { evaluateStrictCloseoutProof } from './strict-closeout-proof-gate';
+import { evaluateTargetArtifactRealization } from './target-artifact-realization-gate';
 import { resolveRuntimeScoringDataPath } from './runtime-scoring-data-path';
 
 const requireCommonJs = createRequire(__filename);
@@ -832,6 +835,10 @@ function readJsonIfExists(filePath: string): Record<string, unknown> | null {
   } catch {
     return null;
   }
+}
+
+function sha256File(filePath: string): string {
+  return `sha256:${crypto.createHash('sha256').update(fs.readFileSync(filePath)).digest('hex')}`;
 }
 
 function mapImplementationEntryDecision(
@@ -6442,6 +6449,7 @@ const MAIN_AGENT_CLI_ACTIONS = new Set([
   'adaptive-intake',
   'confirm-scope',
   'confirmation-ingest',
+  'post-close-defect-intake',
   'route-confirmation-drift',
   'confirmation-drift-route',
   'repair-confirmation-bookkeeping',
@@ -6474,12 +6482,16 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
       out.requirementSetId = argv[++index];
     } else if (token === '--run-id' && argv[index + 1]) {
       out.runId = argv[++index];
+    } else if (token === '--attempt-id' && argv[index + 1]) {
+      out.attemptId = argv[++index];
     } else if (token === '--scoring-run-id' && argv[index + 1]) {
       out.scoringRunId = argv[++index];
     } else if (token === '--source' && argv[index + 1]) {
       out.source = argv[++index];
     } else if (token === '--render-report' && argv[index + 1]) {
       out.renderReport = argv[++index];
+    } else if ((token === '--report-path' || token === '--reportPath') && argv[index + 1]) {
+      out.reportPath = argv[++index];
     } else if (token === '--confirmation-text' && argv[index + 1]) {
       out.confirmationText = argv[++index];
     } else if (token === '--confirmation-text-file' && argv[index + 1]) {
@@ -6542,8 +6554,12 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
       out.input = argv[++index];
     } else if (token === '--payload' && argv[index + 1]) {
       out.payload = argv[++index];
+    } else if (token === '--signal' && argv[index + 1]) {
+      out.signal = argv[++index];
     } else if ((token === '--data-path' || token === '--dataPath') && argv[index + 1]) {
       out.dataPath = argv[++index];
+    } else if (token === '--dry-run' || token === '--dryRun') {
+      out.dryRun = 'true';
     } else if (token === '--apply') {
       out.apply = 'true';
     } else if (!token.startsWith('--')) {
@@ -7260,6 +7276,553 @@ function resolveProjectPath(root: string, candidate: string): string {
   const normalized = normalizeText(candidate);
   if (!normalized) return root;
   return path.isAbsolute(normalized) ? normalized : path.resolve(root, normalized);
+}
+
+type PostCloseIntakeClassification =
+  | 'implementation_defect'
+  | 'missing_scope'
+  | 'architecture_drift'
+  | 'closeout_proof_defect'
+  | 'production_regression'
+  | 'post_close_revalidation_required'
+  | 'no_post_close_action_required';
+
+interface PostCloseArtifactSnapshot {
+  artifactId: string;
+  path: string;
+  absolutePath: string;
+  previousHash: string;
+  previousArtifactEvidenceRefs: string[];
+  previousSource: string;
+}
+
+interface PostCloseChangedTargetArtifact extends PostCloseArtifactSnapshot {
+  currentHash: string | null;
+  missing: boolean;
+}
+
+function toProjectRelativePath(root: string, candidate: string): string {
+  const absolute = resolveProjectPath(root, candidate);
+  return path.relative(root, absolute).replace(/\\/g, '/') || candidate.replace(/\\/g, '/');
+}
+
+function normalizeArtifactHash(value: unknown): string {
+  return normalizeText(value);
+}
+
+function artifactSnapshotFromRow(input: {
+  root: string;
+  row: Record<string, unknown>;
+  index: number;
+  previousSource: string;
+}): PostCloseArtifactSnapshot | null {
+  const pathValue =
+    normalizeText(input.row.path) ||
+    normalizeText(input.row.filePath) ||
+    normalizeText(input.row.absolutePath) ||
+    normalizeText(input.row.pathOrField);
+  const previousHash =
+    normalizeArtifactHash(input.row.hash) ||
+    normalizeArtifactHash(input.row.contentHash) ||
+    normalizeArtifactHash(input.row.artifactHash) ||
+    normalizeArtifactHash(input.row.previousHash);
+  if (!pathValue || !previousHash) return null;
+  const absolutePath = resolveProjectPath(input.root, pathValue);
+  return {
+    artifactId:
+      normalizeText(input.row.artifactId) ||
+      normalizeText(input.row.id) ||
+      normalizeText(input.row.targetId) ||
+      `TARGET-${String(input.index + 1).padStart(3, '0')}`,
+    path: toProjectRelativePath(input.root, absolutePath),
+    absolutePath,
+    previousHash,
+    previousArtifactEvidenceRefs: uniqueNonEmpty([
+      ...stringsFrom(input.row.evidenceRefs),
+      normalizeText(input.row.evidenceRef),
+      normalizeText(input.row.path),
+    ]),
+    previousSource: input.previousSource,
+  };
+}
+
+function currentCloseoutAttemptId(record: Record<string, unknown>): string {
+  const closeout =
+    record.closeout && typeof record.closeout === 'object' && !Array.isArray(record.closeout)
+      ? (record.closeout as Record<string, unknown>)
+      : {};
+  return normalizeText(closeout.currentAttemptId);
+}
+
+function readJsonlObjects(filePath: string): Record<string, unknown>[] {
+  if (!fs.existsSync(filePath)) return [];
+  return fs
+    .readFileSync(filePath, 'utf8')
+    .split(/\r?\n/gu)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      try {
+        const parsed = JSON.parse(line) as unknown;
+        return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+          ? (parsed as Record<string, unknown>)
+          : null;
+      } catch {
+        return null;
+      }
+    })
+    .filter((item): item is Record<string, unknown> => item !== null);
+}
+
+function postCloseArtifactSnapshots(input: {
+  root: string;
+  record: Record<string, unknown>;
+  recordPath: string;
+  attemptId: string;
+}): PostCloseArtifactSnapshot[] {
+  const snapshots: PostCloseArtifactSnapshot[] = [];
+  const closeoutEvidence =
+    input.record.closeoutEvidence &&
+    typeof input.record.closeoutEvidence === 'object' &&
+    !Array.isArray(input.record.closeoutEvidence)
+      ? (input.record.closeoutEvidence as Record<string, unknown>)
+      : {};
+  for (const [index, row] of objectsFrom(closeoutEvidence.targetArtifacts).entries()) {
+    const snapshot = artifactSnapshotFromRow({
+      root: input.root,
+      row,
+      index,
+      previousSource: 'record.closeoutEvidence.targetArtifacts',
+    });
+    if (snapshot) snapshots.push(snapshot);
+  }
+  const artifactIndexPath = path.join(path.dirname(input.recordPath), 'artifact-index.jsonl');
+  const artifactRows = readJsonlObjects(artifactIndexPath).filter((row) => {
+    if (normalizeText(row.artifactType) !== 'target_file_snapshot') return false;
+    const inputVersion = normalizeText(row.inputVersion);
+    const outputVersion = normalizeText(row.outputVersion);
+    return inputVersion === input.attemptId || outputVersion === input.attemptId;
+  });
+  for (const [index, row] of artifactRows.entries()) {
+    const snapshot = artifactSnapshotFromRow({
+      root: input.root,
+      row,
+      index: snapshots.length + index,
+      previousSource: path.relative(input.root, artifactIndexPath).replace(/\\/g, '/'),
+    });
+    if (snapshot) snapshots.push(snapshot);
+  }
+  const deduped = new Map<string, PostCloseArtifactSnapshot>();
+  for (const snapshot of snapshots) {
+    const key = `${snapshot.path}:${snapshot.previousHash}`;
+    if (!deduped.has(key)) {
+      deduped.set(key, snapshot);
+    }
+  }
+  return [...deduped.values()];
+}
+
+function changedPostCloseTargetArtifacts(
+  snapshots: PostCloseArtifactSnapshot[]
+): PostCloseChangedTargetArtifact[] {
+  const changed: PostCloseChangedTargetArtifact[] = [];
+  for (const snapshot of snapshots) {
+    if (!fs.existsSync(snapshot.absolutePath)) {
+      changed.push({ ...snapshot, currentHash: null, missing: true });
+      continue;
+    }
+    const currentHash = sha256File(snapshot.absolutePath);
+    if (currentHash !== snapshot.previousHash) {
+      changed.push({ ...snapshot, currentHash, missing: false });
+    }
+  }
+  return changed;
+}
+
+function hasCloseoutProofDefectSignal(
+  record: Record<string, unknown>,
+  explicitSignal: string
+): boolean {
+  if (
+    [
+      'closeout_proof_defect',
+      'false_closeout_proof',
+      'broken_gate_logic',
+      'corrupted_provenance',
+      'invalid_event_chain_replay',
+      'untrusted_terminal_close_event',
+      'closure_integrity_incident_required',
+    ].includes(explicitSignal)
+  ) {
+    return true;
+  }
+  return objectsFrom(record.postCloseSignals).some((signal) =>
+    [
+      'closeout_proof_defect',
+      'false_closeout_proof',
+      'broken_gate_logic',
+      'corrupted_provenance',
+      'invalid_event_chain_replay',
+      'untrusted_terminal_close_event',
+    ].includes(normalizeText(signal.type) || normalizeText(signal.classification))
+  );
+}
+
+function explicitPostCloseClassification(signal: string): PostCloseIntakeClassification | null {
+  if (
+    signal === 'implementation_defect' ||
+    signal === 'missing_scope' ||
+    signal === 'architecture_drift' ||
+    signal === 'production_regression'
+  ) {
+    return signal;
+  }
+  return null;
+}
+
+function defaultRunId(recordId: string): string {
+  return `post-close-revalidation-run-${recordId}-${new Date().toISOString().replace(/[-:]/gu, '').replace(/\.\d{3}Z$/u, 'Z')}`;
+}
+
+function postCloseReportPath(input: {
+  root: string;
+  recordPath: string;
+  recordId: string;
+  runId: string;
+  explicitReportPath?: string;
+}): string {
+  const explicit = normalizeText(input.explicitReportPath);
+  if (explicit) return resolveProjectPath(input.root, stripWrappingQuotes(explicit));
+  return path.join(path.dirname(input.recordPath), 'post-close', `${input.runId}.json`);
+}
+
+function gateReportRef(filePath: string, report: Record<string, unknown>): Record<string, unknown> {
+  return {
+    path: filePath.replace(/\\/g, '/'),
+    hash: fs.existsSync(filePath) ? sha256File(filePath) : sha256Json(report),
+    decision: normalizeText(report.decision),
+    blockingReasons: stringsFrom(report.blockingReasons),
+    reportType: normalizeText(report.reportType),
+  };
+}
+
+function writeGateReport(filePath: string, report: Record<string, unknown>): Record<string, unknown> {
+  writeJsonUtf8(filePath, report);
+  return gateReportRef(filePath, report);
+}
+
+function captureNestedMainOutput(fn: () => number): { exitCode: number; stdout: string; stderr: string } {
+  const stdoutChunks: string[] = [];
+  const stderrChunks: string[] = [];
+  const originalStdoutWrite = process.stdout.write.bind(process.stdout);
+  const originalStderrWrite = process.stderr.write.bind(process.stderr);
+  const originalConsoleError = console.error;
+  process.stdout.write = (chunk: string | Uint8Array) => {
+    stdoutChunks.push(typeof chunk === 'string' ? chunk : Buffer.from(chunk).toString('utf8'));
+    return true;
+  };
+  process.stderr.write = (chunk: string | Uint8Array) => {
+    stderrChunks.push(typeof chunk === 'string' ? chunk : Buffer.from(chunk).toString('utf8'));
+    return true;
+  };
+  console.error = (...args: unknown[]) => {
+    stderrChunks.push(args.map((arg) => String(arg)).join(' '));
+  };
+  try {
+    return { exitCode: fn(), stdout: stdoutChunks.join(''), stderr: stderrChunks.join('\n') };
+  } finally {
+    process.stdout.write = originalStdoutWrite;
+    process.stderr.write = originalStderrWrite;
+    console.error = originalConsoleError;
+  }
+}
+
+function postCloseCarrierControlRecordPath(reportDir: string): string {
+  return path.join(reportDir, 'revalidation-carrier-control-record.json');
+}
+
+function preparePostCloseCarrierControlRecord(input: {
+  originRecord: Record<string, unknown>;
+  carrierRecordPath: string;
+}): Record<string, unknown> {
+  const carrierRecord = {
+    ...input.originRecord,
+    postCloseOriginRecord: {
+      recordId: normalizeText(input.originRecord.recordId),
+      requirementSetId: normalizeText(input.originRecord.requirementSetId),
+      sourceDocumentHash: normalizeText(input.originRecord.sourceDocumentHash),
+      implementationConfirmationHash: normalizeText(input.originRecord.implementationConfirmationHash),
+      closeoutAttemptId: currentCloseoutAttemptId(input.originRecord),
+      carrierPolicy: 'post_close_revalidation_evidence_carrier_only',
+      createsRequirementRecord: false,
+    },
+  };
+  writeJsonUtf8(input.carrierRecordPath, carrierRecord);
+  return carrierRecord;
+}
+
+function runPostCloseGateStack(input: {
+  root: string;
+  sourcePath: string;
+  recordPath: string;
+  record: Record<string, unknown>;
+  attemptId: string;
+  runId: string;
+  reportDir: string;
+}): { gateReports: Record<string, unknown>[]; blockingReasons: string[] } {
+  fs.mkdirSync(input.reportDir, { recursive: true });
+  const gateReports: Record<string, unknown>[] = [];
+  const commandEvidenceDir = path.join(input.reportDir, 'required-command-evidence');
+  const carrierRecordPath = postCloseCarrierControlRecordPath(input.reportDir);
+  const carrierRecord = preparePostCloseCarrierControlRecord({
+    originRecord: input.record,
+    carrierRecordPath,
+  });
+  const commandRun = captureNestedMainOutput(() =>
+    mainRunRequiredCommandsFromAiTddManifest([
+      '--source',
+      input.sourcePath,
+      '--requirement-record',
+      carrierRecordPath,
+      '--mode',
+      'closeout',
+      '--attempt-id',
+      input.attemptId,
+      '--run-id',
+      input.runId,
+      '--evidence-dir',
+      commandEvidenceDir,
+      '--json',
+    ])
+  );
+  gateReports.push({
+    reportType: 'required_commands_from_ai_tdd_manifest',
+    path: commandEvidenceDir.replace(/\\/g, '/'),
+    carrierRecordPath: carrierRecordPath.replace(/\\/g, '/'),
+    originRecordPath: input.recordPath.replace(/\\/g, '/'),
+    decision: commandRun.exitCode === 0 ? 'pass' : 'blocked',
+    exitCode: commandRun.exitCode,
+    stdout: commandRun.stdout.trim(),
+    stderr: commandRun.stderr.trim(),
+    blockingReasons: commandRun.exitCode === 0 ? [] : ['required_commands_revalidation_failed'],
+  });
+  const updatedRecord = readJsonIfExists(carrierRecordPath) ?? carrierRecord;
+  const targetReport = evaluateTargetArtifactRealization({
+    sourcePath: input.sourcePath,
+    record: updatedRecord,
+    recordPath: carrierRecordPath,
+    attemptId: input.attemptId,
+    evaluatedAt: new Date().toISOString(),
+    evaluatedBy: 'main-agent-orchestration:post-close-defect-intake',
+  });
+  gateReports.push(
+    writeGateReport(path.join(input.reportDir, 'target-artifact-realization-report.json'), targetReport)
+  );
+  const strictReport = evaluateStrictCloseoutProof({
+    sourcePath: input.sourcePath,
+    record: updatedRecord,
+    recordPath: carrierRecordPath,
+    attemptId: input.attemptId,
+    evaluatedAt: new Date().toISOString(),
+    evaluatedBy: 'main-agent-orchestration:post-close-defect-intake',
+  });
+  gateReports.push(writeGateReport(path.join(input.reportDir, 'strict-closeout-proof-report.json'), strictReport));
+  const aiTddReport = evaluateAiTddContractGate({
+    sourcePath: input.sourcePath,
+    record: updatedRecord,
+    recordPath: carrierRecordPath,
+    mode: 'closeout',
+    attemptId: input.attemptId,
+    evaluatedAt: new Date().toISOString(),
+    evaluatedBy: 'main-agent-orchestration:post-close-defect-intake',
+  });
+  gateReports.push(writeGateReport(path.join(input.reportDir, 'ai-tdd-contract-gate-closeout-report.json'), aiTddReport));
+  return {
+    gateReports,
+    blockingReasons: uniqueNonEmpty(
+      gateReports.flatMap((report) =>
+        normalizeText(report.decision) === 'pass'
+          ? []
+          : [
+              normalizeText(report.reportType) || 'gate_report',
+              ...stringsFrom(report.blockingReasons),
+            ]
+      )
+    ),
+  };
+}
+
+export function runMainAgentPostCloseDefectIntake(
+  root: string,
+  args: Record<string, string | undefined>
+): Record<string, unknown> {
+  const source = normalizeText(args.source);
+  const requirementRecord = normalizeText(args.requirementRecord);
+  if (!source) throw new Error('post-close-defect-intake requires --source <source-document.md>');
+  if (!requirementRecord)
+    throw new Error('post-close-defect-intake requires --requirement-record <path>');
+  const sourcePath = resolveProjectPath(root, stripWrappingQuotes(source));
+  const recordPath = resolveProjectPath(root, stripWrappingQuotes(requirementRecord));
+  const record = readJsonIfExists(recordPath);
+  if (!record) throw new Error(`requirement record missing or invalid: ${recordPath}`);
+  const recordId = normalizeText(record.recordId) || path.basename(path.dirname(recordPath));
+  const requirementSetId = normalizeText(record.requirementSetId) || recordId;
+  const attemptId =
+    normalizeText(args.attemptId) || currentCloseoutAttemptId(record) || `post-close-${recordId}`;
+  const runId = normalizeText(args.runId) || defaultRunId(recordId);
+  const reportPath = postCloseReportPath({
+    root,
+    recordPath,
+    recordId,
+    runId,
+    explicitReportPath: args.reportPath,
+  });
+  const signal = normalizeText(args.signal);
+  const base = {
+    action: 'post-close-defect-intake',
+    recordId,
+    originRecordId: recordId,
+    originRequirementSetId: requirementSetId,
+    originCloseoutAttemptId: attemptId,
+    reportPath: reportPath.replace(/\\/g, '/'),
+    reopenOriginalRecord: false,
+    reconfirmOriginalRequirement: false,
+    dispatchFromOriginRecord: false,
+  };
+  if (!isRequirementRecordClosed(record)) {
+    return {
+      ok: false,
+      ...base,
+      classification: 'no_post_close_action_required',
+      decision: 'blocked',
+      block: 'origin_record_not_closed',
+      blockingReasons: ['origin_record_not_closed'],
+      nextSafeAction: 'do_not_reopen_closed_record',
+    };
+  }
+  const currentHashes = currentConfirmationHashes(sourcePath);
+  const sourceDocumentHash = normalizeText(record.sourceDocumentHash);
+  const implementationConfirmationHash = normalizeText(record.implementationConfirmationHash);
+  const semanticMismatchFields = [
+    ...(sourceDocumentHash && sourceDocumentHash !== currentHashes.sourceDocumentHash
+      ? ['sourceDocumentHash']
+      : []),
+    ...(implementationConfirmationHash &&
+    implementationConfirmationHash !== currentHashes.implementationConfirmationHash
+      ? ['implementationConfirmationHash']
+      : []),
+  ];
+  if (semanticMismatchFields.length > 0) {
+    return {
+      ok: false,
+      ...base,
+      classification: 'no_post_close_action_required',
+      decision: 'blocked',
+      block: 'semantic_decision_required',
+      blockingReasons: ['semantic_hash_mismatch', ...semanticMismatchFields],
+      currentSourceDocumentHash: currentHashes.sourceDocumentHash,
+      currentImplementationConfirmationHash: currentHashes.implementationConfirmationHash,
+      sourceDocumentHash,
+      implementationConfirmationHash,
+      nextSafeAction: 'semantic_decision_required',
+    };
+  }
+  const snapshots = postCloseArtifactSnapshots({ root, record, recordPath, attemptId });
+  const changedTargetArtifacts = changedPostCloseTargetArtifacts(snapshots);
+  const explicitClassification = explicitPostCloseClassification(signal);
+  const proofDefect = hasCloseoutProofDefectSignal(record, signal);
+  const classification: PostCloseIntakeClassification = proofDefect
+    ? 'closeout_proof_defect'
+    : explicitClassification ??
+      (changedTargetArtifacts.length > 0
+        ? 'post_close_revalidation_required'
+        : 'no_post_close_action_required');
+  const dryRun = args.dryRun === 'true';
+  const gateReportDir = path.join(path.dirname(reportPath), runId);
+  const gateStack =
+    classification === 'post_close_revalidation_required' && !dryRun
+      ? runPostCloseGateStack({
+          root,
+          sourcePath,
+          recordPath,
+          record,
+          attemptId,
+          runId,
+          reportDir: gateReportDir,
+        })
+      : { gateReports: [], blockingReasons: [] };
+  const gateBlocked = gateStack.blockingReasons.length > 0;
+  const decision =
+    classification === 'no_post_close_action_required'
+      ? 'no_action'
+      : classification === 'post_close_revalidation_required'
+        ? dryRun
+          ? 'dry_run'
+          : gateBlocked
+            ? 'blocked'
+            : 'post_close_revalidation_passed'
+        : 'blocked';
+  const nextSafeAction =
+    classification === 'closeout_proof_defect'
+      ? 'closure_integrity_incident_required'
+      : classification === 'post_close_revalidation_required'
+        ? dryRun
+          ? 'run_post_close_revalidation'
+          : gateBlocked
+            ? 'linked_bugfix_required'
+            : 'post_close_revalidation_complete'
+        : classification === 'no_post_close_action_required'
+          ? 'no_action_required'
+          : classification;
+  const blockingReasons = uniqueNonEmpty([
+    ...(classification === 'closeout_proof_defect' ? ['closeout_proof_defect'] : []),
+    ...(explicitClassification ? [explicitClassification] : []),
+    ...gateStack.blockingReasons,
+  ]);
+  const carrier = {
+    schemaVersion: 'post-close-revalidation-evidence-carrier/v1',
+    reportType: 'post_close_revalidation_report',
+    classification,
+    originRecordId: recordId,
+    originRequirementSetId: requirementSetId,
+    originCloseoutAttemptId: attemptId,
+    sourceDocumentHash: currentHashes.sourceDocumentHash,
+    implementationConfirmationHash: currentHashes.implementationConfirmationHash,
+    changedTargetArtifacts,
+    previousArtifactEvidenceRefs: uniqueNonEmpty(
+      changedTargetArtifacts.flatMap((artifact) => artifact.previousArtifactEvidenceRefs)
+    ),
+    currentArtifactHashes: changedTargetArtifacts.map((artifact) => ({
+      path: artifact.path,
+      hash: artifact.currentHash,
+      missing: artifact.missing,
+    })),
+    revalidationRunId: runId,
+    revalidationEvidenceRefs: gateStack.gateReports.map((report) => normalizeText(report.path)),
+    gateReports: gateStack.gateReports,
+    decision,
+    blockingReasons,
+    nextSafeAction,
+  };
+  if (!dryRun) writeJsonUtf8(reportPath, carrier);
+  return {
+    ok:
+      classification === 'no_post_close_action_required' ||
+      classification === 'post_close_revalidation_required',
+    ...base,
+    classification,
+    decision,
+    blockingReasons,
+    nextSafeAction,
+    sourceDocumentHash: currentHashes.sourceDocumentHash,
+    implementationConfirmationHash: currentHashes.implementationConfirmationHash,
+    targetArtifactHashDrift: changedTargetArtifacts.length > 0,
+    changedTargetArtifacts,
+    previousArtifactEvidenceRefs: carrier.previousArtifactEvidenceRefs,
+    currentArtifactHashes: carrier.currentArtifactHashes,
+    gateReports: gateStack.gateReports,
+    carrier,
+  };
 }
 
 function createExpectedRedAdapterTest(filePath: string, blocker: string): void {
@@ -8341,6 +8904,21 @@ export function mainMainAgentOrchestration(argv: string[]): number {
     } catch (error) {
       console.error(
         `main-agent-orchestration authoring-repair: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+      return 1;
+    }
+  }
+
+  if (action === 'post-close-defect-intake') {
+    try {
+      const result = runMainAgentPostCloseDefectIntake(root, args);
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return result.ok ? 0 : 1;
+    } catch (error) {
+      console.error(
+        `main-agent-orchestration post-close-defect-intake: ${
           error instanceof Error ? error.message : String(error)
         }`
       );
