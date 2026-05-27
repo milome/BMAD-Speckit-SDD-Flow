@@ -639,6 +639,12 @@ function buildDerivedContractExecutionManifest(input) {
   for (const [key, value] of Object.entries(providedManifest)) {
     if (!projectionOnlyKeys.has(key)) overrides[key] = value;
   }
+  const commandTargetOverride =
+    overrides.commandTargetCollection !== undefined
+      ? overrides.commandTargetCollection
+      : overrides.commandTargets;
+  delete overrides.commandTargets;
+  delete overrides.commandTargetCollection;
   const derivedSection = (key, fallback) => {
     const value = overrides[key];
     if (!isObject(value)) return fallback;
@@ -695,7 +701,7 @@ function buildDerivedContractExecutionManifest(input) {
     targetModificationPaths: overrides.targetModificationPaths ?? targetMods,
     negativeControls: controls,
     errorCaseCoverage: overrides.errorCaseCoverage ?? errorCaseCoverage(confirmation, acceptance),
-    commandTargetCollection: overrides.commandTargetCollection ?? commandTargets,
+    commandTargetCollection: commandTargetOverride ?? commandTargets,
     traceClosureAssertions: overrides.traceClosureAssertions ?? traceClosures,
     currentTargetMap: derivedSection('currentTargetMap', currentTargetMap),
     targetModificationPathCoverage: derivedSection(

@@ -675,6 +675,136 @@ describe('req trace generator confirmation block gate', () => {
     });
   });
 
+  it('blocks generation when legacy and canonical command target aliases conflict', () => {
+    const source = writeSource(
+      validCompilerSource().replace(
+        `    commandTargets:
+      commandRefs: ["CMD-TEST-001"]
+      atomicTaskCommandBindings:
+        TASK-001: ["CMD-TEST-001"]
+    traceClosureAssertions:`,
+        `    commandTargets:
+      commandRefs: ["CMD-TEST-001"]
+      atomicTaskCommandBindings:
+        TASK-001: ["CMD-TEST-001"]
+    commandTargetCollection:
+      commandRefs: ["CMD-OTHER"]
+      atomicTaskCommandBindings:
+        TASK-001: ["CMD-OTHER"]
+    traceClosureAssertions:`
+      )
+    );
+    const record = writeRequirementRecord(source);
+    const outDir = path.join(tempDir, 'alias-conflict-trace-execution');
+    const result = runNodePrompt([
+      '--source-document',
+      source,
+      '--requirement-record',
+      record,
+      '--out-dir',
+      outDir,
+      '--execution-host',
+      'codex',
+      '--goal-command-available',
+      'true',
+      '--json',
+    ]);
+
+    expect(result.status, result.stdout).toBe(3);
+    const receipt = readJson<Record<string, any>>(path.join(outDir, 'audit_receipt.json'));
+    expect(receipt.decision).toBe('blocked');
+    expect(receipt.blockingReasons).toEqual(
+      expect.arrayContaining(['MANIFEST_ALIAS_CONFLICT:commandTargets:commandTargetCollection'])
+    );
+    expect(receipt.contractExecutionManifest.aliasAudit).toMatchObject({
+      aliasesUsed: expect.arrayContaining(['commandTargets', 'commandTargetCollection']),
+      blockingReasons: expect.arrayContaining([
+        'MANIFEST_ALIAS_CONFLICT:commandTargets:commandTargetCollection',
+      ]),
+    });
+    expect(fs.existsSync(path.join(outDir, 'model_packet.json'))).toBe(false);
+    expect(fs.existsSync(path.join(outDir, 'human_prompt.txt'))).toBe(false);
+    expect(fs.existsSync(path.join(outDir, 'goal_execution.md'))).toBe(false);
+  });
+
+  it('accepts canonical commandTargetCollection without exposing legacy commandTargets', () => {
+    const source = writeSource(
+      validCompilerSource().replace(
+        `    commandTargets:
+      commandRefs: ["CMD-TEST-001"]
+      atomicTaskCommandBindings:
+        TASK-001: ["CMD-TEST-001"]`,
+        `    commandTargetCollection:
+      commandRefs: ["CMD-TEST-001"]
+      atomicTaskCommandBindings:
+        TASK-001: ["CMD-TEST-001"]`
+      )
+    );
+    const record = writeRequirementRecord(source);
+    const outDir = path.join(tempDir, 'canonical-command-target-trace-execution');
+    const result = runNodePrompt([
+      '--source-document',
+      source,
+      '--requirement-record',
+      record,
+      '--out-dir',
+      outDir,
+      '--json',
+    ]);
+
+    expect(result.status, result.stdout).toBe(0);
+    const packet = readJson<Record<string, any>>(path.join(outDir, 'model_packet.json'));
+    expect(packet.contractExecutionManifest.commandTargetCollection).toMatchObject({
+      commandRefs: ['CMD-TEST-001'],
+      atomicTaskCommandBindings: {
+        'TASK-001': ['CMD-TEST-001'],
+      },
+    });
+    expect(packet.contractExecutionManifest).not.toHaveProperty('commandTargets');
+  });
+
+  it('accepts equivalent legacy and canonical command target aliases without blocking', () => {
+    const source = writeSource(
+      validCompilerSource().replace(
+        `    commandTargets:
+      commandRefs: ["CMD-TEST-001"]
+      atomicTaskCommandBindings:
+        TASK-001: ["CMD-TEST-001"]
+    traceClosureAssertions:`,
+        `    commandTargets:
+      commandRefs: ["CMD-TEST-001"]
+      atomicTaskCommandBindings:
+        TASK-001: ["CMD-TEST-001"]
+    commandTargetCollection:
+      commandRefs: ["CMD-TEST-001"]
+      atomicTaskCommandBindings:
+        TASK-001: ["CMD-TEST-001"]
+    traceClosureAssertions:`
+      )
+    );
+    const record = writeRequirementRecord(source);
+    const outDir = path.join(tempDir, 'equivalent-command-target-aliases-trace-execution');
+    const result = runNodePrompt([
+      '--source-document',
+      source,
+      '--requirement-record',
+      record,
+      '--out-dir',
+      outDir,
+      '--json',
+    ]);
+
+    expect(result.status, result.stdout).toBe(0);
+    const packet = readJson<Record<string, any>>(path.join(outDir, 'model_packet.json'));
+    const receipt = readJson<Record<string, any>>(path.join(outDir, 'audit_receipt.json'));
+    expect(packet.contractExecutionManifest.commandTargetCollection).toBeDefined();
+    expect(packet.contractExecutionManifest).not.toHaveProperty('commandTargets');
+    expect(receipt.contractExecutionManifest.aliasAudit).toMatchObject({
+      aliasesUsed: expect.arrayContaining(['commandTargets', 'commandTargetCollection']),
+      blockingReasons: [],
+    });
+  });
+
   it('uses /goal for Codex only when explicitly available and allowed', () => {
     const source = writeSource(validCompilerSource());
     const record = writeRequirementRecord(source);

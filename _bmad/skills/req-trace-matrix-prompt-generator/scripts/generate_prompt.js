@@ -1902,6 +1902,10 @@ function receiptHashFor(receipt) {
   return sha256(stableStringify(clone));
 }
 
+function manifestAliasBlockingReasons(packet) {
+  return strings(packet?.contractExecutionManifest?.aliasAudit?.blockingReasons);
+}
+
 function buildPassReceipt(args, context, packet, outputHashes, outputs, promptMeta) {
   const validationReasons = [
     ...validateCompilerContract(context.confirmation, context.record),
@@ -1975,7 +1979,7 @@ function buildPassReceipt(args, context, packet, outputHashes, outputs, promptMe
   return receipt;
 }
 
-function buildBlockedReceipt(args, context, blockingReasons, message) {
+function buildBlockedReceipt(args, context, blockingReasons, message, extra = {}) {
   const recordId = context?.record?.recordId ?? context?.confirmation?.recordId ?? 'unknown';
   const receipt = {
     schemaVersion: 'req-trace-ai-tdd-compiler-audit-receipt/v1',
@@ -1998,6 +2002,7 @@ function buildBlockedReceipt(args, context, blockingReasons, message) {
       aiTddManifestComplete: false,
       atomicTaskLineageComplete: false,
     },
+    ...extra,
     outputs: {},
     outputHashes: {},
     proofBoundary: {
@@ -2034,6 +2039,31 @@ function compileArtifacts(args) {
     }
 
     const packet = buildModelPacket(context, args);
+    const aliasBlockingReasons = manifestAliasBlockingReasons(packet);
+    if (aliasBlockingReasons.length > 0) {
+      const receipt = buildBlockedReceipt(
+        args,
+        context,
+        aliasBlockingReasons,
+        'ContractExecutionManifest alias audit failed before writing execution packet artifacts.',
+        {
+          contractExecutionManifest: {
+            aliasAudit: packet.contractExecutionManifest.aliasAudit,
+          },
+        }
+      );
+      writeJson(path.join(outDir, 'audit_receipt.json'), receipt);
+      return {
+        status: 3,
+        summary: {
+          decision: 'blocked',
+          blockingReasons: receipt.blockingReasons,
+          outputs: { auditReceipt: normalizePathSafe(path.join(outDir, 'audit_receipt.json')) },
+          outputHashes: { auditReceiptHash: sha256(stableStringify(receipt)) },
+        },
+      };
+    }
+
     const packetPath = path.join(outDir, 'model_packet.json');
     const promptPath = path.join(outDir, 'human_prompt.txt');
     const receiptPath = path.join(outDir, 'audit_receipt.json');
