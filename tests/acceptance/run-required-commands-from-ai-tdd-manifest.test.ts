@@ -8,6 +8,64 @@ const dynamicRunnerPath = 'scripts/run-required-commands-from-ai-tdd-manifest.ts
 const legacyRunnerPath = 'scripts/run-confirmed-final-required-commands.js';
 const finalCloseoutRunnerPath = 'scripts/final-closeout-evidence-runner.ts';
 
+const globalContractTraceabilityPolicy = {
+  schemaVersion: 'global-contract-traceability-policy/v1',
+  appliesToEntryFlows: ['bugfix', 'standalone_tasks', 'story'],
+  contractAuthoringRequired: true,
+  taskBindingRequired: true,
+  taskBindingDimensions: ['MUST', 'NEG', 'OUT', 'EVD', 'TRACE'],
+  missingBindingBehavior: 'fail_closed',
+  sourceDocumentHashRequired: true,
+  implementationConfirmationHashRequired: true,
+  reconfirmOnTraceSemanticChange: true,
+  allowUnboundImplementationTask: false,
+  taskRegistryField: 'implementationTasks',
+  traceTaskRefsMustResolveTo: 'implementationTasks[].id',
+  readinessFailureWhenUnresolved: true,
+  closeoutFailureWhenUnresolved: true,
+};
+
+const traceStatusPolicy = {
+  schemaVersion: 'trace-status-policy/v1',
+  allowedStatuses: [
+    'PENDING',
+    'PASS',
+    'FAIL',
+    'BLOCKED',
+    'LINKED_DOWNSTREAM',
+    'USER_APPROVED_DEFERRED',
+    'USER_APPROVED_OUT_OF_SCOPE',
+  ],
+  terminalFullCloseoutStatuses: ['PASS', 'FAIL', 'BLOCKED'],
+  linkedDownstreamRequiredFields: [
+    'downstreamRecordId',
+    'downstreamStoryRef',
+    'downstreamSourceDocumentPath',
+    'downstreamSourceDocumentHash',
+    'downstreamScopeSummary',
+    'downstreamRequirementIds',
+    'downstreamAuditEvidenceRefs',
+  ],
+  userApprovedDeferredRequiredFields: [
+    'userApprovalRef',
+    'approvedAt',
+    'approvedBy',
+    'impactSummary',
+    'followUpRecordId',
+    'followUpDueCondition',
+  ],
+  userApprovedOutOfScopeRequiredFields: [
+    'userApprovalRef',
+    'approvedAt',
+    'approvedBy',
+    'impactSummary',
+    'confirmationDeltaRef',
+  ],
+  bareDeferredForbidden: true,
+  bareOutOfScopeForbidden: true,
+  fullCloseoutForUserScopedStatusesForbidden: true,
+};
+
 function readText(path: string): string {
   return readFileSync(path, 'utf8');
 }
@@ -78,13 +136,13 @@ function fixture(
       '    - id: EVD-001',
       '      text: Evidence.',
       '      oracle: command output artifact',
-      '      requiredCommandRefs: [CMD-A]',
+      '      requiredCommandRefs: [CMD-TEST-DYNAMIC-RUNNER]',
       '      artifactRefs: [CANONICAL-001]',
       '  traceRows:',
       '    - id: TRACE-001',
       '      covers: [MUST-001, NEG-001]',
       '      evidenceRefs: [EVD-001]',
-      '      deliveryEvidenceCommandRefs: [CMD-A]',
+      '      deliveryEvidenceCommandRefs: [CMD-TEST-DYNAMIC-RUNNER]',
       '      acceptanceRefs: [ACC-001, E2E-001]',
       '      artifactRefs: [CANONICAL-001]',
       '  failurePaths:',
@@ -111,7 +169,7 @@ function fixture(
       '      covers: [FAIL-001, EDGE-001]',
       '      cases: [EDGE-001]',
       '  requiredCommands:',
-      '    - id: CMD-A',
+      '    - id: CMD-TEST-DYNAMIC-RUNNER',
       `      command: npx vitest run ${testFile.replace(/\\/gu, '/')}`,
       '      traceRows: [TRACE-001]',
       '      evidenceRefs: [EVD-001]',
@@ -157,7 +215,7 @@ function fixture(
       '        traceRows: [TRACE-001]',
       '        evidenceRefs: [EVD-001]',
       '  closeoutReadinessPreview:',
-      '    requiredCommands: [CMD-A]',
+      '    requiredCommands: [CMD-TEST-DYNAMIC-RUNNER]',
       '    orphanPolicy: no orphan',
       '    currentAttemptPolicy: current attempt only',
       '    recordClosedPolicy: closeout gate only',
@@ -171,11 +229,14 @@ function fixture(
     requirementSetId: 'REQ-RUNNER',
     status: 'user_confirmed',
     sourcePath,
-    sourceDocumentHash: 'sha256:source',
-    implementationConfirmationHash: 'sha256:implementation',
+    sourceDocumentHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+    implementationConfirmationHash:
+      'sha256:2222222222222222222222222222222222222222222222222222222222222222',
     closeout: { currentAttemptId: 'attempt-runner' },
     aiTddContractGate: { required: true },
     deliveryEvidence: { requiredCommands: [] },
+    globalContractTraceabilityPolicy,
+    traceStatusPolicy,
     executionIterations: [],
     artifactIndex: [],
   });
@@ -251,6 +312,162 @@ describe('manifest driven required command runner contract', () => {
       expect(failedPacket.not_allowed_through_implementation_evidence_ingested).toBe(true);
       expect(failedPacket.blockingReasons).toEqual(expect.arrayContaining([reason]));
       expect(existsSync(path.join(evidenceDir, 'implementation-evidence-packet.json'))).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('indexes target snapshots and normalized runtime reports through controlled ingest', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'manifest-runner-artifact-index-'));
+    try {
+      const { sourcePath, recordPath } = fixture(root, 'valid');
+      const commandFile = path.join(root, 'runner-artifact-command.js');
+      writeText(commandFile, 'console.log("runner artifact index fixture");\n');
+      const source = readText(sourcePath).replace(
+        /command: npx vitest run .+/u,
+        `command: node ${commandFile.replace(/\\/gu, '/')}`
+      );
+      writeText(sourcePath, source);
+      const evidenceDir = path.join(root, 'evidence');
+      const code = mainRunRequiredCommandsFromAiTddManifest([
+        '--source',
+        sourcePath,
+        '--requirement-record',
+        recordPath,
+        '--mode',
+        'closeout',
+        '--attempt-id',
+        'attempt-runner',
+        '--run-id',
+        'run-runner',
+        '--evidence-dir',
+        evidenceDir,
+        '--json',
+      ]);
+      expect([0, 1]).toContain(code);
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      const artifactPaths = record.artifactIndex.map((artifact: Record<string, unknown>) =>
+        String(artifact.path)
+      );
+      expect(artifactPaths).toEqual(
+        expect.arrayContaining([
+          path.join(evidenceDir, 'ai-tdd-pre-run-report.json').replace(/\\/gu, '/'),
+          path.join(evidenceDir, 'command-evidence-bundle.json').replace(/\\/gu, '/'),
+          path.join(evidenceDir, 'implementation-evidence-packet.json').replace(/\\/gu, '/'),
+          path.join(evidenceDir, 'dynamic-runner-test-report.json').replace(/\\/gu, '/'),
+          path.join(evidenceDir, 'legacy-guard-test-report.json').replace(/\\/gu, '/'),
+          path.join(evidenceDir, 'final-closeout-runner-test-report.json').replace(/\\/gu, '/'),
+          path.resolve('scripts/run-required-commands-from-ai-tdd-manifest.ts').replace(/\\/gu, '/'),
+        ])
+      );
+      const packet = JSON.parse(
+        readFileSync(path.join(evidenceDir, 'implementation-evidence-packet.json'), 'utf8')
+      );
+      expect(packet.artifactRefs).not.toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ artifactType: 'implementation_evidence_packet' }),
+        ])
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('generates failure-case coverage through controlled ingest without polluting manifest required commands', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'manifest-runner-failure-coverage-'));
+    try {
+      const { sourcePath, recordPath } = fixture(root, 'valid');
+      const commandFile = path.join(root, 'runner-failure-coverage-command.js');
+      writeText(commandFile, 'console.log("runner failure coverage fixture");\n');
+      const source = readText(sourcePath)
+        .replace(/command: npx vitest run .+/u, `command: node ${commandFile.replace(/\\/gu, '/')}`)
+        .replace(
+          '  closeoutReadinessPreview:',
+          [
+            '  applicability:',
+            '    runtimeRecovery:',
+            '      requiresFunctionalResumeFailureCaseRegistry: true',
+            '  functionalResumeFailureCaseRegistry:',
+            '    applies: true',
+            '    recoveryActionDefinitions:',
+            '      - actionId: block_closeout',
+            '        label: Block closeout',
+            '        writesControlFields: [gateChecks]',
+            '        recordEventTypes: [implementation_evidence_ingested]',
+            '    groups:',
+            '      - groupId: evidence_integrity',
+            '        label: Evidence integrity',
+            '        caseRefs: [exit_code_only_proof]',
+            '        requiredTraceRefs: [TRACE-001]',
+            '        requiredEvidenceRefs: [EVD-001]',
+            '    failureCases:',
+            '      - id: exit_code_only_proof',
+            '        groupId: evidence_integrity',
+            '        triggerSignal: deliveryEvidence.requiredCommands artifactRefs is empty',
+            '        detectionPoint: ai_tdd_closeout_gate',
+            '        failClosedGate: closeout',
+            '        expectedRecoveryActions: [block_closeout]',
+            '        requiredTraceRefs: [TRACE-001]',
+            '        requiredEvidenceRefs: [EVD-001]',
+            '  closeoutReadinessPreview:',
+          ].join('\n')
+        );
+      writeText(sourcePath, source);
+      const evidenceDir = path.join(root, 'evidence');
+      const code = mainRunRequiredCommandsFromAiTddManifest([
+        '--source',
+        sourcePath,
+        '--requirement-record',
+        recordPath,
+        '--mode',
+        'closeout',
+        '--attempt-id',
+        'attempt-runner',
+        '--run-id',
+        'run-runner',
+        '--evidence-dir',
+        evidenceDir,
+        '--json',
+      ]);
+      expect([0, 1]).toContain(code);
+      const coveragePath = path.join(evidenceDir, 'failure-case-coverage.json');
+      expect(existsSync(coveragePath)).toBe(true);
+      const coverage = JSON.parse(readFileSync(coveragePath, 'utf8'));
+      expect(coverage.resumeFailureCaseRegistryCoverage.caseEvidence).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            caseId: 'exit_code_only_proof',
+            expectedRecoveryActions: ['block_closeout'],
+            sourceRefs: [
+              {
+                sourceType: 'functionalResumeFailureCaseRegistry.failureCases',
+                id: 'exit_code_only_proof',
+              },
+            ],
+          }),
+        ])
+      );
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(record.artifactIndex).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            artifactType: 'failure_case_coverage',
+            path: coveragePath.replace(/\\/gu, '/'),
+          }),
+        ])
+      );
+      expect(
+        record.executionIterations.flatMap((iteration: Record<string, unknown>) =>
+          (iteration.commandRunRefs as Record<string, unknown>[]) ?? []
+        )
+      ).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ commandId: 'CMD-FULL-FAILURE-CASE-COVERAGE' }),
+        ])
+      );
+      expect(
+        record.deliveryEvidence.requiredCommands.map((command: Record<string, unknown>) => command.commandId)
+      ).not.toContain('CMD-FULL-FAILURE-CASE-COVERAGE');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

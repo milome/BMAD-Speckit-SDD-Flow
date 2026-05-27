@@ -335,6 +335,29 @@ function latestProjectionRecord(record) {
     : null;
 }
 
+function normalizeHash(value) {
+  const normalized = String(value ?? '').trim();
+  return /^sha256:[a-f0-9]{64}$/i.test(normalized) ? normalized : null;
+}
+
+function addHashCandidate(candidates, value) {
+  const normalized = normalizeHash(value);
+  if (normalized && !candidates.includes(normalized)) candidates.push(normalized);
+}
+
+function priorProjectionHashCandidates(extractedConfirmation, existingRecord) {
+  const candidates = [];
+  addHashCandidate(candidates, extractedConfirmation?.confirmationRender?.htmlHash);
+  addHashCandidate(candidates, existingRecord?.latestConfirmationProjectionHash);
+  const latestProjection = latestProjectionRecord(existingRecord);
+  addHashCandidate(candidates, latestProjection?.newProjectionHash);
+  addHashCandidate(candidates, latestProjection?.oldProjectionHash);
+  addHashCandidate(candidates, existingRecord?.confirmationPageHash);
+  const latestConfirmation = latestConfirmationRecord(existingRecord);
+  addHashCandidate(candidates, latestConfirmation?.confirmationPageHash);
+  return candidates;
+}
+
 function repairBookkeeping(args) {
   const sourcePath = path.resolve(args.source);
   const sourceText = fs.readFileSync(sourcePath, 'utf8');
@@ -542,13 +565,25 @@ function main(argv) {
   if (report.implementationConfirmationHash !== implementationConfirmationHash) {
     mismatches.push('render_report_implementation_confirmation_hash_mismatch');
   }
-  const priorConfirmedPageHash =
-    typeof extracted.confirmation?.confirmationRender?.htmlHash === 'string'
-      ? extracted.confirmation.confirmationRender.htmlHash
-      : null;
+  const recordPath = path.resolve(
+    args.requirementRecord ??
+      path.join(
+        process.cwd(),
+        '_bmad-output',
+        'runtime',
+        'requirement-records',
+        String(args.recordId ?? report.recordId ?? extracted.confirmation.recordId ?? 'unrecorded'),
+        'requirement-record.json'
+      )
+  );
+  const existingRecord = fs.existsSync(recordPath) ? readJson(recordPath) : {};
+  const priorConfirmedPageHashes = priorProjectionHashCandidates(
+    extracted.confirmation,
+    existingRecord
+  );
   const confirmationPageHashMatchesReport = report.confirmationPageHash === provided.confirmationPageHash;
   const confirmationPageHashMatchesPriorConfirmedProjection =
-    Boolean(priorConfirmedPageHash) && priorConfirmedPageHash === provided.confirmationPageHash;
+    priorConfirmedPageHashes.includes(provided.confirmationPageHash);
   const projectionHashChanged = !confirmationPageHashMatchesReport;
   if (
     projectionHashChanged &&
@@ -636,18 +671,6 @@ function main(argv) {
     fs.writeFileSync(sourcePath, nextSource, 'utf8');
   }
 
-  const recordPath = path.resolve(
-    args.requirementRecord ??
-      path.join(
-        process.cwd(),
-        '_bmad-output',
-        'runtime',
-        'requirement-records',
-        String(recordId ?? 'unrecorded'),
-        'requirement-record.json'
-      )
-  );
-  const existingRecord = fs.existsSync(recordPath) ? readJson(recordPath) : {};
   if (isProjectionOnlyRefresh) {
     const existingConfirmations = Array.isArray(existingRecord.confirmationHistory)
       ? existingRecord.confirmationHistory
@@ -659,7 +682,7 @@ function main(argv) {
       latestConfirmation &&
       latestConfirmation.sourceDocumentHash === sourceDocumentHash &&
       latestConfirmation.implementationConfirmationHash === implementationConfirmationHash &&
-      latestConfirmation.confirmationPageHash === provided.confirmationPageHash;
+      priorConfirmedPageHashes.includes(provided.confirmationPageHash);
     if (!projectionRefreshAllowed) {
       console.error(
         JSON.stringify(

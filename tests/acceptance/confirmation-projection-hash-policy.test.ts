@@ -28,6 +28,7 @@ const REQ_TRACE_PROMPT = path.join(
 );
 const OLD_PAGE_HASH = 'sha256:3333333333333333333333333333333333333333333333333333333333333333';
 const NEW_PAGE_HASH = 'sha256:4444444444444444444444444444444444444444444444444444444444444444';
+const THIRD_PAGE_HASH = 'sha256:6666666666666666666666666666666666666666666666666666666666666666';
 const ARCH_HASH = 'sha256:5555555555555555555555555555555555555555555555555555555555555555';
 
 let tempDir: string;
@@ -801,6 +802,46 @@ describe('confirmation projection hash policy', () => {
     const prompt = runPrompt(source, recordPath());
     expect(prompt.status).toBe(0);
     expect(prompt.stdout).toContain('TRACE-039');
+  });
+
+  it('refreshes projection from the latest record baseline when source inline projection bookkeeping is stale', () => {
+    const source = writeSource();
+    const first = writeRenderReport(source, OLD_PAGE_HASH);
+    expect(ingestConfirmation(source, first.reportPath, first.confirmTextPath).status).toBe(0);
+    const second = writeRenderReport(source, NEW_PAGE_HASH, '-second');
+    const firstRefresh = routeConfirmationDriftWithMainAgent(source, second.reportPath);
+    expect(firstRefresh.status, `${firstRefresh.stdout}\n${firstRefresh.stderr}`).toBe(0);
+    expect(fs.readFileSync(source, 'utf8')).toContain(`htmlHash: ${OLD_PAGE_HASH}`);
+
+    const third = writeRenderReport(source, THIRD_PAGE_HASH, '-third');
+    const secondRefresh = routeConfirmationDriftWithMainAgent(source, third.reportPath);
+    expect(secondRefresh.status, `${secondRefresh.stdout}\n${secondRefresh.stderr}`).toBe(0);
+
+    const refreshedRecord = JSON.parse(fs.readFileSync(recordPath(), 'utf8'));
+    expect(refreshedRecord.confirmationHistory).toHaveLength(1);
+    expect(refreshedRecord.confirmationProjectionHistory.at(-1)).toMatchObject({
+      eventType: 'confirmation_projection_refreshed',
+      oldProjectionHash: NEW_PAGE_HASH,
+      newProjectionHash: THIRD_PAGE_HASH,
+    });
+    expect(JSON.parse(secondRefresh.stdout)).toMatchObject({
+      ok: true,
+      route: 'projection_refresh',
+      classification: {
+        kind: 'projection_refresh_required',
+        requiresUserReconfirmation: false,
+      },
+      delegatedResult: {
+        stdout: {
+          event: null,
+          sourceUpdated: false,
+          projectionEvent: {
+            oldProjectionHash: NEW_PAGE_HASH,
+            newProjectionHash: THIRD_PAGE_HASH,
+          },
+        },
+      },
+    });
   });
 
   it('keeps source and implementation semantic hash drift as demand reconfirmation hard stops', () => {

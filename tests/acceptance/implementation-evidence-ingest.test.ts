@@ -276,12 +276,25 @@ describe('implementation evidence ingest', () => {
       });
       expect(record.deliveryEvidence.requiredCommands[0].artifactRefs).toHaveLength(1);
       expect(record.artifactIndex[0]).toMatchObject({
+        artifactType: 'implementation_evidence_packet',
+        sourceOfTruthRole: 'evidence',
+        path: fixture.evidencePath.replace(/\\/gu, '/'),
+        relatedRequirementIds: ['TRACE-003', 'EVD-006'],
+        status: 'active',
+      });
+      expect(record.artifactIndex[1]).toMatchObject({
         purpose: 'prove controlled implementation evidence ingest behavior',
         relatedRequirementIds: ['MUST-007', 'NEG-008'],
         status: 'active',
         inputVersion: 'source-v1',
         outputVersion: 'artifact-v1',
       });
+      const packet = JSON.parse(readFileSync(fixture.evidencePath, 'utf8'));
+      expect(packet.artifactRefs).not.toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ artifactType: 'implementation_evidence_packet' }),
+        ])
+      );
       expect(record.deliveryEvidence.historicalRunRefs[0]).toMatchObject({
         commandId: 'CMD-IMPLEMENTATION-EVIDENCE-INGEST-TEST',
         runId: 'run-001',

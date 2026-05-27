@@ -281,6 +281,105 @@ function writeFixture(
   return { recordPath, base, sourcePath: source.sourcePath };
 }
 
+function writeScopedAiTddFixture(root: string) {
+  const base = path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'REQ-AI-TDD-SCOPED');
+  const sourcePath = path.join(root, 'source.md');
+  const confirmation = {
+    status: 'user_confirmed',
+    applicability: {
+      runtimeRecovery: {
+        applies: true,
+        requiresFunctionalResumeFailureCaseRegistry: false,
+      },
+      scoringDashboardSft: {
+        applies: false,
+        reasonCode: 'no_scoring_dashboard_sft_dataset_or_read_model_changes',
+      },
+    },
+    artifactAutomationPlan: [],
+    currentTargetMap: {
+      canonicalArtifacts: [],
+      pathRegistry: [],
+      existingArtifacts: [],
+    },
+  };
+  writeText(
+    sourcePath,
+    [
+      'implementationConfirmation:',
+      '  status: user_confirmed',
+      '  applicability:',
+      '    runtimeRecovery:',
+      '      applies: true',
+      '      requiresFunctionalResumeFailureCaseRegistry: false',
+      '    scoringDashboardSft:',
+      '      applies: false',
+      '      reasonCode: no_scoring_dashboard_sft_dataset_or_read_model_changes',
+      '  artifactAutomationPlan: []',
+      '  currentTargetMap:',
+      '    canonicalArtifacts: []',
+      '    pathRegistry: []',
+      '    existingArtifacts: []',
+      '',
+    ].join('\n')
+  );
+  const event = {
+    eventId: 'implementation_evidence_ingested:scoped',
+    eventType: 'implementation_evidence_ingested',
+    writerId: 'implementation-evidence-ingest',
+    previousEventHash: ZERO_HASH,
+    eventHash: EVENT_HASH,
+    payload: {
+      packet: { closeoutAttemptId: ATTEMPT, artifactRefs: [] },
+    },
+  };
+  const eventLogPath = path.join(base, 'events', 'control-events.jsonl');
+  mkdirSync(path.dirname(eventLogPath), { recursive: true });
+  writeFileSync(eventLogPath, `${JSON.stringify(event)}\n`, 'utf8');
+  writeReceipt(base, event.eventId, EVENT_HASH);
+  const recordPath = path.join(base, 'requirement-record.json');
+  writeJson(recordPath, {
+    recordId: 'REQ-AI-TDD-SCOPED',
+    requirementSetId: 'REQ-AI-TDD-SCOPED',
+    status: 'user_confirmed',
+    sourcePath,
+    sourceDocumentHash: HASH,
+    implementationConfirmationHash: implementationConfirmationHash(confirmation),
+    controlStore: {
+      eventLogPath: eventLogPath.replace(/\\/gu, '/'),
+      reducer: 'canonical-requirement-record-reducer/v1',
+      atomicCommitter: 'requirement-record-control-store/v1',
+    },
+    eventChainHead: EVENT_HASH,
+    lastAppliedEventHash: EVENT_HASH,
+    eventCount: 1,
+    executionIterations: [
+      {
+        executionIterationId: 'exec-current',
+        commandRunRefs: [
+          {
+            commandId: 'CMD-STRICT-CLOSEOUT-PROOF-GATE',
+            closeoutAttemptId: ATTEMPT,
+            runId: 'run-strict',
+            exitCode: 0,
+          },
+        ],
+      },
+    ],
+    artifactIndex: [],
+    deliveryEvidence: {
+      requiredCommands: [
+        {
+          commandId: 'CMD-STRICT-CLOSEOUT-PROOF-GATE',
+          lastRunRef: { closeoutAttemptId: ATTEMPT },
+          artifactRefs: [],
+        },
+      ],
+    },
+  });
+  return { recordPath, base, sourcePath };
+}
+
 function addControlledRebaselineFixture(recordPath: string, base: string) {
   const eventLogPath = path.join(base, 'events', 'control-events.jsonl');
   const original = JSON.parse(readFileSync(eventLogPath, 'utf8').trim());
@@ -432,6 +531,38 @@ describe('strict closeout proof gate', () => {
       const report = JSON.parse(readFileSync(reportPath, 'utf8'));
       expect(report.blockingReasons).toContain('target_artifact_source_missing');
       expect(report.blockingReasons).toContain('target_artifact_realization_failed');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('does not require production subsystem or SFT artifacts when source applicability excludes them', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'strict-closeout-scoped-'));
+    try {
+      const { recordPath, base, sourcePath } = writeScopedAiTddFixture(root);
+      const reportPath = path.join(base, 'strict-report.json');
+      const code = mainStrictCloseoutProofGate([
+        '--requirement-record',
+        recordPath,
+        '--source',
+        sourcePath,
+        '--attempt-id',
+        ATTEMPT,
+        '--report-path',
+        reportPath,
+        '--json',
+      ]);
+      expect(code).toBe(0);
+      const report = JSON.parse(readFileSync(reportPath, 'utf8'));
+      expect(report.applicability).toMatchObject({
+        productionSubsystemProofRequired: false,
+        failureCaseProofRequired: false,
+        sftProjectionProofRequired: false,
+      });
+      expect(report.blockingReasons).not.toContain('sft_projection_lineage_failed');
+      expect(report.blockingReasons).not.toEqual(
+        expect.arrayContaining([expect.stringMatching(/^subsystem_join_failed:/u)])
+      );
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

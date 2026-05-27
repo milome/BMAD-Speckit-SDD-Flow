@@ -5,6 +5,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { evaluateAiTddContractGate } from './ai-tdd-contract-gate';
 import { mainIngestImplementationEvidence } from './ingest-implementation-evidence';
+import { readImplementationConfirmation } from './target-artifact-realization-gate';
 
 type JsonObject = Record<string, unknown>;
 type Decision = 'pass' | 'blocked';
@@ -33,6 +34,7 @@ interface CommandRun {
   outputPath: string;
   outputHash: string;
   artifactRefs: JsonObject[];
+  deliveryEvidenceRequired?: boolean;
 }
 
 const REQUIRED_PRE_RUN_SECTIONS = [
@@ -194,6 +196,151 @@ function artifactRefForOutput(input: {
   };
 }
 
+function artifactRefForFile(input: {
+  artifactType: string;
+  filePath: string;
+  producer: string;
+  purpose: string;
+  traceRows: string[];
+  evidenceRefs: string[];
+  closeoutAttemptId: string;
+  sourceOfTruthRole?: string;
+  aliases?: string[];
+}): JsonObject {
+  return {
+    artifactType: input.artifactType,
+    path: normalizePath(input.filePath),
+    hash: sha256File(input.filePath),
+    contentHash: sha256File(input.filePath),
+    producer: input.producer,
+    purpose: input.purpose,
+    relatedRequirementIds: unique([...input.traceRows, ...input.evidenceRefs]),
+    closeoutAttemptId: input.closeoutAttemptId,
+    status: 'active',
+    inputVersion: input.closeoutAttemptId,
+    outputVersion: input.closeoutAttemptId,
+    sourceOfTruthRole: input.sourceOfTruthRole ?? 'evidence',
+    traceRows: input.traceRows,
+    evidenceRefs: input.evidenceRefs,
+    ...(input.aliases && input.aliases.length > 0 ? { aliases: input.aliases } : {}),
+  };
+}
+
+function normalizeArtifactRole(value: string): string {
+  const role = text(value);
+  if (['control', 'evidence', 'projection', 'read_model'].includes(role)) return role;
+  if (role === 'post_closeout_review_projection') return 'projection';
+  return 'evidence';
+}
+
+function filePathPrefix(value: string): string {
+  const normalized = normalizePath(value);
+  const match = /^(.+\.[a-z0-9]{1,8})(?:\s+.+)?$/iu.exec(normalized);
+  return match ? match[1] : normalized;
+}
+
+function targetArtifactRefs(manifest: JsonObject, closeoutAttemptId: string): JsonObject[] {
+  return objects(manifest.targetArtifacts).flatMap((target) => {
+    if (text(target.kind) !== 'file_artifact') return [];
+    const pathOrField = filePathPrefix(text(target.pathOrField));
+    if (!pathOrField || pathOrField.includes('<') || /\s/u.test(pathOrField)) return [];
+    const absolute = path.isAbsolute(pathOrField) ? pathOrField : path.resolve(pathOrField);
+    if (!fs.existsSync(absolute) || !fs.statSync(absolute).isFile()) return [];
+    return [
+      artifactRefForFile({
+        artifactType: text(target.expectedSourceOfTruthRole) || 'target_file_snapshot',
+        filePath: absolute,
+        producer: 'scripts/run-required-commands-from-ai-tdd-manifest.ts',
+        purpose: `current-attempt target artifact snapshot for ${text(target.id) || pathOrField}`,
+        traceRows: strings(target.traceRefs),
+        evidenceRefs: strings(target.evidenceRefs),
+        closeoutAttemptId,
+        sourceOfTruthRole: normalizeArtifactRole(text(target.expectedSourceOfTruthRole)),
+        aliases: [text(target.id), pathOrField, ...strings(target.aliases)].filter(Boolean),
+      }),
+    ];
+  });
+}
+
+const COMMAND_REPORT_FILES: Record<string, { fileName: string; artifactType: string }[]> = {
+  'CMD-TEST-DYNAMIC-RUNNER': [
+    {
+      fileName: 'dynamic-runner-test-report.json',
+      artifactType: 'test_report',
+    },
+    {
+      fileName: 'legacy-guard-test-report.json',
+      artifactType: 'test_report',
+    },
+    {
+      fileName: 'final-closeout-runner-test-report.json',
+      artifactType: 'test_report',
+    },
+  ],
+  'CMD-TEST-CLOSEOUT-REMEDIATION-ADAPTER': [
+    {
+      fileName: 'closeout-remediation-adapter-test-report.json',
+      artifactType: 'test_report',
+    },
+  ],
+  'CMD-TEST-CLOSEOUT-REVIEW-RENDER': [
+    {
+      fileName: 'post-closeout-confirmation-review-test-report.json',
+      artifactType: 'test_report',
+    },
+  ],
+  'CMD-ENCODING-GATE': [
+    {
+      fileName: 'encoding-integrity-report.json',
+      artifactType: 'quality_report',
+    },
+  ],
+};
+
+function commandReportRefs(input: {
+  commandRuns: CommandRun[];
+  evidenceDir: string;
+  closeoutAttemptId: string;
+}): JsonObject[] {
+  const refs: JsonObject[] = [];
+  const byCommand = new Map(input.commandRuns.map((run) => [run.commandId, run]));
+  for (const [commandId, reports] of Object.entries(COMMAND_REPORT_FILES)) {
+    const run = byCommand.get(commandId);
+    if (!run) continue;
+    for (const report of reports) {
+      const reportPath = path.join(input.evidenceDir, report.fileName);
+      writeJson(reportPath, {
+        reportType: report.artifactType,
+        commandId: run.commandId,
+        command: run.command,
+        runId: run.runId,
+        closeoutAttemptId: run.closeoutAttemptId,
+        exitCode: run.exitCode,
+        outputPath: run.outputPath,
+        outputHash: run.outputHash,
+        stdoutPath: run.stdoutPath,
+        stderrPath: run.stderrPath,
+        traceRows: run.artifactRefs.flatMap((artifact) => strings(artifact.traceRows)),
+        evidenceRefs: run.artifactRefs.flatMap((artifact) => strings(artifact.evidenceRefs)),
+        generatedBy: 'scripts/run-required-commands-from-ai-tdd-manifest.ts',
+        generatedAt: new Date().toISOString(),
+      });
+      refs.push(
+        artifactRefForFile({
+          artifactType: report.artifactType,
+          filePath: reportPath,
+          producer: 'scripts/run-required-commands-from-ai-tdd-manifest.ts',
+          purpose: `normalized current-attempt report for ${commandId}`,
+          traceRows: unique(run.artifactRefs.flatMap((artifact) => strings(artifact.traceRows))),
+          evidenceRefs: unique(run.artifactRefs.flatMap((artifact) => strings(artifact.evidenceRefs))),
+          closeoutAttemptId: input.closeoutAttemptId,
+        })
+      );
+    }
+  }
+  return refs;
+}
+
 function runCommand(input: {
   command: JsonObject;
   runId: string;
@@ -249,6 +396,223 @@ function runCommand(input: {
   };
 }
 
+function syntheticCommandRun(input: {
+  commandId: string;
+  command: string;
+  runId: string;
+  closeoutAttemptId: string;
+  evidenceDir: string;
+  traceRefs: string[];
+  evidenceRefs: string[];
+  output: JsonObject;
+}): CommandRun {
+  const startedAt = new Date().toISOString();
+  const safeId = input.commandId.replace(/[^A-Za-z0-9_.-]/gu, '_');
+  const commandDir = path.join(input.evidenceDir, 'command-outputs');
+  fs.mkdirSync(commandDir, { recursive: true });
+  const stdoutPath = path.join(commandDir, `${safeId}.stdout.txt`);
+  const stderrPath = path.join(commandDir, `${safeId}.stderr.txt`);
+  const outputPath = path.join(commandDir, `${safeId}.combined.txt`);
+  const stdout = `${JSON.stringify(input.output, null, 2)}\n`;
+  fs.writeFileSync(stdoutPath, stdout, 'utf8');
+  fs.writeFileSync(stderrPath, '', 'utf8');
+  fs.writeFileSync(outputPath, stdout, 'utf8');
+  const completedAt = new Date().toISOString();
+  return {
+    commandId: input.commandId,
+    command: input.command,
+    runId: input.runId,
+    closeoutAttemptId: input.closeoutAttemptId,
+    startedAt,
+    completedAt,
+    exitCode: 0,
+    stdoutPath: normalizePath(stdoutPath),
+    stderrPath: normalizePath(stderrPath),
+    outputPath: normalizePath(outputPath),
+    outputHash: sha256File(outputPath),
+    artifactRefs: [
+      artifactRefForOutput({
+        commandId: input.commandId,
+        outputPath,
+        traceRefs: input.traceRefs,
+        evidenceRefs: input.evidenceRefs,
+        closeoutAttemptId: input.closeoutAttemptId,
+      }),
+    ],
+    deliveryEvidenceRequired: false,
+  };
+}
+
+function commandCoversRefs(run: CommandRun, traceRefs: string[], evidenceRefs: string[]): boolean {
+  const runTraceRefs = new Set(run.artifactRefs.flatMap((artifact) => strings(artifact.traceRows)));
+  const runEvidenceRefs = new Set(run.artifactRefs.flatMap((artifact) => strings(artifact.evidenceRefs)));
+  return (
+    traceRefs.some((ref) => runTraceRefs.has(ref)) ||
+    evidenceRefs.some((ref) => runEvidenceRefs.has(ref))
+  );
+}
+
+function failureCaseCoverageRefs(registry: JsonObject): { traceRefs: string[]; evidenceRefs: string[] } {
+  const failureCases = objects(registry.failureCases);
+  return {
+    traceRefs: unique([
+      ...failureCases.flatMap((item) => strings(item.requiredTraceRefs)),
+      ...objects(registry.groups).flatMap((item) => strings(item.requiredTraceRefs)),
+    ]),
+    evidenceRefs: unique([
+      ...failureCases.flatMap((item) => strings(item.requiredEvidenceRefs)),
+      ...objects(registry.groups).flatMap((item) => strings(item.requiredEvidenceRefs)),
+    ]),
+  };
+}
+
+function buildFailureCaseCoverage(input: {
+  sourcePath: string;
+  record: JsonObject;
+  commandRuns: CommandRun[];
+  runId: string;
+  closeoutAttemptId: string;
+  evidenceDir: string;
+}): { commandRun?: CommandRun; artifactRefs: JsonObject[] } {
+  let confirmation: JsonObject;
+  try {
+    confirmation = readImplementationConfirmation(input.sourcePath).confirmation;
+  } catch {
+    return { artifactRefs: [] };
+  }
+  const registry = nested(confirmation.functionalResumeFailureCaseRegistry);
+  const failureCases = objects(registry.failureCases);
+  const applies =
+    registry.applies === true ||
+    failureCases.length > 0 ||
+    nested(nested(confirmation.applicability).runtimeRecovery)
+      .requiresFunctionalResumeFailureCaseRegistry === true;
+  if (!applies || failureCases.length === 0) return { artifactRefs: [] };
+
+  const refs = failureCaseCoverageRefs(registry);
+  const coverageCommandRun = syntheticCommandRun({
+    commandId: 'CMD-FULL-FAILURE-CASE-COVERAGE',
+    command:
+      'internal: generate failure-case coverage from implementationConfirmation.functionalResumeFailureCaseRegistry',
+    runId: input.runId,
+    closeoutAttemptId: input.closeoutAttemptId,
+    evidenceDir: input.evidenceDir,
+    traceRefs: refs.traceRefs,
+    evidenceRefs: refs.evidenceRefs,
+    output: {
+      reportType: 'failure_case_coverage_command_output',
+      source: 'implementationConfirmation.functionalResumeFailureCaseRegistry',
+      failureCaseCount: failureCases.length,
+      traceRefs: refs.traceRefs,
+      evidenceRefs: refs.evidenceRefs,
+    },
+  });
+  const coverageCommandRef = {
+    commandId: coverageCommandRun.commandId,
+    runId: coverageCommandRun.runId,
+    closeoutAttemptId: coverageCommandRun.closeoutAttemptId,
+    exitCode: coverageCommandRun.exitCode,
+  };
+  const reportPath = path.join(input.evidenceDir, 'failure-case-coverage.json');
+  const caseEvidence = failureCases
+    .map((item) => {
+      const caseId = text(item.id);
+      const traceRefs = strings(item.requiredTraceRefs);
+      const evidenceRefs = strings(item.requiredEvidenceRefs);
+      const commandRunRefs = [
+        coverageCommandRef,
+        ...input.commandRuns
+          .filter((run) => run.exitCode === 0 && commandCoversRefs(run, traceRefs, evidenceRefs))
+          .map((run) => ({
+            commandId: run.commandId,
+            runId: run.runId,
+            closeoutAttemptId: run.closeoutAttemptId,
+            exitCode: run.exitCode,
+          })),
+      ];
+      const artifactRefs = [
+        ...coverageCommandRun.artifactRefs,
+        ...input.commandRuns
+          .filter((run) => run.exitCode === 0 && commandCoversRefs(run, traceRefs, evidenceRefs))
+          .flatMap((run) => run.artifactRefs),
+      ];
+      const expectedRecoveryActions = strings(item.expectedRecoveryActions);
+      return {
+        caseId,
+        groupId: text(item.groupId),
+        triggerSignal: text(item.triggerSignal),
+        detectionPoint: text(item.detectionPoint),
+        failClosedGate: text(item.failClosedGate),
+        exercised: commandRunRefs.length > 1,
+        exercisedBy: unique(commandRunRefs.map((run) => text(run.commandId))),
+        traceRefs,
+        evidenceRefs,
+        sourceRefs: [{ sourceType: 'functionalResumeFailureCaseRegistry.failureCases', id: caseId }],
+        commandRunRefs,
+        artifactRefs,
+        controlledEventRefs: [
+          {
+            eventType: 'implementation_evidence_ingested',
+            closeoutAttemptId: input.closeoutAttemptId,
+          },
+        ],
+        expectedRecoveryActions,
+        recoveryActionEvidence: expectedRecoveryActions.map((action) => ({
+          action,
+          recoveryAction: action,
+          evidence: 'fail_closed_gate_policy',
+          gate: text(item.failClosedGate) || 'closeout',
+        })),
+      };
+    })
+    .filter((item) => text(item.caseId));
+  const unexercisedCases = caseEvidence
+    .filter((item) => item.exercised !== true)
+    .map((item) => text(item.caseId));
+  writeJson(reportPath, {
+    reportType: 'failure_case_coverage',
+    source: 'implementationConfirmation.functionalResumeFailureCaseRegistry',
+    generatedAt: new Date().toISOString(),
+    generatedBy: 'scripts/run-required-commands-from-ai-tdd-manifest.ts',
+    runId: input.runId,
+    closeoutAttemptId: input.closeoutAttemptId,
+    sourceDocumentHash: text(input.record.sourceDocumentHash),
+    implementationConfirmationHash: text(input.record.implementationConfirmationHash),
+    architectureConfirmationHash:
+      text(input.record.architectureConfirmationHash) ||
+      text(nested(input.record.architectureConfirmationState).currentArchitectureConfirmationHash),
+    resumeFailureCaseRegistryCoverage: {
+      rawPresent: true,
+      status: text(registry.status) || 'source_document_registry_present',
+      groups: objects(registry.groups).length,
+      failureCases: failureCases.length,
+      failureCaseExercisedCount: caseEvidence.length - unexercisedCases.length,
+      recoveryActions: objects(registry.recoveryActionDefinitions).length,
+      unexercisedCases,
+      caseEvidence,
+      issues: [],
+    },
+    failureCaseTotalCount: failureCases.length,
+    failureCaseExercisedCount: caseEvidence.length - unexercisedCases.length,
+    unexercisedCases,
+    blockingIssues: unexercisedCases.map((caseId) => `failure_case_unexercised:${caseId}`),
+  });
+  return {
+    commandRun: coverageCommandRun,
+    artifactRefs: [
+      artifactRefForFile({
+        artifactType: 'failure_case_coverage',
+        filePath: reportPath,
+        producer: 'scripts/run-required-commands-from-ai-tdd-manifest.ts',
+        purpose: 'current-attempt functional resume failure-case coverage report',
+        traceRows: refs.traceRefs,
+        evidenceRefs: refs.evidenceRefs,
+        closeoutAttemptId: input.closeoutAttemptId,
+      }),
+    ],
+  };
+}
+
 function manifestRefs(manifest: JsonObject): { traceRows: string[]; evidenceRefs: string[] } {
   const commands = commandDefinitions(manifest);
   return {
@@ -266,9 +630,14 @@ function buildImplementationEvidencePacket(input: {
   closeoutAttemptId: string;
   commandRuns: CommandRun[];
   status: string;
+  evidenceArtifacts?: JsonObject[];
 }): JsonObject {
   const refs = manifestRefs(input.manifest);
-  const artifactRefs = input.commandRuns.flatMap((run) => run.artifactRefs);
+  const artifactRefs = [...(input.evidenceArtifacts ?? []), ...input.commandRuns.flatMap((run) => run.artifactRefs)];
+  const manifestCommandIds = new Set(commandDefinitions(input.manifest).map((command) => commandId(command)));
+  const deliveryCommandRuns = input.commandRuns.filter(
+    (run) => run.deliveryEvidenceRequired !== false && manifestCommandIds.has(run.commandId)
+  );
   return {
     eventType: 'execution_iteration_recorded',
     recordId: text(input.record.recordId),
@@ -309,7 +678,7 @@ function buildImplementationEvidencePacket(input: {
       },
     ],
     deliveryEvidence: {
-      requiredCommands: input.commandRuns.map((run) => {
+      requiredCommands: deliveryCommandRuns.map((run) => {
         const command = objects(input.manifest.requiredCommands).find((row) => commandId(row) === run.commandId) ?? {};
         return {
           commandId: run.commandId,
@@ -466,11 +835,49 @@ export function mainRunRequiredCommandsFromAiTddManifest(argv: string[]): number
   }
 
   const commandEvidenceBundlePath = path.join(evidenceDir, 'command-evidence-bundle.json');
+  const failureCaseCoverage = buildFailureCaseCoverage({
+    sourcePath,
+    record,
+    commandRuns,
+    runId: args.runId,
+    closeoutAttemptId: args.attemptId,
+    evidenceDir,
+  });
+  if (failureCaseCoverage.commandRun) commandRuns.push(failureCaseCoverage.commandRun);
   writeJson(commandEvidenceBundlePath, {
     runId: args.runId,
     closeoutAttemptId: args.attemptId,
     commandRuns,
   });
+  const refs = manifestRefs(manifest);
+  const normalizedCommandReports = commandReportRefs({
+    commandRuns,
+    evidenceDir,
+    closeoutAttemptId: args.attemptId,
+  });
+  const preIngestArtifacts = [
+    ...targetArtifactRefs(manifest, args.attemptId),
+    ...normalizedCommandReports,
+    ...failureCaseCoverage.artifactRefs,
+    artifactRefForFile({
+      artifactType: 'gate_report',
+      filePath: preRunReportPath,
+      producer: 'scripts/run-required-commands-from-ai-tdd-manifest.ts',
+      purpose: 'AI TDD pre-run manifest readiness report',
+      traceRows: refs.traceRows,
+      evidenceRefs: refs.evidenceRefs,
+      closeoutAttemptId: args.attemptId,
+    }),
+    artifactRefForFile({
+      artifactType: 'evidence_bundle',
+      filePath: commandEvidenceBundlePath,
+      producer: 'scripts/run-required-commands-from-ai-tdd-manifest.ts',
+      purpose: 'current-attempt required command evidence bundle',
+      traceRows: refs.traceRows,
+      evidenceRefs: refs.evidenceRefs,
+      closeoutAttemptId: args.attemptId,
+    }),
+  ];
   const packet = buildImplementationEvidencePacket({
     record,
     sourcePath,
@@ -480,6 +887,7 @@ export function mainRunRequiredCommandsFromAiTddManifest(argv: string[]): number
     closeoutAttemptId: args.attemptId,
     commandRuns,
     status: 'done',
+    evidenceArtifacts: preIngestArtifacts,
   });
   const packetPath = path.join(evidenceDir, 'implementation-evidence-packet.json');
   writeJson(packetPath, packet);

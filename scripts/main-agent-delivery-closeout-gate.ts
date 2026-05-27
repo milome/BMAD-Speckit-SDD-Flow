@@ -9,6 +9,7 @@ import {
 } from './ai-tdd-contract-gate';
 import { appendControlEventAndReplay } from './requirement-record-control-store';
 import { evaluateStrictCloseoutProof } from './strict-closeout-proof-gate';
+import { readImplementationConfirmation } from './target-artifact-realization-gate';
 
 type JsonObject = Record<string, unknown>;
 type CloseoutDecision = 'pass' | 'fail' | 'blocked';
@@ -309,6 +310,26 @@ function isCurrentAttemptCloseoutFailure(failure: JsonObject, currentAttemptId: 
     text(failure.closeoutAttemptId) === currentAttemptId &&
     text(failure.failureId) === `failure:${currentAttemptId}`
   );
+}
+
+function closeoutAttemptRefId(record: JsonObject): string {
+  return (
+    text(record.closeoutAttemptId) ||
+    text(nested(record.sourceRefs).closeoutAttemptId) ||
+    text(objects(record.sourceRefs).find((ref) => text(ref.sourceType) === 'closeout_attempt')?.id)
+  );
+}
+
+function isSupersededCloseoutRca(record: JsonObject, currentAttemptId: string): boolean {
+  if (text(record.type) !== 'closeout_blocker') return false;
+  const attemptRef = closeoutAttemptRefId(record);
+  return Boolean(attemptRef && attemptRef !== currentAttemptId);
+}
+
+function isCurrentAttemptCloseoutRca(record: JsonObject, currentAttemptId: string): boolean {
+  if (text(record.type) !== 'closeout_blocker') return false;
+  const attemptRef = closeoutAttemptRefId(record);
+  return Boolean(attemptRef && attemptRef === currentAttemptId);
 }
 
 function latestRcaRecords(record: JsonObject): JsonObject[] {
@@ -619,6 +640,62 @@ function artifactHash(ref: JsonObject): string {
 
 function currentArchitectureHash(record: JsonObject): string {
   return text(nested(record.architectureConfirmationState).currentArchitectureConfirmationHash);
+}
+
+function boolAt(root: JsonObject, pathSegments: string[]): boolean | null {
+  let current: unknown = root;
+  for (const segment of pathSegments) current = nested(current)[segment];
+  return typeof current === 'boolean' ? current : null;
+}
+
+function contractApplicability(sourcePath?: string): JsonObject {
+  if (!sourcePath) return {};
+  try {
+    return nested(readImplementationConfirmation(sourcePath).confirmation.applicability);
+  } catch {
+    return {};
+  }
+}
+
+function failureCaseCoverageRequired(record: JsonObject, applicability: JsonObject): boolean {
+  const explicit = boolAt(applicability, [
+    'runtimeRecovery',
+    'requiresFunctionalResumeFailureCaseRegistry',
+  ]);
+  if (explicit !== null) return explicit;
+  return Boolean(latestFailureCaseCoverageArtifact(record));
+}
+
+function productionSubsystemEvidenceRequired(
+  record: JsonObject,
+  applicability: JsonObject,
+  attemptId: string
+): boolean {
+  const explicit = boolAt(applicability, ['productionSubsystems', 'applies']);
+  if (explicit !== null) return explicit;
+  return Boolean(
+    latestActiveExtensionRef(record) ||
+      latestActiveArtifact(record, (artifact) =>
+        ['production_subsystem_acceptance_report', 'production_loop_ready_report'].includes(
+          text(artifact.artifactType)
+        )
+      ) ||
+      commandRunsForAttempt(record, attemptId).some(
+        (run) => text(run.commandId) === 'CMD-PRODUCTION-SUBSYSTEM-ACCEPTANCE'
+      )
+  );
+}
+
+function datasetReleaseEvidenceRequired(record: JsonObject, applicability: JsonObject): boolean {
+  const explicit = boolAt(applicability, ['scoringDashboardSft', 'applies']);
+  if (explicit !== null) return explicit;
+  return Boolean(
+    latestActiveArtifact(record, (artifact) =>
+      ['dataset_release_manifest', 'dataset_manifest', 'dataset_release_gate_report'].includes(
+        text(artifact.artifactType)
+      )
+    )
+  );
 }
 
 function latestActiveExtensionRef(record: JsonObject): JsonObject | null {
@@ -960,26 +1037,37 @@ function datasetReleaseIssues(record: JsonObject, recordPath: string): string[] 
 
 function productionBlockerIssues(
   record: JsonObject,
-  recordPath: string
+  recordPath: string,
+  options: { productionRequired: boolean; datasetRequired: boolean } = {
+    productionRequired: true,
+    datasetRequired: true,
+  }
 ): { issues: string[]; checks: JsonObject[] } {
-  const extension = extensionProductionIssues(record, recordPath);
-  const readyReportIssues = productionLoopReadyReportIssues(record, recordPath);
-  const datasetIssues = datasetReleaseIssues(record, recordPath);
+  const extension = options.productionRequired
+    ? extensionProductionIssues(record, recordPath)
+    : { issues: [], extensionRef: null };
+  const readyReportIssues = options.productionRequired
+    ? productionLoopReadyReportIssues(record, recordPath)
+    : [];
+  const datasetIssues = options.datasetRequired ? datasetReleaseIssues(record, recordPath) : [];
   const checks = [
     {
       id: 'production-subsystem-extension-current',
       passed: extension.issues.length === 0,
+      required: options.productionRequired,
       issueCount: extension.issues.length,
       extensionRefPath: text(extension.extensionRef?.path) || null,
     },
     {
       id: 'production-loop-ready-report-current',
       passed: readyReportIssues.length === 0,
+      required: options.productionRequired,
       issueCount: readyReportIssues.length,
     },
     {
       id: 'dataset-release-artifacts-current',
       passed: datasetIssues.length === 0,
+      required: options.datasetRequired,
       issueCount: datasetIssues.length,
     },
   ];
@@ -1396,6 +1484,12 @@ function evaluate(
 ): { decision: CloseoutDecision; blockingReasons: string[]; checks: JsonObject[] } {
   const checks: JsonObject[] = [];
   const blockingReasons: string[] = [];
+  const resolvedSourcePath = sourcePath
+    ? path.resolve(sourcePath)
+    : text(record.sourcePath) && fs.existsSync(text(record.sourcePath))
+      ? path.resolve(text(record.sourcePath))
+      : undefined;
+  const applicability = contractApplicability(resolvedSourcePath);
   const readinessPassed = hasImplementationReadinessPass(record);
   checks.push({ id: 'implementation-readiness-gate-passed', passed: readinessPassed });
   if (!readinessPassed) blockingReasons.push('implementation_readiness_gate_not_passed');
@@ -1434,7 +1528,12 @@ function evaluate(
   });
   blockingReasons.push(...hookIssues);
 
-  if (legacyClosedLoopEvidenceRequired(record)) {
+  const deliveryTruthRequired = legacyClosedLoopEvidenceRequired(record);
+  const failureCasesRequired = failureCaseCoverageRequired(record, applicability);
+  const productionRequired = productionSubsystemEvidenceRequired(record, applicability, attemptId);
+  const datasetRequired = datasetReleaseEvidenceRequired(record, applicability);
+
+  if (deliveryTruthRequired) {
     const truthGate = deliveryTruthGateIssues(recordPath);
     checks.push({
       id: 'delivery-truth-gate-current',
@@ -1447,26 +1546,25 @@ function evaluate(
       blockingReasons.push('delivery_truth_gate_not_passed', ...truthGate.issues);
     }
 
-    const failureCaseIssues = failureCaseCoverageIssues(record);
-    checks.push({
-      id: 'failure-case-coverage-complete',
-      passed: failureCaseIssues.length === 0,
-      issueCount: failureCaseIssues.length,
-    });
-    blockingReasons.push(...failureCaseIssues);
-
-    const productionIssues = productionBlockerIssues(record, recordPath);
-    checks.push(...productionIssues.checks);
-    blockingReasons.push(...productionIssues.issues);
   } else {
-    checks.push(
-      { id: 'delivery-truth-gate-current', passed: true, required: false },
-      { id: 'failure-case-coverage-complete', passed: true, required: false },
-      { id: 'production-subsystem-extension-current', passed: true, required: false },
-      { id: 'production-loop-ready-report-current', passed: true, required: false },
-      { id: 'dataset-release-artifacts-current', passed: true, required: false }
-    );
+    checks.push({ id: 'delivery-truth-gate-current', passed: true, required: false });
   }
+
+  const failureCaseIssues = failureCasesRequired ? failureCaseCoverageIssues(record) : [];
+  checks.push({
+    id: 'failure-case-coverage-complete',
+    passed: failureCaseIssues.length === 0,
+    required: failureCasesRequired,
+    issueCount: failureCaseIssues.length,
+  });
+  blockingReasons.push(...failureCaseIssues);
+
+  const productionIssues = productionBlockerIssues(record, recordPath, {
+    productionRequired,
+    datasetRequired,
+  });
+  checks.push(...productionIssues.checks);
+  blockingReasons.push(...productionIssues.issues);
 
   const subagentRevalidation = subagentCurrentAttemptRevalidationIssues(record, attemptId);
   checks.push(...subagentRevalidation.checks);
@@ -1636,8 +1734,11 @@ function evaluate(
   });
   if (openFailureRecords.length > 0) blockingReasons.push('open_failure_record_exists');
 
-  const openRcaRecords = latestRcaRecords(record).filter((record) =>
-    isOpenLifecycleStatus(record.status)
+  const openRcaRecords = latestRcaRecords(record).filter(
+    (record) =>
+      isOpenLifecycleStatus(record.status) &&
+      !isSupersededCloseoutRca(record, attemptId) &&
+      !(canRetireCurrentAttemptCloseoutFailure && isCurrentAttemptCloseoutRca(record, attemptId))
   );
   checks.push({
     id: 'rca-actions-closed',

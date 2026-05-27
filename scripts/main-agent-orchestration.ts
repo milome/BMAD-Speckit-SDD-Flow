@@ -6831,20 +6831,18 @@ export function runMainAgentConfirmationDriftRoute(
         classification,
       };
     }
-    const latestConfirmation = Array.isArray((record as { confirmationHistory?: unknown[] }).confirmationHistory)
-      ? (record as { confirmationHistory: Record<string, unknown>[] }).confirmationHistory
-          .filter((event) => normalizeText(event?.eventType) === 'confirmation_recorded')
-          .at(-1)
-      : null;
-    const confirmationPageHash = normalizeText(latestConfirmation?.confirmationPageHash);
-    if (!confirmationPageHash) {
+    const priorProjectionHash =
+      normalizeText(classification.latestProjectionHash) ||
+      normalizeText((record as { latestConfirmationProjectionHash?: unknown }).latestConfirmationProjectionHash) ||
+      normalizeText((record as { confirmationPageHash?: unknown }).confirmationPageHash);
+    if (!priorProjectionHash) {
       return {
         ok: false,
         action: 'route-confirmation-drift',
         delegatedEntry: path.relative(root, resolveSkillScript(root, 'confirm-requirements-scope.js')).replace(/\\/g, '/'),
         exitCode: 3,
         route: 'projection_refresh',
-        block: 'PROJECTION_REFRESH_CONFIRMED_PAGE_HASH_REQUIRED',
+        block: 'PROJECTION_REFRESH_PRIOR_PROJECTION_HASH_REQUIRED',
         classification,
       };
     }
@@ -6853,7 +6851,7 @@ export function runMainAgentConfirmationDriftRoute(
       renderReport: renderReportPath,
       confirmationText: confirmationTextFromRenderReport({
         ...renderReport,
-        confirmationPageHash,
+        confirmationPageHash: priorProjectionHash,
       }),
       updateSource: 'false',
     });

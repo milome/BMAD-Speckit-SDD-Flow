@@ -66,6 +66,8 @@ function sourceText(input: {
   omitFailureNegRefs?: boolean;
   omitEdgeFailureRefs?: boolean;
   omitErrorCaseAcceptanceRefs?: boolean;
+  manifestProjectionAddsCommand?: boolean;
+  manifestProjectionOmitsCommand?: boolean;
 }): string {
   const status = input.status ?? 'user_confirmed';
   const targetPath = input.targetPath ?? 'evidence/target.json';
@@ -166,6 +168,19 @@ function sourceText(input: {
   const legacyRefs = input.omitLegacyRefs
     ? []
     : ['        traceRows: [TRACE-001]', '        evidenceRefs: [EVD-001]'];
+  const projectionRows = input.manifestProjectionAddsCommand || input.manifestProjectionOmitsCommand
+    ? [
+        '  aiTddContractExecutionManifestProjection:',
+        '    closeoutProof:',
+        `      requiredCommands: [${input.manifestProjectionOmitsCommand ? 'CMD-001, CMD-002' : 'CMD-001, CMD-002, CMD-003'}]`,
+        '      policies:',
+        '        - no orphan commands, evidence, or artifacts may satisfy closeout',
+        '        - closeout consumes only current-attempt command and artifact evidence',
+        '        - record_closed is written only after delivery verification',
+        '      targetRefs: [ART-001]',
+        '      ready: true',
+      ]
+    : [];
   const closeoutPreviewRows = input.omitCloseoutPreview
     ? []
     : [
@@ -206,7 +221,7 @@ function sourceText(input: {
     '    - id: TRACE-001',
     `      covers: [${input.omitTraceRowCovers ? '' : 'MUST-001, NEG-001'}]`,
     '      evidenceRefs: [EVD-001]',
-    '      deliveryEvidenceCommandRefs: [CMD-001, CMD-002]',
+    `      deliveryEvidenceCommandRefs: [CMD-001, CMD-002${input.manifestProjectionOmitsCommand ? ', CMD-003' : ''}]`,
     '      acceptanceRefs: [ACC-001, E2E-001]',
     `      artifactRefs: [${input.canonicalSurfaceOnly ? 'scripts/ai-tdd-contract-gate.ts' : input.artifactIdOnly ? 'ART-001, scripts/ai-tdd-contract-gate.ts' : 'CANONICAL-001, scripts/ai-tdd-contract-gate.ts'}]`,
     ...(input.canonicalSurfaceOnly ? ['      canonicalSurfaceRefs: [ART-001]'] : []),
@@ -244,6 +259,15 @@ function sourceText(input: {
     '      oracle: fixture e2e negative-control oracle',
     '      traceRows: [TRACE-001]',
     '      evidenceRefs: [EVD-001]',
+    ...(input.manifestProjectionAddsCommand || input.manifestProjectionOmitsCommand
+      ? [
+          '    - id: CMD-003',
+          `      command: ${acceptanceCommandText}`,
+          '      oracle: fixture closeout review oracle',
+          '      traceRows: [TRACE-001]',
+          '      evidenceRefs: [EVD-001]',
+        ]
+      : []),
     ...(input.includeOrphans
       ? [
           '    - id: CMD-ORPHAN',
@@ -315,6 +339,7 @@ function sourceText(input: {
     '        completionProofPolicy: legacy_only',
     ...legacyRefs,
     ...closeoutPreviewRows,
+    ...projectionRows,
     ...targetModificationRows,
     ...acceptance,
     '',
@@ -358,6 +383,8 @@ function writeFixture(
     omitErrorCaseAcceptanceRefs?: boolean;
     projectRootRelativeTestPaths?: boolean;
     sourceInRequirementsDir?: boolean;
+    manifestProjectionAddsCommand?: boolean;
+    manifestProjectionOmitsCommand?: boolean;
   } = {}
 ) {
   const testPath = path.join(root, 'tests', 'acceptance', 'ai-tdd-fixture.test.ts');
@@ -411,6 +438,8 @@ function writeFixture(
       omitFailureNegRefs: options.omitFailureNegRefs,
       omitEdgeFailureRefs: options.omitEdgeFailureRefs,
       omitErrorCaseAcceptanceRefs: options.omitErrorCaseAcceptanceRefs,
+      manifestProjectionAddsCommand: options.manifestProjectionAddsCommand,
+      manifestProjectionOmitsCommand: options.manifestProjectionOmitsCommand,
     })
   );
   const confirmation = {
@@ -468,7 +497,11 @@ function writeFixture(
         id: 'TRACE-001',
         covers: options.omitTraceRowCovers ? [] : ['MUST-001', 'NEG-001'],
         evidenceRefs: ['EVD-001'],
-        deliveryEvidenceCommandRefs: ['CMD-001', 'CMD-002'],
+        deliveryEvidenceCommandRefs: [
+          'CMD-001',
+          'CMD-002',
+          ...(options.manifestProjectionOmitsCommand ? ['CMD-003'] : []),
+        ],
         acceptanceRefs: ['ACC-001', 'E2E-001'],
         artifactRefs: options.canonicalSurfaceOnly
           ? ['scripts/ai-tdd-contract-gate.ts']
@@ -535,6 +568,17 @@ function writeFixture(
               id: 'CMD-ORPHAN',
               command: 'node scripts/orphan-command.js',
               oracle: 'orphan command oracle',
+            },
+          ]
+        : []),
+      ...(options.manifestProjectionAddsCommand || options.manifestProjectionOmitsCommand
+        ? [
+            {
+              id: 'CMD-003',
+              command: `npx vitest run ${testPathRef}`,
+              oracle: 'fixture closeout review oracle',
+              traceRows: ['TRACE-001'],
+              evidenceRefs: ['EVD-001'],
             },
           ]
         : []),
@@ -699,10 +743,13 @@ function writeFixture(
   const base = path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'REQ-AI-TDD');
   const recordPath = path.join(base, 'requirement-record.json');
   const commandAttempt = options.staleAttempt ? 'old-attempt' : ATTEMPT;
+  const reverseAuditReady = options.reverseAuditReady ?? true;
   const artifactRef = {
     artifactType: 'report',
     path: targetPath.replace(/\\/gu, '/'),
-    contentHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+    ...(reverseAuditReady
+      ? { contentHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111' }
+      : {}),
     producer: 'ai-tdd-fixture',
     sourceOfTruthRole: 'evidence',
     status: 'active',
@@ -719,8 +766,8 @@ function writeFixture(
     executionIterations: [
       {
         executionIterationId: 'exec-ai-tdd',
-        traceRows: ['TRACE-001'],
-        evidenceRefs: ['EVD-001'],
+        traceRows: reverseAuditReady ? ['TRACE-001'] : [],
+        evidenceRefs: reverseAuditReady ? ['EVD-001'] : [],
         commandRunRefs: [
           {
             commandId: 'CMD-001',
@@ -734,6 +781,16 @@ function writeFixture(
             runId: 'run-ai-tdd-e2e',
             exitCode: 0,
           },
+          ...(options.manifestProjectionAddsCommand
+            ? [
+                {
+                  commandId: 'CMD-003',
+                  closeoutAttemptId: commandAttempt,
+                  runId: 'run-ai-tdd-closeout-review',
+                  exitCode: 0,
+                },
+              ]
+            : []),
         ],
       },
     ],
@@ -744,13 +801,22 @@ function writeFixture(
           closeoutAttemptId: commandAttempt,
           ...(options.exitCodeOnly ? {} : { artifactRefs: [artifactRef] }),
         },
-        {
-          commandId: 'CMD-002',
-          closeoutAttemptId: commandAttempt,
-          ...(options.exitCodeOnly ? {} : { artifactRefs: [artifactRef] }),
-        },
-      ],
-    },
+          {
+            commandId: 'CMD-002',
+            closeoutAttemptId: commandAttempt,
+            ...(options.exitCodeOnly ? {} : { artifactRefs: [artifactRef] }),
+          },
+          ...(options.manifestProjectionAddsCommand
+            ? [
+                {
+                  commandId: 'CMD-003',
+                  closeoutAttemptId: commandAttempt,
+                  ...(options.exitCodeOnly ? {} : { artifactRefs: [artifactRef] }),
+                },
+              ]
+            : []),
+        ],
+      },
     artifactIndex: [artifactRef],
   };
   writeJson(recordPath, record);
@@ -815,6 +881,54 @@ describe('ai tdd contract gate', () => {
       expect(
         reportArray(report, 'redGreenMatrix').some((row) => row.currentState === 'missing_test')
       ).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('uses manifest projection closeoutProof required commands before legacy preview mirror', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'ai-tdd-closeout-proof-projection-'));
+    try {
+      const fixture = writeFixture(root, { manifestProjectionAddsCommand: true });
+      const report = evaluateAiTddContractGate({
+        sourcePath: fixture.sourcePath,
+        record: fixture.record,
+        recordPath: fixture.recordPath,
+        mode: 'pre-rerun',
+        attemptId: ATTEMPT,
+      });
+      expect(
+        reportObject(reportObject(report, 'contractExecutionManifest'), 'closeoutProof')
+      ).toMatchObject({
+        ready: true,
+        decision: 'pass',
+        requiredCommands: ['CMD-001', 'CMD-002', 'CMD-003'],
+      });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('normalizes generated closeoutProof required commands from command targets when projection omits a required command', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'ai-tdd-closeout-proof-normalize-'));
+    try {
+      const fixture = writeFixture(root, { manifestProjectionOmitsCommand: true });
+      const report = evaluateAiTddContractGate({
+        sourcePath: fixture.sourcePath,
+        record: fixture.record,
+        recordPath: fixture.recordPath,
+        mode: 'pre-rerun',
+        attemptId: ATTEMPT,
+      });
+      expect(
+        reportObject(reportObject(report, 'contractExecutionManifest'), 'closeoutProof')
+      ).toMatchObject({
+        ready: true,
+        decision: 'pass',
+        requiredCommands: ['CMD-001', 'CMD-002', 'CMD-003'],
+        projectionRequiredCommands: ['CMD-001', 'CMD-002'],
+        normalizedFromCommandTargets: ['CMD-003'],
+      });
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -1348,10 +1462,6 @@ describe('ai tdd contract gate', () => {
         expect.arrayContaining([
           expect.objectContaining({
             category: 'CLOSEOUT_PROOF',
-            code: 'closeout_proof_required_commands_missing',
-          }),
-          expect.objectContaining({
-            category: 'CLOSEOUT_PROOF',
             code: 'closeout_proof_policies_missing',
           }),
         ])
@@ -1842,7 +1952,7 @@ describe('ai tdd contract gate', () => {
   it('blocks closeout when reverse audit delivery readiness is not ready', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'ai-tdd-reverse-audit-'));
     try {
-      const fixture = writeFixture(root);
+      const fixture = writeFixture(root, { reverseAuditReady: false });
       const report = evaluateAiTddContractGate({
         sourcePath: fixture.sourcePath,
         record: fixture.record,
@@ -1851,7 +1961,17 @@ describe('ai tdd contract gate', () => {
         attemptId: ATTEMPT,
       });
       expect(report.decision).toBe('blocked');
-      expect(report.blockingReasons).toContain('reverse_audit_delivery_readiness_not_ready');
+      expect(
+        report.blockingReasons,
+        JSON.stringify(
+          {
+            blockingReasons: report.blockingReasons,
+            subReports: report.subReports,
+          },
+          null,
+          2
+        )
+      ).toContain('reverse_audit_delivery_readiness_not_ready');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

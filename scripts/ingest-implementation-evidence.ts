@@ -709,6 +709,29 @@ function artifactEvents(packet: JsonObject, recordId: string, requirementSetId: 
   }));
 }
 
+function evidencePacketArtifact(packet: JsonObject, evidencePath: string, recordId: string, requirementSetId: string): JsonObject {
+  return {
+    eventType: 'artifact_indexed',
+    artifactType: 'implementation_evidence_packet',
+    sourceOfTruthRole: 'evidence',
+    recordId,
+    requirementSetId,
+    path: normalizePathForRecord(evidencePath),
+    contentHash: sha256File(evidencePath),
+    producer: 'scripts/ingest-implementation-evidence.ts',
+    purpose: 'externally indexed controlled implementation evidence packet',
+    relatedRequirementIds: [
+      ...arrayOfStrings(packet.traceRows),
+      ...arrayOfStrings(packet.evidenceRefs),
+    ].filter(Boolean),
+    status: 'active',
+    inputVersion: text(packet.closeoutAttemptId) || text(packet.runId) || 'controlled-ingest',
+    outputVersion: text(packet.executionIterationId) || text(packet.runId) || 'controlled-ingest',
+    traceRows: arrayOfStrings(packet.traceRows),
+    evidenceRefs: arrayOfStrings(packet.evidenceRefs),
+  };
+}
+
 function normalizeHistoricalArtifactRef(
   artifact: JsonObject,
   recordId: string,
@@ -751,12 +774,13 @@ function normalizeHistoricalCommand(command: JsonObject, recordId: string, requi
   };
 }
 
-function updateRecord(record: JsonObject, packet: JsonObject, recordedAt: string, recordedBy: string): JsonObject {
+function updateRecord(record: JsonObject, packet: JsonObject, recordedAt: string, recordedBy: string, evidencePath = ''): JsonObject {
   const recordId = text(packet.recordId) || text(record.recordId);
   const requirementSetId = text(packet.requirementSetId) || text(record.requirementSetId);
   const refs = sourceRefs(packet);
   const commandRefs = commandRunRefs(packet);
   const artifactRefs = artifactEvents(packet, recordId, requirementSetId);
+  const packetArtifact = evidencePath ? evidencePacketArtifact(packet, evidencePath, recordId, requirementSetId) : undefined;
   const extensionRefs = artifactEvents(
     { ...packet, artifactRefs: arrayOfObjects(packet.extensionRefs), extensionRefs: [] },
     recordId,
@@ -961,6 +985,7 @@ function updateRecord(record: JsonObject, packet: JsonObject, recordedAt: string
       ...arrayOfObjects(record.artifactIndex).map((artifact) =>
         normalizeHistoricalArtifactRef(artifact, recordId, requirementSetId)
       ),
+      ...(packetArtifact ? [packetArtifact] : []),
       ...artifactRefs,
     ],
     extensionRefs: [
@@ -1007,6 +1032,12 @@ export function mainIngestImplementationEvidence(argv: string[]): number {
   const globalArtifactIndex = path.resolve(
     args.globalArtifactIndex ?? path.join(path.dirname(baseDir), 'artifact-index.jsonl')
   );
+  const packetArtifact = evidencePacketArtifact(
+    packet,
+    normalizePathForRecord(evidencePath),
+    text(packet.recordId) || text(record.recordId),
+    text(packet.requirementSetId) || text(record.requirementSetId)
+  );
   const commit = appendControlEventAndReplay({
     recordPath,
     writerId: 'implementation-evidence-ingest',
@@ -1014,13 +1045,22 @@ export function mainIngestImplementationEvidence(argv: string[]): number {
     recordedAt,
     payload: {
       packet,
+      artifactRefs: [packetArtifact],
       recordedAt,
       recordedBy,
       evidencePath: normalizePathForRecord(evidencePath),
     },
-    reduce: (currentRecord) => updateRecord(currentRecord, packet, recordedAt, recordedBy),
+    reduce: (currentRecord) =>
+      updateRecord(currentRecord, packet, recordedAt, recordedBy, normalizePathForRecord(evidencePath)),
   });
-  for (const artifact of artifactEvents(packet, text(packet.recordId) || text(record.recordId), text(packet.requirementSetId) || text(record.requirementSetId))) {
+  for (const artifact of [
+    packetArtifact,
+    ...artifactEvents(
+      packet,
+      text(packet.recordId) || text(record.recordId),
+      text(packet.requirementSetId) || text(record.requirementSetId)
+    ),
+  ]) {
     appendJsonl(artifactIndex, artifact);
     appendJsonl(globalArtifactIndex, artifact);
   }

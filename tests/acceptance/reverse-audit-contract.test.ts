@@ -592,6 +592,73 @@ function runReverseAudit(source: string, reportPath: string, extraArgs: string[]
   };
 }
 
+function writeRequirementRecordForReadiness(source: string, render: { report: any }, attemptId = 'attempt-current') {
+  const recordPath = path.join(tempDir, 'requirement-record.json');
+  const artifactPath = path.join(tempDir, 'evidence', 'command-output.txt');
+  fs.mkdirSync(path.dirname(artifactPath), { recursive: true });
+  fs.writeFileSync(artifactPath, 'current attempt evidence\n', 'utf8');
+  const artifact = {
+    artifactType: 'command_output',
+    sourceOfTruthRole: 'evidence',
+    path: artifactPath.replace(/\\/gu, '/'),
+    contentHash: fixedHash('e'),
+    producer: 'test',
+    purpose: 'current attempt command evidence',
+    relatedRequirementIds: ['TRACE-001', 'EVD-001'],
+    closeoutAttemptId: attemptId,
+    status: 'active',
+    inputVersion: attemptId,
+    outputVersion: attemptId,
+    traceRows: ['TRACE-001'],
+    evidenceRefs: ['EVD-001'],
+  };
+  const record = {
+    recordId: 'REQ-REV-AUDIT',
+    requirementSetId: 'REQSET-REV-AUDIT',
+    sourcePath: source.replace(/\\/gu, '/'),
+    status: 'user_confirmed',
+    sourceDocumentHash: render.report.sourceDocumentHash,
+    implementationConfirmationHash: render.report.implementationConfirmationHash,
+    closeout: { currentAttemptId: attemptId },
+    deliveryEvidence: {
+      requiredCommands: [
+        {
+          commandId: 'CMD-001',
+          command: 'npx vitest run fixture',
+          blockingIfMissing: true,
+          negativeOrRegression: true,
+          closeoutAttemptId: attemptId,
+          lastRunRef: { commandId: 'CMD-001', runId: 'run-current', closeoutAttemptId: attemptId },
+          traceRows: ['TRACE-001'],
+          evidenceRefs: ['EVD-001'],
+          artifactRefs: [artifact],
+        },
+      ],
+    },
+    executionIterations: [
+      {
+        executionIterationId: 'exec-current',
+        runId: 'run-current',
+        traceRows: ['TRACE-001'],
+        evidenceRefs: ['EVD-001'],
+        commandRunRefs: [{ commandId: 'CMD-001', runId: 'run-current', closeoutAttemptId: attemptId, exitCode: 0 }],
+      },
+    ],
+    requirementClosures: [
+      {
+        requirementId: 'TRACE-001',
+        status: 'pass',
+        traceRows: ['TRACE-001'],
+        evidenceRefs: ['EVD-001'],
+        commandRunRefs: [{ commandId: 'CMD-001', runId: 'run-current', closeoutAttemptId: attemptId, exitCode: 0 }],
+      },
+    ],
+    artifactIndex: [artifact],
+  };
+  fs.writeFileSync(recordPath, JSON.stringify(record, null, 2), 'utf8');
+  return { recordPath, attemptId };
+}
+
 function runDefinitionAudit(source: string) {
   const result = spawnSync(process.execPath, [REVERSE_AUDIT, source, '--definition-only', '--json'], {
     cwd: ROOT,
@@ -642,6 +709,33 @@ describe('reverse_audit_contract', () => {
     expect(audit.report.rendererAuthority.confirmability).toBe('confirmable');
     expect(audit.report.rendererAuthority.deliveryReadiness.ready).toBe(false);
     expect(audit.report.preConfirmationSemanticDrilldown.status).toBe('pass');
+    expect(audit.report.failedChecks).toEqual([]);
+  });
+
+  it('uses controlled runtime evidence for readiness mode instead of stale render-time delivery readiness', () => {
+    const source = writeSource();
+    const render = runRenderer(source);
+    expect(render.result.status).toBe(0);
+    patchConfirmationRender(source, render);
+    const { recordPath, attemptId } = writeRequirementRecordForReadiness(source, render);
+
+    const audit = runReverseAudit(source, render.reportPath, [
+      '--mode',
+      'readiness',
+      '--requirement-record',
+      recordPath,
+      '--attempt-id',
+      attemptId,
+    ]);
+
+    expect(audit.result.status, JSON.stringify(audit.report.findings, null, 2)).toBe(0);
+    expect(audit.report.rendererAuthority.deliveryReadiness.ready).toBe(false);
+    expect(audit.report.deliveryReadiness).toMatchObject({
+      ready: true,
+      currentAttemptId: attemptId,
+      currentPassTraceRows: 1,
+      totalTraceRows: 1,
+    });
     expect(audit.report.failedChecks).toEqual([]);
   });
 

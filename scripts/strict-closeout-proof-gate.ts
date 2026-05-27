@@ -2,7 +2,10 @@
 import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { evaluateTargetArtifactRealization } from './target-artifact-realization-gate';
+import {
+  evaluateTargetArtifactRealization,
+  readImplementationConfirmation,
+} from './target-artifact-realization-gate';
 
 type JsonObject = Record<string, unknown>;
 type Decision = 'pass' | 'blocked';
@@ -81,6 +84,12 @@ function strings(value: unknown): string[] {
 
 function nested(value: unknown): JsonObject {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as JsonObject) : {};
+}
+
+function boolAt(root: JsonObject, pathSegments: string[]): boolean | null {
+  let current: unknown = root;
+  for (const segment of pathSegments) current = nested(current)[segment];
+  return typeof current === 'boolean' ? current : null;
 }
 
 function readJson(file: string): JsonObject {
@@ -178,6 +187,15 @@ function latestArtifact(record: JsonObject, artifactType: string): JsonObject | 
       )
       .at(-1) ?? null
   );
+}
+
+function contractApplicability(sourcePath?: string): JsonObject {
+  if (!sourcePath) return {};
+  try {
+    return nested(readImplementationConfirmation(sourcePath).confirmation.applicability);
+  } catch {
+    return {};
+  }
 }
 
 function eventForArtifact(events: JsonObject[], artifact: JsonObject): JsonObject | null {
@@ -316,6 +334,33 @@ function commandProof(runs: JsonObject[], commandId: string): JsonObject | null 
         exitCode: run.exitCode,
       }
     : null;
+}
+
+function productionSubsystemProofApplies(input: { record: JsonObject; attemptRuns: JsonObject[]; applicability: JsonObject }): boolean {
+  const explicit = boolAt(input.applicability, ['productionSubsystems', 'applies']);
+  if (explicit !== null) return explicit;
+  return Boolean(
+    latestArtifact(input.record, 'observability_extension') ||
+      commandProof(input.attemptRuns, 'CMD-PRODUCTION-SUBSYSTEM-ACCEPTANCE')
+  );
+}
+
+function failureCaseProofApplies(input: { record: JsonObject; attemptRuns: JsonObject[]; applicability: JsonObject }): boolean {
+  const explicit = boolAt(input.applicability, ['runtimeRecovery', 'requiresFunctionalResumeFailureCaseRegistry']);
+  if (explicit !== null) return explicit;
+  return Boolean(
+    latestArtifact(input.record, 'failure_case_coverage') ||
+      commandProof(input.attemptRuns, 'CMD-FULL-FAILURE-CASE-COVERAGE')
+  );
+}
+
+function sftProjectionProofApplies(input: { record: JsonObject; applicability: JsonObject }): boolean {
+  const explicit = boolAt(input.applicability, ['scoringDashboardSft', 'applies']);
+  if (explicit !== null) return explicit;
+  return Boolean(
+    latestArtifact(input.record, 'dataset_release_manifest') ||
+      latestArtifact(input.record, 'dataset_release_gate_report')
+  );
 }
 
 function proveSubsystems(input: {
@@ -479,18 +524,37 @@ export function evaluateStrictCloseoutProof(input: {
 }): JsonObject {
   const events = readJsonl(eventLogPath(input.recordPath, input.record));
   const attemptRuns = commandRunsForAttempt(input.record, input.attemptId);
-  const subsystemEvidence = proveSubsystems({
+  const applicability = contractApplicability(input.sourcePath);
+  const subsystemProofRequired = productionSubsystemProofApplies({
     record: input.record,
-    recordPath: input.recordPath,
-    events,
     attemptRuns,
+    applicability,
   });
-  const failureCaseEvidence = proveFailureCases({
+  const failureCaseProofRequired = failureCaseProofApplies({
     record: input.record,
-    recordPath: input.recordPath,
-    events,
     attemptRuns,
+    applicability,
   });
+  const sftProjectionProofRequired = sftProjectionProofApplies({
+    record: input.record,
+    applicability,
+  });
+  const subsystemEvidence = subsystemProofRequired
+    ? proveSubsystems({
+        record: input.record,
+        recordPath: input.recordPath,
+        events,
+        attemptRuns,
+      })
+    : [];
+  const failureCaseEvidence = failureCaseProofRequired
+    ? proveFailureCases({
+        record: input.record,
+        recordPath: input.recordPath,
+        events,
+        attemptRuns,
+      })
+    : [];
   const replayFromEventLog = replayProof(input.record, events);
   const writerRegistryAuthorization = writerRegistryProof(events, input.attemptId);
   const atomicCommitRecovery = receiptProof(input.recordPath, events);
@@ -503,7 +567,9 @@ export function evaluateStrictCloseoutProof(input: {
         text(event.eventType) === 'implementation_evidence_ingested'
     ),
   };
-  const sftProjectionLineage = sftProjectionProof(input.record, input.recordPath);
+  const sftProjectionLineage = sftProjectionProofRequired
+    ? sftProjectionProof(input.record, input.recordPath)
+    : { ok: true, skipped: true, reason: 'scoringDashboardSft_not_applicable' };
   const targetArtifactRealization = input.sourcePath
     ? evaluateTargetArtifactRealization({
         sourcePath: input.sourcePath,
@@ -544,6 +610,11 @@ export function evaluateStrictCloseoutProof(input: {
     currentAttemptId: input.attemptId,
     decision,
     blockingReasons: [...new Set(blockingReasons)],
+    applicability: {
+      productionSubsystemProofRequired: subsystemProofRequired,
+      failureCaseProofRequired,
+      sftProjectionProofRequired,
+    },
     replayFromEventLog,
     writerRegistryAuthorization,
     atomicCommitRecovery,

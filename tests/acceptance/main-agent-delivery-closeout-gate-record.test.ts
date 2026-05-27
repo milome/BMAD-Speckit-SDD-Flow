@@ -715,6 +715,101 @@ describe('requirement-scoped delivery closeout gate', () => {
     }
   });
 
+  it('does not require production subsystem or SFT artifacts when source applicability excludes them', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-scoped-applicability-'));
+    try {
+      const sourcePath = path.join(root, 'source.md');
+      writeText(
+        sourcePath,
+        [
+          'implementationConfirmation:',
+          '  status: user_confirmed',
+          '  applicability:',
+          '    runtimeRecovery:',
+          '      requiresFunctionalResumeFailureCaseRegistry: true',
+          '    productionSubsystems:',
+          '      applies: false',
+          '    scoringDashboardSft:',
+          '      applies: false',
+          '',
+        ].join('\n')
+      );
+      const recordPath = writeRecord(root, {
+        ...baseRecord(),
+        aiTddContractGate: { enforcementMode: 'skipped_by_policy' },
+        sourcePath,
+        deliveryEvidence: {
+          requiredCommands: [
+            {
+              commandId: 'CMD-DELIVERY',
+              blockingIfMissing: true,
+              negativeOrRegression: true,
+              closeoutAttemptId: 'closeout-scoped',
+              artifactRefs: [
+                evidenceArtifactRef(
+                  '_bmad-output\\runtime\\requirement-records\\REQ-CLOSEOUT\\execution\\evidence.json'
+                ),
+              ],
+            },
+          ],
+        },
+        executionIterations: [
+          {
+            executionIterationId: 'exec-001',
+            commandRunRefs: [
+              {
+                commandId: 'CMD-DELIVERY',
+                closeoutAttemptId: 'closeout-scoped',
+                exitCode: 0,
+              },
+            ],
+          },
+        ],
+        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+      });
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      record.extensionRefs = [];
+      record.artifactIndex = record.artifactIndex.filter(
+        (artifact: Record<string, unknown>) =>
+          ![
+            'observability_extension',
+            'production_subsystem_acceptance_report',
+            'production_loop_ready_report',
+            'dataset_release_manifest',
+            'dataset_manifest',
+            'dataset_release_gate_report',
+          ].includes(String(artifact.artifactType))
+      );
+      writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
+
+      const code = mainDeliveryCloseoutGate([
+        '--requirement-record',
+        recordPath,
+        '--source',
+        sourcePath,
+        '--attempt-id',
+        'closeout-scoped',
+        '--evaluated-at',
+        '2026-05-19T00:00:00.000Z',
+        '--json',
+      ]);
+      expect(code).toBe(0);
+      const nextRecord = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(nextRecord.closeout.decision).toBe('pass');
+      expect(nextRecord.lastEventType).toBe('record_closed');
+      expect(nextRecord.closeout.attempts[0].checks).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ id: 'production-subsystem-extension-current', required: false }),
+          expect.objectContaining({ id: 'production-loop-ready-report-current', required: false }),
+          expect.objectContaining({ id: 'dataset-release-artifacts-current', required: false }),
+          expect.objectContaining({ id: 'failure-case-coverage-complete', required: true }),
+        ])
+      );
+    } finally {
+      cleanupTempRoot(root);
+    }
+  });
+
   it('blocks closeout by default for confirmed AI-TDD source with missing acceptance evidence', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-ai-tdd-'));
     try {
@@ -781,6 +876,8 @@ describe('requirement-scoped delivery closeout gate', () => {
     try {
       const recordPath = writeRecord(root, {
         ...baseRecord(),
+        aiTddContractGate: { enforcementMode: 'skipped_by_policy' },
+        sourcePath: path.join(root, 'failure-case-required-source.md'),
         deliveryEvidence: {
           requiredCommands: [
             {
@@ -1113,6 +1210,8 @@ describe('requirement-scoped delivery closeout gate', () => {
       const recordPath = writeRecord(root, {
         ...baseRecord(),
         artifactIndex: [],
+        aiTddContractGate: { enforcementMode: 'skipped_by_policy' },
+        sourcePath: path.join(root, 'failure-case-required-source.md'),
         deliveryEvidence: {
           requiredCommands: [
             {
@@ -1139,6 +1238,17 @@ describe('requirement-scoped delivery closeout gate', () => {
         ],
         requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
       });
+      writeText(
+        path.join(root, 'failure-case-required-source.md'),
+        [
+          'implementationConfirmation:',
+          '  status: user_confirmed',
+          '  applicability:',
+          '    runtimeRecovery:',
+          '      requiresFunctionalResumeFailureCaseRegistry: true',
+          '',
+        ].join('\n')
+      );
       const record = JSON.parse(readFileSync(recordPath, 'utf8'));
       record.artifactIndex = record.artifactIndex.filter(
         (artifact: Record<string, unknown>) => artifact.artifactType !== 'failure_case_coverage'
@@ -1148,6 +1258,8 @@ describe('requirement-scoped delivery closeout gate', () => {
       const code = mainDeliveryCloseoutGate([
         '--requirement-record',
         recordPath,
+        '--source',
+        path.join(root, 'failure-case-required-source.md'),
         '--attempt-id',
         'closeout-failure-case-missing',
         '--evaluated-at',
@@ -1168,6 +1280,8 @@ describe('requirement-scoped delivery closeout gate', () => {
     try {
       const recordPath = writeRecord(root, {
         ...baseRecord(),
+        aiTddContractGate: { enforcementMode: 'skipped_by_policy' },
+        sourcePath: path.join(root, 'dataset-required-source.md'),
         deliveryEvidence: {
           requiredCommands: [
             {
@@ -1245,6 +1359,8 @@ describe('requirement-scoped delivery closeout gate', () => {
     try {
       const recordPath = writeRecord(root, {
         ...baseRecord(),
+        aiTddContractGate: { enforcementMode: 'skipped_by_policy' },
+        sourcePath: path.join(root, 'dataset-required-source.md'),
         deliveryEvidence: {
           requiredCommands: [
             {
@@ -1384,6 +1500,17 @@ describe('requirement-scoped delivery closeout gate', () => {
         ],
         requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
       });
+      writeText(
+        path.join(root, 'dataset-required-source.md'),
+        [
+          'implementationConfirmation:',
+          '  status: user_confirmed',
+          '  applicability:',
+          '    scoringDashboardSft:',
+          '      applies: true',
+          '',
+        ].join('\n')
+      );
       const manifestPath = path.join(
         root,
         '_bmad-output',
@@ -1400,6 +1527,8 @@ describe('requirement-scoped delivery closeout gate', () => {
       const code = mainDeliveryCloseoutGate([
         '--requirement-record',
         recordPath,
+        '--source',
+        path.join(root, 'dataset-required-source.md'),
         '--attempt-id',
         'closeout-stale-dataset',
         '--evaluated-at',
@@ -1876,6 +2005,65 @@ describe('requirement-scoped delivery closeout gate', () => {
         '2026-05-19T00:00:00.000Z',
       ]);
       expect(code).toBe(0);
+    } finally {
+      cleanupTempRoot(root);
+    }
+  });
+
+  it('ignores open closeout-blocker RCA records from superseded attempts', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-superseded-rca-'));
+    try {
+      const recordPath = writeRecord(root, {
+        ...baseRecord(),
+        rcaRecords: [
+          {
+            eventType: 'rca_created',
+            rcaId: 'rca:closeout-old',
+            type: 'closeout_blocker',
+            status: 'open',
+            sourceRefs: [
+              { sourceType: 'failure_record', id: 'failure:closeout-old' },
+              { sourceType: 'closeout_attempt', id: 'closeout-old' },
+            ],
+          },
+        ],
+        deliveryEvidence: {
+          requiredCommands: [
+            {
+              commandId: 'CMD-DELIVERY',
+              blockingIfMissing: true,
+              negativeOrRegression: true,
+              closeoutAttemptId: 'closeout-current',
+              artifactRefs: [evidenceArtifactRef()],
+            },
+          ],
+        },
+        executionIterations: [
+          {
+            executionIterationId: 'exec-001',
+            commandRunRefs: [
+              {
+                commandId: 'CMD-DELIVERY',
+                closeoutAttemptId: 'closeout-current',
+                exitCode: 0,
+              },
+            ],
+          },
+        ],
+        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+      });
+      const code = mainDeliveryCloseoutGate([
+        '--requirement-record',
+        recordPath,
+        '--attempt-id',
+        'closeout-current',
+        '--evaluated-at',
+        '2026-05-19T00:01:00.000Z',
+      ]);
+      expect(code).toBe(0);
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(record.closeout.decision).toBe('pass');
+      expect(record.lastEventType).toBe('record_closed');
     } finally {
       cleanupTempRoot(root);
     }

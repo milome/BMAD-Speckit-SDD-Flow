@@ -276,12 +276,15 @@ function withActiveSourceRoot<T>(sourcePath: string, fn: () => T): T {
 function extractCommandFileRefs(command: string): string[] {
   const refs = new Set<string>();
   const normalized = resolveSkillPlaceholders(command).replace(/\r?\n/gu, ' ');
-  const matches = normalized.matchAll(
-    /(?<![A-Za-z0-9_@.-])((?:[A-Za-z]:)?[./\\A-Za-z0-9_-][A-Za-z0-9_./\\-]*\.(?:test|spec)\.(?:tsx|ts|jsx|js|mjs|cjs)|[./\\A-Za-z0-9_-][A-Za-z0-9_./\\-]*\.(?:tsx|ts|jsx|json|mjs|cjs|js|ya?ml|md))(?=$|[^A-Za-z0-9_.-])/giu
-  );
-  for (const match of matches) {
-    const ref = match[1];
-    if (/[\\/]/u.test(ref) || /\.(?:test|spec)\./iu.test(ref)) refs.add(ref);
+  const tokens = normalized.match(/"[^"]+"|'[^']+'|\S+/gu) ?? [];
+  for (const token of tokens) {
+    const ref = token.replace(/^['"]|['"]$/gu, '');
+    if (
+      /(?:^|[\\/])[^\\/]+\.(?:tsx|ts|jsx|json|mjs|cjs|js|ya?ml|md)$/iu.test(ref) &&
+      (/[\\/]/u.test(ref) || /\.(?:test|spec)\./iu.test(ref))
+    ) {
+      refs.add(ref);
+    }
   }
   return [...refs];
 }
@@ -1193,36 +1196,71 @@ function legacyDenial(
   };
 }
 
-function closeoutProof(confirmation: JsonObject, targetArtifacts: JsonObject[]): JsonObject {
+function closeoutProof(
+  confirmation: JsonObject,
+  targetArtifacts: JsonObject[],
+  requiredCommandRows: JsonObject[],
+  commandTargets: JsonObject
+): JsonObject {
+  const projection = nested(nested(confirmation.aiTddContractExecutionManifestProjection).closeoutProof);
   const preview = nested(confirmation.closeoutReadinessPreview);
-  const requiredCommands = strings(preview.requiredCommands);
+  const projectedCommands = strings(projection.requiredCommands);
+  const previewCommands = strings(preview.requiredCommands);
+  const requiredCommands = projectedCommands.length
+    ? strings(projection.requiredCommands)
+    : strings(preview.requiredCommands);
+  const manifestCommandTargets = objects(commandTargets.rows)
+    .map((row) => text(row.id))
+    .filter(Boolean);
   const policies = [
+    ...strings(projection.policies),
     text(preview.orphanPolicy),
     text(preview.currentAttemptPolicy),
     text(preview.recordClosedPolicy),
   ].filter(Boolean);
-  const targetRefs = targetArtifacts
-    .filter((row) => text(row.kind) !== 'legacy_policy')
-    .map((row) => text(row.id) || text(row.pathOrField))
-    .filter(Boolean);
+  const targetRefs = strings(projection.targetRefs).length
+    ? strings(projection.targetRefs)
+    : targetArtifacts
+        .filter((row) => text(row.kind) !== 'legacy_policy')
+        .map((row) => text(row.id) || text(row.pathOrField))
+        .filter(Boolean);
+  const commandIds = new Set(requiredCommandRows.map((row) => commandId(row)).filter(Boolean));
+  const explicitCommandRefs = new Set([
+    ...objects(confirmation.traceRows).flatMap((row) => commandRefs(row)),
+    ...objects(confirmation.acceptanceTests).flatMap((row) => commandRefs(row)),
+    ...objects(confirmation.e2eSuites).flatMap((row) => commandRefs(row)),
+  ]);
+  const closeoutCandidateCommands = manifestCommandTargets.filter((id) => explicitCommandRefs.has(id));
+  const normalizedRequiredCommands = unique([...requiredCommands, ...closeoutCandidateCommands]);
+  const unresolvedCommands = normalizedRequiredCommands.filter((id) => !commandIds.has(id));
+  const missingFromProjection = closeoutCandidateCommands.filter((id) => !projectedCommands.includes(id));
   const missing = [
-    ...(requiredCommands.length > 0 ? [] : ['closeout_proof_required_commands_missing']),
+    ...(normalizedRequiredCommands.length > 0 ? [] : ['closeout_proof_required_commands_missing']),
+    ...unresolvedCommands.map((id) => `closeout_proof_required_command_missing:${id}`),
     ...(policies.length > 0 ? [] : ['closeout_proof_policies_missing']),
     ...(targetRefs.length > 0 ? [] : ['closeout_proof_target_refs_missing']),
   ];
   return {
     decision: missing.length === 0 ? 'pass' : 'blocked',
     ready: missing.length === 0,
-    requiredCommands,
+    requiredCommands: normalizedRequiredCommands,
+    sourceRequiredCommands: requiredCommands,
+    projectionRequiredCommands: projectedCommands,
+    previewRequiredCommands: previewCommands,
+    normalizedFromCommandTargets: missingFromProjection,
     policies,
     targetRefs,
     missing: missing.map((code) => ({
-      id: 'closeoutReadinessPreview',
+      id: strings(projection.requiredCommands).length
+        ? 'aiTddContractExecutionManifestProjection.closeoutProof'
+        : 'closeoutReadinessPreview',
       code,
       category: 'CLOSEOUT_PROOF',
     })),
     summary: {
-      requiredCommandCount: requiredCommands.length,
+      requiredCommandCount: normalizedRequiredCommands.length,
+      sourceRequiredCommandCount: requiredCommands.length,
+      normalizedCommandCount: missingFromProjection.length,
       policyCount: policies.length,
       targetRefCount: targetRefs.length,
       missingCount: missing.length,
@@ -1381,7 +1419,13 @@ function buildManifest(input: {
     targetArtifacts as unknown as JsonObject[],
     controls
   );
-  const closeoutProofPlan = closeoutProof(confirmation, targetArtifacts as unknown as JsonObject[]);
+  const requiredCommandRows = objects(confirmation.requiredCommands);
+  const closeoutProofPlan = closeoutProof(
+    confirmation,
+    targetArtifacts as unknown as JsonObject[],
+    requiredCommandRows,
+    commandTargets
+  );
   const evidenceTrust = evidenceTrustStates(confirmation);
   const targetModificationRows = targetModificationPaths(confirmation);
   const targetModificationCoverage = targetModificationPathCoverage({
@@ -1415,7 +1459,7 @@ function buildManifest(input: {
       acceptanceRefs: strings(row.acceptanceRefs),
       status: text(row.status),
     })),
-    requiredCommands: objects(confirmation.requiredCommands).map((row) => ({
+    requiredCommands: requiredCommandRows.map((row) => ({
       id: commandId(row),
       command: text(row.command),
       role: text(row.role) || text(row.commandRole) || text(row.gate),

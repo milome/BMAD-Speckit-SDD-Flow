@@ -7,7 +7,12 @@ import yaml from 'js-yaml';
 import { canonicalizeRequirementRecord } from './requirement-record-control-store';
 
 type Decision = 'pass' | 'blocked';
-type TargetKind = 'file_artifact' | 'record_field' | 'event_journal' | 'legacy_policy';
+type TargetKind =
+  | 'file_artifact'
+  | 'record_field'
+  | 'event_journal'
+  | 'legacy_policy'
+  | 'logical_surface';
 export type JsonObject = Record<string, unknown>;
 
 interface ParsedArgs {
@@ -46,6 +51,27 @@ const SHA256_RE = /^sha256:[a-f0-9]{64}$/u;
 const RECORD_PREFIX = 'RequirementRecord.';
 const LEGACY_POLICIES = new Set(['legacy_only', 'not_completion_proof']);
 const REQUIRED_PROOF_POLICIES = new Set(['required_current_proof']);
+const RECORD_FIELD_ROOTS = new Set([
+  'artifactIndex',
+  'closeout',
+  'contractChecks',
+  'deliveryEvidence',
+  'executionIterations',
+  'extensionRefs',
+  'failureRecords',
+  'gateChecks',
+  'requirementClosures',
+  'rerunLoops',
+]);
+const POST_CLOSEOUT_SURFACES = new Set([
+  'postCloseoutConfirmationReview',
+  '_bmad-output/runtime/requirement-records/<recordId>/confirmation/closeout-review-<closeoutAttemptId>.html',
+  '_bmad-output/runtime/requirement-records/<recordId>/confirmation/closeout-review-<closeoutAttemptId>.render-report.json',
+]);
+const SUCCESS_PATH_OPTIONAL_SURFACES = new Set([
+  '_bmad-output/runtime/requirement-records/<recordId>/evidence/<runId>/implementation-evidence-packet.failed.json',
+  '_bmad-output/runtime/requirement-records/<recordId>/evidence/<runId>/ai-tdd-closeout-report.json',
+]);
 const CONFIRMATION_BOOKKEEPING_FIELDS = new Set([
   'status',
   'confirmedAt',
@@ -162,7 +188,7 @@ function stableStringify(value: unknown): string {
   if (!value || typeof value !== 'object') return JSON.stringify(value);
   const entries = Object.entries(value as JsonObject)
     .filter(([, item]) => item !== undefined)
-    .sort(([left], [right]) => left.localeCompare(right));
+    .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0));
   return `{${entries.map(([key, item]) => `${JSON.stringify(key)}:${stableStringify(item)}`).join(',')}}`;
 }
 
@@ -255,21 +281,143 @@ function hasValue(value: unknown): boolean {
   return text(value).length > 0 || typeof value === 'boolean' || typeof value === 'number';
 }
 
+function sentinelForRecordField(field: string): unknown {
+  const now = '2026-01-01T00:00:00.000Z';
+  if (field === 'closeout') {
+    return {
+      currentAttemptId: 'sentinel-closeout-attempt',
+      attempts: [{ closeoutAttemptId: 'sentinel-closeout-attempt', decision: 'blocked', checkedAt: now }],
+    };
+  }
+  if (field === 'deliveryEvidence') {
+    return {
+      requiredCommands: [
+        {
+          commandId: 'CMD-SENTINEL',
+          command: 'node --version',
+          blockingIfMissing: true,
+          negativeOrRegression: true,
+          closeoutAttemptId: 'sentinel-closeout-attempt',
+          lastRunRef: {
+            commandId: 'CMD-SENTINEL',
+            runId: 'run-sentinel',
+            closeoutAttemptId: 'sentinel-closeout-attempt',
+          },
+          traceRows: ['TRACE-SENTINEL'],
+          evidenceRefs: ['EVD-SENTINEL'],
+          artifactRefs: [
+            {
+              artifactType: 'command_output',
+              sourceOfTruthRole: 'evidence',
+              path: '_bmad-output/runtime/requirement-records/REQ-SENTINEL/evidence/run-sentinel/output.txt',
+              contentHash: 'sha256:0000000000000000000000000000000000000000000000000000000000000000',
+              producer: 'canonical-reducer-sentinel',
+              purpose: 'schema reducer replay sentinel',
+              relatedRequirementIds: ['TRACE-SENTINEL', 'EVD-SENTINEL'],
+              status: 'active',
+              inputVersion: 'sentinel',
+              outputVersion: 'sentinel',
+            },
+          ],
+        },
+      ],
+    };
+  }
+  if (field === 'requirementClosures') {
+    return [{ requirementId: 'TRACE-SENTINEL', status: 'pass', closureSource: 'schema_reducer_sentinel' }];
+  }
+  return [{ sentinel: field }];
+}
+
 function isPathLike(value: string): boolean {
   return /[\\/]/u.test(value) || /\.[a-z0-9]{1,8}$/iu.test(value);
 }
 
+function filePathPrefix(value: string): string {
+  const normalized = normalizePath(value);
+  const match = /^(.+\.[a-z0-9]{1,8})(?:\s+.+)?$/iu.exec(normalized);
+  return match ? match[1] : normalized;
+}
+
+function recordFieldPath(value: string): string {
+  return value
+    .replace(/\[\]/gu, '')
+    .replace(/^\./u, '')
+    .trim();
+}
+
+function isRequirementRecordFieldRef(value: string): boolean {
+  const fieldPath = value.startsWith(RECORD_PREFIX) ? value.slice(RECORD_PREFIX.length) : value;
+  const root = recordFieldPath(fieldPath).split('.')[0];
+  return RECORD_FIELD_ROOTS.has(root);
+}
+
+function targetKindForPathOrField(value: string): TargetKind {
+  if (value.startsWith(RECORD_PREFIX) || isRequirementRecordFieldRef(value)) return 'record_field';
+  if (value.endsWith('control-events.jsonl')) return 'event_journal';
+  if (
+    value.startsWith('ContractExecutionManifest.') ||
+    value === 'postCloseoutConfirmationReview' ||
+    (/\s/u.test(value) && !isPathLike(value))
+  ) {
+    return 'logical_surface';
+  }
+  return 'file_artifact';
+}
+
+function normalizedExpectedSourceOfTruthRole(role: string): string {
+  const aliases: Record<string, string> = {
+    acceptance_evidence: 'evidence',
+    closeout_remediation_coordinator: 'evidence',
+    compatibility_launcher: 'evidence',
+    controlled_ingest_input: 'evidence',
+    controlled_ingest_validator: 'evidence',
+    current_attempt_command_evidence: 'evidence',
+    delegation_adapter: 'evidence',
+    final_closeout_decision: 'evidence',
+    implementation: 'evidence',
+    legacy_compatibility: 'evidence',
+    post_closeout_review_evidence: 'evidence',
+    post_closeout_review_projection: 'projection',
+  };
+  return aliases[role] ?? role;
+}
+
 function replaceKnownPlaceholders(value: string, record: JsonObject, attemptId: string): string {
+  const activeRunId =
+    text(record.runId) ||
+    text(
+      objects(record.executionIterations)
+        .filter((iteration) => text(iteration.closeoutAttemptId) === attemptId)
+        .at(-1)?.runId
+    ) ||
+    text(
+      objects(record.executionIterations)
+        .filter((iteration) =>
+          objects(iteration.commandRunRefs).some((run) => text(run.closeoutAttemptId) === attemptId)
+        )
+        .at(-1)?.runId
+    );
   return value
     .replace(/<requirement-set-id>/gu, text(record.requirementSetId) || text(record.recordId))
+    .replace(/<requirementSetId>/gu, text(record.requirementSetId) || text(record.recordId))
     .replace(/<record-id>/gu, text(record.recordId))
+    .replace(/<recordId>/gu, text(record.recordId))
     .replace(/<closeout-attempt-id>/gu, attemptId)
-    .replace(/<attempt-id>/gu, attemptId);
+    .replace(/<closeoutAttemptId>/gu, attemptId)
+    .replace(/<attempt-id>/gu, attemptId)
+    .replace(/<attemptId>/gu, attemptId)
+    .replace(/<runId>/gu, activeRunId || '<runId>')
+    .replace(/<run-id>/gu, activeRunId || '<run-id>');
 }
 
 function templateToRegExp(value: string, record: JsonObject, attemptId: string): RegExp {
   const replaced = replaceKnownPlaceholders(normalizePath(value), record, attemptId);
-  const escaped = replaced.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&').replace(/<[^>]+>/gu, '[^/]+');
+  let escaped = replaced.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&').replace(/<[^>]+>/gu, '[^/]+');
+  escaped = escaped.replace(
+    /\/evidence\/((?:[^/]+|\[\^\/\]\+))\//gu,
+    '/evidence/(?:[^/]+/)?$1/'
+  );
   return new RegExp(`(^|/)${escaped}$`, 'u');
 }
 
@@ -278,16 +426,19 @@ function resolveDeclaredPath(
   record: JsonObject,
   attemptId: string
 ): { displayPath: string; absolutePath?: string; pattern?: RegExp } {
-  const replaced = replaceKnownPlaceholders(value, record, attemptId);
+  const pathValue = filePathPrefix(value);
+  const replaced = replaceKnownPlaceholders(pathValue, record, attemptId);
+  const pattern = /<[^>]+>/u.test(pathValue) ? templateToRegExp(pathValue, record, attemptId) : undefined;
   if (/<[^>]+>/u.test(replaced)) {
     return {
       displayPath: normalizePath(replaced),
-      pattern: templateToRegExp(value, record, attemptId),
+      pattern,
     };
   }
   return {
     displayPath: normalizePath(replaced),
     absolutePath: path.isAbsolute(replaced) ? replaced : path.resolve(replaced),
+    pattern,
   };
 }
 
@@ -441,7 +592,7 @@ export function deriveTargetArtifactChecklist(confirmation: JsonObject): TargetI
     if (rowPath) {
       pushTarget(targets, {
         id,
-        kind: rowPath.endsWith('control-events.jsonl') ? 'event_journal' : 'file_artifact',
+        kind: targetKindForPathOrField(rowPath),
         sourceSection,
         pathOrField: rowPath,
         expectedProducer: text(row.producer),
@@ -481,11 +632,7 @@ export function deriveTargetArtifactChecklist(confirmation: JsonObject): TargetI
     const links = resolveLinks(collectLinkedIds(row));
     pushTarget(targets, {
       id,
-      kind: pathOrField.startsWith(RECORD_PREFIX)
-        ? 'record_field'
-        : pathOrField.endsWith('control-events.jsonl')
-          ? 'event_journal'
-          : 'file_artifact',
+      kind: targetKindForPathOrField(pathOrField),
       sourceSection,
       pathOrField,
       traceRefs: links.traceRefs,
@@ -507,7 +654,7 @@ export function deriveTargetArtifactChecklist(confirmation: JsonObject): TargetI
     const links = resolveLinks(collectLinkedIds(row));
     pushTarget(targets, {
       id: text(row.id) || text(row.category) || declaredPath,
-      kind: declaredPath.endsWith('control-events.jsonl') ? 'event_journal' : 'file_artifact',
+      kind: targetKindForPathOrField(declaredPath),
       sourceSection,
       pathOrField: declaredPath,
       expectedSourceOfTruthRole: text(row.sourceOfTruthRole) || text(row.targetRole),
@@ -574,7 +721,7 @@ function artifactPathMatches(
 ): boolean {
   const artifactPath = normalizePath(text(item.path));
   if (!artifactPath) return false;
-  if (declared.pattern) return declared.pattern.test(artifactPath);
+  if (declared.pattern?.test(artifactPath)) return true;
   const wanted = normalizePath(declared.absolutePath ?? declared.displayPath);
   return (
     artifactPath === wanted ||
@@ -583,11 +730,41 @@ function artifactPathMatches(
   );
 }
 
+function artifactAliasMatches(item: JsonObject, target: TargetItem): boolean {
+  const searchable = [
+    text(item.artifactId),
+    text(item.id),
+    text(item.pathOrField),
+    text(item.logicalSurface),
+    ...strings(item.aliases),
+    ...strings(item.relatedRequirementIds),
+  ];
+  return [target.id, target.pathOrField, ...(target.aliases ?? [])]
+    .filter(Boolean)
+    .some((alias) => searchable.includes(alias));
+}
+
 function artifactIndexEntry(
   record: JsonObject,
-  declared: { displayPath: string; absolutePath?: string; pattern?: RegExp }
+  declared: { displayPath: string; absolutePath?: string; pattern?: RegExp },
+  target: TargetItem | undefined,
+  attemptId: string,
+  events: JsonObject[]
 ): JsonObject | undefined {
-  return objects(record.artifactIndex).find((item) => artifactPathMatches(item, declared));
+  const matches = objects(record.artifactIndex).filter(
+    (item) => artifactPathMatches(item, declared) || (target ? artifactAliasMatches(item, target) : false)
+  );
+  return matches.find((item) => artifactBoundToAttempt(record, item, attemptId, events)) ?? matches.at(-1);
+}
+
+function artifactIdentityMatches(
+  entryPath: string,
+  entryHash: string,
+  refPath: string,
+  refHash: string
+): boolean {
+  if (entryHash && refHash) return entryHash === refHash;
+  return Boolean(entryPath && refPath && entryPath === refPath) || Boolean(entryHash && refHash && entryHash === refHash);
 }
 
 function artifactBoundToAttempt(
@@ -607,7 +784,13 @@ function artifactBoundToAttempt(
   const commandRefs = commandRunsForAttempt(record, attemptId);
   if (
     commandRefs.some(
-      (run) => text(run.artifactPath) === artifactPath || text(run.artifactHash) === artifactHash
+      (run) =>
+        artifactIdentityMatches(
+          artifactPath,
+          artifactHash,
+          normalizePath(text(run.artifactPath)),
+          text(run.artifactHash)
+        )
     )
   )
     return true;
@@ -621,8 +804,12 @@ function artifactBoundToAttempt(
     if (
       refs.some(
         (ref) =>
-          normalizePath(text(ref.path)) === artifactPath ||
-          text(ref.contentHash ?? ref.hash) === artifactHash
+          artifactIdentityMatches(
+            artifactPath,
+            artifactHash,
+            normalizePath(text(ref.path)),
+            text(ref.contentHash ?? ref.hash)
+          )
       )
     )
       return true;
@@ -638,8 +825,12 @@ function artifactBoundToAttempt(
     ];
     return refs.some(
       (ref) =>
-        normalizePath(text(ref.path)) === artifactPath ||
-        text(ref.contentHash ?? ref.hash) === artifactHash
+        artifactIdentityMatches(
+          artifactPath,
+          artifactHash,
+          normalizePath(text(ref.path)),
+          text(ref.contentHash ?? ref.hash)
+        )
     );
   });
 }
@@ -661,6 +852,83 @@ function artifactLinksPresent(entry: JsonObject | undefined, target: TargetItem)
   return issues;
 }
 
+function postCloseoutReviewReportIssues(input: {
+  target: TargetItem;
+  record: JsonObject;
+  declared: { displayPath: string; absolutePath?: string; pattern?: RegExp };
+  concreteFile?: string;
+  attemptId: string;
+}): GateIssue[] {
+  const issues: GateIssue[] = [];
+  const filePath = input.concreteFile;
+  if (!filePath || !fs.existsSync(filePath)) return issues;
+  if (!input.target.pathOrField.endsWith('.render-report.json')) return issues;
+  let report: JsonObject = {};
+  try {
+    report = JSON.parse(fs.readFileSync(filePath, 'utf8')) as JsonObject;
+  } catch {
+    return [
+      issue('post_closeout_review_report_invalid', `${input.target.pathOrField} is not parseable JSON`, [
+        input.target.id,
+      ]),
+    ];
+  }
+  const finalAcceptance = nested(report.finalAcceptanceReview);
+  const reportAttemptId = text(finalAcceptance.currentAttemptId) || text(finalAcceptance.closeoutAttemptId);
+  if (text(report.mode) !== 'closeout-review') {
+    issues.push(
+      issue('post_closeout_review_report_mode_mismatch', `${input.target.pathOrField} is not closeout-review mode`, [
+        input.target.id,
+      ])
+    );
+  }
+  if (finalAcceptance.ready !== true) {
+    issues.push(
+      issue('post_closeout_review_not_ready', `${input.target.pathOrField} finalAcceptanceReview.ready is not true`, [
+        input.target.id,
+      ])
+    );
+  }
+  if (reportAttemptId !== input.attemptId) {
+    issues.push(
+      issue(
+        'post_closeout_review_attempt_mismatch',
+        `${input.target.pathOrField} attempt ${reportAttemptId || '<missing>'} does not match ${input.attemptId}`,
+        [input.target.id]
+      )
+    );
+  }
+  if (finalAcceptance.recordClosed !== true) {
+    issues.push(
+      issue('post_closeout_review_record_closed_missing', `${input.target.pathOrField} does not prove record_closed`, [
+        input.target.id,
+      ])
+    );
+  }
+  const expectedSourceHash = text(input.record.sourceDocumentHash);
+  const expectedImplementationHash = text(input.record.implementationConfirmationHash);
+  if (expectedSourceHash && text(report.sourceDocumentHash) !== expectedSourceHash) {
+    issues.push(
+      issue('post_closeout_review_source_hash_mismatch', `${input.target.pathOrField} source hash is stale`, [
+        input.target.id,
+      ])
+    );
+  }
+  if (
+    expectedImplementationHash &&
+    text(report.implementationConfirmationHash) !== expectedImplementationHash
+  ) {
+    issues.push(
+      issue(
+        'post_closeout_review_implementation_hash_mismatch',
+        `${input.target.pathOrField} implementation confirmation hash is stale`,
+        [input.target.id]
+      )
+    );
+  }
+  return issues;
+}
+
 function validateFileTarget(input: {
   target: TargetItem;
   record: JsonObject;
@@ -669,10 +937,38 @@ function validateFileTarget(input: {
   events: JsonObject[];
 }): GateIssue[] {
   const issues: GateIssue[] = [];
+  const events = input.events;
+  if (POST_CLOSEOUT_SURFACES.has(input.target.pathOrField) && !currentAttemptClosed(input.record, input.attemptId, events)) {
+    return [];
+  }
+  if (SUCCESS_PATH_OPTIONAL_SURFACES.has(input.target.pathOrField)) {
+    return [];
+  }
   const declared = resolveDeclaredPath(input.target.pathOrField, input.record, input.attemptId);
   const concreteFile = declared.absolutePath;
   const exists = concreteFile ? fs.existsSync(concreteFile) : false;
-  const entry = artifactIndexEntry(input.record, declared);
+  if (POST_CLOSEOUT_SURFACES.has(input.target.pathOrField)) {
+    if (!exists) {
+      issues.push(
+        issue(
+          'target_artifact_missing',
+          `${input.target.pathOrField} does not exist`,
+          [input.target.id]
+        )
+      );
+    }
+    issues.push(
+      ...postCloseoutReviewReportIssues({
+        target: input.target,
+        record: input.record,
+        declared,
+        concreteFile,
+        attemptId: input.attemptId,
+      })
+    );
+    return issues;
+  }
+  const entry = artifactIndexEntry(input.record, declared, input.target, input.attemptId, input.events);
   if (!exists && !entry) {
     issues.push(
       issue(
@@ -736,7 +1032,8 @@ function validateFileTarget(input: {
     );
   } else if (
     input.target.expectedSourceOfTruthRole &&
-    text(entry.sourceOfTruthRole) !== input.target.expectedSourceOfTruthRole
+    normalizedExpectedSourceOfTruthRole(text(entry.sourceOfTruthRole)) !==
+      normalizedExpectedSourceOfTruthRole(input.target.expectedSourceOfTruthRole)
   ) {
     issues.push(
       issue(
@@ -804,9 +1101,11 @@ function validateRecordFieldTarget(
   attemptId: string,
   events: JsonObject[]
 ): GateIssue[] {
-  const fieldPath = target.pathOrField.startsWith(RECORD_PREFIX)
-    ? target.pathOrField.slice(RECORD_PREFIX.length)
-    : target.pathOrField;
+  const fieldPath = recordFieldPath(
+    target.pathOrField.startsWith(RECORD_PREFIX)
+      ? target.pathOrField.slice(RECORD_PREFIX.length)
+      : target.pathOrField
+  );
   const issues: GateIssue[] = [];
   if (!hasValue(fieldValue(record, fieldPath))) {
     issues.push(
@@ -829,21 +1128,95 @@ function validateRecordFieldTarget(
   return issues;
 }
 
+function currentAttemptClosed(record: JsonObject, attemptId: string, events: JsonObject[]): boolean {
+  if (text(record.lastEventType) === 'record_closed' && text(nested(record.closeout).currentAttemptId) === attemptId) {
+    return true;
+  }
+  return events.some((event) => {
+    if (text(event.eventType) !== 'record_closed') return false;
+    const payload = nested(event.payload);
+    return (
+      text(payload.closeoutAttemptId) === attemptId ||
+      text(nested(payload.packet).closeoutAttemptId) === attemptId ||
+      text(nested(payload.closeout).currentAttemptId) === attemptId
+    );
+  });
+}
+
+function validateLogicalSurfaceTarget(
+  target: TargetItem,
+  record: JsonObject,
+  attemptId: string,
+  events: JsonObject[]
+): GateIssue[] {
+  if (POST_CLOSEOUT_SURFACES.has(target.pathOrField) && !currentAttemptClosed(record, attemptId, events)) {
+    return [];
+  }
+  const fieldPath = target.pathOrField.startsWith(RECORD_PREFIX)
+    ? target.pathOrField.slice(RECORD_PREFIX.length)
+    : target.pathOrField;
+  if (isRequirementRecordFieldRef(fieldPath)) {
+    return validateRecordFieldTarget(
+      { ...target, kind: 'record_field', pathOrField: `${RECORD_PREFIX}${recordFieldPath(fieldPath)}` },
+      record,
+      attemptId,
+      events
+    );
+  }
+  const artifact = objects(record.artifactIndex).find((item) => artifactAliasMatches(item, target));
+  if (artifact) {
+    return artifactBoundToAttempt(record, artifact, attemptId, events)
+      ? []
+      : [
+          issue(
+            'target_logical_surface_attempt_binding_missing',
+            `${target.pathOrField} not bound to current attempt ${attemptId}`,
+            [target.id]
+          ),
+        ];
+  }
+  const hasAttemptEvidence = recordFieldBoundToAttempt(record, target, attemptId, events);
+  return hasAttemptEvidence
+    ? []
+    : [
+        issue(
+          'target_logical_surface_evidence_missing',
+          `${target.pathOrField} lacks current-attempt evidence binding`,
+          [target.id]
+        ),
+      ];
+}
+
 function legacyUsedAsCompletionProof(
   record: JsonObject,
   token: string,
   events: JsonObject[]
 ): boolean {
-  const haystack = [
+  const proofValues = [
     text(record.lastEventType),
-    ...events.map((event) => text(event.eventType)),
-    ...objects(record.requirementClosures).flatMap((closure) => [
-      text(closure.status) === 'pass' ? JSON.stringify(closure) : '',
-    ]),
-    ...objects(nested(record.deliveryEvidence).requiredCommands).map((command) =>
-      JSON.stringify(command)
+    ...events
+      .filter((event) => ['record_closed', 'requirement_closure_recorded'].includes(text(event.eventType)))
+      .map((event) => text(event.eventType)),
+    ...objects(record.requirementClosures).flatMap((closure) =>
+      text(closure.status) === 'pass'
+        ? [
+            text(closure.proofPath),
+            text(closure.proofRef),
+            text(closure.completionProofPath),
+            text(closure.completionProofRef),
+            ...strings(closure.completionProofRefs),
+            ...strings(closure.completionProofPaths),
+          ]
+        : []
     ),
-  ].join('\n');
+    ...objects(nested(record.deliveryEvidence).requiredCommands).flatMap((command) => [
+      text(command.completionProofPath),
+      text(command.completionProofRef),
+      ...strings(command.completionProofRefs),
+      ...strings(command.completionProofPaths),
+    ]),
+  ];
+  const haystack = proofValues.filter(Boolean).join('\n');
   return haystack.includes(token);
 }
 
@@ -907,6 +1280,8 @@ export function evaluateTargetArtifactRealization(input: {
       issues.push(...validateRecordFieldTarget(target, input.record, input.attemptId, events));
     else if (target.kind === 'legacy_policy')
       issues.push(...validateLegacyPolicyTarget(target, input.record, events));
+    else if (target.kind === 'logical_surface')
+      issues.push(...validateLogicalSurfaceTarget(target, input.record, input.attemptId, events));
     else
       issues.push(
         ...validateFileTarget({
@@ -937,12 +1312,15 @@ export function evaluateTargetArtifactRealization(input: {
 function extractCommandFileRefs(command: string): string[] {
   const refs = new Set<string>();
   const normalized = resolveSkillPlaceholders(command).replace(/\r?\n/gu, ' ');
-  const matches = normalized.matchAll(
-    /(?<![A-Za-z0-9_@.-])((?:[A-Za-z]:)?[./\\A-Za-z0-9_-][A-Za-z0-9_./\\-]*\.(?:test|spec)\.(?:tsx|ts|jsx|js|mjs|cjs)|[./\\A-Za-z0-9_-][A-Za-z0-9_./\\-]*\.(?:tsx|ts|jsx|json|mjs|cjs|js|ya?ml|md))(?=$|[^A-Za-z0-9_.-])/giu
-  );
-  for (const match of matches) {
-    const ref = match[1];
-    if (/[\\/]/u.test(ref) || /\.(?:test|spec)\./iu.test(ref)) refs.add(ref);
+  const tokens = normalized.match(/"[^"]+"|'[^']+'|\S+/gu) ?? [];
+  for (const token of tokens) {
+    const ref = token.replace(/^['"]|['"]$/gu, '');
+    if (
+      /(?:^|[\\/])[^\\/]+\.(?:tsx|ts|jsx|json|mjs|cjs|js|ya?ml|md)$/iu.test(ref) &&
+      (/[\\/]/u.test(ref) || /\.(?:test|spec)\./iu.test(ref))
+    ) {
+      refs.add(ref);
+    }
   }
   return [...refs];
 }
@@ -997,11 +1375,10 @@ function declaredRecordFields(confirmation: JsonObject): string[] {
   const fields = new Set<string>();
   for (const target of deriveTargetArtifactChecklist(confirmation)) {
     if (target.kind === 'record_field') {
-      fields.add(
-        target.pathOrField.startsWith(RECORD_PREFIX)
-          ? target.pathOrField.slice(RECORD_PREFIX.length).split('.')[0]
-          : target.pathOrField.split('.')[0]
-      );
+      const fieldPath = target.pathOrField.startsWith(RECORD_PREFIX)
+        ? target.pathOrField.slice(RECORD_PREFIX.length)
+        : target.pathOrField;
+      fields.add(recordFieldPath(fieldPath).split('.')[0]);
     }
   }
   for (const eventType of objects(confirmation.governanceEventTypeRegistry)) {
@@ -1042,7 +1419,7 @@ export function evaluateCanonicalSchemaReducerGate(input: {
     }
   }
   if (input.record && fields.length > 0) {
-    const sentinel = Object.fromEntries(fields.map((field) => [field, [{ sentinel: field }]]));
+    const sentinel = Object.fromEntries(fields.map((field) => [field, sentinelForRecordField(field)]));
     const reduced = canonicalizeRequirementRecord({
       ...input.record,
       recordId: text(input.record.recordId) || 'REQ-FIXTURE',
@@ -1081,6 +1458,8 @@ export function evaluateCanonicalEventRegistryGate(input: {
   const { confirmation, sourcePath } = readImplementationConfirmation(input.sourcePath);
   const issues: GateIssue[] = [];
   const eventRows = objects(confirmation.governanceEventTypeRegistry);
+  const writers = objects(confirmation.controlledIngestWriterRegistry);
+  const coveredEvents = new Set(writers.flatMap((writer) => strings(writer.allowedEventTypes)));
   for (const row of eventRows) {
     const eventType = text(row.eventType);
     if (!eventType) {
@@ -1113,7 +1492,8 @@ export function evaluateCanonicalEventRegistryGate(input: {
     }
     if (
       strings(row.writesControlFields).length > 0 &&
-      strings(row.allowedWriterRefs).length === 0
+      strings(row.allowedWriterRefs).length === 0 &&
+      !coveredEvents.has(eventType)
     ) {
       issues.push(
         issue(
@@ -1124,8 +1504,6 @@ export function evaluateCanonicalEventRegistryGate(input: {
       );
     }
   }
-  const writers = objects(confirmation.controlledIngestWriterRegistry);
-  const coveredEvents = new Set(writers.flatMap((writer) => strings(writer.allowedEventTypes)));
   for (const row of eventRows) {
     const eventType = text(row.eventType);
     if (eventType && strings(row.writesControlFields).length > 0 && !coveredEvents.has(eventType)) {
@@ -1153,6 +1531,9 @@ export function evaluateCanonicalEventRegistryGate(input: {
 
 export function evaluateReverseAuditReadinessGate(input: {
   sourcePath: string;
+  record?: JsonObject;
+  recordPath?: string;
+  attemptId?: string;
   evaluatedAt?: string;
   evaluatedBy?: string;
 }): JsonObject {
@@ -1161,7 +1542,15 @@ export function evaluateReverseAuditReadinessGate(input: {
   );
   const result = spawnSync(
     process.execPath,
-    [script, path.resolve(input.sourcePath), '--mode', 'readiness', '--json'],
+    [
+      script,
+      path.resolve(input.sourcePath),
+      '--mode',
+      'readiness',
+      ...(input.recordPath ? ['--requirement-record', path.resolve(input.recordPath)] : []),
+      ...(input.attemptId ? ['--attempt-id', input.attemptId] : []),
+      '--json',
+    ],
     {
       cwd: process.cwd(),
       encoding: 'utf8',
@@ -1179,7 +1568,13 @@ export function evaluateReverseAuditReadinessGate(input: {
   }
   const rendererReadiness = nested(nested(auditReport.rendererAuthority).deliveryReadiness);
   const directReadiness = nested(auditReport.deliveryReadiness);
-  const readiness = rendererReadiness.ready ?? directReadiness.ready;
+  const effectiveReadiness =
+    Object.keys(directReadiness).length > 0
+      ? directReadiness
+      : Object.keys(rendererReadiness).length > 0
+        ? rendererReadiness
+        : {};
+  const readiness = effectiveReadiness.ready;
   if (result.status !== 0)
     issues.push(
       issue('reverse_audit_exit_nonzero', `reverse audit exitCode=${result.status ?? '<null>'}`)
@@ -1202,12 +1597,9 @@ export function evaluateReverseAuditReadinessGate(input: {
     blockingReasons,
     exitCode: result.status,
     auditVerdict: text(auditReport.verdict),
-    deliveryReadiness:
-      Object.keys(rendererReadiness).length > 0
-        ? rendererReadiness
-        : Object.keys(directReadiness).length > 0
-          ? directReadiness
-          : null,
+    auditFailedChecks: strings(auditReport.failedChecks),
+    auditFindings: objects(auditReport.findings),
+    deliveryReadiness: Object.keys(effectiveReadiness).length > 0 ? effectiveReadiness : null,
     issues,
   };
 }

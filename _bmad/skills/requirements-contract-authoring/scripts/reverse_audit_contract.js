@@ -42,6 +42,8 @@ Options:
   --render-report <path>      Use an explicit confirmation-render-report.json.
   --drilldown-gate-report <path>
                               Use an explicit pre-render MUST decomposition gate report.
+  --requirement-record <path> Use controlled requirement-record.json for readiness-mode runtime evidence.
+  --attempt-id <id>           Evaluate readiness against this current closeout attempt.
   --confirmation-dir <dir>    Discover confirmation-render-report.json in this directory.
   --record-id <id>            Discover report under _bmad-output runtime records.
   --mode <implementation|readiness>
@@ -66,6 +68,8 @@ function parseArgs(argv) {
     mode: 'implementation',
     grillReport: '',
     drilldownGateReport: '',
+    requirementRecord: '',
+    attemptId: '',
     definitionOnly: false,
     json: false,
   };
@@ -105,6 +109,24 @@ function parseArgs(argv) {
         return { error: 'missing value for --confirmation-dir' };
       }
       args.confirmationDir = next;
+      i += 1;
+      continue;
+    }
+    if (arg === '--requirement-record') {
+      const next = argv[i + 1];
+      if (!next || next.startsWith('--')) {
+        return { error: 'missing value for --requirement-record' };
+      }
+      args.requirementRecord = next;
+      i += 1;
+      continue;
+    }
+    if (arg === '--attempt-id') {
+      const next = argv[i + 1];
+      if (!next || next.startsWith('--')) {
+        return { error: 'missing value for --attempt-id' };
+      }
+      args.attemptId = next;
       i += 1;
       continue;
     }
@@ -166,6 +188,14 @@ function readJson(filePath) {
 
 function issue(code, message, refs = [], severity = 'blocker', source = 'reverse_audit') {
   return { code, message, refs, severity, source };
+}
+
+function confirmationRenderBookkeepingSeverity(driftClassification) {
+  return [PROJECTION_REFRESH_REQUIRED, STALE_BOOKKEEPING_REPAIR_REQUIRED].includes(
+    driftClassification?.kind
+  )
+    ? 'warning'
+    : 'blocker';
 }
 
 function authoringRepairIssue(sourcePath, message, refs = []) {
@@ -587,18 +617,19 @@ function collectReconfirmationRequestIssues(text, confirmation, currentHashes, d
   return findings;
 }
 
-function collectConfirmationRenderBookkeepingIssues(confirmation, renderReportPath, renderReport) {
+function collectConfirmationRenderBookkeepingIssues(confirmation, renderReportPath, renderReport, driftClassification) {
   const findings = [];
   const render = confirmation?.confirmationRender;
   if (!render || typeof render !== 'object') return findings;
+  const severity = confirmationRenderBookkeepingSeverity(driftClassification);
 
   if (renderReportPath && render.reportPath && render.reportPath !== 'null') {
     const configured = path.resolve(render.reportPath);
     if (configured !== path.resolve(renderReportPath)) {
       findings.push(
-        issue('confirmation_render_report_path_mismatch', 'confirmationRender.reportPath does not point to the consumed render report', [
+      issue('confirmation_render_report_path_mismatch', 'confirmationRender.reportPath does not point to the consumed render report', [
           'confirmationRender.reportPath',
-        ])
+        ], severity)
       );
     }
   }
@@ -608,7 +639,7 @@ function collectConfirmationRenderBookkeepingIssues(confirmation, renderReportPa
       issue('confirmation_render_html_hash_mismatch', 'confirmationRender.htmlHash does not match render report confirmationPageHash', [
         'confirmationRender.htmlHash',
         'confirmationPageHash',
-      ])
+      ], severity)
     );
   }
 
@@ -626,7 +657,7 @@ function collectConfirmationRenderBookkeepingIssues(confirmation, renderReportPa
       issue('confirmation_render_phrase_mismatch', 'confirmationRender.confirmationPhrase does not match render report confirmInstruction', [
         'confirmationRender.confirmationPhrase',
         'confirmInstruction',
-      ])
+      ], severity)
     );
   }
 
@@ -918,6 +949,125 @@ function collectReadinessModeIssues(renderReport, mode) {
   ];
 }
 
+function latestAttemptIdFromRecord(record) {
+  const closeoutAttempt = record?.closeout?.currentAttemptId;
+  if (typeof closeoutAttempt === 'string' && closeoutAttempt.trim()) return closeoutAttempt.trim();
+  const commands = asArray(record?.deliveryEvidence?.requiredCommands);
+  for (let index = commands.length - 1; index >= 0; index -= 1) {
+    const command = commands[index];
+    const attempt = command?.lastRunRef?.closeoutAttemptId ?? command?.closeoutAttemptId;
+    if (typeof attempt === 'string' && attempt.trim()) return attempt.trim();
+  }
+  return '';
+}
+
+function commandForAttempt(command, attemptId) {
+  return (
+    command?.closeoutAttemptId === attemptId ||
+    command?.lastRunRef?.closeoutAttemptId === attemptId ||
+    asArray(command?.commandRunRefs).some((run) => run?.closeoutAttemptId === attemptId)
+  );
+}
+
+function artifactRefCurrent(ref, attemptId) {
+  return (
+    ref?.closeoutAttemptId === attemptId ||
+    ref?.lastRunRef?.closeoutAttemptId === attemptId ||
+    ref?.outputVersion === attemptId ||
+    ref?.inputVersion === attemptId
+  );
+}
+
+function runtimeDeliveryReadinessFromRecord(record, confirmation, attemptIdInput) {
+  if (!record || typeof record !== 'object') return null;
+  const attemptId = attemptIdInput || latestAttemptIdFromRecord(record);
+  if (!attemptId) {
+    return {
+      ready: false,
+      status: 'delivery_not_ready',
+      label: 'delivery_ready=false',
+      reasons: ['missing current attempt id'],
+      currentAttemptStatus: 'missing_current_attempt',
+      currentPassTraceRows: 0,
+      totalTraceRows: asArray(confirmation?.traceRows).length,
+      missingEvidenceCount: asArray(confirmation?.traceRows).length,
+      staleProofCount: 0,
+      nonCurrentPassTraceRows: asArray(confirmation?.traceRows).map((row) => row?.id).filter(Boolean),
+    };
+  }
+  const traceRows = asArray(confirmation?.traceRows).map((row) => row?.id).filter(Boolean);
+  const requiredCommands = asArray(record?.deliveryEvidence?.requiredCommands).filter((command) =>
+    commandForAttempt(command, attemptId)
+  );
+  const currentTraceIds = new Set();
+  const missingCommands = [];
+  for (const command of requiredCommands) {
+    const artifactRefs = [...asArray(command?.artifactRefs), ...asArray(command?.extensionRefs)];
+    const hasCurrentArtifact =
+      artifactRefs.length > 0 &&
+      artifactRefs.some((ref) => artifactRefCurrent(ref, attemptId) || Boolean(ref?.contentHash ?? ref?.hash));
+    if (!hasCurrentArtifact) missingCommands.push(command?.commandId ?? command?.id ?? '<unknown>');
+    for (const traceId of stringList(command?.traceRows)) currentTraceIds.add(traceId);
+  }
+  for (const iteration of asArray(record?.executionIterations)) {
+    const hasAttemptRun = asArray(iteration?.commandRunRefs).some((run) => run?.closeoutAttemptId === attemptId);
+    if (!hasAttemptRun && iteration?.closeoutAttemptId !== attemptId) continue;
+    for (const traceId of stringList(iteration?.traceRows)) currentTraceIds.add(traceId);
+  }
+  for (const closure of asArray(record?.requirementClosures)) {
+    if (closure?.status !== 'pass') continue;
+    const hasAttemptRun = asArray(closure?.commandRunRefs).some((run) => run?.closeoutAttemptId === attemptId);
+    if (!hasAttemptRun && closure?.closeoutAttemptId !== attemptId) continue;
+    for (const traceId of stringList(closure?.traceRows)) currentTraceIds.add(traceId);
+    if (typeof closure?.requirementId === 'string') currentTraceIds.add(closure.requirementId);
+  }
+  const nonCurrentPassTraceRows = traceRows.filter((traceId) => !currentTraceIds.has(traceId));
+  const missingControlledTraceRows = traceRows.length === 0;
+  const missingEvidenceCount =
+    missingCommands.length + nonCurrentPassTraceRows.length + (missingControlledTraceRows ? 1 : 0);
+  const ready = !missingControlledTraceRows && requiredCommands.length > 0 && missingEvidenceCount === 0;
+  return {
+    ready,
+    status: ready ? 'delivery_ready' : 'delivery_not_ready',
+    label: `delivery_ready=${ready ? 'true' : 'false'}`,
+    reasons: ready
+      ? []
+      : [
+          ...(missingControlledTraceRows ? ['missing controlled traceRows for readiness audit'] : []),
+          ...(requiredCommands.length === 0 ? ['missing current-attempt required command evidence'] : []),
+          ...(missingCommands.length ? [`commands missing current artifacts: ${missingCommands.join(', ')}`] : []),
+          ...(nonCurrentPassTraceRows.length
+            ? [`traceRows not covered by current attempt evidence: ${nonCurrentPassTraceRows.join(', ')}`]
+            : []),
+        ],
+    currentAttemptId: attemptId,
+    currentAttemptStatus: ready ? 'current_attempt_evidence_complete' : 'current_attempt_evidence_incomplete',
+    currentPassTraceRows: traceRows.length - nonCurrentPassTraceRows.length,
+    totalTraceRows: traceRows.length,
+    missingEvidenceCount,
+    staleProofCount: 0,
+    nonCurrentPassTraceRows,
+    currentRequiredCommandCount: requiredCommands.length,
+  };
+}
+
+function collectEffectiveReadinessModeIssues(effectiveDeliveryReadiness, renderReport, mode) {
+  if (mode !== 'readiness') return [];
+  if (effectiveDeliveryReadiness) {
+    if (effectiveDeliveryReadiness.ready === true) return [];
+    return [
+      issue(
+        'delivery_readiness_not_ready',
+        `runtime deliveryReadiness.ready must be true in readiness mode; status=${effectiveDeliveryReadiness.status ?? 'missing'}; reasons=${stringList(effectiveDeliveryReadiness.reasons).join('; ') || 'missing'}`,
+        ['deliveryReadiness'],
+        'blocker',
+        'runtime_delivery'
+      ),
+    ];
+  }
+  return collectReadinessModeIssues(renderReport, mode);
+}
+
 function collectPreConfirmationSemanticDrilldownIssues(args, renderReport, hashes) {
   const embedded = renderReport?.preConfirmationSemanticDrilldown ?? null;
   const reportPath = args.drilldownGateReport || embedded?.reportPath || '';
@@ -1147,6 +1297,7 @@ function buildReport({
   target,
   renderReportPath,
   mode,
+  runtimeDeliveryReadiness,
   grillReportSummary,
   text,
   confirmation,
@@ -1169,6 +1320,7 @@ function buildReport({
       blockingIssueCount: asArray(renderReport?.blockingIssues).length,
       deliveryReadiness: renderReport?.deliveryReadiness ?? null,
     },
+    deliveryReadiness: runtimeDeliveryReadiness ?? renderReport?.deliveryReadiness ?? null,
     grillReport: grillReportSummary,
     currentHashes: {
       sourceDocumentHash: integrity.currentSourceHash,
@@ -1272,9 +1424,28 @@ function main(argv) {
     );
   }
 
+  let requirementRecord = null;
+  if (args.requirementRecord) {
+    try {
+      requirementRecord = readJson(path.resolve(args.requirementRecord));
+    } catch (error) {
+      findings.push(
+        issue(
+          'requirement_record_parse_failed',
+          error instanceof Error ? error.message : String(error),
+          [args.requirementRecord]
+        )
+      );
+    }
+  }
+  const runtimeDeliveryReadiness =
+    args.mode === 'readiness'
+      ? runtimeDeliveryReadinessFromRecord(requirementRecord, confirmation, args.attemptId)
+      : null;
+
   findings.push(...collectRenderReportShapeIssues(renderReport));
   findings.push(...collectRendererIssues(renderReport));
-  findings.push(...collectReadinessModeIssues(renderReport, args.mode));
+  findings.push(...collectEffectiveReadinessModeIssues(runtimeDeliveryReadiness, renderReport, args.mode));
   const integrity = collectReportIntegrityIssues({
     sourcePath: target,
     sourceText: text,
@@ -1286,7 +1457,7 @@ function main(argv) {
   findings.push(...integrity.findings);
   const driftClassification = classifyConfirmationDrift({
     confirmation,
-    requirementRecord: null,
+    requirementRecord,
     renderReport,
     currentHashes: {
       sourceDocumentHash: integrity.currentSourceHash,
@@ -1305,7 +1476,7 @@ function main(argv) {
       implementationConfirmationHash: integrity.currentImplementationHash,
     }, driftClassification, renderReport)
   );
-  findings.push(...collectConfirmationRenderBookkeepingIssues(confirmation, renderReportPath, renderReport));
+  findings.push(...collectConfirmationRenderBookkeepingIssues(confirmation, renderReportPath, renderReport, driftClassification));
   findings.push(...collectReportShapeIssues(text));
   const traceability = collectTraceabilityIssues(text, confirmation);
   findings.push(...traceability.findings);
@@ -1332,6 +1503,7 @@ function main(argv) {
     target,
     renderReportPath,
     mode: args.mode,
+    runtimeDeliveryReadiness,
     grillReportSummary: grillReport.summary,
     text,
     confirmation,

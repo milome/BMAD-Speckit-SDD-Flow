@@ -696,8 +696,8 @@ describe('controlled confirmation ingest', () => {
     const source = writeSource();
     const blockedPrompt = runPython(REQ_TRACE_PROMPT, ['--source-document', source]);
     expect(blockedPrompt.status).toBe(3);
-    expect(blockedPrompt.stdout).toContain('BLOCK: CONFIRMATION_RECORD_REQUIRED');
-    expect(blockedPrompt.stdout).toContain('--requirement-record is required');
+    expect(blockedPrompt.stdout).toContain('BLOCK: CONFIRMATION_REQUIRED');
+    expect(blockedPrompt.stdout).toContain('implementationConfirmation.status is not user_confirmed');
 
     const { reportPath, report } = render(source);
     const recordPath = path.join(tempDir, '_bmad-output/runtime/requirement-records/REQ-CONFIRM-INGEST/requirement-record.json');
