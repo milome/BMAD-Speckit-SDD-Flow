@@ -23,6 +23,42 @@
     "flow": { "enum": ["story", "bugfix", "standalone_tasks", "epic", "unknown"] },
     "stage": { "$ref": "#/$defs/nonEmptyString" },
     "currentStage": { "$ref": "#/$defs/nonEmptyString" },
+    "currentMentalModel": {
+      "enum": [
+        "requirement_confirmation",
+        "architecture_confirmation",
+        "implementation_readiness",
+        "execution_closure",
+        "audit_review",
+        "delivery_confirmation"
+      ]
+    },
+    "mentalModelTransitions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/mentalModelTransition" }
+    },
+    "sixModelResults": { "$ref": "#/$defs/sixModelResults" },
+    "pendingBlockerIntake": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/pendingBlockerIntake" }
+    },
+    "blockerIntakeRuns": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/blockerIntakeRun" }
+    },
+    "reconfirmationRequests": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/reconfirmationRequest" }
+    },
+    "bmadAssociation": { "$ref": "#/$defs/bmadAssociation" },
+    "sprintStatusUpdateAuthorizations": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/sprintStatusUpdateAuthorization" }
+    },
+    "externalBoardSyncReceipts": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/externalBoardSyncReceipt" }
+    },
     "entryFlow": { "enum": ["story", "bugfix", "standalone_tasks"] },
     "entryFlowClass": { "enum": ["full_story_entry", "corrective_entry", "task_packet_entry"] },
     "workflowAdapter": { "enum": ["bmad", "speckit", "direct", "legacy"] },
@@ -181,7 +217,7 @@
       "properties": {
         "baselineId": { "$ref": "#/$defs/nonEmptyString" },
         "activationId": { "$ref": "#/$defs/nonEmptyString" },
-        "status": { "enum": ["current", "stale", "blocked"] },
+        "status": { "enum": ["current", "stale", "blocked", "not_established"] },
         "scoringRunId": { "$ref": "#/$defs/nonEmptyString" },
         "scoringRecordPath": { "$ref": "#/$defs/nonEmptyString" },
         "sourceRequirementRecordHash": { "$ref": "#/$defs/sha256" },
@@ -372,6 +408,205 @@
       "properties": {
         "sourceType": { "$ref": "#/$defs/nonEmptyString" },
         "id": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "modelResult": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "payloadKind",
+        "model",
+        "recordId",
+        "requirementSetId",
+        "sourceDocumentHash",
+        "implementationConfirmationHash",
+        "status",
+        "resultRecordedAt",
+        "resultRecordedBy",
+        "blockingReasons",
+        "sourceRefs",
+        "currentHashes"
+      ],
+      "properties": {
+        "payloadKind": { "const": "model_result" },
+        "model": {
+          "enum": [
+            "requirement_confirmation",
+            "architecture_confirmation",
+            "implementation_readiness",
+            "execution_closure",
+            "audit_review",
+            "delivery_confirmation"
+          ]
+        },
+        "recordId": { "$ref": "#/$defs/nonEmptyString" },
+        "requirementSetId": { "$ref": "#/$defs/nonEmptyString" },
+        "sourceDocumentHash": { "$ref": "#/$defs/sha256" },
+        "implementationConfirmationHash": { "$ref": "#/$defs/sha256" },
+        "status": { "enum": ["pass", "blocked", "fail", "stale", "not_established"] },
+        "resultRecordedAt": { "type": "string", "format": "date-time" },
+        "resultRecordedBy": { "$ref": "#/$defs/nonEmptyString" },
+        "blockingReasons": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "sourceRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/sourceRef" }
+        },
+        "currentHashes": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "readinessReportRef": { "$ref": "#/$defs/reportRef" },
+        "deliveryCloseoutReportRef": { "$ref": "#/$defs/reportRef" },
+        "readinessBaselineMetadata": { "$ref": "#/$defs/readinessBaselineMetadata" }
+      }
+    },
+    "reportRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path"],
+      "properties": {
+        "path": { "$ref": "#/$defs/nonEmptyString" },
+        "contentHash": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "sixModelResults": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "requirement_confirmation": {
+          "allOf": [
+            { "$ref": "#/$defs/modelResult" },
+            { "properties": { "model": { "const": "requirement_confirmation" } } }
+          ]
+        },
+        "architecture_confirmation": {
+          "allOf": [
+            { "$ref": "#/$defs/modelResult" },
+            { "properties": { "model": { "const": "architecture_confirmation" } } }
+          ]
+        },
+        "implementation_readiness": {
+          "allOf": [
+            { "$ref": "#/$defs/modelResult" },
+            { "properties": { "model": { "const": "implementation_readiness" } } }
+          ]
+        },
+        "execution_closure": {
+          "allOf": [
+            { "$ref": "#/$defs/modelResult" },
+            { "properties": { "model": { "const": "execution_closure" } } }
+          ]
+        },
+        "audit_review": {
+          "allOf": [
+            { "$ref": "#/$defs/modelResult" },
+            { "properties": { "model": { "const": "audit_review" } } }
+          ]
+        },
+        "delivery_confirmation": {
+          "allOf": [
+            { "$ref": "#/$defs/modelResult" },
+            { "properties": { "model": { "const": "delivery_confirmation" } } }
+          ]
+        }
+      }
+    },
+    "readinessBaselineMetadata": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "baselineId",
+        "activationId",
+        "status",
+        "scoringRunId",
+        "scoringRecordPath",
+        "sourceRequirementRecordHash",
+        "auditTraceHash",
+        "readinessGateRecipeVersion"
+      ],
+      "properties": {
+        "baselineId": { "$ref": "#/$defs/nonEmptyString" },
+        "activationId": { "$ref": "#/$defs/nonEmptyString" },
+        "status": { "enum": ["current", "stale", "blocked", "not_established"] },
+        "scoringRunId": { "$ref": "#/$defs/nonEmptyString" },
+        "scoringRecordPath": { "$ref": "#/$defs/nonEmptyString" },
+        "sourceRequirementRecordHash": { "$ref": "#/$defs/sha256" },
+        "auditTraceHash": { "$ref": "#/$defs/sha256" },
+        "readinessGateRecipeVersion": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "mentalModelTransition": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["eventType", "fromModel", "toModel", "recordedAt", "recordedBy"],
+      "properties": {
+        "eventType": { "enum": ["mental_model_transition_recorded", "mental_model_rollback_recorded"] },
+        "fromModel": { "$ref": "#/$defs/nonEmptyString" },
+        "toModel": { "$ref": "#/$defs/nonEmptyString" },
+        "recordedAt": { "type": "string", "format": "date-time" },
+        "recordedBy": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "pendingBlockerIntake": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["intakeId", "status", "sourceRefs"],
+      "properties": {
+        "intakeId": { "$ref": "#/$defs/nonEmptyString" },
+        "status": { "$ref": "#/$defs/nonEmptyString" },
+        "sourceRefs": { "type": "array", "items": { "$ref": "#/$defs/sourceRef" } }
+      }
+    },
+    "blockerIntakeRun": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["runId", "status", "recordedAt"],
+      "properties": {
+        "runId": { "$ref": "#/$defs/nonEmptyString" },
+        "status": { "$ref": "#/$defs/nonEmptyString" },
+        "recordedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "reconfirmationRequest": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["requestId", "targetModel", "status", "sourceRefs"],
+      "properties": {
+        "requestId": { "$ref": "#/$defs/nonEmptyString" },
+        "targetModel": { "$ref": "#/$defs/nonEmptyString" },
+        "status": { "$ref": "#/$defs/nonEmptyString" },
+        "sourceRefs": { "type": "array", "items": { "$ref": "#/$defs/sourceRef" } }
+      }
+    },
+    "bmadAssociation": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["relationship"],
+      "properties": {
+        "relationship": { "enum": ["orphan", "linked", "adopted_by_story", "promoted_to_story", "story"] }
+      }
+    },
+    "sprintStatusUpdateAuthorization": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["authorizationId", "status", "targetPath"],
+      "properties": {
+        "authorizationId": { "$ref": "#/$defs/nonEmptyString" },
+        "status": { "$ref": "#/$defs/nonEmptyString" },
+        "targetPath": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "externalBoardSyncReceipt": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["receiptId", "board", "status"],
+      "properties": {
+        "receiptId": { "$ref": "#/$defs/nonEmptyString" },
+        "board": { "$ref": "#/$defs/nonEmptyString" },
+        "status": { "$ref": "#/$defs/nonEmptyString" }
       }
     },
     "rerunAuthoritySourceRef": {

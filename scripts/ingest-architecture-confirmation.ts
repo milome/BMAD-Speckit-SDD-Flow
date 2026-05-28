@@ -434,27 +434,16 @@ export function mainIngestArchitectureConfirmation(argv: string[]): number {
     const checkedAt = args.confirmedAt ?? new Date().toISOString();
     const checkedBy = args.confirmedBy ?? 'agent';
     const result = architectureStateCheck(record, checkedAt, checkedBy);
-    const commit = appendControlEventAndReplay({
-      recordPath,
-      writerId: 'architecture-confirmation-ingest',
-      eventType: 'architecture_confirmation_state_checked',
-      recordedAt: checkedAt,
-      payload: {
-        event: result.event,
-        checkedAt,
-        checkedBy,
-      },
-      reduce: (currentRecord) => architectureStateCheck(currentRecord, checkedAt, checkedBy).nextRecord,
-    });
     const output = {
       ok: result.decision === 'pass',
       event: result.event,
       mismatches: result.mismatches,
       requirementRecordPath: normalizePathForRecord(recordPath),
-      eventLogPath: normalizePathForRecord(commit.eventLogPath),
-      controlEventId: commit.event.eventId,
-      controlEventHash: commit.event.eventHash,
-      receiptPath: normalizePathForRecord(commit.receiptPath),
+      diagnosticOnly: true,
+      eventLogPath: null,
+      controlEventId: null,
+      controlEventHash: null,
+      receiptPath: null,
     };
     process.stdout.write(args.json ? `${JSON.stringify(output, null, 2)}\n` : `architecture_confirmation_state=${result.decision}\n`);
     return result.decision === 'pass' ? 0 : 1;

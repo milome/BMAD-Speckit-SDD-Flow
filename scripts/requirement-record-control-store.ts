@@ -553,6 +553,85 @@ function normalizeImplementationEntryGate(value: unknown): JsonObject | undefine
   };
 }
 
+function normalizeMentalModel(value: unknown): string | undefined {
+  const model = text(value);
+  if (
+    [
+      'requirement_confirmation',
+      'architecture_confirmation',
+      'implementation_readiness',
+      'execution_closure',
+      'audit_review',
+      'delivery_confirmation',
+    ].includes(model)
+  ) {
+    return model;
+  }
+  if (model === 'delivery_closeout') return 'delivery_confirmation';
+  return undefined;
+}
+
+function normalizeModelResult(result: JsonObject, record: JsonObject, model: string): JsonObject {
+  const recordedAt = text(result.resultRecordedAt) || text(result.recordedAt) || text(record.updatedAt) || new Date().toISOString();
+  const status = text(result.status);
+  return {
+    payloadKind: 'model_result',
+    model,
+    recordId: text(result.recordId) || text(record.recordId),
+    requirementSetId: text(result.requirementSetId) || text(record.requirementSetId) || text(record.recordId),
+    sourceDocumentHash: text(result.sourceDocumentHash) || text(record.sourceDocumentHash),
+    implementationConfirmationHash: text(result.implementationConfirmationHash) || text(record.implementationConfirmationHash),
+    status: ['pass', 'blocked', 'fail', 'stale', 'not_established'].includes(status) ? status : 'blocked',
+    resultRecordedAt: recordedAt,
+    resultRecordedBy: text(result.resultRecordedBy) || text(result.recordedBy) || 'canonical-reducer',
+    blockingReasons: strings(result.blockingReasons),
+    sourceRefs: normalizeSourceRefs(result.sourceRefs),
+    currentHashes: nested(result.currentHashes),
+    ...(nested(result.readinessReportRef).path ? { readinessReportRef: nested(result.readinessReportRef) } : {}),
+    ...(nested(result.deliveryCloseoutReportRef).path ? { deliveryCloseoutReportRef: nested(result.deliveryCloseoutReportRef) } : {}),
+    ...(nested(result.readinessBaselineMetadata).status
+      ? { readinessBaselineMetadata: normalizeReadinessBaselineMetadata(result.readinessBaselineMetadata, record) }
+      : {}),
+  };
+}
+
+function normalizeSixModelResults(value: unknown, record: JsonObject): JsonObject | undefined {
+  const results = nested(value);
+  if (Object.keys(results).length === 0) return undefined;
+  const out: JsonObject = {};
+  for (const model of [
+    'requirement_confirmation',
+    'architecture_confirmation',
+    'implementation_readiness',
+    'execution_closure',
+    'audit_review',
+    'delivery_confirmation',
+  ]) {
+    const result = nested(results[model]);
+    if (Object.keys(result).length > 0) out[model] = normalizeModelResult(result, record, model);
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
+function normalizeReadinessBaselineMetadata(value: unknown, record: JsonObject): JsonObject | undefined {
+  const metadata = nested(value);
+  if (Object.keys(metadata).length === 0) return undefined;
+  const status = text(metadata.status);
+  return {
+    ...metadata,
+    baselineId: text(metadata.baselineId) || `readiness-baseline:${text(record.requirementSetId) || text(record.recordId)}`,
+    activationId: text(metadata.activationId) || `readiness-baseline:${text(record.requirementSetId) || text(record.recordId)}:not-established`,
+    status: ['current', 'stale', 'blocked', 'not_established'].includes(status) ? status : 'not_established',
+    scoringRunId: text(metadata.scoringRunId) || 'readiness-scoring:not-established',
+    scoringRecordPath: text(metadata.scoringRecordPath) || '_bmad-output/runtime/readiness-scoring/not-established.json',
+    sourceRequirementRecordHash:
+      text(metadata.sourceRequirementRecordHash) || 'sha256:0000000000000000000000000000000000000000000000000000000000000000',
+    auditTraceHash:
+      text(metadata.auditTraceHash) || 'sha256:0000000000000000000000000000000000000000000000000000000000000000',
+    readinessGateRecipeVersion: text(metadata.readinessGateRecipeVersion) || 'implementation-readiness-gate/v1',
+  };
+}
+
 export function canonicalizeRequirementRecord(record: JsonObject): JsonObject {
   const recordId = text(record.recordId);
   const requirementSetId = text(record.requirementSetId) || recordId;
@@ -576,6 +655,15 @@ export function canonicalizeRequirementRecord(record: JsonObject): JsonObject {
     'runId',
     'artifactRoot',
     'artifactPath',
+    'currentMentalModel',
+    'mentalModelTransitions',
+    'sixModelResults',
+    'pendingBlockerIntake',
+    'blockerIntakeRuns',
+    'reconfirmationRequests',
+    'bmadAssociation',
+    'sprintStatusUpdateAuthorizations',
+    'externalBoardSyncReceipts',
     'implementationEntryGate',
     'contractAuthoringRequired',
     'globalContractTraceabilityPolicy',
@@ -630,6 +718,20 @@ export function canonicalizeRequirementRecord(record: JsonObject): JsonObject {
   out.sourcePath = text(out.sourcePath) || 'docs/design/unknown.md';
   out.sourceDocumentHash = text(out.sourceDocumentHash);
   out.implementationConfirmationHash = text(out.implementationConfirmationHash);
+  const currentMentalModel = normalizeMentalModel(out.currentMentalModel);
+  if (currentMentalModel) out.currentMentalModel = currentMentalModel;
+  else delete out.currentMentalModel;
+  const sixModelResults = normalizeSixModelResults(out.sixModelResults, out);
+  if (sixModelResults) out.sixModelResults = sixModelResults;
+  else delete out.sixModelResults;
+  out.mentalModelTransitions = objects(out.mentalModelTransitions);
+  out.pendingBlockerIntake = objects(out.pendingBlockerIntake);
+  out.blockerIntakeRuns = objects(out.blockerIntakeRuns);
+  out.reconfirmationRequests = objects(out.reconfirmationRequests);
+  if (Object.keys(nested(out.bmadAssociation)).length > 0) out.bmadAssociation = nested(out.bmadAssociation);
+  else delete out.bmadAssociation;
+  out.sprintStatusUpdateAuthorizations = objects(out.sprintStatusUpdateAuthorizations);
+  out.externalBoardSyncReceipts = objects(out.externalBoardSyncReceipts);
   const implementationEntryGate = normalizeImplementationEntryGate(out.implementationEntryGate);
   if (implementationEntryGate) out.implementationEntryGate = implementationEntryGate;
   else delete out.implementationEntryGate;
@@ -688,6 +790,9 @@ export function canonicalizeRequirementRecord(record: JsonObject): JsonObject {
   const hookReconciliation = normalizeHookReconciliation(out.hookReconciliation);
   if (hookReconciliation) out.hookReconciliation = hookReconciliation;
   else delete out.hookReconciliation;
+  const readinessBaselineMetadata = normalizeReadinessBaselineMetadata(out.readinessBaselineMetadata, out);
+  if (readinessBaselineMetadata) out.readinessBaselineMetadata = readinessBaselineMetadata;
+  else delete out.readinessBaselineMetadata;
   if (!text(out.updatedAt)) out.updatedAt = new Date().toISOString();
   if (!text(out.lastEventType)) out.lastEventType = 'canonical_record_reduced';
   return withoutUndefined(out) as JsonObject;

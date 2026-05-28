@@ -404,7 +404,7 @@ ${includeCloseoutReviewPolicy ? `    - id: TARGET-MOD-005
       path: "scripts/main-agent-delivery-closeout-gate.ts"
       changeType: validation_only
       intent: "Fixture target for suggested closeout command policy projection."
-      ownerModel: delivery_closeout
+      ownerModel: delivery_confirmation
       requirementRefs: ["MUST-001"]
       traceRefs: ["TRACE-001"]
       evidenceRefs: ["EVD-010"]
@@ -549,7 +549,7 @@ ${currentTargetMapBlock || `  currentTargetMap:
         allowedControlWriteMode: control
       canAffectControlFlow: true
     - eventType: closeout_recorded
-      ownerModel: delivery_closeout
+      ownerModel: delivery_confirmation
       payloadKind: decision
       writesControlFields: ["closeout"]
       allowedDecisionValues: ["pass", "fail", "blocked"]
@@ -905,7 +905,7 @@ functionalResumeFailureCaseRegistry:
       requiresUserConfirmation: false
     - actionId: block_closeout_until_resolved
       label: "阻断 closeout 直到解决"
-      ownerModel: delivery_closeout
+      ownerModel: delivery_confirmation
       automationLevel: automatic_block
       writesControlFields: ["gateChecks", "failureRecords", "closeout"]
       recordEventTypes: ["gate_check_recorded", "failure_recorded", "closeout_recorded"]
@@ -923,7 +923,7 @@ functionalResumeFailureCaseRegistry:
       requiresUserConfirmation: false
     - actionId: rerun_required_commands
       label: "重跑必要证据命令"
-      ownerModel: delivery_closeout
+      ownerModel: delivery_confirmation
       automationLevel: agent_assisted
       writesControlFields: ["executionIterations", "gateChecks"]
       recordEventTypes: ["execution_iteration_recorded", "gate_check_recorded"]

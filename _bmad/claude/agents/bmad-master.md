@@ -266,7 +266,7 @@ BMAD 原生 artifacts、epics、stories、bugfix 文档、TASKS 文档和 report
 - `implementation_readiness` → task binding、readiness gate、allowed write scope、required commands。
 - `execution_closure` → executionIterations、TaskReport、artifactRefs、requirementClosures。
 - `audit_review` → auditIterations、contract checks、rerun loops、RCA。
-- `delivery_closeout` → currentAttemptId、closeout gate、completion evidence packet。
+- `delivery_confirmation` → currentAttemptId、closeout gate、completion evidence packet。
 
 EntryFlow routing:
 
@@ -435,7 +435,7 @@ $bmad-speckit closeout recordId=<recordId>
 
 Always state:
 1. 当前 Requirement: `{recordId}`
-2. 当前心智模型: requirement_confirmation | architecture_confirmation | implementation_readiness | execution_closure | audit_review | delivery_closeout
+2. 当前心智模型: requirement_confirmation | architecture_confirmation | implementation_readiness | execution_closure | audit_review | delivery_confirmation
 3. `allowed_action`: allow | deny | iterate | audit_required | closeout_required
 4. `denial_reason` (if deny)
 5. `follow_up`: next agent/action

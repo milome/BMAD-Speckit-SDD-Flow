@@ -564,11 +564,27 @@ describe('requirement-scoped implementation readiness gate', () => {
         gate: 'Implementation Readiness Gate',
         decision: 'pass',
       });
-      expect(record.lastEventType).toBe('implementation_readiness_check_recorded');
-      expect(record.readinessBaselineActivation).toMatchObject({
-        status: 'audit_required',
-        sourceGateCheckId: 'implementation-readiness:2026-05-19T00:00:01.000Z',
+      expect(record.lastEventType).toBe('implementation_readiness_result_recorded');
+      expect(record.lastAppliedEventId).toContain('implementation_readiness_result_recorded');
+      expect(record).not.toHaveProperty('readinessBaselineActivationEventType');
+      expect(record).not.toHaveProperty('readinessBaselineActivation');
+      expect(record.sixModelResults.implementation_readiness).toMatchObject({
+        payloadKind: 'model_result',
+        model: 'implementation_readiness',
+        recordId: 'REQ-READINESS',
+        requirementSetId: 'REQ-READINESS',
+        sourceDocumentHash: record.sourceDocumentHash,
+        implementationConfirmationHash: record.implementationConfirmationHash,
+        status: 'pass',
+        resultRecordedAt: '2026-05-19T00:00:01.000Z',
+        resultRecordedBy: 'agent',
+        blockingReasons: [],
+      });
+      expect(record.readinessBaselineMetadata).toMatchObject({
+        status: 'current',
         readinessGateRecipeVersion: 'implementation-readiness-gate/v1',
+        baselineCreatedByEventId:
+          'implementation-readiness-result:REQ-READINESS:2026-05-19T00:00:01.000Z',
       });
     } finally {
       rmSync(root, { recursive: true, force: true });
@@ -592,6 +608,12 @@ describe('requirement-scoped implementation readiness gate', () => {
       expect(record.gateChecks.at(-1).blockingReasons).toContain(
         'ai_tdd_pre_implementation_readiness_not_ready'
       );
+      expect(record.lastEventType).toBe('implementation_readiness_result_recorded');
+      expect(record.sixModelResults.implementation_readiness).toMatchObject({
+        model: 'implementation_readiness',
+        status: 'blocked',
+      });
+      expect(record.readinessBaselineMetadata.status).toBe('not_established');
       expect(record.gateChecks.at(-1).checks).toEqual(
         expect.arrayContaining([
           expect.objectContaining({

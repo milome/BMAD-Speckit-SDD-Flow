@@ -210,7 +210,7 @@ function writeClosedRecordFixture(options: {
     recordId,
     requirementSetId: recordId,
     status: 'user_confirmed',
-    currentMentalModel: 'delivery_closeout',
+    currentMentalModel: 'delivery_confirmation',
     sourcePath: path.relative(root, sourcePath).replace(/\\/g, '/'),
     sourceDocumentHash: options.semanticHashOverride?.sourceDocumentHash ?? hashes.sourceDocumentHash,
     implementationConfirmationHash:
@@ -421,7 +421,7 @@ function writeGatePassFixture(): {
     recordId,
     requirementSetId: recordId,
     status: 'user_confirmed',
-    currentMentalModel: 'delivery_closeout',
+    currentMentalModel: 'delivery_confirmation',
     sourceDocumentHash: hashes.sourceDocumentHash,
     implementationConfirmationHash: hashes.implementationConfirmationHash,
     globalContractTraceabilityPolicy,

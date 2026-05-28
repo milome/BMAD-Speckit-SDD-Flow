@@ -178,9 +178,7 @@ describe('prepare-architecture-confirmation-page', () => {
     expect(prepareReport.internalSteps[0].label).toBe('architecture_confirmation_state_checked');
 
     const record = JSON.parse(fs.readFileSync(fixture.record, 'utf8'));
-    expect(record.architectureConfirmationStateChecks.at(-1)).toMatchObject({
-      eventType: 'architecture_confirmation_state_checked',
-    });
+    expect(record.architectureConfirmationStateChecks ?? []).toHaveLength(0);
     expect(record.architectureConfirmations ?? []).toHaveLength(0);
   });
 

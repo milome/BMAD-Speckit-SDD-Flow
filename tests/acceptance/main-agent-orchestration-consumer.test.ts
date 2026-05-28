@@ -582,9 +582,13 @@ describe('main-agent orchestration consumer', () => {
         flow: 'standalone_tasks',
         stage: 'implement',
       });
-      expect(surface.diagnostics.map((item) => item.category)).toContain(
+      expect(surface.diagnostics.map((item) => item.category)).not.toContain(
         'repairable_readiness_audit_required'
       );
+      expect(surface.drift).toMatchObject({
+        effectiveVerdict: 'approved',
+        baselineSource: 'requirement_metadata',
+      });
 
       const result = await runMainAgentControlledReadinessAudit(root, {});
 
@@ -605,7 +609,6 @@ describe('main-agent orchestration consumer', () => {
         'Cross-Document Traceability',
       ]);
       const record = JSON.parse(readFileSync(recordPath, 'utf8'));
-      expect(record.readinessBaselineActivation.status).toBe('current');
       expect(record.readinessBaselineMetadata).toMatchObject({
         status: 'current',
         scoringRunId: result.scoringRunId,
@@ -653,7 +656,7 @@ describe('main-agent orchestration consumer', () => {
     }
   }, 40000);
 
-  it('auto-activates readiness baseline from high-level run-loop after readiness pass', async () => {
+  it('dispatches implementation then projects review after readiness pass without legacy baseline activation', async () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-readiness-auto-baseline-'));
     try {
       const recordPath = writeConfirmedReadinessRecord(root);
@@ -671,13 +674,12 @@ describe('main-agent orchestration consumer', () => {
         flow: 'standalone_tasks',
         stage: 'implement',
       });
-      const readinessDiagnostic = before.diagnostics.find(
-        (item) => item.category === 'repairable_readiness_audit_required'
+      expect(before.diagnostics.map((item) => item.category)).not.toContain(
+        'repairable_readiness_audit_required'
       );
-      expect(readinessDiagnostic).toMatchObject({
-        automaticRepairAvailable: true,
-        repairAction: 'trigger_controlled_readiness_audit',
-        nextCommand: null,
+      expect(before.drift).toMatchObject({
+        effectiveVerdict: 'approved',
+        baselineSource: 'requirement_metadata',
       });
 
       const result = await runMainAgentAutomaticLoopAsync({
@@ -685,49 +687,28 @@ describe('main-agent orchestration consumer', () => {
         flow: 'standalone_tasks',
         stage: 'implement',
         args: { dataPath },
+        executor: ({ instruction }) => ({
+          packetId: instruction.packetId,
+          status: 'done',
+          filesChanged: [],
+          validationsRun: ['main-agent-run-loop:dispatch-review-fixture'],
+          evidence: ['requirement-record:readinessBaselineMetadata.status=current'],
+          downstreamContext: ['implementation readiness passed; review dispatch completed'],
+        }),
       });
 
       expect(result.status).toBe('completed');
-      expect(result.dispatchInstruction).toBeNull();
-      expect(result.taskReport).toMatchObject({
-        status: 'done',
-        downstreamContext: ['implementation readiness passed; readiness baseline activated'],
-      });
-      expect(result.taskReport?.validationsRun).toContain(
-        'main-agent-orchestration:readiness-baseline-activation'
-      );
-      expect(result.taskReport?.validationsRun).toEqual([
-        'main-agent-orchestration:readiness-baseline-activation',
-      ]);
-      expect(result.taskReport?.validationsRun).not.toContain(
-        'controlled-readiness-audit-bridge'
-      );
-      expect(result.taskReport?.evidence).toEqual([
-        'requirement-record:readinessBaselineActivation.status=current',
-        'requirement-record:readinessBaselineMetadata.status=current',
-      ]);
-      expect(result.steps).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            step: 'implementation-readiness-baseline-activation',
-            status: 'pass',
-            summary: 'implementation readiness passed; readiness baseline activated',
-          }),
-        ])
-      );
+      expect(result.dispatchInstruction?.nextAction).toBe('dispatch_implement');
+      expect(result.finalSurface.mainAgentNextAction).toBe('dispatch_review');
       expect(result.finalSurface.diagnostics.map((item) => item.category)).not.toContain(
         'repairable_readiness_audit_required'
       );
       expect(result.finalSurface.diagnostics.some((item) => item.nextCommand)).toBe(false);
       const record = JSON.parse(readFileSync(recordPath, 'utf8'));
-      expect(record.readinessBaselineActivation.status).toBe('current');
       expect(record.readinessBaselineMetadata).toMatchObject({
         status: 'current',
       });
-      expect(record.readinessScoringRecords.at(-1)).toMatchObject({
-        stage: 'implementation_readiness',
-        scenario: 'real_dev',
-      });
+      expect(record).not.toHaveProperty('readinessBaselineActivation');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -758,9 +739,8 @@ describe('main-agent orchestration consumer', () => {
 
       expect(receipt.controlPlane).toBe('main-agent-orchestration');
       expect(receipt.runLoop.status).toBe('completed');
-      expect(receipt.runLoop.finalNextAction).toBe('dispatch_implement');
+      expect(receipt.runLoop.finalNextAction).toBe('dispatch_review');
       const record = JSON.parse(readFileSync(recordPath, 'utf8'));
-      expect(record.readinessBaselineActivation.status).toBe('current');
       expect(record.readinessBaselineMetadata).toMatchObject({
         status: 'current',
       });

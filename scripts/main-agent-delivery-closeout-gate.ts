@@ -1888,7 +1888,33 @@ function updateRecord(
     gateCheckId,
   });
   const rcaRecords = rcaRecordsForCloseout(record, input);
-  const closeoutEventType = input.decision === 'pass' ? 'record_closed' : 'closeout_recorded';
+  const closeoutEventType =
+    input.decision === 'pass' ? 'record_closed' : 'delivery_confirmation_result_recorded';
+  const previousSixModelResults = nested(record.sixModelResults);
+  const deliveryConfirmationResult = {
+    payloadKind: 'model_result',
+    model: 'delivery_confirmation',
+    recordId: text(record.recordId),
+    requirementSetId: text(record.requirementSetId) || text(record.recordId),
+    sourceDocumentHash: text(record.sourceDocumentHash),
+    implementationConfirmationHash: text(record.implementationConfirmationHash),
+    status: input.decision,
+    resultRecordedAt: input.evaluatedAt,
+    resultRecordedBy: input.evaluatedBy,
+    blockingReasons: input.blockingReasons,
+    sourceRefs: [
+      { sourceType: 'closeout_attempt', id: input.attemptId },
+      { sourceType: 'gate_check', id: gateCheckId },
+    ],
+    currentHashes: {
+      sourceDocumentHash: text(record.sourceDocumentHash),
+      implementationConfirmationHash: text(record.implementationConfirmationHash),
+      architectureConfirmationHash: text(nested(record.architectureConfirmationState).currentArchitectureConfirmationHash),
+    },
+    deliveryCloseoutReportRef: {
+      path: normalizePathForRecord(input.reportPath),
+    },
+  };
   return {
     ...record,
     closeout: {
@@ -1901,6 +1927,11 @@ function updateRecord(
     gateChecks: [...objects(record.gateChecks), gateCheck],
     failureRecords,
     rcaRecords,
+    sixModelResults: {
+      ...previousSixModelResults,
+      delivery_confirmation: deliveryConfirmationResult,
+    },
+    currentMentalModel: text(record.currentMentalModel) || 'delivery_confirmation',
     lastEventType: closeoutEventType,
     updatedAt: input.evaluatedAt,
   };
@@ -1963,7 +1994,8 @@ export function mainDeliveryCloseoutGate(argv: string[]): number {
   const commit = appendControlEventAndReplay({
     recordPath,
     writerId: 'delivery-closeout-gate-writer',
-    eventType: evaluation.decision === 'pass' ? 'record_closed' : 'closeout_recorded',
+    eventType:
+      evaluation.decision === 'pass' ? 'record_closed' : 'delivery_confirmation_result_recorded',
     recordedAt: evaluatedAt,
     payload: closeoutPayload,
     reduce: (currentRecord) =>

@@ -195,7 +195,7 @@ describe('architecture confirmation ingest', () => {
     }
   });
 
-  it('records architecture confirmation state checks and marks hash drift stale', () => {
+  it('reports architecture confirmation state checks as diagnostic-only output', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'arch-confirm-state-check-'));
     try {
       const fixture = writeFixture(root);
@@ -230,14 +230,8 @@ describe('architecture confirmation ingest', () => {
       ).toBe(0);
       const active = JSON.parse(readFileSync(fixture.recordPath, 'utf8'));
       expect(active.architectureConfirmationState.status).toBe('active');
-      expect(active.architectureConfirmationStateChecks.at(-1)).toMatchObject({
-        eventType: 'architecture_confirmation_state_checked',
-        decision: 'pass',
-        stateTransition: {
-          toStatus: 'active',
-          reasonCode: 'hash_match',
-        },
-      });
+      expect(active.architectureConfirmationStateChecks ?? []).toHaveLength(0);
+      expect(active.lastEventType).toBe('architecture_confirmation_recorded');
 
       active.sourceDocumentHash = 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
       writeFileSync(fixture.recordPath, `${JSON.stringify(active, null, 2)}\n`, 'utf8');
@@ -254,20 +248,10 @@ describe('architecture confirmation ingest', () => {
         ])
       ).toBe(1);
       const stale = JSON.parse(readFileSync(fixture.recordPath, 'utf8'));
-      expect(stale.architectureConfirmationState.status).toBe('stale');
-      expect(stale.architectureConfirmationStateChecks.at(-1)).toMatchObject({
-        decision: 'fail',
-        stateTransition: {
-          toStatus: 'stale',
-        },
-      });
-      expect(stale.architectureConfirmationStateChecks.at(-1).stateTransition.mismatchFields).toContain(
-        'sourceDocumentHash'
-      );
-      expect(stale.gateChecks.at(-1)).toMatchObject({
-        gate: 'architecture_confirmation_state',
-        decision: 'fail',
-      });
+      expect(stale.architectureConfirmationState.status).toBe('active');
+      expect(stale.architectureConfirmationStateChecks ?? []).toHaveLength(0);
+      expect(stale.gateChecks ?? []).toHaveLength(0);
+      expect(stale.lastEventType).toBe('architecture_confirmation_recorded');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

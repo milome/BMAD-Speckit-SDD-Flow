@@ -552,8 +552,10 @@ function updateRecord(
     blockingReasons: string[];
     checks: JsonObject[];
     reportPath: string;
+    reportHash: string;
     evaluatedAt: string;
     evaluatedBy: string;
+    resultPayload: JsonObject;
   }
 ): JsonObject {
   const checkId = `implementation-readiness:${input.evaluatedAt}`;
@@ -572,10 +574,17 @@ function updateRecord(
     recordedAt: input.evaluatedAt,
     recordedBy: input.evaluatedBy,
   };
+  const previousSixModelResults = nested(record.sixModelResults);
   return {
     ...record,
     gateChecks: [...objects(record.gateChecks), gateCheck],
-    lastEventType: 'implementation_readiness_check_recorded',
+    sixModelResults: {
+      ...previousSixModelResults,
+      implementation_readiness: input.resultPayload,
+    },
+    readinessBaselineMetadata: nested(input.resultPayload.readinessBaselineMetadata),
+    currentMentalModel: text(record.currentMentalModel) || 'implementation_readiness',
+    lastEventType: 'implementation_readiness_result_recorded',
     updatedAt: input.evaluatedAt,
   };
 }
@@ -585,50 +594,6 @@ function currentArchitectureHash(record: JsonObject): string {
   return state && typeof state === 'object' && !Array.isArray(state)
     ? text((state as JsonObject).currentArchitectureConfirmationHash)
     : '';
-}
-
-function requestReadinessBaselineActivation(
-  recordPath: string,
-  input: {
-    record: JsonObject;
-    gateCommit: ReturnType<typeof appendControlEventAndReplay>;
-    sourceReportPath: string;
-    evaluatedAt: string;
-    evaluatedBy: string;
-  }
-): ReturnType<typeof appendControlEventAndReplay> {
-  const sourceReportHash = sha256Text(fs.readFileSync(input.sourceReportPath, 'utf8'));
-  const activationId = `readiness-baseline:${text(input.record.requirementSetId) || text(input.record.recordId)}:${input.evaluatedAt}`;
-  const payload = {
-    activationId,
-    requirementSetId: text(input.record.requirementSetId) || text(input.record.recordId),
-    recordId: text(input.record.recordId),
-    status: 'audit_required',
-    sourceGateCheckId: `implementation-readiness:${input.evaluatedAt}`,
-    sourceReportPath: normalizePathForRecord(input.sourceReportPath),
-    sourceReportHash,
-    sourceControlEventId: input.gateCommit.event.eventId,
-    sourceControlEventHash: input.gateCommit.event.eventHash,
-    readinessGateRecipeVersion: 'implementation-readiness-gate/v1',
-    sourceDocumentHash: text(input.record.sourceDocumentHash),
-    implementationConfirmationHash: text(input.record.implementationConfirmationHash),
-    architectureConfirmationHash: currentArchitectureHash(input.record),
-    requestedAt: input.evaluatedAt,
-    requestedBy: input.evaluatedBy,
-  };
-  return appendControlEventAndReplay({
-    recordPath,
-    writerId: 'readiness-baseline-activation-writer',
-    eventType: 'readiness_baseline_activation_requested',
-    recordedAt: input.evaluatedAt,
-    payload,
-    reduce: (currentRecord) => ({
-      ...currentRecord,
-      readinessBaselineActivation: payload,
-      readinessBaselineActivationEventType: 'readiness_baseline_activation_requested',
-      updatedAt: input.evaluatedAt,
-    }),
-  });
 }
 
 export function mainImplementationReadinessGate(argv: string[]): number {
@@ -668,30 +633,69 @@ export function mainImplementationReadinessGate(argv: string[]): number {
   };
   fs.mkdirSync(path.dirname(reportPath), { recursive: true });
   fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+  const reportHash = sha256Text(fs.readFileSync(reportPath, 'utf8'));
+  const resultId = `implementation-readiness-result:${text(record.requirementSetId) || text(record.recordId)}:${evaluatedAt}`;
+  const readinessBaselineMetadata = {
+    baselineId: `readiness-baseline:${text(record.requirementSetId) || text(record.recordId)}`,
+    activationId: resultId,
+    status: evaluation.decision === 'pass' ? 'current' : 'not_established',
+    scoringRunId: `readiness-scoring:${text(record.requirementSetId) || text(record.recordId)}:${evaluatedAt}`,
+    scoringRecordPath: normalizePathForRecord(
+      path.join(path.dirname(recordPath), 'readiness-scoring-record.json')
+    ),
+    sourceRequirementRecordHash: sha256Text(JSON.stringify(record)),
+    auditTraceHash: reportHash,
+    readinessGateRecipeVersion: 'implementation-readiness-gate/v1',
+    ...(evaluation.decision === 'pass'
+      ? {
+          establishedAt: evaluatedAt,
+          baselineCreatedByEventId: resultId,
+        }
+      : {}),
+  };
+  const resultPayload = {
+    payloadKind: 'model_result',
+    model: 'implementation_readiness',
+    recordId: text(record.recordId),
+    requirementSetId: text(record.requirementSetId) || text(record.recordId),
+    sourceDocumentHash: text(record.sourceDocumentHash),
+    implementationConfirmationHash: text(record.implementationConfirmationHash),
+    status: evaluation.decision,
+    resultRecordedAt: evaluatedAt,
+    resultRecordedBy: evaluatedBy,
+    blockingReasons: evaluation.blockingReasons,
+    sourceRefs: [
+      { sourceType: 'gate_check', id: `implementation-readiness:${evaluatedAt}` },
+      { sourceType: 'readiness_report', id: normalizePathForRecord(reportPath) },
+    ],
+    currentHashes: {
+      sourceDocumentHash: text(record.sourceDocumentHash),
+      implementationConfirmationHash: text(record.implementationConfirmationHash),
+      confirmationPageHash: text(record.confirmationPageHash),
+      architectureConfirmationHash: currentArchitectureHash(record),
+    },
+    readinessReportRef: {
+      path: normalizePathForRecord(reportPath),
+      contentHash: reportHash,
+    },
+    readinessBaselineMetadata,
+  };
   const readinessPayload = {
     ...evaluation,
     reportPath,
+    reportHash,
     evaluatedAt,
     evaluatedBy,
+    resultPayload,
   };
   const commit = appendControlEventAndReplay({
     recordPath,
     writerId: 'implementation-readiness-gate-writer',
-    eventType: 'implementation_readiness_check_recorded',
+    eventType: 'implementation_readiness_result_recorded',
     recordedAt: evaluatedAt,
-    payload: readinessPayload,
+    payload: resultPayload,
     reduce: (currentRecord) => updateRecord(currentRecord, readinessPayload),
   });
-  const activationCommit =
-    evaluation.decision === 'pass'
-      ? requestReadinessBaselineActivation(recordPath, {
-          record,
-          gateCommit: commit,
-          sourceReportPath: reportPath,
-          evaluatedAt,
-          evaluatedBy,
-        })
-      : null;
   const output = {
     ok: true,
     reportPath: normalizePathForRecord(reportPath),
@@ -701,16 +705,7 @@ export function mainImplementationReadinessGate(argv: string[]): number {
     controlEventHash: commit.event.eventHash,
     eventLogPath: normalizePathForRecord(commit.eventLogPath),
     receiptPath: normalizePathForRecord(commit.receiptPath),
-    ...(activationCommit
-      ? {
-          readinessBaselineActivation: {
-            status: 'audit_required',
-            controlEventId: activationCommit.event.eventId,
-            controlEventHash: activationCommit.event.eventHash,
-            receiptPath: normalizePathForRecord(activationCommit.receiptPath),
-          },
-        }
-      : {}),
+    readinessBaselineMetadata,
   };
   process.stdout.write(
     args.json

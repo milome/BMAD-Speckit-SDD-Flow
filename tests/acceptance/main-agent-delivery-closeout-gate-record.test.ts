@@ -651,6 +651,19 @@ describe('requirement-scoped delivery closeout gate', () => {
           { sourceType: 'closeout_attempt', id: 'closeout-001' },
         ])
       );
+      expect(record.lastEventType).toBe('delivery_confirmation_result_recorded');
+      expect(record.lastAppliedEventId).toContain('delivery_confirmation_result_recorded');
+      expect(record.sixModelResults.delivery_confirmation).toMatchObject({
+        payloadKind: 'model_result',
+        model: 'delivery_confirmation',
+        recordId: 'REQ-CLOSEOUT',
+        requirementSetId: 'REQ-CLOSEOUT',
+        status: 'blocked',
+        blockingReasons: expect.arrayContaining([
+          'deliveryEvidence.requiredCommands_missing',
+          'negative_or_regression_command_missing',
+        ]),
+      });
     } finally {
       cleanupTempRoot(root);
     }

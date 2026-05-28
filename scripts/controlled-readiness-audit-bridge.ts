@@ -113,15 +113,53 @@ function writeReadinessAuditManifest(
   return out;
 }
 
-function requireActivation(record: JsonObject): JsonObject {
+function resolveReadinessAuditContext(
+  record: JsonObject,
+  now: string
+): {
+  activationId: string;
+  baselineId: string;
+  readinessGateRecipeVersion: string;
+} {
+  const requirementSetId = text(record.requirementSetId);
+  const metadata = object(record.readinessBaselineMetadata);
+  const metadataStatus = text(metadata.status);
+  const metadataActivationId = text(metadata.activationId);
+  const metadataBaselineId = text(metadata.baselineId);
+  if (metadataStatus === 'current' && metadataActivationId && metadataBaselineId) {
+    return {
+      activationId: metadataActivationId,
+      baselineId: metadataBaselineId,
+      readinessGateRecipeVersion:
+        text(metadata.readinessGateRecipeVersion) || 'implementation-readiness-gate/v1',
+    };
+  }
+
   const activation = object(record.readinessBaselineActivation);
-  if (text(activation.status) !== 'audit_required') {
-    throw new Error('controlled readiness audit requires readinessBaselineActivation.status=audit_required');
+  const activationStatus = text(activation.status);
+  const activationId = text(activation.activationId);
+  if (activationStatus === 'audit_required' && activationId) {
+    return {
+      activationId,
+      baselineId: text(activation.baselineId) || `readiness-baseline:${requirementSetId}`,
+      readinessGateRecipeVersion:
+        text(activation.readinessGateRecipeVersion) || 'implementation-readiness-gate/v1',
+    };
   }
-  if (!text(activation.activationId)) {
-    throw new Error('controlled readiness audit requires activationId');
+
+  if (metadataStatus === 'current') {
+    return {
+      activationId:
+        metadataActivationId || `implementation-readiness-result:${requirementSetId}:${now}`,
+      baselineId: metadataBaselineId || `readiness-baseline:${requirementSetId}`,
+      readinessGateRecipeVersion:
+        text(metadata.readinessGateRecipeVersion) || 'implementation-readiness-gate/v1',
+    };
   }
-  return activation;
+
+  throw new Error(
+    'controlled readiness audit requires readinessBaselineMetadata.status=current or legacy readinessBaselineActivation.status=audit_required'
+  );
 }
 
 function appendEvent(recordPath: string, input: {
@@ -162,11 +200,11 @@ export async function runControlledReadinessAuditBridge(input: {
   const root = path.resolve(input.root);
   const recordPath = path.resolve(input.recordPath);
   const initialRecord = readJson(recordPath);
-  const activation = requireActivation(initialRecord);
-  const activationId = text(activation.activationId);
   const now = input.now ?? new Date().toISOString();
+  const readinessContext = resolveReadinessAuditContext(initialRecord, now);
+  const activationId = readinessContext.activationId;
   const auditRequestId = `readiness-audit:${text(initialRecord.requirementSetId)}:${now}`;
-  const baselineId = `readiness-baseline:${text(initialRecord.requirementSetId)}:${now}`;
+  const baselineId = readinessContext.baselineId;
   const scoringRunId = input.scoringRunId ?? `${text(initialRecord.requirementSetId)}-readiness-${now.replace(/[^0-9]/gu, '').slice(0, 14)}`;
   const dataPath = resolveRuntimeScoringDataPath({
     root,
@@ -326,7 +364,7 @@ export async function runControlledReadinessAuditBridge(input: {
     readinessAuditManifestHash: manifestHash,
     sourceRequirementRecordHash,
     auditTraceHash: toolTraceRef,
-    readinessGateRecipeVersion: text(activation.readinessGateRecipeVersion) || 'implementation-readiness-gate/v1',
+    readinessGateRecipeVersion: readinessContext.readinessGateRecipeVersion,
     sourceDocumentHash: text(initialRecord.sourceDocumentHash),
     implementationConfirmationHash: text(initialRecord.implementationConfirmationHash),
     architectureConfirmationHash: currentArchitectureHash(initialRecord),
@@ -344,10 +382,6 @@ export async function runControlledReadinessAuditBridge(input: {
     reduce: (currentRecord) => ({
       ...currentRecord,
       readinessBaselineMetadata: baselinePayload,
-      readinessBaselineActivation: {
-        ...object(currentRecord.readinessBaselineActivation),
-        status: 'current',
-      },
       lastEventType: 'readiness_baseline_current_recorded',
       updatedAt: now,
     }),
