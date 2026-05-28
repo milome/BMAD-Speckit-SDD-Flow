@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import {
   buildMainAgentDispatchInstruction,
@@ -326,6 +327,122 @@ function codexSmokeArtifactPath(packetId: string): string {
   return `_bmad-output/runtime/requirement-records/REQ-CODEX-WORKER/artifacts/codex/${packetId}.md`;
 }
 
+function sha256File(filePath: string): string {
+  return `sha256:${createHash('sha256').update(fs.readFileSync(filePath)).digest('hex')}`;
+}
+
+function attachCompiledPromptRef(root: string, packetPath: string, packetId: string): void {
+  const packet = JSON.parse(fs.readFileSync(packetPath, 'utf8')) as Record<string, any>;
+  const normalizedPacketPath = packetPath.replace(/\\/g, '/');
+  const match = normalizedPacketPath.match(
+    /_bmad-output\/runtime\/requirement-records\/([^/]+)\/prompts\/prompt-packets\/[^/]+\.json$/u
+  );
+  const recordId = match?.[1] ?? 'REQ-CODEX-WORKER';
+  const traceDir = path.join(
+    root,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    recordId,
+    'trace-execution',
+    packetId
+  );
+  fs.mkdirSync(traceDir, { recursive: true });
+  const flow = typeof packet.flow === 'string' ? packet.flow : 'story';
+  const profile = {
+    profileId: `${flow}_execution`,
+    profileHash: 'sha256:9999999999999999999999999999999999999999999999999999999999999999',
+  };
+  const modelPacketPath = path.join(traceDir, 'model_packet.json');
+  const humanPromptPath = path.join(traceDir, 'human_prompt.txt');
+  const goalExecutionPath = path.join(traceDir, 'goal_execution.md');
+  const auditReceiptPath = path.join(traceDir, 'audit_receipt.json');
+  fs.writeFileSync(
+    modelPacketPath,
+    JSON.stringify(
+      {
+        artifactRole: 'execution_authority',
+        sourceDocumentHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+        implementationConfirmationHash:
+          'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+      },
+      null,
+      2
+    ) + '\n',
+    'utf8'
+  );
+  fs.writeFileSync(
+    humanPromptPath,
+    [
+      'Execution Discipline Profile',
+      `profileId: ${profile.profileId}`,
+      `profileHash: ${profile.profileHash}`,
+      'model_packet.json is the machine-readable execution authority',
+      'compiled worker body',
+      '',
+    ].join('\n'),
+    'utf8'
+  );
+  fs.writeFileSync(
+    goalExecutionPath,
+    [
+      '# Goal Execution',
+      `profileId: ${profile.profileId}`,
+      `profileHash: ${profile.profileHash}`,
+      '',
+    ].join('\n'),
+    'utf8'
+  );
+  const goalHash = sha256File(goalExecutionPath);
+  fs.writeFileSync(
+    auditReceiptPath,
+    JSON.stringify(
+      {
+        decision: 'pass',
+        goalCommand: {
+          mode: 'native_goal_document_ref',
+          documentHash: goalHash,
+        },
+        executionDisciplineProfile: profile,
+      },
+      null,
+      2
+    ) + '\n',
+    'utf8'
+  );
+  packet.authorityMode = 'compiled_implementation_confirmation';
+  packet.executionDisciplineProfile = {
+    ...profile,
+    flow,
+    authority: 'discipline_profile_only',
+  };
+  packet.compiledPromptRef = {
+    modelPacketPath,
+    modelPacketHash: sha256File(modelPacketPath),
+    humanPromptPath,
+    humanPromptHash: sha256File(humanPromptPath),
+    auditReceiptPath,
+    auditReceiptHash: sha256File(auditReceiptPath),
+    goalExecutionPath,
+    goalExecutionHash: goalHash,
+    sourceDocumentHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+    implementationConfirmationHash:
+      'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+  };
+  packet.executionStrategy = {
+    eventType: 'execution_strategy_selected',
+    strategyId: 'compiled_trace_direct',
+    availability: 'available',
+    selectedBy: 'policy',
+    strategyOptionsHash: 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    selectedOptionHash: 'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+    modelPacketHash: packet.compiledPromptRef.modelPacketHash,
+    sourceDocumentHash: packet.compiledPromptRef.sourceDocumentHash,
+    implementationConfirmationHash: packet.compiledPromptRef.implementationConfirmationHash,
+  };
+  fs.writeFileSync(packetPath, JSON.stringify(packet, null, 2) + '\n', 'utf8');
+}
+
 describe('main-agent codex worker adapter e2e', () => {
   it('runs codex no-hooks smoke, writes scoped changes, emits TaskReport, and lets run-loop ingest it', () => {
     const root = prepareCodexRoot();
@@ -340,6 +457,7 @@ describe('main-agent codex worker adapter e2e', () => {
         hydratePacket: true,
       });
       expect(instruction).not.toBeNull();
+      attachCompiledPromptRef(root, instruction!.packetPath, instruction!.packetId);
       const taskReportPath = path.join(
         root,
         '_bmad-output',
@@ -428,6 +546,7 @@ describe('main-agent codex worker adapter e2e', () => {
         hydratePacket: true,
       });
       expect(instruction).not.toBeNull();
+      attachCompiledPromptRef(root, instruction!.packetPath, instruction!.packetId);
       const adapter = runBoundCodexWorkerAdapter({
         projectRoot: root,
         recordId: 'REQ-CODEX-WORKER',
@@ -477,6 +596,7 @@ describe('main-agent codex worker adapter e2e', () => {
         host: 'claude',
         hydratePacket: true,
       });
+      attachCompiledPromptRef(root, instruction!.packetPath, instruction!.packetId);
       const taskReportPath = path.join(root, 'policy-blocked-task-report.json');
 
       const adapter = runBoundCodexWorkerAdapter({
@@ -592,6 +712,7 @@ describe('main-agent codex worker adapter e2e', () => {
         host: 'claude',
         hydratePacket: true,
       });
+      attachCompiledPromptRef(root, instruction!.packetPath, instruction!.packetId);
       const taskReportPath = path.join(root, 'fake-codex-task-report.json');
       const adapter = runBoundCodexWorkerAdapter({
         projectRoot: root,
@@ -710,6 +831,7 @@ describe('main-agent codex worker adapter e2e', () => {
         host: 'claude',
         hydratePacket: true,
       });
+      attachCompiledPromptRef(root, instruction!.packetPath, instruction!.packetId);
       const taskReportPath = path.join(root, 'canonical-agent-task-report.json');
 
       const adapter = runBoundCodexWorkerAdapter({
@@ -740,6 +862,7 @@ describe('main-agent codex worker adapter e2e', () => {
         host: 'codex',
         hydratePacket: true,
       });
+      attachCompiledPromptRef(root, instruction!.packetPath, instruction!.packetId);
 
       const adapter = runBoundCodexWorkerAdapter({
         projectRoot: root,
@@ -755,6 +878,56 @@ describe('main-agent codex worker adapter e2e', () => {
       expect(prompt).toContain('--- Runtime Governance JSON ---');
       expect(prompt).toContain('"implementationEntryGate"');
       expect(prompt).toContain('"stage":"implement"');
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('renders compiled human_prompt.txt after governance and blocks stale compiled prompt refs', () => {
+    const root = prepareCodexRoot();
+    try {
+      const instruction = buildMainAgentDispatchInstruction({
+        projectRoot: root,
+        flow: 'story',
+        stage: 'implement',
+        host: 'codex',
+        hydratePacket: true,
+      });
+      attachCompiledPromptRef(root, instruction!.packetPath, instruction!.packetId);
+
+      const adapter = runBoundCodexWorkerAdapter({
+        projectRoot: root,
+        packetPath: instruction!.packetPath,
+        taskReportPath: path.join(root, 'compiled-prompt-task-report.json'),
+        smoke: false,
+        timeoutMs: 1,
+      });
+
+      expect(adapter.stdinPath).toBeTruthy();
+      const prompt = fs.readFileSync(adapter.stdinPath!, 'utf8');
+      expect(prompt.indexOf('--- Runtime Governance JSON ---')).toBeLessThan(
+        prompt.indexOf('--- Compiled Human Prompt ---')
+      );
+      expect(prompt).toContain('--- Entry Flow Discipline Profile ---');
+      expect(prompt).toContain('compiled worker body');
+      expect(prompt).toContain(
+        '/goal is an entry pointer only; execution scope is goal_execution.md plus model_packet.json'
+      );
+      expect(prompt).not.toContain('BUG-A4-IMPL');
+      expect(prompt).not.toContain('STORY-A3-DEV');
+
+      const packet = JSON.parse(fs.readFileSync(instruction!.packetPath, 'utf8')) as Record<string, any>;
+      fs.writeFileSync(packet.compiledPromptRef.humanPromptPath, 'stale compiled prompt\n', 'utf8');
+      const blocked = runBoundCodexWorkerAdapter({
+        projectRoot: root,
+        packetPath: instruction!.packetPath,
+        taskReportPath: path.join(root, 'compiled-prompt-stale-task-report.json'),
+        smoke: false,
+        timeoutMs: 1,
+      });
+      expect(blocked.exitCode).toBe(1);
+      expect(blocked.taskReport.status).toBe('blocked');
+      expect(blocked.taskReport.driftFlags).toContain('compiled-prompt-hash-mismatch');
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }
@@ -787,6 +960,7 @@ describe('main-agent codex worker adapter e2e', () => {
         hydratePacket: true,
       });
       expect(instruction?.nextAction).toBe('dispatch_implement');
+      attachCompiledPromptRef(root, instruction!.packetPath, instruction!.packetId);
 
       const adapter = runBoundCodexWorkerAdapter({
         projectRoot: root,
@@ -842,6 +1016,7 @@ describe('main-agent codex worker adapter e2e', () => {
         hydratePacket: true,
       });
       expect(instruction?.nextAction).toBe('dispatch_implement');
+      attachCompiledPromptRef(root, instruction!.packetPath, instruction!.packetId);
       markMainAgentPacketDispatched(root, instruction!.sessionId, instruction!.packetId);
 
       const adapter = runBoundCodexWorkerAdapter({
@@ -881,6 +1056,7 @@ describe('main-agent codex worker adapter e2e', () => {
         host: 'claude',
         hydratePacket: true,
       });
+      attachCompiledPromptRef(root, instruction!.packetPath, instruction!.packetId);
       const raw = fs.readFileSync(instruction!.packetPath, 'utf8');
       fs.writeFileSync(instruction!.packetPath, `\uFEFF${raw}`, 'utf8');
 
@@ -909,6 +1085,7 @@ describe('main-agent codex worker adapter e2e', () => {
         host: 'claude',
         hydratePacket: true,
       });
+      attachCompiledPromptRef(root, instruction!.packetPath, instruction!.packetId);
       const taskReportPath = path.join(root, 'bad-task-report.json');
       fs.writeFileSync(
         taskReportPath,
@@ -953,6 +1130,7 @@ describe('main-agent codex worker adapter e2e', () => {
         host: 'claude',
         hydratePacket: true,
       });
+      attachCompiledPromptRef(root, instruction!.packetPath, instruction!.packetId);
       const taskReportPath = path.join(root, 'utf16-task-report.json');
       const report = JSON.stringify(
         {
@@ -1036,6 +1214,7 @@ describe('main-agent codex worker adapter e2e', () => {
         host: 'codex',
         hydratePacket: true,
       });
+      attachCompiledPromptRef(root, instruction!.packetPath, instruction!.packetId);
       const taskReportPath = path.join(root, 'hidden-write-task-report.json');
 
       const adapter = runBoundCodexWorkerAdapter({
@@ -1073,6 +1252,7 @@ describe('main-agent codex worker adapter e2e', () => {
         host: 'claude',
         hydratePacket: true,
       });
+      attachCompiledPromptRef(root, instruction!.packetPath, instruction!.packetId);
       const reportPath = path.join(root, 'adapter-report.json');
       const taskReportPath = path.join(root, 'task-report.json');
       const registryPath = writeRegistryBindingFile(root);
@@ -1121,6 +1301,7 @@ describe('main-agent codex worker adapter e2e', () => {
         host: 'codex',
         hydratePacket: true,
       });
+      attachCompiledPromptRef(root, instruction!.packetPath, instruction!.packetId);
       const reportPath = path.join(root, 'adapter-kebab-report.json');
       const taskReportPath = path.join(root, 'task-report-kebab.json');
       const registryPath = writeRegistryBindingFile(root);

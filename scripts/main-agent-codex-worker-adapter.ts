@@ -134,6 +134,10 @@ function readPacket(packetPath: string): Packet {
   return JSON.parse(readStrictUtf8JsonText(packetPath, { allowUtf8Bom: true })) as Packet;
 }
 
+function sha256File(filePath: string): string {
+  return `sha256:${createHash('sha256').update(fs.readFileSync(filePath)).digest('hex')}`;
+}
+
 function packetExpectedDelta(packet: Packet): string {
   return packet.expectedDelta;
 }
@@ -381,6 +385,8 @@ function buildPrompt(input: {
   agentRole: string;
   agentSpec: { path: string; content: string } | null;
   runtimeGovernance: string;
+  compiledPromptContent?: string;
+  compiledGoalExplanation?: string | null;
 }): string {
   const smokeLine = input.smokeTargetPath
     ? `For this bounded smoke run, write a small proof file at ${input.smokeTargetPath} and do not modify files outside allowedWriteScope.`
@@ -404,6 +410,18 @@ function buildPrompt(input: {
     `Allowed write scope: ${packetAllowedWriteScope(input.packet).join(', ') || '(none)'}`,
     `Expected delta: ${packetExpectedDelta(input.packet)}`,
     smokeLine,
+    input.compiledPromptContent
+      ? [
+          '--- Entry Flow Discipline Profile ---',
+          `flow: ${'flow' in input.packet ? input.packet.flow : 'unknown'}`,
+          `authorityMode: ${'authorityMode' in input.packet ? input.packet.authorityMode ?? 'legacy_generic_prompt' : 'legacy_generic_prompt'}`,
+          input.compiledGoalExplanation ?? '',
+          '--- End Entry Flow Discipline Profile ---',
+          '--- Compiled Human Prompt ---',
+          input.compiledPromptContent,
+          '--- End Compiled Human Prompt ---',
+        ].join('\n')
+      : '',
     `When finished, write a JSON TaskReport to: ${input.codexWritableTaskReportPath}`,
     input.codexWritableTaskReportPath === input.taskReportPath
       ? ''
@@ -462,6 +480,149 @@ function readStrictUtf8JsonText(filePath: string, options: { allowUtf8Bom: boole
     return raw.subarray(3).toString('utf8');
   }
   return raw.toString('utf8');
+}
+
+function readJsonIfExists(filePath: string | null | undefined): Record<string, unknown> | null {
+  if (!filePath || !fs.existsSync(filePath)) return null;
+  const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8')) as unknown;
+  return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+    ? (parsed as Record<string, unknown>)
+    : null;
+}
+
+function nested(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function readCompiledPromptProjection(input: {
+  packet: Packet;
+}): { status: 'pass'; content: string; goalExplanation: string | null } | { status: 'blocked'; driftFlags: string[]; evidence: string[] } {
+  if (!('authorityMode' in input.packet) || input.packet.authorityMode !== 'compiled_implementation_confirmation') {
+    return { status: 'pass', content: '', goalExplanation: null };
+  }
+  const ref = input.packet.compiledPromptRef;
+  if (!ref) {
+    return {
+      status: 'blocked',
+      driftFlags: ['compiled-prompt-missing'],
+      evidence: ['compiledPromptRef missing for compiled_implementation_confirmation packet'],
+    };
+  }
+  if (!fs.existsSync(ref.humanPromptPath)) {
+    return {
+      status: 'blocked',
+      driftFlags: ['compiled-prompt-missing'],
+      evidence: [`compiled human_prompt.txt missing: ${ref.humanPromptPath}`],
+    };
+  }
+  if (sha256File(ref.humanPromptPath) !== ref.humanPromptHash) {
+    return {
+      status: 'blocked',
+      driftFlags: ['compiled-prompt-hash-mismatch'],
+      evidence: [`compiled human_prompt.txt hash mismatch: ${ref.humanPromptPath}`],
+    };
+  }
+  if (!fs.existsSync(ref.auditReceiptPath)) {
+    return {
+      status: 'blocked',
+      driftFlags: ['compiled-audit-receipt-missing'],
+      evidence: [`compiled audit_receipt.json missing: ${ref.auditReceiptPath}`],
+    };
+  }
+  if (sha256File(ref.auditReceiptPath) !== ref.auditReceiptHash) {
+    return {
+      status: 'blocked',
+      driftFlags: ['compiled-audit-receipt-hash-mismatch'],
+      evidence: [`compiled audit_receipt.json hash mismatch: ${ref.auditReceiptPath}`],
+    };
+  }
+  const receipt = readJsonIfExists(ref.auditReceiptPath);
+  const receiptGoalCommand = nested(receipt?.goalCommand);
+  const goalMode = text(receiptGoalCommand.mode);
+  if (goalMode === 'native_goal_document_ref') {
+    if (!ref.goalExecutionPath || !fs.existsSync(ref.goalExecutionPath)) {
+      return {
+        status: 'blocked',
+        driftFlags: ['compiled-goal-execution-missing'],
+        evidence: ['native /goal receipt requires hash-bound goal_execution.md'],
+      };
+    }
+    if (!ref.goalExecutionHash || sha256File(ref.goalExecutionPath) !== ref.goalExecutionHash) {
+      return {
+        status: 'blocked',
+        driftFlags: ['compiled-goal-execution-hash-mismatch'],
+        evidence: [`goal_execution.md hash mismatch: ${ref.goalExecutionPath}`],
+      };
+    }
+  }
+  if (goalMode === 'native_goal_inline') {
+    return {
+      status: 'blocked',
+      driftFlags: ['compiled-native-goal-inline-rejected'],
+      evidence: ['native_goal_inline is forbidden; compiler must provide goal_execution.md document ref'],
+    };
+  }
+
+  const packetProfile = nested((input.packet as ExecutionPacket).executionDisciplineProfile);
+  const profileId = text(packetProfile.profileId);
+  const profileHash = text(packetProfile.profileHash);
+  const receiptProfile = nested(receipt?.executionDisciplineProfile);
+  if (profileId && text(receiptProfile.profileId) && text(receiptProfile.profileId) !== profileId) {
+    return {
+      status: 'blocked',
+      driftFlags: ['compiled-profile-id-mismatch'],
+      evidence: ['audit_receipt.json executionDisciplineProfile.profileId differs from dispatch packet'],
+    };
+  }
+  if (profileHash && text(receiptProfile.profileHash) && text(receiptProfile.profileHash) !== profileHash) {
+    return {
+      status: 'blocked',
+      driftFlags: ['compiled-profile-hash-mismatch'],
+      evidence: ['audit_receipt.json executionDisciplineProfile.profileHash differs from dispatch packet'],
+    };
+  }
+  const content = fs.readFileSync(ref.humanPromptPath, 'utf8');
+  if (profileId && !content.includes(profileId)) {
+    return {
+      status: 'blocked',
+      driftFlags: ['compiled-human-prompt-profile-missing'],
+      evidence: ['human_prompt.txt does not include execution discipline profile id'],
+    };
+  }
+  if (profileHash && !content.includes(profileHash)) {
+    return {
+      status: 'blocked',
+      driftFlags: ['compiled-human-prompt-profile-hash-missing'],
+      evidence: ['human_prompt.txt does not include execution discipline profile hash'],
+    };
+  }
+  if (goalMode === 'native_goal_document_ref' && ref.goalExecutionPath) {
+    const goalContent = fs.readFileSync(ref.goalExecutionPath, 'utf8');
+    if (profileId && !goalContent.includes(profileId)) {
+      return {
+        status: 'blocked',
+        driftFlags: ['compiled-goal-profile-missing'],
+        evidence: ['goal_execution.md does not include execution discipline profile id'],
+      };
+    }
+    if (profileHash && !goalContent.includes(profileHash)) {
+      return {
+        status: 'blocked',
+        driftFlags: ['compiled-goal-profile-hash-missing'],
+        evidence: ['goal_execution.md does not include execution discipline profile hash'],
+      };
+    }
+  }
+  return {
+    status: 'pass',
+    content,
+    goalExplanation:
+      goalMode === 'native_goal_document_ref'
+        ? '/goal is an entry pointer only; execution scope is goal_execution.md plus model_packet.json, and model_packet.json remains machine authority.'
+        : null,
+  };
 }
 
 function normalizeTaskReport(report: TaskReport): TaskReport {
@@ -878,17 +1039,6 @@ export function runCodexWorkerAdapter(input: {
       },
     };
   }
-  const prompt = buildPrompt({
-    packet,
-    packetPath,
-    taskReportPath,
-    codexWritableTaskReportPath,
-    smokeTargetPath: input.smoke ? smokeTargetPath : null,
-    agentRole,
-    agentSpec,
-    runtimeGovernance: runtimeGovernance.content,
-  });
-
   let exitCode = 0;
   let stdinPath: string | null = null;
   let stdoutPath: string | null = null;
@@ -940,6 +1090,61 @@ export function runCodexWorkerAdapter(input: {
       },
     };
   }
+  const compiledPromptProjection = readCompiledPromptProjection({ packet });
+  if (compiledPromptProjection.status === 'blocked') {
+    const blockedReport: TaskReport = {
+      packetId: packet.packetId,
+      status: 'blocked',
+      filesChanged: [],
+      validationsRun: ['codex-worker-adapter-compiled-prompt'],
+      evidence: compiledPromptProjection.evidence,
+      downstreamContext: [packetExpectedDelta(packet)],
+      driftFlags: compiledPromptProjection.driftFlags,
+    };
+    writeTaskReport(taskReportPath, blockedReport);
+    return {
+      reportType: 'main_agent_codex_worker_adapter',
+      generatedAt: new Date().toISOString(),
+      projectRoot,
+      packetPath,
+      taskReportPath,
+      mode: input.smoke ? 'smoke' : 'codex_exec',
+      codexCommand: input.smoke ? ['codex', 'worker-adapter-smoke'] : [],
+      exitCode: 1,
+      scopePassed: false,
+      taskReport: blockedReport,
+      stdinPath: null,
+      stdoutPath: null,
+      stderrPath: null,
+      agentRole,
+      agentSpecPath: agentSpec.path,
+      runtimeGovernanceStatus: runtimeGovernance.status,
+      runtimeGovernanceError: runtimeGovernance.error,
+      actualFilesChanged: [],
+      transportEnvelope: null,
+      transportEnvelopeValidation: { ok: false, mismatches: compiledPromptProjection.driftFlags },
+      subagentEvidenceEnvelope: null,
+      subagentEvidenceEnvelopeValidation: {
+        ok: false,
+        status: 'blocked',
+        mismatches: compiledPromptProjection.driftFlags,
+        sourceRefs: [],
+        evidenceArtifactRefs: [],
+      },
+    };
+  }
+  const prompt = buildPrompt({
+    packet,
+    packetPath,
+    taskReportPath,
+    codexWritableTaskReportPath,
+    smokeTargetPath: input.smoke ? smokeTargetPath : null,
+    agentRole,
+    agentSpec,
+    runtimeGovernance: runtimeGovernance.content,
+    compiledPromptContent: compiledPromptProjection.content,
+    compiledGoalExplanation: compiledPromptProjection.goalExplanation,
+  });
   const codexCommand = input.smoke
     ? ['codex', 'worker-adapter-smoke']
     : [

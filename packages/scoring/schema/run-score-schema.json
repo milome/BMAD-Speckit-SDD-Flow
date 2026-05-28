@@ -47,6 +47,17 @@
     "tool_trace_ref": { "type": "string", "description": "Optional tool trace content hash reference for this scoring record" },
     "tool_trace_path": { "type": "string", "description": "Optional tool trace artifact path for this scoring record" },
     "trigger_stage": { "type": "string", "description": "Stage identifier that triggered this scoring, e.g. speckit_5_2, bmad_story_stage4 (Story 9.1 T4)" },
+    "dimension_contract_id": { "type": "string", "description": "Stage-aware top-level dimension contract id used for this score attempt" },
+    "dimension_mode": {
+      "enum": ["code", "prd", "arch", "pr", "readiness", "story", "tasks", "bugfix"],
+      "description": "Stage-aware top-level dimension mode used for this score attempt"
+    },
+    "expected_dimensions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Expected top-level dimension names for this score attempt"
+    },
+    "atomic_item_set_id": { "type": "string", "description": "Atomic check item set id; check_items remain atomic rules/veto inputs" },
     "run_group_id": { "type": "string", "description": "Optional logical run grouping key for multi-record runs and governance runtime events" },
     "readiness_baseline_run_id": { "type": "string", "description": "Latest implementation readiness baseline run used for deterministic drift evaluation" },
     "drift_signals": {

@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  type ExecutionDisciplineProfile,
   createExecutionPacket,
   createResumePacket,
   fallbackAllowed,
@@ -157,5 +158,212 @@ describe('orchestration dispatch contract', () => {
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
+  });
+
+  it('enforces authority-mode metadata on execution packets', () => {
+    expect(() =>
+      createExecutionPacket({
+        packetId: 'pkt-compiled-missing',
+        parentSessionId: 'session-compiled',
+        flow: 'standalone_tasks',
+        phase: 'implement',
+        taskType: 'implement',
+        role: 'implementation-worker',
+        inputArtifacts: [],
+        allowedWriteScope: ['scripts/**'],
+        expectedDelta: 'compiled work',
+        successCriteria: ['compiled prompt consumed'],
+        stopConditions: ['compiler blocked'],
+        authorityMode: 'compiled_implementation_confirmation',
+      })
+    ).toThrow(/compiledPromptRef or compilerBlock is required/u);
+
+    expect(() =>
+      createExecutionPacket({
+        packetId: 'pkt-legacy-missing',
+        parentSessionId: 'session-legacy',
+        flow: 'standalone_tasks',
+        phase: 'implement',
+        taskType: 'implement',
+        role: 'implementation-worker',
+        inputArtifacts: [],
+        allowedWriteScope: ['scripts/**'],
+        expectedDelta: 'legacy work',
+        successCriteria: ['legacy fallback consumed'],
+        stopConditions: ['true blocker'],
+        authorityMode: 'legacy_generic_prompt',
+      })
+    ).toThrow(/legacyPromptFallbackReason is required/u);
+
+    const packet = createExecutionPacket({
+      packetId: 'pkt-compiled',
+      parentSessionId: 'session-compiled',
+      flow: 'standalone_tasks',
+      phase: 'implement',
+      taskType: 'implement',
+      role: 'implementation-worker',
+      inputArtifacts: [],
+      allowedWriteScope: ['scripts/**'],
+      expectedDelta: 'compiled work',
+      successCriteria: ['compiled prompt consumed'],
+      stopConditions: ['compiler blocked'],
+      authorityMode: 'compiled_implementation_confirmation',
+      compiledPromptRef: {
+        modelPacketPath: 'trace-execution/pkt-compiled/model_packet.json',
+        modelPacketHash: 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        humanPromptPath: 'trace-execution/pkt-compiled/human_prompt.txt',
+        humanPromptHash: 'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        auditReceiptPath: 'trace-execution/pkt-compiled/audit_receipt.json',
+        auditReceiptHash: 'sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+        goalExecutionPath: null,
+        goalExecutionHash: null,
+        sourceDocumentHash: 'sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+        implementationConfirmationHash:
+          'sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+      },
+      executionStrategy: {
+        eventType: 'execution_strategy_selected',
+        strategyId: 'compiled_trace_direct',
+        availability: 'available',
+        selectedBy: 'policy',
+        strategyOptionsHash: 'sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+        selectedOptionHash: 'sha256:9999999999999999999999999999999999999999999999999999999999999999',
+        modelPacketHash: 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        sourceDocumentHash: 'sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+        implementationConfirmationHash:
+          'sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+      },
+    });
+
+    expect(packet.authorityMode).toBe('compiled_implementation_confirmation');
+    expect(packet.legacyPromptFallbackReason).toBeNull();
+    expect(packet.compiledPromptRef?.modelPacketPath).toContain('model_packet.json');
+    expect(packet.executionStrategy?.strategyId).toBe('compiled_trace_direct');
+  });
+
+  it('requires compiled execution strategy selection after model packet gate pass', () => {
+    expect(() =>
+      createExecutionPacket({
+        packetId: 'pkt-compiled-without-strategy',
+        parentSessionId: 'session-compiled',
+        flow: 'standalone_tasks',
+        phase: 'implement',
+        taskType: 'implement',
+        role: 'implementation-worker',
+        inputArtifacts: [],
+        allowedWriteScope: ['scripts/**'],
+        expectedDelta: 'compiled work',
+        successCriteria: ['compiled prompt consumed'],
+        stopConditions: ['compiler blocked'],
+        authorityMode: 'compiled_implementation_confirmation',
+        compiledPromptRef: {
+          modelPacketPath: 'trace-execution/pkt-compiled/model_packet.json',
+          modelPacketHash: 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          humanPromptPath: 'trace-execution/pkt-compiled/human_prompt.txt',
+          humanPromptHash: 'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+          auditReceiptPath: 'trace-execution/pkt-compiled/audit_receipt.json',
+          auditReceiptHash: 'sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+          goalExecutionPath: null,
+          goalExecutionHash: null,
+          sourceDocumentHash: 'sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+          implementationConfirmationHash:
+            'sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+        },
+      })
+    ).toThrow(/executionStrategy is required/u);
+
+    expect(() =>
+      createExecutionPacket({
+        packetId: 'pkt-strategy-bypass',
+        parentSessionId: 'session-compiled',
+        flow: 'standalone_tasks',
+        phase: 'implement',
+        taskType: 'implement',
+        role: 'implementation-worker',
+        inputArtifacts: [],
+        allowedWriteScope: ['scripts/**'],
+        expectedDelta: 'compiled work',
+        successCriteria: ['compiled prompt consumed'],
+        stopConditions: ['compiler blocked'],
+        authorityMode: 'legacy_generic_prompt',
+        legacyPromptFallbackReason: 'no_confirmed_source',
+        executionStrategy: {
+          eventType: 'execution_strategy_selected',
+          strategyId: 'compiled_trace_direct',
+          availability: 'available',
+          selectedBy: 'policy',
+          strategyOptionsHash: 'sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+          selectedOptionHash: 'sha256:9999999999999999999999999999999999999999999999999999999999999999',
+          modelPacketHash: 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          sourceDocumentHash: 'sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+          implementationConfirmationHash:
+            'sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+        },
+      })
+    ).toThrow(/cannot bypass compiledPromptRef/u);
+  });
+
+  it('accepts typed execution discipline profile metadata without source authority fields', () => {
+    const profile: ExecutionDisciplineProfile = {
+      profileId: 'standalone_tasks_execution',
+      profileHash: 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      flow: 'standalone_tasks',
+      authority: 'discipline_profile_only',
+      sourceReferences: ['bmad-standalone-tasks/SKILL.md'],
+      rules: ['Preserve compiled model_packet.json requirement authority.'],
+      requiredEvidence: ['task_report', 'validation_commands', 'audit_report', 'score_receipt'],
+      auditScoringConvergencePolicy: {
+        auditPassRequired: true,
+        criticalAuditorNoNewGapRequired: true,
+        scoreReceiptRequired: true,
+        dimensionContractMatchRequired: true,
+        thresholdPassRequired: true,
+        vetoForbidden: true,
+        iterationCountRequired: true,
+        freshHashesRequired: true,
+      },
+      dimensionContractSelector: 'tasks',
+      forbiddenOverrides: ['traceRows', 'requiredCommands'],
+      lintPolicy: { required: true, blockOnWarnings: true, forbiddenWaivers: [] },
+      docCommentPolicy: { publicApiRequired: true, languages: ['typescript'] },
+      failureExclusionPolicy: {
+        objectiveFieldsRequired: true,
+        userApprovalRequiredForExcludedTests: false,
+      },
+      testExecutionPolicy: {
+        projectRootRequired: true,
+        pytestCleanupEvidenceRequired: false,
+      },
+      subagentContinuityPolicy: {
+        returnAllowedOnlyOn: ['scope_complete', 'real_blocker', 'audit_boundary', 'resume_checkpoint'],
+      },
+      auditReportContract: {
+        parseableScoreBlockRequired: true,
+        allowedGrades: ['A', 'B', 'C', 'D'],
+        forbidScoreRanges: true,
+      },
+      hostCloseoutPolicy: { prosePassIsCompletion: false },
+    };
+
+    const packet = createExecutionPacket({
+      packetId: 'pkt-profile',
+      parentSessionId: 'session-profile',
+      flow: 'standalone_tasks',
+      phase: 'implement',
+      taskType: 'implement',
+      role: 'implementation-worker',
+      inputArtifacts: [],
+      allowedWriteScope: ['scripts/**'],
+      expectedDelta: 'profile work',
+      successCriteria: ['profile attached'],
+      stopConditions: ['true blocker'],
+      authorityMode: 'legacy_generic_prompt',
+      legacyPromptFallbackReason: 'no_confirmed_source',
+      executionDisciplineProfile: profile,
+    });
+
+    expect(packet.executionDisciplineProfile?.authority).toBe('discipline_profile_only');
+    expect(JSON.stringify(packet.executionDisciplineProfile)).not.toContain('"taskList"');
+    expect(JSON.stringify(packet.executionDisciplineProfile)).not.toContain('"legacyPromptBody"');
   });
 });

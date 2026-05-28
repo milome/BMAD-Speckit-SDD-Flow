@@ -81,6 +81,10 @@
         ]
       }
     },
+    "executionStrategySelections": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/executionStrategySelectionEvent" }
+    },
     "requirementClosures": {
       "type": "array",
       "items": { "$ref": "#/$defs/requirementClosure" }
@@ -787,6 +791,61 @@
         "anyOf": [
           { "required": ["result"] },
           { "required": ["decision"] }
+        ]
+      }
+    },
+    "executionStrategySelectionEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "eventType",
+        "recordId",
+        "requirementSetId",
+        "strategyId",
+        "availability",
+        "selectedBy",
+        "strategyOptionsHash",
+        "selectedOptionHash",
+        "modelPacketHash",
+        "sourceDocumentHash",
+        "implementationConfirmationHash",
+        "sourceRefs",
+        "recordedAt",
+        "recordedBy"
+      ],
+      "properties": {
+        "eventType": { "const": "execution_strategy_selected" },
+        "recordId": { "$ref": "#/$defs/nonEmptyString" },
+        "requirementSetId": { "$ref": "#/$defs/nonEmptyString" },
+        "strategyId": {
+          "enum": [
+            "compiled_trace_direct",
+            "compiled_trace_with_sdd_artifacts",
+            "governed_skill_adapter",
+            "governed_skill_prompt"
+          ]
+        },
+        "availability": { "const": "available" },
+        "selectedBy": { "enum": ["user", "policy"] },
+        "strategyOptionsHash": { "$ref": "#/$defs/sha256" },
+        "selectedOptionHash": { "$ref": "#/$defs/sha256" },
+        "modelPacketHash": { "$ref": "#/$defs/sha256" },
+        "sourceDocumentHash": { "$ref": "#/$defs/sha256" },
+        "implementationConfirmationHash": { "$ref": "#/$defs/sha256" },
+        "sourceRefs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/sourceRef" }
+        },
+        "recordedAt": { "type": "string", "format": "date-time" },
+        "recordedBy": { "$ref": "#/$defs/nonEmptyString" }
+      },
+      "not": {
+        "anyOf": [
+          { "required": ["traceRows"] },
+          { "required": ["requiredCommands"] },
+          { "required": ["requirementScopeDecision"] },
+          { "required": ["recordClosed"] }
         ]
       }
     },

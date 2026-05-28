@@ -56,6 +56,8 @@ Treat `<skill-dir>` as the directory that contains this `SKILL.md` after install
 
 Resolve bundled scripts from `<skill-dir>/scripts/...`. Resolve consumer project inputs and outputs from the current project working directory or explicit CLI paths such as `--source-document`, `--requirement-record`, and `--out-dir`.
 
+When a main-agent or host adapter has already resolved the installed req-trace skill directory, invoke the generator with `path.join(resolvedReqTraceSkillDir, 'scripts', 'generate_prompt.js')`. Do not hard-code installed skill roots.
+
 Use `--execution-host codex|claude-code|cursor-ide|cursor-cli|generic` when compiling packet artifacts with `--out-dir`.
 
 Compatibility aliases are accepted:
@@ -117,10 +119,35 @@ Useful options:
 - `--execution-host codex|claude-code|claude|cursor-ide|cursor-cli|cursor|generic` to select host-specific continuation projection.
 - `--prompt-language zh-CN|en-US|bilingual|auto` to select human prompt prose language. `auto` reads `implementationConfirmation.promptLanguage`, then `implementationConfirmation.confirmationLanguage`, then falls back to `zh-CN`.
 - `--human-prompt-profile full|compact` to select human prompt density. `full` is the default for `--out-dir`.
+- `--execution-discipline-profile-ref <path>` to load an immutable main-agent generated execution discipline profile snapshot. The profile is `discipline_profile_only` and may be rendered into `human_prompt.txt`, `goal_execution.md`, and `audit_receipt.json`; it must not change confirmed source rows, required commands, packet authority, or mental model state.
 - `--goal-command-available true|false|auto` to declare whether the active host supports a native `/goal` command. `auto` is conservative and does not emit `/goal`. When true, the generated `/goal` command must reference `goal_execution.md` and `model_packet.json`; it requires `--out-dir` and is length-checked.
 - `--no-auto-commit` only when the user explicitly says not to auto-commit after PASS.
 
 If the script emits a `BLOCK:` marker, do not hide it and do not produce an implementation prompt.
+
+## Controlled Execution Discipline Profile Extension
+
+`--execution-discipline-profile-ref` is a controlled integration extension for main-agent dispatch. It expands host prompt projection only; it is not a source amendment and it is not requirement scope authority.
+
+Rules:
+
+- Main Agent is the only component that resolves `entryFlow -> ExecutionDisciplineProfile` and writes the immutable profile snapshot.
+- Req-trace may validate the profile hash and render its discipline rules into prompt artifacts.
+- Req-trace must not use the profile to add, remove, reorder, or reinterpret `MUST`, `TRACE`, `EVD`, `ACC`, `E2E`, failure, edge, AI-TDD, command, target, or closeout rows.
+- The profile must not change `sourceDocumentHash`, `implementationConfirmationHash`, or `confirmationPageHash`.
+- The profile must not override `model_packet.json`, `requiredCommands[]`, `contractExecutionManifest.requiredCommands[]`, or `contractExecutionManifest.closeoutProof.requiredCommands[]`.
+- The profile must not write `requirement-record.json` and must not advance `currentMentalModel`.
+- Existing `bugfix`, `standalone_tasks`, and `story assistant` skill definitions, prompt templates, audit templates, and stage contracts remain unchanged by this extension.
+
+Forbidden effects:
+
+- `change_confirmed_source_hash`
+- `change_implementation_confirmation_hash`
+- `add_or_remove_must_trace_evd_acc_e2e_rows`
+- `override_model_packet_authority`
+- `override_required_commands`
+- `write_requirement_record_directly`
+- `advance_mental_model`
 
 ## BLOCK Cases
 

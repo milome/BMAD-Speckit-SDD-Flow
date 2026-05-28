@@ -134,6 +134,17 @@ function readJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 
+function readOptionalJson(file) {
+  if (!file) return null;
+  if (!fs.existsSync(file)) {
+    throw new BlockedInput(
+      'BLOCK: EXECUTION_DISCIPLINE_PROFILE_REF_MISSING',
+      `Execution discipline profile ref does not exist: ${file}`
+    );
+  }
+  return readJson(file);
+}
+
 function writeJson(file, value) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
@@ -200,6 +211,12 @@ function stableStringify(value) {
 
 function sha256(content) {
   return `sha256:${crypto.createHash('sha256').update(content, 'utf8').digest('hex')}`;
+}
+
+function profileHashFor(profile) {
+  const clone = { ...(profile ?? {}) };
+  delete clone.profileHash;
+  return sha256(stableStringify(clone));
 }
 
 function semanticConfirmationForHash(confirmation) {
@@ -959,6 +976,9 @@ function compilerInputContext(args) {
       'Final gate commands must be derived from implementationConfirmation.requiredCommands, closeoutReadinessPreview.requiredCommands, evidence, or --final-gate before PASS.'
     );
   }
+  const executionDisciplineProfile = validateExecutionDisciplineProfile(
+    readOptionalJson(args.executionDisciplineProfileRef)
+  );
   return {
     sourcePath,
     sourceText,
@@ -970,6 +990,59 @@ function compilerInputContext(args) {
     implementationConfirmationHash: recordValidation.implementationConfirmationHash,
     registry,
     gates,
+    executionDisciplineProfile,
+  };
+}
+
+function validateExecutionDisciplineProfile(profile) {
+  if (!profile) return null;
+  const blockingReasons = [];
+  if (String(profile.authority ?? '') !== 'discipline_profile_only') {
+    blockingReasons.push('EXECUTION_DISCIPLINE_PROFILE_AUTHORITY_INVALID');
+  }
+  const declaredHash = String(profile.profileHash ?? '').trim();
+  const computedHash = profileHashFor(profile);
+  if (!declaredHash) {
+    blockingReasons.push('EXECUTION_DISCIPLINE_PROFILE_HASH_MISSING');
+  } else if (declaredHash !== computedHash) {
+    blockingReasons.push('EXECUTION_DISCIPLINE_PROFILE_HASH_MISMATCH');
+  }
+  const forbiddenFields = [
+    'traceRows',
+    'covers',
+    'requiredCommands',
+    'taskList',
+    'section7Tasks',
+    'legacyPromptBody',
+    'sourcePathAuthority',
+  ];
+  const scan = (value, prefix = '') => {
+    if (!value || typeof value !== 'object') return [];
+    if (Array.isArray(value)) return value.flatMap((item, index) => scan(item, `${prefix}[${index}]`));
+    return Object.entries(value).flatMap(([key, item]) => {
+      const current = prefix ? `${prefix}.${key}` : key;
+      const own = forbiddenFields.includes(key) ? [current] : [];
+      return [...own, ...scan(item, current)];
+    });
+  };
+  const forbidden = scan(profile);
+  blockingReasons.push(...forbidden.map((field) => `EXECUTION_DISCIPLINE_PROFILE_FORBIDDEN_FIELD:${field}`));
+  if (blockingReasons.length > 0) {
+    throw new BlockedInput(
+      `BLOCK: ${blockingReasons[0]}`,
+      `Execution discipline profile validation failed: ${blockingReasons.join(', ')}`
+    );
+  }
+  return {
+    profileId: String(profile.profileId ?? ''),
+    profileHash: declaredHash,
+    flow: String(profile.flow ?? ''),
+    authority: String(profile.authority ?? ''),
+    dimensionContractSelector: String(profile.dimensionContractSelector ?? ''),
+    sourceReferences: strings(profile.sourceReferences),
+    rules: strings(profile.rules),
+    requiredEvidence: strings(profile.requiredEvidence),
+    forbiddenOverrides: strings(profile.forbiddenOverrides),
   };
 }
 
@@ -1140,6 +1213,7 @@ function buildModelPacket(context, args) {
       auditReceiptRole: 'generator_self_audit_only_not_delivery_proof',
       sourceTraceMutationPolicy: 'confirmed_source_traceRows_status_must_not_be_rewritten',
     },
+    executionDisciplineProfile: context.executionDisciplineProfile,
     traceOrder: objects(confirmation.traceRows).map((row) => String(row.id)),
     traceSlices: buildTraceSlices(confirmation),
     atomicImplementationTaskList: objects(confirmation.atomicImplementationTaskList),
@@ -1475,6 +1549,19 @@ function renderHostDirectiveText(directive) {
   return lines.join('\n');
 }
 
+function renderExecutionDisciplineProfile(profile) {
+  if (!profile) return 'Execution Discipline Profile: none';
+  return `Execution Discipline Profile:
+profileId: ${profile.profileId}
+profileHash: ${profile.profileHash}
+authority: ${profile.authority}
+flow: ${profile.flow}
+dimensionContractSelector: ${profile.dimensionContractSelector}
+requiredEvidence: ${profile.requiredEvidence.join(', ') || '(none)'}
+rules:
+${profile.rules.map((rule) => `- ${rule}`).join('\n') || '- (none)'}`;
+}
+
 function languageLabels(language) {
   if (language === 'en-US') {
     return {
@@ -1507,6 +1594,8 @@ function renderFullHumanPromptFromPacket(packet, args, hostDirective, language) 
   return `${SKILL_LINE}
 
 ${renderHostDirectiveText(hostDirective)}
+
+${renderExecutionDisciplineProfile(packet.executionDisciplineProfile)}
 
 ${labels.task}: Strictly execute confirmed traceRows from ${sourceAuthority} until governed evidence closeout or semantic gap reconfirm_required.
 
@@ -1586,6 +1675,8 @@ function renderCompactHumanPromptFromPacket(packet, args, hostDirective, languag
   return `${SKILL_LINE}
 
 ${renderHostDirectiveText(hostDirective)}
+
+${renderExecutionDisciplineProfile(packet.executionDisciplineProfile)}
 
 Only ${sourceAuthority} is authoritative. model_packet.json is the machine-readable execution authority.
 Human prompt role: projection-only over model_packet.json. Do not introduce requirements absent from the packet.
@@ -1675,6 +1766,10 @@ function renderGoalDomainAddenda(packet) {
 - Missing evidence behavior: ${packet.runtimeWritePolicy.missingEvidenceBehavior}
 - Semantic gap action: reconfirm_required
 - Non-semantic gap action: repair_and_rerun_same_trace_slice
+
+### Execution Discipline Profile
+
+${renderExecutionDisciplineProfile(packet.executionDisciplineProfile)}
 
 AI-TDD protocol:
 Use RED -> GREEN -> REFACTOR -> CLOSEOUT per trace slice. RED proof must precede GREEN when expectedPreImplementationState is expected_red. Unexpected GREEN must be blocked and investigated before closeout.
@@ -1957,6 +2052,19 @@ function buildPassReceipt(args, context, packet, outputHashes, outputs, promptMe
     goalDocumentRequiredFragments: promptMeta.goalDocumentAudit?.fragments ?? [],
     goalDocumentMissingRequiredFragments: promptMeta.goalDocumentAudit?.missing ?? [],
     goalContractTemplate: promptMeta.goalContractTemplate,
+    executionDisciplineProfile: packet.executionDisciplineProfile
+      ? {
+          profileId: packet.executionDisciplineProfile.profileId,
+          profileHash: packet.executionDisciplineProfile.profileHash,
+          authority: packet.executionDisciplineProfile.authority,
+          flow: packet.executionDisciplineProfile.flow,
+          humanPromptProfileRendered: promptMeta.prompt.includes(packet.executionDisciplineProfile.profileHash),
+          goalExecutionProfileRendered:
+            promptMeta.hostDirective.goalCommand?.mode === 'native_goal_document_ref'
+              ? promptMeta.goalDocumentAudit?.passed === true
+              : null,
+        }
+      : null,
     coverageLedger: {
       traceRows: packet.traceOrder,
       atomicTasks: packet.atomicImplementationTaskList.map((task) => task.id),

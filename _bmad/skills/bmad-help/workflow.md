@@ -34,6 +34,9 @@
 - **Runtime readiness gate label** — when runtime state exists, `Check Implementation Readiness` maps to `governed_runtime_readiness_gate`, not directly to the upstream planning readiness workflow.
 - **No remediation execution** — `bmad-help` may explain that `readiness_auto_remediation` is the main Agent lane for blocked runtime readiness, but it must not trigger remediation.
 - **No mental model progression** — Only `main_agent_orchestration` and controlled ingest may progress the six mental model chain.
+- **Compiled dispatch route is informational** — when a confirmed `implementationConfirmation` exists, implementation dispatch uses req-trace compiled artifacts first: `model_packet.json` is machine authority; `human_prompt.txt` and `goal_execution.md` are host projections.
+- **Execution strategy display is not scope selection** — if execution strategy options are shown, label them as adapter / artifact-depth choices after validated `model_packet.json`, not as requirement scope choices.
+- **Old skill adapters remain blocked** — show `bugfix`, `standalone_tasks`, and `story` implementation adapters as compatibility or blocked options until adapter capability, prompt equivalence, artifact manifest, write scope, SDD reconciliation, and controlled evidence ingest gates pass.
 
 ## PRESENTATION PRIORITY
 

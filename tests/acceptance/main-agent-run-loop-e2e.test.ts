@@ -410,13 +410,19 @@ describe('main-agent automatic run-loop', () => {
         host: 'codex',
       });
 
-      expect(result.status).toBe('completed');
+      expect(result.status).toBe('blocked');
       expect(result.steps.find((step) => step.step === 'codex-worker-adapter')?.summary).toContain(
         'mode=codex_exec'
       );
       expect(result.taskReport?.validationsRun).toContain('fake-codex-exec-implement');
       expect(result.taskReport?.validationsRun).not.toContain('codex-worker-adapter-smoke');
       expect(result.taskReport?.validationsRun).not.toContain('main-agent:run-loop-task-report');
+      expect(result.taskReport?.driftFlags).toContain(
+        'task-report-done-without-valid-subagent-evidence-envelope'
+      );
+      expect(result.taskReport?.driftFlags).toContain('controlled-evidence-ingest-failed');
+      expect(result.finalSurface.pendingPacketStatus).toBe('invalidated');
+      expect(result.finalSurface.mainAgentNextAction).toBe('dispatch_implement');
     } finally {
       if (previous === undefined) {
         delete process.env.CODEX_WORKER_ADAPTER_BIN;
@@ -512,10 +518,14 @@ describe('main-agent automatic run-loop', () => {
         stage: 'implement',
         host: 'codex',
       });
-      expect(remediate.status).toBe('completed');
+      expect(remediate.status).toBe('blocked');
       expect(remediate.dispatchInstruction?.taskType).toBe('implement');
       expect(remediate.taskReport?.validationsRun).toContain('fake-rerun-codex-implement');
-      expect(remediate.finalSurface.mainAgentNextAction).toBe('dispatch_review');
+      expect(remediate.taskReport?.driftFlags).toContain(
+        'task-report-done-without-valid-subagent-evidence-envelope'
+      );
+      expect(remediate.taskReport?.driftFlags).toContain('controlled-evidence-ingest-failed');
+      expect(remediate.finalSurface.mainAgentNextAction).toBe('dispatch_implement');
 
       const review = runMainAgentAutomaticLoop({
         projectRoot: root,
@@ -523,10 +533,9 @@ describe('main-agent automatic run-loop', () => {
         stage: 'implement',
         host: 'codex',
       });
-      expect(review.status).toBe('completed');
-      expect(review.dispatchInstruction?.taskType).toBe('audit');
-      expect(review.dispatchInstruction?.nextAction).toBe('dispatch_review');
-      expect(review.taskReport?.validationsRun).toContain('fake-rerun-codex-audit');
+      expect(review.status).toBe('blocked');
+      expect(review.dispatchInstruction?.taskType).toBe('implement');
+      expect(review.dispatchInstruction?.nextAction).toBe('dispatch_implement');
       expect(review.steps.find((step) => step.step === 'codex-worker-adapter')?.summary).toContain(
         'mode=codex_exec'
       );

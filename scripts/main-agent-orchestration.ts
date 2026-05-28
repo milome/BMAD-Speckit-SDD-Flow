@@ -19,6 +19,20 @@ import {
   resolveDispatchRoute,
   type OrchestrationHost,
 } from './orchestration-dispatch-contract';
+import { resolveExecutionDisciplineProfile } from './execution-discipline-profiles';
+import { runMainAgentCompiledPrompt } from './main-agent-compiled-prompt-runner';
+import {
+  appendExecutionStrategySelection,
+  buildExecutionStrategyOptions,
+  selectExecutionStrategy,
+  toExecutionStrategySelectionEvent,
+} from './execution-strategy-selection';
+import {
+  createSddArtifactManifest,
+  defaultSddArtifactManifestPath,
+  validateSddArtifactManifest,
+  writeSddArtifactManifest,
+} from './sdd-artifact-manifest';
 import {
   claimPendingPacket,
   completePendingPacket,
@@ -64,6 +78,7 @@ import { mainRunRequiredCommandsFromAiTddManifest } from './run-required-command
 import { evaluateStrictCloseoutProof } from './strict-closeout-proof-gate';
 import { evaluateTargetArtifactRealization } from './target-artifact-realization-gate';
 import { resolveRuntimeScoringDataPath } from './runtime-scoring-data-path';
+import type { CodexWorkerAdapterReport } from './main-agent-codex-worker-adapter';
 
 const requireCommonJs = createRequire(__filename);
 
@@ -793,6 +808,94 @@ function writePacketFile(
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, JSON.stringify(packet, null, 2) + '\n', 'utf8');
   return file;
+}
+
+function relativePathFromRoot(projectRoot: string, filePath: string): string {
+  return path.relative(projectRoot, filePath).replace(/\\/gu, '/');
+}
+
+function recordIdentityFromPath(recordPath: string | undefined, fallbackSessionId: string): {
+  recordId: string;
+  requirementSetId: string;
+} {
+  if (recordPath && fs.existsSync(recordPath)) {
+    try {
+      const record = JSON.parse(fs.readFileSync(recordPath, 'utf8')) as Record<string, unknown>;
+      const recordId = normalizeText(record.recordId);
+      const requirementSetId = normalizeText(record.requirementSetId) || recordId;
+      if (recordId && requirementSetId) return { recordId, requirementSetId };
+    } catch {
+      // Fall back to the runtime session id below.
+    }
+  }
+  return { recordId: fallbackSessionId, requirementSetId: fallbackSessionId };
+}
+
+function ensurePolicyDefaultExecutionStrategy(input: {
+  recordPath?: string;
+  compiledRun: NonNullable<ReturnType<typeof runMainAgentCompiledPrompt>>;
+  packetId: string;
+  sessionId: string;
+}): ExecutionPacket['executionStrategy'] {
+  const optionsResult = buildExecutionStrategyOptions({
+    compiledPromptRef: input.compiledRun.compiledPromptRef,
+    modelPacketGateDecision: input.compiledRun.status === 'pass' ? 'pass' : 'blocked',
+  });
+  if (optionsResult.status !== 'pass') return null;
+  const selection = selectExecutionStrategy({
+    optionsResult,
+    strategyId: 'compiled_trace_direct',
+    selectedBy: 'policy',
+    policyDefaultAllowed: true,
+  });
+  if (!input.recordPath) return selection;
+  const identity = recordIdentityFromPath(input.recordPath, input.sessionId);
+  appendExecutionStrategySelection({
+    recordPath: input.recordPath,
+    event: toExecutionStrategySelectionEvent({
+      ...identity,
+      selection,
+      sourceRefs: [
+        { sourceType: 'model_packet', id: input.compiledRun.compiledPromptRef!.modelPacketHash },
+        { sourceType: 'execution_strategy_option', id: selection.selectedOptionHash },
+      ],
+      recordedAt: new Date().toISOString(),
+      recordedBy: 'main-agent-orchestration',
+    }),
+  });
+  return selection;
+}
+
+function writeEmptySddArtifactManifestRef(input: {
+  projectRoot: string;
+  recordPath?: string;
+  compiledOutDir?: string | null;
+  packetId: string;
+  sessionId: string;
+  flow: 'story' | 'bugfix' | 'standalone_tasks';
+}): ExecutionPacket['sddArtifactManifestRef'] {
+  if (!input.compiledOutDir) return null;
+  const identity = recordIdentityFromPath(input.recordPath, input.sessionId);
+  const manifest = createSddArtifactManifest({
+    recordId: identity.recordId,
+    flow: input.flow,
+    packetId: input.packetId,
+    runtimeTraceExecutionDir: relativePathFromRoot(input.projectRoot, input.compiledOutDir),
+  });
+  const manifestPath = defaultSddArtifactManifestPath({
+    runtimeTraceExecutionDir: input.compiledOutDir,
+  });
+  writeSddArtifactManifest(manifestPath, manifest);
+  const validation = validateSddArtifactManifest({
+    manifest,
+    projectRoot: input.projectRoot,
+  });
+  return {
+    path: manifestPath,
+    contentHash: sha256Text(fs.readFileSync(manifestPath, 'utf8')),
+    status: validation.ok ? 'pass' : 'blocked',
+    blockingReasons: validation.blockingReasons,
+  };
 }
 
 function sha256Text(value: string): string {
@@ -6199,7 +6302,10 @@ export function ingestMainAgentTaskReport(
 }
 
 export function ensureMainAgentDispatchPacket(
-  input: ResolveMainAgentOrchestrationInput & { host?: OrchestrationHost }
+  input: ResolveMainAgentOrchestrationInput & {
+    host?: OrchestrationHost;
+    preferredPacketId?: string | null;
+  }
 ): MainAgentOrchestrationSurface {
   const runtimeContext = loadRuntimeContextForMainAgent(input);
   const resolvedInput = runtimeContext ? { ...input, runtimeContext } : input;
@@ -6227,8 +6333,13 @@ export function ensureMainAgentDispatchPacket(
     currentSurface.sessionId ??
     deriveSessionIdFromRuntimeContext(input.flow, runtimeContext);
   const host = resolveMainAgentHost(input.projectRoot, input.host, currentSurface);
-  const packetId = `${taskType}-${Date.now()}`;
+  const packetId = input.preferredPacketId ?? `${taskType}-${Date.now()}`;
   const role = defaultPacketRole(taskType);
+  const flow = input.flow as 'story' | 'bugfix' | 'standalone_tasks';
+  const executionDisciplineProfile =
+    taskType === 'implement' || taskType === 'remediate'
+      ? resolveExecutionDisciplineProfile(flow)
+      : null;
   const inputArtifacts = [
     normalizeText(runtimeContext?.artifactPath),
     normalizeText(runtimeContext?.artifactRoot),
@@ -6251,13 +6362,54 @@ export function ensureMainAgentDispatchPacket(
         ? ['docs/**', '_bmad-output/**', 'specs/**']
         : ['src/**', 'tests/**', 'docs/**', '_bmad-output/**'];
 
+  const recordPath = resolvedContext(runtimeContext)?.recordPath;
+  const compiledRun =
+    taskType === 'implement' && !currentSurface.orchestrationState?.originalExecutionPacketId
+      ? runMainAgentCompiledPrompt({
+          projectRoot: input.projectRoot,
+          recordPath,
+          sourcePath:
+            normalizeText(runtimeContext?.artifactPath) ||
+            normalizeText(runtimeContext?.artifactRoot),
+          packetId,
+          flow,
+          executionHost:
+            host === 'codex'
+              ? 'codex'
+              : host === 'claude'
+                ? 'claude-code'
+                : 'cursor-ide',
+          executionDisciplineProfile,
+          goalCommandAvailable: host === 'codex' ? 'auto' : 'false',
+        })
+      : null;
+  const executionStrategy =
+    compiledRun?.status === 'pass'
+      ? ensurePolicyDefaultExecutionStrategy({
+          recordPath,
+          compiledRun,
+          packetId,
+          sessionId,
+        })
+      : null;
+  const sddArtifactManifestRef =
+    compiledRun?.status === 'pass'
+      ? writeEmptySddArtifactManifestRef({
+          projectRoot: input.projectRoot,
+          recordPath,
+          compiledOutDir: compiledRun.outDir,
+          packetId,
+          sessionId,
+          flow,
+        })
+      : null;
   const packet =
     currentSurface.orchestrationState?.originalExecutionPacketId != null
       ? createResumePacket({
           packetId,
           parentSessionId: sessionId,
           originalExecutionPacketId: currentSurface.orchestrationState.originalExecutionPacketId,
-          flow: input.flow as 'story' | 'bugfix' | 'standalone_tasks',
+          flow,
           phase: input.stage,
           role,
           resumeReason: `main agent resumed ${taskType} after orchestration-state inspection`,
@@ -6272,7 +6424,7 @@ export function ensureMainAgentDispatchPacket(
       : createExecutionPacket({
           packetId,
           parentSessionId: sessionId,
-          flow: input.flow as 'story' | 'bugfix' | 'standalone_tasks',
+          flow,
           phase: input.stage,
           taskType,
           role,
@@ -6283,7 +6435,27 @@ export function ensureMainAgentDispatchPacket(
           expectedDelta: `execute ${taskType} through the main-agent runtime loop`,
           successCriteria: ['bounded task report returned', 'state updated'],
           stopConditions: ['true blocker detected', 'scope must widen'],
+          authorityMode:
+            compiledRun?.status === 'pass'
+              ? 'compiled_implementation_confirmation'
+              : compiledRun?.status === 'no_confirmed_source' || compiledRun === null
+                ? 'legacy_generic_prompt'
+                : 'compiled_implementation_confirmation',
+          compiledPromptRef: compiledRun?.compiledPromptRef ?? null,
+          executionDisciplineProfile,
+          executionStrategy,
+          sddArtifactManifestRef,
+          legacyPromptFallbackReason:
+            compiledRun?.status === 'no_confirmed_source' || compiledRun === null
+              ? 'no_confirmed_source'
+              : null,
+          compilerBlock:
+            compiledRun && compiledRun.status !== 'pass' && compiledRun.status !== 'no_confirmed_source'
+              ? compiledRun.blockingReasons
+              : null,
         });
+  const compilerBlocked =
+    'compilerBlock' in packet && Array.isArray(packet.compilerBlock) && packet.compilerBlock.length > 0;
 
   const packetKind: PacketKind = 'originalExecutionPacketId' in packet ? 'resume' : 'execution';
   const packetPath = writePacketFile(input.projectRoot, sessionId, packetId, packet);
@@ -6299,7 +6471,7 @@ export function ensureMainAgentDispatchPacket(
         packetId,
         packetPath,
         packetKind,
-        status: 'ready_for_main_agent',
+        status: compilerBlocked ? 'invalidated' : 'ready_for_main_agent',
         createdAt: new Date().toISOString(),
         claimOwner: null,
       },
@@ -6331,7 +6503,7 @@ export function ensureMainAgentDispatchPacket(
         packetId,
         packetPath,
         packetKind,
-        status: 'ready_for_main_agent',
+        status: compilerBlocked ? 'invalidated' : 'ready_for_main_agent',
         createdAt: new Date().toISOString(),
         claimOwner: null,
       },
@@ -6380,7 +6552,7 @@ export function ensureMainAgentDispatchPacket(
       `${sessionId}.json`
     ),
     orchestrationState: writtenState,
-    pendingPacketStatus: 'ready_for_main_agent',
+    pendingPacketStatus: compilerBlocked ? 'invalidated' : 'ready_for_main_agent',
     pendingPacket: packet,
     fourSignal: writtenState.fourSignal ?? null,
     latestGate: writtenState.latestGate ?? null,
@@ -6391,7 +6563,7 @@ export function ensureMainAgentDispatchPacket(
     mainAgentCanContinue: false,
     continueDecision: 'blocked',
     mainAgentNextAction: writtenState.nextAction,
-    mainAgentReady: true,
+    mainAgentReady: !compilerBlocked,
   };
 }
 
@@ -6399,6 +6571,7 @@ export function buildMainAgentDispatchInstruction(
   input: ResolveMainAgentOrchestrationInput & {
     host?: OrchestrationHost;
     hydratePacket?: boolean;
+    preferredPacketId?: string | null;
   }
 ): MainAgentDispatchInstruction | null {
   const surface = input.hydratePacket
@@ -7061,6 +7234,137 @@ function readTaskReportFromFile(reportPath: string, packetId: string): TaskRepor
     throw new Error(`Task report packetId mismatch: expected ${packetId}, got ${parsed.packetId}`);
   }
   return parsed;
+}
+
+function readTaskReportPacketId(reportPath: string | undefined): string | null {
+  const normalized = normalizeText(reportPath);
+  if (!normalized || !fs.existsSync(normalized)) return null;
+  try {
+    const parsed = JSON.parse(fs.readFileSync(path.resolve(normalized), 'utf8')) as unknown;
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+    return normalizeText((parsed as { packetId?: unknown }).packetId) || null;
+  } catch {
+    return null;
+  }
+}
+
+function controlledIngestCodexWorkerEvidence(input: {
+  recordPath: string | null;
+  adapterReport: CodexWorkerAdapterReport;
+  recordedAt: string;
+}): string[] {
+  if (!input.recordPath) return [];
+  const envelope = input.adapterReport.subagentEvidenceEnvelope;
+  const validation = input.adapterReport.subagentEvidenceEnvelopeValidation;
+  const record = readJsonIfExists(input.recordPath) ?? {};
+  const recordId = normalizeText(record.recordId);
+  const requirementSetId = normalizeText(record.requirementSetId) || recordId;
+  const sourceRefs = validation.sourceRefs.length
+    ? validation.sourceRefs
+    : [{ sourceType: 'execution_packet', id: input.adapterReport.taskReport.packetId }];
+  const artifactRefs = validation.evidenceArtifactRefs;
+  const events: string[] = [];
+  if (envelope && validation.ok) {
+    const subagentEvent = {
+      eventType: 'subagent_evidence_envelope_recorded',
+      recordId,
+      requirementSetId,
+      executionIterationId: `${input.adapterReport.taskReport.packetId}:subagent-evidence-envelope`,
+      runId: input.adapterReport.taskReport.packetId,
+      status: validation.status,
+      subagentEvidenceEnvelope: envelope,
+      subagentEvidenceEnvelopeHash: validation.envelopeHash,
+      traceRows: Array.isArray(envelope.traceRows) ? envelope.traceRows : [],
+      taskRefs: Array.isArray(envelope.taskRefs) ? envelope.taskRefs : [],
+      evidenceRefs: input.adapterReport.taskReport.evidence,
+      coveredRequirementIds: Array.isArray(envelope.coveredRequirementIds)
+        ? envelope.coveredRequirementIds
+        : [],
+      commandRunRefs: Array.isArray(envelope.commandRuns) ? envelope.commandRuns : [],
+      evidenceArtifactRefs: artifactRefs,
+      sourceRefs,
+      sourceDocumentHash: normalizeText(envelope.sourceDocumentHash),
+      implementationConfirmationHash: normalizeText(envelope.implementationConfirmationHash),
+      architectureConfirmationHash: normalizeText(envelope.architectureConfirmationHash),
+      recordedAt: input.recordedAt,
+      recordedBy: 'main-agent-orchestration',
+    };
+    const commit = appendControlEventAndReplay({
+      recordPath: input.recordPath,
+      writerId: 'main-agent-orchestration',
+      eventType: 'subagent_evidence_envelope_recorded',
+      payload: subagentEvent,
+      recordedAt: input.recordedAt,
+      reduce: (current) => ({
+        ...current,
+        executionIterations: [...objectsFrom(current.executionIterations), subagentEvent],
+        lastEventType: 'subagent_evidence_envelope_recorded',
+        updatedAt: input.recordedAt,
+      }),
+    });
+    events.push(commit.event.eventId);
+    for (const artifact of artifactRefs) {
+      const artifactEvent = {
+        ...artifact,
+        eventType: 'artifact_indexed',
+        recordId,
+        requirementSetId,
+      };
+      const artifactCommit = appendControlEventAndReplay({
+        recordPath: input.recordPath,
+        writerId: 'main-agent-orchestration',
+        eventType: 'artifact_indexed',
+        payload: artifactEvent,
+        recordedAt: input.recordedAt,
+        reduce: (current) => ({
+          ...current,
+          artifactIndex: [...objectsFrom(current.artifactIndex), artifactEvent],
+          lastEventType: 'artifact_indexed',
+          updatedAt: input.recordedAt,
+        }),
+      });
+      events.push(artifactCommit.event.eventId);
+    }
+  }
+  const executionEvent = {
+    eventType: 'execution_iteration_recorded',
+    recordId,
+    requirementSetId,
+    executionIterationId: input.adapterReport.taskReport.packetId,
+    runId: input.adapterReport.taskReport.packetId,
+    status: input.adapterReport.taskReport.status,
+    traceRows: envelope && Array.isArray(envelope.traceRows) ? envelope.traceRows : [],
+    taskRefs: envelope && Array.isArray(envelope.taskRefs) ? envelope.taskRefs : [],
+    evidenceRefs: input.adapterReport.taskReport.evidence,
+    filesChanged: input.adapterReport.taskReport.filesChanged,
+    diffSummary: 'Codex worker TaskReport ingested as iteration evidence only; not terminal closeout.',
+    commandRunRefs: envelope && Array.isArray(envelope.commandRuns) ? envelope.commandRuns : [],
+    evidenceArtifactRefs: artifactRefs,
+    sourceRefs,
+    sourceDocumentHash: normalizeText(record.sourceDocumentHash),
+    implementationConfirmationHash: normalizeText(record.implementationConfirmationHash),
+    architectureConfirmationHash: normalizeText(
+      (record.architectureConfirmationState as Record<string, unknown> | undefined)
+        ?.currentArchitectureConfirmationHash
+    ),
+    recordedAt: input.recordedAt,
+    recordedBy: 'main-agent-orchestration',
+  };
+  const iterationCommit = appendControlEventAndReplay({
+    recordPath: input.recordPath,
+    writerId: 'main-agent-orchestration',
+    eventType: 'execution_iteration_recorded',
+    payload: executionEvent,
+    recordedAt: input.recordedAt,
+    reduce: (current) => ({
+      ...current,
+      executionIterations: [...objectsFrom(current.executionIterations), executionEvent],
+      lastEventType: 'execution_iteration_recorded',
+      updatedAt: input.recordedAt,
+    }),
+  });
+  events.push(iterationCommit.event.eventId);
+  return events;
 }
 
 export function writeMainAgentRunLoopTaskReport(
@@ -8544,6 +8848,10 @@ export function runMainAgentAutomaticLoop(input: {
     ...surfaceInput,
     host: input.host,
     hydratePacket: true,
+    preferredPacketId:
+      process.env.MAIN_AGENT_ALLOW_EXTERNAL_TASK_REPORT === 'true'
+        ? readTaskReportPacketId(args.taskReportPath)
+        : null,
   });
   if (!instruction) {
     const finalSurface = resolveMainAgentOrchestrationSurface({
@@ -8597,6 +8905,7 @@ export function runMainAgentAutomaticLoop(input: {
   });
 
   let taskReport: TaskReport | null = null;
+  let codexAdapterReport: CodexWorkerAdapterReport | null = null;
   try {
     taskReport =
       input.executor?.({
@@ -8634,6 +8943,7 @@ export function runMainAgentAutomaticLoop(input: {
         smokeTargetPath: normalizeText(args.codexSmokeTargetPath) || undefined,
         timeoutMs: Number(args.codexTimeoutMs) > 0 ? Number(args.codexTimeoutMs) : undefined,
       });
+      codexAdapterReport = adapterReport;
       steps.push({
         step: 'codex-worker-adapter',
         status:
@@ -8694,7 +9004,64 @@ export function runMainAgentAutomaticLoop(input: {
       finalSurface,
     };
   }
+  if (
+    codexAdapterReport &&
+    taskReport.status === 'done' &&
+    !codexAdapterReport.subagentEvidenceEnvelopeValidation.ok
+  ) {
+    taskReport = {
+      ...taskReport,
+      status: 'blocked',
+      evidence: [
+        ...taskReport.evidence,
+        ...codexAdapterReport.subagentEvidenceEnvelopeValidation.mismatches.map(
+          (mismatch) => `subagentEvidenceEnvelope invalid: ${mismatch}`
+        ),
+      ],
+      driftFlags: [
+        ...new Set([
+          ...(taskReport.driftFlags ?? []),
+          'task-report-done-without-valid-subagent-evidence-envelope',
+        ]),
+      ],
+    };
+  }
   taskReport = blockSmokeOnlyImplementationReport(taskReport, instruction);
+  if (codexAdapterReport && activeRecordPath) {
+    try {
+      const controlledEventIds = controlledIngestCodexWorkerEvidence({
+        recordPath: activeRecordPath,
+        adapterReport: {
+          ...codexAdapterReport,
+          taskReport,
+        },
+        recordedAt: new Date().toISOString(),
+      });
+      steps.push({
+        step: 'controlled-evidence.ingest',
+        status: controlledEventIds.length > 0 ? 'pass' : 'skip',
+        summary: `events=${controlledEventIds.length}`,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      taskReport = {
+        ...taskReport,
+        status: 'blocked',
+        evidence: [
+          ...taskReport.evidence,
+          `controlled evidence ingest failed: ${message}`,
+        ],
+        driftFlags: [
+          ...new Set([...(taskReport.driftFlags ?? []), 'controlled-evidence-ingest-failed']),
+        ],
+      };
+      steps.push({
+        step: 'controlled-evidence.ingest',
+        status: 'fail',
+        summary: message,
+      });
+    }
+  }
   const completedState = ingestMainAgentTaskReport(
     input.projectRoot,
     instruction.sessionId,
@@ -9051,6 +9418,7 @@ export function mainMainAgentOrchestration(argv: string[]): number {
         stage,
         host,
         args,
+        // runMainAgentAutomaticLoop reads this path to preserve packetId binding.
         executor: args.taskReportPath
           ? ({ instruction, args: runArgs }) =>
               process.env.MAIN_AGENT_ALLOW_EXTERNAL_TASK_REPORT === 'true'

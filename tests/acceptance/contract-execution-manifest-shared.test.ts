@@ -61,10 +61,14 @@ describe('shared ContractExecutionManifest canonicalization', () => {
 
   it('keeps hash stable for presentation-only projection changes', () => {
     const first = buildContractExecutionManifest({ confirmation: confirmation() });
+    const baseProjection = confirmation().aiTddContractExecutionManifestProjection as Record<
+      string,
+      unknown
+    >;
     const second = buildContractExecutionManifest({
       confirmation: confirmation({
         aiTddContractExecutionManifestProjection: {
-          ...confirmation().aiTddContractExecutionManifestProjection,
+          ...baseProjection,
           note: 'different presentation-only note',
         },
       }),
@@ -75,10 +79,14 @@ describe('shared ContractExecutionManifest canonicalization', () => {
 
   it('changes hash for semantic projection changes', () => {
     const first = buildContractExecutionManifest({ confirmation: confirmation() });
+    const baseProjection = confirmation().aiTddContractExecutionManifestProjection as Record<
+      string,
+      unknown
+    >;
     const second = buildContractExecutionManifest({
       confirmation: confirmation({
         aiTddContractExecutionManifestProjection: {
-          ...confirmation().aiTddContractExecutionManifestProjection,
+          ...baseProjection,
           closeoutProof: { requiredCommands: ['CMD-001', 'CMD-002'] },
         },
         requiredCommands: [
@@ -168,7 +176,7 @@ describe('shared ContractExecutionManifest canonicalization', () => {
         ],
       }),
     });
-    const second = {
+    const second: Record<string, unknown> = {
       ...first,
       commandTargetCollection: {
         ...(first.commandTargetCollection as Record<string, unknown>),

@@ -301,6 +301,29 @@ function normalizeContractCheck(check: JsonObject, record: JsonObject): JsonObje
   };
 }
 
+function normalizeExecutionStrategySelection(selection: JsonObject, record: JsonObject): JsonObject {
+  const recordedAt = text(selection.recordedAt) || text(record.updatedAt) || '2026-01-01T00:00:00.000Z';
+  return {
+    eventType: 'execution_strategy_selected',
+    recordId: text(selection.recordId) || text(record.recordId),
+    requirementSetId: text(selection.requirementSetId) || text(record.requirementSetId) || text(record.recordId),
+    strategyId: text(selection.strategyId) || 'compiled_trace_direct',
+    availability: text(selection.availability) === 'available' ? 'available' : text(selection.availability),
+    selectedBy: text(selection.selectedBy) === 'user' ? 'user' : 'policy',
+    strategyOptionsHash: text(selection.strategyOptionsHash),
+    selectedOptionHash: text(selection.selectedOptionHash),
+    modelPacketHash: text(selection.modelPacketHash),
+    sourceDocumentHash: text(selection.sourceDocumentHash) || text(record.sourceDocumentHash),
+    implementationConfirmationHash:
+      text(selection.implementationConfirmationHash) || text(record.implementationConfirmationHash),
+    sourceRefs: normalizeSourceRefs(selection.sourceRefs).length
+      ? normalizeSourceRefs(selection.sourceRefs)
+      : [{ sourceType: 'execution_strategy_option', id: text(selection.strategyId) || 'compiled_trace_direct' }],
+    recordedAt,
+    recordedBy: text(selection.recordedBy) || 'canonical-reducer',
+  };
+}
+
 function normalizeArchitectureStatus(value: unknown, fallback: string): string {
   const status = text(value);
   return ['active', 'stale', 'blocked', 'missing', 'superseded'].includes(status) ? status : fallback;
@@ -568,6 +591,7 @@ export function canonicalizeRequirementRecord(record: JsonObject): JsonObject {
     'architectureConfirmations',
     'architectureConfirmationStateChecks',
     'executionIterations',
+    'executionStrategySelections',
     'requirementClosures',
     'gateChecks',
     'contractChecks',
@@ -642,6 +666,9 @@ export function canonicalizeRequirementRecord(record: JsonObject): JsonObject {
     normalizeArchitectureStateCheck(check, out, index)
   );
   out.executionIterations = objects(out.executionIterations).map((iteration, index) => normalizeExecutionIteration(iteration, out, index));
+  out.executionStrategySelections = objects(out.executionStrategySelections).map((selection) =>
+    normalizeExecutionStrategySelection(selection, out)
+  );
   out.requirementClosures = objects(out.requirementClosures)
     .map((closure) => normalizeClosure(closure, out))
     .filter((closure) => text(closure.requirementId));

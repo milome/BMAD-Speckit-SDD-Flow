@@ -16,6 +16,8 @@ import {
   extractStructuredDriftSignalBlock,
 } from '../parsers';
 import type { AuditStage } from '../parsers';
+import type { DimensionMode } from '../parsers/dimension-parser';
+import { resolveScoringDimensionContract } from '../contracts/dimension-contracts';
 import { loadAndDedupeRecords } from '../query/loader';
 import { writeScoreRecordSync } from '../writer';
 import type { WriteMode } from '../writer';
@@ -69,6 +71,14 @@ export interface ParseAndWriteScoreOptions {
   triggerStage?: string;
   /** Story 9.4: 本 stage 失败轮报告路径列表（不含验证轮）；仅 scenario=real_dev 时生效 */
   iterationReportPaths?: string[];
+  /** Stage-aware dimension contract id for this score materialization attempt. */
+  dimensionContractId?: string;
+  /** Explicit dimension mode; overrides legacy stageToMode for this call when consistent. */
+  dimensionMode?: DimensionMode;
+  /** Expected top-level dimensions for this scoring attempt. */
+  expectedDimensions?: string[];
+  /** Atomic item set id; 20+ check_items remain atomic items, not top-level dimensions. */
+  atomicItemSetId?: string;
 }
 
 function resolveScoreDataPath(dataPath?: string): string {
@@ -260,7 +270,19 @@ export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Pr
     scenario,
   });
 
-  const dimensionScores = parseDimensionScores(content, stageToMode(stage));
+  const dimensionContract = resolveScoringDimensionContract({
+    stage,
+    dimensionMode: options.dimensionMode,
+    dimensionContractId: options.dimensionContractId,
+    expectedDimensions: options.expectedDimensions,
+    atomicItemSetId: options.atomicItemSetId,
+  });
+  if (dimensionContract.status !== 'resolved' || !dimensionContract.dimensionMode) {
+    throw new Error(
+      `parseAndWriteScore: dimension contract ${dimensionContract.status}: ${dimensionContract.blockingReasons.join(', ')}`
+    );
+  }
+  const dimensionScores = parseDimensionScores(content, dimensionContract.dimensionMode);
   let baseRecord =
     dimensionScores.length > 0
       ? {
@@ -348,7 +370,7 @@ export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Pr
       failRecords.push(parseIterationReportToRecord(absPath, iterContent, stage));
     }
     const mainOverallGrade = extractOverallGrade(content);
-    const mainDimensionScores = parseDimensionScores(content, stageToMode(stage));
+    const mainDimensionScores = parseDimensionScores(content, dimensionContract.dimensionMode);
     const passRecord: IterationRecord = {
       timestamp: baseRecord.timestamp,
       result: 'pass',
@@ -421,10 +443,14 @@ export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Pr
     ...(patchSnapshot ?? {}),
     ...(computeSourcePath(stage, options.artifactDocPath, reportPath)),
     ...(options.triggerStage != null ? { trigger_stage: options.triggerStage } : {}),
+    dimension_contract_id: dimensionContract.dimensionContractId ?? undefined,
+    dimension_mode: dimensionContract.dimensionMode,
+    expected_dimensions: dimensionContract.expectedDimensions,
+    atomic_item_set_id: dimensionContract.atomicItemSetId ?? undefined,
   };
 
   if ((stage === 'implement' || stage === 'post_impl') && dimensionScores.length === 0) {
-    const expectedEn = listDimensionNamesEn('code');
+    const expectedEn = listDimensionNamesEn(dimensionContract.dimensionMode);
     const dimHint =
       expectedEn.length > 0
         ? expectedEn.join(', ')

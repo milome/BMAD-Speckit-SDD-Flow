@@ -8544,6 +8544,7 @@ post-close signal 必须被分类为以下之一：
 3. 架构假设失效或架构绑定变化：创建新的 requirement record/version，并从 `architecture_confirmation` 或更早阶段重新确认。
 4. closeout、gate、evidence、hash 或 provenance 本身错误：创建 `closure_integrity_incident`，执行 RCA 和显式治理事件。
 5. 生产环境或后续测试发现回归：若违反原契约，创建 bugfix record；若暴露新需求，创建新 requirement/version。
+6. 非缺陷 post-close revalidation：当 `sourceDocumentHash` 和 `implementationConfirmationHash` 未变、没有证据证明旧 closeout proof 本身虚假，但当前 target artifact hash 与历史 closeout evidence 不同，分类为 `post_close_revalidation_required`，只生成 revalidation evidence carrier，不创建新 requirement record。
 
 ### 14.3 新 record 最小字段
 
@@ -8560,6 +8561,24 @@ reproductionEvidence
 sourceRefs
 relationship: bugfix_of | supersedes | follows_up | closure_integrity_incident_of
 ```
+
+`post_close_revalidation_required` 不是新的执行 record。它必须写入独立 revalidation evidence carrier，并至少包含：
+
+```text
+originRecordId
+originRequirementSetId
+originCloseoutAttemptId
+sourceDocumentHash
+implementationConfirmationHash
+changedTargetArtifacts
+previousArtifactEvidenceRefs
+currentArtifactHashes
+revalidationRunId
+revalidationEvidenceRefs
+classification: post_close_revalidation_required
+```
+
+如果 revalidation 通过，原 closed record 只追加 `post_close_revalidation_passed` 证据或只读投影引用，继续保持 closed。如果 revalidation 失败，`post_close_defect_intake` 必须升级分类：原契约实现偏离进入 linked bugfix record，新需求进入 new requirement/version，旧 closeout proof 真实性缺陷进入 `closure_integrity_incident`。
 
 ### 14.4 禁止行为
 
@@ -8579,6 +8598,18 @@ post-close signal
 -> run confirmation / architecture / readiness as needed on the new carrier
 -> implement and close the new record
 -> keep original record closed
+```
+
+非缺陷 revalidation 分支：
+
+```text
+post-close signal
+-> post_close_defect_intake
+-> classify post_close_revalidation_required
+-> create revalidation evidence carrier
+-> rerun current target artifact realization / strict closeout proof / AI-TDD closeout evidence
+-> if pass: append post_close_revalidation_passed evidence reference and keep original record closed
+-> if fail: reclassify to linked bugfix, new requirement/version, or closure_integrity_incident
 ```
 
 ### 14.6 closure_integrity_incident
@@ -9084,6 +9115,8 @@ score、dashboard、SFT、report、summary、hook receipt、stdout、HTTP 200、
 
 分类后必须创建 linked bugfix requirement record、新 requirement/version，或 `closure_integrity_incident`。原 closed record 必须保持 closed，不能自动 reopen，不能继续 dispatch。
 
+当关闭后信号只表明 target artifact hash 与历史 closeout evidence 不同，且 `sourceDocumentHash` 与 `implementationConfirmationHash` 未变、旧 closeout proof 无伪通过或 provenance 损坏证据时，系统必须分类为 `post_close_revalidation_required`，生成新的 revalidation evidence carrier；不得重新确认原需求，不得 reopen 或 dispatch 原 closed record，也不得覆盖旧 closeout acceptance。
+
 ### FR-014 BMAD Association 与外部看板投影
 
 系统必须为 `bugfix`、`standalone_tasks` 和 `story` 提供受控 BMAD association 关联能力。
@@ -9227,6 +9260,15 @@ AND 原 record 保持 closed 且不得继续 dispatch
 AND 实现缺陷必须创建 linked bugfix requirement record
 AND 新能力或漏项必须创建新 requirement record/version
 AND closeout proof defect 必须创建 `closure_integrity_incident`。
+
+GIVEN 原 requirement record 已经 `record_closed`
+AND `sourceDocumentHash` 与 `implementationConfirmationHash` 未变
+AND 当前 target artifact hash 与历史 closeout evidence 不同
+WHEN 没有证据证明旧 closeout proof 本身虚假、gate 错误、hash/provenance 损坏或 terminal close event 链不可信
+THEN `post_close_defect_intake` 必须分类为 `post_close_revalidation_required`
+AND 系统只追加 revalidation evidence carrier 或 `post_close_revalidation_passed` 证据引用
+AND 原 record 保持 closed
+AND 不得触发原需求重新确认、不得 reopen、不得从原 closed record dispatch。
 
 ### AC-014 BMAD Association 与外部看板投影
 

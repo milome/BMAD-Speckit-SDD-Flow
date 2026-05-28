@@ -28,3 +28,11 @@ export type { ParseAuditReportOptions, AuditStage } from './audit-index';
 
 export { listDimensionNamesEn, parseDimensionScores, stageToMode } from './dimension-parser';
 export type { DimensionScore, DimensionMode } from './dimension-parser';
+export {
+  expectedDimensionsForMode,
+  resolveScoringDimensionContract,
+} from '../contracts/dimension-contracts';
+export type {
+  ResolveScoringDimensionContractInput,
+  ScoringDimensionContractResolution,
+} from '../contracts/dimension-contracts';
