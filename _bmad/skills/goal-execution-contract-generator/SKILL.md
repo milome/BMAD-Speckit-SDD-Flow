@@ -54,6 +54,75 @@ Create a frozen `/goal` execution contract. This skill only generates and audits
 - Prefer scoped acceptance groups such as `Domain Behavior Acceptance`, `Integration Surface Acceptance`, or `Operational Surface Acceptance` when they make the contract clearer; do not force these group names when the goal is simple.
 - If the source is underspecified, generate a contract that stops with the appropriate amendment condition instead of inventing semantic requirements.
 
+## Deterministic Requirement Language
+
+Generate every executable contract item with deterministic wording. The generated document must let another model parse exact obligations without inferring intent from prose.
+
+Apply this rule to every:
+
+- `MUST`
+- `MUST NOT`
+- `NOT DONE`
+- `EVD`
+- `ARTIFACT`
+- `PATH`
+- `TRACE MATRIX`
+- `COMMAND`
+- task step
+- acceptance checklist row
+- completion evidence item
+- stop condition
+
+Required wording:
+
+- Use one obligation per sentence or bullet.
+- Name exact IDs, files, directories, artifacts, schemas, fields, commands, hashes, gates, scripts, and acceptance rows.
+- State who owns the action, where the output is written, what exact value or condition must be true, and which command proves it.
+- Use `none` only when the template or source explicitly permits no value.
+- Use `blocked_until_<specific_condition>` for unavailable work, not "future", "later", or "optional".
+- For any excluded scope, write a deterministic `NOT DONE` row with the excluded action, excluded path or surface, and the reason.
+- For every artifact, state the exact path, required fields, hash expectation, producer, and consuming gate.
+- For every command, provide the exact command line, working directory assumption, expected pass condition, and the acceptance IDs it proves.
+- For every trace matrix row, map exact task IDs to exact acceptance IDs and exact evidence commands or artifact paths.
+
+Forbidden wording in executable contract sections:
+
+- "reference"
+- "refer to"
+- "optional"
+- "as needed"
+- "if possible"
+- "where appropriate"
+- "where applicable" unless followed by a deterministic applicability condition
+- "consider"
+- "may consider"
+- "should consider"
+- "can be"
+- "exists or is referenced"
+- "exists or referenced"
+- "produce or reference"
+- "future"
+- "later"
+- "follow-up" unless it appears in a `NOT DONE` row
+- "TBD"
+- "TODO"
+- "etc."
+- "and so on"
+- "similar"
+- "roughly"
+- "generally"
+- "recommended" unless a single selected recommendation is also written as a MUST
+
+If source text contains vague wording, normalize it before writing the contract:
+
+- Replace "produce or reference artifact" with "produce artifact at `<exact-path>` and validate `<exact-hash-field>`".
+- Replace "run relevant tests" with the exact command list.
+- Replace "sync surfaces" with the exact surface paths and the exact equality or allowed-difference rule.
+- Replace "missing core surfaces block" with the exact missing field IDs and blocking state.
+- Replace "later/future work" with a deterministic `NOT DONE` row or `blocked_until_<specific_condition>`.
+
+If a deterministic path, command, schema, field, owner, artifact, or acceptance mapping cannot be derived from the source or conversation, do not invent it. Add a stop condition named `blocked_by_contract_ambiguity:<field>` and list the exact missing decision.
+
 ## Shared Asset Governance
 
 Inside this repository:
@@ -97,6 +166,9 @@ Also verify:
 - Every acceptance ID maps to at least one task and one evidence command.
 - Every command is concrete, ordered, and scoped to this repository.
 - If `Domain-Specific Contract Addenda` exists, every addendum maps to a task, an acceptance item, and a traceability matrix row.
+- No executable contract section contains forbidden vague wording from `Deterministic Requirement Language`.
+- Every `MUST`, `MUST NOT`, `NOT DONE`, `EVD`, `ARTIFACT`, `PATH`, `TRACE MATRIX`, and `COMMAND` row has deterministic owner, path or target, proof command or artifact, and pass/block condition.
+- Every unavailable or out-of-scope item is expressed as either `blocked_until_<specific_condition>` or a deterministic `NOT DONE` row.
 
 If any check fails, fix the contract before starting docs-review rounds.
 
