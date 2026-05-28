@@ -7,6 +7,8 @@ const path = require('path');
 const os = require('os');
 const AIRegistry = require('./ai-registry');
 
+const SHARED_REF_PATTERN = /@\.\/\.\.\/_shared\/([^\s)]+)/g;
+
 /**
  * Expand ~ in path to os.homedir(). Handles ~, ~/, ~\.
  * @param {string} [p] - Path that may start with ~.
@@ -47,6 +49,49 @@ function copyDirRecursive(src, dest) {
   return copied;
 }
 
+function normalizeSharedRef(ref) {
+  const normalized = String(ref || '').replace(/\\/g, '/').trim();
+  if (!normalized || path.isAbsolute(normalized) || normalized.split('/').includes('..')) {
+    return null;
+  }
+  return normalized;
+}
+
+function readSharedRefs(skillDir) {
+  const skillMd = path.join(skillDir, 'SKILL.md');
+  if (!fs.existsSync(skillMd) || !fs.statSync(skillMd).isFile()) return [];
+  const content = fs.readFileSync(skillMd, 'utf8');
+  const refs = new Set();
+  let match;
+  SHARED_REF_PATTERN.lastIndex = 0;
+  while ((match = SHARED_REF_PATTERN.exec(content)) !== null) {
+    const normalized = normalizeSharedRef(match[1]);
+    if (normalized) refs.add(normalized);
+  }
+  return [...refs].sort();
+}
+
+function copyReferencedSharedFiles(skillSrc, skillDest) {
+  const refs = readSharedRefs(skillSrc);
+  if (refs.length === 0) return;
+
+  const srcSharedRoot = path.resolve(skillSrc, '..', '_shared');
+  const destSharedRoot = path.resolve(skillDest, '..', '_shared');
+  if (!fs.existsSync(srcSharedRoot) || !fs.statSync(srcSharedRoot).isDirectory()) {
+    throw new Error(`Skill references ../_shared but source _shared is missing: ${srcSharedRoot}`);
+  }
+
+  for (const ref of refs) {
+    const srcFile = path.resolve(srcSharedRoot, ...ref.split('/'));
+    if (!srcFile.startsWith(srcSharedRoot + path.sep) || !fs.existsSync(srcFile) || !fs.statSync(srcFile).isFile()) {
+      throw new Error(`Skill shared reference is missing: ${ref}`);
+    }
+    const destFile = path.resolve(destSharedRoot, ...ref.split('/'));
+    if (!fs.existsSync(path.dirname(destFile))) fs.mkdirSync(path.dirname(destFile), { recursive: true });
+    fs.copyFileSync(srcFile, destFile);
+  }
+}
+
 /**
  * Copy all skill subdirectories from srcRoot to destFull.
  * @param {string} srcRoot - Source skills directory.
@@ -63,6 +108,7 @@ function publishFromDir(srcRoot, destFull) {
     const destSub = path.join(destFull, sub.name);
     if (!fs.existsSync(destSub)) fs.mkdirSync(destSub, { recursive: true });
     copyDirRecursive(srcSub, destSub);
+    copyReferencedSharedFiles(srcSub, destSub);
     published.push(sub.name);
   }
   return published;
@@ -88,6 +134,7 @@ function publishRecursiveSkillDirs(srcRoot, destFull) {
       const destSub = path.join(destFull, skillName);
       if (!fs.existsSync(destSub)) fs.mkdirSync(destSub, { recursive: true });
       copyDirRecursive(current, destSub);
+      copyReferencedSharedFiles(current, destSub);
       published.add(skillName);
       return;
     }

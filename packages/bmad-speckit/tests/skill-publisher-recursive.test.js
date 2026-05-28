@@ -69,4 +69,66 @@ describe('SkillPublisher recursive workflow skill publishing', () => {
       fs.rmSync(root, { recursive: true, force: true });
     }
   });
+
+  it('publishes sibling _shared files referenced by recursive skills', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'skill-publisher-shared-'));
+    const projectRoot = path.join(root, 'project');
+    const homeRoot = path.join(root, 'home');
+    const bmadRoot = path.join(projectRoot, '_bmad');
+    const destRoot = path.join(homeRoot, '.claude', 'skills');
+
+    mkdirp(path.join(bmadRoot, '_config'));
+    mkdirp(destRoot);
+
+    writeFile(
+      path.join(projectRoot, '_bmad-output', 'config', 'ai-registry.json'),
+      JSON.stringify([
+        {
+          id: 'test-ai',
+          name: 'Test AI',
+          configTemplate: {
+            commandsDir: '.claude/commands',
+            rulesDir: '.claude/rules',
+            skillsDir: '~/.claude/skills',
+            sourceDir: 'claude',
+          },
+        },
+      ]),
+    );
+
+    writeFile(
+      path.join(bmadRoot, 'bmm', 'workflows', 'docs', 'docs-review', 'SKILL.md'),
+      [
+        '---',
+        'name: docs-review',
+        'description: test skill',
+        '---',
+        '',
+        '@./../_shared/metabase-style-guide.md',
+      ].join('\n'),
+    );
+    writeFile(
+      path.join(bmadRoot, 'bmm', 'workflows', 'docs', '_shared', 'metabase-style-guide.md'),
+      '# Metabase style guide\n',
+    );
+
+    const previousHome = process.env.HOME;
+    const previousUserProfile = process.env.USERPROFILE;
+    process.env.HOME = homeRoot;
+    process.env.USERPROFILE = homeRoot;
+    try {
+      const result = SkillPublisher.publish(projectRoot, 'test-ai');
+      const installedSkill = path.join(destRoot, 'docs-review', 'SKILL.md');
+      const installedShared = path.join(destRoot, '_shared', 'metabase-style-guide.md');
+
+      assert.ok(result.published.includes('docs-review'), 'published skills should include docs-review');
+      assert.ok(fs.existsSync(installedSkill), 'recursive docs-review skill should be installed');
+      assert.ok(fs.existsSync(installedShared), 'referenced sibling shared file should be installed');
+      assert.strictEqual(fs.readFileSync(installedShared, 'utf8'), '# Metabase style guide\n');
+    } finally {
+      process.env.HOME = previousHome;
+      process.env.USERPROFILE = previousUserProfile;
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
 });
