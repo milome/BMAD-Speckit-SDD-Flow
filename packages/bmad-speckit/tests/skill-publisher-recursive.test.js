@@ -19,9 +19,8 @@ describe('SkillPublisher recursive workflow skill publishing', () => {
   it('publishes workflow-based skills like bmad-create-prd into target skillsDir', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'skill-publisher-recursive-'));
     const projectRoot = path.join(root, 'project');
-    const homeRoot = path.join(root, 'home');
     const bmadRoot = path.join(projectRoot, '_bmad');
-    const destRoot = path.join(homeRoot, '.claude', 'skills');
+    const destRoot = path.join(projectRoot, '.claude', 'skills');
 
     mkdirp(path.join(bmadRoot, '_config'));
     mkdirp(destRoot);
@@ -35,7 +34,8 @@ describe('SkillPublisher recursive workflow skill publishing', () => {
           configTemplate: {
             commandsDir: '.claude/commands',
             rulesDir: '.claude/rules',
-            skillsDir: '~/.claude/skills',
+            skillsDir: '.claude/skills',
+            skillScope: 'project',
             sourceDir: 'claude',
           },
         },
@@ -51,10 +51,6 @@ describe('SkillPublisher recursive workflow skill publishing', () => {
       '# workflow\n',
     );
 
-    const previousHome = process.env.HOME;
-    const previousUserProfile = process.env.USERPROFILE;
-    process.env.HOME = homeRoot;
-    process.env.USERPROFILE = homeRoot;
     try {
       const result = SkillPublisher.publish(projectRoot, 'test-ai');
       const installedSkill = path.join(destRoot, 'bmad-create-prd', 'SKILL.md');
@@ -64,8 +60,6 @@ describe('SkillPublisher recursive workflow skill publishing', () => {
       assert.ok(fs.existsSync(installedSkill), 'recursive workflow skill should be installed');
       assert.ok(fs.existsSync(installedWorkflow), 'workflow companion files should be installed');
     } finally {
-      process.env.HOME = previousHome;
-      process.env.USERPROFILE = previousUserProfile;
       fs.rmSync(root, { recursive: true, force: true });
     }
   });
@@ -73,9 +67,8 @@ describe('SkillPublisher recursive workflow skill publishing', () => {
   it('publishes sibling _shared files referenced by recursive skills', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'skill-publisher-shared-'));
     const projectRoot = path.join(root, 'project');
-    const homeRoot = path.join(root, 'home');
     const bmadRoot = path.join(projectRoot, '_bmad');
-    const destRoot = path.join(homeRoot, '.claude', 'skills');
+    const destRoot = path.join(projectRoot, '.claude', 'skills');
 
     mkdirp(path.join(bmadRoot, '_config'));
     mkdirp(destRoot);
@@ -89,7 +82,8 @@ describe('SkillPublisher recursive workflow skill publishing', () => {
           configTemplate: {
             commandsDir: '.claude/commands',
             rulesDir: '.claude/rules',
-            skillsDir: '~/.claude/skills',
+            skillsDir: '.claude/skills',
+            skillScope: 'project',
             sourceDir: 'claude',
           },
         },
@@ -112,10 +106,6 @@ describe('SkillPublisher recursive workflow skill publishing', () => {
       '# Metabase style guide\n',
     );
 
-    const previousHome = process.env.HOME;
-    const previousUserProfile = process.env.USERPROFILE;
-    process.env.HOME = homeRoot;
-    process.env.USERPROFILE = homeRoot;
     try {
       const result = SkillPublisher.publish(projectRoot, 'test-ai');
       const installedSkill = path.join(destRoot, 'docs-review', 'SKILL.md');
@@ -126,8 +116,6 @@ describe('SkillPublisher recursive workflow skill publishing', () => {
       assert.ok(fs.existsSync(installedShared), 'referenced sibling shared file should be installed');
       assert.strictEqual(fs.readFileSync(installedShared, 'utf8'), '# Metabase style guide\n');
     } finally {
-      process.env.HOME = previousHome;
-      process.env.USERPROFILE = previousUserProfile;
       fs.rmSync(root, { recursive: true, force: true });
     }
   });

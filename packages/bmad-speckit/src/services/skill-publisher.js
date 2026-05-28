@@ -1,6 +1,5 @@
 /**
- * SkillPublisher - publish skills from _bmad/skills to configTemplate.skillsDir (Story 12.3)
- * spec §3: 按 configTemplate.skillsDir 同步；bmadPath 源；~ 展开；递归复制
+ * SkillPublisher - publish skills from _bmad/skills to scoped configTemplate.skillsDir.
  */
 const fs = require('fs');
 const path = require('path');
@@ -9,18 +8,49 @@ const AIRegistry = require('./ai-registry');
 
 const SHARED_REF_PATTERN = /@\.\/\.\.\/_shared\/([^\s)]+)/g;
 
-/**
- * Expand ~ in path to os.homedir(). Handles ~, ~/, ~\.
- * @param {string} [p] - Path that may start with ~.
- * @returns {string} Expanded path or original if no tilde.
- */
+function isTildePath(p) {
+  return typeof p === 'string' && (p === '~' || p.startsWith('~/') || p.startsWith('~\\'));
+}
+
 function expandTilde(p) {
   if (!p || typeof p !== 'string') return p;
-  if (p === '~' || p.startsWith('~/') || p.startsWith('~' + path.sep)) {
+  if (isTildePath(p)) {
     const rest = p.slice(1).replace(/^[/\\]/, '') || '';
     return rest ? path.join(os.homedir(), rest) : os.homedir();
   }
   return p;
+}
+
+function isWithinRoot(root, candidate) {
+  const relative = path.relative(path.resolve(root), path.resolve(candidate));
+  return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
+}
+
+function resolveSkillsDestination(projectRoot, configTemplate, options = {}) {
+  const rawPath = configTemplate?.skillsDir;
+  const declaredScope = configTemplate?.skillScope;
+  const scope = declaredScope || (isTildePath(rawPath) || path.isAbsolute(String(rawPath || '')) ? 'user-global' : 'project');
+
+  if (scope === 'user-global') {
+    const resolvedPath = path.resolve(expandTilde(rawPath));
+    return {
+      scope,
+      rawPath,
+      resolvedPath,
+      escapedProjectRoot: !isWithinRoot(projectRoot, resolvedPath),
+      allowed: options.allowGlobalSkillWrites === true && typeof options.globalSkillWriteReason === 'string' && options.globalSkillWriteReason.trim() !== '',
+    };
+  }
+
+  const resolvedPath = path.resolve(projectRoot, rawPath);
+  const escapedProjectRoot = !isWithinRoot(projectRoot, resolvedPath);
+  return {
+    scope: 'project',
+    rawPath,
+    resolvedPath,
+    escapedProjectRoot,
+    allowed: !escapedProjectRoot,
+  };
 }
 
 /**
@@ -156,7 +186,7 @@ function publishRecursiveSkillDirs(srcRoot, destFull) {
  * Same-name skills in phase 2 overwrite phase 1 (platform-specific wins).
  * @param {string} projectRoot - Project root.
  * @param {string} selectedAI - AI id from registry.
- * @param {{ bmadPath?: string, noAiSkills?: boolean }} [options] - bmadPath for worktree; noAiSkills to skip.
+ * @param {{ bmadPath?: string, noAiSkills?: boolean, allowGlobalSkillWrites?: boolean, globalSkillWriteReason?: string }} [options] - Publish options.
  * @returns {{ published: string[], skippedReasons: string[] }} Published skill dir names and skip reasons.
  */
 function publish(projectRoot, selectedAI, options = {}) {
@@ -172,15 +202,22 @@ function publish(projectRoot, selectedAI, options = {}) {
 
   const skillsDir = entry.configTemplate.skillsDir;
   if (!skillsDir || String(skillsDir).trim() === '') {
-    return { published: [], skippedReasons: ['该 AI 不支持全局 skill'] };
+    return { published: [], skippedReasons: ['该 AI 不支持 skill 发布'] };
   }
 
   const bmadRoot = options.bmadPath
     ? path.resolve(projectRoot, options.bmadPath)
     : path.join(projectRoot, '_bmad');
 
-  const destRaw = expandTilde(skillsDir);
-  const destFull = path.isAbsolute(destRaw) ? destRaw : path.join(projectRoot, destRaw);
+  const destination = resolveSkillsDestination(projectRoot, entry.configTemplate, options);
+  if (destination.scope === 'project' && destination.escapedProjectRoot) {
+    return { published: [], skippedReasons: [`skillsDir escapes project root: ${skillsDir}`] };
+  }
+  if (destination.scope === 'user-global' && !destination.allowed) {
+    return { published: [], skippedReasons: [`global skill writes require --allow-global-skill-writes: ${skillsDir}`] };
+  }
+
+  const destFull = destination.resolvedPath;
   if (!fs.existsSync(destFull)) {
     fs.mkdirSync(destFull, { recursive: true });
   }
@@ -209,4 +246,4 @@ function publish(projectRoot, selectedAI, options = {}) {
   return { published: allPublished, skippedReasons: [] };
 }
 
-module.exports = { publish };
+module.exports = { publish, resolveSkillsDestination };

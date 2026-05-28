@@ -93,6 +93,47 @@ describe('AIRegistry (Story 12.1 T1)', () => {
     }
   });
 
+  it('built-in cursor, claude, and codex skills are project scoped by default', () => {
+    const cursor = AIRegistry.getById('cursor-agent', { cwd: tmpRoot });
+    const claude = AIRegistry.getById('claude', { cwd: tmpRoot });
+    const codex = AIRegistry.getById('codex', { cwd: tmpRoot });
+
+    assert.strictEqual(cursor.configTemplate.skillsDir, '.cursor/skills');
+    assert.strictEqual(cursor.configTemplate.skillScope, 'project');
+    assert.strictEqual(claude.configTemplate.skillsDir, '.claude/skills');
+    assert.strictEqual(claude.configTemplate.skillScope, 'project');
+    assert.strictEqual(codex.configTemplate.skillsDir, '.codex/skills');
+    assert.strictEqual(codex.configTemplate.skillScope, 'project');
+  });
+
+  it('custom registry can declare user-global skill scope for explicit global lane', () => {
+    const customCwd = path.join(tmpRoot, 'custom-global-scope');
+    const projectDir = path.join(customCwd, '_bmad-output', 'config');
+    mkdirp(projectDir);
+    fs.writeFileSync(
+      path.join(projectDir, 'ai-registry.json'),
+      JSON.stringify({
+        ais: [
+          {
+            id: 'global-custom-ai',
+            name: 'Global Custom AI',
+            configTemplate: {
+              commandsDir: '.global-custom/commands',
+              skillsDir: '~/.global-custom/skills',
+              skillScope: 'user-global',
+              subagentSupport: 'none',
+            },
+          },
+        ],
+      }),
+      'utf8',
+    );
+
+    const entry = AIRegistry.getById('global-custom-ai', { cwd: customCwd });
+    assert.strictEqual(entry.configTemplate.skillsDir, '~/.global-custom/skills');
+    assert.strictEqual(entry.configTemplate.skillScope, 'user-global');
+  });
+
   it('T1.3 load: JSON 解析失败抛出含路径错误', () => {
     const badCwd = path.join(tmpRoot, 'bad-json');
     const projectReg = path.join(badCwd, '_bmad-output', 'config');

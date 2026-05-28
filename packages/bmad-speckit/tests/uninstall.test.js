@@ -475,6 +475,165 @@ describe('uninstall command', () => {
     }
   });
 
+  it('preserves managed global skill entries by default', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'uninstall-global-default-'));
+    try {
+      const globalSkill = path.join(root, 'home', '.cursor', 'skills', 'demo-skill');
+      fs.mkdirSync(globalSkill, { recursive: true });
+      fs.writeFileSync(path.join(globalSkill, 'SKILL.md'), 'managed\n', 'utf8');
+      writeInstallManifest(
+        root,
+        createBaseManifest(root, {
+          managed_global_skill_paths: [
+            {
+              path: globalSkill,
+              kind: 'global_skill_dir',
+              owner_agents: ['cursor'],
+              delete_policy: 'delete_entry_only',
+              preinstall_state: { classification: 'created' },
+              restore: { strategy: 'delete_created', source_ref: '', skip_reason: '' },
+              installed_state: {
+                path_exists_after_install: true,
+                path_kind_after_install: 'dir',
+                content_hash_after_install: require('../src/services/install-surface-manifest').hashPath(globalSkill),
+                captured_at: new Date().toISOString(),
+              },
+            },
+          ],
+        })
+      );
+
+      uninstallCommand({ target: root });
+
+      assert.strictEqual(fs.existsSync(globalSkill), true);
+      const report = JSON.parse(fs.readFileSync(getUninstallReportPath(root), 'utf8'));
+      assert.strictEqual(report.skipped_entries.length, 1);
+      assert.strictEqual(report.skipped_entries[0].skip_reason, 'global_cleanup_authorization_not_set');
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('skips global cleanup without ownership evidence', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'uninstall-global-unmanaged-'));
+    try {
+      const globalSkill = path.join(root, 'home', '.cursor', 'skills', 'demo-skill');
+      fs.mkdirSync(globalSkill, { recursive: true });
+      fs.writeFileSync(path.join(globalSkill, 'SKILL.md'), 'user\n', 'utf8');
+      writeInstallManifest(
+        root,
+        createBaseManifest(root, {
+          managed_global_skill_paths: [
+            {
+              path: globalSkill,
+              kind: 'global_skill_dir',
+              owner_agents: ['cursor'],
+              delete_policy: 'delete_entry_only',
+              preinstall_state: { classification: 'preexisting-unmanaged' },
+              restore: { strategy: 'skip_report', source_ref: '', skip_reason: 'preexisting' },
+              installed_state: {
+                path_exists_after_install: true,
+                path_kind_after_install: 'dir',
+                content_hash_after_install: require('../src/services/install-surface-manifest').hashPath(globalSkill),
+                captured_at: new Date().toISOString(),
+              },
+            },
+          ],
+        })
+      );
+
+      uninstallCommand({ target: root, removeGlobalSkills: true });
+
+      assert.strictEqual(fs.existsSync(globalSkill), true);
+      const report = JSON.parse(fs.readFileSync(getUninstallReportPath(root), 'utf8'));
+      assert.strictEqual(report.skipped_entries[0].skip_reason, 'missing_global_ownership_evidence');
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('skips global cleanup when content changed after install', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'uninstall-global-changed-'));
+    try {
+      const globalSkill = path.join(root, 'home', '.cursor', 'skills', 'demo-skill');
+      fs.mkdirSync(globalSkill, { recursive: true });
+      fs.writeFileSync(path.join(globalSkill, 'SKILL.md'), 'before\n', 'utf8');
+      const installedHash = require('../src/services/install-surface-manifest').hashPath(globalSkill);
+      fs.writeFileSync(path.join(globalSkill, 'SKILL.md'), 'after\n', 'utf8');
+      writeInstallManifest(
+        root,
+        createBaseManifest(root, {
+          managed_global_skill_paths: [
+            {
+              path: globalSkill,
+              kind: 'global_skill_dir',
+              owner_agents: ['cursor'],
+              delete_policy: 'delete_entry_only',
+              preinstall_state: { classification: 'created' },
+              restore: { strategy: 'delete_created', source_ref: '', skip_reason: '' },
+              installed_state: {
+                path_exists_after_install: true,
+                path_kind_after_install: 'dir',
+                content_hash_after_install: installedHash,
+                captured_at: new Date().toISOString(),
+              },
+            },
+          ],
+        })
+      );
+
+      uninstallCommand({ target: root, removeGlobalSkills: true });
+
+      assert.strictEqual(fs.existsSync(globalSkill), true);
+      const report = JSON.parse(fs.readFileSync(getUninstallReportPath(root), 'utf8'));
+      assert.strictEqual(report.skipped_entries[0].skip_reason, 'current_content_modified_since_install');
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('archives global created entries before removal without deleting user home parents', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'uninstall-global-archive-'));
+    try {
+      const homeRoot = path.join(root, 'home');
+      const globalSkill = path.join(homeRoot, '.cursor', 'skills', 'demo-skill');
+      fs.mkdirSync(globalSkill, { recursive: true });
+      fs.writeFileSync(path.join(globalSkill, 'SKILL.md'), 'managed\n', 'utf8');
+      writeInstallManifest(
+        root,
+        createBaseManifest(root, {
+          managed_global_skill_paths: [
+            {
+              path: globalSkill,
+              kind: 'global_skill_dir',
+              owner_agents: ['cursor'],
+              delete_policy: 'delete_entry_only',
+              preinstall_state: { classification: 'created' },
+              restore: { strategy: 'delete_created', source_ref: '', skip_reason: '' },
+              installed_state: {
+                path_exists_after_install: true,
+                path_kind_after_install: 'dir',
+                content_hash_after_install: require('../src/services/install-surface-manifest').hashPath(globalSkill),
+                captured_at: new Date().toISOString(),
+              },
+            },
+          ],
+        })
+      );
+
+      uninstallCommand({ target: root, removeGlobalSkills: true });
+
+      assert.strictEqual(fs.existsSync(globalSkill), false);
+      assert.strictEqual(fs.existsSync(path.join(homeRoot, '.cursor', 'skills')), true);
+      const report = JSON.parse(fs.readFileSync(getUninstallReportPath(root), 'utf8'));
+      assert.strictEqual(report.deleted_entries[0].action, 'archived_deleted_created');
+      assert.ok(report.deleted_entries[0].archive_ref.includes('global-skill-archive'));
+      assert.strictEqual(fs.existsSync(path.join(root, report.deleted_entries[0].archive_ref, 'SKILL.md')), true);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('fails closed when manifest is missing', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'uninstall-missing-'));
     try {

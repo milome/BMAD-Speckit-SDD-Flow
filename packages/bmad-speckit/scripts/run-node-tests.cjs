@@ -1,5 +1,5 @@
 const { readdirSync } = require('node:fs');
-const { join } = require('node:path');
+const { basename, isAbsolute, join, relative, resolve } = require('node:path');
 const { spawnSync } = require('node:child_process');
 
 function collectTests(dir) {
@@ -21,6 +21,32 @@ function collectTests(dir) {
   return files;
 }
 
+function normalizePathForMatch(value) {
+  return String(value || '').replace(/\\/g, '/');
+}
+
+function matchesFilter(testFile, filter, cwd) {
+  const normalizedFilter = normalizePathForMatch(filter);
+  const absoluteTestFile = resolve(cwd, testFile);
+  const relativeTestFile = normalizePathForMatch(relative(cwd, absoluteTestFile));
+  const absoluteFilter = isAbsolute(filter) ? normalizePathForMatch(resolve(filter)) : null;
+
+  return (
+    relativeTestFile === normalizedFilter ||
+    relativeTestFile.endsWith(`/${normalizedFilter}`) ||
+    basename(testFile) === normalizedFilter ||
+    (absoluteFilter != null && normalizePathForMatch(absoluteTestFile) === absoluteFilter)
+  );
+}
+
+function applyFilters(testFiles, filters, cwd) {
+  if (filters.length === 0) return testFiles;
+  return testFiles.filter((testFile) =>
+    filters.some((filter) => matchesFilter(testFile, filter, cwd))
+  );
+}
+
+const filters = process.argv.slice(2).filter((arg) => String(arg).trim() !== '');
 let testFiles = [];
 
 try {
@@ -38,8 +64,19 @@ if (testFiles.length === 0) {
   process.exit(0);
 }
 
+testFiles = applyFilters(testFiles, filters, process.cwd());
+
+if (filters.length > 0 && testFiles.length === 0) {
+  console.error(`No tests matched filters: ${filters.join(', ')}`);
+  process.exit(1);
+}
+
+const childEnv = { ...process.env };
+delete childEnv.NODE_TEST_CONTEXT;
+
 const result = spawnSync(process.execPath, ['--test', ...testFiles], {
   stdio: 'inherit',
+  env: childEnv,
 });
 
 if (typeof result.status === 'number') {

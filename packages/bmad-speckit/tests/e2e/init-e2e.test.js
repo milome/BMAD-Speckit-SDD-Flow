@@ -14,14 +14,62 @@ const os = require('os');
 const BIN = path.join(__dirname, '../../bin/bmad-speckit.js');
 const ROOT = path.join(__dirname, '../../');
 
-function runInit(args = [], cwd = ROOT, env = undefined) {
-  const opts = { cwd, encoding: 'utf8', timeout: 30000 };
-  if (env) opts.env = { ...process.env, ...env };
-  return spawnSync('node', [BIN, 'init', ...args], opts);
+function createIsolatedEnv(root) {
+  const homeRoot = path.join(root, 'fake-home');
+  const appDataRoot = path.join(root, 'fake-appdata');
+  const localAppDataRoot = path.join(root, 'fake-localappdata');
+  fs.mkdirSync(homeRoot, { recursive: true });
+  fs.mkdirSync(appDataRoot, { recursive: true });
+  fs.mkdirSync(localAppDataRoot, { recursive: true });
+  return {
+    HOME: homeRoot,
+    USERPROFILE: homeRoot,
+    APPDATA: appDataRoot,
+    LOCALAPPDATA: localAppDataRoot,
+  };
 }
 
-function runCheck(cwd = ROOT) {
-  return spawnSync('node', [BIN, 'check'], { cwd, encoding: 'utf8', timeout: 5000 });
+function withIsolatedCommandEnv(cwd, envOverrides = undefined) {
+  const envRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'bmad-speckit-e2e-env-'));
+  const isolatedEnv = createIsolatedEnv(envRoot);
+  return {
+    env: {
+      ...process.env,
+      ...isolatedEnv,
+      ...(envOverrides || {}),
+    },
+    cleanup() {
+      try { fs.rmSync(envRoot, { recursive: true, force: true }); } catch (_) {}
+    },
+  };
+}
+
+function runInit(args = [], cwd = ROOT, env = undefined) {
+  const { env: commandEnv, cleanup } = withIsolatedCommandEnv(cwd, env);
+  try {
+    return spawnSync('node', [BIN, 'init', ...args], {
+      cwd,
+      env: commandEnv,
+      encoding: 'utf8',
+      timeout: 30000,
+    });
+  } finally {
+    cleanup();
+  }
+}
+
+function runCheck(cwd = ROOT, env = undefined) {
+  const { env: commandEnv, cleanup } = withIsolatedCommandEnv(cwd, env);
+  try {
+    return spawnSync('node', [BIN, 'check'], {
+      cwd,
+      env: commandEnv,
+      encoding: 'utf8',
+      timeout: 5000,
+    });
+  } finally {
+    cleanup();
+  }
 }
 
 function runGrep(pattern, filePath) {
@@ -543,10 +591,11 @@ function testE12S2BobWorktree() {
   return r.status === 0 && hasBobCommands && checkR.status === 0;
 }
 
-// Story 12.3 T4.3: init --ai cursor-agent --yes (worktree) => ~/.cursor/skills has published skills; initLog.skillsPublished
+// Story 12.3 T4.3: init --ai cursor-agent --yes (worktree) => project-local .cursor/skills has published skills; initLog.skillsPublished
 function testE12S3SkillsPublishWorktree() {
   const tmpDir = path.join(os.tmpdir(), `bmad-speckit-e12s3-skills-${Date.now()}`);
   const sharedBmad = path.join(tmpDir, 'shared_bmad');
+  const isolatedEnv = createIsolatedEnv(tmpDir);
   fs.mkdirSync(path.join(sharedBmad, 'core'), { recursive: true });
   fs.mkdirSync(path.join(sharedBmad, 'cursor', 'commands'), { recursive: true });
   fs.mkdirSync(path.join(sharedBmad, 'cursor', 'rules'), { recursive: true });
@@ -555,11 +604,13 @@ function testE12S3SkillsPublishWorktree() {
   fs.writeFileSync(path.join(sharedBmad, 'skills', 'speckit-workflow', 'SKILL.md'), 'x');
   const projectDir = path.join(tmpDir, 'proj');
   fs.mkdirSync(projectDir, { recursive: true });
-  const r = runInit(['.', '--bmad-path', sharedBmad, '--ai', 'cursor-agent', '--yes', '--no-git'], projectDir);
-  const home = os.homedir();
-  const skillsDir = path.join(home, '.cursor', 'skills');
+  const r = runInit(['.', '--bmad-path', sharedBmad, '--ai', 'cursor-agent', '--yes', '--no-git'], projectDir, isolatedEnv);
+  const skillsDir = path.join(projectDir, '.cursor', 'skills');
   const hasSpeckit = fs.existsSync(path.join(skillsDir, 'speckit-workflow'));
   const hasBmadBug = fs.existsSync(path.join(skillsDir, 'bmad-bug-assistant'));
+  const fakeHomeSkillsDir = path.join(isolatedEnv.HOME, '.cursor', 'skills');
+  const fakeHomeHasSkills = fs.existsSync(path.join(fakeHomeSkillsDir, 'speckit-workflow'))
+    || fs.existsSync(path.join(fakeHomeSkillsDir, 'bmad-bug-assistant'));
   const configPath = path.join(projectDir, '_bmad-output', 'config', 'bmad-speckit.json');
   let config = {};
   if (fs.existsSync(configPath)) {
@@ -567,7 +618,7 @@ function testE12S3SkillsPublishWorktree() {
   }
   const hasSkillsPublished = Array.isArray(config.initLog?.skillsPublished) && config.initLog.skillsPublished.length > 0;
   try { fs.rmSync(tmpDir, { recursive: true }); } catch (_) {}
-  return r.status === 0 && (hasSpeckit || hasBmadBug) && hasSkillsPublished;
+  return r.status === 0 && (hasSpeckit || hasBmadBug) && hasSkillsPublished && !fakeHomeHasSkills;
 }
 
 // Story 12.3 T4.3: init --no-ai-skills => skills not synced, initLog.skippedReasons

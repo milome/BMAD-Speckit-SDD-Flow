@@ -514,9 +514,10 @@ function collectManagedGlobalSkillSpecs(projectRoot, bmadRoot, installedTools) {
   for (const agentId of normalizedTools) {
     const entry = AIRegistry.getById(TOOL_TO_REGISTRY_ID[agentId] || agentId, { cwd: projectRoot });
     if (!entry || !entry.configTemplate) continue;
+    if (entry.configTemplate.skillScope !== 'user-global') continue;
     const destRaw = entry.configTemplate.skillsDir;
     if (!destRaw || !String(destRaw).trim()) continue;
-    const destFull = path.isAbsolute(destRaw) ? destRaw : path.join(projectRoot, destRaw);
+    const destFull = path.resolve(expandTildePath(destRaw));
     const platformSkillsDir =
       agentId === 'cursor'
         ? path.join(bmadRoot, 'cursor', 'skills')
@@ -546,6 +547,15 @@ function collectManagedGlobalSkillSpecs(projectRoot, bmadRoot, installedTools) {
   }
 
   return [...specs.values()];
+}
+
+function expandTildePath(value) {
+  const raw = String(value || '');
+  if (raw === '~' || raw.startsWith('~/') || raw.startsWith('~\\')) {
+    const rest = raw.slice(1).replace(/^[/\\]/, '') || '';
+    return rest ? path.join(require('os').homedir(), rest) : require('os').homedir();
+  }
+  return path.isAbsolute(raw) ? raw : path.resolve(raw);
 }
 
 function createInstallStateTracker({

@@ -83,16 +83,24 @@ describe('SkillPublisher (Story 12.3 T1, T4)', () => {
     assert.ok(fs.existsSync(path.join(destSkills, 'from-bmad-path')), 'from bmadPath');
   });
 
-  it('T1.3 ~ expansion in skillsDir', () => {
+  it('T1.3 rejects user-global skillsDir without explicit authorization', () => {
     const projectRoot = path.join(tmpRoot, 't1_3');
     mkdirp(projectRoot);
     createSkillsSource(path.join(projectRoot, '_bmad'), ['expanded']);
 
     const SkillPublisher = require('../src/services/skill-publisher');
-    const home = os.homedir();
-    const result = SkillPublisher.publish(projectRoot, 'cursor-agent', {});
-    const expectedDest = path.join(home, '.cursor', 'skills');
-    assert.ok(fs.existsSync(expectedDest) || result.published.length >= 0, '~ should expand to homedir');
+    const registryPath = path.join(projectRoot, '_bmad-output', 'config', 'ai-registry.json');
+    fs.mkdirSync(path.dirname(registryPath), { recursive: true });
+    fs.writeFileSync(
+      registryPath,
+      JSON.stringify([{ id: 'global-test-ai', configTemplate: { commandsDir: '.x/commands', skillsDir: '~/.x/skills', skillScope: 'user-global', subagentSupport: 'none' } }]),
+      'utf8',
+    );
+
+    const result = SkillPublisher.publish(projectRoot, 'global-test-ai', {});
+    assert.deepStrictEqual(result.published, []);
+    assert.ok(result.skippedReasons.some((reason) => reason.includes('global skill writes require')));
+    assert.strictEqual(fs.existsSync(path.join(os.homedir(), '.x', 'skills')), false);
   });
 
   it('T1.4 recursive copy, dest created when missing, published list', () => {
