@@ -12,12 +12,12 @@ English | [简体中文](README.zh-CN.md)
 
 <p align="center">
   <strong>Built on <a href="https://github.com/bmad-code-org/BMAD-METHOD">BMAD-METHOD</a> and <a href="https://github.com/github/spec-kit">Spec-Kit</a>.</strong><br>
-  <em>v1 integrates BMAD + Speckit. v2 turns that workflow into an AI-TDD control plane for governed Main Agent orchestration.</em>
+  <em>The 1.x release line integrates BMAD + Speckit. The 2.0.0 release line turns that workflow into an AI-TDD control plane for governed Main Agent orchestration.</em>
 </p>
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
-  <a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen" alt="Node.js Version"></a>
+  <a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen" alt="Node.js Version"></a>
 </p>
 
 ## Table Of Contents
@@ -30,10 +30,9 @@ English | [简体中文](README.zh-CN.md)
 - [AI-TDD Control Plane](#ai-tdd-control-plane)
 - [Six Mental Models](#six-mental-models)
 - [Manifest And Trace Evidence](#manifest-and-trace-evidence)
-- [Daily Use](#daily-use)
 - [CLI Installation And External Interfaces](#cli-installation-and-external-interfaces)
-- [Evidence And Screenshots](#evidence-and-screenshots)
-- [v1 Compatibility](#v1-compatibility)
+- [Delivery Evidence](#delivery-evidence)
+- [Release Line Compatibility](#release-line-compatibility)
 - [Repository Map](#repository-map)
 - [Documentation](#documentation)
 - [Development And Contribution Policy](#development-and-contribution-policy)
@@ -45,7 +44,7 @@ English | [简体中文](README.zh-CN.md)
 
 BMAD-SpeCKit-SDD-Flow is not a prompt pack that asks AI to write more code. It is a Main Agent orchestration workflow that installs into consumer projects through the CLI, then runs inside Codex, Claude Code CLI, or Cursor through the `bmads` / `bmad-speckit` skills.
 
-The goal is simple: make AI work inside requirement contracts, gates, evidence, and traceability. v1 connected BMAD and Speckit into a full delivery flow. v2 makes that flow requirement-contract driven with AI-TDD, six mental models, and two delivery gates.
+The goal is simple: make AI work inside requirement contracts, gates, evidence, and traceability. The 1.x release line connected BMAD and Speckit into a full delivery flow. The 2.0.0 release line makes that flow requirement-contract driven with AI-TDD, six mental models, and two delivery gates.
 
 <p align="center">
   <img src="docs/assets/toolchain-ecosystem-en.svg" alt="AI-TDD toolchain ecosystem for requirement-contract driven agent automation" width="100%" />
@@ -76,7 +75,7 @@ This project is not the best fit when you only want:
 
 | Tool | Version | Why it matters |
 | --- | --- | --- |
-| Node.js | 18+ | Required for the published CLI and package install surface. |
+| Node.js | 22+ | Required for the published CLI and package install surface. |
 | npm | 9+ | Required for `npx --package`, local install, and workspace workflows. |
 | PowerShell | 7+ on Windows | Recommended for setup, verification, and runtime helper scripts. |
 | Git | 2.30+ | Required for worktrees, branch workflows, and contribution flow. |
@@ -102,7 +101,15 @@ Then switch to the AI host session and activate the Main Agent:
 $bmads
 ```
 
-If you are installing from a CI artifact instead of npm registry, the recommended non-invasive path is the same command shape with `--package ./bmad-speckit-sdd-flow-<version>.tgz`.
+If you are installing from a CI artifact instead of npm registry, use the same non-invasive path with the local tarball:
+
+```bash
+npx --yes --package ./bmad-speckit-sdd-flow-<version>.tgz bmad-speckit version
+npx --yes --package ./bmad-speckit-sdd-flow-<version>.tgz bmad-speckit-init . --agent claude-code --full --no-package-json
+npx --yes --package ./bmad-speckit-sdd-flow-<version>.tgz bmad-speckit-init . --agent cursor --full --no-package-json
+npx --yes --package ./bmad-speckit-sdd-flow-<version>.tgz bmad-speckit-init . --agent codex --full --no-package-json
+npx --yes --package ./bmad-speckit-sdd-flow-<version>.tgz bmad-speckit check
+```
 
 ---
 
@@ -132,6 +139,8 @@ The Main Agent owns these decisions:
 | Evidence | Surface missing Manifest, trace, command, artifact, audit, score, or closeout evidence. |
 
 CLI commands are allowed for install validation, CI, debug, fallback hosts, and external read models. They are not the primary daily activation path when the host skill is available.
+
+Daily operation should stay simple: activate the host skill, let the Main Agent inspect the active requirement, and follow the governed next action it returns. Do not bypass the Implementation Readiness Gate by sending an implementation agent directly into coding. Do not claim delivery from dashboard green, score green, task completion, or chat confidence alone. Delivery closes only through the Delivery Closeout Gate and the current evidence chain.
 
 ---
 
@@ -193,28 +202,6 @@ The Main Agent should block or reroute when Manifest completeness, trace coverag
 
 ---
 
-## Daily Use
-
-In Codex, Claude Code CLI, or Cursor, start from the host skill:
-
-```text
-$bmads
-```
-
-Expected Main Agent output should answer:
-
-| Output | Meaning |
-| --- | --- |
-| Current requirement | Which requirement record or requirement set is active. |
-| Current mental model | Which of the six AI-TDD stages owns the next decision. |
-| Blockers | Missing confirmation, stale architecture, readiness failure, audit finding, or evidence gap. |
-| Recommended next step | The next governed action, not a generic coding suggestion. |
-| Missing evidence | Manifest, trace matrix, tests, commands, artifacts, scores, audit records, or closeout proof still needed. |
-
-Do not bypass the Implementation Readiness Gate by sending an implementation agent directly into coding. Do not claim delivery from dashboard green, score green, task completion, or chat confidence alone. Delivery closes only through the Delivery Closeout Gate and the current evidence chain.
-
----
-
 ## CLI Installation And External Interfaces
 
 Install the workflow into a consumer project with the published npm package. These commands are for installation, validation, lifecycle operations, and external runtime views.
@@ -246,19 +233,17 @@ The public CLI exposes these auxiliary surfaces:
 | Evidence and scoring | `score`, `check-score`, `scores`, `dashboard`, `deferred-gap-audit`. |
 | Data and feedback | `coach`, `sft-extract`, `sft-preview`, `sft-validate`, `sft-bundle`, `feedback`. |
 
-Use the CLI to install and inspect. Use the host skill to let the Main Agent control the requirement flow.
+### Public CLI Surface
 
----
-
-## Evidence And Screenshots
-
-The CLI screenshot below is an evidence artifact for the public npm interface, not the primary user workflow.
+The screenshot below shows the published npm CLI command surface. It is a quick reference for installation, lifecycle, runtime read models, scoring, Coach, and SFT tooling; it is not the daily Main Agent workflow.
 
 <p align="center">
   <img src="docs/assets/bmad-speckit-cli.png" alt="bmad-speckit CLI help and runtime command surface" width="100%" />
 </p>
 
-Recommended evidence for a consumer install:
+### Install Verification
+
+Recommended install verification commands for a consumer project:
 
 ```bash
 npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit version
@@ -266,7 +251,13 @@ npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit check
 npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit dashboard-status
 ```
 
-Recommended evidence for delivery:
+Use the CLI to install and inspect. Use the host skill to let the Main Agent control the requirement flow.
+
+---
+
+## Delivery Evidence
+
+Delivery evidence is different from the CLI command-surface screenshot. It is the gate material used to decide whether the active requirement can close through the Delivery Closeout Gate.
 
 | Evidence type | Required proof |
 | --- | --- |
@@ -278,11 +269,11 @@ Recommended evidence for delivery:
 
 ---
 
-## v1 Compatibility
+## Release Line Compatibility
 
-The v1 BMAD + Speckit assets are still part of the compatibility surface: Product Brief, PRD, Architecture, Epic/Story, Speckit specify/plan/GAPS/tasks, implementation, audit, scoring, dashboard, Coach, and SFT extraction remain useful.
+The 1.x release line BMAD + Speckit assets remain part of the compatibility surface: Product Brief, PRD, Architecture, Epic/Story, Speckit specify/plan/GAPS/tasks, implementation, audit, scoring, dashboard, Coach, and SFT extraction remain useful.
 
-The v2 README intentionally does not lead with the old five-layer architecture diagram. The current primary architecture is the AI-TDD toolchain ecosystem and the Main Agent control plane. v1 artifacts are inputs and projections inside that control plane, not a replacement for requirement-contract authority.
+The 2.0.0 release line intentionally does not lead with the old five-layer architecture diagram. Its primary architecture is the AI-TDD toolchain ecosystem and the Main Agent control plane. 1.x artifacts are inputs and projections inside that control plane, not a replacement for requirement-contract authority.
 
 ---
 
