@@ -565,6 +565,87 @@ function writeConfirmedReadinessRecord(root: string): string {
 }
 
 describe('main-agent orchestration consumer', () => {
+  it('projects the current six-model stage and next action for user-facing command output', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-stage-summary-'));
+    try {
+      const recordPath = writeMinimalRequirementRecordContext(root, {
+        flow: 'story',
+        stage: 'implement',
+        runId: 'stage-summary',
+        implementationEntryGate: {
+          gateName: 'implementation-readiness',
+          requestedFlow: 'story',
+          recommendedFlow: 'story',
+          decision: 'pass',
+          readinessStatus: 'ready_clean',
+          blockerCodes: [],
+          blockerSummary: [],
+          rerouteRequired: false,
+          rerouteReason: null,
+          evidenceSources: {
+            readinessReportPath: null,
+            remediationArtifactPath: null,
+            executionRecordPath: null,
+            authoritativeAuditReportPath: null,
+          },
+          semanticFingerprint: 'stage-summary',
+          evaluatedAt: '2026-05-29T00:00:00.000Z',
+        },
+      });
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      record.currentMentalModel = 'implementation_readiness';
+      record.sixModelResults = {
+        requirement_confirmation: { model: 'requirement_confirmation', status: 'pass' },
+        architecture_confirmation: { model: 'architecture_confirmation', status: 'pass' },
+        implementation_readiness: {
+          model: 'implementation_readiness',
+          status: 'pass',
+          blockingReasons: [],
+        },
+        execution_closure: {
+          model: 'execution_closure',
+          status: 'not_established',
+          blockingReasons: ['execution_closure_not_established'],
+        },
+        audit_review: {
+          model: 'audit_review',
+          status: 'not_established',
+          blockingReasons: ['audit_review_not_established'],
+        },
+        delivery_confirmation: {
+          model: 'delivery_confirmation',
+          status: 'not_established',
+          blockingReasons: ['delivery_confirmation_not_established'],
+        },
+      };
+      writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
+
+      const surface = resolveMainAgentOrchestrationSurface({
+        projectRoot: root,
+        flow: 'story',
+        stage: 'implement',
+      });
+
+      expect(surface.mainAgentStageSummary).toMatchObject({
+        schemaVersion: 'main-agent-stage-summary/v1',
+        recordId: record.recordId,
+        currentMentalModel: 'implementation_readiness',
+        currentMentalModelStatus: 'pass',
+        currentStageOrdinal: 3,
+        nextAction: 'dispatch_implement',
+        nextMentalModel: 'execution_closure',
+        ready: true,
+        blocked: false,
+      });
+      expect(surface.mainAgentStageSummary?.userFacingMessage).toContain(
+        'implementation_readiness'
+      );
+      expect(surface.mainAgentStageSummary?.userFacingMessage).toContain('dispatch_implement');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('runs controlled readiness audit through scoring bridge and records current baseline metadata', async () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-readiness-bridge-'));
     try {

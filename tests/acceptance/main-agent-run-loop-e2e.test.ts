@@ -115,6 +115,12 @@ describe('main-agent automatic run-loop', () => {
       expect(result.finalSurface.orchestrationState?.longRun?.active_host_mode).toBe('cursor');
       expect(result.finalSurface.orchestrationState?.lastTaskReport?.status).toBe('done');
       expect(result.finalSurface.mainAgentNextAction).toBe('dispatch_review');
+      expect(result.mainAgentStageSummary).toMatchObject({
+        schemaVersion: 'main-agent-stage-summary/v1',
+        nextAction: 'dispatch_review',
+        ready: true,
+      });
+      expect(result.mainAgentStageSummary?.userFacingMessage).toContain('下一步');
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }

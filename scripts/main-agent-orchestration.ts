@@ -98,6 +98,34 @@ export type MainAgentPendingPacketStatus =
   | 'invalidated'
   | 'missing_packet_file';
 
+const SIX_MENTAL_MODEL_SEQUENCE = [
+  'requirement_confirmation',
+  'architecture_confirmation',
+  'implementation_readiness',
+  'execution_closure',
+  'audit_review',
+  'delivery_confirmation',
+] as const;
+
+type SixMentalModel = (typeof SIX_MENTAL_MODEL_SEQUENCE)[number];
+
+export interface MainAgentStageSummary {
+  schemaVersion: 'main-agent-stage-summary/v1';
+  recordId: string | null;
+  requirementSetId: string | null;
+  currentMentalModel: SixMentalModel | string | null;
+  currentMentalModelStatus: string | null;
+  currentStageOrdinal: number | null;
+  totalStages: number;
+  nextAction: string | null;
+  nextMentalModel: SixMentalModel | string | null;
+  ready: boolean | null;
+  blocked: boolean;
+  blockingReasons: string[];
+  lastEventType: string | null;
+  userFacingMessage: string;
+}
+
 export type PreConfirmationDrilldownSubstate =
   | 'idle'
   | 'source_identified'
@@ -187,6 +215,7 @@ export interface MainAgentOrchestrationSurface {
   continueDecision: MainAgentContinueDecision;
   mainAgentNextAction: string | null;
   mainAgentReady: boolean | null;
+  mainAgentStageSummary: MainAgentStageSummary | null;
   runtimeResumeProjection?: {
     projectionType: 'runtime_resume_projection';
     source: 'requirement_record';
@@ -230,6 +259,7 @@ export interface MainAgentRunLoopResult {
   dispatchInstruction: MainAgentDispatchInstruction | null;
   taskReport: TaskReport | null;
   finalSurface: MainAgentOrchestrationSurface;
+  mainAgentStageSummary: MainAgentStageSummary | null;
 }
 
 export interface MainAgentRunLoopExecutorContext {
@@ -454,6 +484,107 @@ function readRequirementRecordFromRuntimeContext(
 
 function runtimeRecordPath(runtimeContext: Partial<RuntimeContextFile> | null): string | null {
   return resolvedContext(runtimeContext)?.recordPath ?? null;
+}
+
+function isSixMentalModel(value: string): value is SixMentalModel {
+  return SIX_MENTAL_MODEL_SEQUENCE.includes(value as SixMentalModel);
+}
+
+function modelResultFor(
+  record: Record<string, unknown> | null,
+  model: string | null
+): Record<string, unknown> | null {
+  const sixModelResults =
+    record?.sixModelResults &&
+    typeof record.sixModelResults === 'object' &&
+    !Array.isArray(record.sixModelResults)
+      ? (record.sixModelResults as Record<string, unknown>)
+      : null;
+  const result = model ? sixModelResults?.[model] : null;
+  return result && typeof result === 'object' && !Array.isArray(result)
+    ? (result as Record<string, unknown>)
+    : null;
+}
+
+function stringArrayFrom(value: unknown): string[] {
+  return Array.isArray(value) ? value.map((item) => normalizeText(item)).filter(Boolean) : [];
+}
+
+function nextMentalModelFor(
+  currentMentalModel: string | null,
+  nextAction: string | null
+): SixMentalModel | string | null {
+  if (nextAction === 'enter_architecture_confirmation') {
+    return 'architecture_confirmation';
+  }
+  if (nextAction === 'run_implementation_readiness_gate') {
+    return 'implementation_readiness';
+  }
+  if (nextAction === 'dispatch_implement') {
+    return 'execution_closure';
+  }
+  if (nextAction === 'dispatch_review') {
+    return 'audit_review';
+  }
+  if (nextAction === 'run_closeout') {
+    return 'delivery_confirmation';
+  }
+  if (!currentMentalModel || !isSixMentalModel(currentMentalModel)) {
+    return null;
+  }
+  const index = SIX_MENTAL_MODEL_SEQUENCE.indexOf(currentMentalModel);
+  return index >= 0 && index < SIX_MENTAL_MODEL_SEQUENCE.length - 1
+    ? SIX_MENTAL_MODEL_SEQUENCE[index + 1]
+    : null;
+}
+
+function buildMainAgentStageSummary(input: {
+  record: Record<string, unknown> | null;
+  nextAction: string | null;
+  ready: boolean | null;
+}): MainAgentStageSummary | null {
+  if (!input.record) {
+    return null;
+  }
+  const recordId = normalizeText(input.record.recordId) || null;
+  const requirementSetId = normalizeText(input.record.requirementSetId) || recordId;
+  const currentMentalModel = normalizeText(input.record.currentMentalModel) || null;
+  const currentModelResult = modelResultFor(input.record, currentMentalModel);
+  const currentMentalModelStatus = normalizeText(currentModelResult?.status) || null;
+  const currentStageOrdinal =
+    currentMentalModel && isSixMentalModel(currentMentalModel)
+      ? SIX_MENTAL_MODEL_SEQUENCE.indexOf(currentMentalModel) + 1
+      : null;
+  const blockingReasons = Array.from(
+    new Set([
+      ...stringArrayFrom(currentModelResult?.blockingReasons),
+      ...(input.ready === false && input.nextAction
+        ? [`next_action_not_ready:${input.nextAction}`]
+        : []),
+    ])
+  );
+  const nextMentalModel = nextMentalModelFor(currentMentalModel, input.nextAction);
+  const blocked =
+    input.ready === false ||
+    ['blocked', 'fail', 'stale', 'not_established'].includes(currentMentalModelStatus ?? '');
+  const statusText = currentMentalModelStatus ?? 'unknown';
+  const nextActionText = input.nextAction ?? 'none';
+  return {
+    schemaVersion: 'main-agent-stage-summary/v1',
+    recordId,
+    requirementSetId,
+    currentMentalModel,
+    currentMentalModelStatus,
+    currentStageOrdinal,
+    totalStages: SIX_MENTAL_MODEL_SEQUENCE.length,
+    nextAction: input.nextAction,
+    nextMentalModel,
+    ready: input.ready,
+    blocked,
+    blockingReasons,
+    lastEventType: normalizeText(input.record.lastEventType) || null,
+    userFacingMessage: `当前六心智阶段: ${currentMentalModel ?? 'unknown'} (${statusText}); 下一步: ${nextActionText}.`,
+  };
 }
 
 function mergeAllowedWriteScope(base: string[], extras: string[]): string[] {
@@ -6537,6 +6668,11 @@ export function resolveMainAgentOrchestrationSurface(
     'terminalState' in action && action.terminalState === 'completed_no_dispatch'
       ? action.terminalState
       : undefined;
+  const mainAgentStageSummary = buildMainAgentStageSummary({
+    record: requirementRecord,
+    nextAction: action.nextAction,
+    ready: action.ready,
+  });
 
   return {
     source: surfaceSource,
@@ -6555,6 +6691,7 @@ export function resolveMainAgentOrchestrationSurface(
     continueDecision: continueState.continueDecision,
     mainAgentNextAction: action.nextAction,
     mainAgentReady: action.ready,
+    mainAgentStageSummary,
     preConfirmationDrilldownLane,
     ...(useRequirementRecordProjection
       ? {
@@ -6935,6 +7072,7 @@ export function ensureMainAgentDispatchPacket(
     continueDecision: 'blocked',
     mainAgentNextAction: writtenState.nextAction,
     mainAgentReady: !compilerBlocked,
+    mainAgentStageSummary: currentSurface.mainAgentStageSummary,
   };
 }
 
@@ -7167,6 +7305,102 @@ export interface MainAgentConfirmScopeResult {
   nextRequiredAction?: string;
   classification?: Record<string, unknown>;
   delegatedResult?: MainAgentConfirmScopeResult;
+  mainAgentStageSummary?: MainAgentStageSummary | null;
+}
+
+function stageSummaryForCommandResult(
+  root: string,
+  args: Record<string, string | undefined>,
+  delegatedOutput?: unknown
+): MainAgentStageSummary | null {
+  try {
+    const { flow, stage } = resolveFlowAndStage(root, args);
+    const surfaceSummary = resolveMainAgentOrchestrationSurface({
+      projectRoot: root,
+      recordId: args.recordId,
+      requirementSetId: args.requirementSetId,
+      runId: args.runId,
+      flow,
+      stage,
+    }).mainAgentStageSummary;
+    if (surfaceSummary) {
+      return surfaceSummary;
+    }
+  } catch {
+    // Fall back to direct record reads below; user-facing hints must not fail the command.
+  }
+  const recordPath = directRequirementRecordPathForCommand(root, args, delegatedOutput);
+  const record = recordPath ? readJsonIfExists(recordPath) : null;
+  if (!record) {
+    return null;
+  }
+  const stage = normalizeText(args.stage) || normalizeText(record.stage) || 'implement';
+  const implementationEntryGate =
+    record.implementationEntryGate &&
+    typeof record.implementationEntryGate === 'object' &&
+    !Array.isArray(record.implementationEntryGate)
+      ? (record.implementationEntryGate as ImplementationEntryGate)
+      : null;
+  const action = deriveNextActionFromRequirementRecord({
+    stage,
+    record,
+    state: null,
+    pendingPacketStatus: 'none',
+    pendingPacket: null,
+    implementationEntryDecision: implementationEntryGate?.decision ?? null,
+    continueDecision: null,
+  });
+  return buildMainAgentStageSummary({
+    record,
+    nextAction: action.nextAction,
+    ready: action.ready,
+  });
+}
+
+function directRequirementRecordPathForCommand(
+  root: string,
+  args: Record<string, string | undefined>,
+  delegatedOutput?: unknown
+): string | null {
+  const fromArg = normalizeText(args.requirementRecord);
+  if (fromArg) {
+    return path.resolve(root, stripWrappingQuotes(fromArg));
+  }
+  const output =
+    delegatedOutput && typeof delegatedOutput === 'object' && !Array.isArray(delegatedOutput)
+      ? (delegatedOutput as Record<string, unknown>)
+      : null;
+  const fromOutput =
+    normalizeText(output?.requirementRecordPath) ||
+    normalizeText(
+      output?.stdout &&
+        typeof output.stdout === 'object' &&
+        !Array.isArray(output.stdout)
+        ? (output.stdout as Record<string, unknown>).requirementRecordPath
+        : null
+    );
+  if (fromOutput) {
+    return path.resolve(root, stripWrappingQuotes(fromOutput));
+  }
+  const index = readJsonIfExists(
+    path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'index.json')
+  );
+  const active =
+    index?.active && typeof index.active === 'object' && !Array.isArray(index.active)
+      ? (index.active as Record<string, unknown>)
+      : null;
+  const activeRequirementSetId = normalizeText(active?.requirementSetId || args.requirementSetId);
+  if (activeRequirementSetId) {
+    return path.join(
+      root,
+      '_bmad-output',
+      'runtime',
+      'requirement-records',
+      activeRequirementSetId,
+      'requirement-record.json'
+    );
+  }
+  return null;
 }
 
 export function runMainAgentConfirmCloseoutAcceptance(
@@ -7232,6 +7466,7 @@ export function runMainAgentConfirmCloseoutAcceptance(
     exitCode: step.status ?? 2,
     ...(parsedStdout !== undefined ? { stdout: parsedStdout } : {}),
     ...(step.stderr.trim() ? { stderr: step.stderr.trim() } : {}),
+    mainAgentStageSummary: stageSummaryForCommandResult(root, args, parsedStdout),
   };
 }
 
@@ -7291,6 +7526,7 @@ export function runMainAgentConfirmScope(
     exitCode: step.status ?? 2,
     ...(parsedStdout !== undefined ? { stdout: parsedStdout } : {}),
     ...(step.stderr.trim() ? { stderr: step.stderr.trim() } : {}),
+    mainAgentStageSummary: stageSummaryForCommandResult(root, args, parsedStdout),
   };
 }
 
@@ -7348,6 +7584,7 @@ export function runMainAgentConfirmationBookkeepingRepair(
     exitCode: step.status ?? 2,
     ...(parsedStdout !== undefined ? { stdout: parsedStdout } : {}),
     ...(step.stderr.trim() ? { stderr: step.stderr.trim() } : {}),
+    mainAgentStageSummary: stageSummaryForCommandResult(root, args, parsedStdout),
   };
 }
 
@@ -9310,6 +9547,20 @@ export function runMainAgentAutomaticLoop(input: {
           ...finalSurface,
           mainAgentNextAction: blockedNextAction,
           mainAgentReady: false,
+          mainAgentStageSummary: finalSurface.mainAgentStageSummary
+            ? {
+                ...finalSurface.mainAgentStageSummary,
+                nextAction: blockedNextAction,
+                ready: false,
+                blocked: true,
+                blockingReasons: remediation.blockingReasons,
+                userFacingMessage: `当前六心智阶段: ${
+                  finalSurface.mainAgentStageSummary.currentMentalModel ?? 'unknown'
+                } (${
+                  finalSurface.mainAgentStageSummary.currentMentalModelStatus ?? 'unknown'
+                }); 下一步: ${blockedNextAction}.`,
+              }
+            : null,
           runtimeResumeProjection: finalSurface.runtimeResumeProjection
             ? {
                 ...finalSurface.runtimeResumeProjection,
@@ -9322,6 +9573,20 @@ export function runMainAgentAutomaticLoop(input: {
               }
             : finalSurface.runtimeResumeProjection,
         },
+        mainAgentStageSummary: finalSurface.mainAgentStageSummary
+          ? {
+              ...finalSurface.mainAgentStageSummary,
+              nextAction: blockedNextAction,
+              ready: false,
+              blocked: true,
+              blockingReasons: remediation.blockingReasons,
+              userFacingMessage: `当前六心智阶段: ${
+                finalSurface.mainAgentStageSummary.currentMentalModel ?? 'unknown'
+              } (${
+                finalSurface.mainAgentStageSummary.currentMentalModelStatus ?? 'unknown'
+              }); 下一步: ${blockedNextAction}.`,
+            }
+          : null,
       };
     }
     steps.push({
@@ -9336,6 +9601,7 @@ export function runMainAgentAutomaticLoop(input: {
       dispatchInstruction: null,
       taskReport,
       finalSurface,
+      mainAgentStageSummary: finalSurface.mainAgentStageSummary,
     };
   }
 
@@ -9366,6 +9632,7 @@ export function runMainAgentAutomaticLoop(input: {
       dispatchInstruction: null,
       taskReport: null,
       finalSurface,
+      mainAgentStageSummary: finalSurface.mainAgentStageSummary,
     };
   }
   steps.push({
@@ -9474,6 +9741,7 @@ export function runMainAgentAutomaticLoop(input: {
       dispatchInstruction: instruction,
       taskReport: null,
       finalSurface,
+      mainAgentStageSummary: finalSurface.mainAgentStageSummary,
     };
   }
   if (!taskReport) {
@@ -9497,6 +9765,7 @@ export function runMainAgentAutomaticLoop(input: {
       dispatchInstruction: instruction,
       taskReport: null,
       finalSurface,
+      mainAgentStageSummary: finalSurface.mainAgentStageSummary,
     };
   }
   if (
@@ -9585,6 +9854,7 @@ export function runMainAgentAutomaticLoop(input: {
     dispatchInstruction: instruction,
     taskReport,
     finalSurface,
+    mainAgentStageSummary: finalSurface.mainAgentStageSummary,
   };
 }
 
@@ -9692,6 +9962,7 @@ export async function runMainAgentAutomaticLoopAsync(input: {
       dispatchInstruction: null,
       taskReport: readinessBaselineActivationTaskReport(),
       finalSurface,
+      mainAgentStageSummary: finalSurface.mainAgentStageSummary,
     };
   } catch (error) {
     const finalSurface = resolveMainAgentOrchestrationSurface({
@@ -9722,7 +9993,33 @@ export async function runMainAgentAutomaticLoopAsync(input: {
         ...finalSurface,
         mainAgentNextAction: 'await_user',
         mainAgentReady: false,
+        mainAgentStageSummary: finalSurface.mainAgentStageSummary
+          ? {
+              ...finalSurface.mainAgentStageSummary,
+              nextAction: 'await_user',
+              ready: false,
+              blocked: true,
+              userFacingMessage: `当前六心智阶段: ${
+                finalSurface.mainAgentStageSummary.currentMentalModel ?? 'unknown'
+              } (${
+                finalSurface.mainAgentStageSummary.currentMentalModelStatus ?? 'unknown'
+              }); 下一步: await_user.`,
+            }
+          : null,
       },
+      mainAgentStageSummary: finalSurface.mainAgentStageSummary
+        ? {
+            ...finalSurface.mainAgentStageSummary,
+            nextAction: 'await_user',
+            ready: false,
+            blocked: true,
+            userFacingMessage: `当前六心智阶段: ${
+              finalSurface.mainAgentStageSummary.currentMentalModel ?? 'unknown'
+            } (${
+              finalSurface.mainAgentStageSummary.currentMentalModelStatus ?? 'unknown'
+            }); 下一步: await_user.`,
+          }
+        : null,
     };
   }
 }
