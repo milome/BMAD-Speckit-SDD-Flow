@@ -739,7 +739,7 @@ describe('requirement-scoped implementation readiness gate', () => {
     }
   });
 
-  it('blocks when architecture state check is missing or stale', () => {
+  it('does not require legacy architecture state check when architecture state is current', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'implementation-readiness-arch-state-'));
     try {
       const recordPath = writeRecord(root, {
@@ -752,10 +752,53 @@ describe('requirement-scoped implementation readiness gate', () => {
         '--evaluated-at',
         '2026-05-19T00:00:01.000Z',
       ]);
-      expect(code).toBe(1);
+      expect(code).toBe(0);
       const record = JSON.parse(readFileSync(recordPath, 'utf8'));
-      expect(record.gateChecks.at(-1).blockingReasons).toContain(
+      expect(record.gateChecks.at(-1).blockingReasons).not.toContain(
         'architecture_confirmation_state_check_not_current'
+      );
+      expect(record.gateChecks.at(-1).checks).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: 'architecture-confirmation-state-current',
+            passed: true,
+          }),
+          expect.objectContaining({
+            id: 'architecture-confirmation-state-check-current',
+            passed: true,
+            compatibilityOnly: true,
+          }),
+        ])
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('blocks when architecture state hashes are stale', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'implementation-readiness-arch-stale-'));
+    try {
+      const record = baseRecord(root);
+      const state = record.architectureConfirmationState as Record<string, unknown>;
+      state.staleInputs = {
+        ...(state.staleInputs as Record<string, unknown>),
+        sourceDocumentHash:
+          'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      };
+      const recordPath = writeRecord(root, {
+        ...record,
+        architectureConfirmationStateChecks: [],
+      });
+      const code = mainImplementationReadinessGate([
+        '--requirement-record',
+        recordPath,
+        '--evaluated-at',
+        '2026-05-19T00:00:01.000Z',
+      ]);
+      expect(code).toBe(1);
+      const updated = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(updated.gateChecks.at(-1).blockingReasons).toContain(
+        'architecture_confirmation_source_hash_not_current'
       );
     } finally {
       rmSync(root, { recursive: true, force: true });

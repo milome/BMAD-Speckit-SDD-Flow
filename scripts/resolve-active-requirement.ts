@@ -399,18 +399,14 @@ function stageFromConfirmedImplementationEntry(record: JsonObject, flow: Runtime
   const entryFlow = firstText(record.entryFlow, nested(record, 'implementationConfirmation')?.entryFlow);
   const entryFlowClass = firstText(record.entryFlowClass, nested(record, 'implementationConfirmation')?.entryFlowClass);
   const workflowAdapter = firstText(record.workflowAdapter, nested(record, 'implementationConfirmation')?.workflowAdapter);
-  const architectureState = nested(record, 'architectureConfirmationState');
-  const architectureStatus = firstText(architectureState?.status);
-  const architectureReady = !architectureState || architectureStatus === 'active';
   if (
     flow === 'standalone_tasks' &&
     entryFlow === 'standalone_tasks' &&
     entryFlowClass === 'task_packet_entry' &&
     ['direct', 'legacy', 'speckit'].includes(workflowAdapter) &&
-    ['user_confirmed', 'in_progress'].includes(status) &&
-    architectureReady
+    ['user_confirmed', 'in_progress'].includes(status)
   ) {
-    return 'implement';
+    return 'requirement_confirmation';
   }
   return '';
 }

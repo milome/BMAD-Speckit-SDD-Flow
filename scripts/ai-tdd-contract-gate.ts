@@ -200,6 +200,21 @@ function commandRefs(row: JsonObject): string[] {
   ]);
 }
 
+function commandFileRefs(row: JsonObject): string[] {
+  return unique([
+    ...extractCommandFileRefs(text(row.command)),
+    text(row.file),
+    text(row.path),
+    text(row.testFile),
+    text(row.testPath),
+    ...strings(row.files),
+    ...strings(row.testFiles),
+    ...strings(row.targetFiles),
+  ])
+    .filter(Boolean)
+    .map(normalizePath);
+}
+
 function idRefs(row: JsonObject, keys: string[]): string[] {
   return unique(keys.flatMap((key) => strings(row[key])));
 }
@@ -496,7 +511,7 @@ function derivedAcceptanceRows(confirmation: JsonObject): AcceptanceRow[] {
   const traceByCommand = traceCommandIndex(confirmation);
   return objects(confirmation.requiredCommands).flatMap((command, index) => {
     const id = commandId(command);
-    const files = extractCommandFileRefs(text(command.command)).filter((file) =>
+    const files = commandFileRefs(command).filter((file) =>
       /\.(?:test|spec)\.(?:ts|tsx|js|jsx|mjs|cjs)$/iu.test(file)
     );
     if (files.length === 0) return [];
@@ -931,7 +946,7 @@ function commandTargetCollection(confirmation: JsonObject): JsonObject {
       const id = commandId(row);
       const traceRefs = idRefs(row, ['traceRows', 'traceRefs']);
       const evidenceRefs = idRefs(row, ['evidenceRefs', 'linkedEvidenceIds']);
-      const files = extractCommandFileRefs(text(row.command));
+      const files = commandFileRefs(row);
       const linkedTraceRows = traceRows.filter((trace) => commandRefs(trace).includes(id));
       const collectedTraceRefs = unique([
         ...traceRefs,
@@ -1482,7 +1497,7 @@ function buildManifest(input: {
       command: text(row.command),
       role: text(row.role) || text(row.commandRole) || text(row.gate),
       expectedMode: text(row.expectedMode) || text(row.expectedExitCodeAfterImplementation),
-      files: extractCommandFileRefs(text(row.command)),
+      files: commandFileRefs(row),
       traceRefs: idRefs(row, ['traceRows', 'traceRefs']),
       evidenceRefs: idRefs(row, ['evidenceRefs']),
     })),
@@ -1528,7 +1543,7 @@ function buildManifest(input: {
     },
   };
   return buildDerivedContractExecutionManifest({
-    confirmation: input.confirmation,
+    confirmation,
     manifest: rawManifest,
     record: input.record,
     sourcePath: normalizePath(path.resolve(input.sourcePath)),

@@ -5,9 +5,17 @@ import {
   architectureConfirmationHashFor,
   resolveArchitectureConfirmationHashRecipe,
 } from './architecture-confirmation-hash-recipe';
-import { appendControlEventAndReplay } from './requirement-record-control-store';
+import { appendControlEventAndReplay, type ControlCommitResult } from './requirement-record-control-store';
 
 type JsonObject = Record<string, unknown>;
+
+const NEXT_MODEL: Record<string, string> = {
+  requirement_confirmation: 'architecture_confirmation',
+  architecture_confirmation: 'implementation_readiness',
+  implementation_readiness: 'execution_closure',
+  execution_closure: 'audit_review',
+  audit_review: 'delivery_confirmation',
+};
 
 interface ParsedArgs {
   architectureConfirmation?: string;
@@ -173,6 +181,225 @@ function objects(value: unknown): JsonObject[] {
   return Array.isArray(value)
     ? value.filter((item): item is JsonObject => Boolean(item) && typeof item === 'object' && !Array.isArray(item))
     : [];
+}
+
+function hasSixModelRuntime(record: JsonObject): boolean {
+  return (
+    typeof record.currentMentalModel === 'string' &&
+    object(record.sixModelResults).requirement_confirmation !== undefined
+  );
+}
+
+function sameArchitectureConfirmationAlreadyRecorded(record: JsonObject, event: JsonObject): boolean {
+  const state = object(record.architectureConfirmationState);
+  return (
+    text(state.status) === 'active' &&
+    text(state.currentArchitectureConfirmationRunId) === text(event.runId) &&
+    text(state.currentArchitectureConfirmationHash) === text(event.architectureConfirmationArtifactHash)
+  );
+}
+
+function modelResultForArchitectureConfirmation(
+  record: JsonObject,
+  event: JsonObject,
+  recordedAt: string,
+  recordedBy: string
+): JsonObject {
+  return {
+    payloadKind: 'model_result',
+    model: 'architecture_confirmation',
+    recordId: text(event.recordId) || text(record.recordId),
+    requirementSetId: text(event.requirementSetId) || text(record.requirementSetId) || text(record.recordId),
+    sourceDocumentHash: text(event.sourceDocumentHash) || text(record.sourceDocumentHash),
+    implementationConfirmationHash:
+      text(event.implementationConfirmationHash) || text(record.implementationConfirmationHash),
+    status: 'pass',
+    resultRecordedAt: recordedAt,
+    resultRecordedBy: recordedBy,
+    blockingReasons: [],
+    sourceRefs: [
+      {
+        sourceType: 'architecture_confirmation',
+        id: text(event.architectureConfirmationArtifactHash),
+      },
+    ],
+    currentHashes: {
+      sourceDocumentHash: text(event.sourceDocumentHash) || text(record.sourceDocumentHash),
+      implementationConfirmationHash:
+        text(event.implementationConfirmationHash) || text(record.implementationConfirmationHash),
+      resolvedRecipeHash: text(event.resolvedRecipeHash),
+      architectureConfirmationArtifactHash: text(event.architectureConfirmationArtifactHash),
+      targetPathsHash: text(event.targetPathsHash),
+      consumerImpactScanHash: text(event.consumerImpactScanHash),
+      governanceImpactScanHash: text(event.governanceImpactScanHash),
+    },
+  };
+}
+
+function hasOpenBlockingReconfirmation(record: JsonObject): boolean {
+  return objects(record.reconfirmationRequests).some((request) =>
+    ['blocking_open', 'open', 'in_progress'].includes(text(request.status))
+  );
+}
+
+function hasOpenRerun(record: JsonObject): boolean {
+  return objects(record.rerunLoops).some((loop) =>
+    ['open', 'in_progress', 'no_progress', 'blocked'].includes(text(loop.status))
+  );
+}
+
+function hasPendingBlockerIntake(record: JsonObject): boolean {
+  if (objects(record.pendingBlockerIntake).length > 0) return true;
+  return objects(record.blockerIntakeRuns).some((run) => !['closed', 'resolved', 'pass'].includes(text(run.status)));
+}
+
+function appendMentalModelTransition(input: {
+  recordPath: string;
+  fromModel: string;
+  toModel: string;
+  recordedAt: string;
+  recordedBy: string;
+  sourceRefs: JsonObject[];
+}): ControlCommitResult | null {
+  const current = readJson(input.recordPath);
+  if (!hasSixModelRuntime(current) || text(current.currentMentalModel) !== input.fromModel) {
+    return null;
+  }
+  return appendControlEventAndReplay({
+    recordPath: input.recordPath,
+    writerId: 'architecture-confirmation-ingest',
+    eventType: 'mental_model_transition_recorded',
+    recordedAt: input.recordedAt,
+    payload: {
+      eventType: 'mental_model_transition_recorded',
+      recordId: text(current.recordId),
+      requirementSetId: text(current.requirementSetId) || text(current.recordId),
+      fromModel: input.fromModel,
+      toModel: input.toModel,
+      sourceDocumentHash: text(current.sourceDocumentHash),
+      implementationConfirmationHash: text(current.implementationConfirmationHash),
+      recordedAt: input.recordedAt,
+      recordedBy: input.recordedBy,
+      sourceRefs: input.sourceRefs,
+    },
+    reduce: (record, payload) => {
+      if (record.currentMentalModel !== payload.fromModel) {
+        throw new Error('mental_model_transition_from_model_mismatch');
+      }
+      if (NEXT_MODEL[String(payload.fromModel)] !== payload.toModel) {
+        throw new Error('mental_model_transition_order_violation');
+      }
+      if (hasOpenBlockingReconfirmation(record)) {
+        throw new Error('mental_model_transition_blocked_by_open_reconfirmation');
+      }
+      if (hasOpenRerun(record)) {
+        throw new Error('mental_model_transition_blocked_by_open_rerun');
+      }
+      if (hasPendingBlockerIntake(record)) {
+        throw new Error('mental_model_transition_blocked_by_pending_blocker_intake');
+      }
+      const results = object(record.sixModelResults);
+      const currentResult = object(results[String(payload.fromModel)]);
+      if (text(currentResult.status) !== 'pass') {
+        throw new Error('mental_model_transition_requires_current_model_pass');
+      }
+      return {
+        ...record,
+        currentMentalModel: payload.toModel,
+        stage: payload.toModel,
+        currentStage: payload.toModel,
+        mentalModelTransitions: [...objects(record.mentalModelTransitions), payload],
+        lastEventType: 'mental_model_transition_recorded',
+        updatedAt: input.recordedAt,
+      };
+    },
+  });
+}
+
+function appendArchitectureConfirmationResult(input: {
+  recordPath: string;
+  event: JsonObject;
+  recordedAt: string;
+  recordedBy: string;
+}): ControlCommitResult | null {
+  const current = readJson(input.recordPath);
+  if (!hasSixModelRuntime(current)) return null;
+  const existingResult = object(object(current.sixModelResults).architecture_confirmation);
+  if (
+    text(existingResult.status) === 'pass' &&
+    text(object(existingResult.currentHashes).architectureConfirmationArtifactHash) ===
+      text(input.event.architectureConfirmationArtifactHash)
+  ) {
+    return null;
+  }
+  const result = modelResultForArchitectureConfirmation(
+    current,
+    input.event,
+    input.recordedAt,
+    input.recordedBy
+  );
+  return appendControlEventAndReplay({
+    recordPath: input.recordPath,
+    writerId: 'architecture-confirmation-ingest',
+    eventType: 'six_model_results_recorded',
+    recordedAt: input.recordedAt,
+    payload: {
+      eventType: 'six_model_results_recorded',
+      ...result,
+    },
+    reduce: (record, payload) => ({
+      ...record,
+      sixModelResults: {
+        ...object(record.sixModelResults),
+        architecture_confirmation: modelResultForArchitectureConfirmation(
+          record,
+          input.event,
+          input.recordedAt,
+          input.recordedBy
+        ),
+      },
+      lastEventType: 'six_model_results_recorded',
+      updatedAt: input.recordedAt,
+    }),
+  });
+}
+
+function appendArchitectureConfirmationModelProgression(input: {
+  recordPath: string;
+  event: JsonObject;
+  recordedAt: string;
+  recordedBy: string;
+}): ControlCommitResult[] {
+  const initial = readJson(input.recordPath);
+  if (!hasSixModelRuntime(initial)) return [];
+  const sourceRefs = [
+    {
+      sourceType: 'architecture_confirmation',
+      id: text(input.event.architectureConfirmationArtifactHash),
+    },
+  ];
+  const commits: ControlCommitResult[] = [];
+  const firstTransition = appendMentalModelTransition({
+    recordPath: input.recordPath,
+    fromModel: 'requirement_confirmation',
+    toModel: 'architecture_confirmation',
+    recordedAt: input.recordedAt,
+    recordedBy: input.recordedBy,
+    sourceRefs,
+  });
+  if (firstTransition) commits.push(firstTransition);
+  const resultCommit = appendArchitectureConfirmationResult(input);
+  if (resultCommit) commits.push(resultCommit);
+  const secondTransition = appendMentalModelTransition({
+    recordPath: input.recordPath,
+    fromModel: 'architecture_confirmation',
+    toModel: 'implementation_readiness',
+    recordedAt: input.recordedAt,
+    recordedBy: input.recordedBy,
+    sourceRefs,
+  });
+  if (secondTransition) commits.push(secondTransition);
+  return commits;
 }
 
 function validate(input: {
@@ -479,37 +706,57 @@ export function mainIngestArchitectureConfirmation(argv: string[]): number {
     confirmedBy: args.confirmedBy,
   };
   const baseDir = path.dirname(recordPath);
-  const commit = appendControlEventAndReplay({
+  const currentRecord = readJson(recordPath);
+  const alreadyRecorded = sameArchitectureConfirmationAlreadyRecorded(currentRecord, event);
+  const commit = alreadyRecorded
+    ? null
+    : appendControlEventAndReplay({
+        recordPath,
+        writerId: 'architecture-confirmation-ingest',
+        eventType: 'architecture_confirmation_recorded',
+        recordedAt: confirmedAt,
+        payload: {
+          event: eventWithActor,
+          architecturePath: normalizePathForRecord(architecturePath),
+          renderReportPath: normalizePathForRecord(reportPath),
+        },
+        reduce: (currentRecord) => updateRecord(currentRecord, event, confirmedAt, args.confirmedBy!),
+      });
+  const progressionCommits = appendArchitectureConfirmationModelProgression({
     recordPath,
-    writerId: 'architecture-confirmation-ingest',
-    eventType: 'architecture_confirmation_recorded',
+    event,
     recordedAt: confirmedAt,
-    payload: {
-      event: eventWithActor,
-      architecturePath: normalizePathForRecord(architecturePath),
-      renderReportPath: normalizePathForRecord(reportPath),
-    },
-    reduce: (currentRecord) => updateRecord(currentRecord, event, confirmedAt, args.confirmedBy!),
+    recordedBy: args.confirmedBy!,
   });
   const artifactIndex = path.resolve(args.artifactIndex ?? path.join(baseDir, 'artifact-index.jsonl'));
-  appendJsonl(artifactIndex, {
-    artifactType: 'architecture_confirmation',
-    sourceOfTruthRole: 'evidence',
-    recordId: event.recordId,
-    requirementSetId: event.requirementSetId,
-    path: normalizePathForRecord(architecturePath),
-    eventType: 'architecture_confirmation_recorded',
-    contentHash: event.architectureConfirmationArtifactHash,
-  });
+  if (!alreadyRecorded) {
+    appendJsonl(artifactIndex, {
+      artifactType: 'architecture_confirmation',
+      sourceOfTruthRole: 'evidence',
+      recordId: event.recordId,
+      requirementSetId: event.requirementSetId,
+      path: normalizePathForRecord(architecturePath),
+      eventType: 'architecture_confirmation_recorded',
+      contentHash: event.architectureConfirmationArtifactHash,
+    });
+  }
+  const primaryCommit = commit ?? progressionCommits.at(-1);
 
   const result = {
     ok: true,
     event: eventWithActor,
+    architectureConfirmationAlreadyRecorded: alreadyRecorded,
     requirementRecordPath: normalizePathForRecord(recordPath),
-    eventLogPath: normalizePathForRecord(commit.eventLogPath),
-    controlEventId: commit.event.eventId,
-    controlEventHash: commit.event.eventHash,
-    receiptPath: normalizePathForRecord(commit.receiptPath),
+    eventLogPath: primaryCommit ? normalizePathForRecord(primaryCommit.eventLogPath) : null,
+    controlEventId: primaryCommit?.event.eventId ?? null,
+    controlEventHash: primaryCommit?.event.eventHash ?? null,
+    receiptPath: primaryCommit ? normalizePathForRecord(primaryCommit.receiptPath) : null,
+    modelProgressionEvents: progressionCommits.map((progressionCommit) => ({
+      eventType: progressionCommit.event.eventType,
+      eventId: progressionCommit.event.eventId,
+      eventHash: progressionCommit.event.eventHash,
+      receiptPath: normalizePathForRecord(progressionCommit.receiptPath),
+    })),
     artifactIndexPath: normalizePathForRecord(artifactIndex),
   };
   if (args.json) {

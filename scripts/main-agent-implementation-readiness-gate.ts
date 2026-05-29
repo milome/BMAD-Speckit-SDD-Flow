@@ -95,6 +95,48 @@ function latestArchitectureStateCheck(record: JsonObject): JsonObject | null {
   return checks.length > 0 ? checks[checks.length - 1] : null;
 }
 
+function architectureStateCurrent(
+  record: JsonObject,
+  resolvedRecipeHash: string
+): {
+  passed: boolean;
+  blockingReasons: string[];
+  currentHashes: JsonObject;
+  staleInputs: JsonObject;
+} {
+  const state = nested(record.architectureConfirmationState);
+  const staleInputs = nested(state.staleInputs);
+  const currentHashes = {
+    sourceDocumentHash: text(record.sourceDocumentHash),
+    implementationConfirmationHash: text(record.implementationConfirmationHash),
+    targetPathsHash: text(staleInputs.targetPathsHash),
+    consumerImpactScanHash: text(staleInputs.consumerImpactScanHash),
+    governanceImpactScanHash: text(staleInputs.governanceImpactScanHash),
+    currentArtifactHash: text(state.currentArchitectureConfirmationHash),
+    resolvedRecipeHash,
+  };
+  const blockingReasons = [
+    text(state.status) === 'active' ? '' : 'architecture_confirmation_not_active',
+    text(state.currentArchitectureConfirmationHash) ? '' : 'architecture_confirmation_hash_missing',
+    text(staleInputs.sourceDocumentHash) === text(currentHashes.sourceDocumentHash)
+      ? ''
+      : 'architecture_confirmation_source_hash_not_current',
+    text(staleInputs.implementationConfirmationHash) ===
+    text(currentHashes.implementationConfirmationHash)
+      ? ''
+      : 'architecture_confirmation_implementation_hash_not_current',
+    text(state.resolvedRecipeHash) === resolvedRecipeHash
+      ? ''
+      : 'architecture_confirmation_resolved_recipe_hash_not_current',
+  ].filter(Boolean);
+  return {
+    passed: blockingReasons.length === 0,
+    blockingReasons,
+    currentHashes,
+    staleInputs,
+  };
+}
+
 function architectureConfirmationRequired(record: JsonObject): boolean {
   if (record.architectureConfirmationRequired === true) return true;
   const state = record.architectureConfirmationState;
@@ -449,15 +491,27 @@ function evaluate(
   if (!architectureRecipeCurrent)
     blockingReasons.push('architecture_confirmation_resolved_recipe_hash_not_current');
 
+  const stateCurrent = architectureStateCurrent(record, resolvedRecipeHash);
   const stateCheck = latestArchitectureStateCheck(record);
-  const stateCheckPassed =
-    !requiresArchitecture ||
-    (Boolean(stateCheck) &&
-      text(stateCheck?.decision) === 'pass' &&
-      text((stateCheck?.stateTransition as JsonObject | undefined)?.toStatus) === 'active' &&
-      text(stateCheck?.resolvedRecipeHash) === resolvedRecipeHash);
-  checks.push({ id: 'architecture-confirmation-state-check-current', passed: stateCheckPassed });
-  if (!stateCheckPassed) blockingReasons.push('architecture_confirmation_state_check_not_current');
+  const legacyStateCheckPassed =
+    Boolean(stateCheck) &&
+    text(stateCheck?.decision) === 'pass' &&
+    text((stateCheck?.stateTransition as JsonObject | undefined)?.toStatus) === 'active' &&
+    text(stateCheck?.resolvedRecipeHash) === resolvedRecipeHash;
+  checks.push({
+    id: 'architecture-confirmation-state-current',
+    passed: !requiresArchitecture || stateCurrent.passed,
+    currentHashes: stateCurrent.currentHashes,
+    staleInputs: stateCurrent.staleInputs,
+    blockingReasons: requiresArchitecture ? stateCurrent.blockingReasons : [],
+  });
+  checks.push({
+    id: 'architecture-confirmation-state-check-current',
+    passed: !requiresArchitecture || stateCurrent.passed || legacyStateCheckPassed,
+    compatibilityOnly: true,
+    legacyEventType: 'architecture_confirmation_state_checked',
+  });
+  if (requiresArchitecture) blockingReasons.push(...stateCurrent.blockingReasons);
 
   const blockingQuestion = hasBlockingOpenQuestion(record);
   checks.push({ id: 'no-blocking-open-questions', passed: !blockingQuestion });
@@ -591,9 +645,11 @@ function updateRecord(
 
 function currentArchitectureHash(record: JsonObject): string {
   const state = record.architectureConfirmationState;
-  return state && typeof state === 'object' && !Array.isArray(state)
-    ? text((state as JsonObject).currentArchitectureConfirmationHash)
-    : '';
+  const currentHash =
+    state && typeof state === 'object' && !Array.isArray(state)
+      ? text((state as JsonObject).currentArchitectureConfirmationHash)
+      : '';
+  return currentHash || 'not_required';
 }
 
 export function mainImplementationReadinessGate(argv: string[]): number {

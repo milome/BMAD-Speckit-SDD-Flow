@@ -24,6 +24,39 @@ function sha256(content: string): string {
   return `sha256:${crypto.createHash('sha256').update(content, 'utf8').digest('hex')}`;
 }
 
+function removeTempTree(root: string): void {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    try {
+      rmSync(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 50 });
+      return;
+    } catch (error) {
+      if (attempt === 4) throw error;
+    }
+  }
+}
+
+function modelResult(model: string, status: string, blockingReasons: string[] = []): Record<string, unknown> {
+  return {
+    payloadKind: 'model_result',
+    model,
+    recordId: 'REQ-ARCH-INGEST',
+    requirementSetId: 'REQ-ARCH-INGEST',
+    sourceDocumentHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+    implementationConfirmationHash:
+      'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+    status,
+    resultRecordedAt: '2026-05-19T00:00:00.000Z',
+    resultRecordedBy: 'architecture-confirmation-ingest.test',
+    blockingReasons,
+    sourceRefs: [{ sourceType: 'fixture', id: model }],
+    currentHashes: {
+      sourceDocumentHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+      implementationConfirmationHash:
+        'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+    },
+  };
+}
+
 function writeFixture(root: string): {
   architecturePath: string;
   reportPath: string;
@@ -88,11 +121,56 @@ function writeFixture(root: string): {
     recordPath,
     `${JSON.stringify(
       {
+        schemaVersion: 'requirement-record/v1',
         recordId: 'REQ-ARCH-INGEST',
         requirementSetId: 'REQ-ARCH-INGEST',
         status: 'user_confirmed',
+        sourcePath: 'docs/requirements/architecture-confirmation-ingest.md',
         sourceDocumentHash: architecture.sourceDocumentHash,
         implementationConfirmationHash: architecture.implementationConfirmationHash,
+        confirmationHistory: [
+          {
+            eventType: 'confirmation_recorded',
+            recordId: 'REQ-ARCH-INGEST',
+            requirementSetId: 'REQ-ARCH-INGEST',
+            confirmedAt: '2026-05-19T00:00:00.000Z',
+            confirmedBy: 'test-user',
+            sourcePath: 'docs/requirements/architecture-confirmation-ingest.md',
+            sourceDocumentHash: architecture.sourceDocumentHash,
+            implementationConfirmationHash: architecture.implementationConfirmationHash,
+            confirmationPageHash:
+              'sha256:9999999999999999999999999999999999999999999999999999999999999999',
+            confirmationText: 'confirmed',
+            renderReportPath:
+              '_bmad-output/runtime/requirement-records/REQ-ARCH-INGEST/confirmation/confirmation-render-report.json',
+            htmlPath:
+              '_bmad-output/runtime/requirement-records/REQ-ARCH-INGEST/confirmation/confirmation.html',
+          },
+        ],
+        currentMentalModel: 'requirement_confirmation',
+        mentalModelTransitions: [],
+        reconfirmationRequests: [],
+        pendingBlockerIntake: [],
+        blockerIntakeRuns: [],
+        rerunLoops: [],
+        sixModelResults: {
+          requirement_confirmation: modelResult('requirement_confirmation', 'pass'),
+          architecture_confirmation: modelResult('architecture_confirmation', 'not_established', [
+            'architecture_confirmation_not_established',
+          ]),
+          implementation_readiness: modelResult('implementation_readiness', 'not_established', [
+            'implementation_readiness_not_established',
+          ]),
+          execution_closure: modelResult('execution_closure', 'not_established', [
+            'execution_closure_not_established',
+          ]),
+          audit_review: modelResult('audit_review', 'not_established', [
+            'audit_review_not_established',
+          ]),
+          delivery_confirmation: modelResult('delivery_confirmation', 'not_established', [
+            'delivery_confirmation_not_established',
+          ]),
+        },
       },
       null,
       2
@@ -148,7 +226,7 @@ describe('architecture confirmation ingest', () => {
       ]);
       expect(code).toBe(0);
       const record = JSON.parse(readFileSync(fixture.recordPath, 'utf8'));
-      expect(record.lastEventType).toBe('architecture_confirmation_recorded');
+      expect(record.lastEventType).toBe('mental_model_transition_recorded');
       expect(record.architectureConfirmationState).toMatchObject({
         status: 'active',
         currentArchitectureConfirmationRunId: 'arch-run-001',
@@ -159,11 +237,30 @@ describe('architecture confirmation ingest', () => {
         confirmedBy: 'test-user',
         resolvedRecipeHash: resolveArchitectureConfirmationHashRecipe().resolvedRecipeHash,
       });
+      expect(record.sixModelResults.architecture_confirmation).toMatchObject({
+        payloadKind: 'model_result',
+        model: 'architecture_confirmation',
+        status: 'pass',
+        sourceDocumentHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+        implementationConfirmationHash:
+          'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+      });
+      expect(record.currentMentalModel).toBe('implementation_readiness');
+      expect(record.stage).toBe('implementation_readiness');
+      expect(record.currentStage).toBe('implementation_readiness');
+      expect(record.mentalModelTransitions.map((transition: Record<string, unknown>) => transition.toModel)).toEqual([
+        'architecture_confirmation',
+        'implementation_readiness',
+      ]);
+      expect(record.mentalModelTransitions.map((transition: Record<string, unknown>) => transition.eventType)).toEqual([
+        'mental_model_transition_recorded',
+        'mental_model_transition_recorded',
+      ]);
       expect(existsSync(path.join(path.dirname(fixture.recordPath), 'artifact-index.jsonl'))).toBe(
         true
       );
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      removeTempTree(root);
     }
   });
 
@@ -191,7 +288,7 @@ describe('architecture confirmation ingest', () => {
       expect(code).toBe(3);
       expect(readFileSync(fixture.recordPath, 'utf8')).toBe(before);
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      removeTempTree(root);
     }
   });
 
@@ -231,7 +328,7 @@ describe('architecture confirmation ingest', () => {
       const active = JSON.parse(readFileSync(fixture.recordPath, 'utf8'));
       expect(active.architectureConfirmationState.status).toBe('active');
       expect(active.architectureConfirmationStateChecks ?? []).toHaveLength(0);
-      expect(active.lastEventType).toBe('architecture_confirmation_recorded');
+      expect(active.lastEventType).toBe('mental_model_transition_recorded');
 
       active.sourceDocumentHash = 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
       writeFileSync(fixture.recordPath, `${JSON.stringify(active, null, 2)}\n`, 'utf8');
@@ -251,9 +348,9 @@ describe('architecture confirmation ingest', () => {
       expect(stale.architectureConfirmationState.status).toBe('active');
       expect(stale.architectureConfirmationStateChecks ?? []).toHaveLength(0);
       expect(stale.gateChecks ?? []).toHaveLength(0);
-      expect(stale.lastEventType).toBe('architecture_confirmation_recorded');
+      expect(stale.lastEventType).toBe('mental_model_transition_recorded');
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      removeTempTree(root);
     }
   });
 });

@@ -574,8 +574,10 @@ function artifactPlanRowDefinesTargetSurface(row: JsonObject): boolean {
     role === 'manifest_gate_oracle' ||
     role === 'contract_manifest_standard' ||
     role === 'execution_authority' ||
+    role === 'historical_requirement_context' ||
+    role === 'host_surface_projection' ||
     row.canAffectControlFlow === true ||
-    /^(?:code|script|hook|test|config|schema|control_record|execution_packet|prompt_projection|generator_receipt|gate|report|test_report|quality_report|render_report|evidence_bundle|failed_evidence_packet|implementation_evidence_packet|html_projection)$/iu.test(artifactType)
+    /^(?:code|script|hook|test|config|schema|control_record|requirement_source|skill_surface|execution_packet|prompt_projection|generator_receipt|gate|report|test_report|quality_report|render_report|evidence_bundle|failed_evidence_packet|implementation_evidence_packet|html_projection)$/iu.test(artifactType)
   );
 }
 
