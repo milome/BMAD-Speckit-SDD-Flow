@@ -980,6 +980,14 @@ describe('reverse_audit_contract', () => {
     expect(audit.report.failedChecks).not.toContain('definition_contradiction_matrix');
   });
 
+  it('does not treat generic scope boundary overlap as a contradiction', () => {
+    const source = writeSource();
+
+    const audit = runPreRenderDrilldown(source);
+
+    expect(audit.report.failedChecks).not.toContain('definition_contradiction_matrix');
+  });
+
   it('suppresses unchanged previous blockers when changed-only is requested', () => {
     const source = writeSource('SIDE_EFFECT CONFLICT_OUT');
     const previous = path.join(tempDir, 'previous-definition-report.json');

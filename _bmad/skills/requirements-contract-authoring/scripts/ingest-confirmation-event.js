@@ -77,8 +77,92 @@ function normalizePathForReport(value) {
   return String(value ?? '').replace(/\\/g, '/');
 }
 
+function repoRelativePath(value) {
+  const absolute = path.resolve(value);
+  const relative = path.relative(process.cwd(), absolute).replace(/\\/g, '/');
+  return relative && !relative.startsWith('..') && !path.isAbsolute(relative)
+    ? relative
+    : normalizePathForReport(absolute);
+}
+
 function readJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
+}
+
+function syncRequirementRecordIndex(recordPath, record, event) {
+  const indexPath = path.join(process.cwd(), '_bmad-output', 'runtime', 'requirement-records', 'index.json');
+  const now = event.confirmedAt ?? new Date().toISOString();
+  const recordId = String(record.recordId ?? event.recordId ?? '').trim();
+  const requirementSetId = String(record.requirementSetId ?? event.requirementSetId ?? recordId).trim();
+  if (!recordId || !requirementSetId) return null;
+  let index = { version: 1, source: '_bmad-output/runtime/requirement-records/index.json' };
+  if (fs.existsSync(indexPath)) {
+    try {
+      index = readJson(indexPath);
+    } catch {
+      index = { version: 1, source: '_bmad-output/runtime/requirement-records/index.json' };
+    }
+  }
+  const recordRef = {
+    requirementSetId,
+    recordId,
+    recordPath: repoRelativePath(recordPath),
+    flow: event.entryFlow ?? record.entryFlow ?? 'standalone_tasks',
+    status: record.status ?? 'user_confirmed',
+    updatedAt: now,
+  };
+  const records = Array.isArray(index.records) ? index.records : [];
+  const nextRecords = [
+    recordRef,
+    ...records.filter(
+      (item) =>
+        !item ||
+        typeof item !== 'object' ||
+        item.recordId !== recordId ||
+        item.requirementSetId !== requirementSetId
+    ),
+  ];
+  const items = Array.isArray(index.items) ? index.items : [];
+  const itemRef = {
+    requirementId: requirementSetId,
+    sourceType: 'controlled_requirement_record',
+    flow: event.entryFlow ?? record.entryFlow ?? 'standalone_tasks',
+    status: record.status ?? 'user_confirmed',
+    recordId,
+    requirementSetId,
+    recordPath: recordRef.recordPath,
+    sourcePath: repoRelativePath(event.sourcePath ?? record.sourcePath ?? ''),
+    sourceDocumentHash: record.sourceDocumentHash,
+    implementationConfirmationHash: record.implementationConfirmationHash,
+    confirmationPageHash: record.confirmationPageHash,
+    updatedAt: now,
+  };
+  const nextItems = [
+    itemRef,
+    ...items.filter(
+      (item) =>
+        !item ||
+        typeof item !== 'object' ||
+        item.requirementId !== requirementSetId ||
+        item.recordId !== recordId
+    ),
+  ];
+  const nextIndex = {
+    ...index,
+    version: 1,
+    updatedAt: now,
+    source: '_bmad-output/runtime/requirement-records/index.json',
+    active: {
+      requirementSetId,
+      recordId,
+      recordPath: recordRef.recordPath,
+    },
+    records: nextRecords,
+    items: nextItems,
+  };
+  fs.mkdirSync(path.dirname(indexPath), { recursive: true });
+  fs.writeFileSync(indexPath, `${JSON.stringify(nextIndex, null, 2)}\n`, 'utf8');
+  return normalizePathForReport(indexPath);
 }
 
 function extractImplementationConfirmation(sourceText) {
@@ -895,6 +979,9 @@ function main(argv) {
   );
   fs.mkdirSync(path.dirname(recordPath), { recursive: true });
   fs.writeFileSync(recordPath, `${JSON.stringify(nextRecord, null, 2)}\n`, 'utf8');
+  const requirementRecordIndexPath = isProjectionOnlyRefresh
+    ? null
+    : syncRequirementRecordIndex(recordPath, nextRecord, event);
 
   const eventLogPath = path.resolve(
     args.eventLog ??
@@ -935,6 +1022,7 @@ function main(argv) {
     event: isProjectionOnlyRefresh ? null : event,
     projectionEvent,
     requirementRecordPath: normalizePathForReport(recordPath),
+    requirementRecordIndexPath,
     eventLogPath: normalizePathForReport(eventLogPath),
     artifactIndexPath: normalizePathForReport(artifactIndexPath),
     sourceUpdated: !isProjectionOnlyRefresh && args.updateSource !== 'false',

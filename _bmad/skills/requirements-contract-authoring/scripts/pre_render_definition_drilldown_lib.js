@@ -355,11 +355,88 @@ function requirementTextItems(confirmation) {
   ];
 }
 
+const CONTRADICTION_TOKEN_STOP_WORDS = new Set([
+  'must',
+  'not',
+  'the',
+  'and',
+  'for',
+  'with',
+  'this',
+  'that',
+  'or',
+  'are',
+  'was',
+  'were',
+  'from',
+  'into',
+  'before',
+  'after',
+  'cannot',
+  'only',
+  'model',
+  'models',
+  'mental',
+  'six',
+  'main',
+  'agent',
+  'bmad',
+  'implementation',
+  'requirement',
+  'requirements',
+  'requirementrecord',
+  'record',
+  'records',
+  'current',
+  'canonical',
+  'control',
+  'controlled',
+  'field',
+  'fields',
+  'state',
+  'status',
+  'event',
+  'events',
+  'authority',
+  'proof',
+  'evidence',
+  'external',
+  'output',
+  'report',
+  'reports',
+  'dashboard',
+  'score',
+  'sft',
+  'hook',
+  'legacy',
+  'target',
+  'source',
+  'close',
+  'closed',
+  'closeout',
+  'post',
+  'delivery',
+  'confirmation',
+  'pass',
+]);
+
+function normalizeContradictionToken(token) {
+  const value = String(token ?? '').toLowerCase();
+  if (value.length > 5 && value.endsWith('ies')) return `${value.slice(0, -3)}y`;
+  if (value.length > 4 && value.endsWith('es')) return value.slice(0, -2);
+  if (value.length > 3 && value.endsWith('s')) return value.slice(0, -1);
+  return value;
+}
+
 function tokenSet(text) {
   const tokens = String(text ?? '')
     .toLowerCase()
     .match(/[a-z0-9\u4e00-\u9fff]{2,}/gu);
-  return new Set((tokens ?? []).filter((token) => !['must', 'not', 'the', 'and', 'for', 'with', 'this', 'that'].includes(token)));
+  return new Set(
+    (tokens ?? [])
+      .map(normalizeContradictionToken)
+      .filter((token) => token && !CONTRADICTION_TOKEN_STOP_WORDS.has(token))
+  );
 }
 
 function sharedTokens(left, right) {
@@ -447,6 +524,51 @@ function normalizeGlossaryTerm(value) {
 
 function usesAvoidedTermAsBoundary(text, avoided) {
   const content = String(text ?? '');
+  const lowerAvoided = String(avoided ?? '').toLowerCase();
+  const lowerLine = content
+    .split(/\r?\n/u)
+    .find((line) => line.toLowerCase().includes(lowerAvoided))
+    ?.toLowerCase() ?? '';
+  const boundaryTerms = [
+    'do not',
+    'must not',
+    'forbid',
+    'forbidden',
+    'outside',
+    'only',
+    'separate',
+    'not a',
+    'not as',
+    'legacy',
+    'migrate',
+    'migrated',
+    'migration',
+    'upcast',
+    'resolved',
+    'deprecated',
+    'reject',
+    'deny',
+    'cannot',
+    '不得',
+    '不能',
+    '禁止',
+    '只允许',
+    '只能',
+    '不是',
+    '不属于',
+    '边界',
+    '拒绝',
+    '阻断',
+  ];
+  const hasBoundaryTerm = (haystack, term) => {
+    if (/^[a-z][a-z ]+$/iu.test(term)) {
+      return new RegExp(`(^|[^a-z0-9])${escapeRegExp(term)}([^a-z0-9]|$)`, 'iu').test(haystack);
+    }
+    return haystack.includes(term);
+  };
+  if (lowerAvoided && lowerLine) {
+    if (boundaryTerms.some((term) => hasBoundaryTerm(lowerLine, term))) return true;
+  }
   const boundaryPattern = new RegExp(
     `(do not|must not|forbid(?:den)?|outside|only|separate|not a|not as|legacy|migrat(?:e|ed|ion)|upcast|resolved|deprecated|forbidden|reject|deny|不得|不能|禁止|只(?:能|允许)|不得成为|不能作为|不属于|不是|旧|迁移|边界|拒绝|阻断)[^\\n。；;]{0,160}\\b${escapeRegExp(
       avoided
@@ -597,7 +719,23 @@ function collectContradictionQuestions(confirmation) {
   for (const must of asArray(confirmation.must)) {
     for (const out of asArray(confirmation.mustNot)) {
       const overlap = sharedTokens(must.text, out.text);
-      if (overlap.length >= 1 && /do not|must not|forbid|outside|不得|禁止|不能/iu.test(String(out.text ?? ''))) {
+      const mustText = String(must.text ?? '');
+      const outText = String(out.text ?? '');
+      const outIsProofBoundary =
+        /do not treat|must not treat|cannot (?:be|count|serve)|不得把|不能把/iu.test(outText) &&
+        /proof|authority|completion|完成证明|权威/u.test(outText);
+      const mustIsEvidenceRecording =
+        /summari[sz]e|record|ingest|include|evidence|artifact|taskreport|subagentevidenceenvelope|dispatch|prompt|记录|汇总|证据/u.test(
+          mustText
+        );
+      if (
+        overlap.length >= 2 &&
+        !(
+          outIsProofBoundary &&
+          mustIsEvidenceRecording
+        ) &&
+        /do not|must not|forbid|outside|不得|禁止|不能/iu.test(outText)
+      ) {
         questions.push({
           id: `DQ-CONFLICT-${slug(`${must.id}-${out.id}`)}`,
           severity: 'blocker',

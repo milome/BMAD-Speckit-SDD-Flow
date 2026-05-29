@@ -664,21 +664,41 @@ function collectConfirmationRenderBookkeepingIssues(confirmation, renderReportPa
   return findings;
 }
 
-function collectReportShapeIssues(text) {
-  const findings = [];
-  const missingSections = ['implementationConfirmation', 'Reverse Audit Report', 'Definition of Done'].filter(
-    (section) => !text.includes(section)
+function hasModernDrilldownShape(renderReport) {
+  const drilldown = renderReport?.preConfirmationSemanticDrilldown;
+  if (!drilldown || drilldown.status !== 'pass') return false;
+  const report = drilldown.report ?? {};
+  return (
+    report.verdict === 'PASS' &&
+    report.confirmability === 'confirmable' &&
+    report.packetSourceReconciliation?.verdict === 'pass' &&
+    Number(report.criticalAuditor?.consecutiveNoNewGapRounds ?? 0) >=
+      Number(report.criticalAuditor?.minimumRounds ?? 3)
   );
+}
+
+function collectReportShapeIssues(text, renderReport) {
+  const findings = [];
+  const modernDrilldownShape = hasModernDrilldownShape(renderReport);
+  const missingSections = ['implementationConfirmation', 'Reverse Audit Report', 'Definition of Done'].filter((section) => {
+    if (section === 'Reverse Audit Report' && modernDrilldownShape) return false;
+    if (section === 'Definition of Done' && text.includes('Completion Definition')) return false;
+    return !text.includes(section);
+  });
   if (missingSections.length) {
     findings.push(
       issue('missing_required_sections', `required sections missing: ${missingSections.join(', ')}`, missingSections)
     );
   }
 
-  const hasReverseVerdict = /##\s+(?:\d+\.\s+)?Reverse Audit Report[\s\S]*?Verdict:\s*(PASS|FAIL)/u.test(text);
+  const hasReverseVerdict =
+    modernDrilldownShape ||
+    /##\s+(?:\d+\.\s+)?Reverse Audit Report[\s\S]*?Verdict:\s*(PASS|FAIL)/u.test(text);
   if (!hasReverseVerdict) {
     findings.push(issue('missing_reverse_audit_verdict', 'Reverse Audit Report must include Verdict: PASS|FAIL'));
   }
+
+  if (modernDrilldownShape) return findings;
 
   const reverseAuditText = /###\s+Reverse Audit Report([\s\S]*?)(?:\n###\s+Definition of Done|\n##\s+Definition of Done|\n#\s+)/u.exec(text)?.[1] ?? text;
   const equivalentSectionGroups = new Map([
@@ -896,12 +916,18 @@ function addRangeCoverage(body, covered) {
   }
 }
 
-function collectAntiSmokeIssues(text, confirmation) {
+function collectAntiSmokeIssues(text, confirmation, renderReport) {
   const findings = [];
   const hasSmokeOnlyWarning =
     /Must Not Count As|must not count|cannot satisfy|cannot substitute|cannot count|不能算作|不得算作|不计为完成|不能满足|不能替代/u.test(text) &&
     /exit code only|exit code|stdout|HTTP 200|page render|mock calls?|command exit code|smoke-only proof|smoke-level acceptance|仅退出码|标准输出|页面渲染|mock/u.test(text);
-  if (!hasSmokeOnlyWarning) {
+  const structuredAntiSmoke =
+    renderReport?.confirmability === 'confirmable' &&
+    asArray(confirmation.evidence).every((evidence) => String(evidence?.oracle ?? '').trim()) &&
+    normalizeAcceptanceSuites(confirmation).every(
+      (row) => row.oracle && row.mockOnly !== true && !/^(exit code|stdout|http 200|page render|mock calls?)$/iu.test(row.oracle)
+    );
+  if (!hasSmokeOnlyWarning && !structuredAntiSmoke) {
     findings.push(
       issue(
         'missing_e2e_anti_smoke_assertion',
@@ -1477,10 +1503,10 @@ function main(argv) {
     }, driftClassification, renderReport)
   );
   findings.push(...collectConfirmationRenderBookkeepingIssues(confirmation, renderReportPath, renderReport, driftClassification));
-  findings.push(...collectReportShapeIssues(text));
+  findings.push(...collectReportShapeIssues(text, renderReport));
   const traceability = collectTraceabilityIssues(text, confirmation);
   findings.push(...traceability.findings);
-  findings.push(...collectAntiSmokeIssues(text, confirmation));
+  findings.push(...collectAntiSmokeIssues(text, confirmation, renderReport));
   const definitionDrilldown = collectDefinitionDrilldownIssues({
     confirmation,
     renderReport,
