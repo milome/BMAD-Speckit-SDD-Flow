@@ -215,6 +215,11 @@ function artifacts(root: string, recordId: string) {
     confirmation,
     semanticKernel: path.join(authoring, 'semantic-kernel.json'),
     packet: path.join(authoring, 'must_decomposition_packet.json'),
+    scaleAssessmentInitial: path.join(authoring, 'scale-assessment-initial.json'),
+    scaleAssessmentPostPacket: path.join(authoring, 'scale-assessment-post-packet.json'),
+    scaleAssessmentPostMaterialization: path.join(authoring, 'scale-assessment-post-materialization.json'),
+    scaleRoutingDecision: path.join(authoring, 'scale-routing-decision.json'),
+    checkpointPersistenceEvidence: path.join(authoring, 'checkpoint-persistence-evidence.json'),
     receipt1: path.join(authoring, 'critical-auditor-receipt-round-1.json'),
     receipt2: path.join(authoring, 'critical-auditor-receipt-round-2.json'),
     receipt3: path.join(authoring, 'critical-auditor-receipt-round-3.json'),
@@ -284,6 +289,11 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       for (const file of [
         paths.semanticKernel,
         paths.packet,
+        paths.scaleAssessmentInitial,
+        paths.scaleAssessmentPostPacket,
+        paths.scaleAssessmentPostMaterialization,
+        paths.scaleRoutingDecision,
+        paths.checkpointPersistenceEvidence,
         paths.receipt1,
         paths.receipt2,
         paths.receipt3,
@@ -315,13 +325,53 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       }
 
       const packet = readJson(paths.packet).must_decomposition_packet;
+      const initialAssessment = readJson(paths.scaleAssessmentInitial);
+      const postPacketAssessment = readJson(paths.scaleAssessmentPostPacket);
+      const postMaterializationAssessment = readJson(paths.scaleAssessmentPostMaterialization);
+      const scaleRoutingDecision = readJson(paths.scaleRoutingDecision);
+      const checkpointPersistenceEvidence = readJson(paths.checkpointPersistenceEvidence);
       const mustGate = readJson(paths.mustGate);
       const globalGate = readJson(paths.globalGate);
       const reconciliation = readJson(paths.reconciliation);
+      const progress = readJson(paths.progress);
       const renderReport = readJson(paths.renderReport);
       const html = readFileSync(paths.html, 'utf8');
 
       expect(packet.status).toBe('synchronized');
+      expect(initialAssessment.phase).toBe('initial_assessment');
+      expect(initialAssessment.provisionalDecision).toBe('provisional_single_pass_allowed');
+      expect(postPacketAssessment.phase).toBe('post_packet_assessment');
+      expect(postPacketAssessment.signals.conditionalDomainCount).toBe(
+        postPacketAssessment.signals.applicableConditionalDomains.length
+      );
+      expect(postMaterializationAssessment.phase).toBe('post_materialization_assessment');
+      expect(scaleRoutingDecision.decision).toBe('single_pass_final_allowed');
+      expect(scaleRoutingDecision.decisionSource).toBe('checkpoint_persistence_satisfied');
+      expect(scaleRoutingDecision.latestCompletedPhase).toBe('post_materialization_assessment');
+      expect(scaleRoutingDecision.checkpointPersistenceSatisfied).toBe(true);
+      expect(checkpointPersistenceEvidence.checkpointPersistenceSatisfiedCandidate).toBe(true);
+      expect(checkpointPersistenceEvidence.checkpointPersistenceRef.routeDecisionHash).toBe(
+        checkpointPersistenceEvidence.routeDecisionHash
+      );
+      expect(scaleRoutingDecision.checkpointPersistenceRef.routeDecisionHash).toBe(
+        checkpointPersistenceEvidence.routeDecisionHash
+      );
+      expect(scaleRoutingDecision.routeDecisionHash).toMatch(/^sha256:[a-f0-9]{64}$/u);
+      expect(progress.documentHash).toMatch(/^sha256:[a-f0-9]{64}$/u);
+      expect(progress.checkpoints.map((checkpoint: any) => checkpoint.id)).toEqual([
+        'cp-00-semantic-kernel',
+        'cp-01-must-decomposition-packet',
+        'cp-02-atomic-decomposition-loop-convergence',
+        'cp-03-packet-to-source-materialization',
+        'cp-04-id-freeze',
+        'cp-05-implementation-confirmation-core',
+        'cp-06-projections',
+        'cp-07-human-readable-views',
+        'cp-08-pre-render-global-reconciliation',
+      ]);
+      expect(progress.checkpoints.every((checkpoint: any) => checkpoint.status === 'passed')).toBe(
+        true
+      );
       expect(packet.lifecycle.atomicDecompositionLoopEnteredBeforeMaterialization).toBe(true);
       expect(packet.lifecycle.singlePassBypassPrevented).toBe(true);
       expect(packet.lifecycle.materializedAfterStatus).toBe('synchronized');

@@ -975,6 +975,11 @@ interface PreConfirmationPaths {
   indexPath: string;
   semanticKernel: string;
   mustDecompositionPacket: string;
+  scaleAssessmentInitial: string;
+  scaleAssessmentPostPacket: string;
+  scaleAssessmentPostMaterialization: string;
+  scaleRoutingDecision: string;
+  checkpointPersistenceEvidence: string;
   receiptPaths: string[];
   reconciliationReport: string;
   progress: string;
@@ -1165,6 +1170,14 @@ function preConfirmationPaths(root: string, recordId: string): PreConfirmationPa
     indexPath: path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'index.json'),
     semanticKernel: path.join(authoringDir, 'semantic-kernel.json'),
     mustDecompositionPacket: path.join(authoringDir, 'must_decomposition_packet.json'),
+    scaleAssessmentInitial: path.join(authoringDir, 'scale-assessment-initial.json'),
+    scaleAssessmentPostPacket: path.join(authoringDir, 'scale-assessment-post-packet.json'),
+    scaleAssessmentPostMaterialization: path.join(
+      authoringDir,
+      'scale-assessment-post-materialization.json'
+    ),
+    scaleRoutingDecision: path.join(authoringDir, 'scale-routing-decision.json'),
+    checkpointPersistenceEvidence: path.join(authoringDir, 'checkpoint-persistence-evidence.json'),
     receiptPaths: [1, 2, 3].map((round) =>
       path.join(authoringDir, `critical-auditor-receipt-round-${round}.json`)
     ),
@@ -4512,6 +4525,62 @@ function commandFailureIssue(
   );
 }
 
+function runPreConfirmationScaleAssessment(input: {
+  root: string;
+  sourcePath: string;
+  paths: PreConfirmationPaths;
+  phase: 'initial_assessment' | 'post_packet_assessment' | 'post_materialization_assessment';
+  checkpointPersistenceEvidencePath?: string;
+}): {
+  assessment: Record<string, unknown> | null;
+  routingDecision: Record<string, unknown> | null;
+  issues: PreConfirmationDrilldownIssue[];
+} {
+  const script = resolveSkillScript(input.root, 'assess_contract_authoring_scale.js');
+  const outByPhase = {
+    initial_assessment: input.paths.scaleAssessmentInitial,
+    post_packet_assessment: input.paths.scaleAssessmentPostPacket,
+    post_materialization_assessment: input.paths.scaleAssessmentPostMaterialization,
+  };
+  const args = [
+    '--source',
+    input.sourcePath,
+    '--phase',
+    input.phase,
+    '--out',
+    outByPhase[input.phase],
+    '--routing-decision-out',
+    input.paths.scaleRoutingDecision,
+    '--json',
+  ];
+  if (input.phase !== 'initial_assessment') {
+    args.push('--semantic-kernel', input.paths.semanticKernel);
+    args.push('--packet', input.paths.mustDecompositionPacket);
+    args.push('--initial-assessment', input.paths.scaleAssessmentInitial);
+  }
+  if (input.phase === 'post_materialization_assessment') {
+    args.push('--post-packet-assessment', input.paths.scaleAssessmentPostPacket);
+    args.push('--packet-source-reconciliation', input.paths.reconciliationReport);
+    if (input.checkpointPersistenceEvidencePath) {
+      args.push('--checkpoint-persistence-evidence', input.checkpointPersistenceEvidencePath);
+    }
+  }
+  const command = runNodeJson(script, args, input.root);
+  if (command.stderr) {
+    process.stderr.write(command.stderr);
+  }
+  const assessment = command.json ?? readJsonIfExists(outByPhase[input.phase]);
+  const routingDecision = readJsonIfExists(input.paths.scaleRoutingDecision);
+  const issues: PreConfirmationDrilldownIssue[] = [];
+  if (command.status !== 0 || !assessment) {
+    issues.push(commandFailureIssue('scale_assessment_report_missing', script, command));
+  }
+  if (!routingDecision) {
+    issues.push(commandFailureIssue('scale_routing_decision_missing', script, command));
+  }
+  return { assessment, routingDecision, issues };
+}
+
 function collectBlockingIssuesFromReports(
   ...reports: Array<Record<string, unknown> | null>
 ): PreConfirmationDrilldownIssue[] {
@@ -4637,6 +4706,7 @@ function buildPreConfirmationResult(input: {
 
 function updatePreConfirmationProgress(input: {
   root: string;
+  sourcePath: string;
   paths: PreConfirmationPaths;
   recordId: string;
   sourceDocumentHash: string;
@@ -4650,11 +4720,54 @@ function updatePreConfirmationProgress(input: {
     | Record<string, unknown>
     | undefined;
   const consecutiveNoNewValidGapRounds = Number(criticalAuditor?.consecutiveNoNewGapRounds ?? 0);
+  const progressCheckpoints = [
+    { id: 'cp-00-semantic-kernel', name: 'semantic kernel', status: 'passed' },
+    { id: 'cp-01-must-decomposition-packet', name: 'must_decomposition_packet', status: 'passed' },
+    {
+      id: 'cp-02-atomic-decomposition-loop-convergence',
+      name: 'atomic decomposition loop convergence',
+      status: consecutiveNoNewValidGapRounds >= 3 ? 'passed' : 'blocked',
+      consecutiveNoNewValidGapRounds,
+    },
+    {
+      id: 'cp-03-packet-to-source-materialization',
+      name: 'packet-to-source materialization',
+      status: 'passed',
+    },
+    { id: 'cp-04-id-freeze', name: 'ID freeze', status: 'passed' },
+    {
+      id: 'cp-05-implementation-confirmation-core',
+      name: 'implementationConfirmation core',
+      status: 'passed',
+    },
+    {
+      id: 'cp-06-projections',
+      name: 'EVD/TRACE/ACC/E2E/failure/edge/currentTarget/AI-TDD projections',
+      status: 'passed',
+    },
+    { id: 'cp-07-human-readable-views', name: 'human-readable views', status: 'passed' },
+    {
+      id: 'cp-08-pre-render-global-reconciliation',
+      name: 'pre-render global reconciliation',
+      status:
+        input.mustGateReport?.verdict === 'PASS' && input.globalGateReport?.verdict === 'PASS'
+          ? 'passed'
+          : 'blocked',
+    },
+  ];
   writeJsonUtf8(input.paths.progress, {
     schemaVersion: 'semantic-checkpoint-progress/v1',
     recordId: input.recordId,
     sourceDocumentHash: input.sourceDocumentHash,
     implementationConfirmationHash: input.implementationConfirmationHash,
+    source: toRootRelativePath(input.root, input.sourcePath),
+    documentHash: sha256File(input.sourcePath),
+    mode: 'checkpoint_required',
+    modeDecision: 'checkpoint_required',
+    authoringMode: 'semantic_kernel_then_packet_with_amendment',
+    lastCompletedCheckpoint: 'cp-08-pre-render-global-reconciliation',
+    currentCheckpoint: null,
+    next: null,
     contentHash: sha256Json({
       sourceDocumentHash: input.sourceDocumentHash,
       implementationConfirmationHash: input.implementationConfirmationHash,
@@ -4666,7 +4779,8 @@ function updatePreConfirmationProgress(input: {
     currentMentalModel: 'requirement_confirmation',
     lane: 'pre_confirmation_drilldown',
     substate: input.substate,
-    checkpoints: [
+    checkpoints: progressCheckpoints,
+    authoringSubstates: [
       { id: 'source_identification', status: 'completed' },
       { id: 'scale_assessment', status: 'completed' },
       { id: 'semantic_kernel_authoring', status: 'completed' },
@@ -4850,6 +4964,25 @@ export function runMainAgentPreConfirmationDrilldown(
     seed: 'critical-auditor-receipt',
   });
 
+  const initialScaleAssessment = runPreConfirmationScaleAssessment({
+    root,
+    sourcePath,
+    paths,
+    phase: 'initial_assessment',
+  });
+  if (initialScaleAssessment.issues.length > 0) {
+    return buildPreConfirmationResult({
+      root,
+      sourcePath,
+      recordId: identity.recordId,
+      requirementSetId: identity.requirementSetId,
+      paths,
+      substate: 'blocked_by_render_gate',
+      issues: initialScaleAssessment.issues,
+      finalStandards: { singlePassCannotSkipAtomicDecompositionLoop: true },
+    });
+  }
+
   const provisionalConfirmation = buildPreConfirmationImplementationConfirmation({
     root,
     sourcePath,
@@ -4992,6 +5125,31 @@ export function runMainAgentPreConfirmationDrilldown(
     mustRequirements,
   });
   writeJsonUtf8(paths.mustDecompositionPacket, { must_decomposition_packet: finalPacket });
+
+  const postPacketScaleAssessment = runPreConfirmationScaleAssessment({
+    root,
+    sourcePath,
+    paths,
+    phase: 'post_packet_assessment',
+  });
+  if (postPacketScaleAssessment.issues.length > 0) {
+    return buildPreConfirmationResult({
+      root,
+      sourcePath,
+      recordId: identity.recordId,
+      requirementSetId: identity.requirementSetId,
+      paths,
+      substate: 'blocked_by_render_gate',
+      issues: postPacketScaleAssessment.issues,
+      sourceDocumentHash: finalMaterialized.sourceDocumentHash,
+      implementationConfirmationHash: finalMaterialized.implementationConfirmationHash,
+      finalStandards: {
+        newSkillFlowEntersAtomicDecompositionLoopBeforeMaterialization: true,
+        singlePassCannotSkipAtomicDecompositionLoop: true,
+        mustDecompositionPacketSynchronizedBeforeMaterialization: finalPacket.status === 'synchronized',
+      },
+    });
+  }
 
   const finalAuditInputHash = sha256Json({
     sourceDocumentHash: finalMaterialized.sourceDocumentHash,
@@ -5172,6 +5330,7 @@ export function runMainAgentPreConfirmationDrilldown(
 
   updatePreConfirmationProgress({
     root,
+    sourcePath,
     paths,
     recordId: identity.recordId,
     sourceDocumentHash: finalMaterialized.sourceDocumentHash,
@@ -5203,6 +5362,159 @@ export function runMainAgentPreConfirmationDrilldown(
       globalGateReport,
       sourceDocumentHash: finalMaterialized.sourceDocumentHash,
       implementationConfirmationHash: finalMaterialized.implementationConfirmationHash,
+    });
+  }
+
+  const postMaterializationScaleAssessment = runPreConfirmationScaleAssessment({
+    root,
+    sourcePath,
+    paths,
+    phase: 'post_materialization_assessment',
+  });
+  if (postMaterializationScaleAssessment.issues.length > 0) {
+    return buildPreConfirmationResult({
+      root,
+      sourcePath,
+      recordId: identity.recordId,
+      requirementSetId: identity.requirementSetId,
+      paths,
+      substate: 'blocked_by_render_gate',
+      issues: postMaterializationScaleAssessment.issues,
+      mustGateReport,
+      globalGateReport,
+      sourceDocumentHash: finalMaterialized.sourceDocumentHash,
+      implementationConfirmationHash: finalMaterialized.implementationConfirmationHash,
+      finalStandards: finalStandardsFromReports({
+        packet: finalPacket,
+        mustGateReport,
+        globalGateReport,
+        renderReport: null,
+        missingSurfaceProbe: null,
+        requirementRecord: null,
+      }),
+    });
+  }
+  let routingDecision = postMaterializationScaleAssessment.routingDecision;
+  if (
+    routingDecision &&
+    ['checkpoint_required', 'checkpoint_required_with_amendment'].includes(
+      normalizeText(routingDecision.decision)
+    )
+  ) {
+    const checkpointPersistence = runNodeJson(
+      checkpointScript,
+      [
+        '--source',
+        sourcePath,
+        '--progress',
+        paths.progress,
+        '--mode',
+        'checkpoint-persistence',
+        '--route-decision',
+        paths.scaleRoutingDecision,
+        '--json',
+      ],
+      root
+    );
+    const checkpointPersistenceEvidence = checkpointPersistence.json;
+    if (
+      checkpointPersistence.status !== 0 ||
+      checkpointPersistenceEvidence?.checkpointPersistenceSatisfiedCandidate !== true ||
+      normalizeText(checkpointPersistenceEvidence?.routeDecisionHash) !==
+        normalizeText(routingDecision.routeDecisionHash) ||
+      normalizeText(
+        (checkpointPersistenceEvidence?.checkpointPersistenceRef as Record<string, unknown> | undefined)
+          ?.routeDecisionHash
+      ) !== normalizeText(routingDecision.routeDecisionHash)
+    ) {
+      const issue = preConfirmationIssue(
+        'checkpoint_persistence_evidence_missing',
+        'Checkpoint persistence evidence is required before scale routing can continue after checkpoint_required.',
+        [toRootRelativePath(root, paths.scaleRoutingDecision), toRootRelativePath(root, paths.progress)],
+        'run_semantic_checkpoints.checkpoint_persistence'
+      );
+      return buildPreConfirmationResult({
+        root,
+        sourcePath,
+        recordId: identity.recordId,
+        requirementSetId: identity.requirementSetId,
+        paths,
+        substate: 'blocked_by_render_gate',
+        issues: [issue],
+        mustGateReport,
+        globalGateReport,
+        sourceDocumentHash: finalMaterialized.sourceDocumentHash,
+        implementationConfirmationHash: finalMaterialized.implementationConfirmationHash,
+        finalStandards: finalStandardsFromReports({
+          packet: finalPacket,
+          mustGateReport,
+          globalGateReport,
+          renderReport: null,
+          missingSurfaceProbe: null,
+          requirementRecord: null,
+        }),
+      });
+    }
+    writeJsonUtf8(paths.checkpointPersistenceEvidence, checkpointPersistenceEvidence);
+    const finalScaleAssessment = runPreConfirmationScaleAssessment({
+      root,
+      sourcePath,
+      paths,
+      phase: 'post_materialization_assessment',
+      checkpointPersistenceEvidencePath: paths.checkpointPersistenceEvidence,
+    });
+    if (finalScaleAssessment.issues.length > 0) {
+      return buildPreConfirmationResult({
+        root,
+        sourcePath,
+        recordId: identity.recordId,
+        requirementSetId: identity.requirementSetId,
+        paths,
+        substate: 'blocked_by_render_gate',
+        issues: finalScaleAssessment.issues,
+        mustGateReport,
+        globalGateReport,
+        sourceDocumentHash: finalMaterialized.sourceDocumentHash,
+        implementationConfirmationHash: finalMaterialized.implementationConfirmationHash,
+        finalStandards: finalStandardsFromReports({
+          packet: finalPacket,
+          mustGateReport,
+          globalGateReport,
+          renderReport: null,
+          missingSurfaceProbe: null,
+          requirementRecord: null,
+        }),
+      });
+    }
+    routingDecision = finalScaleAssessment.routingDecision;
+  }
+  if (normalizeText(routingDecision?.decision) !== 'single_pass_final_allowed') {
+    const issue = preConfirmationIssue(
+      normalizeText(routingDecision?.blockingState) || 'scale_routing_decision_blocks_render',
+      `Scale routing decision blocks confirmation render: ${normalizeText(routingDecision?.decision)}`,
+      [toRootRelativePath(root, paths.scaleRoutingDecision)],
+      'requirements_contract_authoring_scale_routing'
+    );
+    return buildPreConfirmationResult({
+      root,
+      sourcePath,
+      recordId: identity.recordId,
+      requirementSetId: identity.requirementSetId,
+      paths,
+      substate: 'blocked_by_render_gate',
+      issues: [issue],
+      mustGateReport,
+      globalGateReport,
+      sourceDocumentHash: finalMaterialized.sourceDocumentHash,
+      implementationConfirmationHash: finalMaterialized.implementationConfirmationHash,
+      finalStandards: finalStandardsFromReports({
+        packet: finalPacket,
+        mustGateReport,
+        globalGateReport,
+        renderReport: null,
+        missingSurfaceProbe: null,
+        requirementRecord: null,
+      }),
     });
   }
 

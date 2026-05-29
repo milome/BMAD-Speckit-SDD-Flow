@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -115,6 +116,10 @@ function refs(row: Record<string, any>, keys: string[]): string[] {
 
 function fixedHash(char: string): string {
   return `sha256:${char.repeat(64)}`;
+}
+
+function fileHash(filePath: string): string {
+  return `sha256:${createHash('sha256').update(fs.readFileSync(filePath)).digest('hex')}`;
 }
 
 function mustGateSource(packetHash = fixedHash('a'), overrides = ''): string {
@@ -1177,6 +1182,10 @@ function initGitRepo(root: string) {
   fs.mkdirSync(path.join(root, 'docs', 'requirements'), { recursive: true });
 }
 
+function authoringDirForGlobalGateRecord(root = tempDir): string {
+  return path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'REQ-GLOBAL-GATE', 'authoring');
+}
+
 describe('requirements contract checkpoint automation', () => {
   const SEMANTIC_CHECKPOINT_IDS = [
     'cp-00-semantic-kernel',
@@ -1201,6 +1210,33 @@ describe('requirements contract checkpoint automation', () => {
     expect(json.authoringMode).toBe('semantic_kernel_then_packet');
     expect(json.riskLevel).toBe('low');
     expect(json.recommendedCheckpoints).toEqual([]);
+    expect(json.scoreBreakdown.map((item: any) => item.id)).toEqual([
+      'line_count',
+      'byte_length',
+      'section_count',
+      'confirmation_id_count',
+      'conditional_domain_count',
+      'mermaid_block_count',
+      'required_command_count',
+      'progress_exists',
+      'amendment_risk',
+    ]);
+    expect(json.hardTriggerBreakdown.map((item: any) => item.id)).toEqual([
+      'line_count_gt_600',
+      'byte_length_gt_35000',
+      'confirmation_ids_gt_45',
+      'conditional_domains_gte_2',
+      'progress_exists',
+      'amendment_risk',
+    ]);
+    expect(json.assessmentTrace.visibleOutputStream).toBe('stderr');
+    expect(json.assessmentTrace.stdoutContract).toBe('json_only');
+    expect(result.stderr).toContain('[requirements-contract-authoring] scale assessment started');
+    expect(result.stderr).toContain('[requirements-contract-authoring] signals');
+    expect(result.stderr).toContain('[requirements-contract-authoring] score breakdown');
+    expect(result.stderr).toContain('[requirements-contract-authoring] hard triggers');
+    expect(result.stderr).toContain('[requirements-contract-authoring] scale assessment result');
+    expect(result.stderr).toContain('decision=single_pass_allowed');
   });
 
   it('routes large or complex requirements to checkpoint_required', () => {
@@ -1215,6 +1251,10 @@ describe('requirements contract checkpoint automation', () => {
       expect.arrayContaining(['governanceEvents', 'runtimeRecovery', 'scriptsAndHooks'])
     );
     expect(json.recommendedCheckpoints).toEqual(SEMANTIC_CHECKPOINT_IDS);
+    expect(json.hardTriggerBreakdown.filter((item: any) => item.triggered).map((item: any) => item.id)).toContain(
+      'conditional_domains_gte_2'
+    );
+    expect(result.stderr).toContain('decision=checkpoint_required');
   });
 
   it('routes to checkpoint_required when progress already exists', () => {
@@ -1228,6 +1268,8 @@ describe('requirements contract checkpoint automation', () => {
     expect(json.decision).toBe('checkpoint_required_with_amendment');
     expect(json.authoringMode).toBe('semantic_kernel_then_packet_with_amendment');
     expect(json.signals.progressExists).toBe(true);
+    expect(json.scoreBreakdown.find((item: any) => item.id === 'progress_exists')?.points).toBe(5);
+    expect(result.stderr).toContain('TRIGGERED progress_exists');
   });
 
   it('routes blocking definition or amendment risk to kernel checkpoint with amendment', () => {
@@ -1239,6 +1281,224 @@ describe('requirements contract checkpoint automation', () => {
     expect(json.decision).toBe('checkpoint_required_with_amendment');
     expect(json.authoringMode).toBe('semantic_kernel_then_packet_with_amendment');
     expect(json.signals.amendmentRisk).toBe(true);
+    expect(json.hardTriggerBreakdown.find((item: any) => item.id === 'amendment_risk')?.triggered).toBe(true);
+    expect(result.stderr).toContain('TRIGGERED amendment_risk');
+  });
+
+  it('keeps stdout JSON-only while printing assessment process to stderr', () => {
+    const source = writeLargeSource();
+
+    const { result, json } = runNode(ASSESS, ['--source', source]);
+
+    expect(result.status).toBe(0);
+    expect(result.stdout.trim().startsWith('{')).toBe(true);
+    expect(result.stdout).not.toContain('[requirements-contract-authoring]');
+    expect(result.stderr).toContain('[requirements-contract-authoring] scale assessment started');
+    expect(result.stderr).toContain('conditionalDomains=governanceEvents,runtimeRecovery');
+    expect(result.stderr).toContain('scriptsAndHooks');
+    expect(json.assessmentTrace.result.decision).toBe('checkpoint_required');
+  });
+
+  it('suppresses visible assessment trace only when --quiet is explicitly provided', () => {
+    const source = writeLargeSource();
+
+    const { result, json } = runNode(ASSESS, ['--source', source, '--quiet']);
+
+    expect(result.status).toBe(0);
+    expect(json.decision).toBe('checkpoint_required');
+    expect(result.stderr).toBe('');
+  });
+
+  it('keeps initial single pass provisional and requires post-packet assessment before final route', () => {
+    const source = writeSmallSource();
+    const initial = path.join(tempDir, 'scale-assessment-initial.json');
+    const route = path.join(tempDir, 'scale-routing-decision.json');
+
+    const { result, json } = runNode(ASSESS, [
+      '--source',
+      source,
+      '--phase',
+      'initial_assessment',
+      '--out',
+      initial,
+      '--routing-decision-out',
+      route,
+    ]);
+    const routing = JSON.parse(fs.readFileSync(route, 'utf8'));
+
+    expect(result.status).toBe(0);
+    expect(json.phase).toBe('initial_assessment');
+    expect(json.decision).toBe('single_pass_allowed');
+    expect(json.provisionalDecision).toBe('provisional_single_pass_allowed');
+    expect(routing.decision).toBe('checkpoint_required_with_amendment');
+    expect(routing.blockingState).toBe('blocked_by_missing_post_packet_assessment');
+    expect(routing.routeDecisionHash).toMatch(/^sha256:[a-f0-9]{64}$/u);
+  });
+
+  it('upgrades post-packet routing to checkpoint from packet-derived growth and conditional domains', () => {
+    const source = writeGloballyConsistentSource(tempDir);
+    const authoringDir = authoringDirForGlobalGateRecord(tempDir);
+    writeValidMustGateArtifactsForSource(source, authoringDir);
+    const packetPath = path.join(authoringDir, 'must_decomposition_packet.json');
+    const packetWrapper = JSON.parse(fs.readFileSync(packetPath, 'utf8'));
+    packetWrapper.must_decomposition_packet.mustPackets[0].mustAtomicTasks = Array.from({ length: 21 }, (_, index) => ({
+      id: `TASK-GROWTH-${String(index + 1).padStart(3, '0')}`,
+      targetFiles: ['tests/acceptance/requirements-contract-checkpoint-automation.test.ts'],
+      redProofPlan: `growth red proof ${index + 1}`,
+    }));
+    fs.writeFileSync(packetPath, JSON.stringify(packetWrapper, null, 2), 'utf8');
+    const initial = path.join(authoringDir, 'scale-assessment-initial.json');
+    const postPacket = path.join(authoringDir, 'scale-assessment-post-packet.json');
+    const route = path.join(authoringDir, 'scale-routing-decision.json');
+    runNode(ASSESS, ['--source', source, '--phase', 'initial_assessment', '--out', initial, '--quiet']);
+
+    const { result, json } = runNode(ASSESS, [
+      '--source',
+      source,
+      '--phase',
+      'post_packet_assessment',
+      '--semantic-kernel',
+      path.join(authoringDir, 'semantic-kernel.json'),
+      '--packet',
+      packetPath,
+      '--initial-assessment',
+      initial,
+      '--out',
+      postPacket,
+      '--routing-decision-out',
+      route,
+    ]);
+    const routing = JSON.parse(fs.readFileSync(route, 'utf8'));
+
+    expect(result.status).toBe(0);
+    expect(json.phase).toBe('post_packet_assessment');
+    expect(json.signals.mustAtomicTaskCount).toBeGreaterThan(0);
+    expect(json.signals.projectionRowCount).toBeGreaterThan(0);
+    expect(json.signals.conditionalDomainCount).toBe(json.signals.applicableConditionalDomains.length);
+    expect(json.decision).toBe('checkpoint_required');
+    expect(json.blockingReasons).toEqual([]);
+    expect(json.hardTriggerBreakdown.map((item: any) => item.id)).toContain('must_atomic_task_count_gt_20');
+    expect(routing.decision).toBe('checkpoint_required');
+    expect(routing.decisionSource).toBe('post_packet_assessment');
+    expect(routing.latestCompletedPhase).toBe('post_packet_assessment');
+  });
+
+  it('blocks post-packet assessment when semantic kernel or packet hashes are stale', () => {
+    const source = writeGloballyConsistentSource(tempDir);
+    const authoringDir = authoringDirForGlobalGateRecord(tempDir);
+    writeValidMustGateArtifactsForSource(source, authoringDir);
+    const packetPath = path.join(authoringDir, 'must_decomposition_packet.json');
+    const packetWrapper = JSON.parse(fs.readFileSync(packetPath, 'utf8'));
+    packetWrapper.must_decomposition_packet.sourceDocumentHash = fixedHash('f');
+    fs.writeFileSync(packetPath, JSON.stringify(packetWrapper, null, 2), 'utf8');
+
+    const { result, json } = runNode(ASSESS, [
+      '--source',
+      source,
+      '--phase',
+      'post_packet_assessment',
+      '--semantic-kernel',
+      path.join(authoringDir, 'semantic-kernel.json'),
+      '--packet',
+      packetPath,
+    ]);
+
+    expect(result.status).toBe(0);
+    expect(json.decision).toBe('checkpoint_required_with_amendment');
+    expect(json.blockingState).toBe('blocked_by_stale_scale_assessment_hash');
+    expect(json.blockingReasons).toContain('must_decomposition_packet_source_hash_stale');
+  });
+
+  it('allows final single-pass only after post-materialization reconciliation pass and stable hashes', () => {
+    const source = writeSmallSource();
+    const authoringDir = path.join(tempDir, 'authoring');
+    fs.mkdirSync(authoringDir, { recursive: true });
+    const reconciliation = path.join(authoringDir, 'must_packet_source_reconciliation_report.json');
+    fs.writeFileSync(reconciliation, JSON.stringify({ verdict: 'pass' }, null, 2), 'utf8');
+    const initial = path.join(authoringDir, 'scale-assessment-initial.json');
+    const postPacket = path.join(authoringDir, 'scale-assessment-post-packet.json');
+    const postMaterialization = path.join(authoringDir, 'scale-assessment-post-materialization.json');
+    const route = path.join(authoringDir, 'scale-routing-decision.json');
+    runNode(ASSESS, ['--source', source, '--phase', 'initial_assessment', '--out', initial, '--quiet']);
+    fs.writeFileSync(
+      postPacket,
+      JSON.stringify({
+        schemaVersion: 'contract-authoring-scale-assessment/v1',
+        phase: 'post_packet_assessment',
+        decision: 'single_pass_allowed',
+        signals: { postPacketProjectionWeight: 0, sourceDocumentHash: 'sha256:fixture' },
+      }),
+      'utf8'
+    );
+
+    const { result, json } = runNode(ASSESS, [
+      '--source',
+      source,
+      '--phase',
+      'post_materialization_assessment',
+      '--post-packet-assessment',
+      postPacket,
+      '--packet-source-reconciliation',
+      reconciliation,
+      '--initial-assessment',
+      initial,
+      '--out',
+      postMaterialization,
+      '--routing-decision-out',
+      route,
+    ]);
+    const routing = JSON.parse(fs.readFileSync(route, 'utf8'));
+    const rewritten = { ...routing, createdAt: '2099-01-01T00:00:00.000Z', checkpointPersistenceSatisfied: true };
+    const reroute = path.join(authoringDir, 'scale-routing-decision-rewritten.json');
+    fs.writeFileSync(reroute, JSON.stringify(rewritten, null, 2), 'utf8');
+
+    const { buildScaleRoutingDecision } = requireForGate(ASSESS);
+    const recomputed = buildScaleRoutingDecision({
+      sourcePath: source,
+      initial: JSON.parse(fs.readFileSync(initial, 'utf8')),
+      postPacket: JSON.parse(fs.readFileSync(postPacket, 'utf8')),
+      postMaterialization: JSON.parse(fs.readFileSync(postMaterialization, 'utf8')),
+      refs: {
+        initialAssessment: initial,
+        postPacketAssessment: postPacket,
+        postMaterializationAssessment: postMaterialization,
+        packetSourceReconciliation: reconciliation,
+        packetSourceReconciliationHash: routing.packetSourceReconciliationHash,
+      },
+    });
+
+    expect(result.status).toBe(0);
+    expect(json.phase).toBe('post_materialization_assessment');
+    expect(routing.decision).toBe('single_pass_final_allowed');
+    expect(routing.decisionSource).toBe('post_materialization_assessment');
+    expect(recomputed.routeDecisionHash).toBe(routing.routeDecisionHash);
+  });
+
+  it('rejects bare checkpoint persistence satisfaction without runner evidence', () => {
+    const source = writeSmallSource();
+    const { result, json } = runNode(ASSESS, [
+      '--source',
+      source,
+      '--phase',
+      'post_materialization_assessment',
+      '--checkpoint-persistence-satisfied',
+    ]);
+
+    expect(result.status).toBe(2);
+    expect(json.verdict).toBe('FAIL');
+    expect(json.message).toBe('unknown option --checkpoint-persistence-satisfied');
+  });
+
+  it('prints visible assessment trace when checkpoint runner computes assessment implicitly', () => {
+    const source = writeLargeSource();
+
+    const { result, json } = runNode(CHECKPOINTS, ['--source', source, '--mode', 'plan']);
+
+    expect(result.status).toBe(0);
+    expect(json.authoringMode).toBe('semantic_kernel_then_packet');
+    expect(result.stderr).toContain('[requirements-contract-authoring] scale assessment started');
+    expect(result.stderr).toContain('[requirements-contract-authoring] scale assessment result');
+    expect(result.stderr).toContain('decision=checkpoint_required');
   });
 
   it('emits checkpoint plan in deterministic pre-render order', () => {
@@ -1355,9 +1615,9 @@ describe('requirements contract checkpoint automation', () => {
 
   it('creates a single-file checkpoint commit and progress record', () => {
     initGitRepo(tempDir);
-    const source = path.join(tempDir, 'docs', 'requirements', 'source.md');
+    const source = writeGloballyConsistentSource(tempDir);
     const progress = path.join(tempDir, 'progress.json');
-    fs.writeFileSync(source, '# Source\n\nCheckpoint content.\n', 'utf8');
+    writeValidMustGateArtifactsForSource(source, authoringDirForGlobalGateRecord(tempDir));
 
     const { result, json } = runNode(
       CHECKPOINTS,
@@ -1379,9 +1639,9 @@ describe('requirements contract checkpoint automation', () => {
 
   it('does not create a duplicate checkpoint commit when progress idempotency key already matches current document', () => {
     initGitRepo(tempDir);
-    const source = path.join(tempDir, 'docs', 'requirements', 'source.md');
+    const source = writeGloballyConsistentSource(tempDir);
     const progress = path.join(tempDir, 'progress.json');
-    fs.writeFileSync(source, '# Source\n\nCheckpoint content.\n', 'utf8');
+    writeValidMustGateArtifactsForSource(source, authoringDirForGlobalGateRecord(tempDir));
     runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'run', '--checkpoint', 'cp-01-header-scope-decisions'], tempDir);
     const beforeCount = spawnSync('git', ['rev-list', '--count', 'HEAD'], { cwd: tempDir, encoding: 'utf8' }).stdout.trim();
 
@@ -1400,9 +1660,9 @@ describe('requirements contract checkpoint automation', () => {
 
   it('recovers status from backup progress when the primary progress record is corrupt', () => {
     initGitRepo(tempDir);
-    const source = path.join(tempDir, 'docs', 'requirements', 'source.md');
+    const source = writeGloballyConsistentSource(tempDir);
     const progress = path.join(tempDir, 'progress.json');
-    fs.writeFileSync(source, '# Source\n\nCheckpoint content.\n', 'utf8');
+    writeValidMustGateArtifactsForSource(source, authoringDirForGlobalGateRecord(tempDir));
     runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'run', '--checkpoint', 'cp-01-header-scope-decisions'], tempDir);
     fs.copyFileSync(progress, `${progress}.bak`);
     fs.writeFileSync(progress, '{broken json', 'utf8');
@@ -1413,14 +1673,14 @@ describe('requirements contract checkpoint automation', () => {
     expect(json.status).toBe('ready');
     expect(json.recoveredFrom).toBe('backup');
     expect(json.nextCheckpoint).toBe('cp-02-atomic-decomposition-loop-convergence');
-    expect(json.semanticDrilldown.nextAction).toBe('create_semantic_kernel');
+    expect(json.semanticDrilldown.nextAction).toBe('run_packet_source_reconciliation');
   });
 
   it('recovers status from the latest git checkpoint when progress and backup are corrupt', () => {
     initGitRepo(tempDir);
-    const source = path.join(tempDir, 'docs', 'requirements', 'source.md');
+    const source = writeGloballyConsistentSource(tempDir);
     const progress = path.join(tempDir, 'progress.json');
-    fs.writeFileSync(source, '# Source\n\nCheckpoint content.\n', 'utf8');
+    writeValidMustGateArtifactsForSource(source, authoringDirForGlobalGateRecord(tempDir));
     runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'run', '--checkpoint', 'cp-01-header-scope-decisions'], tempDir);
     fs.writeFileSync(progress, '{broken json', 'utf8');
     fs.writeFileSync(`${progress}.bak`, '{also broken', 'utf8');
@@ -1437,6 +1697,7 @@ describe('requirements contract checkpoint automation', () => {
     initGitRepo(tempDir);
     const source = writeGloballyConsistentSource(tempDir);
     const progress = path.join(tempDir, 'progress.json');
+    writeValidMustGateArtifactsForSource(source, authoringDirForGlobalGateRecord(tempDir));
     runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'run', '--checkpoint', 'cp-01-header-scope-decisions'], tempDir);
     fs.copyFileSync(progress, `${progress}.bak`);
     fs.writeFileSync(progress, '{broken json', 'utf8');
@@ -1445,26 +1706,17 @@ describe('requirements contract checkpoint automation', () => {
     const commitCount = spawnSync('git', ['rev-list', '--count', 'HEAD'], { cwd: tempDir, encoding: 'utf8' }).stdout.trim();
 
     expect(result.status).toBe(1);
-    expect(json.code).toBe('pre_render_gate_failed');
-    expect(json.completedCheckpoints.map((item: any) => item.checkpoint)).toEqual([
-      'cp-02-atomic-decomposition-loop-convergence',
-      'cp-03-packet-to-source-materialization',
-      'cp-04-id-freeze',
-      'cp-05-implementation-confirmation-core',
-      'cp-06-projections',
-      'cp-07-human-readable-views',
-      'cp-08-pre-render-global-reconciliation',
-    ]);
-    expect(commitCount).toBe('8');
-    expect(json.failedChecks).toContain('missing_semantic_kernel');
+    expect(json.code).toBe('checkpoint_source_edit_missing');
+    expect(json.failedCheckpoint).toBe('cp-02-atomic-decomposition-loop-convergence');
+    expect(commitCount).toBe('1');
   });
 
   it('fails closed when checkpoint progress cannot be written after a checkpoint commit', () => {
     initGitRepo(tempDir);
-    const source = path.join(tempDir, 'docs', 'requirements', 'source.md');
+    const source = writeGloballyConsistentSource(tempDir);
     const blockingParent = path.join(tempDir, 'not-a-directory');
     const progress = path.join(blockingParent, 'progress.json');
-    fs.writeFileSync(source, '# Source\n\nCheckpoint content.\n', 'utf8');
+    writeValidMustGateArtifactsForSource(source, authoringDirForGlobalGateRecord(tempDir));
     fs.writeFileSync(blockingParent, 'blocks progress directory creation\n', 'utf8');
 
     const { result, json } = runNode(
@@ -1493,24 +1745,21 @@ describe('requirements contract checkpoint automation', () => {
         .stdout.split(/\r?\n/u)
         .filter(Boolean)
     );
-    const savedProgress = JSON.parse(fs.readFileSync(progress, 'utf8'));
 
     expect(result.status).toBe(1);
     expect(json.ok).toBe(false);
-    expect(json.code).toBe('pre_render_gate_failed');
+    expect(json.code).toBe('checkpoint_authoring_evidence_missing');
     expect(json.status).toBe('blocked');
-    expect(json.completedCheckpoints.map((item: any) => item.checkpoint)).toEqual([
-      ...SEMANTIC_CHECKPOINT_IDS,
-    ]);
-    expect(commitHashes).toHaveLength(9);
-    expect(committedFileSets).toEqual(Array.from({ length: 9 }, () => ['docs/requirements/source.md']));
-    expect(savedProgress.lastCompletedCheckpoint).toBe('cp-08-pre-render-global-reconciliation');
-    expect(savedProgress.next).toBeNull();
-    expect(savedProgress.validation.globalConsistency).toBe('fail');
-    expect(savedProgress.validation.mustDecomposition).toBe('fail');
-    expect(json.failedChecks).toContain('global_source_parse_failed');
-    expect(json.failedChecks).toContain('source_parse_failed');
-    expect(fs.existsSync(path.join(tempDir, 'pre-render-global-consistency-report.json'))).toBe(true);
+    expect(json.failedCheckpoint).toBe('cp-00-semantic-kernel');
+    expect(json.issues.map((issue: any) => issue.code)).toEqual(
+      expect.arrayContaining([
+        'implementation_confirmation_required_before_checkpoint',
+        'semantic_kernel_required_before_checkpoint',
+      ])
+    );
+    expect(commitHashes).toHaveLength(0);
+    expect(committedFileSets).toEqual([]);
+    expect(fs.existsSync(progress)).toBe(false);
   });
 
   it('blocks full checkpoint run when semantic kernel, packet, critic, and reconciliation are missing', () => {
@@ -1522,25 +1771,158 @@ describe('requirements contract checkpoint automation', () => {
     const commitHashes = spawnSync('git', ['log', '--format=%H'], { cwd: tempDir, encoding: 'utf8' })
       .stdout.split(/\r?\n/u)
       .filter(Boolean);
-    const savedProgress = JSON.parse(fs.readFileSync(progress, 'utf8'));
 
     expect(result.status).toBe(1);
     expect(json.ok).toBe(false);
     expect(json.status).toBe('blocked');
-    expect(json.completedCheckpoints).toHaveLength(9);
-    expect(commitHashes).toHaveLength(9);
-    expect(savedProgress.validation.globalConsistency).toBe('pass');
-    expect(savedProgress.validation.mustDecomposition).toBe('fail');
-    expect(savedProgress.preRenderGlobalConsistency.verdict).toBe('PASS');
-    expect(savedProgress.preRenderGate.verdict).toBe('FAIL');
-    expect(json.failedChecks).toContain('missing_semantic_kernel');
-    expect(fs.existsSync(path.join(tempDir, 'pre-render-global-consistency-report.json'))).toBe(true);
+    expect(json.code).toBe('checkpoint_authoring_evidence_missing');
+    expect(json.failedCheckpoint).toBe('cp-00-semantic-kernel');
+    expect(commitHashes).toHaveLength(0);
+    expect(json.issues.map((issue: any) => issue.code)).toContain('semantic_kernel_required_before_checkpoint');
+    expect(fs.existsSync(progress)).toBe(false);
+  });
+
+  it('rejects route decisions that are not checkpoint decisions before checkpoint execution', () => {
+    initGitRepo(tempDir);
+    const source = writeSmallSource(tempDir);
+    const route = path.join(tempDir, 'scale-routing-decision.json');
+    const routeDecision = {
+      schemaVersion: 'contract-authoring-scale-routing-decision/v1',
+      decision: 'single_pass_final_allowed',
+      decisionSource: 'post_materialization_assessment',
+      latestCompletedPhase: 'post_materialization_assessment',
+      routeDecisionHash: 'sha256:stale',
+    };
+    fs.writeFileSync(route, JSON.stringify(routeDecision, null, 2), 'utf8');
+
+    const { result, json } = runNode(CHECKPOINTS, [
+      '--source',
+      source,
+      '--mode',
+      'run',
+      '--route-decision',
+      route,
+    ], tempDir);
+
+    expect(result.status).toBe(1);
+    expect(json.status).toBe('blocked');
+    expect(json.code).toBe('route_decision_invalid');
+    expect(json.blockingReasons).toEqual(
+      expect.arrayContaining(['route_decision_not_checkpoint', 'route_decision_hash_stale'])
+    );
+    expect(json.nextAction).toBe('rerun_scale_routing_decision');
+    expect(result.stdout.trim().startsWith('{')).toBe(true);
+  });
+
+  it('returns checkpoint persistence candidate evidence without mutating route decision fields', () => {
+    initGitRepo(tempDir);
+    const source = writeGloballyConsistentSource(tempDir);
+    const authoringDir = authoringDirForGlobalGateRecord(tempDir);
+    writeValidMustGateArtifactsForSource(source, authoringDir);
+    const progress = path.join(tempDir, 'progress.json');
+    const route = path.join(tempDir, 'scale-routing-decision.json');
+    const { buildScaleRoutingDecision } = requireForGate(ASSESS);
+    const routeDecision = buildScaleRoutingDecision({
+      sourcePath: source,
+      initial: { phase: 'initial_assessment', decision: 'single_pass_allowed', signals: {} },
+      postPacket: { phase: 'post_packet_assessment', decision: 'checkpoint_required', signals: {} },
+      refs: {},
+    });
+    fs.writeFileSync(route, JSON.stringify(routeDecision, null, 2), 'utf8');
+    const before = fs.readFileSync(route, 'utf8');
+
+    const { result, json } = runNode(CHECKPOINTS, [
+      '--source',
+      source,
+      '--progress',
+      progress,
+      '--mode',
+      'run',
+      '--checkpoint',
+      'cp-01-header-scope-decisions',
+      '--route-decision',
+      route,
+    ], tempDir);
+    const after = fs.readFileSync(route, 'utf8');
+
+    expect(result.status).toBe(0);
+    expect(json.routeDecisionHash).toBe(routeDecision.routeDecisionHash);
+    expect(json.checkpointPersistenceRef.routeDecisionHash).toBe(routeDecision.routeDecisionHash);
+    expect(json.checkpointPersistenceSatisfiedCandidate).toBe(false);
+    expect(after).toBe(before);
+  });
+
+  it('returns satisfied checkpoint persistence evidence from current progress and gate hashes without mutating route decisions', () => {
+    initGitRepo(tempDir);
+    const source = writeGloballyConsistentSource(tempDir);
+    const authoringDir = authoringDirForGlobalGateRecord(tempDir);
+    writeValidMustGateArtifactsForSource(source, authoringDir);
+    const progress = path.join(authoringDir, 'semantic-checkpoint-progress.json');
+    const route = path.join(authoringDir, 'scale-routing-decision.json');
+    const documentHash = fileHash(source);
+    fs.writeFileSync(
+      progress,
+      JSON.stringify(
+        {
+          schemaVersion: 'semantic-checkpoint-progress/v1',
+          documentHash,
+          checkpoints: SEMANTIC_CHECKPOINT_IDS.map((id) => ({
+            id,
+            status: 'passed',
+            documentHash,
+          })),
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+    runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'pre-render-gate'], tempDir);
+    const { buildScaleRoutingDecision } = requireForGate(ASSESS);
+    const routeDecision = buildScaleRoutingDecision({
+      sourcePath: source,
+      initial: { phase: 'initial_assessment', decision: 'single_pass_allowed', signals: {} },
+      postPacket: { phase: 'post_packet_assessment', decision: 'checkpoint_required', signals: {} },
+      postMaterialization: {
+        phase: 'post_materialization_assessment',
+        decision: 'checkpoint_required',
+        signals: { packetSourceReconciliationVerdict: 'pass' },
+      },
+      refs: {},
+    });
+    fs.writeFileSync(route, JSON.stringify(routeDecision, null, 2), 'utf8');
+    const before = fs.readFileSync(route, 'utf8');
+
+    const { result, json } = runNode(CHECKPOINTS, [
+      '--source',
+      source,
+      '--progress',
+      progress,
+      '--mode',
+      'checkpoint-persistence',
+      '--route-decision',
+      route,
+    ], tempDir);
+    const after = fs.readFileSync(route, 'utf8');
+
+    expect(result.status).toBe(0);
+    expect(json.status).toBe('satisfied');
+    expect(json.checkpointPersistenceSatisfiedCandidate).toBe(true);
+    expect(json.checkpointPersistenceRef.routeDecisionHash).toBe(routeDecision.routeDecisionHash);
+    expect(json.checkpointPersistenceRef.completedCheckpointIds).toEqual(SEMANTIC_CHECKPOINT_IDS);
+    expect(json.completedCheckpointIds).toEqual(SEMANTIC_CHECKPOINT_IDS);
+    expect(json.checkpointPersistenceRef.progressHash).toMatch(/^sha256:[a-f0-9]{64}$/u);
+    expect(json.checkpointPersistenceRef.preRenderMustDecompositionGateHash).toMatch(/^sha256:[a-f0-9]{64}$/u);
+    expect(json.checkpointPersistenceRef.preRenderGlobalConsistencyHash).toMatch(/^sha256:[a-f0-9]{64}$/u);
+    expect(json.checkpointPersistenceRef.packetSourceReconciliationHash).toMatch(/^sha256:[a-f0-9]{64}$/u);
+    expect(after).toBe(before);
   });
 
   it('resumes from progress next checkpoint and runs remaining checkpoints separately', () => {
     initGitRepo(tempDir);
     const source = writeGloballyConsistentSource(tempDir);
     const progress = path.join(tempDir, 'progress.json');
+    writeValidMustGateArtifactsForSource(source, authoringDirForGlobalGateRecord(tempDir));
     runNode(
       CHECKPOINTS,
       ['--source', source, '--progress', progress, '--mode', 'run', '--checkpoint', 'cp-01-header-scope-decisions'],
@@ -1553,19 +1935,10 @@ describe('requirements contract checkpoint automation', () => {
 
     expect(result.status).toBe(1);
     expect(json.ok).toBe(false);
-    expect(json.completedCheckpoints.map((item: any) => item.checkpoint)).toEqual([
-      'cp-02-atomic-decomposition-loop-convergence',
-      'cp-03-packet-to-source-materialization',
-      'cp-04-id-freeze',
-      'cp-05-implementation-confirmation-core',
-      'cp-06-projections',
-      'cp-07-human-readable-views',
-      'cp-08-pre-render-global-reconciliation',
-    ]);
-    expect(commitCount).toBe('8');
-    expect(savedProgress.next).toBeNull();
-    expect(savedProgress.validation.globalConsistency).toBe('pass');
-    expect(savedProgress.validation.mustDecomposition).toBe('fail');
+    expect(json.code).toBe('checkpoint_source_edit_missing');
+    expect(json.failedCheckpoint).toBe('cp-02-atomic-decomposition-loop-convergence');
+    expect(commitCount).toBe('1');
+    expect(savedProgress.next).toBe('cp-02-atomic-decomposition-loop-convergence');
   });
 
   it('fails the pre-render gate for eighteen trace rows that reference missing evidence', () => {

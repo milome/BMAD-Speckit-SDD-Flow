@@ -12,11 +12,19 @@ The executable companion is:
 node <skill-dir>/scripts/run_semantic_checkpoints.js
 ```
 
+Supported runner mode summary:
+
+```text
+--mode plan|status|run|resume
+```
+
 The script should automate the manual steps in this reference where possible. Automation must not remove the core safety property:
 
 ```text
 one semantic checkpoint -> one bounded source-document edit -> validation -> forced single-file commit -> receipt with diff and hash
 ```
+
+`run_semantic_checkpoints.js` is not the semantic authoring engine. It must not invent requirements, fill missing `implementationConfirmation` fields, append status-only checkpoint logs, or mutate the source document to manufacture a checkpoint diff. The source edit for each checkpoint must already exist from `authoring-repair`, pre-confirmation drilldown materialization, or an explicitly reviewed manual source edit before the runner records progress.
 
 ## Purpose
 
@@ -86,7 +94,9 @@ Edit only the target requirements document for the current checkpoint unless the
 
 For ignored requirement documents under `docs/requirements/`, expect to stage with `git add -f`.
 
-This edit must be a real source-document authoring step. It may add or refine the checkpoint's semantic section, ID matrix rows, views, evidence, commands, or human-readable explanations. It must not degrade into writing only a status marker unless the checkpoint content was already fully present and the status marker is only a receipt.
+This edit must be a real source-document authoring step. It may add or refine the checkpoint's semantic section, ID matrix rows, views, evidence, commands, or human-readable explanations. It must not degrade into writing only a status marker.
+
+When automation is used, this source edit is produced before `run_semantic_checkpoints.js` records the checkpoint. If the corresponding source materialization does not exist, the runner must fail closed with a next action such as `run_authoring_repair_preserve_existing`; it must not append `Status: passed` or any other marker to create a diff.
 
 ### 3. After Editing
 
@@ -155,12 +165,13 @@ The skill should prefer script automation over manual repetition:
 ```bash
 node <skill-dir>/scripts/assess_contract_authoring_scale.js \
   --source <source-document.md> \
-  --out _bmad-output/runtime/requirement-records/<recordId>/authoring/scale-assessment.json \
+  --phase initial_assessment \
+  --out _bmad-output/runtime/requirement-records/<recordId>/authoring/scale-assessment-initial.json \
   --json
 
 node <skill-dir>/scripts/run_semantic_checkpoints.js \
   --source <source-document.md> \
-  --assessment _bmad-output/runtime/requirement-records/<recordId>/authoring/scale-assessment.json \
+  --route-decision _bmad-output/runtime/requirement-records/<recordId>/authoring/scale-routing-decision.json \
   --progress _bmad-output/runtime/requirement-records/<recordId>/authoring/semantic-checkpoint-progress.json \
   --mode run \
   --until pre-render-ready \
@@ -169,16 +180,25 @@ node <skill-dir>/scripts/run_semantic_checkpoints.js \
 
 Required automation behavior:
 
+- Scale assessment is staged. `initial_assessment` runs before semantic artifact generation and may only produce provisional single-pass routing. `post_packet_assessment` runs after `semantic-kernel.json` and synchronized `must_decomposition_packet.json` exist. `post_materialization_assessment` runs after packet projections are materialized into inline `implementationConfirmation` and before pre-render readiness.
+- The authoring lane must write `scale-routing-decision.json`. The route decision is monotonic: a checkpoint decision cannot be downgraded by a later single-pass phase. `single_pass_final_allowed` requires all three assessments, current hashes, and packet/source reconciliation `pass`.
+- Scale assessment must be visible in the active session. When `assess_contract_authoring_scale.js` starts, it must print a human-readable trace to `stderr` that includes start, source/progress paths, collected signals, score breakdown, hard-trigger breakdown, and final decision. `stdout` must remain JSON-only so existing `--json` machine callers can parse it. `--quiet` is allowed only for explicitly silent machine calls.
+- `run_semantic_checkpoints.js` must print the same visible scale-assessment trace when it computes an assessment implicitly. If `--assessment <scale-assessment.json>` is supplied, it must consume that artifact instead of re-running and re-printing assessment.
+- When `--route-decision <scale-routing-decision.json>` is supplied, `run_semantic_checkpoints.js` must verify that the decision is `checkpoint_required` or `checkpoint_required_with_amendment`, verify `routeDecisionHash`, return checkpoint persistence evidence JSON, and leave `scale-routing-decision.json` unchanged.
+- `checkpoint-persistence` mode is evidence-only. It verifies cp-00 through cp-08 progress, current document hash, pre-render MUST decomposition gate `PASS`, pre-render global consistency gate `PASS`, packet/source reconciliation `pass`, and the route decision hash. It never emits `single_pass_final_allowed`.
+- The authoring lane may rerun `assess_contract_authoring_scale.js --checkpoint-persistence-evidence <checkpoint-persistence-evidence.json>` after validating same-run output and current disk hashes. Only that rerun may write the final `single_pass_final_allowed` route decision.
 - `plan` and `status` are read-only.
 - `plan` and `status` must show semantic kernel status, packet status, Critical Auditor rounds, convergence counter, packet/source reconciliation, and next action.
 - `run` without `--checkpoint` starts at the first incomplete checkpoint and continues until `pre-render-ready`.
 - `resume` starts from the progress record's next checkpoint when the current document hash matches the progress record.
 - `resume` must reload semantic kernel, must_decomposition_packet, Critical Auditor receipts, packet/source reconciliation, and checkpoint progress instead of restarting.
-- Explicit `--checkpoint` executes only that checkpoint for controlled manual repair.
+- Explicit `--checkpoint` records only that checkpoint after controlled manual repair or upstream source materialization has already changed the active source document.
 - Every completed checkpoint creates a separate single-file commit.
+- A checkpoint commit must contain a real source materialization diff. If the target document has no staged or stageable source edit for the checkpoint, the runner must fail closed before commit.
 - The runner must stop before commit if staged paths contain anything other than the active target requirements document.
 - The runner must not silently overwrite manual edits when the current document hash differs from the latest progress record.
 - The runner must fail closed when source hash and progress hash mismatch.
+- The runner must fail closed when current-hash upstream authoring evidence is missing. Required evidence includes the semantic kernel, synchronized must decomposition packet, required Critical Auditor receipts, and pre-render drilldown gate artifacts as applicable to the checkpoint.
 - Progress corruption may be recovered from a backup or Git checkpoint only when the current source hash is safe to trust.
 - The runner must write progress and receipts sufficient for resume and user review.
 - The runner must preserve checkpoint authoring semantics: each checkpoint is a bounded document edit, not merely a progress status update.

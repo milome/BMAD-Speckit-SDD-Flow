@@ -152,6 +152,8 @@ node <skill-dir>/scripts/run_semantic_checkpoints.js \
   --json
 ```
 
+Scale assessment is not silent. When `assess_contract_authoring_scale.js` starts, or when `run_semantic_checkpoints.js` computes assessment implicitly, the session must show the assessment start, collected signals, score breakdown, hard-trigger breakdown, and final routing decision. These human-readable lines go to `stderr`; `stdout` remains JSON-only for `--json` callers. Use `--quiet` only when an explicitly silent machine call is required.
+
 Checkpoint automation is an execution strategy only. It must not reduce scope, omit required registries, omit negative assertions, omit renderer-facing views, or defer trace/evidence coverage.
 
 Checkpointing is only persistence, recovery, single-file commit, and receipt strategy. Complex reasoning happens in the pre-confirmation atomic decomposition loop, not in chapter checkpoints.
@@ -516,26 +518,42 @@ Run the pre-confirmation atomic decomposition loop first. This loop produces `se
 
 Run the deterministic definition drilldown first:
 
-When authoring a source document, run scale assessment before deciding whether to use a single authoring pass or semantic checkpoint authoring:
+When authoring a source document, run staged scale assessment before deciding whether the final route is single-pass or semantic checkpoint authoring. The `initial_assessment` phase is provisional only. The `post_packet_assessment` phase must run after `semantic-kernel.json` and synchronized `must_decomposition_packet.json` exist. The `post_materialization_assessment` phase must run after inline `implementationConfirmation` materialization and before pre-render readiness or HTML render.
 
 ```bash
 node <skill-dir>/scripts/assess_contract_authoring_scale.js \
   --source <source-document.md> \
-  --out _bmad-output/runtime/requirement-records/<recordId>/authoring/scale-assessment.json \
+  --phase initial_assessment \
+  --out _bmad-output/runtime/requirement-records/<recordId>/authoring/scale-assessment-initial.json \
   --json
 ```
 
-If the decision is `checkpoint_required`, use the semantic checkpoint runner before HTML render. Checkpoint mode must create a single-file Git commit for each completed checkpoint and write a progress record for resume:
+The authoring lane must build `_bmad-output/runtime/requirement-records/<recordId>/authoring/scale-routing-decision.json` from `scale-assessment-initial.json`, `scale-assessment-post-packet.json`, and `scale-assessment-post-materialization.json`. Routing is monotonic: `checkpoint_required_with_amendment` outranks `checkpoint_required`, and `checkpoint_required` outranks `single_pass_final_allowed`. A later single-pass result must not downgrade an earlier checkpoint decision. `single_pass_final_allowed` is valid only when all three assessments are current-hash bound and packet/source reconciliation is `pass`.
+
+If the final route decision is `checkpoint_required` or `checkpoint_required_with_amendment`, use the semantic checkpoint runner before HTML render. Checkpoint mode must create a single-file Git commit for each completed checkpoint and write a progress record for resume. The runner consumes `scale-routing-decision.json`; it does not decide that a source is final single-pass eligible:
 
 ```bash
 node <skill-dir>/scripts/run_semantic_checkpoints.js \
   --source <source-document.md> \
-  --assessment _bmad-output/runtime/requirement-records/<recordId>/authoring/scale-assessment.json \
+  --route-decision _bmad-output/runtime/requirement-records/<recordId>/authoring/scale-routing-decision.json \
   --progress _bmad-output/runtime/requirement-records/<recordId>/authoring/semantic-checkpoint-progress.json \
   --mode plan|status|run|resume \
   --until pre-render-ready \
   --json
 ```
+
+After checkpoint persistence is complete, the main Agent or authoring lane must request runner evidence in evidence-only mode and then rerun scale routing with that evidence. The runner must not write `single_pass_final_allowed`; the authoring lane writes the final route decision only after validating same-run output and current disk hashes:
+
+```bash
+node <skill-dir>/scripts/run_semantic_checkpoints.js \
+  --source <source-document.md> \
+  --route-decision _bmad-output/runtime/requirement-records/<recordId>/authoring/scale-routing-decision.json \
+  --progress _bmad-output/runtime/requirement-records/<recordId>/authoring/semantic-checkpoint-progress.json \
+  --mode checkpoint-persistence \
+  --json
+```
+
+The resulting `checkpoint-persistence-evidence.json` is evidence only. It may be consumed by `assess_contract_authoring_scale.js --checkpoint-persistence-evidence`, and it must not mutate route-defining fields.
 
 The runner must stop before commit if staged files contain any path other than the active target requirements document.
 

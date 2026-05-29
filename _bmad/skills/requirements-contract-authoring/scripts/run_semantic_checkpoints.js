@@ -13,7 +13,7 @@ const {
   stringList,
   unique,
 } = require('./pre_render_definition_drilldown_lib');
-const { buildAssessment } = require('./assess_contract_authoring_scale');
+const { buildAssessment, emitVisibleTrace } = require('./assess_contract_authoring_scale');
 const {
   evaluateTargetModificationPathCoverage,
 } = require('./target_modification_path_coverage');
@@ -106,14 +106,16 @@ const AUTHORING_MODES = new Set([
 
 function usage(exitCode = 0) {
   console.log(`Usage:
-  node run_semantic_checkpoints.js --source <source-document.md> --mode plan|status|run|resume|pre-render-gate [options]
+  node run_semantic_checkpoints.js --source <source-document.md> --mode plan|status|run|resume|pre-render-gate|checkpoint-persistence [options]
 
 Options:
   --assessment <scale-assessment.json>
+  --route-decision <scale-routing-decision.json>
   --progress <semantic-checkpoint-progress.json>
   --checkpoint <checkpoint-id>
   --until pre-render-ready
   --json
+  --quiet
 
 plan/status are read-only. run/resume enforce the mandatory single-file checkpoint commit gate.`);
   process.exit(exitCode);
@@ -123,11 +125,13 @@ function parseArgs(argv) {
   const args = {
     source: '',
     assessment: '',
+    routeDecision: '',
     progress: '',
     mode: 'plan',
     checkpoint: '',
     until: 'pre-render-ready',
     json: false,
+    quiet: false,
   };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -136,9 +140,14 @@ function parseArgs(argv) {
       args.json = true;
       continue;
     }
+    if (arg === '--quiet') {
+      args.quiet = true;
+      continue;
+    }
     if (
       arg === '--source' ||
       arg === '--assessment' ||
+      arg === '--route-decision' ||
       arg === '--progress' ||
       arg === '--mode' ||
       arg === '--checkpoint' ||
@@ -155,7 +164,7 @@ function parseArgs(argv) {
     args.source = arg;
   }
   if (!args.source) return { error: 'missing source document path' };
-  if (!['plan', 'status', 'run', 'resume', 'pre-render-gate'].includes(args.mode)) return { error: `unsupported mode ${args.mode}` };
+  if (!['plan', 'status', 'run', 'resume', 'pre-render-gate', 'checkpoint-persistence'].includes(args.mode)) return { error: `unsupported mode ${args.mode}` };
   return args;
 }
 
@@ -198,6 +207,38 @@ function writeJsonFileAtomic(filePath, value) {
   );
   fs.writeFileSync(temporary, content, 'utf8');
   fs.renameSync(temporary, absolute);
+}
+
+function stableStringify(value) {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map((item) => stableStringify(item)).join(',')}]`;
+  return `{${Object.keys(value)
+    .sort()
+    .map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`)
+    .join(',')}}`;
+}
+
+const ROUTE_HASH_EXCLUDED_FIELDS = new Set([
+  'routeDecisionHash',
+  'checkpointPersistenceSatisfied',
+  'checkpointPersistenceRef',
+  'createdAt',
+  'createdBy',
+]);
+
+function routeHashInput(value) {
+  if (Array.isArray(value)) return value.map(routeHashInput);
+  if (!value || typeof value !== 'object') return value;
+  const result = {};
+  for (const [key, item] of Object.entries(value)) {
+    if (ROUTE_HASH_EXCLUDED_FIELDS.has(key) || key.endsWith('RecordedAt')) continue;
+    result[key] = routeHashInput(item);
+  }
+  return result;
+}
+
+function routeDecisionHashFor(routeDecision) {
+  return `sha256:${crypto.createHash('sha256').update(stableStringify(routeHashInput(routeDecision)), 'utf8').digest('hex')}`;
 }
 
 function writeProgressAtomic(progressPath, value) {
@@ -325,6 +366,165 @@ function semanticDrilldownStatus(sourcePath) {
     },
     nextAction,
   };
+}
+
+function currentSemanticBinding(sourcePath) {
+  const text = fs.readFileSync(sourcePath, 'utf8');
+  let extracted = null;
+  try {
+    extracted = extractImplementationConfirmation(text);
+  } catch (_error) {
+    extracted = null;
+  }
+  const confirmation = extracted?.confirmation ?? null;
+  const sourceDocumentHash = extracted
+    ? sourceDocumentHashFor(text, extracted.blockText, confirmation)
+    : sha256File(sourcePath);
+  const implementationConfirmationHash = confirmation
+    ? implementationConfirmationHashFor(confirmation)
+    : null;
+  return { confirmation, sourceDocumentHash, implementationConfirmationHash };
+}
+
+function currentAuthoringEvidence(sourcePath) {
+  const paths = semanticAuthoringPaths(sourcePath);
+  const binding = currentSemanticBinding(sourcePath);
+  const kernel = readSemanticJson(paths.semanticKernel)?.semanticKernel ?? readSemanticJson(paths.semanticKernel);
+  const packet =
+    readSemanticJson(paths.mustDecompositionPacket)?.must_decomposition_packet ??
+    readSemanticJson(paths.mustDecompositionPacket)?.mustDecompositionPacket ??
+    readSemanticJson(paths.mustDecompositionPacket);
+  const receiptFiles = collectCriticalAuditorReceiptFiles(paths.authoringDir);
+  const receipts = receiptFiles.map((filePath) => unwrapReceipt(readSemanticJson(filePath))).filter(Boolean);
+  const reconciliation = readSemanticJson(paths.packetSourceReconciliation);
+  const gateReport = readSemanticJson(paths.preRenderMustDecompositionGate);
+  return {
+    ...paths,
+    ...binding,
+    kernel,
+    packet,
+    receiptFiles,
+    receipts,
+    reconciliation,
+    gateReport,
+  };
+}
+
+function noNewGapReceiptCount(receipts, auditInputHash = null) {
+  return receipts.filter((receipt) => {
+    const verdict = receipt?.convergenceDecision?.verdict;
+    const isNoNewGap =
+      verdict === 'no_new_valid_gap' || verdict === 'no_new_confirmation_blocking_gap';
+    const hashMatches = !auditInputHash || receipt?.inputHash === auditInputHash;
+    return isNoNewGap && hashMatches;
+  }).length;
+}
+
+function validateCheckpointAuthoringEvidence({ sourcePath, checkpoint }) {
+  const evidence = currentAuthoringEvidence(sourcePath);
+  const issues = [];
+  const issue = (code, message, refs = [], nextAction = null) => {
+    issues.push({
+      code,
+      message,
+      refs: refs.map(normalizePathForReport),
+      nextAction,
+    });
+  };
+
+  if (!evidence.confirmation) {
+    issue(
+      'implementation_confirmation_required_before_checkpoint',
+      'implementationConfirmation must exist before semantic checkpoints can be recorded',
+      [sourcePath],
+      'author_inline_implementation_confirmation'
+    );
+  }
+  if (!evidence.kernel || evidence.kernel.schemaVersion !== 'semantic-kernel/v1') {
+    issue(
+      'semantic_kernel_required_before_checkpoint',
+      'semantic-kernel.json must be created by authoring-repair before checkpoint materialization can continue',
+      [evidence.semanticKernel],
+      'run_authoring_repair_preserve_existing'
+    );
+  }
+  if (evidence.kernel && evidence.kernel.sourceDocumentHash !== evidence.sourceDocumentHash) {
+    issue(
+      'semantic_kernel_hash_mismatch_before_checkpoint',
+      'semantic-kernel.json is not bound to the current source document hash',
+      [evidence.semanticKernel],
+      'run_authoring_repair_preserve_existing'
+    );
+  }
+  if (
+    ['cp-01-must-decomposition-packet', 'cp-02-atomic-decomposition-loop-convergence', 'cp-03-packet-to-source-materialization', 'cp-04-id-freeze', 'cp-05-implementation-confirmation-core', 'cp-06-projections', 'cp-07-human-readable-views', 'cp-08-pre-render-global-reconciliation'].includes(checkpoint.id) &&
+    (!evidence.packet || evidence.packet.schemaVersion !== 'must-decomposition-packet/v1' || evidence.packet.status !== 'synchronized')
+  ) {
+    issue(
+      'must_decomposition_packet_required_before_checkpoint',
+      'synchronized must_decomposition_packet.json must be produced by authoring-repair before this checkpoint can be recorded',
+      [evidence.mustDecompositionPacket],
+      'run_authoring_repair_preserve_existing'
+    );
+  }
+  if (
+    evidence.packet &&
+    ['cp-01-must-decomposition-packet', 'cp-02-atomic-decomposition-loop-convergence', 'cp-03-packet-to-source-materialization', 'cp-04-id-freeze', 'cp-05-implementation-confirmation-core', 'cp-06-projections', 'cp-07-human-readable-views', 'cp-08-pre-render-global-reconciliation'].includes(checkpoint.id) &&
+    evidence.packet.sourceDocumentHash !== evidence.sourceDocumentHash
+  ) {
+    issue(
+      'must_decomposition_packet_hash_mismatch_before_checkpoint',
+      'must_decomposition_packet.json is not bound to the current source document hash',
+      [evidence.mustDecompositionPacket],
+      'run_authoring_repair_preserve_existing'
+    );
+  }
+  if (
+    ['cp-02-atomic-decomposition-loop-convergence', 'cp-03-packet-to-source-materialization', 'cp-04-id-freeze', 'cp-05-implementation-confirmation-core', 'cp-06-projections', 'cp-07-human-readable-views', 'cp-08-pre-render-global-reconciliation'].includes(checkpoint.id)
+  ) {
+    const auditInputHash = evidence.kernel && evidence.packet && evidence.implementationConfirmationHash
+      ? mustDecompositionGate.buildAuditInputHash({
+          sourceDocumentHash: evidence.sourceDocumentHash,
+          implementationConfirmationHash: evidence.implementationConfirmationHash,
+          kernel: evidence.kernel,
+          packet: evidence.packet,
+        })
+      : null;
+    if (noNewGapReceiptCount(evidence.receipts, auditInputHash) < 3) {
+      issue(
+        'critical_auditor_receipts_required_before_checkpoint',
+        'three current-hash no-new-gap Critical Auditor receipts are required before checkpoint materialization can continue',
+        [evidence.authoringDir],
+        'run_critical_auditor_until_three_no_new_gap_rounds'
+      );
+    }
+  }
+  if (
+    ['cp-03-packet-to-source-materialization', 'cp-04-id-freeze', 'cp-05-implementation-confirmation-core', 'cp-06-projections', 'cp-07-human-readable-views', 'cp-08-pre-render-global-reconciliation'].includes(checkpoint.id) &&
+    evidence.gateReport?.verdict !== 'PASS'
+  ) {
+    issue(
+      'pre_render_must_decomposition_gate_required_before_checkpoint',
+      'pre-render MUST decomposition gate PASS is required before source materialization checkpoints can be recorded',
+      [evidence.preRenderMustDecompositionGate],
+      'run_pre_render_must_decomposition_gate'
+    );
+  }
+
+  if (issues.length) {
+    return fail(
+      'checkpoint_authoring_evidence_missing',
+      'checkpoint runner cannot mark semantic checkpoints passed without current upstream authoring evidence',
+      {
+        status: 'blocked',
+        failedCheckpoint: checkpoint.id,
+        issues,
+        nextAction: issues[0]?.nextAction ?? semanticDrilldownStatus(sourcePath).nextAction,
+        semanticDrilldown: semanticDrilldownStatus(sourcePath),
+      }
+    );
+  }
+  return { ok: true, evidence };
 }
 
 function buildPlan({ sourcePath, assessment = null, progress = null }) {
@@ -983,18 +1183,6 @@ function checkpointIndex(id) {
   return CHECKPOINTS.findIndex((checkpoint) => checkpoint.id === id);
 }
 
-function appendCheckpointExecutionLog({ sourcePath, checkpoint }) {
-  const text = fs.readFileSync(sourcePath, 'utf8');
-  const heading = '## Automated Semantic Checkpoint Execution Log';
-  const entryHeading = `### ${checkpoint.id}`;
-  if (text.includes(entryHeading)) return false;
-  const prefix = text.endsWith('\n') ? text : `${text}\n`;
-  const headingBlock = text.includes(heading) ? '' : `\n${heading}\n\nThis section is maintained by run_semantic_checkpoints.js before HTML render. It does not mark user confirmation or delivery readiness.\n`;
-  const entry = `\n${entryHeading}\n\nStatus: passed\n\nValidated sections: ${checkpoint.allowedSections.join(', ')}.\nHTML render: not run by semantic checkpoint runner.\n`;
-  fs.writeFileSync(sourcePath, `${prefix}${headingBlock}${entry}`, 'utf8');
-  return true;
-}
-
 function commitCheckpoint({ sourcePath, checkpointId, progressPath, assessment = null, priorProgressOverride = null }) {
   const checkpoint = checkpointById(checkpointId);
   if (!checkpoint) return fail('unknown_checkpoint', `unknown checkpoint ${checkpointId}`);
@@ -1048,10 +1236,19 @@ function commitCheckpoint({ sourcePath, checkpointId, progressPath, assessment =
       stagedPaths: existingStaged,
     });
   }
+  const authoringEvidence = validateCheckpointAuthoringEvidence({ sourcePath, checkpoint });
+  if (!authoringEvidence.ok) return authoringEvidence;
 
   const add = git(['add', '-f', '--', targetRel]);
   if (add.status !== 0) return fail('git_add_failed', add.stderr || 'git add failed');
   const staged = stagedPaths();
+  if (staged.length === 0) {
+    return fail('checkpoint_source_edit_missing', 'checkpoint runner does not author semantic content; run authoring-repair or complete the checkpoint source materialization before recording progress', {
+      checkpoint: checkpoint.id,
+      failedCheckpoint: checkpoint.id,
+      nextAction: 'run_authoring_repair_preserve_existing',
+    });
+  }
   if (staged.length !== 1 || staged[0] !== targetRel) {
     return fail('checkpoint_staged_set_not_single_target', 'checkpoint staged set is not exactly the target document', {
       expected: targetRel,
@@ -1172,7 +1369,6 @@ function runCheckpointLoop({ sourcePath, progressPath, startCheckpointId, assess
         stagedPaths: existingStaged,
       });
     }
-    appendCheckpointExecutionLog({ sourcePath, checkpoint });
     const result = commitCheckpoint({
       sourcePath,
       checkpointId: checkpoint.id,
@@ -1291,6 +1487,92 @@ function resumeStatus({ sourcePath, progressPath }) {
   };
 }
 
+function completedCheckpointIdsFromProgress(progress) {
+  return (progress?.checkpoints ?? [])
+    .filter((item) => item.status === 'passed')
+    .map((item) => canonicalCheckpointId(item.id));
+}
+
+function checkpointPersistenceEvidence({ sourcePath, progressPath, routeDecision }) {
+  const progress = readJsonIfExists(progressPath);
+  const authoring = currentAuthoringEvidence(sourcePath);
+  const completedCheckpointIds = completedCheckpointIdsFromProgress(progress);
+  const allCheckpointIds = CHECKPOINTS.map((checkpoint) => checkpoint.id);
+  const completedAll = allCheckpointIds.every((id) => completedCheckpointIds.includes(id));
+  const progressHash = fs.existsSync(progressPath) ? sha256File(progressPath) : null;
+  const preRenderGlobalConsistency = readSemanticJson(
+    path.join(authoring.authoringDir, 'pre-render-global-consistency-report.json')
+  );
+  const preRenderGlobalConsistencyPath = path.join(authoring.authoringDir, 'pre-render-global-consistency-report.json');
+  const preRenderMustDecompositionGateHash = fs.existsSync(authoring.preRenderMustDecompositionGate)
+    ? sha256File(authoring.preRenderMustDecompositionGate)
+    : null;
+  const preRenderGlobalConsistencyHash = fs.existsSync(preRenderGlobalConsistencyPath)
+    ? sha256File(preRenderGlobalConsistencyPath)
+    : null;
+  const packetSourceReconciliationHash = fs.existsSync(authoring.packetSourceReconciliation)
+    ? sha256File(authoring.packetSourceReconciliation)
+    : null;
+  const checkpointPersistenceSatisfiedCandidate =
+    completedAll &&
+    progress?.documentHash === sha256File(sourcePath) &&
+    authoring.gateReport?.verdict === 'PASS' &&
+    preRenderGlobalConsistency?.verdict === 'PASS' &&
+    authoring.reconciliation?.verdict === 'pass';
+  return {
+    checkpointPersistenceSatisfiedCandidate,
+    checkpointPersistenceRef: {
+      routeDecisionHash: routeDecision.routeDecisionHash,
+      progressPath: normalizePathForReport(progressPath),
+      progressHash,
+      completedCheckpointIds,
+      preRenderMustDecompositionGateHash,
+      preRenderGlobalConsistencyHash,
+      packetSourceReconciliationHash,
+    },
+    completedCheckpointIds,
+    progressHash,
+    preRenderMustDecompositionGateHash,
+    preRenderGlobalConsistencyHash,
+    packetSourceReconciliationHash,
+  };
+}
+
+function validateRouteDecisionFile(routeDecisionPath) {
+  const read = readJsonSafe(routeDecisionPath);
+  if (!read.ok) {
+    return fail('route_decision_unreadable', 'route decision file is missing or invalid', {
+      status: 'blocked',
+      blockingState: 'blocked_by_stale_scale_assessment_hash',
+      blockingReasons: ['route_decision_unreadable'],
+      nextAction: 'rerun_scale_routing_decision',
+      routeDecisionPath: normalizePathForReport(routeDecisionPath),
+      error: read.error ?? null,
+    });
+  }
+  const routeDecision = read.value;
+  const actualHash = routeDecisionHashFor(routeDecision);
+  const blockingReasons = [];
+  if (!['checkpoint_required', 'checkpoint_required_with_amendment'].includes(routeDecision.decision)) {
+    blockingReasons.push('route_decision_not_checkpoint');
+  }
+  if (routeDecision.routeDecisionHash !== actualHash) {
+    blockingReasons.push('route_decision_hash_stale');
+  }
+  if (blockingReasons.length > 0) {
+    return fail('route_decision_invalid', 'route decision cannot be consumed by checkpoint runner', {
+      status: 'blocked',
+      blockingState: 'blocked_by_stale_scale_assessment_hash',
+      blockingReasons,
+      nextAction: 'rerun_scale_routing_decision',
+      routeDecisionPath: normalizePathForReport(routeDecisionPath),
+      expectedRouteDecisionHash: actualHash,
+      actualRouteDecisionHash: routeDecision.routeDecisionHash ?? null,
+    });
+  }
+  return { ok: true, routeDecision, routeDecisionPath: normalizePathForReport(routeDecisionPath) };
+}
+
 function main(argv) {
   const args = parseArgs(argv);
   if (args.error) {
@@ -1304,6 +1586,15 @@ function main(argv) {
   }
   const progressPath = path.resolve(args.progress || defaultProgressPath(sourcePath));
   const assessment = args.assessment ? readJsonIfExists(args.assessment) : buildAssessment(sourcePath, progressPath);
+  if (!args.assessment && !args.quiet) emitVisibleTrace(assessment);
+  let routeDecisionValidation = null;
+  if (args.routeDecision) {
+    routeDecisionValidation = validateRouteDecisionFile(path.resolve(args.routeDecision));
+    if (!routeDecisionValidation.ok) {
+      process.stdout.write(`${JSON.stringify(routeDecisionValidation, null, 2)}\n`);
+      return 1;
+    }
+  }
   const progressRead = readJsonSafe(progressPath);
   let progress = progressRead.ok ? progressRead.value : null;
   let recoveredStatus = null;
@@ -1330,6 +1621,39 @@ function main(argv) {
     updateProgressWithCombinedPreRenderGate({ progressPath, combinedReport: gate.report });
     process.stdout.write(`${JSON.stringify(gate.report, null, 2)}\n`);
     return gate.report.verdict === 'PASS' ? 0 : 1;
+  }
+  if (args.mode === 'checkpoint-persistence') {
+    if (!routeDecisionValidation?.ok) {
+      const blocked = fail(
+        'route_decision_required',
+        'checkpoint persistence evidence requires a valid checkpoint route decision',
+        {
+          status: 'blocked',
+          blockingState: 'blocked_by_missing_scale_routing_decision',
+          blockingReasons: ['route_decision_required'],
+          nextAction: 'rerun_scale_routing_decision',
+        }
+      );
+      process.stdout.write(`${JSON.stringify(blocked, null, 2)}\n`);
+      return 1;
+    }
+    const evidence = checkpointPersistenceEvidence({
+      sourcePath,
+      progressPath,
+      routeDecision: routeDecisionValidation.routeDecision,
+    });
+    const result = {
+      ok: true,
+      status: evidence.checkpointPersistenceSatisfiedCandidate ? 'satisfied' : 'not_satisfied',
+      routeDecisionPath: routeDecisionValidation.routeDecisionPath,
+      routeDecisionHash: routeDecisionValidation.routeDecision.routeDecisionHash,
+      nextAction: evidence.checkpointPersistenceSatisfiedCandidate
+        ? 'rerun_scale_routing_decision_with_checkpoint_persistence_evidence'
+        : 'run_semantic_checkpoints_until_pre_render_ready',
+      ...evidence,
+    };
+    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    return 0;
   }
   if (args.mode === 'resume') {
     const status = resumeStatus({ sourcePath, progressPath });
@@ -1361,6 +1685,18 @@ function main(argv) {
         assessment,
         priorProgressOverride: recoveredStatus?.progress ?? null,
       });
+  if (routeDecisionValidation?.ok) {
+    const evidence = checkpointPersistenceEvidence({
+      sourcePath,
+      progressPath,
+      routeDecision: routeDecisionValidation.routeDecision,
+    });
+    Object.assign(result, {
+      routeDecisionPath: routeDecisionValidation.routeDecisionPath,
+      routeDecisionHash: routeDecisionValidation.routeDecision.routeDecisionHash,
+      ...evidence,
+    });
+  }
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
   return result.ok ? 0 : 1;
 }

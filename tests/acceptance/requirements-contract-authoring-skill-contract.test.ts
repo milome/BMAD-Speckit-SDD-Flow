@@ -156,12 +156,19 @@ describe('requirements-contract-authoring published contract', () => {
 
   it('documents scale assessment and semantic checkpoint runner before render', () => {
     const skill = readSkillFile('SKILL.md');
-    const reverseAuditGate = readSkillFile(path.join('references', 'reverse-audit-gate.md'));
+    const checkpointWorkflow = readSkillFile(path.join('references', 'semantic-checkpoint-workflow.md'));
 
-    for (const content of [skill, reverseAuditGate]) {
+    for (const content of [skill, checkpointWorkflow]) {
       expect(content).toContain('assess_contract_authoring_scale.js');
       expect(content).toContain('run_semantic_checkpoints.js');
       expect(content).toContain('checkpoint_required');
+      expect(content).toContain('initial_assessment');
+      expect(content).toContain('post_packet_assessment');
+      expect(content).toContain('post_materialization_assessment');
+      expect(content).toContain('scale-routing-decision.json');
+      expect(content).toContain('checkpoint-persistence');
+      expect(content).toContain('checkpoint-persistence-evidence');
+      expect(content).toContain('monotonic');
       expect(content).toContain('single-file');
       expect(content).toContain('--mode plan|status|run|resume');
       expect(content).toContain('--until pre-render-ready');
@@ -180,6 +187,9 @@ describe('requirements-contract-authoring published contract', () => {
     expect(checkpointWorkflow).toContain('one semantic checkpoint -> one bounded source-document edit');
     expect(checkpointWorkflow).toContain("The checkpoint runner's `--until pre-render-ready` scope covers checkpoints 1-8");
     expect(checkpointWorkflow).toContain('The runner must preserve checkpoint authoring semantics');
+    expect(checkpointWorkflow).toContain('`run_semantic_checkpoints.js` is not the semantic authoring engine');
+    expect(checkpointWorkflow).toContain('append status-only checkpoint logs');
+    expect(checkpointWorkflow).toContain('must already exist from `authoring-repair`');
   });
 
   it('keeps skill-local command references portable across installation roots', () => {
