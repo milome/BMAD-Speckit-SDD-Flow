@@ -243,23 +243,33 @@ export type MainAgentRunLoopExecutor = (
 ) => TaskReport | null;
 
 type ReadinessRemediationClassification =
-  | 'deterministic_repair'
-  | 'record_only_repair'
-  | 'semantic_gap'
-  | 'unsafe_to_auto_repair';
+  | 'derive_without_reconfirm'
+  | 'requires_source_amendment'
+  | 'requires_user_decision';
+
+type ReadinessRemediationNextAction =
+  | 'run_deterministic_projection_repair'
+  | 'source_amendment_required'
+  | 'blocked_by_unresolved_user_decision';
 
 interface ReadinessRemediationAction {
   blocker: string;
+  schemaVersion: 'readiness-blocker-classification/v1';
   classification: ReadinessRemediationClassification;
+  sourceAuthorityImpact: 'none' | 'proof_or_projection' | 'source_authority' | 'ambiguous_source_authority';
+  autoRemediationAllowed: boolean;
+  requiredNextAction: ReadinessRemediationNextAction;
   action: string;
   target?: string;
   reason: string;
+  reasonCode: string;
 }
 
 interface ReadinessAutoRemediationResult {
   ok: boolean;
   status: 'done' | 'blocked';
   blockerActions: ReadinessRemediationAction[];
+  requiredNextAction?: ReadinessRemediationNextAction;
   filesChanged: string[];
   validationsRun: string[];
   evidence: string[];
@@ -551,6 +561,7 @@ function resolveScopedOrchestrationState(
   const strictRequirementScope = [
     'explicit_args',
     'explicit_args_without_index',
+    'index_active',
     'index_match',
     'record_scan_match',
   ].includes(normalizeText(resolvedContext(runtimeContext)?.resolutionSource));
@@ -6144,6 +6155,19 @@ function deriveNextActionFromRequirementRecord(input: {
   terminalState?: 'completed_no_dispatch';
 } {
   const recordId = normalizeText(input.record?.recordId) || 'requirement-record';
+  const currentMentalModel = normalizeText(input.record?.currentMentalModel);
+  const sixModelResults =
+    input.record?.sixModelResults &&
+    typeof input.record.sixModelResults === 'object' &&
+    !Array.isArray(input.record.sixModelResults)
+      ? (input.record.sixModelResults as Record<string, unknown>)
+      : null;
+  const currentModelResult =
+    currentMentalModel && sixModelResults?.[currentMentalModel] &&
+    typeof sixModelResults[currentMentalModel] === 'object' &&
+    !Array.isArray(sixModelResults[currentMentalModel])
+      ? (sixModelResults[currentMentalModel] as Record<string, unknown>)
+      : null;
   const architectureState =
     input.record?.architectureConfirmationState &&
     typeof input.record.architectureConfirmationState === 'object' &&
@@ -6183,6 +6207,41 @@ function deriveNextActionFromRequirementRecord(input: {
       blockingReasonRefs,
       terminalState: 'completed_no_dispatch',
     };
+  }
+  if (currentMentalModel === 'requirement_confirmation') {
+    if (normalizeText(currentModelResult?.status) === 'pass') {
+      return {
+        nextAction: 'enter_architecture_confirmation',
+        ready: true,
+        blockingReasonRefs,
+      };
+    }
+    blockingReasonRefs.push({ sourceType: 'model_result', id: 'requirement_confirmation' });
+    return { nextAction: 'run_pre_confirmation_drilldown', ready: false, blockingReasonRefs };
+  }
+  if (currentMentalModel === 'architecture_confirmation') {
+    if (normalizeText(currentModelResult?.status) === 'pass') {
+      return {
+        nextAction: 'run_implementation_readiness_gate',
+        ready: true,
+        blockingReasonRefs,
+      };
+    }
+    blockingReasonRefs.push({ sourceType: 'model_result', id: 'architecture_confirmation' });
+    return { nextAction: 'prepare_architecture_confirmation', ready: false, blockingReasonRefs };
+  }
+  if (currentMentalModel === 'implementation_readiness') {
+    const implementationReadinessStatus = normalizeText(currentModelResult?.status);
+    if (implementationReadinessStatus !== 'pass') {
+      blockingReasonRefs.push({ sourceType: 'model_result', id: 'implementation_readiness' });
+      if (['blocked', 'fail'].includes(implementationReadinessStatus)) {
+        return { nextAction: 'dispatch_remediation', ready: true, blockingReasonRefs };
+      }
+      return { nextAction: 'run_implementation_readiness_gate', ready: false, blockingReasonRefs };
+    }
+  } else if (currentMentalModel) {
+    blockingReasonRefs.push({ sourceType: 'model_result', id: currentMentalModel });
+    return { nextAction: 'await_user', ready: false, blockingReasonRefs };
   }
   if (input.implementationEntryDecision === 'reroute') {
     blockingReasonRefs.push({ sourceType: 'gate_check', id: 'implementation-readiness' });
@@ -6971,6 +7030,16 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
       out.runId = argv[++index];
     } else if (token === '--attempt-id' && argv[index + 1]) {
       out.attemptId = argv[++index];
+    } else if (
+      (token === '--implementation-run-kind' || token === '--implementationRunKind') &&
+      argv[index + 1]
+    ) {
+      out.implementationRunKind = argv[++index];
+    } else if (
+      (token === '--readiness-report-path' || token === '--readinessReportPath') &&
+      argv[index + 1]
+    ) {
+      out.readinessReportPath = argv[++index];
     } else if (token === '--scoring-run-id' && argv[index + 1]) {
       out.scoringRunId = argv[++index];
     } else if (token === '--source' && argv[index + 1]) {
@@ -7767,63 +7836,253 @@ function latestReadinessBlockers(
   );
 }
 
+function deriveReadinessAction(input: {
+  blocker: string;
+  action: string;
+  reason: string;
+  reasonCode: string;
+  target?: string;
+}): ReadinessRemediationAction {
+  return {
+    blocker: input.blocker,
+    schemaVersion: 'readiness-blocker-classification/v1',
+    classification: 'derive_without_reconfirm',
+    sourceAuthorityImpact: 'proof_or_projection',
+    autoRemediationAllowed: true,
+    requiredNextAction: 'run_deterministic_projection_repair',
+    action: input.action,
+    ...(input.target ? { target: input.target } : {}),
+    reason: input.reason,
+    reasonCode: input.reasonCode,
+  };
+}
+
+function sourceAmendmentReadinessAction(
+  blocker: string,
+  reasonCode = 'source_authority_blocker_requires_amendment',
+  reason = 'blocker affects confirmed execution contract semantics or authority'
+): ReadinessRemediationAction {
+  return {
+    blocker,
+    schemaVersion: 'readiness-blocker-classification/v1',
+    classification: 'requires_source_amendment',
+    sourceAuthorityImpact: 'source_authority',
+    autoRemediationAllowed: false,
+    requiredNextAction: 'source_amendment_required',
+    action: 'block_for_source_amendment',
+    reason,
+    reasonCode,
+  };
+}
+
+function userDecisionReadinessAction(
+  blocker: string,
+  reasonCode = 'multiple_equal_candidates_require_user_decision',
+  reason = 'confirmed source does not select one candidate among multiple equal valid candidates'
+): ReadinessRemediationAction {
+  return {
+    blocker,
+    schemaVersion: 'readiness-blocker-classification/v1',
+    classification: 'requires_user_decision',
+    sourceAuthorityImpact: 'ambiguous_source_authority',
+    autoRemediationAllowed: false,
+    requiredNextAction: 'blocked_by_unresolved_user_decision',
+    action: 'block_for_user_decision',
+    reason,
+    reasonCode,
+  };
+}
+
+function blockerHasMultipleEqualCandidates(blocker: string): boolean {
+  return (
+    blocker.includes(':multiple_equal_candidates') ||
+    blocker.includes(':ambiguous_candidates') ||
+    blocker.includes(':ambiguous') ||
+    blocker.startsWith('multiple_equal_candidate:')
+  );
+}
+
+function readinessBlockerBaseId(blocker: string): string {
+  const normalized = normalizeText(blocker);
+  if (normalized.startsWith('multiple_equal_candidate:')) {
+    return normalized.slice('multiple_equal_candidate:'.length);
+  }
+  for (const suffix of [
+    ':multiple_equal_candidates',
+    ':ambiguous_candidates',
+    ':ambiguous',
+  ]) {
+    if (normalized.endsWith(suffix)) return normalized.slice(0, -suffix.length);
+  }
+  return normalized;
+}
+
 function classifyReadinessBlocker(blocker: string): ReadinessRemediationAction {
-  if (blocker.startsWith('required_command_file_missing:')) {
-    return {
-      blocker,
-      classification: 'deterministic_repair',
+  const blockerId = normalizeText(blocker);
+  const baseBlocker = readinessBlockerBaseId(blockerId);
+  const hasMultipleEqualCandidates = blockerHasMultipleEqualCandidates(blockerId);
+
+  if (baseBlocker.startsWith('required_command_file_missing:')) {
+    return deriveReadinessAction({
+      blocker: blockerId,
       action: 'create_expected_red_adapter_test',
-      target: blocker.slice('required_command_file_missing:'.length),
+      target: baseBlocker.slice('required_command_file_missing:'.length),
       reason: 'missing command target file can be created without changing requirement semantics',
-    };
+      reasonCode: 'missing_command_file_derivable_from_manifest',
+    });
   }
-  if (
-    blocker === 'pre_implementation_red_proof_missing' ||
-    blocker === 'pre_implementation_valid_expected_red_missing'
-  ) {
-    return {
-      blocker,
-      classification: 'record_only_repair',
-      action: 'record_expected_red_contract_check',
-      reason: 'expected-red proof belongs in controlled requirement record evidence',
-    };
-  }
-  if (blocker === 'ai_tdd_pre_implementation_readiness_not_ready') {
-    return {
-      blocker,
-      classification: 'record_only_repair',
+  if (baseBlocker === 'ai_tdd_pre_implementation_readiness_not_ready') {
+    return deriveReadinessAction({
+      blocker: blockerId,
       action: 'rerun_after_child_ai_tdd_repairs',
       reason: 'summary blocker is resolved by repairing concrete AI-TDD blockers',
-    };
+      reasonCode: 'summary_blocker_resolved_by_child_derive_repairs',
+    });
+  }
+  if (baseBlocker === 'PRE_CONFIRMATION_DRILLDOWN_REQUIRED') {
+    return deriveReadinessAction({
+      blocker: blockerId,
+      action: 'regenerate_pre_confirmation_drilldown_artifacts',
+      reason: 'pre-confirmation drilldown is a proof artifact projection for current confirmed source',
+      reasonCode: 'proof_artifact_regeneration_allowed',
+    });
+  }
+  if (baseBlocker === 'PACKET_SOURCE_RECONCILIATION_REQUIRED') {
+    return deriveReadinessAction({
+      blocker: blockerId,
+      action: 'rerun_packet_source_reconciliation',
+      reason: 'missing or stale reconciliation report can be rerun without changing source semantics',
+      reasonCode: 'reconciliation_report_rerun_allowed',
+    });
+  }
+  if (baseBlocker === 'PACKET_SOURCE_RECONCILIATION_FAILED') {
+    return sourceAmendmentReadinessAction(
+      blockerId,
+      'reconciliation_failed_requires_source_amendment',
+      'packet/source reconciliation failure indicates source and packet drift'
+    );
+  }
+  if (baseBlocker === 'PRE_RENDER_GATE_REPORT_REQUIRED') {
+    return deriveReadinessAction({
+      blocker: blockerId,
+      action: 'rerun_pre_render_gate',
+      reason: 'missing or stale pre-render gate report can be rerun without changing source semantics',
+      reasonCode: 'pre_render_report_rerun_allowed',
+    });
+  }
+  if (
+    baseBlocker === 'ATOMIC_TASK_LINEAGE_REQUIRED' ||
+    baseBlocker === 'MANIFEST_SECTION_REQUIRED:atomicImplementationTaskLineage'
+  ) {
+    if (hasMultipleEqualCandidates) return userDecisionReadinessAction(blockerId);
+    return deriveReadinessAction({
+      blocker: blockerId,
+      action: 'materialize_existing_atomic_task_lineage',
+      reason: 'existing deterministic atomic packet lineage can be materialized for current confirmed source',
+      reasonCode: 'existing_atomic_lineage_materialization_allowed',
+    });
   }
   if (
     [
+      'MANIFEST_SECTION_REQUIRED:preConfirmationDrilldownInputs',
+      'MANIFEST_SECTION_REQUIRED:legacyDenial',
+      'MANIFEST_SECTION_REQUIRED:executionLoopProtocol',
+      'MANIFEST_SECTION_REQUIRED:semanticGapPolicy',
+      'MANIFEST_SECTION_REQUIRED:evidenceTrustStates',
+    ].includes(baseBlocker)
+  ) {
+    return deriveReadinessAction({
+      blocker: blockerId,
+      action: 'materialize_policy_or_projection_section',
+      reason: 'manifest section is policy or projection materialization, not source semantics',
+      reasonCode: 'manifest_policy_projection_materialization_allowed',
+    });
+  }
+  if (baseBlocker === 'MANIFEST_SECTION_REQUIRED:hostExecutionHints') {
+    if (hasMultipleEqualCandidates) return userDecisionReadinessAction(blockerId);
+    return deriveReadinessAction({
+      blocker: blockerId,
+      action: 'materialize_host_execution_hints',
+      reason: 'host selection already exists in main-agent input',
+      reasonCode: 'host_selection_materialization_allowed',
+    });
+  }
+  if (baseBlocker === 'AI_TDD_MANIFEST_REQUIRED') {
+    return sourceAmendmentReadinessAction(
+      blockerId,
+      'ai_tdd_manifest_root_blocker_requires_section_detail',
+      'AI_TDD_MANIFEST_REQUIRED must be classified by concrete missing manifest sections'
+    );
+  }
+  if (
+    [
+      'MANIFEST_SECTION_REQUIRED:finalGateMatrix',
+      'MANIFEST_SECTION_REQUIRED:canonicalSurfaceReconciliation',
+      'MANIFEST_SECTION_REQUIRED:closeoutProof',
+      'MANIFEST_SECTION_REQUIRED:errorCaseCoverage',
+      'MANIFEST_SECTION_REQUIRED:traceClosureAssertions',
+      'MANIFEST_SECTION_REQUIRED:commandTargets',
+      'MANIFEST_SECTION_REQUIRED:currentTargetMap',
+    ].includes(baseBlocker)
+  ) {
+    if (hasMultipleEqualCandidates) return userDecisionReadinessAction(blockerId);
+    return sourceAmendmentReadinessAction(
+      blockerId,
+      'authority_or_relation_manifest_section_requires_source_amendment',
+      'manifest section can affect source authority, target authority, command authority, artifact authority, or relation bindings'
+    );
+  }
+  if (
+    baseBlocker.startsWith('PRE_IMPLEMENTATION_RED_PROOF_PLAN_REQUIRED:') ||
+    baseBlocker.startsWith('FAILURE_PATH_BINDING_REQUIRED:TRACE-') ||
+    baseBlocker.startsWith('EDGE_CASE_BINDING_REQUIRED:TRACE-') ||
+    baseBlocker.startsWith('ERROR_CASE_CLOSURE_INCOMPLETE:FAIL-') ||
+    baseBlocker.startsWith('ERROR_CASE_CLOSURE_INCOMPLETE:EDGE-')
+  ) {
+    if (hasMultipleEqualCandidates) return userDecisionReadinessAction(blockerId);
+    return sourceAmendmentReadinessAction(
+      blockerId,
+      'relation_or_red_proof_requires_source_amendment',
+      'missing relation or expected-red proof plan belongs to confirmed source execution contract'
+    );
+  }
+  if (
+    [
+      'requirement_pre_implementation_missing_plan',
+      'pre_implementation_red_proof_missing',
+      'pre_implementation_valid_expected_red_missing',
       'trace_acceptance_binding_missing',
       'artifact_ref_missing',
+      'command_target_refs_missing',
+      'artifact_refs_missing',
+      'current_target_map_refs_missing',
       'orphan_evidence',
       'orphan_command',
       'orphan_artifact',
-      'requirement_pre_implementation_missing_plan',
       'missing_test_plan_blocked',
       'target_artifact_plan_blocked',
       'negative_control_plan_blocked',
       'contract_completeness_report_blocked',
-    ].includes(blocker)
+      'acceptance_or_e2e_coverage_missing',
+      'stage_audit_requirement_missing_acceptance_or_e2e_coverage',
+    ].includes(baseBlocker)
   ) {
-    return {
-      blocker,
-      classification: 'semantic_gap',
-      action: 'require_user_or_authoring_repair_decision',
-      reason:
-        'source projection closure is not uniquely repairable by the run-loop without risking confirmed semantic changes',
-    };
+    if (hasMultipleEqualCandidates) return userDecisionReadinessAction(blockerId);
+    return sourceAmendmentReadinessAction(blockerId);
   }
-  return {
-    blocker,
-    classification: 'unsafe_to_auto_repair',
-    action: 'block_for_manual_review',
-    reason: 'blocker has no deterministic non-semantic repair mapping',
-  };
+  if (baseBlocker.includes('commandTargets -> commandTargetCollection')) {
+    return deriveReadinessAction({
+      blocker: blockerId,
+      action: 'normalize_equal_command_target_alias',
+      reason: 'canonical alias normalization is allowed only when authority is unchanged',
+      reasonCode: 'equal_alias_normalization_allowed',
+    });
+  }
+  return sourceAmendmentReadinessAction(
+    blockerId,
+    'unknown_blocker_fail_closed',
+    'blocker has no deterministic non-semantic repair mapping'
+  );
 }
 
 function classifyReadinessBlockers(blockers: string[]): ReadinessRemediationAction[] {
@@ -7841,22 +8100,6 @@ function classifyReadinessBlockers(blockers: string[]): ReadinessRemediationActi
   const stageAuditOnlyMissingTest =
     stageAuditBlockers.length > 0 &&
     stageAuditBlockers.every((blocker) => blocker === 'stage_audit_acceptance_test_file_missing');
-  const hasUniqueProjectionRoot = uniqueBlockers.some((blocker) =>
-    [
-      'requirement_pre_implementation_missing_plan',
-      'trace_acceptance_binding_missing',
-      'acceptance_or_e2e_coverage_missing',
-      'artifact_ref_missing',
-      'orphan_evidence',
-      'orphan_command',
-      'orphan_artifact',
-    ].includes(blocker)
-  );
-  const stageAuditOnlyProjection =
-    stageAuditBlockers.length > 0 &&
-    stageAuditBlockers.every(
-      (blocker) => blocker === 'stage_audit_requirement_missing_acceptance_or_e2e_coverage'
-    );
 
   return uniqueBlockers.map((blocker) => {
     if (
@@ -7867,13 +8110,13 @@ function classifyReadinessBlockers(blockers: string[]): ReadinessRemediationActi
         'requirement_pre_implementation_missing_test',
       ].includes(blocker)
     ) {
-      return {
+      return deriveReadinessAction({
         blocker,
-        classification: 'deterministic_repair',
         action: 'create_missing_acceptance_files_from_manifest',
         reason:
           'missing expected-red test files are uniquely declared by the confirmed AI-TDD manifest',
-      };
+        reasonCode: 'missing_expected_red_files_derivable_from_manifest',
+      });
     }
     if (
       hasMissingTestRoot &&
@@ -7883,75 +8126,15 @@ function classifyReadinessBlockers(blockers: string[]): ReadinessRemediationActi
         'trace_acceptance_binding_missing',
       ].includes(blocker)
     ) {
-      return {
-        blocker,
-        classification: 'record_only_repair',
-        action: 'rerun_after_child_ai_tdd_repairs',
-        reason: 'blocker is a derived readiness-plan symptom of missing expected-red test files',
-      };
+      return classifyReadinessBlocker(blocker);
     }
     if (blocker === 'implementation_readiness_stage_audit_failed' && stageAuditOnlyMissingTest) {
-      return {
+      return deriveReadinessAction({
         blocker,
-        classification: 'record_only_repair',
         action: 'rerun_after_child_ai_tdd_repairs',
         reason: 'stage audit failure is fully explained by missing expected-red test files',
-      };
-    }
-    if (
-      hasUniqueProjectionRoot &&
-      [
-        'requirement_pre_implementation_missing_plan',
-        'trace_acceptance_binding_missing',
-        'acceptance_or_e2e_coverage_missing',
-        'artifact_ref_missing',
-        'orphan_evidence',
-        'orphan_command',
-        'orphan_artifact',
-      ].includes(blocker)
-    ) {
-      return {
-        blocker,
-        classification: 'record_only_repair',
-        action: 'record_unique_projection_overlay',
-        reason: 'confirmed ID graph can be checked for a unique non-semantic projection overlay',
-      };
-    }
-    if (blocker === 'contract_completeness_report_blocked' && hasUniqueProjectionRoot) {
-      return {
-        blocker,
-        classification: 'record_only_repair',
-        action: 'record_unique_projection_overlay',
-        reason: 'contract completeness blocker may be resolved by a unique projection overlay',
-      };
-    }
-    if (blocker === 'missing_test_plan_blocked' && hasUniqueProjectionRoot) {
-      return {
-        blocker,
-        classification: 'record_only_repair',
-        action: 'record_unique_projection_overlay',
-        reason: 'missing test plan blocker may be resolved by a unique acceptance coverage overlay',
-      };
-    }
-    if (blocker === 'implementation_readiness_stage_audit_failed' && stageAuditOnlyProjection) {
-      return {
-        blocker,
-        classification: 'record_only_repair',
-        action: 'record_unique_projection_overlay',
-        reason: 'stage audit failure is fully explained by uniquely derivable projection coverage',
-      };
-    }
-    if (
-      blocker === 'stage_audit_requirement_missing_acceptance_or_e2e_coverage' &&
-      hasUniqueProjectionRoot
-    ) {
-      return {
-        blocker,
-        classification: 'record_only_repair',
-        action: 'record_unique_projection_overlay',
-        reason:
-          'stage audit coverage blocker may be resolved by unique acceptance coverage overlay',
-      };
+        reasonCode: 'stage_audit_missing_test_child_blocker_derivable',
+      });
     }
     return classifyReadinessBlocker(blocker);
   });
@@ -8887,18 +9070,28 @@ export function runMainAgentReadinessAutoRemediation(input: {
     (action) => action.blocker !== 'ai_tdd_pre_implementation_readiness_not_ready'
   );
   const blockingActions = concreteActions.filter(
-    (action) =>
-      action.classification === 'semantic_gap' || action.classification === 'unsafe_to_auto_repair'
+    (action) => !action.autoRemediationAllowed
   );
   if (blockingActions.length > 0) {
+    const hasUserDecision = blockingActions.some(
+      (action) => action.classification === 'requires_user_decision'
+    );
     return {
       ok: false,
       status: 'blocked',
       blockerActions,
+      requiredNextAction: hasUserDecision
+        ? 'blocked_by_unresolved_user_decision'
+        : 'source_amendment_required',
       filesChanged: [],
       validationsRun: ['readiness-blocker-classifier'],
-      evidence: blockingActions.map((action) => `${action.classification}:${action.blocker}`),
-      blockingReasons: blockingActions.map((action) => action.blocker),
+      evidence: blockingActions.map(
+        (action) => `${action.classification}:${action.requiredNextAction}:${action.blocker}`
+      ),
+      blockingReasons: [
+        hasUserDecision ? 'blocked_by_unresolved_user_decision' : 'source_amendment_required',
+        ...blockingActions.map((action) => action.blocker),
+      ],
     };
   }
 
@@ -8931,23 +9124,7 @@ export function runMainAgentReadinessAutoRemediation(input: {
         filesChanged.push(path.relative(input.projectRoot, absolute).replace(/\\/g, '/'));
     }
   }
-  const shouldRecordProjectionOverlay = concreteActions.some(
-    (item) => item.action === 'record_unique_projection_overlay'
-  );
-  const overlay = shouldRecordProjectionOverlay
-    ? deriveReadinessOverlayFromManifest(aiTddReport)
-    : null;
-  if (shouldRecordProjectionOverlay && !overlay) {
-    return {
-      ok: false,
-      status: 'blocked',
-      blockerActions,
-      filesChanged,
-      validationsRun: ['readiness-blocker-classifier', 'readiness-unique-projection-overlay'],
-      evidence: ['unsafe_to_auto_repair:unique_projection_overlay_not_derivable'],
-      blockingReasons: ['unique_projection_overlay_not_derivable'],
-    };
-  }
+  const overlay = null;
 
   const now = new Date().toISOString();
   const proofRows: Record<string, unknown>[] = defaultProofRows(report, aiTddReport).map(
@@ -9117,6 +9294,12 @@ export function runMainAgentAutomaticLoop(input: {
       ...surfaceInput,
     });
     if (!remediation.ok) {
+      const blockedNextAction =
+        remediation.requiredNextAction === 'source_amendment_required'
+          ? 'source_amendment_required'
+          : remediation.requiredNextAction === 'blocked_by_unresolved_user_decision'
+            ? 'blocked_by_unresolved_user_decision'
+            : 'await_user';
       return {
         runId: `main-agent-run-loop-${Date.now()}`,
         status: 'blocked',
@@ -9125,12 +9308,12 @@ export function runMainAgentAutomaticLoop(input: {
         taskReport,
         finalSurface: {
           ...finalSurface,
-          mainAgentNextAction: 'await_user',
+          mainAgentNextAction: blockedNextAction,
           mainAgentReady: false,
           runtimeResumeProjection: finalSurface.runtimeResumeProjection
             ? {
                 ...finalSurface.runtimeResumeProjection,
-                runtimeNextAction: 'await_user',
+                runtimeNextAction: blockedNextAction,
                 ready: false,
                 blockingReasonRefs: remediation.blockingReasons.map((reason) => ({
                   sourceType: 'readiness_auto_remediation',
