@@ -1,4 +1,4 @@
-# BMAD-Speckit-SDD-Flow
+# BMAD-SpeCKit-SDD-Flow: Requirement-Contract Driven Agent Automation
 
 English | [简体中文](README.zh-CN.md)
 
@@ -12,7 +12,7 @@ English | [简体中文](README.zh-CN.md)
 
 <p align="center">
   <strong>Built on <a href="https://github.com/bmad-code-org/BMAD-METHOD">BMAD-METHOD</a> and <a href="https://github.com/github/spec-kit">Spec-Kit</a>.</strong><br>
-  <em>Runtime governance, mandatory audit loops, dashboard observability, and published npm installation in one flow.</em>
+  <em>v1 integrates BMAD + Speckit. v2 turns that workflow into an AI-TDD control plane for governed Main Agent orchestration.</em>
 </p>
 
 <p align="center">
@@ -20,99 +20,207 @@ English | [简体中文](README.zh-CN.md)
   <a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen" alt="Node.js Version"></a>
 </p>
 
----
+## Table Of Contents
 
-## Why This Flow?
-
-Traditional AI tooling often stops at prompt orchestration. BMAD-Speckit-SDD-Flow turns that into a governed delivery pipeline: specify, plan, audit, enter implementation through readiness gates, run runtime governance during execution, then close out into scoring, dashboard, coach, and SFT data.
-
-<p align="center">
-  <img src="docs/assets/readme-architecture-overview.final.svg" alt="BMAD-Speckit-SDD-Flow architecture overview" width="100%" />
-</p>
-
-### Key Capabilities
-
-- **Six-model governed control plane**: requirement, architecture, readiness, execution, audit, and delivery are explicit runtime questions, not loose checklist labels.
-- **16-subsystem production-loop readiness**: every production-loop subsystem must expose machine-readable inputs, outputs, status, evidence, hashes, and failure handling before delivery can be trusted.
-- **Controlled RequirementRecord authority**: `inspect` resolves the active requirement, reloads governed state from the record, verifies provenance, and only then chooses the next global branch.
-- **Readiness baseline self-healing**: readiness gates write controlled `audit_required` activation metadata, while the audit/scoring pipeline writes `implementation_readiness` score records with verifiable provenance.
-- **Bounded packet execution**: `dispatch-plan` is generated only when `inspect` says dispatch is allowed; child agents execute bounded packets and cannot choose the global route.
-- **Audit, scoring, and projection separation**: audit owns scored evidence, while dashboard, MCP, coach, SFT, and help surfaces are read-only projections unless re-ingested as governed evidence.
-- **Fail-closed delivery governance**: ambiguous active requirements, stale hashes, missing current attempts, stale baselines, incomplete evidence, or subsystem coverage gaps block, rerun, or require controlled closeout.
-
-> Image strategy: README assets live in `docs/assets/` and are tracked in Git. The package `README.md` is rendered on npm as GitHub Flavored Markdown, so keeping repository assets tracked and using repository-relative paths is the most reliable cross-surface strategy for GitHub and npm. Source: [About package README files](https://docs.npmjs.com/about-package-readme-files)
+- [What This Is](#what-this-is)
+- [Who This Is For](#who-this-is-for)
+- [Prerequisites](#prerequisites)
+- [Quick Start](#quick-start)
+- [Runtime Model](#runtime-model)
+- [AI-TDD Control Plane](#ai-tdd-control-plane)
+- [Six Mental Models](#six-mental-models)
+- [Manifest And Trace Evidence](#manifest-and-trace-evidence)
+- [Daily Use](#daily-use)
+- [CLI Installation And External Interfaces](#cli-installation-and-external-interfaces)
+- [Evidence And Screenshots](#evidence-and-screenshots)
+- [v1 Compatibility](#v1-compatibility)
+- [Repository Map](#repository-map)
+- [Documentation](#documentation)
+- [Development And Contribution Policy](#development-and-contribution-policy)
+- [License](#license)
 
 ---
 
-## Runtime Governance At A Glance
+## What This Is
 
-- **Inspect first, fail closed**: the main agent starts from `main-agent-orchestration inspect`; missing, ambiguous, or stale active requirement resolution does not fall through to implementation.
-- **RequirementRecord is control authority**: `requirement-records/index.json` is a locator projection; the current control state is reloaded from the requirement record and governed event history.
-- **Readiness gate activates audit, not score**: readiness pass writes controlled activation metadata and can trigger or request a readiness audit; it does not directly create score records.
-- **Audit writes scored provenance**: the audit/scoring pipeline writes `RunScoreRecord` entries such as `stage=implementation_readiness`, including score, audit, gate, record hash, and command provenance.
-- **Drift baseline precedence is deterministic**: current requirement metadata wins, then requirement-scoped scoring baseline, then legacy `packages/scoring/data`; runtime context fallback is not allowed.
-- **Dispatch remains conditional**: `dispatch-plan` appears only when the controlled record says bounded packet execution should happen; otherwise closeout, audit, rerun, or blocked diagnostics are surfaced.
-- **Closeout is attempt-scoped**: a closeout pass leads to `completed_no_dispatch` only for the current governed attempt; missing global scoring baseline alone must not become an implementation blocker.
-- **Diagnostics are user-visible**: `inspect` explains missing active requirement, missing readiness baseline, stale baseline, projection-only surfaces, and evidence gaps instead of returning silent "not ready" states.
+BMAD-SpeCKit-SDD-Flow is not a prompt pack that asks AI to write more code. It is a Main Agent orchestration workflow that installs into consumer projects through the CLI, then runs inside Codex, Claude Code CLI, or Cursor through the `bmads` / `bmad-speckit` skills.
 
-### Six Mental Models
-
-The latest runtime path is organized around six mental models. They are not dashboard tabs or status colors; they are the governed questions the main agent must answer from `requirement-record.json`, `currentMentalModel`, current attempt metadata, and controlled ingest events before it can continue.
+The goal is simple: make AI work inside requirement contracts, gates, evidence, and traceability. v1 connected BMAD and Speckit into a full delivery flow. v2 makes that flow requirement-contract driven with AI-TDD, six mental models, and two delivery gates.
 
 <p align="center">
-  <img src="docs/assets/readme-six-mental-models-subsystems.en.svg" alt="Six mental models architecture showing all 16 governed subsystems, RequirementRecord authority, fail-closed reruns, and read-only projections" width="100%" />
+  <img src="docs/assets/toolchain-ecosystem-en.svg" alt="AI-TDD toolchain ecosystem for requirement-contract driven agent automation" width="100%" />
 </p>
 
-<p align="center"><em>Figure: the diagram uses the ClawScope README architecture style as visual reference while mapping BMAD-Speckit-SDD-Flow's six control lanes and sixteen governed subsystems.</em></p>
+The CLI is the installation and external interface. It installs the workflow into a consumer project, validates the install surface, and exposes runtime read models such as dashboard, scoring, Coach, and SFT extraction. Daily delivery control belongs to the Main Agent after the user activates it in the AI host.
 
-The active chain is:
+---
 
-1. **Requirement Confirmation**: what is in scope, what is out of scope, and which evidence IDs prove closure.
-2. **Architecture Confirmation**: whether implementation still fits the confirmed boundary, shared contracts, and risk envelope.
-3. **Implementation Readiness**: whether the controlled record permits implementation, including readiness baseline activation.
-4. **Execution Closure**: whether bounded packets, trace closure, command evidence, and artifact indexing exist for the current run.
-5. **Audit Review**: whether findings, reruns, RCA, and audit-written `RunScoreRecord` data carry verifiable provenance.
-6. **Delivery Confirmation**: whether the current closeout attempt alone authorizes completion language and delivery closure.
+## Who This Is For
 
-Dashboard, runtime MCP, scoring, coach, and SFT outputs are read-only projections over that chain. They improve navigation and observability, but dashboard green, score green, task done, SFT generated, or legacy `mainAgentReady` hints cannot close a requirement or choose the next global branch.
+This project is a good fit when you need:
 
-The table below is the primary-owner map. A subsystem can emit evidence or projections across more than one model, but the primary lane shows which mental model owns the control decision.
+- Governed AI delivery inside a consumer project, not just prompts.
+- Requirement contracts, readiness gates, delivery gates, and evidence trails.
+- A Main Agent that can inspect state, route work, enforce bounded execution, and block weak delivery claims.
+- External read models for dashboard, scoring, Coach, and SFT workflows.
 
-`main_agent_orchestration` is the cross-cutting control layer over all six mental models. It is not owned by Execution Closure alone; Execution Closure owns the packet dispatch and trace evidence produced under that orchestration.
+This project is not the best fit when you only want:
 
-| Mental model | Primary subsystem ownership | Runtime question |
+- A minimal prompt library with no runtime governance.
+- A codegen-only CLI with no host-session workflow.
+- A local script that skips requirement contracts and gate evidence.
+
+---
+
+## Prerequisites
+
+| Tool | Version | Why it matters |
 | --- | --- | --- |
-| Requirement Confirmation | `requirement_confirmation` | Scope, exclusions, and proof IDs. |
-| Architecture Confirmation | `architecture_confirmation`, `governance` | Boundaries, contracts, schemas, and risks. |
-| Implementation Readiness | `implementation_readiness` | Entry permission and current readiness baseline. |
-| Execution Closure | `execution_tracking`, `prompt_packet_generation`, `bounded_packet_closure` | Bounded dispatch, trace closure, packet evidence, and rerun routing. |
-| Audit Review | `audit_review`, `rca_improvement`, `scoring`, `data_production`, `eval_sft`, `coach` | Findings, RCA, score provenance, derived datasets, and coach feedback. |
-| Delivery Confirmation | `delivery_closeout`, `observability`, `dashboard_read_model` | Current closeout attempt, observability evidence, and read-model projection. |
-
-## Dashboard And MCP
-
-- **Dashboard is default**: the published package supports runtime dashboard status, start/stop helpers, and runtime snapshot generation without any extra MCP setup.
-- **Runtime MCP is optional**: enable it only when you want runtime data exposed as agent tools via `--with-mcp`.
-- **Dashboard and runtime governance do not depend on MCP**: live dashboard, hooks, scoring projection, and runtime close-out all work without `.mcp.json`.
-
-Quick mental model:
-
-- `dashboard`: human-facing runtime and scoring visibility
-- `runtime-mcp`: explicit agent-tool surface over the same runtime data
+| Node.js | 18+ | Required for the published CLI and package install surface. |
+| npm | 9+ | Required for `npx --package`, local install, and workspace workflows. |
+| PowerShell | 7+ on Windows | Recommended for setup, verification, and runtime helper scripts. |
+| Git | 2.30+ | Required for worktrees, branch workflows, and contribution flow. |
+| AI host | Codex, Claude Code CLI, or Cursor | Required for the normal `bmads` / `bmad-speckit` runtime entry. |
 
 ---
 
-## Recommended npm Installation
+## Quick Start
 
-Ensure you have **[Node.js](https://nodejs.org) v18+** installed.
-
-### Recommended Off-Repo Install From npm
-
-Use the published root package directly. This is the current recommended path when you're installing into a consumer project without cloning this repository.
-
-This is the verified off-repo path for the published package contract.
+For most consumer projects, use the published package to install the workflow surface, then activate the Main Agent inside the AI host.
 
 ```bash
+npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit version
+npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit-init . --agent claude-code --full --no-package-json
+npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit-init . --agent cursor --full --no-package-json
+npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit-init . --agent codex --full --no-package-json
+npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit check
+```
+
+Then switch to the AI host session and activate the Main Agent:
+
+```text
+$bmads
+```
+
+If you are installing from a CI artifact instead of npm registry, the recommended non-invasive path is the same command shape with `--package ./bmad-speckit-sdd-flow-<version>.tgz`.
+
+---
+
+## Runtime Model
+
+The normal user entry is typed inside the active AI host session:
+
+```text
+$bmads
+/bmads
+bmads
+$bmad-speckit
+/bmad-speckit
+bmad-speckit
+```
+
+After activation, the Main Agent takes root governed runtime authority for the current request. Its first responsibility is not implementation. It must inspect the active requirement, read the current requirement record, determine the current mental model, show progress, and recommend the next governed action.
+
+The Main Agent owns these decisions:
+
+| Decision | Main Agent responsibility |
+| --- | --- |
+| Active requirement | Resolve the current requirement from explicit IDs or runtime requirement records. |
+| Current mental model | Read `currentMentalModel` and continue from the governed stage instead of guessing from chat history. |
+| Progress | Show what is confirmed, blocked, missing, or ready for the active requirement. |
+| Next action | Recommend confirmation, architecture, readiness, dispatch, audit, rerun, or delivery closeout. |
+| Evidence | Surface missing Manifest, trace, command, artifact, audit, score, or closeout evidence. |
+
+CLI commands are allowed for install validation, CI, debug, fallback hosts, and external read models. They are not the primary daily activation path when the host skill is available.
+
+---
+
+## AI-TDD Control Plane
+
+AI-TDD in this project means Manifest-level, acceptance-driven development. The Manifest is the requirement contract matrix: it carries `MUST`, `MUST NOT`, `NOT DONE`, `EVIDENCE`, and `TRACE MATRIX` definitions that both humans and agents can verify.
+
+The control plane exists to enforce two rules:
+
+| Rule | Gate |
+| --- | --- |
+| No complete Manifest, no execution. | Implementation Readiness Gate, expected status `AI-TDD-RED`. |
+| Unverified Manifest items, no delivery. | Delivery Closeout Gate, expected status `AI-TDD-GREEN`. |
+
+<p align="center">
+  <img src="docs/assets/tdd-state-machine-en.svg" alt="AI-TDD state machine from Manifest draft to AI-TDD-RED, implementation, AI-TDD-GREEN, and closed delivery" width="100%" />
+</p>
+
+The readiness gate does not mean "the feature is done." It means the requirement contract is complete enough, the acceptance baseline exists, and implementation is allowed to start from `AI-TDD-RED`. The delivery closeout gate means all Manifest-linked acceptance items and evidence are verified before completion language is allowed.
+
+---
+
+## Six Mental Models
+
+The Main Agent drives every requirement through six mental models. They are not dashboard tabs. They are the questions that decide whether the next action is confirmation, architecture, readiness, execution, audit, or delivery closeout.
+
+<p align="center">
+  <img src="docs/assets/ai-tdd-flow-en.svg" alt="AI-TDD six mental models and two gate flow" width="100%" />
+</p>
+
+| Mental model | Governed question | Target outcome |
+| --- | --- | --- |
+| Requirement Confirmation | What is in scope, out of scope, and provable by evidence IDs? | Confirmed requirement contract. |
+| Architecture Confirmation | Does the implementation boundary still match the confirmed architecture and risk envelope? | Confirmed architecture boundary. |
+| Implementation Readiness | Is the Manifest complete enough and is the acceptance baseline registered? | Entry gate reaches `AI-TDD-RED`. |
+| Execution Closure | Did bounded agents implement only within the contract and produce traceable evidence? | Bounded execution closes against the Manifest. |
+| Audit Review | Do findings, reruns, RCA, scores, and review evidence have verifiable provenance? | Audit evidence is current and replayable. |
+| Delivery Confirmation | Are all acceptance items and delivery evidence verified for the current closeout attempt? | Delivery gate reaches `AI-TDD-GREEN`. |
+
+Implementation agents do not choose the global route. They receive bounded packets only after readiness passes, then the Main Agent re-inspects state after each child result, audit result, rerun, or blocking event.
+
+---
+
+## Manifest And Trace Evidence
+
+The Manifest is the source of truth for the AI-TDD contract. It is closer to contract-as-code than to a prose requirements document.
+
+<p align="center">
+  <img src="docs/assets/manifest-structure-en.svg" alt="AI-TDD Manifest structure with requirement, boundary, evidence, and gate layers" width="100%" />
+</p>
+
+Every meaningful delivery claim should be traceable across requirement, trace, evidence, command, and artifact dimensions.
+
+<p align="center">
+  <img src="docs/assets/5d-trace-matrix-en.svg" alt="Five-dimensional AI-TDD trace matrix" width="100%" />
+</p>
+
+The Main Agent should block or reroute when Manifest completeness, trace coverage, command evidence, artifact evidence, audit provenance, or closeout evidence is missing.
+
+---
+
+## Daily Use
+
+In Codex, Claude Code CLI, or Cursor, start from the host skill:
+
+```text
+$bmads
+```
+
+Expected Main Agent output should answer:
+
+| Output | Meaning |
+| --- | --- |
+| Current requirement | Which requirement record or requirement set is active. |
+| Current mental model | Which of the six AI-TDD stages owns the next decision. |
+| Blockers | Missing confirmation, stale architecture, readiness failure, audit finding, or evidence gap. |
+| Recommended next step | The next governed action, not a generic coding suggestion. |
+| Missing evidence | Manifest, trace matrix, tests, commands, artifacts, scores, audit records, or closeout proof still needed. |
+
+Do not bypass the Implementation Readiness Gate by sending an implementation agent directly into coding. Do not claim delivery from dashboard green, score green, task completion, or chat confidence alone. Delivery closes only through the Delivery Closeout Gate and the current evidence chain.
+
+---
+
+## CLI Installation And External Interfaces
+
+Install the workflow into a consumer project with the published npm package. These commands are for installation, validation, lifecycle operations, and external runtime views.
+
+```bash
+npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit --help
 npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit version
 npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit-init . --agent claude-code --full --no-package-json
 npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit-init . --agent cursor --full --no-package-json
@@ -121,119 +229,92 @@ npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit check
 npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit dashboard-status
 ```
 
-Why this is the recommended path:
-
-- it uses the published single public root package
-- it aligns both host surfaces explicitly
-- it preserves the non-invasive `--no-package-json` consumer install style
-- it matches the validated published package flow rather than an older bootstrap-only shortcut
-
-### Persistent Install In A Project
-
-If you want the package present in the consumer project's dependency tree:
+If you prefer a project dependency:
 
 ```bash
 npm install --save-dev bmad-speckit-sdd-flow@latest
-npx bmad-speckit-init . --agent claude-code --full --no-package-json
-npx bmad-speckit-init . --agent cursor --full --no-package-json
+npx bmad-speckit-init . --agent codex --full --no-package-json
 npx bmad-speckit check
 ```
 
-### Quick Bootstrap Path
+The public CLI exposes these auxiliary surfaces:
 
-The faster bootstrap command still exists:
+| Surface | Commands |
+| --- | --- |
+| Install and lifecycle | `init`, `check`, `version`, `upgrade`, `uninstall`, `add-agent`. |
+| Runtime read models | `bmads`, `bmad-speckit`, `dashboard-start`, `dashboard-status`, `dashboard-stop`, `dashboard-live`, `runtime-mcp`. |
+| Evidence and scoring | `score`, `check-score`, `scores`, `dashboard`, `deferred-gap-audit`. |
+| Data and feedback | `coach`, `sft-extract`, `sft-preview`, `sft-validate`, `sft-bundle`, `feedback`. |
 
-```bash
-npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit init . --ai cursor-agent --yes
-```
-
-Treat that as a quick initializer, not the highest-confidence installation path for the full runtime governance surface. If you care about the latest published hooks, runtime governance, dashboard wiring, and dual-host alignment, use the recommended installation path above.
-
-> Need help choosing the next governed route? Run `/bmad-help` in your AI IDE. It evaluates `flow`, `contextMaturity`, `complexity`, and `implementationReadinessStatus` before recommending or blocking routes.
-
-### Alternative Deployments
-
-<details>
-<summary><b>Install via CI Artifact (Consumer Projects)</b></summary>
-<br>
-If you are installing from a release artifact instead of npm registry:
-
-1. Download the `npm-packages-<commit-sha>` artifact from GitHub Actions.
-2. Extract the `bmad-speckit-sdd-flow-<version>.tgz` tarball.
-3. Install and initialize:
-   ```bash
-   npx --yes --package ./bmad-speckit-sdd-flow-<version>.tgz bmad-speckit version
-   npx --yes --package ./bmad-speckit-sdd-flow-<version>.tgz bmad-speckit-init . --agent claude-code --full --no-package-json
-   npx --yes --package ./bmad-speckit-sdd-flow-<version>.tgz bmad-speckit-init . --agent cursor --full --no-package-json
-   ```
-   </details>
-
-<details>
-<summary><b>One-Line Deploy Scripts</b></summary>
-<br>
-
-```powershell
-# Windows
-pwsh scripts/setup.ps1 -Target <project-path>
-```
-
-```bash
-# WSL / Linux / macOS
-bash scripts/setup.sh -Target <project-path>
-```
-
-</details>
-
-<details>
-<summary><b>Safe Uninstallation</b></summary>
-<br>
-To remove managed installation surfaces in the current project:
-
-```bash
-npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit uninstall
-```
-
-This only removes installer-managed entries. It does not delete `.cursor`, `.claude`, or global skills, and it never deletes `_bmad-output`.
-
-</details>
+Use the CLI to install and inspect. Use the host skill to let the Main Agent control the requirement flow.
 
 ---
 
-## Architecture And Modules
+## Evidence And Screenshots
 
-### Core Components
+The CLI screenshot below is an evidence artifact for the public npm interface, not the primary user workflow.
 
-| Component                   | Purpose                                                                                                                                    |
-| :-------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------- |
-| **`_bmad/`**                | Canonical source of truth for workflow modules, hooks, prompts, routing, and host-facing assets.                                           |
-| **`packages/scoring/`**     | Scoring engine, readiness drift evaluation, dashboard projection, coach inputs, and SFT extraction.                                        |
-| **`dashboard`**             | Default runtime observability surface: live dashboard, runtime snapshots, and scoring projections.                                         |
-| **`runtime-mcp`**           | Optional MCP surface for agent tools over runtime data; enabled explicitly with `--with-mcp`.                                              |
-| **`speckit-workflow`**      | Specify -> Plan -> GAPS -> Tasks -> TDD with mandatory audit loops.                                                                        |
-| **`bmad-story-assistant`**  | Story lifecycle entry: main agent reads `inspect`, dispatches bounded packets when needed, and closes post-audit through `runAuditorHost`. |
-| **`bmad-bug-assistant`**    | Bug lifecycle path: RCA -> Party Mode -> BUGFIX -> Implement, while the main Agent still owns the global `inspect -> dispatch-plan -> closeout` chain. |
-| **`bmad-standalone-tasks`** | TASKS/BUGFIX execution still follows the main-agent path: `inspect` first, `dispatch-plan` only when needed, then bounded subagent work.             |
+<p align="center">
+  <img src="docs/assets/bmad-speckit-cli.png" alt="bmad-speckit CLI help and runtime command surface" width="100%" />
+</p>
 
-<details>
-<summary><b>View Folder Structure</b></summary>
+Recommended evidence for a consumer install:
+
+```bash
+npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit version
+npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit check
+npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit dashboard-status
+```
+
+Recommended evidence for delivery:
+
+| Evidence type | Required proof |
+| --- | --- |
+| Requirement contract | Confirmed Manifest and requirement record. |
+| Readiness | Implementation Readiness Gate result at `AI-TDD-RED`. |
+| Execution | Bounded packet result, command evidence, artifact index, and trace closure. |
+| Audit | Findings, reruns, RCA, score records, and provenance. |
+| Delivery | Delivery Closeout Gate result at `AI-TDD-GREEN` for the current attempt. |
+
+---
+
+## v1 Compatibility
+
+The v1 BMAD + Speckit assets are still part of the compatibility surface: Product Brief, PRD, Architecture, Epic/Story, Speckit specify/plan/GAPS/tasks, implementation, audit, scoring, dashboard, Coach, and SFT extraction remain useful.
+
+The v2 README intentionally does not lead with the old five-layer architecture diagram. The current primary architecture is the AI-TDD toolchain ecosystem and the Main Agent control plane. v1 artifacts are inputs and projections inside that control plane, not a replacement for requirement-contract authority.
+
+---
+
+## Repository Map
+
+This map describes the tracked source and package layout. Local/generated folders such as `node_modules/`, `coverage/`, `test-results/`, `_bmad-output/`, `outputs/`, `reports/`, `tmp-*`, `.worktrees/`, and host cache directories can appear during development, but they are not source modules.
 
 ```text
 BMAD-Speckit-SDD-Flow/
-├── _bmad/                # Core modules and configuration
-├── packages/             # Monorepo packages (CLI, scoring)
-├── scripts/              # Setup and deployment utilities
-├── docs/                 # Diataxis-style documentation
-├── tests/                # Acceptance & epic testing
-└── specs/                # Generated story specs
+├── _bmad/                 # Canonical workflow assets installed into consumer projects
+├── bin/                   # Published root package bin wrappers
+├── docs/                  # User docs, reference docs, ops notes, evidence assets
+├── packages/              # npm workspace packages
+│   ├── bmad-speckit/      # Internal CLI workspace bundled by the root package
+│   ├── ralph-method/      # Task-level TDD evidence tracker for Speckit implementation
+│   ├── runtime-context/   # Runtime context registry and ensure-run utilities
+│   ├── runtime-emit/      # Pre-bundled runtime policy/audit emit tools
+│   ├── schema/            # Shared schema assets
+│   └── scoring/           # Scoring, dashboard, Coach, and SFT tooling
+├── scripts/               # Installers, CLI entrypoints, gates, release/test utilities
+├── specs/                 # Epic/story specs, audits, and governed delivery evidence
+├── src/                   # Shared source helpers for host/story validation workflows
+├── templates/             # Consumer-facing templates such as MCP setup
+├── tests/                 # Acceptance, integration, unit, fixture, and host tests
+└── website/               # Documentation site source
 ```
 
-</details>
+The published root npm package is assembled from `package.json#files`. It does not publish every local development directory; it packages the install/runtime surface such as `_bmad/`, `bin/`, `scripts/`, selected docs/assets, scoring, runtime-context pieces, and selected acceptance fixtures.
 
 ---
 
 ## Documentation
-
-Key entry points:
 
 - [Getting Started](docs/tutorials/getting-started.md)
 - [Main-Agent Orchestration Reference](docs/reference/main-agent-orchestration.md)
@@ -243,7 +324,39 @@ Key entry points:
 - [Provider Configuration](docs/how-to/provider-configuration.md)
 - [Cursor Setup](docs/how-to/cursor-setup.md)
 - [Claude Code Setup](docs/how-to/claude-code-setup.md)
-- [WSL / Shell Scripts](docs/how-to/wsl-shell-scripts.md)
+- [Codex Setup](docs/how-to/codex-setup.md)
+- [Run Tests Locally](docs/how-to/run-tests-locally.md)
+
+---
+
+## Development And Contribution Policy
+
+This is primarily a personal workflow project. I publish it because the workflow may be useful to others, but I cannot commit to a fixed schedule for reviewing issues, feature requests, or pull requests.
+
+Bug reports, documentation fixes, and small compatibility improvements are welcome. For larger features, architectural changes, or workflows that do not align with my current usage, forking the project and adapting it to your own context is the recommended path.
+
+If you still want to contribute upstream:
+
+- Read [CONTRIBUTING.md](CONTRIBUTING.md) for local setup, branch conventions, tests, and pull request expectations.
+- Read [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for community standards.
+- Use [docs/how-to/run-tests-locally.md](docs/how-to/run-tests-locally.md) for local verification flow.
+
+Common local validation commands:
+
+```bash
+npm install
+npm test
+npm run lint
+npm run format:check
+```
+
+For repository maintainers, the internal workspace CLI implementation lives in [packages/bmad-speckit/README.md](packages/bmad-speckit/README.md). Consumer users should still follow the root package contract documented in this README.
+
+---
+
+## License
+
+Released under the [MIT License](LICENSE).
 
 ---
 

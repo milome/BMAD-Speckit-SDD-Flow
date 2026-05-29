@@ -1,0 +1,320 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1200">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#8b5a2b"/>
+    </marker>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="2" dy="2" stdDeviation="3" flood-opacity="0.15"/>
+    </filter>
+    <linearGradient id="control-plane-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#fef3c7;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#fde68a;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="store-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#e0e7ff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#c7d2fe;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <style>
+    .bg { fill: #fafaf9; }
+    .title { font-family: system-ui, -apple-system, sans-serif; font-size: 22px; font-weight: 700; fill: #1c1917; text-anchor: middle; }
+    .subtitle { font-family: system-ui, -apple-system, sans-serif; font-size: 11px; fill: #78716c; text-anchor: middle; }
+    .text { font-family: system-ui, -apple-system, sans-serif; font-size: 11px; fill: #44403c; text-anchor: middle; }
+    .text-small { font-size: 9px; }
+
+    /* Control Plane Styles */
+    .control-plane-box { fill: url(#control-plane-grad); stroke: #d97706; stroke-width: 2.5; filter: url(#shadow); }
+    .control-plane-title { font-family: system-ui, -apple-system, sans-serif; font-size: 16px; font-weight: 700; fill: #92400e; text-anchor: middle; }
+    .control-plane-sub { font-family: system-ui, -apple-system, sans-serif; font-size: 10px; fill: #a16207; text-anchor: middle; }
+
+    /* Store Styles */
+    .store-box { fill: url(#store-grad); stroke: #4f46e5; stroke-width: 2; filter: url(#shadow); }
+    .store-title { font-family: system-ui, -apple-system, sans-serif; font-size: 13px; font-weight: 700; fill: #3730a3; text-anchor: middle; }
+    .store-sub { font-family: system-ui, -apple-system, sans-serif; font-size: 9px; fill: #6366f1; text-anchor: middle; }
+
+    /* Table Styles */
+    .mental-name { font-family: system-ui, -apple-system, sans-serif; font-size: 11px; font-weight: 700; text-anchor: middle; }
+    .count-number { font-family: system-ui, -apple-system, sans-serif; font-size: 16px; font-weight: 700; text-anchor: middle; }
+    .table-header { font-family: system-ui, -apple-system, sans-serif; font-size: 10px; font-weight: 700; fill: #1c1917; text-anchor: start; }
+    .subsystem-primary { font-family: system-ui, -apple-system, sans-serif; font-size: 9px; font-weight: 600; text-anchor: start; }
+    .cli-yes { font-family: system-ui, -apple-system, sans-serif; font-size: 10px; font-weight: 700; fill: #d97706; text-anchor: middle; }
+    .table-cell { font-family: system-ui, -apple-system, sans-serif; font-size: 9px; fill: #44403c; text-anchor: start; }
+    .cli-no { font-family: system-ui, -apple-system, sans-serif; font-size: 9px; fill: #6b7280; text-anchor: middle; }
+    .cli-partial { font-family: system-ui, -apple-system, sans-serif; font-size: 9px; fill: #6b7280; text-anchor: middle; }
+    .legend-small { font-family: system-ui, -apple-system, sans-serif; font-size: 9px; fill: #6b7280; text-anchor: start; }
+    .tag-highlight { font-family: system-ui, -apple-system, sans-serif; font-size: 9px; font-weight: 600; fill: #dc2626; text-anchor: start; }
+    .legend-title { font-family: system-ui, -apple-system, sans-serif; font-size: 13px; font-weight: 700; fill: #1c1917; text-anchor: start; }
+    .legend-text { font-family: system-ui, -apple-system, sans-serif; font-size: 10px; fill: #44403c; text-anchor: start; }
+
+    /* External Tools */
+    .ext-title { font-family: system-ui, -apple-system, sans-serif; font-size: 12px; font-weight: 700; fill: #4b5563; text-anchor: middle; }
+    .ext-text { font-family: system-ui, -apple-system, sans-serif; font-size: 10px; fill: #4b5563; text-anchor: middle; }
+    .ext-small { font-size: 9px; fill: #6b7280; }
+
+    /* Arrow Styles */
+    .arrow-line { stroke: #8b5a2b; stroke-width: 2; fill: none; marker-end: url(#arrow); }
+    .arrow-down { stroke: #6b7280; stroke-width: 1.5; fill: none; stroke-dasharray: 4,2; }
+  </style>
+
+  <!-- Background -->
+  <rect width="1000" height="1200" class="bg"/>
+
+  <!-- Title -->
+  <text x="500" y="30" class="title">AI-TDD 工具链生态系统</text>
+  <text x="500" y="50" class="subtitle">Control Plane → Store → 六大心智模型 → CLI → 外部集成</text>
+
+  <!-- Layer 1: Main Agent Control Plane -->
+  <rect x="50" y="65" width="900" height="70" rx="8" class="control-plane-box"/>
+  <text x="500" y="95" class="control-plane-title">Main Agent Control Plane</text>
+  <text x="500" y="115" class="control-plane-sub">主控Agent控制平面 | 跨层编排 | 状态管理 | 决策路由 | 人机协作</text>
+
+  <!-- Arrow: Control Plane → Store -->
+  <line x1="500" y1="135" x2="500" y2="155" class="arrow-line"/>
+
+  <!-- Layer 2: Controlled RequirementRecord Store -->
+  <rect x="50" y="155" width="900" height="60" rx="8" class="store-box"/>
+  <text x="500" y="180" class="store-title">Controlled RequirementRecord Store</text>
+  <text x="500" y="200" class="store-sub">受控需求记录存储 | 契约矩阵持久化 | Trace证据存储 | 状态快照</text>
+
+  <!-- Arrow: Store → Mental Models -->
+  <line x1="500" y1="215" x2="500" y2="235" class="arrow-line"/>
+
+  <!-- Layer 3: Six Mental Models Section -->
+  <rect x="50" y="235" width="900" height="390" rx="8" fill="#ffffff" stroke="#e5e7eb" stroke-width="1"/>
+  <text x="500" y="260" class="legend-title" style="text-anchor:middle;font-size:14px;">六大心智模型与16个内部子系统</text>
+
+  <!-- Table Header -->
+  <rect x="70" y="275" width="150" height="35" fill="#f3f4f6" stroke="#d1d5db" stroke-width="1"/>
+  <text x="80" y="290" class="table-header">心智模型</text>
+  <text x="80" y="303" class="legend-small">(六大模型)</text>
+
+  <rect x="220" y="275" width="180" height="35" fill="#f3f4f6" stroke="#d1d5db" stroke-width="1"/>
+  <text x="230" y="290" class="table-header">子系统名称</text>
+  <text x="230" y="303" class="legend-small">(16个内部实现)</text>
+
+  <rect x="400" y="275" width="360" height="35" fill="#f3f4f6" stroke="#d1d5db" stroke-width="1"/>
+  <text x="410" y="290" class="table-header">功能说明</text>
+  <text x="410" y="303" class="legend-small">(各子系统职责)</text>
+
+  <rect x="760" y="275" width="70" height="35" fill="#f3f4f6" stroke="#d1d5db" stroke-width="1"/>
+  <text x="770" y="290" class="table-header">子系统</text>
+  <text x="770" y="303" class="legend-small">数量</text>
+
+  <rect x="830" y="275" width="100" height="35" fill="#f3f4f6" stroke="#d1d5db" stroke-width="1"/>
+  <text x="840" y="290" class="table-header">CLI</text>
+  <text x="840" y="303" class="legend-small">暴露</text>
+
+  <!-- Row 1: Requirement - 人工确认点#1 -->
+  <rect x="70" y="310" width="150" height="55" fill="#dbeafe" stroke="#d1d5db" stroke-width="1"/>
+  <text x="145" y="335" class="mental-name" style="fill:#1e40af;">需求确认</text>
+  <text x="145" y="350" class="text-small" style="fill:#3b82f6;">① Requirement</text>
+
+  <rect x="220" y="310" width="180" height="55" fill="#ffffff" stroke="#d1d5db" stroke-width="1"/>
+  <text x="230" y="327" class="subsystem-primary" style="fill:#1e40af;">requirement_authoring</text>
+  <text x="230" y="340" class="table-cell">requirement_confirmation</text>
+  <text x="230" y="353" class="tag-highlight">[人工确认]</text>
+
+  <rect x="400" y="310" width="360" height="55" fill="#ffffff" stroke="#d1d5db" stroke-width="1"/>
+  <text x="410" y="327" class="table-cell">requirement_authoring</text>
+  <text x="410" y="340" class="table-cell">requirement_confirmation</text>
+  <text x="410" y="353" class="tag-highlight">Human-in-loop决策点</text>
+
+  <rect x="760" y="310" width="70" height="55" fill="#dbeafe" stroke="#d1d5db" stroke-width="1"/>
+  <text x="795" y="342" class="count-number" style="fill:#1e40af;">2</text>
+
+  <rect x="830" y="310" width="100" height="55" fill="#ffffff" stroke="#d1d5db" stroke-width="1"/>
+  <text x="880" y="343" class="cli-no">否</text>
+  <text x="880" y="356" class="legend-small" style="text-anchor:middle;">(内部)</text>
+
+  <!-- Row 2: Architecture - 人工确认点#2 -->
+  <rect x="70" y="365" width="150" height="40" fill="#e0e7ff" stroke="#d1d5db" stroke-width="1"/>
+  <text x="145" y="382" class="mental-name" style="fill:#3730a3;">架构确认</text>
+  <text x="145" y="397" class="text-small" style="fill:#6366f1;">② Architecture</text>
+
+  <rect x="220" y="365" width="180" height="40" fill="#ffffff" stroke="#d1d5db" stroke-width="1"/>
+  <text x="230" y="387" class="subsystem-primary" style="fill:#3730a3;">architecture_confirmation</text>
+  <text x="230" y="400" class="tag-highlight">[人工确认]</text>
+
+  <rect x="400" y="365" width="360" height="40" fill="#ffffff" stroke="#d1d5db" stroke-width="1"/>
+  <text x="410" y="382" class="table-cell">architecture_confirmation</text>
+  <text x="410" y="395" class="tag-highlight">Human-in-loop强制确认</text>
+
+  <rect x="760" y="365" width="70" height="40" fill="#e0e7ff" stroke="#d1d5db" stroke-width="1"/>
+  <text x="795" y="387" class="count-number" style="fill:#3730a3;">1</text>
+
+  <rect x="830" y="365" width="100" height="40" fill="#ffffff" stroke="#d1d5db" stroke-width="1"/>
+  <text x="880" y="387" class="cli-no">否</text>
+
+  <!-- Row 3: Implementation -->
+  <rect x="70" y="405" width="150" height="40" fill="#fecaca" stroke="#d1d5db" stroke-width="1"/>
+  <text x="145" y="422" class="mental-name" style="fill:#991b1b;">实施准备</text>
+  <text x="145" y="437" class="text-small" style="fill:#ef4444;">③ Implementation</text>
+
+  <rect x="220" y="405" width="180" height="40" fill="#ffffff" stroke="#d1d5db" stroke-width="1"/>
+  <text x="230" y="427" class="subsystem-primary" style="fill:#991b1b;">implementation_readiness</text>
+
+  <rect x="400" y="405" width="360" height="40" fill="#ffffff" stroke="#d1d5db" stroke-width="1"/>
+  <text x="410" y="422" class="table-cell">implementation_readiness</text>
+  <text x="410" y="435" class="legend-small">验证AI-TDD-RED状态(准入门禁)</text>
+
+  <rect x="760" y="405" width="70" height="40" fill="#fecaca" stroke="#d1d5db" stroke-width="1"/>
+  <text x="795" y="427" class="count-number" style="fill:#991b1b;">1</text>
+
+  <rect x="830" y="405" width="100" height="40" fill="#ffffff" stroke="#d1d5db" stroke-width="1"/>
+  <text x="880" y="427" class="cli-no">否</text>
+
+  <!-- Row 4: Execution -->
+  <rect x="70" y="445" width="150" height="55" fill="#dcfce7" stroke="#d1d5db" stroke-width="1"/>
+  <text x="145" y="467" class="mental-name" style="fill:#166534;">执行闭合</text>
+  <text x="145" y="482" class="text-small" style="fill:#22c55e;">④ Execution</text>
+
+  <rect x="220" y="445" width="180" height="55" fill="#ffffff" stroke="#d1d5db" stroke-width="1"/>
+  <text x="230" y="462" class="subsystem-primary" style="fill:#166534;">execution_tracking</text>
+  <text x="230" y="475" class="table-cell">prompt_packet_gen</text>
+  <text x="230" y="488" class="table-cell">bounded_packet_closure</text>
+
+  <rect x="400" y="445" width="360" height="55" fill="#ffffff" stroke="#d1d5db" stroke-width="1"/>
+  <text x="410" y="462" class="table-cell">execution_tracking</text>
+  <text x="410" y="475" class="table-cell">prompt_packet_gen</text>
+  <text x="410" y="488" class="table-cell">bounded_packet_closure</text>
+
+  <rect x="760" y="445" width="70" height="55" fill="#dcfce7" stroke="#d1d5db" stroke-width="1"/>
+  <text x="795" y="472" class="count-number" style="fill:#166534;">3</text>
+
+  <rect x="830" y="445" width="100" height="55" fill="#fffbeb" stroke="#d1d5db" stroke-width="1"/>
+  <text x="880" y="467" class="cli-partial">部分</text>
+  <text x="880" y="480" class="legend-small" style="text-anchor:middle;">(dashboard)</text>
+
+  <!-- Row 5: Audit -->
+  <rect x="70" y="500" width="150" height="60" fill="#f3e8ff" stroke="#d1d5db" stroke-width="1"/>
+  <text x="145" y="522" class="mental-name" style="fill:#6b21a8;">审计复核</text>
+  <text x="145" y="537" class="text-small" style="fill:#a855f7;">⑤ Audit</text>
+  <text x="145" y="550" class="legend-small" style="fill:#a855f7;text-anchor:middle;">(6个子系统)</text>
+
+  <rect x="220" y="500" width="180" height="60" fill="#ffffff" stroke="#d1d5db" stroke-width="1"/>
+  <text x="230" y="517" class="subsystem-primary" style="fill:#6b21a8;">audit_review</text>
+  <text x="230" y="530" class="table-cell">rca_improvement</text>
+  <text x="230" y="543" class="table-cell">scoring, eval</text>
+  <text x="230" y="553" class="table-cell">extract_sft, coach</text>
+
+  <rect x="400" y="500" width="360" height="60" fill="#ffffff" stroke="#d1d5db" stroke-width="1"/>
+  <text x="410" y="517" class="table-cell">audit_review</text>
+  <text x="410" y="530" class="table-cell">rca_improvement</text>
+  <text x="410" y="543" class="table-cell">scoring, eval, extract_sft, coach</text>
+
+  <rect x="760" y="500" width="70" height="60" fill="#f3e8ff" stroke="#d1d5db" stroke-width="1"/>
+  <text x="795" y="535" class="count-number" style="fill:#6b21a8;">6</text>
+
+  <rect x="830" y="500" width="100" height="60" fill="#fef3c7" stroke="#d1d5db" stroke-width="1"/>
+  <text x="880" y="525" class="cli-yes">是</text>
+  <text x="880" y="540" class="legend-small" style="text-anchor:middle;">score/coach/</text>
+  <text x="880" y="553" class="legend-small" style="text-anchor:middle;">sft-extract</text>
+
+  <!-- Row 6: Delivery - 人工确认点#3 -->
+  <rect x="70" y="560" width="150" height="55" fill="#d1fae5" stroke="#d1d5db" stroke-width="1"/>
+  <text x="145" y="585" class="mental-name" style="fill:#047857;">交付确认</text>
+  <text x="145" y="600" class="text-small" style="fill:#10b981;">⑥ Delivery</text>
+  <text x="145" y="610" class="legend-small" style="fill:#10b981;text-anchor:middle;">(3个子系统)</text>
+
+  <rect x="220" y="560" width="180" height="55" fill="#ffffff" stroke="#d1d5db" stroke-width="1"/>
+  <text x="230" y="577" class="subsystem-primary" style="fill:#047857;">delivery_closeout</text>
+  <text x="230" y="590" class="table-cell">observability</text>
+  <text x="230" y="603" class="table-cell">dashboard_read_model</text>
+  <text x="230" y="613" class="tag-highlight">[人工确认]</text>
+
+  <rect x="400" y="560" width="360" height="55" fill="#ffffff" stroke="#d1d5db" stroke-width="1"/>
+  <text x="410" y="577" class="table-cell">delivery_closeout</text>
+  <text x="410" y="590" class="table-cell">observability</text>
+  <text x="410" y="603" class="table-cell">dashboard_read_model</text>
+  <text x="410" y="613" class="tag-highlight">Human-in-loop强制确认</text>
+
+  <rect x="760" y="560" width="70" height="55" fill="#d1fae5" stroke="#d1d5db" stroke-width="1"/>
+  <text x="795" y="592" class="count-number" style="fill:#047857;">3</text>
+
+  <rect x="830" y="560" width="100" height="55" fill="#fef3c7" stroke="#d1d5db" stroke-width="1"/>
+  <text x="880" y="582" class="cli-yes">是</text>
+  <text x="880" y="597" class="legend-small" style="text-anchor:middle;">dashboard/</text>
+  <text x="880" y="607" class="legend-small" style="text-anchor:middle;">dashboard-status</text>
+
+  <!-- Arrow: Mental Models → External Integration -->
+  <line x1="500" y1="625" x2="500" y2="645" class="arrow-line"/>
+
+  <!-- Layer 4: External Integration Section -->
+  <rect x="50" y="645" width="900" height="85" rx="6" fill="#f3f4f6" stroke="#e7e5e4" stroke-width="1"/>
+  <text x="500" y="670" class="ext-title">外部集成层</text>
+
+  <text x="120" y="695" class="ext-text">Vitest/Jest</text>
+  <text x="120" y="710" class="ext-text ext-small">测试框架</text>
+
+  <text x="220" y="695" class="ext-text">Git</text>
+  <text x="220" y="710" class="ext-text ext-small">版本控制</text>
+
+  <text x="310" y="695" class="ext-text">LLM APIs</text>
+  <text x="310" y="710" class="ext-text ext-small">Claude/Codex</text>
+
+  <text x="420" y="695" class="ext-text">YAML/JSON</text>
+  <text x="420" y="710" class="ext-text ext-small">契约解析</text>
+
+  <text x="530" y="695" class="ext-text">SHA256</text>
+  <text x="530" y="710" class="ext-text ext-small">证据哈希</text>
+
+  <text x="630" y="695" class="ext-text">Docker</text>
+  <text x="630" y="710" class="ext-text ext-small">容器化</text>
+
+  <text x="720" y="695" class="ext-text">CI/CD</text>
+  <text x="720" y="710" class="ext-text ext-small">流水线</text>
+
+  <text x="810" y="695" class="ext-text">Evidence Store</text>
+  <text x="810" y="710" class="ext-text ext-small">证据存储</text>
+
+  <text x="910" y="695" class="ext-text">Read Model</text>
+  <text x="910" y="710" class="ext-text ext-small">只读模型</text>
+
+  <!-- Layer 5: CLI Commands Section -->
+  <rect x="50" y="740" width="900" height="210" rx="6" fill="#ffffff" stroke="#e7e5e4" stroke-width="1"/>
+  <text x="70" y="765" class="legend-title" style="font-size:13px;">用户可见CLI子命令 (对应 scripts/ 目录)</text>
+
+  <!-- CLI commands in 3 columns -->
+  <text x="70" y="795" class="legend-text" style="font-weight:600;color:#92400e;">npx bmad-speckit init</text>
+  <text x="70" y="810" class="legend-small">初始化AI-TDD项目</text>
+
+  <text x="70" y="835" class="legend-text" style="font-weight:600;color:#92400e;">npx bmad-speckit score</text>
+  <text x="70" y="850" class="legend-small">评分计算与写入</text>
+
+  <text x="70" y="875" class="legend-text" style="font-weight:600;color:#92400e;">npx bmad-speckit check-score</text>
+  <text x="70" y="890" class="legend-small">检查评分是否已写入</text>
+
+  <text x="70" y="915" class="legend-text" style="font-weight:600;color:#92400e;">npx bmad-speckit coach</text>
+  <text x="70" y="930" class="legend-small">AI-TDD辅导诊断</text>
+
+  <text x="360" y="795" class="legend-text" style="font-weight:600;color:#92400e;">npx bmad-speckit dashboard</text>
+  <text x="360" y="810" class="legend-small">生成看板</text>
+
+  <text x="360" y="835" class="legend-text" style="font-weight:600;color:#92400e;">npx bmad-speckit sft-extract</text>
+  <text x="360" y="850" class="legend-small">提取SFT训练数据</text>
+
+  <text x="360" y="875" class="legend-text" style="font-weight:600;color:#92400e;">npx bmad-speckit scores</text>
+  <text x="360" y="890" class="legend-small">评分汇总报告</text>
+
+  <text x="360" y="915" class="legend-text" style="font-weight:600;color:#92400e;">npx bmad-speckit check</text>
+  <text x="360" y="930" class="legend-small">项目检查</text>
+
+  <text x="650" y="795" class="legend-text" style="font-weight:600;color:#92400e;">npx bmad-speckit dashboard-status</text>
+  <text x="650" y="810" class="legend-small">看板状态查询</text>
+
+  <text x="650" y="835" class="legend-text" style="font-weight:600;color:#92400e;">npx bmad-speckit version</text>
+  <text x="650" y="850" class="legend-small">版本信息</text>
+
+  <!-- Summary at bottom -->
+  <rect x="50" y="965" width="900" height="180" rx="6" fill="#f9fafb" stroke="#e7e5e4" stroke-width="1"/>
+  <text x="70" y="990" class="legend-title" style="font-size:12px;">关键理解要点：</text>
+
+  <text x="70" y="1015" class="legend-text">1. Main Agent Control Plane: 跨层编排、状态管理、决策路由、人机协作</text>
+  <text x="70" y="1035" class="legend-text">2. Controlled RequirementRecord Store: 契约矩阵持久化、Trace证据存储、状态快照</text>
+  <text x="70" y="1055" class="legend-text">3. 六大心智模型是内部概念，包含16个内部子系统，用户不直接操作</text>
+  <text x="70" y="1075" class="legend-text">4. 人机协作强制确认点：需求确认 → 架构确认 → 交付确认 (3个Human-in-loop)</text>
+  <text x="70" y="1095" class="legend-text">5. 16个子系统分布：需求确认(2) + 架构确认(1) + 实施准备(1) + 执行闭合(3) + 审计复核(6) + 交付确认(3)</text>
+  <text x="70" y="1115" class="legend-text">6. 审计复核(6个子系统)暴露CLI：score, check-score, coach, sft-extract, scores</text>
+  <text x="70" y="1135" class="legend-text">7. 交付确认(3个子系统)暴露CLI：dashboard, dashboard-status</text>
+</svg>
