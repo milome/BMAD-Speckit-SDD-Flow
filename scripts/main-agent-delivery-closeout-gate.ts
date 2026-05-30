@@ -10,6 +10,7 @@ import {
 import { appendControlEventAndReplay } from './requirement-record-control-store';
 import { evaluateStrictCloseoutProof } from './strict-closeout-proof-gate';
 import { readImplementationConfirmation } from './target-artifact-realization-gate';
+import { buildPerMustClosureEvidenceIndex } from './per-must-closure-evidence-index';
 
 type JsonObject = Record<string, unknown>;
 type CloseoutDecision = 'pass' | 'fail' | 'blocked';
@@ -74,6 +75,7 @@ const STRICT_CLOSEOUT_PROOF_CONTRACT_IDS = new Set([
 interface ParsedArgs {
   requirementRecord?: string;
   source?: string;
+  modelPacket?: string;
   attemptId?: string;
   reportPath?: string;
   evaluatedBy?: string;
@@ -137,6 +139,13 @@ function readJsonIfExists(file: string): JsonObject | null {
   return readJson(file);
 }
 
+function writeJsonAtomic(file: string, value: unknown): void {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  const temp = `${file}.${process.pid}.${Date.now()}.tmp`;
+  fs.writeFileSync(temp, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+  fs.renameSync(temp, file);
+}
+
 function sha256File(file: string): string {
   return `sha256:${crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex')}`;
 }
@@ -190,6 +199,75 @@ function commandSelectedForAttempt(command: JsonObject, attemptId: string): bool
 function requiredCommandsForAttempt(record: JsonObject, attemptId: string): JsonObject[] {
   return objects(deliveryEvidence(record).requiredCommands).filter((command) =>
     commandSelectedForAttempt(command, attemptId)
+  );
+}
+
+function candidateModelPacketPaths(record: JsonObject, recordPath: string): string[] {
+  const baseDir = path.dirname(recordPath);
+  const rootDir = path.resolve(baseDir, '..', '..', '..');
+  const candidates = [
+    ...objects(record.executionStrategySelections).flatMap((selection) =>
+      objects(selection.compiledPromptRefs)
+        .map((ref) => text(ref.modelPacketPath))
+        .filter(Boolean)
+    ),
+    ...objects(record.executionStrategySelections).map((selection) => text(selection.modelPacketPath)),
+    ...objects(record.executionIterations).flatMap((iteration) =>
+      objects(iteration.sourceRefs)
+        .filter((ref) => text(ref.sourceType) === 'model_packet')
+        .map((ref) => text(ref.path))
+    ),
+  ];
+  const traceExecutionDir = path.join(baseDir, 'trace-execution');
+  if (fs.existsSync(traceExecutionDir)) {
+    for (const entry of fs.readdirSync(traceExecutionDir, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      candidates.push(path.join(traceExecutionDir, entry.name, 'model_packet.json'));
+    }
+  }
+  return uniqueStrings(candidates)
+    .map((candidate) =>
+      path.isAbsolute(candidate)
+        ? candidate
+        : path.resolve(fs.existsSync(path.resolve(rootDir, candidate)) ? rootDir : baseDir, candidate)
+    )
+    .filter((candidate) => fs.existsSync(candidate));
+}
+
+function selectCurrentModelPacketPath(record: JsonObject, recordPath: string): string {
+  const sourceHash = text(record.sourceDocumentHash);
+  const confirmationHash = text(record.implementationConfirmationHash);
+  const candidates = candidateModelPacketPaths(record, recordPath);
+  const matching = candidates
+    .map((candidate) => {
+      try {
+        const packet = readJson(candidate);
+        const packetSourceHash = text(packet.sourceDocumentHash);
+        const packetConfirmationHash = text(packet.implementationConfirmationHash);
+        const hashMatch =
+          (!sourceHash || packetSourceHash === sourceHash) &&
+          (!confirmationHash || packetConfirmationHash === confirmationHash);
+        return { candidate, hashMatch, mtimeMs: fs.statSync(candidate).mtimeMs };
+      } catch {
+        return null;
+      }
+    })
+    .filter((item): item is { candidate: string; hashMatch: boolean; mtimeMs: number } => Boolean(item));
+  return matching
+    .filter((item) => item.hashMatch)
+    .sort((left, right) => right.mtimeMs - left.mtimeMs)[0]?.candidate ?? '';
+}
+
+function perMustIndexOutPath(reportPath: string): string {
+  return path.join(path.dirname(reportPath), 'per-must-closure-evidence-index.json');
+}
+
+function compiledModelPacketRequired(record: JsonObject): boolean {
+  return objects(record.executionStrategySelections).some(
+    (selection) =>
+      text(selection.strategyId) === 'compiled_trace_direct' ||
+      text(selection.eventType) === 'execution_strategy_selected' ||
+      text(selection.modelPacketHash)
   );
 }
 
@@ -1001,7 +1079,13 @@ function datasetReleaseIssues(record: JsonObject, recordPath: string): string[] 
   if (text(manifest.releaseDecision) !== 'pass')
     issues.push('dataset_manifest_release_decision_not_pass');
   issues.push(...hashBindingIssues(record, nested(manifest.source), 'dataset_manifest'));
-  if (Number(nested(manifest.counts).subsystems ?? 0) !== REQUIRED_SUBSYSTEM_IDS.length) {
+  const checks = objects(report.checks);
+  const subsystemCheck = checks.find((check) => text(check.id) === 'sixteen-subsystems-machine-readable');
+  const subsystemCheckSkipped = subsystemCheck?.skipped === true;
+  if (
+    !subsystemCheckSkipped &&
+    Number(nested(manifest.counts).subsystems ?? 0) !== REQUIRED_SUBSYSTEM_IDS.length
+  ) {
     issues.push('dataset_manifest_subsystem_count_mismatch');
   }
   if (Number(nested(manifest.counts).blockedIssues ?? 1) !== 0)
@@ -1021,7 +1105,6 @@ function datasetReleaseIssues(record: JsonObject, recordPath: string): string[] 
   if (text(report.manifestHash) && text(report.manifestHash) !== manifestHash) {
     issues.push('dataset_release_manifest_hash_mismatch');
   }
-  const checks = objects(report.checks);
   for (const requiredId of [
     'source-manifest-current',
     'training-run-bound',
@@ -1272,6 +1355,33 @@ function hasImplementationReadinessPass(record: JsonObject): boolean {
   );
 }
 
+function sixModelResult(record: JsonObject, model: string): JsonObject {
+  const results = nested(record.sixModelResults);
+  return nested(results[model]);
+}
+
+function currentSixModelPassIssues(record: JsonObject, model: string): string[] {
+  const result = sixModelResult(record, model);
+  const status = text(result.status);
+  const issues: string[] = [];
+  if (!status) issues.push(`${model}_result_missing`);
+  else if (status !== 'pass') issues.push(`${model}_not_passed:${status}`);
+  if (text(result.sourceDocumentHash) !== text(record.sourceDocumentHash)) {
+    issues.push(`${model}_source_hash_mismatch`);
+  }
+  if (text(result.implementationConfirmationHash) !== text(record.implementationConfirmationHash)) {
+    issues.push(`${model}_confirmation_hash_mismatch`);
+  }
+  return issues;
+}
+
+function closeoutPrerequisiteIssues(record: JsonObject): string[] {
+  return [
+    ...currentSixModelPassIssues(record, 'execution_closure'),
+    ...currentSixModelPassIssues(record, 'audit_review'),
+  ];
+}
+
 function latestArchitectureStateCheck(record: JsonObject): JsonObject | null {
   const checks = objects(record.architectureConfirmationStateChecks);
   return checks.length > 0 ? checks[checks.length - 1] : null;
@@ -1480,7 +1590,9 @@ function evaluate(
   record: JsonObject,
   recordPath: string,
   attemptId: string,
-  sourcePath?: string
+  sourcePath?: string,
+  modelPacketPath?: string,
+  reportPath?: string
 ): { decision: CloseoutDecision; blockingReasons: string[]; checks: JsonObject[] } {
   const checks: JsonObject[] = [];
   const blockingReasons: string[] = [];
@@ -1490,6 +1602,16 @@ function evaluate(
       ? path.resolve(text(record.sourcePath))
       : undefined;
   const applicability = contractApplicability(resolvedSourcePath);
+  const closeoutPrerequisites = closeoutPrerequisiteIssues(record);
+  checks.push({
+    id: 'six-model-closeout-prerequisites-current',
+    passed: closeoutPrerequisites.length === 0,
+    requiredModels: ['execution_closure', 'audit_review'],
+    issueCount: closeoutPrerequisites.length,
+    blockingReasons: closeoutPrerequisites,
+  });
+  blockingReasons.push(...closeoutPrerequisites);
+
   const readinessPassed = hasImplementationReadinessPass(record);
   checks.push({ id: 'implementation-readiness-gate-passed', passed: readinessPassed });
   if (!readinessPassed) blockingReasons.push('implementation_readiness_gate_not_passed');
@@ -1699,6 +1821,48 @@ function evaluate(
     openCount: openClosures.length,
   });
   if (openClosures.length > 0) blockingReasons.push('requirement_closures_not_terminal');
+
+  const resolvedModelPacketPath = modelPacketPath
+    ? path.resolve(modelPacketPath)
+    : selectCurrentModelPacketPath(record, recordPath);
+  if (resolvedModelPacketPath) {
+    const perMustIndex = buildPerMustClosureEvidenceIndex({
+      modelPacket: readJson(resolvedModelPacketPath),
+      record,
+      attemptId,
+      modelPacketPath: resolvedModelPacketPath,
+      requirementRecordPath: recordPath,
+    });
+    const perMustOutPath = reportPath ? perMustIndexOutPath(reportPath) : '';
+    if (perMustOutPath) writeJsonAtomic(perMustOutPath, perMustIndex);
+    checks.push({
+      id: 'per-must-closure-evidence-index',
+      passed: text(perMustIndex.decision) === 'pass',
+      reportPath: perMustOutPath ? normalizePathForRecord(perMustOutPath) : null,
+      counts: perMustIndex.counts,
+      blockingReasons: strings(perMustIndex.blockingReasons),
+    });
+    if (text(perMustIndex.decision) !== 'pass') {
+      blockingReasons.push(
+        'per_must_closure_evidence_index_not_passed',
+        ...strings(perMustIndex.blockingReasons)
+      );
+    }
+  } else {
+    const modelPacketRequired = Boolean(modelPacketPath) || compiledModelPacketRequired(record);
+    checks.push({
+      id: 'per-must-closure-evidence-index',
+      passed: !modelPacketRequired,
+      required: modelPacketRequired,
+      blockingReasons: ['model_packet_not_available'],
+    });
+    if (modelPacketRequired) {
+      blockingReasons.push(
+        'per_must_closure_evidence_index_not_passed',
+        'model_packet_not_available'
+      );
+    }
+  }
 
   const openReruns = latestRerunLoops(record).filter((loop) =>
     ['open', 'in_progress', 'no_progress', 'blocked'].includes(text(loop.status))
@@ -1969,7 +2133,7 @@ export function mainDeliveryCloseoutGate(argv: string[]): number {
   const reportPath = path.resolve(
     args.reportPath ?? path.join(path.dirname(recordPath), 'delivery-closeout-report.json')
   );
-  const evaluation = evaluate(record, recordPath, attemptId, args.source);
+  const evaluation = evaluate(record, recordPath, attemptId, args.source, args.modelPacket, reportPath);
   const report = {
     reportType: 'delivery_closeout_report',
     generatedAt: evaluatedAt,

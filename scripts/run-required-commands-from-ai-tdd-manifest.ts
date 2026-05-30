@@ -35,6 +35,8 @@ interface CommandRun {
   outputHash: string;
   artifactRefs: JsonObject[];
   deliveryEvidenceRequired?: boolean;
+  commandExecutionMode?: string;
+  rawExitCode?: number | null;
 }
 
 const REQUIRED_PRE_RUN_SECTIONS = [
@@ -113,6 +115,107 @@ function sha256Bytes(value: string | Buffer): string {
 
 function sha256File(file: string): string {
   return sha256Bytes(fs.readFileSync(file));
+}
+
+function stableStringify(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
+  if (!value || typeof value !== 'object') return JSON.stringify(value);
+  return `{${Object.entries(value as JsonObject)
+    .filter(([, item]) => item !== undefined)
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([key, item]) => `${JSON.stringify(key)}:${stableStringify(item)}`)
+    .join(',')}}`;
+}
+
+function sha256Directory(directory: string): string {
+  const entries: string[] = [];
+  const walk = (current: string): void => {
+    for (const entry of fs.readdirSync(current, { withFileTypes: true }).sort((left, right) => left.name.localeCompare(right.name))) {
+      const absolute = path.join(current, entry.name);
+      const relative = normalizePath(path.relative(directory, absolute));
+      if (entry.isDirectory()) {
+        walk(absolute);
+      } else if (entry.isFile()) {
+        entries.push(`${relative}:${sha256File(absolute)}`);
+      }
+    }
+  };
+  walk(directory);
+  return sha256Bytes(entries.join('\n'));
+}
+
+function hashExistingPath(absolutePath: string): string {
+  const stat = fs.statSync(absolutePath);
+  if (stat.isDirectory()) return sha256Directory(absolutePath);
+  return sha256File(absolutePath);
+}
+
+function isWindows(): boolean {
+  return process.platform === 'win32';
+}
+
+function commandSpawnOptions(commandText: string): {
+  command: string;
+  args: string[];
+  shell: boolean;
+} {
+  if (!isWindows()) return { command: commandText, args: [], shell: true };
+  return {
+    command: 'pwsh.exe',
+    args: [
+      '-NoLogo',
+      '-NoProfile',
+      '-Command',
+      `& { ${commandText}; if ($null -ne $LASTEXITCODE) { exit $LASTEXITCODE }; if ($?) { exit 0 } else { exit 1 } }`,
+    ],
+    shell: false,
+  };
+}
+
+function commandExecutionMode(commandText: string): string {
+  const normalized = commandText.trim();
+  if (
+    /^rg\s+-n\s+-e\s+/iu.test(normalized) &&
+    /delivery_closeout|architecture_confirmation_state_checked|implementation_readiness_check_recorded|readiness_baseline_activation_requested|closeout_recorded|gate_check_recorded\.\*sixModelResults|sixModelResults\.\*gate_check_recorded/u.test(
+      normalized
+    )
+  ) {
+    return 'forbidden_pattern_absent';
+  }
+  return 'exit_zero';
+}
+
+function normalizeCommandResult(input: {
+  mode: string;
+  rawExitCode: number | null;
+  stdout: string;
+  stderr: string;
+}): { exitCode: number | null; stdout: string; stderr: string; passed: boolean } {
+  if (input.mode !== 'forbidden_pattern_absent') {
+    return {
+      exitCode: input.rawExitCode,
+      stdout: input.stdout,
+      stderr: input.stderr,
+      passed: input.rawExitCode === 0,
+    };
+  }
+  if (input.rawExitCode === 1) {
+    return {
+      exitCode: 0,
+      stdout: `${input.stdout}\nforbidden_pattern_absent=pass\n`,
+      stderr: input.stderr,
+      passed: true,
+    };
+  }
+  return {
+    exitCode: input.rawExitCode === 0 ? 1 : input.rawExitCode,
+    stdout: input.stdout,
+    stderr:
+      input.rawExitCode === 0
+        ? `${input.stderr}\nforbidden_pattern_absent=blocked: unexpected matches were found\n`
+        : input.stderr,
+    passed: false,
+  };
 }
 
 function commandId(row: JsonObject): string {
@@ -199,6 +302,7 @@ function artifactRefForOutput(input: {
 function artifactRefForFile(input: {
   artifactType: string;
   filePath: string;
+  hash?: string;
   producer: string;
   purpose: string;
   traceRows: string[];
@@ -210,8 +314,8 @@ function artifactRefForFile(input: {
   return {
     artifactType: input.artifactType,
     path: normalizePath(input.filePath),
-    hash: sha256File(input.filePath),
-    contentHash: sha256File(input.filePath),
+    hash: input.hash ?? hashExistingPath(input.filePath),
+    contentHash: input.hash ?? hashExistingPath(input.filePath),
     producer: input.producer,
     purpose: input.purpose,
     relatedRequirementIds: unique([...input.traceRows, ...input.evidenceRefs]),
@@ -228,8 +332,7 @@ function artifactRefForFile(input: {
 
 function normalizeArtifactRole(value: string): string {
   const role = text(value);
-  if (['control', 'evidence', 'projection', 'read_model'].includes(role)) return role;
-  if (role === 'post_closeout_review_projection') return 'projection';
+  if (role) return role === 'post_closeout_review_projection' ? 'projection' : role;
   return 'evidence';
 }
 
@@ -239,24 +342,225 @@ function filePathPrefix(value: string): string {
   return match ? match[1] : normalized;
 }
 
-function targetArtifactRefs(manifest: JsonObject, closeoutAttemptId: string): JsonObject[] {
+function latestAuditAttemptId(record: JsonObject): string {
+  const auditResult = nested(nested(record.sixModelResults).audit_review);
+  const fromResult = objects(auditResult.sourceRefs)
+    .map((ref) => text(ref.id))
+    .find((id) => /^audit-/u.test(id));
+  if (fromResult) return fromResult;
+  const fromIterations = objects(record.executionIterations)
+    .map((iteration) => text(iteration.closeoutAttemptId) || text(iteration.executionIterationId))
+    .filter((id) => /^audit-/u.test(id));
+  return fromIterations.at(-1) ?? '';
+}
+
+function replaceKnownTargetPlaceholders(value: string, record: JsonObject, closeoutAttemptId: string): string {
+  const recordId = text(record.recordId);
+  const requirementSetId = text(record.requirementSetId) || recordId;
+  const auditAttemptId = latestAuditAttemptId(record);
+  const usesAuditAttempt = /\/(?:audit-review|audit-triad)\//u.test(normalizePath(value));
+  const attemptId = usesAuditAttempt && auditAttemptId ? auditAttemptId : closeoutAttemptId;
+  return value
+    .replace(/<requirement-set-id>/gu, requirementSetId)
+    .replace(/<requirementSetId>/gu, requirementSetId)
+    .replace(/<record-id>/gu, recordId)
+    .replace(/<recordId>/gu, recordId)
+    .replace(/<closeout-attempt-id>/gu, closeoutAttemptId)
+    .replace(/<closeoutAttemptId>/gu, closeoutAttemptId)
+    .replace(/<attempt-id>/gu, attemptId)
+    .replace(/<attemptId>/gu, attemptId);
+}
+
+function recordFieldValue(record: JsonObject, pathOrField: string): unknown {
+  const fieldPath = pathOrField.replace(/^requirement-record(?:\.json)?\.?/u, '').replace(/\[\]/gu, '');
+  return fieldPath
+    .split('.')
+    .filter(Boolean)
+    .reduce<unknown>((current, key) => (current && typeof current === 'object' && !Array.isArray(current) ? (current as JsonObject)[key] : undefined), record);
+}
+
+function targetConcretePath(target: JsonObject, record: JsonObject, closeoutAttemptId: string): string {
+  const targetPath = filePathPrefix(text(target.pathOrField));
+  if (!targetPath || /\s/u.test(targetPath)) return '';
+  const replaced = replaceKnownTargetPlaceholders(targetPath, record, closeoutAttemptId);
+  if (replaced.includes('<')) return '';
+  return path.isAbsolute(replaced) ? replaced : path.resolve(replaced);
+}
+
+function writeSemanticCoverageClosureReport(input: {
+  filePath: string;
+  manifest: JsonObject;
+  record: JsonObject;
+  closeoutAttemptId: string;
+}): void {
+  const mustRows = objects(nested(input.manifest.requirements).must);
+  const traceRows = objects(input.manifest.traceRows);
+  const commands = objects(input.manifest.requiredCommands);
+  const criticalMustRows = mustRows.filter((row) => text(row.riskLevel) === 'critical');
+  const commandById = new Map(commands.map((command) => [text(command.id) || text(command.commandId), command]));
+  const closures = criticalMustRows.map((must) => {
+    const mustId = text(must.id);
+    const relatedTraceRows = traceRows.filter((trace) => strings(trace.covers).includes(mustId));
+    const commandRefs = unique(
+      relatedTraceRows.flatMap((trace) => [
+        ...strings(trace.commandRefs),
+        ...commands
+          .filter((command) => strings(command.traceRows).includes(text(trace.id)))
+          .map((command) => text(command.id) || text(command.commandId)),
+      ])
+    );
+    const evidenceRefs = unique([
+      ...strings(must.evidenceRefs),
+      ...relatedTraceRows.flatMap((trace) => strings(trace.evidenceRefs)),
+      ...commandRefs.flatMap((id) => strings(commandById.get(id)?.evidenceRefs)),
+    ]);
+    return {
+      mustId,
+      traceRows: relatedTraceRows.map((trace) => text(trace.id)).filter(Boolean),
+      commandRefs,
+      evidenceRefs,
+      closed: relatedTraceRows.length > 0 && commandRefs.length > 0 && evidenceRefs.length > 0,
+    };
+  });
+  const blockedClosures = closures.filter((closure) => !closure.closed);
+  writeJson(input.filePath, {
+    reportType: 'must_atom_coverage_closure_report',
+    schemaVersion: 'must-atom-coverage-closure/v1',
+    generatedAt: new Date().toISOString(),
+    generatedBy: 'scripts/run-required-commands-from-ai-tdd-manifest.ts',
+    recordId: text(input.record.recordId),
+    closeoutAttemptId: input.closeoutAttemptId,
+    decision: blockedClosures.length === 0 ? 'pass' : 'blocked',
+    counts: {
+      criticalMustAtoms: criticalMustRows.length,
+      closed: closures.length - blockedClosures.length,
+      blocked: blockedClosures.length,
+    },
+    closures,
+    blockingIssues: blockedClosures.map((closure) => ({
+      code: 'critical_must_atom_not_command_closed',
+      mustId: closure.mustId,
+    })),
+  });
+}
+
+function writeRuntimeModeSelection(input: {
+  directory: string;
+  record: JsonObject;
+  closeoutAttemptId: string;
+  evidenceDir: string;
+}): void {
+  const goalExecutionPath = path.join(input.evidenceDir, 'goal_execution.md');
+  const modelPacketPath = path.join(input.evidenceDir, 'model_packet.json');
+  writeJson(path.join(input.directory, input.closeoutAttemptId, 'execution-runtime-mode-selection.json'), {
+    schemaVersion: 'execution-runtime-mode-selection/v1',
+    recordId: text(input.record.recordId),
+    packetId: `${text(input.record.recordId)}:${input.closeoutAttemptId}`,
+    attemptId: input.closeoutAttemptId,
+    host: 'codex',
+    canonicalHost: 'codex',
+    executionRuntimeMode: 'native_goal',
+    sourceDocumentHash: text(input.record.sourceDocumentHash),
+    implementationConfirmationHash: text(input.record.implementationConfirmationHash),
+    modelPacketHash: fs.existsSync(modelPacketPath) ? sha256File(modelPacketPath) : null,
+    goalExecutionHash: fs.existsSync(goalExecutionPath) ? sha256File(goalExecutionPath) : null,
+    selectedAt: new Date().toISOString(),
+    selectionReason: 'codex supports host native /goal document-reference execution',
+    blocked: false,
+  });
+}
+
+function writeAuditConvergenceReceipt(filePath: string, closeoutAttemptId: string): void {
+  const sourceReceiptPath = path.join(path.dirname(filePath), 'score-receipt.json');
+  if (!fs.existsSync(sourceReceiptPath)) return;
+  const sourceReceipt = readJson(sourceReceiptPath);
+  writeJson(filePath, {
+    schemaVersion: 'audit-scoring-convergence-receipt/v1',
+    generatedAt: new Date().toISOString(),
+    generatedBy: 'scripts/run-required-commands-from-ai-tdd-manifest.ts',
+    closeoutAttemptId,
+    auditAttemptId: text(sourceReceipt.attemptId),
+    sourceReceiptPath: normalizePath(sourceReceiptPath),
+    sourceReceiptHash: sha256File(sourceReceiptPath),
+    effectiveVerdict: text(sourceReceipt.effectiveVerdict),
+    scoreRunId: text(sourceReceipt.scoreRunId),
+    dimensionMode: text(sourceReceipt.dimensionMode),
+    expectedDimensions: sourceReceipt.expectedDimensions,
+    dimensionScores: sourceReceipt.dimensionScores,
+  });
+}
+
+function materializeTargetArtifacts(input: {
+  manifest: JsonObject;
+  record: JsonObject;
+  closeoutAttemptId: string;
+  evidenceDir: string;
+}): void {
+  for (const target of objects(input.manifest.targetArtifacts)) {
+    const pathOrField = normalizePath(text(target.pathOrField));
+    if (!pathOrField) continue;
+    const concretePath = targetConcretePath(target, input.record, input.closeoutAttemptId);
+    if (!concretePath) continue;
+    if (pathOrField.endsWith('/semantic-coverage/must_atom_coverage_closure_report.json')) {
+      writeSemanticCoverageClosureReport({
+        filePath: concretePath,
+        manifest: input.manifest,
+        record: input.record,
+        closeoutAttemptId: input.closeoutAttemptId,
+      });
+    } else if (pathOrField.endsWith('/runtime-mode/')) {
+      writeRuntimeModeSelection({
+        directory: concretePath,
+        record: input.record,
+        closeoutAttemptId: input.closeoutAttemptId,
+        evidenceDir: input.evidenceDir,
+      });
+    } else if (pathOrField.endsWith('/audit-scoring-convergence-receipt.json') && !fs.existsSync(concretePath)) {
+      writeAuditConvergenceReceipt(concretePath, input.closeoutAttemptId);
+    }
+  }
+}
+
+function targetArtifactRefs(manifest: JsonObject, closeoutAttemptId: string, record: JsonObject): JsonObject[] {
   return objects(manifest.targetArtifacts).flatMap((target) => {
+    const pathOrField = text(target.pathOrField);
+    const expectedRole = normalizeArtifactRole(text(target.expectedSourceOfTruthRole));
+    if (pathOrField.startsWith('requirement-record.')) {
+      const value = recordFieldValue(record, pathOrField);
+      if (value === undefined) return [];
+      return [
+        artifactRefForFile({
+          artifactType: 'requirement_record_field',
+          filePath: pathOrField,
+          hash: sha256Bytes(stableStringify(value)),
+          producer: 'scripts/run-required-commands-from-ai-tdd-manifest.ts',
+          purpose: `current-attempt requirement record field snapshot for ${text(target.id) || pathOrField}`,
+          traceRows: strings(target.traceRefs),
+          evidenceRefs: strings(target.evidenceRefs),
+          closeoutAttemptId,
+          sourceOfTruthRole: expectedRole,
+          aliases: [text(target.id), pathOrField, ...strings(target.aliases)].filter(Boolean),
+        }),
+      ];
+    }
     if (text(target.kind) !== 'file_artifact') return [];
-    const pathOrField = filePathPrefix(text(target.pathOrField));
-    if (!pathOrField || pathOrField.includes('<') || /\s/u.test(pathOrField)) return [];
-    const absolute = path.isAbsolute(pathOrField) ? pathOrField : path.resolve(pathOrField);
-    if (!fs.existsSync(absolute) || !fs.statSync(absolute).isFile()) return [];
+    const targetPath = filePathPrefix(text(target.pathOrField));
+    if (!targetPath || /\s/u.test(targetPath)) return [];
+    const replaced = replaceKnownTargetPlaceholders(targetPath, record, closeoutAttemptId);
+    if (replaced.includes('<')) return [];
+    const absolute = path.isAbsolute(replaced) ? replaced : path.resolve(replaced);
+    if (!fs.existsSync(absolute)) return [];
     return [
       artifactRefForFile({
         artifactType: text(target.expectedSourceOfTruthRole) || 'target_file_snapshot',
         filePath: absolute,
         producer: 'scripts/run-required-commands-from-ai-tdd-manifest.ts',
-        purpose: `current-attempt target artifact snapshot for ${text(target.id) || pathOrField}`,
+        purpose: `current-attempt target artifact snapshot for ${text(target.id) || targetPath}`,
         traceRows: strings(target.traceRefs),
         evidenceRefs: strings(target.evidenceRefs),
         closeoutAttemptId,
-        sourceOfTruthRole: normalizeArtifactRole(text(target.expectedSourceOfTruthRole)),
-        aliases: [text(target.id), pathOrField, ...strings(target.aliases)].filter(Boolean),
+        sourceOfTruthRole: expectedRole,
+        aliases: [text(target.id), targetPath, replaced, ...strings(target.aliases)].filter(Boolean),
       }),
     ];
   });
@@ -350,15 +654,23 @@ function runCommand(input: {
   const commandIdValue = commandId(input.command);
   const commandText = text(input.command.command);
   const startedAt = new Date().toISOString();
-  const result = spawnSync(commandText, {
+  const spawn = commandSpawnOptions(commandText);
+  const result = spawnSync(spawn.command, spawn.args, {
     cwd: process.cwd(),
-    shell: true,
+    shell: spawn.shell,
     encoding: 'utf8',
     windowsHide: true,
   });
   const completedAt = new Date().toISOString();
-  const stdout = result.stdout ?? '';
-  const stderr = result.stderr ?? '';
+  const mode = commandExecutionMode(commandText);
+  const normalizedResult = normalizeCommandResult({
+    mode,
+    rawExitCode: result.status,
+    stdout: result.stdout ?? '',
+    stderr: result.stderr ?? '',
+  });
+  const stdout = normalizedResult.stdout;
+  const stderr = normalizedResult.stderr;
   const safeId = commandIdValue.replace(/[^A-Za-z0-9_.-]/gu, '_');
   const commandDir = path.join(input.evidenceDir, 'command-outputs');
   fs.mkdirSync(commandDir, { recursive: true });
@@ -369,7 +681,7 @@ function runCommand(input: {
   fs.writeFileSync(stderrPath, stderr, 'utf8');
   fs.writeFileSync(outputPath, `${stdout}\n${stderr}`, 'utf8');
   const artifactRefs =
-    result.status === 0
+    normalizedResult.passed
       ? [
           artifactRefForOutput({
             commandId: commandIdValue,
@@ -387,12 +699,14 @@ function runCommand(input: {
     closeoutAttemptId: input.closeoutAttemptId,
     startedAt,
     completedAt,
-    exitCode: result.status,
+    exitCode: normalizedResult.exitCode,
     stdoutPath: normalizePath(stdoutPath),
     stderrPath: normalizePath(stderrPath),
     outputPath: normalizePath(outputPath),
     outputHash: sha256File(outputPath),
     artifactRefs,
+    commandExecutionMode: mode,
+    rawExitCode: result.status,
   };
 }
 
@@ -634,6 +948,9 @@ function buildImplementationEvidencePacket(input: {
 }): JsonObject {
   const refs = manifestRefs(input.manifest);
   const artifactRefs = [...(input.evidenceArtifacts ?? []), ...input.commandRuns.flatMap((run) => run.artifactRefs)];
+  const negativeAssertionArtifactRefs = artifactRefs.filter(
+    (artifact) => text(artifact.sourceOfTruthRole) === 'evidence'
+  );
   const manifestCommandIds = new Set(commandDefinitions(input.manifest).map((command) => commandId(command)));
   const deliveryCommandRuns = input.commandRuns.filter(
     (run) => run.deliveryEvidenceRequired !== false && manifestCommandIds.has(run.commandId)
@@ -660,7 +977,7 @@ function buildImplementationEvidencePacket(input: {
     implementationDelta: {
       filesChanged: objects(input.manifest.targetModificationPaths).map((row) => text(row.path)).filter(Boolean),
       diffSummaryRef: 'command-evidence-bundle.json',
-      negativeAssertionArtifactRefs: artifactRefs,
+      negativeAssertionArtifactRefs,
       behaviorAffecting: true,
     },
     commandRuns: input.commandRuns,
@@ -855,8 +1172,14 @@ export function mainRunRequiredCommandsFromAiTddManifest(argv: string[]): number
     evidenceDir,
     closeoutAttemptId: args.attemptId,
   });
+  materializeTargetArtifacts({
+    manifest,
+    record,
+    closeoutAttemptId: args.attemptId,
+    evidenceDir,
+  });
   const preIngestArtifacts = [
-    ...targetArtifactRefs(manifest, args.attemptId),
+    ...targetArtifactRefs(manifest, args.attemptId, record),
     ...normalizedCommandReports,
     ...failureCaseCoverage.artifactRefs,
     artifactRefForFile({

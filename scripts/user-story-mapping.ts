@@ -180,6 +180,12 @@ function normalizeText(value: unknown): string {
   return String(value ?? '').trim();
 }
 
+function stringList(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+    : [];
+}
+
 function scoreRuntimeMatch(
   item: UserStoryMappingItem,
   runtimeContext: Partial<RuntimeContextFile> | null,
@@ -194,7 +200,7 @@ function scoreRuntimeMatch(
   }
   if (runtimeContext?.artifactRoot) {
     const artifactRoot = runtimeContext.artifactRoot.toLowerCase();
-    score += item.allowedWriteScope.some((scope) => artifactRoot.includes(scope.toLowerCase()))
+    score += stringList(item.allowedWriteScope).some((scope) => artifactRoot.includes(scope.toLowerCase()))
       ? 20
       : 0;
   }

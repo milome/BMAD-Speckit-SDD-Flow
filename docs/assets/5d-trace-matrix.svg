@@ -32,7 +32,7 @@
   <!-- Title Section -->
   <text x="480" y="35" class="title">五维追溯矩阵 (5D Trace Matrix)</text>
   <text x="480" y="55" class="text text-sub">从需求承诺到交付证据的全链路双向追溯</text>
-  <text x="480" y="72" class="text" style="font-size:10px;fill:#6b7280;">TRACE ROW作为核心 orchestrates 五个维度的关联关系</text>
+  <text x="480" y="72" class="text" style="font-size:10px;fill:#6b7280;">TRACE 行作为核心，编排需求、任务、证据、命令、产物与验收关系</text>
 
   <!-- Central Trace Row - 核心执行切片 -->
   <circle cx="480" cy="340" r="70" class="center-core"/>
@@ -46,7 +46,7 @@
   <text x="480" y="115" class="text dim-title" fill="#dc2626">① MUST</text>
   <text x="480" y="135" class="text" style="font-size:12px;">需求承诺</text>
   <text x="480" y="155" class="text text-sub" style="font-size:11px;">What to build</text>
-  <text x="480" y="175" class="text text-sub" style="font-size:10px;">MUST-001, MUST-002...</text>
+  <text x="480" y="175" class="text text-sub" style="font-size:10px;">MUST-REQ-001, MUST-REQ-002...</text>
 
   <!-- Dimension 2: TRACE (Execution) - Left -->
   <!-- 说明: TRACE定义执行切片，通过slice关系与TRACE ROW交互 -->
@@ -54,28 +54,28 @@
   <text x="150" y="320" class="text dim-title" fill="#2563eb">② TRACE</text>
   <text x="150" y="340" class="text" style="font-size:12px;">执行切片</text>
   <text x="150" y="360" class="text text-sub" style="font-size:11px;">How to execute</text>
-  <text x="150" y="378" class="text text-sub" style="font-size:10px;">TRACE-001, TRACE-002...</text>
+  <text x="150" y="378" class="text text-sub" style="font-size:10px;">TRACE-REG-001...</text>
 
-  <!-- Dimension 3: EVIDENCE (Proof) - Bottom -->
-  <!-- 说明: EVIDENCE提供验证证据，通过proves关系证明TRACE ROW -->
+  <!-- Dimension 3: EVD (Proof) - Bottom -->
+  <!-- 说明: EVD提供验证证据，通过proves关系证明TRACE ROW -->
   <rect x="380" y="490" width="200" height="100" rx="8" class="dim-box dim-evidence"/>
-  <text x="480" y="515" class="text dim-title" fill="#16a34a">③ EVIDENCE</text>
+  <text x="480" y="515" class="text dim-title" fill="#16a34a">③ EVD</text>
   <text x="480" y="535" class="text" style="font-size:12px;">验证证据</text>
   <text x="480" y="555" class="text text-sub" style="font-size:11px;">Proof of compliance</text>
-  <text x="480" y="575" class="text text-sub" style="font-size:10px;">EVD-001 (test-pass, hash)</text>
+  <text x="480" y="575" class="text text-sub" style="font-size:10px;">EVD-TEST-001 (test-pass)</text>
 
-  <!-- Dimension 4: COMMAND (Action) - Right -->
-  <!-- 说明: COMMAND定义执行命令，通过runs关系驱动TRACE ROW -->
+  <!-- Dimension 4: CMD (Action) - Right -->
+  <!-- 说明: CMD定义执行命令，通过runs关系驱动TRACE ROW -->
   <rect x="720" y="295" width="180" height="90" rx="8" class="dim-box dim-command"/>
-  <text x="810" y="320" class="text dim-title" fill="#ea580c">④ COMMAND</text>
+  <text x="810" y="320" class="text dim-title" fill="#ea580c">④ CMD</text>
   <text x="810" y="340" class="text" style="font-size:12px;">执行命令</text>
   <text x="810" y="360" class="text text-sub" style="font-size:11px;">Action to verify</text>
-  <text x="810" y="378" class="text text-sub" style="font-size:10px;">CMD-TEST-001, CMD-AUDIT...</text>
+  <text x="810" y="378" class="text text-sub" style="font-size:10px;">CMD-REG-TEST-001...</text>
 
-  <!-- Dimension 5: ARTIFACT (Output) - Top-Right -->
-  <!-- 说明: ARTIFACT是交付物，通过produces关系由TRACE ROW生成 -->
+  <!-- Dimension 5: ART (Output) - Top-Right -->
+  <!-- 说明: ART是交付物，通过produces关系由TRACE ROW生成 -->
   <rect x="680" y="90" width="220" height="100" rx="8" class="dim-box dim-artifact"/>
-  <text x="790" y="115" class="text dim-title" fill="#7c3aed">⑤ ARTIFACT</text>
+  <text x="790" y="115" class="text dim-title" fill="#7c3aed">⑤ ART</text>
   <text x="790" y="135" class="text" style="font-size:12px;">交付物</text>
   <text x="790" y="155" class="text text-sub" style="font-size:11px;">What is delivered</text>
   <text x="790" y="175" class="text text-sub" style="font-size:10px;">code, config, docs...</text>
@@ -91,30 +91,30 @@
   <line x1="240" y1="340" x2="410" y2="340" class="arrow-line bidirectional"/>
   <text x="325" y="330" class="text" style="font-size:10px;fill:#2563eb;">slice</text>
 
-  <!-- EVIDENCE <-> TRACE ROW: proves关系 -->
-  <!-- 说明: EVIDENCE通过proves关系证明TRACE ROW完成 -->
+  <!-- EVD <-> TRACE ROW: proves关系 -->
+  <!-- 说明: EVD通过proves关系证明TRACE ROW完成 -->
   <line x1="480" y1="490" x2="480" y2="410" class="arrow-line bidirectional"/>
   <text x="505" y="455" class="text" style="font-size:10px;fill:#16a34a;">proves</text>
 
-  <!-- COMMAND <-> TRACE ROW: runs关系 -->
-  <!-- 说明: COMMAND通过runs关系执行TRACE ROW -->
+  <!-- CMD <-> TRACE ROW: runs关系 -->
+  <!-- 说明: CMD通过runs关系执行TRACE ROW -->
   <line x1="720" y1="340" x2="550" y2="340" class="arrow-line bidirectional"/>
   <text x="635" y="330" class="text" style="font-size:10px;fill:#ea580c;">runs</text>
 
-  <!-- TRACE ROW <-> ARTIFACT: produces关系 -->
-  <!-- 说明: TRACE ROW通过produces关系生成交付物ARTIFACT -->
+  <!-- TRACE ROW <-> ART: produces关系 -->
+  <!-- 说明: TRACE ROW通过produces关系生成交付物ART -->
   <line x1="680" y1="180" x2="530" y2="290" class="arrow-line bidirectional"/>
   <text x="590" y="220" class="text" style="font-size:10px;fill:#7c3aed;">produces</text>
 
   <!-- Sample Trace Row Detail Box -->
-  <!-- 说明: 展示TRACE-001的具体属性示例 -->
+  <!-- 说明: 展示TRACE-REG-001的具体属性示例 -->
   <rect x="60" y="410" width="280" height="160" rx="6" class="trace-row"/>
-  <text x="200" y="435" class="text" style="font-weight:600;">示例: TRACE-001</text>
-  <text x="75" y="460" class="text text-sub" style="text-anchor:start;font-size:11px;">covers: MUST-001, NEG-001</text>
-  <text x="75" y="482" class="text text-sub" style="text-anchor:start;font-size:11px;">evidenceRefs: EVD-001</text>
-  <text x="75" y="504" class="text text-sub" style="text-anchor:start;font-size:11px;">contractGates: CMD-TEST-001</text>
-  <text x="75" y="526" class="text text-sub" style="text-anchor:start;font-size:11px;">deliveryGates: CMD-DELIVERY-SEAL-001</text>
-  <text x="75" y="548" class="text text-sub" style="text-anchor:start;font-size:11px;">artifactRefs: ART-001</text>
+  <text x="200" y="435" class="text" style="font-weight:600;">示例: TRACE-REG-001</text>
+  <text x="75" y="460" class="text text-sub" style="text-anchor:start;font-size:11px;">covers: MUST-REQ-001, NEG-SEC-001</text>
+  <text x="75" y="482" class="text text-sub" style="text-anchor:start;font-size:11px;">taskRefs: TASK-REG-001</text>
+  <text x="75" y="504" class="text text-sub" style="text-anchor:start;font-size:11px;">acceptanceRefs: ACC-REG-001 / E2E-REG-001</text>
+  <text x="75" y="526" class="text text-sub" style="text-anchor:start;font-size:11px;">commandRefs: CMD-REG-TEST-001</text>
+  <text x="75" y="548" class="text text-sub" style="text-anchor:start;font-size:11px;">artifactRefs: ART-REG-RPT-01</text>
   <text x="75" y="565" class="text" style="text-anchor:start;font-size:9px;fill:#0ea5e9;">说明: TRACE ROW包含完整的追溯链</text>
 
   <!-- Matrix Properties -->
@@ -122,17 +122,17 @@
   <rect x="620" y="410" width="280" height="160" rx="6" fill="#fff7ed" stroke="#ea580c" stroke-width="1"/>
   <text x="760" y="435" class="text" style="font-weight:600;">矩阵属性</text>
   <text x="635" y="460" class="text" style="text-anchor:start;font-size:11px;">• <tspan font-weight="600">完备性</tspan>: 每个MUST至少有一个TRACE</text>
-  <text x="635" y="480" class="text" style="text-anchor:start;font-size:11px;">• <tspan font-weight="600">可验证性</tspan>: 每个TRACE有EVIDENCE</text>
-  <text x="635" y="500" class="text" style="text-anchor:start;font-size:11px;">• <tspan font-weight="600">可复现性</tspan>: 每个TRACE有COMMAND</text>
-  <text x="635" y="520" class="text" style="text-anchor:start;font-size:11px;">• <tspan font-weight="600">可追溯性</tspan>: 双向链接，支持反向审计</text>
+  <text x="635" y="480" class="text" style="text-anchor:start;font-size:11px;">• <tspan font-weight="600">EVD证明</tspan>: 每个TRACE有证据</text>
+  <text x="635" y="500" class="text" style="text-anchor:start;font-size:11px;">• <tspan font-weight="600">CMD可复现</tspan>: 每个TRACE有命令</text>
+  <text x="635" y="520" class="text" style="text-anchor:start;font-size:11px;">• <tspan font-weight="600">ACC/E2E验收</tspan>: 验收链可审计</text>
   <text x="635" y="540" class="text" style="text-anchor:start;font-size:11px;">• <tspan font-weight="600">原子性</tspan>: TRACE是最小执行单元</text>
   <text x="635" y="560" class="text" style="text-anchor:start;font-size:9px;fill:#ea580c;">说明: 五个维度形成完整的质量门禁闭环</text>
 
   <!-- Legend / 追溯规则说明 -->
   <rect x="60" y="590" width="840" height="75" rx="6" fill="#ffffff" stroke="#e5e7eb" stroke-width="1"/>
   <text x="80" y="615" class="text" style="text-anchor:start;font-weight:600;">追溯规则:</text>
-  <text x="80" y="638" class="text text-sub" style="text-anchor:start;font-size:11px;">正向: MUST → TRACE → COMMAND → ARTIFACT + EVIDENCE</text>
+  <text x="80" y="638" class="text text-sub" style="text-anchor:start;font-size:11px;">正向: MUST → TRACE → CMD → ART + EVD</text>
   <text x="80" y="655" class="text text-sub" style="text-anchor:start;font-size:10px;">说明: 从需求出发，通过执行切片生成交付物并收集证据</text>
-  <text x="520" y="638" class="text text-sub" style="text-anchor:start;font-size:11px;">反向: EVIDENCE → TRACE → MUST (反向审计)</text>
+  <text x="520" y="638" class="text text-sub" style="text-anchor:start;font-size:11px;">反向: EVD → TRACE → MUST (反向审计)</text>
   <text x="520" y="655" class="text text-sub" style="text-anchor:start;font-size:10px;">说明: 从证据反查执行切片，验证需求覆盖</text>
 </svg>

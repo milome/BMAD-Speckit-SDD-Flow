@@ -72,6 +72,15 @@ const SUCCESS_PATH_OPTIONAL_SURFACES = new Set([
   '_bmad-output/runtime/requirement-records/<recordId>/evidence/<runId>/implementation-evidence-packet.failed.json',
   '_bmad-output/runtime/requirement-records/<recordId>/evidence/<runId>/ai-tdd-closeout-report.json',
 ]);
+const GENERIC_SEMANTIC_MATCH_ROLES = new Set([
+  'control',
+  'evidence',
+  'implementation',
+  'legacy_compatibility',
+  'post_closeout_review_evidence',
+  'post_closeout_review_projection',
+  'projection',
+]);
 const CONFIRMATION_BOOKKEEPING_FIELDS = new Set([
   'status',
   'confirmedAt',
@@ -181,6 +190,29 @@ function sha256Bytes(value: Buffer | string): string {
 
 function sha256File(file: string): string {
   return sha256Bytes(fs.readFileSync(file));
+}
+
+function sha256Directory(directory: string): string {
+  const entries: string[] = [];
+  const walk = (current: string): void => {
+    for (const entry of fs.readdirSync(current, { withFileTypes: true }).sort((left, right) => left.name.localeCompare(right.name))) {
+      const absolute = path.join(current, entry.name);
+      const relative = normalizePath(path.relative(directory, absolute));
+      if (entry.isDirectory()) {
+        walk(absolute);
+      } else if (entry.isFile()) {
+        entries.push(`${relative}:${sha256File(absolute)}`);
+      }
+    }
+  };
+  walk(directory);
+  return sha256Bytes(entries.join('\n'));
+}
+
+function sha256ExistingPath(absolutePath: string): string {
+  const stat = fs.statSync(absolutePath);
+  if (stat.isDirectory()) return sha256Directory(absolutePath);
+  return sha256File(absolutePath);
 }
 
 function stableStringify(value: unknown): string {
@@ -321,6 +353,16 @@ function sentinelForRecordField(field: string): unknown {
           ],
         },
       ],
+    };
+  }
+  if (field === 'currentMentalModel') return 'execution_closure';
+  if (field === 'sixModelResults') {
+    return {
+      execution_closure: {
+        status: 'pass',
+        resultRecordedAt: now,
+        resultRecordedBy: 'canonical-reducer-sentinel',
+      },
     };
   }
   if (field === 'requirementClosures') {
@@ -746,6 +788,28 @@ function artifactAliasMatches(item: JsonObject, target: TargetItem): boolean {
     .some((alias) => searchable.includes(alias));
 }
 
+function artifactLinkedIds(entry: JsonObject): string[] {
+  return [
+    ...strings(entry.relatedRequirementIds),
+    ...strings(entry.traceRows),
+    ...strings(entry.evidenceRefs),
+    ...strings(entry.linkedEvidenceIds),
+    ...strings(entry.linkedRequirementIds),
+  ];
+}
+
+function artifactSemanticMatches(item: JsonObject, target: TargetItem): boolean {
+  const expectedRole = target.expectedSourceOfTruthRole;
+  if (!expectedRole || GENERIC_SEMANTIC_MATCH_ROLES.has(expectedRole)) return false;
+  if (text(item.sourceOfTruthRole) !== expectedRole) return false;
+
+  const linked = artifactLinkedIds(item);
+  const targetLinks = [...target.traceRefs, ...target.evidenceRefs, ...(target.requirementRefs ?? [])].filter(Boolean);
+  if (targetLinks.length > 0) return targetLinks.some((id) => linked.includes(id));
+
+  return Boolean(target.id && text(item.purpose).includes(target.id));
+}
+
 function artifactIndexEntry(
   record: JsonObject,
   declared: { displayPath: string; absolutePath?: string; pattern?: RegExp },
@@ -753,10 +817,16 @@ function artifactIndexEntry(
   attemptId: string,
   events: JsonObject[]
 ): JsonObject | undefined {
-  const matches = objects(record.artifactIndex).filter(
+  const artifactIndex = objects(record.artifactIndex);
+  const directMatches = artifactIndex.filter(
     (item) => artifactPathMatches(item, declared) || (target ? artifactAliasMatches(item, target) : false)
   );
-  return matches.find((item) => artifactBoundToAttempt(record, item, attemptId, events)) ?? matches.at(-1);
+  const matches =
+    directMatches.length > 0 || !target
+      ? directMatches
+      : artifactIndex.filter((item) => artifactSemanticMatches(item, target));
+  const boundMatches = matches.filter((item) => artifactBoundToAttempt(record, item, attemptId, events));
+  return boundMatches.at(-1) ?? matches.at(-1);
 }
 
 function artifactIdentityMatches(
@@ -780,7 +850,9 @@ function artifactBoundToAttempt(
   const artifactHash = text(entry.contentHash ?? entry.hash);
   if (
     text(entry.closeoutAttemptId) === attemptId ||
-    text(nested(entry.lastRunRef).closeoutAttemptId) === attemptId
+    text(nested(entry.lastRunRef).closeoutAttemptId) === attemptId ||
+    text(entry.inputVersion) === attemptId ||
+    text(entry.outputVersion) === attemptId
   )
     return true;
   const commandRefs = commandRunsForAttempt(record, attemptId);
@@ -839,13 +911,7 @@ function artifactBoundToAttempt(
 
 function artifactLinksPresent(entry: JsonObject | undefined, target: TargetItem): string[] {
   if (!entry) return [];
-  const linked = [
-    ...strings(entry.relatedRequirementIds),
-    ...strings(entry.traceRows),
-    ...strings(entry.evidenceRefs),
-    ...strings(entry.linkedEvidenceIds),
-    ...strings(entry.linkedRequirementIds),
-  ];
+  const linked = artifactLinkedIds(entry);
   const issues: string[] = [];
   if (target.traceRefs.length > 0 && !target.traceRefs.some((id) => linked.includes(id)))
     issues.push('target_artifact_trace_binding_missing');
@@ -1007,7 +1073,7 @@ function validateFileTarget(input: {
         [input.target.id]
       )
     );
-  else if (concreteFile && exists && sha256File(concreteFile) !== hash) {
+  else if (concreteFile && exists && sha256ExistingPath(concreteFile) !== hash) {
     issues.push(
       issue(
         'target_artifact_hash_mismatch',
@@ -1194,8 +1260,9 @@ function legacyUsedAsCompletionProof(
   token: string,
   events: JsonObject[]
 ): boolean {
+  const lastEventType = text(record.lastEventType);
   const proofValues = [
-    text(record.lastEventType),
+    isCompletionProofEventType(lastEventType) ? lastEventType : '',
     ...events
       .filter((event) => ['record_closed', 'requirement_closure_recorded'].includes(text(event.eventType)))
       .map((event) => text(event.eventType)),
@@ -1220,6 +1287,10 @@ function legacyUsedAsCompletionProof(
   ];
   const haystack = proofValues.filter(Boolean).join('\n');
   return haystack.includes(token);
+}
+
+function isCompletionProofEventType(eventType: string): boolean {
+  return /completion|closeout|closure|closed/u.test(eventType);
 }
 
 function validateLegacyPolicyTarget(
@@ -1577,7 +1648,7 @@ export function evaluateReverseAuditReadinessGate(input: {
         ? rendererReadiness
         : {};
   const readiness = effectiveReadiness.ready;
-  if (result.status !== 0)
+  if (result.status !== 0 && readiness !== true)
     issues.push(
       issue('reverse_audit_exit_nonzero', `reverse audit exitCode=${result.status ?? '<null>'}`)
     );

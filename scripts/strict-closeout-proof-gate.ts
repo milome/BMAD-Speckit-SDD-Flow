@@ -189,6 +189,41 @@ function latestArtifact(record: JsonObject, artifactType: string): JsonObject | 
   );
 }
 
+function defaultDatasetId(record: JsonObject): string {
+  return `${text(record.recordId)}-governed-sft`.toLowerCase();
+}
+
+function runtimeDirFromRecord(recordPath: string): string {
+  return path.dirname(path.dirname(path.dirname(recordPath)));
+}
+
+function defaultDatasetReleaseArtifact(record: JsonObject, recordPath: string, artifactType: string): JsonObject | null {
+  const fileName =
+    artifactType === 'dataset_release_manifest'
+      ? 'dataset-manifest.json'
+      : artifactType === 'dataset_release_gate_report'
+        ? 'dataset-release-gate-report.json'
+        : '';
+  if (!fileName) return null;
+  const artifactPath = path.join(runtimeDirFromRecord(recordPath), 'datasets', defaultDatasetId(record), 'v1', fileName);
+  if (!fs.existsSync(artifactPath)) return null;
+  return {
+    artifactType,
+    sourceOfTruthRole: 'evidence',
+    status: 'active',
+    path: artifactPath,
+    contentHash: sha256File(artifactPath),
+  };
+}
+
+function latestOrDefaultDatasetReleaseArtifact(
+  record: JsonObject,
+  recordPath: string,
+  artifactType: string
+): JsonObject | null {
+  return latestArtifact(record, artifactType) ?? defaultDatasetReleaseArtifact(record, recordPath, artifactType);
+}
+
 function contractApplicability(sourcePath?: string): JsonObject {
   if (!sourcePath) return {};
   try {
@@ -278,9 +313,11 @@ function replayProof(record: JsonObject, events: JsonObject[]): JsonObject {
 
 function writerRegistryProof(events: JsonObject[], attemptId: string): JsonObject {
   const allowed = new Set([
+    'main-agent-orchestration-control-writer',
     'implementation-evidence-ingest',
     'delivery-closeout-gate-writer',
     'implementation-readiness-gate-writer',
+    'execution-closure-gate-writer',
     'architecture-confirmation-ingest',
   ]);
   const attemptEvents = events.filter(
@@ -354,12 +391,12 @@ function failureCaseProofApplies(input: { record: JsonObject; attemptRuns: JsonO
   );
 }
 
-function sftProjectionProofApplies(input: { record: JsonObject; applicability: JsonObject }): boolean {
+function sftProjectionProofApplies(input: { record: JsonObject; recordPath: string; applicability: JsonObject }): boolean {
   const explicit = boolAt(input.applicability, ['scoringDashboardSft', 'applies']);
   if (explicit !== null) return explicit;
   return Boolean(
-    latestArtifact(input.record, 'dataset_release_manifest') ||
-      latestArtifact(input.record, 'dataset_release_gate_report')
+    latestOrDefaultDatasetReleaseArtifact(input.record, input.recordPath, 'dataset_release_manifest') ||
+      latestOrDefaultDatasetReleaseArtifact(input.record, input.recordPath, 'dataset_release_gate_report')
   );
 }
 
@@ -458,8 +495,8 @@ function proveFailureCases(input: {
 }
 
 function sftProjectionProof(record: JsonObject, recordPath: string): JsonObject {
-  const manifestRef = latestArtifact(record, 'dataset_release_manifest');
-  const releaseRef = latestArtifact(record, 'dataset_release_gate_report');
+  const manifestRef = latestOrDefaultDatasetReleaseArtifact(record, recordPath, 'dataset_release_manifest');
+  const releaseRef = latestOrDefaultDatasetReleaseArtifact(record, recordPath, 'dataset_release_gate_report');
   const reasons: string[] = [];
   if (!manifestRef) reasons.push('dataset_manifest_artifact_missing');
   if (!releaseRef) reasons.push('dataset_release_report_artifact_missing');
@@ -537,6 +574,7 @@ export function evaluateStrictCloseoutProof(input: {
   });
   const sftProjectionProofRequired = sftProjectionProofApplies({
     record: input.record,
+    recordPath: input.recordPath,
     applicability,
   });
   const subsystemEvidence = subsystemProofRequired

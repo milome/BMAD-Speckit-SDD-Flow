@@ -128,7 +128,10 @@ function subsystem(subsystemId: string): Record<string, unknown> {
   };
 }
 
-function writeFixture(root: string, options: { missingTrainingRun?: boolean; incompleteSubsystems?: boolean } = {}) {
+function writeFixture(
+  root: string,
+  options: { missingTrainingRun?: boolean; incompleteSubsystems?: boolean; governanceBindings?: boolean; omitSubsystemExtension?: boolean } = {}
+) {
   const recordId = 'REQ-DATASET-RELEASE';
   const base = path.join(root, '_bmad-output', 'runtime', 'requirement-records', recordId);
   const dataDir = path.join(base, 'data');
@@ -156,20 +159,22 @@ function writeFixture(root: string, options: { missingTrainingRun?: boolean; inc
       status: 'active',
       currentArchitectureConfirmationHash: ARCHITECTURE_HASH,
     },
-    extensionRefs: [
-      {
-        artifactType: 'observability_extension',
-        sourceOfTruthRole: 'evidence',
-        path: extensionRelativePath,
-        contentHash: sha256File(extensionPath),
-        producer: 'main-agent-dataset-release-gate.test',
-        purpose: 'prove all sixteen subsystems are machine readable',
-        relatedRequirementIds: ['MUST-017', 'EVD-010'],
-        status: 'active',
-        inputVersion: 'trace-007',
-        outputVersion: 'subsystems-v1',
-      },
-    ],
+    extensionRefs: options.omitSubsystemExtension
+      ? []
+      : [
+          {
+            artifactType: 'observability_extension',
+            sourceOfTruthRole: 'evidence',
+            path: extensionRelativePath,
+            contentHash: sha256File(extensionPath),
+            producer: 'main-agent-dataset-release-gate.test',
+            purpose: 'prove all sixteen subsystems are machine readable',
+            relatedRequirementIds: ['MUST-017', 'EVD-010'],
+            status: 'active',
+            inputVersion: 'trace-007',
+            outputVersion: 'subsystems-v1',
+          },
+        ],
   });
   const samples = [sample('sample-a'), sample('sample-b')];
   const routes = [
@@ -230,7 +235,7 @@ function writeFixture(root: string, options: { missingTrainingRun?: boolean; inc
       status: 'completed',
     });
   }
-  writeJson(evalReportPath, {
+  const evalReport = {
     evalReportId: 'eval-001',
     trainingRunId: 'train-001',
     decision: 'pass',
@@ -242,7 +247,19 @@ function writeFixture(root: string, options: { missingTrainingRun?: boolean; inc
       defect_escape_rate: { baseline: 0.1, current: 0.05, decision: 'pass' },
       similar_error_recurrence_rate: { baseline: 0.1, current: 0.02, decision: 'pass' },
     },
-  });
+  };
+  writeJson(evalReportPath, evalReport);
+  if (options.governanceBindings && !options.missingTrainingRun) {
+    writeJson(path.join(governanceDir, 'training-run.json'), {
+      trainingRunId: 'train-001',
+      datasetId: DATASET_ID,
+      datasetVersion: DATASET_VERSION,
+      status: 'completed',
+      trainingRunType: 'dataset_release_validation_lineage_binding',
+      modelTrainingPerformed: false,
+    });
+    writeJson(path.join(governanceDir, 'post-training-eval-report.json'), evalReport);
+  }
   return { recordPath, dataDir, governanceDir, releaseDir, trainingRunPath, evalReportPath };
 }
 
@@ -298,10 +315,52 @@ describe('main-agent dataset release gate', () => {
         architectureConfirmationHash: ARCHITECTURE_HASH,
       });
       expect(manifest.training.trainingRun.hash).toMatch(/^sha256:[a-f0-9]{64}$/u);
+      expect(manifest.projections.openai.hash).toMatch(/^sha256:[a-f0-9]{64}$/u);
+      expect(manifest.projections.huggingface.hash).toMatch(/^sha256:[a-f0-9]{64}$/u);
       const report = JSON.parse(readFileSync(path.join(fixture.releaseDir, 'dataset-release-gate-report.json'), 'utf8'));
       expect(report.checks).toEqual(
         expect.arrayContaining([
           expect.objectContaining({ id: 'sixteen-subsystems-machine-readable', passed: true, expectedCount: 16, actualCount: 16 }),
+        ])
+      );
+    } finally {
+      process.chdir(cwd);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('uses governance-dir training and eval bindings by default and skips production subsystem checks when not applicable', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'dataset-release-default-bindings-'));
+    const cwd = process.cwd();
+    try {
+      process.chdir(root);
+      const fixture = writeFixture(root, { governanceBindings: true, omitSubsystemExtension: true });
+      const code = mainDatasetReleaseGate([
+        '--requirement-record',
+        fixture.recordPath,
+        '--data-dir',
+        fixture.dataDir,
+        '--governance-dir',
+        fixture.governanceDir,
+        '--out-dir',
+        fixture.releaseDir,
+        '--dataset-id',
+        DATASET_ID,
+        '--dataset-version',
+        DATASET_VERSION,
+        '--json',
+      ]);
+
+      expect(code).toBe(0);
+      const report = JSON.parse(readFileSync(path.join(fixture.releaseDir, 'dataset-release-gate-report.json'), 'utf8'));
+      expect(report.checks).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: 'sixteen-subsystems-machine-readable',
+            passed: true,
+            skipped: true,
+            reason: 'production_subsystems_not_applicable',
+          }),
         ])
       );
     } finally {

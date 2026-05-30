@@ -68,8 +68,8 @@
   <rect x="30" y="185" width="240" height="125" rx="4" fill="#ffffff" stroke="#e5e5e5" stroke-width="1"/>
   <text x="150" y="205" class="text" style="font-weight:600;font-size:12px;">关键动作</text>
   <text x="45" y="225" class="text text-sub" style="text-anchor:start;">• 原子化需求拆解</text>
-  <text x="45" y="242" class="text text-sub" style="text-anchor:start;">• 定义MUST/MUST NOT</text>
-  <text x="45" y="259" class="text text-sub" style="text-anchor:start;">• 建立TRACE MATRIX</text>
+  <text x="45" y="242" class="text text-sub" style="text-anchor:start;">• 定义 MUST/NEG/OUT</text>
+  <text x="45" y="259" class="text text-sub" style="text-anchor:start;">• 建立 TRACE rows</text>
   <text x="45" y="276" class="text text-sub" style="text-anchor:start;">• Human-in-loop确认</text>
   <text x="45" y="293" class="text text-sub" style="text-anchor:start;">• 生成需求确认页HTML</text>
 
@@ -77,7 +77,7 @@
   <text x="420" y="205" class="text" style="font-weight:600;font-size:12px;">准出标准</text>
   <text x="315" y="225" class="text text-sub" style="text-anchor:start;">• 基于Manifest生成测试</text>
   <text x="315" y="242" class="text text-sub" style="text-anchor:start;">• 所有测试注册完成</text>
-  <text x="315" y="259" class="text text-sub" style="text-anchor:start;">• 运行AI-TDD Gate</text>
+  <text x="315" y="259" class="text text-sub" style="text-anchor:start;">• 运行 CMD 门禁并收集 EVD</text>
   <text x="315" y="276" class="text text-sub" style="text-anchor:start;fill:#dc2626;">• 状态必须为AI-TDD-RED</text>
   <text x="315" y="293" class="text text-sub" style="text-anchor:start;">• Manifest完备性检查</text>
 
@@ -91,8 +91,8 @@
 
   <rect x="840" y="185" width="230" height="125" rx="4" fill="#ffffff" stroke="#e5e5e5" stroke-width="1"/>
   <text x="955" y="205" class="text" style="font-weight:600;font-size:12px;">准出标准</text>
-  <text x="855" y="225" class="text text-sub" style="text-anchor:start;">• 重新运行全量测试</text>
-  <text x="855" y="242" class="text text-sub" style="text-anchor:start;">• Manifest全部验证</text>
+  <text x="855" y="225" class="text text-sub" style="text-anchor:start;">• ACC/E2E 全部通过</text>
+  <text x="855" y="242" class="text text-sub" style="text-anchor:start;">• EVD/ART 齐备</text>
   <text x="855" y="259" class="text text-sub" style="text-anchor:start;">• 生成交付确认页</text>
   <text x="855" y="276" class="text text-sub" style="text-anchor:start;fill:#16a34a;">• 状态必须为AI-TDD-GREEN</text>
   <text x="855" y="293" class="text text-sub" style="text-anchor:start;">• 人工最终审核通过</text>
@@ -106,10 +106,10 @@
   <!-- Core Principles Box -->
   <rect x="30" y="330" width="1040" height="130" rx="6" fill="#ffffff" stroke="#e5e5e5" stroke-width="1"/>
   <text x="550" y="355" class="text" style="font-weight:600;font-size:16px;">AI-TDD 核心原则</text>
-  <text x="50" y="385" class="text text-sub" style="text-anchor:start;">1. Manifest必须在执行开始前完备定义</text>
+  <text x="50" y="385" class="text text-sub" style="text-anchor:start;">1. Manifest必须在执行开始前定义 MUST/NEG/OUT/TRACE/EVD</text>
   <text x="50" y="408" class="text text-sub" style="text-anchor:start;">2. 准入门禁必须AI-TDD-RED（全红）—— 测试存在但实现缺失</text>
   <text x="50" y="431" class="text text-sub" style="text-anchor:start;">3. 交付门禁必须AI-TDD-GREEN（全绿）—— 全部验证通过</text>
-  <text x="50" y="454" class="text text-sub" style="text-anchor:start;">4. 没有完备Manifest，禁止进入执行；有未验证项，禁止交付</text>
+  <text x="50" y="454" class="text text-sub" style="text-anchor:start;">4. OUT 是范围边界；NEG 违反才阻断交付</text>
 
   <!-- Timeline -->
   <text x="550" y="515" class="text" style="font-weight:600;font-size:14px;">执行时序</text>

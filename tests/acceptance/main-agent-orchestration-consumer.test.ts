@@ -534,7 +534,15 @@ function writeConfirmedReadinessRecord(root: string): string {
     inputVersion: 'test',
     outputVersion: 'test',
   };
-  record.architectureConfirmationState.resolvedRecipeHash = recipe.resolvedRecipeHash;
+  record.architectureConfirmationState = {
+    ...record.architectureConfirmationState,
+    resolvedRecipeHash: recipe.resolvedRecipeHash,
+    staleInputs: {
+      ...(record.architectureConfirmationState.staleInputs ?? {}),
+      sourceDocumentHash: record.sourceDocumentHash,
+      implementationConfirmationHash: record.implementationConfirmationHash,
+    },
+  };
   record.architectureConfirmationStateChecks = [
     {
       eventType: 'architecture_confirmation_state_checked',
@@ -737,7 +745,7 @@ describe('main-agent orchestration consumer', () => {
     }
   }, 40000);
 
-  it('dispatches implementation then projects review after readiness pass without legacy baseline activation', async () => {
+  it('dispatches implementation and does not project review before execution closure pass', async () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-readiness-auto-baseline-'));
     try {
       const recordPath = writeConfirmedReadinessRecord(root);
@@ -772,15 +780,17 @@ describe('main-agent orchestration consumer', () => {
           packetId: instruction.packetId,
           status: 'done',
           filesChanged: [],
-          validationsRun: ['main-agent-run-loop:dispatch-review-fixture'],
+          validationsRun: ['main-agent-run-loop:implementation-fixture'],
           evidence: ['requirement-record:readinessBaselineMetadata.status=current'],
-          downstreamContext: ['implementation readiness passed; review dispatch completed'],
+          downstreamContext: [
+            'implementation readiness passed; task report is execution iteration evidence only',
+          ],
         }),
       });
 
       expect(result.status).toBe('completed');
       expect(result.dispatchInstruction?.nextAction).toBe('dispatch_implement');
-      expect(result.finalSurface.mainAgentNextAction).toBe('dispatch_review');
+      expect(result.finalSurface.mainAgentNextAction).toBe('dispatch_implement');
       expect(result.finalSurface.diagnostics.map((item) => item.category)).not.toContain(
         'repairable_readiness_audit_required'
       );
@@ -820,7 +830,7 @@ describe('main-agent orchestration consumer', () => {
 
       expect(receipt.controlPlane).toBe('main-agent-orchestration');
       expect(receipt.runLoop.status).toBe('completed');
-      expect(receipt.runLoop.finalNextAction).toBe('dispatch_review');
+      expect(receipt.runLoop.finalNextAction).toBe('dispatch_implement');
       const record = JSON.parse(readFileSync(recordPath, 'utf8'));
       expect(record.readinessBaselineMetadata).toMatchObject({
         status: 'current',
@@ -1014,6 +1024,261 @@ describe('main-agent orchestration consumer', () => {
       );
       expect(policy.mainAgentNextAction).toBe('dispatch_implement');
       expect(policy.mainAgentReady).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('invalidates stale post-audit run-closeout state after current confirmation until compiled implementation prompt exists', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-stale-closeout-state-'));
+    try {
+      const recordPath = writeMinimalRequirementRecordContext(root, {
+        flow: 'standalone_tasks',
+        stage: 'implement',
+        runId: 'stale-closeout-state',
+        artifactPath: 'docs/requirements/stale-closeout-state.md',
+        implementationEntryGate: {
+          gateName: 'implementation-readiness',
+          requestedFlow: 'standalone_tasks',
+          recommendedFlow: 'standalone_tasks',
+          decision: 'pass',
+          readinessStatus: 'ready_clean',
+          blockerCodes: [],
+          blockerSummary: [],
+          rerouteRequired: false,
+          rerouteReason: null,
+          evidenceSources: {
+            readinessReportPath: null,
+            remediationArtifactPath: null,
+            executionRecordPath: null,
+            authoritativeAuditReportPath: null,
+          },
+          semanticFingerprint: 'stale-closeout-state',
+          evaluatedAt: '2026-05-30T00:00:00.000Z',
+        },
+      });
+      const record = JSON.parse(readFileSync(recordPath, 'utf8')) as Record<string, unknown>;
+      record.currentMentalModel = 'implementation_readiness';
+      record.lastEventType = 'confirmation_recorded';
+      record.confirmationHistory = [
+        {
+          eventType: 'confirmation_recorded',
+          sourceDocumentHash: record.sourceDocumentHash,
+          implementationConfirmationHash: record.implementationConfirmationHash,
+          confirmationPageHash: record.confirmationPageHash,
+        },
+      ];
+      record.sixModelResults = {
+        requirement_confirmation: { model: 'requirement_confirmation', status: 'pass' },
+        architecture_confirmation: { model: 'architecture_confirmation', status: 'pass' },
+        implementation_readiness: {
+          model: 'implementation_readiness',
+          status: 'pass',
+          blockingReasons: [],
+        },
+        execution_closure: {
+          model: 'execution_closure',
+          status: 'not_established',
+          blockingReasons: ['execution_closure_not_established'],
+        },
+        audit_review: {
+          model: 'audit_review',
+          status: 'not_established',
+          blockingReasons: ['audit_review_not_established'],
+        },
+        delivery_confirmation: {
+          model: 'delivery_confirmation',
+          status: 'not_established',
+          blockingReasons: ['delivery_confirmation_not_established'],
+        },
+      };
+      writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
+
+      const sessionId = String(record.requirementSetId);
+      const stalePacket: ExecutionPacket = {
+        packetId: 'audit-stale-completed',
+        parentSessionId: sessionId,
+        flow: 'standalone_tasks',
+        phase: 'post_audit',
+        taskType: 'audit',
+        role: 'code-reviewer',
+        inputArtifacts: [recordPath],
+        allowedWriteScope: ['docs/**', '_bmad-output/**'],
+        expectedDelta: 'old audit',
+        successCriteria: ['old audit done'],
+        stopConditions: ['true blocker'],
+        authorityMode: 'legacy_generic_prompt',
+        compiledPromptRef: null,
+        legacyPromptFallbackReason: 'no_confirmed_source',
+      };
+      const stalePacketPath = writePacket(root, sessionId, stalePacket);
+      const staleState = createDefaultOrchestrationState({
+        sessionId,
+        host: 'codex',
+        flow: 'standalone_tasks',
+        currentPhase: 'post_audit',
+        nextAction: 'run_closeout',
+        pendingPacket: {
+          packetId: stalePacket.packetId,
+          packetPath: stalePacketPath,
+          packetKind: 'execution',
+          status: 'completed',
+          createdAt: '2026-05-29T00:00:00.000Z',
+        },
+      });
+      staleState.lastTaskReport = {
+        packetId: stalePacket.packetId,
+        status: 'done',
+        filesChanged: [],
+        validationsRun: ['legacy audit'],
+        evidence: ['legacy audit prose pass'],
+      };
+      writeOrchestrationState(root, staleState);
+
+      const surface = resolveMainAgentOrchestrationSurface({
+        projectRoot: root,
+        flow: 'standalone_tasks',
+        stage: 'post_audit',
+      });
+
+      expect(surface.source).toBe('requirement_record');
+      expect(surface.mainAgentNextAction).toBe('dispatch_implement');
+      expect(surface.mainAgentReady).toBe(true);
+      expect(surface.mainAgentStageSummary).toMatchObject({
+        currentMentalModel: 'implementation_readiness',
+        currentMentalModelStatus: 'pass',
+        nextAction: 'dispatch_implement',
+        nextMentalModel: 'execution_closure',
+      });
+      expect(surface.runtimeResumeProjection).toMatchObject({
+        observedLegacyState: {
+          nextAction: 'run_closeout',
+          pendingPacketStatus: 'completed',
+        },
+      });
+      expect(surface.runtimeResumeProjection?.blockingReasonRefs).toContainEqual({
+        sourceType: 'compiled_prompt_ref',
+        id: 'missing_current_hash_compiledPromptRef',
+      });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects compiled prompt refs that are not bound to the current confirmed hashes', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-stale-compiled-ref-'));
+    try {
+      const recordPath = writeMinimalRequirementRecordContext(root, {
+        flow: 'standalone_tasks',
+        stage: 'implement',
+        runId: 'stale-compiled-ref',
+        artifactPath: 'docs/requirements/stale-compiled-ref.md',
+        implementationEntryGate: {
+          gateName: 'implementation-readiness',
+          requestedFlow: 'standalone_tasks',
+          recommendedFlow: 'standalone_tasks',
+          decision: 'pass',
+          readinessStatus: 'ready_clean',
+          blockerCodes: [],
+          blockerSummary: [],
+          rerouteRequired: false,
+          rerouteReason: null,
+          evidenceSources: {
+            readinessReportPath: null,
+            remediationArtifactPath: null,
+            executionRecordPath: null,
+            authoritativeAuditReportPath: null,
+          },
+          semanticFingerprint: 'stale-compiled-ref',
+          evaluatedAt: '2026-05-30T00:00:00.000Z',
+        },
+      });
+      const record = JSON.parse(readFileSync(recordPath, 'utf8')) as Record<string, unknown>;
+      record.currentMentalModel = 'implementation_readiness';
+      record.lastEventType = 'confirmation_recorded';
+      record.confirmationHistory = [
+        {
+          eventType: 'confirmation_recorded',
+          sourceDocumentHash: record.sourceDocumentHash,
+          implementationConfirmationHash: record.implementationConfirmationHash,
+          confirmationPageHash: record.confirmationPageHash,
+        },
+      ];
+      record.sixModelResults = {
+        requirement_confirmation: { model: 'requirement_confirmation', status: 'pass' },
+        architecture_confirmation: { model: 'architecture_confirmation', status: 'pass' },
+        implementation_readiness: {
+          model: 'implementation_readiness',
+          status: 'pass',
+          blockingReasons: [],
+        },
+        execution_closure: {
+          model: 'execution_closure',
+          status: 'not_established',
+          blockingReasons: ['execution_closure_not_established'],
+        },
+      };
+      writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
+
+      const sessionId = String(record.requirementSetId);
+      const staleCompiledPromptPacket: ExecutionPacket = {
+        packetId: 'implement-stale-compiled-ref',
+        parentSessionId: sessionId,
+        flow: 'standalone_tasks',
+        phase: 'implementation_readiness',
+        taskType: 'implement',
+        role: 'implementation-worker',
+        inputArtifacts: [recordPath],
+        allowedWriteScope: ['src/**', 'tests/**', 'docs/**', '_bmad-output/**'],
+        expectedDelta: 'old implementation',
+        successCriteria: ['old implementation done'],
+        stopConditions: ['true blocker'],
+        authorityMode: 'compiled_implementation_confirmation',
+        compiledPromptRef: {
+          modelPacketPath: 'old/model_packet.json',
+          modelPacketHash: 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          humanPromptPath: 'old/human_prompt.txt',
+          humanPromptHash: 'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+          auditReceiptPath: 'old/audit_receipt.json',
+          auditReceiptHash: 'sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+          goalExecutionPath: 'old/goal_execution.md',
+          goalExecutionHash: 'sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+          sourceDocumentHash:
+            'sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+          implementationConfirmationHash: String(record.implementationConfirmationHash),
+        },
+        legacyPromptFallbackReason: null,
+      };
+      const packetPath = writePacket(root, sessionId, staleCompiledPromptPacket);
+      writeOrchestrationState(
+        root,
+        createDefaultOrchestrationState({
+          sessionId,
+          host: 'codex',
+          flow: 'standalone_tasks',
+          currentPhase: 'post_audit',
+          nextAction: 'run_closeout',
+          pendingPacket: {
+            packetId: staleCompiledPromptPacket.packetId,
+            packetPath,
+            packetKind: 'execution',
+            status: 'completed',
+            createdAt: '2026-05-29T00:00:00.000Z',
+          },
+        })
+      );
+
+      const surface = resolveMainAgentOrchestrationSurface({
+        projectRoot: root,
+        flow: 'standalone_tasks',
+        stage: 'post_audit',
+      });
+
+      expect(surface.mainAgentNextAction).toBe('dispatch_implement');
+      expect(surface.runtimeResumeProjection?.blockingReasonRefs).toContainEqual({
+        sourceType: 'compiled_prompt_ref',
+        id: 'missing_current_hash_compiledPromptRef',
+      });
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -1219,6 +1484,101 @@ describe('main-agent orchestration consumer', () => {
       expect(instruction?.nextAction).toBe('dispatch_implement');
       expect(instruction?.taskType).toBe('implement');
       expect(instruction?.packetId).toMatch(/^implement-/u);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('falls back to audit write scope when active mapping lacks allowedWriteScope', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-audit-scope-fallback-'));
+    try {
+      const recordPath = writeMinimalRequirementRecordContext(root, {
+        flow: 'standalone_tasks',
+        stage: 'implement',
+        runId: 'audit-scope-fallback',
+        implementationEntryGate: {
+          gateName: 'implementation-readiness',
+          requestedFlow: 'standalone_tasks',
+          recommendedFlow: 'standalone_tasks',
+          decision: 'pass',
+          readinessStatus: 'ready_clean',
+          blockerCodes: [],
+          blockerSummary: [],
+          rerouteRequired: false,
+          rerouteReason: null,
+          evidenceSources: {
+            readinessReportPath: null,
+            remediationArtifactPath: null,
+            executionRecordPath: null,
+            authoritativeAuditReportPath: null,
+          },
+          semanticFingerprint: 'audit-scope-fallback',
+          evaluatedAt: '2026-05-26T00:00:00.000Z',
+        },
+      });
+      const record = JSON.parse(readFileSync(recordPath, 'utf8')) as Record<string, unknown>;
+      record.sixModelResults = {
+        execution_closure: { model: 'execution_closure', status: 'pass' },
+        audit_review: { model: 'audit_review', status: 'not_established' },
+      };
+      writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
+      writeJsonFixture(
+        path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'index.json'),
+        {
+          version: 1,
+          updatedAt: '2026-05-26T00:00:00.000Z',
+          source: '_bmad-output/runtime/requirement-records/index.json',
+          items: [
+            {
+              requirementId: record.requirementSetId,
+              sourceType: 'controlled_requirement_record',
+              flow: 'standalone_tasks',
+              status: 'user_confirmed',
+              recordId: record.recordId,
+              requirementSetId: record.requirementSetId,
+              recordPath: path.relative(root, recordPath).replace(/\\/g, '/'),
+            },
+          ],
+        }
+      );
+      const state = createDefaultOrchestrationState({
+        sessionId: String(record.requirementSetId),
+        host: 'codex',
+        flow: 'standalone_tasks',
+        currentPhase: 'implement',
+        nextAction: 'dispatch_review',
+        pendingPacket: {
+          packetId: 'implement-completed',
+          packetPath: recordPath,
+          packetKind: 'execution',
+          status: 'completed',
+          createdAt: '2026-05-26T00:00:00.000Z',
+        },
+      });
+      state.lastTaskReport = {
+        packetId: 'implement-completed',
+        status: 'done',
+        filesChanged: [],
+        validationsRun: ['fixture'],
+        evidence: ['fixture'],
+      };
+      writeOrchestrationState(root, state);
+
+      const instruction = buildMainAgentDispatchInstruction({
+        projectRoot: root,
+        flow: 'standalone_tasks',
+        stage: 'implement',
+        recordId: String(record.recordId),
+        requirementSetId: String(record.requirementSetId),
+        host: 'codex',
+        hydratePacket: true,
+      });
+
+      expect(instruction?.nextAction).toBe('dispatch_review');
+      expect(instruction?.taskType).toBe('audit');
+      expect(instruction).not.toBeNull();
+      const packet = JSON.parse(readFileSync(instruction!.packetPath, 'utf8')) as ExecutionPacket;
+      expect(packet.allowedWriteScope).toEqual(['docs/**', '_bmad-output/**', 'specs/**']);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -1845,7 +2205,7 @@ describe('main-agent orchestration consumer', () => {
       expect(loop.status).toBe('completed');
       expect(loop.dispatchInstruction?.packetId).toBe(instruction?.packetId);
       expect(loop.finalSurface.pendingPacketStatus).toBe('completed');
-      expect(loop.finalSurface.mainAgentNextAction).toBe('rerun_gate');
+      expect(loop.finalSurface.mainAgentNextAction).toBe('dispatch_implement');
       expect(loop.taskReport?.evidence).toContain('bridge-post-audit-remediation');
     } finally {
       rmSync(root, { recursive: true, force: true });

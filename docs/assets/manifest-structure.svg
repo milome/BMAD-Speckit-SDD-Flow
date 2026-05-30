@@ -38,23 +38,23 @@
   <text x="100" y="138" class="text text-sub" style="font-size:9px;">contract state</text>
 
   <rect x="170" y="110" width="90" height="35" rx="6" class="node-must"/>
-  <text x="215" y="125" class="text text-title" style="font-size:11px;">must[]</text>
+  <text x="215" y="125" class="text text-title" style="font-size:11px;">MUST[]</text>
   <text x="215" y="138" class="text text-sub" style="font-size:9px;">requirements</text>
 
   <rect x="280" y="110" width="100" height="35" rx="6" class="node-not"/>
-  <text x="330" y="125" class="text text-title" style="font-size:11px;">notDone[]</text>
-  <text x="330" y="138" class="text text-sub" style="font-size:9px;">blockers</text>
+  <text x="330" y="125" class="text text-title" style="font-size:11px;">OUT[]</text>
+  <text x="330" y="138" class="text text-sub" style="font-size:9px;">scope boundary</text>
 
   <rect x="400" y="110" width="100" height="35" rx="6" class="node-not"/>
-  <text x="450" y="125" class="text text-title" style="font-size:11px;">mustNot[]</text>
-  <text x="450" y="138" class="text text-sub" style="font-size:9px;">prohibitions</text>
+  <text x="450" y="125" class="text text-title" style="font-size:11px;">NEG[]</text>
+  <text x="450" y="138" class="text text-sub" style="font-size:9px;">NEG blockers</text>
 
   <rect x="520" y="110" width="100" height="35" rx="6" class="node-evidence"/>
-  <text x="570" y="125" class="text text-title" style="font-size:11px;">evidence[]</text>
+  <text x="570" y="125" class="text text-title" style="font-size:11px;">EVD[]</text>
   <text x="570" y="138" class="text text-sub" style="font-size:9px;">proof items</text>
 
   <rect x="640" y="110" width="130" height="35" rx="6" class="node-trace"/>
-  <text x="705" y="125" class="text text-title" style="font-size:11px;">traceRows[]</text>
+  <text x="705" y="125" class="text text-title" style="font-size:11px;">TRACE[]</text>
   <text x="705" y="138" class="text text-sub" style="font-size:9px;">execution slice</text>
 
   <rect x="790" y="110" width="160" height="35" rx="6" class="node"/>
@@ -72,32 +72,33 @@
 
   <!-- Trace Row Detail - Reduced height -->
   <rect x="670" y="170" width="280" height="160" rx="6" fill="#ffffff" stroke="#2563eb" stroke-width="2" filter="url(#shadow)"/>
-  <text x="810" y="190" class="text text-title">traceRows Structure</text>
+  <text x="810" y="190" class="text text-title">TRACE Structure</text>
 
-  <text x="690" y="210" class="code"><tspan class="yaml-key">- id:</tspan> <tspan class="yaml-id">TRACE-001</tspan></text>
+  <text x="690" y="210" class="code"><tspan class="yaml-key">- id:</tspan> <tspan class="yaml-id">TRACE-REG-001</tspan></text>
   <text x="690" y="225" class="code"><tspan class="yaml-key">  covers:</tspan></text>
-  <text x="690" y="237" class="code">    - <tspan class="yaml-id">MUST-001</tspan></text>
-  <text x="690" y="249" class="code">    - <tspan class="yaml-id">NEG-001</tspan></text>
-  <text x="690" y="264" class="code"><tspan class="yaml-key">  evidenceRefs:</tspan> [<tspan class="yaml-id">EVD-001</tspan>]</text>
-  <text x="690" y="279" class="code"><tspan class="yaml-key">  contractGates:</tspan> [<tspan class="yaml-str">CMD-001</tspan>]</text>
-  <text x="690" y="294" class="code"><tspan class="yaml-key">  deliveryGates:</tspan> [<tspan class="yaml-str">CMD-002</tspan>]</text>
-  <text x="690" y="309" class="code"><tspan class="yaml-key">  acceptanceRefs:</tspan> [<tspan class="yaml-id">ACC-001</tspan>]</text>
+  <text x="690" y="237" class="code">    - <tspan class="yaml-id">MUST-REQ-001</tspan></text>
+  <text x="690" y="249" class="code">    - <tspan class="yaml-id">NEG-SEC-001</tspan></text>
+  <text x="690" y="264" class="code"><tspan class="yaml-key">  evidenceRefs:</tspan> [<tspan class="yaml-id">EVD-TEST-001</tspan>]</text>
+  <text x="690" y="279" class="code"><tspan class="yaml-key">  taskRefs:</tspan> [<tspan class="yaml-id">TASK-REG-001</tspan>]</text>
+  <text x="690" y="294" class="code"><tspan class="yaml-key">  commandRefs:</tspan> [<tspan class="yaml-str">CMD-REG-TEST-001</tspan>]</text>
+  <text x="690" y="309" class="code"><tspan class="yaml-key">  acceptanceRefs:</tspan> [<tspan class="yaml-id">ACC-REG-001</tspan>, <tspan class="yaml-id">E2E-REG-001</tspan>]</text>
+  <text x="690" y="324" class="code"><tspan class="yaml-key">  artifactRefs:</tspan> [<tspan class="yaml-id">ART-REG-RPT-01</tspan>]</text>
 
   <!-- Must Detail -->
   <rect x="30" y="170" width="280" height="130" rx="6" fill="#ffffff" stroke="#dc2626" stroke-width="2" filter="url(#shadow)"/>
-  <text x="170" y="190" class="text text-title">must Structure</text>
+  <text x="170" y="190" class="text text-title">MUST Structure</text>
 
-  <text x="50" y="212" class="code"><tspan class="yaml-key">- id:</tspan> <tspan class="yaml-id">MUST-001</tspan></text>
+  <text x="50" y="212" class="code"><tspan class="yaml-key">- id:</tspan> <tspan class="yaml-id">MUST-REQ-001</tspan></text>
   <text x="50" y="227" class="code"><tspan class="yaml-key">  text:</tspan> <tspan class="yaml-str">"Expose manifest"</tspan></text>
   <text x="50" y="242" class="code"><tspan class="yaml-key">  validation:</tspan> <tspan class="yaml-str">"yaml exists"</tspan></text>
-  <text x="50" y="257" class="code"><tspan class="yaml-key">  evidenceRefs:</tspan> [<tspan class="yaml-id">EVD-001</tspan>]</text>
-  <text x="50" y="272" class="code"><tspan class="yaml-key">  coveredByTraceRows:</tspan> [<tspan class="yaml-id">T-001</tspan>]</text>
+  <text x="50" y="257" class="code"><tspan class="yaml-key">  evidenceRefs:</tspan> [<tspan class="yaml-id">EVD-TEST-001</tspan>]</text>
+  <text x="50" y="272" class="code"><tspan class="yaml-key">  coveredByTraceRows:</tspan> [<tspan class="yaml-id">TRACE-REG-001</tspan>]</text>
 
   <!-- Evidence Detail -->
   <rect x="30" y="320" width="280" height="110" rx="6" fill="#ffffff" stroke="#16a34a" stroke-width="2" filter="url(#shadow)"/>
-  <text x="170" y="340" class="text text-title">evidence Structure</text>
+  <text x="170" y="340" class="text text-title">EVD Structure</text>
 
-  <text x="50" y="362" class="code"><tspan class="yaml-key">- id:</tspan> <tspan class="yaml-id">EVD-001</tspan></text>
+  <text x="50" y="362" class="code"><tspan class="yaml-key">- id:</tspan> <tspan class="yaml-id">EVD-TEST-001</tspan></text>
   <text x="50" y="377" class="code"><tspan class="yaml-key">  type:</tspan> <tspan class="yaml-str">test-pass</tspan></text>
   <text x="50" y="392" class="code"><tspan class="yaml-key">  path:</tspan> <tspan class="yaml-str">tests/acceptance/...</tspan></text>
   <text x="50" y="407" class="code"><tspan class="yaml-key">  hash:</tspan> <tspan class="yaml-str">sha256:...</tspan></text>
@@ -117,15 +118,15 @@
   <text x="360" y="300" class="text text-sub" style="text-anchor:start;font-size:9px;">按序推进的任务追踪单元</text>
 
   <rect x="350" y="312" width="270" height="35" rx="4" fill="#f0fdf4" stroke="#16a34a" stroke-width="1"/>
-  <text x="360" y="328" class="text" style="text-anchor:start;font-size:11px;">3️⃣ EVIDENCE - 验证证据 (Proof)</text>
+  <text x="360" y="328" class="text" style="text-anchor:start;font-size:11px;">3️⃣ EVD - 验证证据 (Proof)</text>
   <text x="360" y="340" class="text text-sub" style="text-anchor:start;font-size:9px;">测试通过、审计报告的哈希</text>
 
   <rect x="350" y="352" width="270" height="35" rx="4" fill="#fff7ed" stroke="#ea580c" stroke-width="1"/>
-  <text x="360" y="368" class="text" style="text-anchor:start;font-size:11px;">4️⃣ COMMAND - 执行命令 (Action)</text>
+  <text x="360" y="368" class="text" style="text-anchor:start;font-size:11px;">4️⃣ CMD - 执行命令 (Action)</text>
   <text x="360" y="380" class="text text-sub" style="text-anchor:start;font-size:9px;">可复现的验证命令与参数</text>
 
   <rect x="350" y="392" width="270" height="25" rx="4" fill="#faf5ff" stroke="#7c3aed" stroke-width="1"/>
-  <text x="360" y="408" class="text" style="text-anchor:start;font-size:11px;">5️⃣ ARTIFACT - 交付物 (Output)</text>
+  <text x="360" y="408" class="text" style="text-anchor:start;font-size:11px;">5️⃣ ART - 交付物 (Output)</text>
 
   <!-- Key Insight - Adjusted -->
   <rect x="330" y="450" width="620" height="100" rx="6" fill="#faf5ff" stroke="#7c3aed" stroke-width="1"/>
@@ -136,15 +137,15 @@
 
   <!-- Sample Trace Row at bottom -->
   <rect x="30" y="450" width="280" height="100" rx="6" fill="#f0f9ff" stroke="#0ea5e9" stroke-width="1"/>
-  <text x="170" y="475" class="text text-title" style="font-size:12px;">示例: TRACE-001</text>
-  <text x="45" y="495" class="text text-sub" style="text-anchor:start;font-size:9px;">covers: MUST-001, NEG-001</text>
-  <text x="45" y="510" class="text text-sub" style="text-anchor:start;font-size:9px;">evidenceRefs: EVD-001</text>
-  <text x="45" y="525" class="text text-sub" style="text-anchor:start;font-size:9px;">contractGates: CMD-TEST-001</text>
-  <text x="45" y="540" class="text text-sub" style="text-anchor:start;font-size:9px;">deliveryGates: CMD-DELIVERY-001</text>
+  <text x="170" y="475" class="text text-title" style="font-size:12px;">示例: TRACE-REG-001</text>
+  <text x="45" y="495" class="text text-sub" style="text-anchor:start;font-size:9px;">taskRefs: TASK-REG-001</text>
+  <text x="45" y="510" class="text text-sub" style="text-anchor:start;font-size:9px;">acceptanceRefs: ACC-REG-001 / E2E-REG-001</text>
+  <text x="45" y="525" class="text text-sub" style="text-anchor:start;font-size:9px;">commandRefs: CMD-REG-TEST-001</text>
+  <text x="45" y="540" class="text text-sub" style="text-anchor:start;font-size:9px;">artifactRefs: ART-REG-RPT-01</text>
 
   <!-- Legend at bottom -->
   <rect x="30" y="570" width="940" height="60" rx="6" fill="#ffffff" stroke="#e5e5e5" stroke-width="1"/>
   <text x="50" y="590" class="text" style="text-anchor:start;font-weight:600;font-size:11px;">追溯规则:</text>
-  <text x="50" y="608" class="text text-sub" style="text-anchor:start;font-size:10px;">正向: MUST → TRACE → COMMAND → ARTIFACT + EVIDENCE</text>
-  <text x="500" y="608" class="text text-sub" style="text-anchor:start;font-size:10px;">反向: EVIDENCE → TRACE → MUST (反向审计)</text>
+  <text x="50" y="608" class="text text-sub" style="text-anchor:start;font-size:10px;">正向: MUST → TRACE → CMD → ART + EVD</text>
+  <text x="500" y="608" class="text text-sub" style="text-anchor:start;font-size:10px;">反向: EVD → TRACE → MUST (反向审计)</text>
 </svg>

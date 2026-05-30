@@ -21,7 +21,8 @@ export type DimensionMode =
   | 'readiness'
   | 'story'
   | 'tasks'
-  | 'bugfix';
+  | 'bugfix'
+  | 'delivery';
 
 const DIMENSION_SCORE_PATTERN = /^(?:[-*]\s*|\d+\.\s*)?(.+?)\s*[：:]\s*(\d+)\s*[/／]\s*100\s*$/;
 
@@ -86,6 +87,8 @@ export function stageToMode(stage: string): DimensionMode {
       return 'pr';
     case 'implementation_readiness':
       return 'readiness';
+    case 'delivery_confirmation':
+      return 'delivery';
     default:
       return 'code';
   }

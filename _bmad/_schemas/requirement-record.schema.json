@@ -234,6 +234,20 @@
       "items": { "$ref": "#/$defs/artifactRef" }
     },
     "deliveryEvidence": { "$ref": "#/$defs/deliveryEvidence" },
+    "implementationReadiness": { "$ref": "#/$defs/controlEventList" },
+    "executionClosures": { "$ref": "#/$defs/controlEventList" },
+    "auditReviews": { "$ref": "#/$defs/controlEventList" },
+    "deliveryConfirmations": { "$ref": "#/$defs/controlEventList" },
+    "externalBoardEvidence": { "$ref": "#/$defs/controlEventList" },
+    "bmadAssociations": { "$ref": "#/$defs/controlEventList" },
+    "postCloseDefectLinks": { "$ref": "#/$defs/controlEventList" },
+    "semanticCoverage": { "$ref": "#/$defs/controlEventList" },
+    "auditReviewDispatchPackets": { "$ref": "#/$defs/controlEventList" },
+    "auditScoringConvergence": { "$ref": "#/$defs/controlEventList" },
+    "sixModelRuntimeDecisions": { "$ref": "#/$defs/controlEventList" },
+    "runtimeModeSelections": { "$ref": "#/$defs/controlEventList" },
+    "taskProgress": { "$ref": "#/$defs/controlEventList" },
+    "auditTriadConvergence": { "$ref": "#/$defs/controlEventList" },
     "aiTddContractGate": { "$ref": "#/$defs/aiTddContractGate" },
     "hookReconciliation": { "$ref": "#/$defs/hookReconciliation" },
     "latestReviewerCloseout": {
@@ -261,6 +275,13 @@
     "nonEmptyString": {
       "type": "string",
       "minLength": 1
+    },
+    "controlEventList": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
     },
     "sha256": {
       "type": "string",
@@ -660,7 +681,24 @@
         "eventType": { "$ref": "#/$defs/nonEmptyString" },
         "artifactType": { "$ref": "#/$defs/nonEmptyString" },
         "sourceOfTruthRole": {
-          "enum": ["control", "evidence", "projection", "read_model"]
+          "enum": [
+            "acceptance_oracle",
+            "audit_convergence_authority",
+            "audit_dispatch_contract",
+            "audit_profile_contract",
+            "audit_triad_convergence_authority",
+            "closeout_oracle",
+            "control",
+            "evidence",
+            "execution_runtime_mode_selection",
+            "historical_requirement_context",
+            "host_surface_projection",
+            "implementation",
+            "projection",
+            "read_model",
+            "runtime_next_action_authority",
+            "semantic_coverage_gate_receipt"
+          ]
         },
         "recordId": { "$ref": "#/$defs/nonEmptyString" },
         "requirementSetId": { "$ref": "#/$defs/nonEmptyString" },

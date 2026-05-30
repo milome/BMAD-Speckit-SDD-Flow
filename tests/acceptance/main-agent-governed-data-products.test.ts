@@ -172,9 +172,27 @@ describe('main-agent governed data products', () => {
         'canonical-samples.jsonl',
         'dataset-manifest.json',
         'data-governance-report.json',
+        'governance/split-report.json',
+        'governance/dedup-report.json',
+        'governance/contamination-report.json',
+        'governance/holdout-registry.json',
+        'governance/post-training-eval-report.json',
+        'governance/data-governance-gate-report.json',
+        'governance/training-run.json',
       ]) {
         expect(existsSync(path.join(fixture.dataDir, fileName))).toBe(true);
       }
+      const trainingRun = JSON.parse(readFileSync(path.join(fixture.dataDir, 'governance', 'training-run.json'), 'utf8'));
+      const evalReport = JSON.parse(readFileSync(path.join(fixture.dataDir, 'governance', 'post-training-eval-report.json'), 'utf8'));
+      expect(trainingRun).toMatchObject({
+        status: 'completed',
+        modelTrainingPerformed: false,
+      });
+      expect(evalReport).toMatchObject({
+        decision: 'pass',
+        trainingLossOnly: false,
+        trainingRunId: trainingRun.trainingRunId,
+      });
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

@@ -353,4 +353,59 @@ describe('architecture confirmation ingest', () => {
       removeTempTree(root);
     }
   });
+
+  it('persists architecture confirmation state checks only when explicitly requested', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'arch-confirm-state-check-persist-'));
+    try {
+      const fixture = writeFixture(root);
+      expect(
+        mainIngestArchitectureConfirmation([
+          '--architecture-confirmation',
+          fixture.architecturePath,
+          '--render-report',
+          fixture.reportPath,
+          '--requirement-record',
+          fixture.recordPath,
+          '--confirmation-text',
+          fixture.confirmationText,
+          '--confirmed-by',
+          'test-user',
+          '--confirmed-at',
+          '2026-05-19T00:00:00.000Z',
+        ])
+      ).toBe(0);
+      expect(
+        mainIngestArchitectureConfirmation([
+          '--action',
+          'check-state',
+          '--requirement-record',
+          fixture.recordPath,
+          '--confirmed-by',
+          'test-agent',
+          '--confirmed-at',
+          '2026-05-19T00:00:01.000Z',
+          '--persist-state-check',
+          '--json',
+        ])
+      ).toBe(0);
+
+      const record = JSON.parse(readFileSync(fixture.recordPath, 'utf8'));
+      expect(record.architectureConfirmationState.status).toBe('active');
+      expect(record.architectureConfirmationStateChecks).toHaveLength(1);
+      expect(record.architectureConfirmationStateChecks[0]).toMatchObject({
+        eventType: 'architecture_confirmation_state_checked',
+        decision: 'pass',
+      });
+      expect(record.gateChecks).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            gate: 'architecture_confirmation_state',
+            decision: 'pass',
+          }),
+        ])
+      );
+    } finally {
+      removeTempTree(root);
+    }
+  });
 });

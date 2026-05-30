@@ -70,6 +70,21 @@ function extractCommandFileRefs(command) {
   return [...refs];
 }
 
+function commandFileRefs(row) {
+  return unique([
+    ...extractCommandFileRefs(text(row.command)),
+    text(row.file),
+    text(row.path),
+    text(row.testFile),
+    text(row.testPath),
+    ...strings(row.files),
+    ...strings(row.testFiles),
+    ...strings(row.targetFiles),
+  ])
+    .filter(Boolean)
+    .map(normalizePath);
+}
+
 function requirementRows(confirmation) {
   const traceRefsByRequirement = new Map();
   for (const trace of objects(confirmation.traceRows)) {
@@ -687,7 +702,7 @@ function buildDerivedContractExecutionManifest(input) {
       command: text(row.command),
       role: text(row.role) || text(row.commandRole) || text(row.gate),
       expectedMode: text(row.expectedMode) || text(row.expectedExitCodeAfterImplementation),
-      files: extractCommandFileRefs(text(row.command)),
+      files: commandFileRefs(row),
       traceRefs: idRefs(row, ['traceRows', 'traceRefs']),
       evidenceRefs: idRefs(row, ['evidenceRefs']),
     })),

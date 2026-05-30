@@ -373,6 +373,52 @@ describe('manifest driven required command runner contract', () => {
     }
   });
 
+  it('treats forbidden rg scans as pass only when no forbidden pattern is found', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'manifest-runner-forbidden-rg-'));
+    try {
+      const { sourcePath, recordPath } = fixture(root, 'valid');
+      const cleanFile = path.join(root, 'clean-surface.ts');
+      writeText(cleanFile, 'currentMentalModel: delivery_confirmation\n');
+      const source = readText(sourcePath).replace(
+        /command: npx vitest run .+/u,
+        `command: rg -n -e 'currentMentalModel.*delivery_closeout|delivery_closeout.*currentMentalModel' -- ${cleanFile.replace(/\\/gu, '/')}`
+      );
+      writeText(sourcePath, source);
+      const evidenceDir = path.join(root, 'evidence');
+      const code = mainRunRequiredCommandsFromAiTddManifest([
+        '--source',
+        sourcePath,
+        '--requirement-record',
+        recordPath,
+        '--mode',
+        'closeout',
+        '--attempt-id',
+        'attempt-runner',
+        '--run-id',
+        'run-runner',
+        '--evidence-dir',
+        evidenceDir,
+        '--json',
+      ]);
+      expect([0, 1]).toContain(code);
+      const failedPacketPath = path.join(evidenceDir, 'implementation-evidence-packet.failed.json');
+      expect(existsSync(failedPacketPath)).toBe(true);
+      const packet = JSON.parse(readFileSync(failedPacketPath, 'utf8'));
+      expect(packet.commandRuns).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            commandId: 'CMD-TEST-DYNAMIC-RUNNER',
+            commandExecutionMode: 'forbidden_pattern_absent',
+            exitCode: 0,
+            rawExitCode: 1,
+          }),
+        ])
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('generates failure-case coverage through controlled ingest without polluting manifest required commands', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'manifest-runner-failure-coverage-'));
     try {

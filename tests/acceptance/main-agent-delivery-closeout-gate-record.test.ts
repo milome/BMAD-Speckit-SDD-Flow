@@ -44,6 +44,43 @@ function writeText(filePath: string, value: string): void {
   writeFileSync(filePath, value, 'utf8');
 }
 
+function writeModelPacket(filePath: string, input: Record<string, unknown> = {}): string {
+  writeJson(filePath, {
+    schemaVersion: 'model-packet-fixture/v1',
+    sourceDocumentHash: HASH,
+    implementationConfirmationHash: HASH,
+    requirements: {
+      must: [
+        {
+          id: 'MUST-001',
+          text: 'MUST-001 requires current attempt command, artifact, test result, and closure.',
+          riskLevel: 'critical',
+          evidenceRefs: ['EVD-001'],
+          coveredByTraceRows: ['TRACE-001'],
+        },
+      ],
+    },
+    traceSlices: [
+      {
+        traceId: 'TRACE-001',
+        requirementRefs: ['MUST-001'],
+        evidenceRefs: ['EVD-001'],
+        commandRefs: ['CMD-DELIVERY'],
+      },
+    ],
+    requiredCommands: [
+      {
+        id: 'CMD-DELIVERY',
+        command: 'node verify-delivery.js',
+        traceRows: ['TRACE-001'],
+        evidenceRefs: ['EVD-001'],
+      },
+    ],
+    ...input,
+  });
+  return filePath;
+}
+
 function writeDeliveryTruthReport(root: string, overrides: Record<string, unknown> = {}): string {
   const reportPath = path.join(
     root,
@@ -84,6 +121,26 @@ function recordText(record: Record<string, unknown>, key: string): string {
 function currentArchitectureHash(record: Record<string, unknown>): string {
   const state = record.architectureConfirmationState as Record<string, unknown> | undefined;
   return typeof state?.currentArchitectureConfirmationHash === 'string' ? state.currentArchitectureConfirmationHash : HASH;
+}
+
+function modelResult(model: string, status = 'pass'): Record<string, unknown> {
+  return {
+    payloadKind: 'model_result',
+    model,
+    recordId: 'REQ-CLOSEOUT',
+    requirementSetId: 'REQ-CLOSEOUT',
+    sourceDocumentHash: HASH,
+    implementationConfirmationHash: HASH,
+    status,
+    resultRecordedAt: '2026-05-19T00:00:00.000Z',
+    resultRecordedBy: 'test-agent',
+    blockingReasons: status === 'pass' ? [] : [`${model}_${status}`],
+    sourceRefs: [{ sourceType: 'fixture', id: model }],
+    currentHashes: {
+      sourceDocumentHash: HASH,
+      implementationConfirmationHash: HASH,
+    },
+  };
 }
 
 function artifact(filePath: string, artifactType: string): Record<string, unknown> {
@@ -545,6 +602,14 @@ function baseRecord(): Record<string, unknown> {
     status: 'user_confirmed',
     sourceDocumentHash: HASH,
     implementationConfirmationHash: HASH,
+    currentMentalModel: 'audit_review',
+    sixModelResults: {
+      requirement_confirmation: modelResult('requirement_confirmation'),
+      architecture_confirmation: modelResult('architecture_confirmation'),
+      implementation_readiness: modelResult('implementation_readiness'),
+      execution_closure: modelResult('execution_closure'),
+      audit_review: modelResult('audit_review'),
+    },
     architectureConfirmationState: {
       status: 'active',
       currentArchitectureConfirmationRunId: 'arch-run-001',
@@ -559,7 +624,7 @@ function baseRecord(): Record<string, unknown> {
     },
     architectureConfirmationStateChecks: [
       {
-        eventType: 'architecture_confirmation_state_checked',
+        eventType: 'architecture_confirmation_recorded',
         recordId: 'REQ-CLOSEOUT',
         requirementSetId: 'REQ-CLOSEOUT',
         checkId: 'architecture-state:2026-05-19T00:00:00.000Z',
@@ -723,6 +788,293 @@ describe('requirement-scoped delivery closeout gate', () => {
         closeoutAttemptId: 'closeout-pass',
         decision: 'pass',
       });
+    } finally {
+      cleanupTempRoot(root);
+    }
+  });
+
+  it('blocks closeout when audit_review is not current pass', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-audit-prereq-'));
+    try {
+      const base = baseRecord();
+      const recordPath = writeRecord(root, {
+        ...base,
+        sixModelResults: {
+          ...(base.sixModelResults as Record<string, unknown>),
+          audit_review: modelResult('audit_review', 'not_established'),
+        },
+        deliveryEvidence: {
+          requiredCommands: [
+            {
+              commandId: 'CMD-DELIVERY',
+              blockingIfMissing: true,
+              negativeOrRegression: true,
+              closeoutAttemptId: 'closeout-audit-prereq',
+              artifactRefs: [evidenceArtifactRef()],
+            },
+          ],
+        },
+        executionIterations: [
+          {
+            executionIterationId: 'exec-001',
+            commandRunRefs: [
+              {
+                commandId: 'CMD-DELIVERY',
+                closeoutAttemptId: 'closeout-audit-prereq',
+                exitCode: 0,
+              },
+            ],
+          },
+        ],
+        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+      });
+      const code = mainDeliveryCloseoutGate([
+        '--requirement-record',
+        recordPath,
+        '--attempt-id',
+        'closeout-audit-prereq',
+        '--evaluated-at',
+        '2026-05-19T00:00:00.000Z',
+        '--json',
+      ]);
+      expect(code).toBe(1);
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(record.closeout.decision).toBe('blocked');
+      expect(record.closeout.attempts[0].blockingReasons).toEqual(
+        expect.arrayContaining(['audit_review_not_passed:not_established'])
+      );
+      expect(record.lastEventType).toBe('delivery_confirmation_result_recorded');
+      expect(record.sixModelResults.delivery_confirmation.status).toBe('blocked');
+    } finally {
+      cleanupTempRoot(root);
+    }
+  });
+
+  it('fails closed when compiled model packet MUSTs lack per-MUST closure evidence', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-per-must-blocked-'));
+    try {
+      const modelPacketPath = writeModelPacket(path.join(root, 'trace-execution', 'model_packet.json'));
+      const recordPath = writeRecord(root, {
+        ...baseRecord(),
+        deliveryEvidence: {
+          requiredCommands: [
+            {
+              commandId: 'CMD-DELIVERY',
+              command: 'node verify-delivery.js',
+              blockingIfMissing: true,
+              negativeOrRegression: true,
+              closeoutAttemptId: 'closeout-per-must-blocked',
+              artifactRefs: [evidenceArtifactRef()],
+            },
+          ],
+        },
+        executionIterations: [
+          {
+            executionIterationId: 'exec-001',
+            commandRunRefs: [
+              {
+                commandId: 'CMD-DELIVERY',
+                closeoutAttemptId: 'closeout-per-must-blocked',
+                exitCode: 0,
+              },
+            ],
+          },
+        ],
+        requirementClosures: [],
+      });
+      const reportPath = path.join(root, 'closeout', 'delivery-closeout-report.json');
+
+      const code = mainDeliveryCloseoutGate([
+        '--requirement-record',
+        recordPath,
+        '--model-packet',
+        modelPacketPath,
+        '--attempt-id',
+        'closeout-per-must-blocked',
+        '--report-path',
+        reportPath,
+        '--evaluated-at',
+        '2026-05-19T00:00:00.000Z',
+      ]);
+
+      expect(code).toBe(1);
+      const report = JSON.parse(readFileSync(reportPath, 'utf8'));
+      expect(report.blockingReasons).toEqual(
+        expect.arrayContaining([
+          'per_must_closure_evidence_index_not_passed',
+          'closure_missing:MUST-001',
+        ])
+      );
+      expect(report.checks).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: 'per-must-closure-evidence-index',
+            passed: false,
+          }),
+        ])
+      );
+      const indexPath = path.join(root, 'closeout', 'per-must-closure-evidence-index.json');
+      const index = JSON.parse(readFileSync(indexPath, 'utf8'));
+      expect(index.rows[0]).toMatchObject({
+        mustId: 'MUST-001',
+        status: 'blocked',
+        closureStatus: 'missing',
+      });
+    } finally {
+      cleanupTempRoot(root);
+    }
+  });
+
+  it('fails closed when compiled execution strategy exists but no model packet can be resolved', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-per-must-missing-packet-'));
+    try {
+      const recordPath = writeRecord(root, {
+        ...baseRecord(),
+        executionStrategySelections: [
+          {
+            eventType: 'execution_strategy_selected',
+            strategyId: 'compiled_trace_direct',
+            availability: 'available',
+            selectedBy: 'policy',
+            strategyOptionsHash: HASH,
+            selectedOptionHash: HASH,
+            modelPacketHash: HASH,
+            sourceDocumentHash: HASH,
+            implementationConfirmationHash: HASH,
+            sourceRefs: [{ sourceType: 'model_packet', id: HASH }],
+            recordedAt: '2026-05-19T00:00:00.000Z',
+            recordedBy: 'test-agent',
+          },
+        ],
+        deliveryEvidence: {
+          requiredCommands: [
+            {
+              commandId: 'CMD-DELIVERY',
+              command: 'node verify-delivery.js',
+              blockingIfMissing: true,
+              negativeOrRegression: true,
+              closeoutAttemptId: 'closeout-missing-model-packet',
+              artifactRefs: [evidenceArtifactRef()],
+            },
+          ],
+        },
+        executionIterations: [
+          {
+            executionIterationId: 'exec-001',
+            commandRunRefs: [
+              {
+                commandId: 'CMD-DELIVERY',
+                closeoutAttemptId: 'closeout-missing-model-packet',
+                exitCode: 0,
+              },
+            ],
+          },
+        ],
+        requirementClosures: [
+          {
+            requirementId: 'MUST-001',
+            status: 'pass',
+          },
+        ],
+      });
+
+      const code = mainDeliveryCloseoutGate([
+        '--requirement-record',
+        recordPath,
+        '--attempt-id',
+        'closeout-missing-model-packet',
+        '--evaluated-at',
+        '2026-05-19T00:00:00.000Z',
+      ]);
+
+      expect(code).toBe(1);
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(record.closeout.attempts[0].blockingReasons).toEqual(
+        expect.arrayContaining([
+          'per_must_closure_evidence_index_not_passed',
+          'model_packet_not_available',
+        ])
+      );
+    } finally {
+      cleanupTempRoot(root);
+    }
+  });
+
+  it('passes compiled model packet closeout only after every MUST has command, artifact, test result, and pass closure', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-per-must-pass-'));
+    try {
+      const modelPacketPath = writeModelPacket(path.join(root, 'trace-execution', 'model_packet.json'));
+      const reportPath = path.join(root, 'closeout', 'delivery-closeout-report.json');
+      const recordPath = writeRecord(root, {
+        ...baseRecord(),
+        deliveryEvidence: {
+          requiredCommands: [
+            {
+              commandId: 'CMD-DELIVERY',
+              command: 'node verify-delivery.js',
+              blockingIfMissing: true,
+              negativeOrRegression: true,
+              closeoutAttemptId: 'closeout-per-must-pass',
+              artifactRefs: [evidenceArtifactRef()],
+            },
+          ],
+        },
+        executionIterations: [
+          {
+            executionIterationId: 'exec-001',
+            commandRunRefs: [
+              {
+                commandId: 'CMD-DELIVERY',
+                command: 'node verify-delivery.js',
+                runId: 'run-delivery',
+                closeoutAttemptId: 'closeout-per-must-pass',
+                exitCode: 0,
+                startedAt: '2026-05-19T00:00:00.000Z',
+                completedAt: '2026-05-19T00:00:01.000Z',
+                outputSummary: 'delivery command passed',
+              },
+            ],
+            evidenceArtifactRefs: [evidenceArtifactRef()],
+          },
+        ],
+        requirementClosures: [
+          {
+            requirementId: 'MUST-001',
+            status: 'pass',
+            recordedAt: '2026-05-19T00:00:01.000Z',
+          },
+        ],
+      });
+
+      const code = mainDeliveryCloseoutGate([
+        '--requirement-record',
+        recordPath,
+        '--model-packet',
+        modelPacketPath,
+        '--attempt-id',
+        'closeout-per-must-pass',
+        '--report-path',
+        reportPath,
+        '--evaluated-at',
+        '2026-05-19T00:00:00.000Z',
+      ]);
+
+      expect(code).toBe(0);
+      const report = JSON.parse(readFileSync(reportPath, 'utf8'));
+      expect(report.checks).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: 'per-must-closure-evidence-index',
+            passed: true,
+            counts: { total: 1, pass: 1, blocked: 0 },
+          }),
+        ])
+      );
+      const index = JSON.parse(
+        readFileSync(path.join(root, 'closeout', 'per-must-closure-evidence-index.json'), 'utf8')
+      );
+      expect(index.decision).toBe('pass');
+      expect(index.rows[0].closureStatus).toBe('pass');
     } finally {
       cleanupTempRoot(root);
     }

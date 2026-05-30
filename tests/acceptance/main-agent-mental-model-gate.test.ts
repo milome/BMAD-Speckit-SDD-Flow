@@ -153,7 +153,7 @@ describe('main-agent mental model gate', () => {
     });
   });
 
-  it('rejects gate_check_recorded as a direct writer for sixModelResults implementation readiness', () => {
+  it('rejects gate_check_recorded as a direct writer for implementation readiness model results', () => {
     withRecord((recordPath) => {
       expect(() =>
         appendControlEventAndReplay({
@@ -180,12 +180,12 @@ describe('main-agent mental model gate', () => {
               },
             };
             if (sha256Json(next.sixModelResults) !== beforeHash) {
-              throw new Error('gate_check_recorded_cannot_write_sixModelResults');
+              throw new Error('gate_check_recorded_cannot_write_model_results');
             }
             return next;
           },
         })
-      ).toThrow('gate_check_recorded_cannot_write_sixModelResults');
+      ).toThrow('gate_check_recorded_cannot_write_model_results');
     });
   });
 

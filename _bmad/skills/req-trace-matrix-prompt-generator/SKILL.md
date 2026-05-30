@@ -65,8 +65,8 @@ Compatibility aliases are accepted:
 - `claude` resolves to `claude-code`.
 - `cursor` resolves to `cursor-ide`.
 
-- `codex` may emit `/goal` only when the caller passes `--goal-command-available true` and the confirmed host hints allow goal mode; otherwise it emits `continue nonstop`.
-- `claude-code` may emit Claude Code `/goal` only when `--goal-command-available true` and confirmed host hints allow goal mode; otherwise it emits an autonomous prompt contract.
+- `codex` emits `/goal` when the caller passes `--goal-command-available true` unless confirmed host hints explicitly set `goalModeAllowed: false`; otherwise it emits `continue nonstop`.
+- `claude-code` emits Claude Code `/goal` when the caller passes `--goal-command-available true` unless confirmed host hints explicitly set `goalModeAllowed: false`; otherwise it emits an autonomous prompt contract.
 - Native `/goal` output must be an audited document-reference entry pointer, not a short natural-language task objective.
 - When native `/goal` is available in `--out-dir` mode, the generator always writes `goal_execution.md` and emits a `/goal` command that references `goal_execution.md` and `model_packet.json`.
 - The `/goal` document-reference command is length-governed against a hard 4000-character limit and a 3800-character safe limit. If it exceeds the hard limit, generation blocks.

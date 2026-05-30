@@ -26,7 +26,7 @@ const VALID_ENTRY_FLOW_CLASSES = new Set([
 const VALID_WORKFLOW_ADAPTERS = new Set(['direct', 'legacy', 'bmad', 'speckit']);
 const VALID_THEMES = new Set(['readable', 'compact', 'audit']);
 const VALID_RENDER_MODES = new Set(['confirmation', 'closeout-review']);
-const ID_PATTERN = /\b(MUST|NEG|OUT|EVD|TRACE|ACC|E2E|Q)-[A-Za-z0-9_.:-]+\b/g;
+const ID_PATTERN = /\b(MUST|NEG|OUT|EVD|TRACE|ACC|E2E|FAIL|EDGE|ART|CMD|TASK|SEQ|FLOW|BOUNDARY|Q)-[A-Za-z0-9_.:-]+\b/g;
 const SELF_PAGE_HASH_PLACEHOLDER = 'sha256:SELF_CONFIRMATION_PAGE_HASH';
 const SELF_CLOSEOUT_PAGE_HASH_PLACEHOLDER = 'sha256:SELF_CLOSEOUT_CONFIRMATION_PAGE_HASH';
 const GENERATED_AT_HASH_PLACEHOLDER = 'CONFIRMATION_GENERATED_AT_HASH_PLACEHOLDER';
@@ -1826,6 +1826,10 @@ function findUnboundDiagramSemantics(source) {
 }
 
 function makeIdSet(confirmation) {
+  const sequenceViews = asArray(confirmation.sequenceViews);
+  const flowViews = asArray(confirmation.flowViews);
+  const edgeCaseViews = asArray(confirmation.edgeCaseViews);
+  const boundaryViews = asArray(confirmation.boundaryViews);
   return {
     must: new Set(asArray(confirmation.must).map((item) => item.id)),
     notDone: new Set(asArray(confirmation.notDone).map((item) => item.id)),
@@ -1836,6 +1840,23 @@ function makeIdSet(confirmation) {
     failurePaths: new Set(asArray(confirmation.failurePaths).map((item) => item.id)),
     edgeCases: new Set(asArray(confirmation.edgeCases).map((item) => item.id)),
     acceptance: new Set(normalizeAcceptanceSuites(confirmation).map((item) => item.id)),
+    artifacts: new Set(asArray(confirmation.artifactAutomationPlan).map((item) => item.artifactId ?? item.id)),
+    commands: new Set([
+      ...asArray(confirmation.requiredCommands).map((item) => item?.id ?? item?.commandId),
+      ...asArray(confirmation.suggestedCommands).map((item) => item?.id ?? item?.commandId),
+    ]),
+    tasks: new Set([
+      ...asArray(confirmation.implementationTasks).map((item) => item.taskId ?? item.id),
+      ...asArray(confirmation.aiTddContractExecutionManifestProjection?.atomicImplementationTaskLineage).map(
+        (item) => item.taskId ?? item.id
+      ),
+    ]),
+    views: new Set([
+      ...sequenceViews.map((item) => item.id),
+      ...flowViews.map((item) => item.id),
+      ...edgeCaseViews.map((item) => item.id),
+      ...boundaryViews.map((item) => item.id),
+    ]),
   };
 }
 
@@ -1850,6 +1871,10 @@ function allKnownIds(idSet) {
     ...idSet.failurePaths,
     ...idSet.edgeCases,
     ...idSet.acceptance,
+    ...idSet.artifacts,
+    ...idSet.commands,
+    ...idSet.tasks,
+    ...idSet.views,
   ]);
 }
 
@@ -3131,9 +3156,11 @@ function buildCoverage(input) {
     }
   }
 
+  const isManagedReconfirmationStatus =
+    confirmation.status === 'reconfirm_required' || confirmation.status === 'reconfirmation_required';
   const hasManagedReconfirmationRequest =
     reconfirmationState?.required === true &&
-    confirmation.status === 'reconfirm_required' &&
+    isManagedReconfirmationStatus &&
     confirmation.reconfirmationRequest &&
     confirmation.reconfirmationRequest.required === true;
 
@@ -3156,11 +3183,11 @@ function buildCoverage(input) {
     );
   }
   if (reconfirmationState?.required) {
-    if (confirmation.status !== 'reconfirm_required' && confirmation.status !== 'draft') {
+    if (!isManagedReconfirmationStatus && confirmation.status !== 'draft') {
       blockingIssues.push(
         blocking(
           'reconfirmation_status_not_set',
-          'Hash drift requires status draft or reconfirm_required before a new user confirmation can be recorded.',
+          'Hash drift requires status draft, reconfirm_required, or reconfirmation_required before a new user confirmation can be recorded.',
           ['implementationConfirmation.status']
         )
       );
@@ -3171,6 +3198,15 @@ function buildCoverage(input) {
           'reconfirmation_request_missing',
           'Hash drift must create a reconfirmationRequest; users must not manually edit hashes or confirmation state.',
           ['implementationConfirmation.reconfirmationRequest']
+        )
+      );
+    }
+    if (!asArray(reconfirmationState.diffSummary).length) {
+      blockingIssues.push(
+        blocking(
+          'reconfirmation_missing_diff_summary',
+          'reconfirmationRequest.diffSummary[] is required when reconfirmation is required.',
+          ['implementationConfirmation.reconfirmationRequest.diffSummary']
         )
       );
     }

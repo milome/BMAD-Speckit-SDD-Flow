@@ -1,0 +1,155 @@
+{
+  "metadata": {
+    "profileId": "main-agent-six-mental-model-critical-auditor",
+    "profileVersion": "1.0.0",
+    "profileHash": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "schemaVersion": "critical-auditor-profile/v1",
+    "createdAt": "2026-05-30T00:00:00.000Z",
+    "authoritativeFor": [
+      "audit dimensions",
+      "audit check item binding",
+      "audit triad convergence",
+      "audit fail-closed policy"
+    ]
+  },
+  "registryBindings": {
+    "codeReviewerConfigPath": "_bmad/_config/code-reviewer-config.yaml",
+    "auditItemMappingPath": "_bmad/_config/audit-item-mapping.yaml",
+    "dimensionContractsModule": "packages/scoring/contracts/dimension-contracts.ts",
+    "scoreSchemaPath": "packages/scoring/schema/run-score-schema.json",
+    "orchestrationDispatchContractPath": "scripts/orchestration-dispatch-contract.ts",
+    "reviewerSchemaPath": "scripts/reviewer-schema.ts",
+    "auditScoringConvergencePolicyPath": "scripts/audit-scoring-convergence-policy.ts"
+  },
+  "stageProfileDefinitions": {
+    "requirements_compiler": {
+      "owningStages": ["requirement_confirmation", "req-trace compiler"],
+      "stageForDimensionContract": "prd",
+      "checkItemMode": "prd"
+    },
+    "implementation_readiness": {
+      "owningStages": ["implementation_readiness"],
+      "stageForDimensionContract": "implementation_readiness",
+      "checkItemMode": "implementation_readiness"
+    },
+    "post_implementation_code_audit": {
+      "owningStages": ["audit_review"],
+      "stageForDimensionContract": "implement",
+      "checkItemMode": "implement"
+    },
+    "delivery_confirmation": {
+      "owningStages": ["delivery_confirmation"],
+      "stageForDimensionContract": "delivery_confirmation",
+      "checkItemMode": "delivery"
+    }
+  },
+  "stageProfiles": {},
+  "perspectives": ["product_intent", "model_projection", "main_agent_execution"],
+  "dimensionContractBinding": {
+    "source": "packages/scoring/contracts/dimension-contracts.ts",
+    "stageProfileMustResolve": true,
+    "scoreReceiptMustUseActiveDimensionContractId": true,
+    "expectedDimensionsMustMatchActiveStageProfile": true
+  },
+  "checkItemSetBinding": {
+    "source": "_bmad/_config/audit-item-mapping.yaml",
+    "requiredCheckItemsMustExist": true,
+    "requiredCheckItemsMustBeCoveredByEachRound": true,
+    "vetoItemsMustPass": true
+  },
+  "auditRoundPolicy": {
+    "consecutiveNoGapRoundsRequired": 3,
+    "resetOnHashChange": [
+      "sourceDocumentHash",
+      "implementationConfirmationHash",
+      "modelPacketHash",
+      "auditReceiptHash",
+      "goalExecutionHash",
+      "criticalAuditorProfileHash",
+      "criticalAuditorStageProfileHash",
+      "requiredCheckItemSetHash",
+      "attemptId",
+      "currentAttemptHash",
+      "currentEvidenceHash"
+    ],
+    "staleConvergenceForbidden": true
+  },
+  "roundReceiptContract": {
+    "requiredFields": [
+      "roundId",
+      "stageProfileId",
+      "perspectiveResults.product_intent",
+      "perspectiveResults.model_projection",
+      "perspectiveResults.main_agent_execution",
+      "coveredCheckItemIds",
+      "vetoItemResults",
+      "validatedGapRefs",
+      "invalidGapRefs",
+      "sourceDocumentHash",
+      "implementationConfirmationHash",
+      "modelPacketHash",
+      "criticalAuditorProfileHash",
+      "criticalAuditorStageProfileHash",
+      "requiredCheckItemSetHash",
+      "currentAttemptHash",
+      "currentEvidenceHash"
+    ]
+  },
+  "convergenceReceiptContract": {
+    "requiredConsecutiveRoundReceipts": 3,
+    "unresolvedValidatedGapRefsAllowed": 0,
+    "failedVetoItemsAllowed": 0,
+    "hashBindingMustBeIdenticalAcrossRounds": true,
+    "requiredCheckItemCoverageMustEqualStageProfile": true,
+    "scoreReceiptRefsRequiredWhenStageRequiresScoreMaterialization": true,
+    "runAuditorHostReceiptRefsRequiredWhenStageRequiresScoreMaterialization": true
+  },
+  "failClosedPolicy": {
+    "blockingReasons": [
+      "critical_auditor_profile_missing",
+      "critical_auditor_profile_hash_stale",
+      "critical_auditor_stage_profile_missing",
+      "critical_auditor_stage_profile_hash_stale",
+      "critical_auditor_required_check_items_missing",
+      "critical_auditor_perspective_missing",
+      "critical_auditor_dimension_contract_unresolved",
+      "critical_auditor_round_hash_mismatch",
+      "critical_auditor_valid_gap_found",
+      "critical_auditor_delivery_closeout_authority_invalid"
+    ]
+  },
+  "auditCallPointRegistry": {
+    "requirements_compiler": "requirements_compiler",
+    "must_atomic_decomposition": "requirements_compiler",
+    "packet_source_reconciliation": "requirements_compiler",
+    "compiler_projection": "requirements_compiler",
+    "goal_execution_contract": "requirements_compiler",
+    "docs_review": "requirements_compiler",
+    "grill_with_docs": "requirements_compiler",
+    "implementation_readiness": "implementation_readiness",
+    "readiness_blocker_classification": "implementation_readiness",
+    "execution_closure_evidence": "post_implementation_code_audit",
+    "audit_review": "post_implementation_code_audit",
+    "audit_scoring_materialization": "post_implementation_code_audit",
+    "delivery_confirmation": "delivery_confirmation"
+  },
+  "triadOrchestrationPolicy": {
+    "perspectivesRequiredPerRound": ["product_intent", "model_projection", "main_agent_execution"],
+    "mainAgentOwnsRepair": true,
+    "subagentsMayWriteRuntimeState": false
+  },
+  "subagentIndependencePolicy": {
+    "distinctAgentIdsRequired": true,
+    "distinctExecutorIdentityRequired": true,
+    "sameAgentMayNotProduceMultiplePerspectives": true
+  },
+  "mainAgentRepairPolicy": {
+    "repairOwner": "main_agent",
+    "repairReceiptRequired": true,
+    "repairMustPrecedeNextAuditRound": true
+  },
+  "repairReceiptFeedbackPolicy": {
+    "feedbackDispatchRequired": true,
+    "subagentsMustReceiveRepairReceiptBeforeNextRound": true
+  }
+}

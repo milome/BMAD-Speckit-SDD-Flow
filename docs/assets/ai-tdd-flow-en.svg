@@ -71,8 +71,8 @@
   <rect x="30" y="185" width="240" height="125" rx="4" fill="#ffffff" stroke="#e5e5e5" stroke-width="1"/>
   <text x="150" y="205" class="text" style="font-weight:600;font-size:12px;">Key Actions</text>
   <text x="45" y="225" class="text text-sub" style="text-anchor:start;">• Atomic requirement decomposition</text>
-  <text x="45" y="242" class="text text-sub" style="text-anchor:start;">• Define MUST/MUST NOT</text>
-  <text x="45" y="259" class="text text-sub" style="text-anchor:start;">• Build TRACE MATRIX</text>
+  <text x="45" y="242" class="text text-sub" style="text-anchor:start;">• Define MUST/NEG/OUT</text>
+  <text x="45" y="259" class="text text-sub" style="text-anchor:start;">• Build TRACE rows</text>
   <text x="45" y="276" class="text text-sub" style="text-anchor:start;">• Human-in-loop confirmation</text>
   <text x="45" y="293" class="text text-sub" style="text-anchor:start;">• Generate HTML confirmation page</text>
 
@@ -80,7 +80,7 @@
   <text x="420" y="205" class="text" style="font-weight:600;font-size:12px;">Exit Criteria</text>
   <text x="315" y="225" class="text text-sub" style="text-anchor:start;">• Generate tests from Manifest</text>
   <text x="315" y="242" class="text text-sub" style="text-anchor:start;">• All tests registered</text>
-  <text x="315" y="259" class="text text-sub" style="text-anchor:start;">• Run AI-TDD Gate</text>
+  <text x="315" y="259" class="text text-sub" style="text-anchor:start;">• Run CMD gates and collect EVD</text>
   <text x="315" y="276" class="text text-sub" style="text-anchor:start;fill:#dc2626;">• State must be AI-TDD-RED</text>
   <text x="315" y="293" class="text text-sub" style="text-anchor:start;">• Manifest completeness check</text>
 
@@ -94,8 +94,8 @@
 
   <rect x="840" y="185" width="230" height="125" rx="4" fill="#ffffff" stroke="#e5e5e5" stroke-width="1"/>
   <text x="955" y="205" class="text" style="font-weight:600;font-size:12px;">Exit Criteria</text>
-  <text x="855" y="225" class="text text-sub" style="text-anchor:start;">• Re-run full test suite</text>
-  <text x="855" y="242" class="text text-sub" style="text-anchor:start;">• All Manifest items verified</text>
+  <text x="855" y="225" class="text text-sub" style="text-anchor:start;">• ACC/E2E passing</text>
+  <text x="855" y="242" class="text text-sub" style="text-anchor:start;">• EVD/ART complete</text>
   <text x="855" y="259" class="text text-sub" style="text-anchor:start;">• Generate delivery confirmation</text>
   <text x="855" y="276" class="text text-sub" style="text-anchor:start;fill:#16a34a;">• State must be AI-TDD-GREEN</text>
   <text x="855" y="293" class="text text-sub" style="text-anchor:start;">• Human final approval</text>
@@ -109,10 +109,10 @@
   <!-- Core Principles Box -->
   <rect x="30" y="330" width="1040" height="130" rx="6" fill="#ffffff" stroke="#e5e5e5" stroke-width="1"/>
   <text x="550" y="355" class="text" style="font-weight:600;font-size:16px;">AI-TDD Core Principles</text>
-  <text x="50" y="385" class="text text-sub" style="text-anchor:start;">1. Manifest must be complete before execution begins</text>
+  <text x="50" y="385" class="text text-sub" style="text-anchor:start;">1. Manifest defines MUST/NEG/OUT/TRACE/EVD before execution</text>
   <text x="50" y="408" class="text text-sub" style="text-anchor:start;">2. Entry Gate must be AI-TDD-RED (All Red) — tests exist but implementation missing</text>
   <text x="50" y="431" class="text text-sub" style="text-anchor:start;">3. Delivery Gate must be AI-TDD-GREEN (All Green) — all verifications passing</text>
-  <text x="50" y="454" class="text text-sub" style="text-anchor:start;">4. No complete Manifest, no execution; unverified items, no delivery</text>
+  <text x="50" y="454" class="text text-sub" style="text-anchor:start;">4. OUT is scope boundary; violated NEG blocks delivery</text>
 
   <!-- Timeline -->
   <text x="550" y="515" class="text" style="font-weight:600;font-size:14px;">Execution Timeline</text>

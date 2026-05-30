@@ -172,6 +172,15 @@ function latestActiveSubsystemExtension(record: JsonObject, recordPath: string):
   return readJson(resolved);
 }
 
+function productionSubsystemCoverageRequired(record: JsonObject): boolean {
+  const explicit = nested(nested(record.applicability).productionSubsystems).applies;
+  if (typeof explicit === 'boolean') return explicit;
+  return objects(record.extensionRefs).some((ref) => {
+    const relatedIds = strings(ref.relatedRequirementIds);
+    return text(ref.status) === 'active' && relatedIds.includes('MUST-017');
+  });
+}
+
 function isSha256(value: string): boolean {
   return /^sha256:[a-f0-9]{64}$/u.test(value);
 }
@@ -231,7 +240,8 @@ function concreteEvidenceIssues(item: JsonObject, prefix: string, itemId: string
   return issues;
 }
 
-function subsystemCoverageIssues(extension: JsonObject | null): string[] {
+function subsystemCoverageIssues(extension: JsonObject | null, required = true): string[] {
+  if (!required) return [];
   if (!extension) return ['subsystem_extension_missing'];
   const byId = new Map(objects(extension.subsystemReadiness).map((item) => [text(item.subsystemId), item]));
   const issues: string[] = [];
@@ -415,6 +425,17 @@ function artifactSummary(file: string, artifactType: string): JsonObject {
   };
 }
 
+function defaultJsonBinding(file: string): JsonObject | null {
+  return fs.existsSync(file) ? readJson(file) : null;
+}
+
+function defaultEvalReport(governanceDir: string): JsonObject | null {
+  const primary = path.join(governanceDir, 'post-training-eval-report.json');
+  const fallback = path.join(governanceDir, 'eval-report.json');
+  if (fs.existsSync(primary)) return readJson(primary);
+  return defaultJsonBinding(fallback);
+}
+
 function buildRelease(input: {
   record: JsonObject;
   recordPath: string;
@@ -438,6 +459,7 @@ function buildRelease(input: {
   const dedup = readJsonIfExists(path.join(input.governanceDir, 'dedup-report.json')) ?? {};
   const holdout = readJsonIfExists(path.join(input.governanceDir, 'holdout-registry.json')) ?? {};
   const subsystemExtension = latestActiveSubsystemExtension(input.record, input.recordPath);
+  const subsystemCoverageRequired = productionSubsystemCoverageRequired(input.record);
 
   const blockingIssues = [
     ...(!fs.existsSync(sourceManifestPath) ? ['source_dataset_manifest_missing'] : sourceSnapshotIssues(input.record, sourceManifest)),
@@ -445,7 +467,7 @@ function buildRelease(input: {
     ...governanceIssues(input.governanceDir, governanceReport),
     ...trainingRunIssues(input.trainingRun, input.datasetId, input.datasetVersion),
     ...evalReportIssues(input.evalReport, input.trainingRun),
-    ...subsystemCoverageIssues(subsystemExtension),
+    ...subsystemCoverageIssues(subsystemExtension, subsystemCoverageRequired),
   ];
   const releaseDecision: ReleaseDecision = blockingIssues.length === 0 ? 'pass' : 'blocked';
 
@@ -453,11 +475,37 @@ function buildRelease(input: {
   const trainPath = path.join(exportsDir, 'train.jsonl');
   const validationPath = path.join(exportsDir, 'validation.jsonl');
   const testPath = path.join(exportsDir, 'test.jsonl');
+  const openaiProjectionPath = path.join(exportsDir, 'canonical-samples.openai.jsonl');
+  const huggingfaceProjectionPath = path.join(exportsDir, 'canonical-samples.hf.jsonl');
   copyFile(path.join(input.dataDir, 'canonical-samples.jsonl'), trainPath);
   if (fs.existsSync(path.join(input.dataDir, 'validation.jsonl'))) copyFile(path.join(input.dataDir, 'validation.jsonl'), validationPath);
   else writeText(validationPath, '');
   if (fs.existsSync(path.join(input.dataDir, 'test.jsonl'))) copyFile(path.join(input.dataDir, 'test.jsonl'), testPath);
   else writeText(testPath, '');
+  writeText(
+    openaiProjectionPath,
+    samples
+      .map((sample, index) =>
+        JSON.stringify({
+          custom_id: text(sample.sample_id) || `sample-${index + 1}`,
+          messages: objects(sample.messages),
+          metadata: nested(sample.metadata),
+        })
+      )
+      .join('\n') + (samples.length > 0 ? '\n' : '')
+  );
+  writeText(
+    huggingfaceProjectionPath,
+    samples
+      .map((sample, index) =>
+        JSON.stringify({
+          sample_id: text(sample.sample_id) || `sample-${index + 1}`,
+          conversations: objects(sample.messages),
+          metadata: nested(sample.metadata),
+        })
+      )
+      .join('\n') + (samples.length > 0 ? '\n' : '')
+  );
 
   const quality = qualityReport(sourceManifest, samples, routes, input.generatedAt);
   const redaction = redactionReport(sourceManifest, samples, input.generatedAt);
@@ -564,6 +612,10 @@ function buildRelease(input: {
       trainingRun: artifactSummary(paths.trainingRun, 'training_run_metadata'),
       evalReport: artifactSummary(paths.postTrainingEvalReport, 'post_training_eval_report'),
     },
+    projections: {
+      openai: artifactSummary(openaiProjectionPath, 'openai_chat_projection'),
+      huggingface: artifactSummary(huggingfaceProjectionPath, 'huggingface_conversational_projection'),
+    },
     counts: {
       canonicalSamples: samples.length,
       sampleRoutes: routes.length,
@@ -584,17 +636,28 @@ function buildRelease(input: {
     blockingIssues: [...new Set(blockingIssues)],
     checks: [
       { id: 'source-manifest-current', passed: sourceSnapshotIssues(input.record, sourceManifest).length === 0 },
-      { id: 'release-artifact-set-complete', passed: true, artifactCount: Object.keys(paths).length + 3 },
+      { id: 'release-artifact-set-complete', passed: true, artifactCount: Object.keys(paths).length + 5 },
       { id: 'training-run-bound', passed: trainingRunIssues(input.trainingRun, input.datasetId, input.datasetVersion).length === 0 },
       { id: 'post-training-eval-bound', passed: evalReportIssues(input.evalReport, input.trainingRun).length === 0 },
       {
         id: 'sixteen-subsystems-machine-readable',
-        passed: subsystemCoverageIssues(subsystemExtension).length === 0,
+        passed: subsystemCoverageIssues(subsystemExtension, subsystemCoverageRequired).length === 0,
+        skipped: !subsystemCoverageRequired,
+        reason: subsystemCoverageRequired ? undefined : 'production_subsystems_not_applicable',
         expectedCount: REQUIRED_SUBSYSTEM_IDS.length,
         actualCount: objects(subsystemExtension?.subsystemReadiness).length,
       },
     ],
-    artifactPaths: Object.fromEntries(Object.entries({ ...paths, trainPath, validationPath, testPath }).map(([key, value]) => [key, normalizePathForRecord(value)])),
+    artifactPaths: Object.fromEntries(
+      Object.entries({
+        ...paths,
+        trainPath,
+        validationPath,
+        testPath,
+        openaiProjectionPath,
+        huggingfaceProjectionPath,
+      }).map(([key, value]) => [key, normalizePathForRecord(value)])
+    ),
     manifestHash: sha256File(paths.datasetManifest),
   };
   writeJson(paths.releaseGateReport, report);
@@ -625,8 +688,10 @@ export function mainDatasetReleaseGate(argv: string[]): number {
     outDir,
     datasetId,
     datasetVersion,
-    trainingRun: args.trainingRun ? readJson(path.resolve(args.trainingRun)) : null,
-    evalReport: args.evalReport ? readJson(path.resolve(args.evalReport)) : null,
+    trainingRun: args.trainingRun
+      ? readJson(path.resolve(args.trainingRun))
+      : defaultJsonBinding(path.join(governanceDir, 'training-run.json')),
+    evalReport: args.evalReport ? readJson(path.resolve(args.evalReport)) : defaultEvalReport(governanceDir),
     generatedAt,
     generatedBy,
   });

@@ -25,6 +25,7 @@ function writeJson(filePath: string, value: unknown): void {
 type FakeReqTraceBehavior =
   | 'pass'
   | 'block'
+  | 'fallbackGoal'
   | 'inlineGoal'
   | 'missingAudit'
   | 'missingModel'
@@ -63,6 +64,8 @@ function writeFakeReqTraceSkill(root: string, behavior: FakeReqTraceBehavior): s
       "fs.writeFileSync(path.join(outDir, 'human_prompt.txt'), `Execution Discipline Profile\\nprofileId: ${profile.profileId}\\nprofileHash: ${profile.profileHash}\\nmodel_packet.json is the machine-readable execution authority\\ncompiled direct body\\n`);",
       behavior === 'inlineGoal'
         ? "const goalCommand = { mode: 'native_goal_inline' };"
+        : behavior === 'fallbackGoal'
+          ? "const goalCommand = { mode: 'fallback_prompt_contract' };"
         : behavior === 'missingGoalDocument'
           ? "const goalCommand = { mode: 'native_goal_document_ref', documentPath: path.join(outDir, 'goal_execution.md'), documentHash: 'sha256:0000000000000000000000000000000000000000000000000000000000000000' };"
           : behavior === 'overlongGoal'
@@ -180,6 +183,9 @@ describe('req-trace main-agent dispatch integration', () => {
       expect(invocation.argv).toContain('--source-document');
       expect(invocation.argv).toContain('--out-dir');
       expect(invocation.argv).toContain('--execution-discipline-profile-ref');
+      expect(invocation.argv).toEqual(
+        expect.arrayContaining(['--goal-command-available', 'true'])
+      );
       const modelPacket = JSON.parse(readFileSync(result.compiledPromptRef!.modelPacketPath, 'utf8'));
       expect(modelPacket.artifactRole).toBe('execution_authority');
       const humanPrompt = readFileSync(result.compiledPromptRef!.humanPromptPath, 'utf8');
@@ -199,6 +205,7 @@ describe('req-trace main-agent dispatch integration', () => {
   it('blocks dispatch when compiler artifacts or native goal projection are invalid', () => {
     const cases: Array<[FakeReqTraceBehavior, string]> = [
       ['block', 'compiler_block'],
+      ['fallbackGoal', 'native_goal_document_ref_required:fallback_prompt_contract'],
       ['inlineGoal', 'native_goal_inline_rejected'],
       ['missingAudit', 'audit_receipt_missing'],
       ['missingModel', 'model_packet_missing'],

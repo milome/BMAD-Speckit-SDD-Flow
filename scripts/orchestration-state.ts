@@ -18,11 +18,18 @@ export type OrchestrationPhase =
   | 'post_audit'
   | 'closeout';
 export type OrchestrationNextAction =
+  | 'enter_architecture_confirmation'
+  | 'prepare_architecture_confirmation'
+  | 'recompute_current_model_gate'
+  | 'run_implementation_readiness_gate'
+  | 'run_execution_closure_gate'
   | 'dispatch_implement'
   | 'dispatch_review'
   | 'dispatch_remediation'
   | 'rerun_gate'
   | 'run_closeout'
+  | 'run_pre_confirmation_drilldown'
+  | 'record_closed'
   | 'await_user'
   | 'blocked';
 

@@ -843,6 +843,47 @@ describe('req trace generator confirmation block gate', () => {
     expect(receipt.goalCommand.mode).not.toBe('native_goal_inline');
   });
 
+  it('defaults Codex native /goal to allowed when confirmed host hints omit goalModeAllowed', () => {
+    const source = writeSource(
+      validCompilerSource().replace(
+        `    hostExecutionHints:
+      codexCapable:
+        goalModeAllowed: true
+        preferredContinuationMechanism: /goal
+        goalObjectiveTemplate: "Execute model_packet.json until finalGateMatrix passes; halt for reconfirm_required on semantic gaps."
+      nonCodex:
+        goalModeAllowed: false
+        preferredContinuationMechanism: branch_specific_future_work
+        instruction: "Use branch-specific continuation instructions without emitting /goal."
+      proofPolicy: execution_hint_only_not_delivery_or_closeout_proof`,
+        `    hostExecutionHints:
+      hostSurfaces: ["_bmad/skills/bmad-speckit/SKILL.md"]
+      projectionStatus: synchronized`
+      )
+    );
+    const record = writeRequirementRecord(source);
+    const outDir = path.join(tempDir, 'codex-goal-default-allowed-trace-execution');
+    const result = runNodePrompt([
+      '--source-document',
+      source,
+      '--requirement-record',
+      record,
+      '--out-dir',
+      outDir,
+      '--execution-host',
+      'codex',
+      '--goal-command-available',
+      'true',
+      '--json',
+    ]);
+
+    expect(result.status).toBe(0);
+    expect(fs.existsSync(path.join(outDir, 'goal_execution.md'))).toBe(true);
+    const receipt = readJson<Record<string, any>>(path.join(outDir, 'audit_receipt.json'));
+    expect(receipt.goalCommand.mode).toBe('native_goal_document_ref');
+    expect(receipt.continuationDirective.nativeGoalCommandUsed).toBe(true);
+  });
+
   it('projects generic continuation text without /goal for generic hosts', () => {
     const source = writeSource(validCompilerSource());
     const record = writeRequirementRecord(source);

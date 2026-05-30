@@ -121,7 +121,27 @@ function normalizePathForRecord(value: string): string {
 
 function normalizeSourceOfTruthRole(value: unknown): string {
   const role = text(value);
-  if (['control', 'evidence', 'projection', 'read_model'].includes(role)) return role;
+  if (
+    [
+      'acceptance_oracle',
+      'audit_convergence_authority',
+      'audit_dispatch_contract',
+      'audit_profile_contract',
+      'audit_triad_convergence_authority',
+      'closeout_oracle',
+      'control',
+      'evidence',
+      'execution_runtime_mode_selection',
+      'historical_requirement_context',
+      'host_surface_projection',
+      'implementation',
+      'read_model',
+      'runtime_next_action_authority',
+      'semantic_coverage_gate_receipt',
+      'projection',
+    ].includes(role)
+  )
+    return role;
   if (role === 'derived') return 'evidence';
   return 'evidence';
 }
@@ -696,6 +716,20 @@ export function canonicalizeRequirementRecord(record: JsonObject): JsonObject {
     'artifactIndex',
     'extensionRefs',
     'deliveryEvidence',
+    'implementationReadiness',
+    'executionClosures',
+    'auditReviews',
+    'deliveryConfirmations',
+    'externalBoardEvidence',
+    'bmadAssociations',
+    'postCloseDefectLinks',
+    'semanticCoverage',
+    'auditReviewDispatchPackets',
+    'auditScoringConvergence',
+    'sixModelRuntimeDecisions',
+    'runtimeModeSelections',
+    'taskProgress',
+    'auditTriadConvergence',
     'hookReconciliation',
     'latestReviewerCloseout',
     'aiTddContractGate',
@@ -787,6 +821,24 @@ export function canonicalizeRequirementRecord(record: JsonObject): JsonObject {
   const deliveryEvidence = normalizeDeliveryEvidence(out.deliveryEvidence, out);
   if (deliveryEvidence) out.deliveryEvidence = deliveryEvidence;
   else delete out.deliveryEvidence;
+  for (const field of [
+    'implementationReadiness',
+    'executionClosures',
+    'auditReviews',
+    'deliveryConfirmations',
+    'externalBoardEvidence',
+    'bmadAssociations',
+    'postCloseDefectLinks',
+    'semanticCoverage',
+    'auditReviewDispatchPackets',
+    'auditScoringConvergence',
+    'sixModelRuntimeDecisions',
+    'runtimeModeSelections',
+    'taskProgress',
+    'auditTriadConvergence',
+  ]) {
+    out[field] = objects(out[field]);
+  }
   const hookReconciliation = normalizeHookReconciliation(out.hookReconciliation);
   if (hookReconciliation) out.hookReconciliation = hookReconciliation;
   else delete out.hookReconciliation;

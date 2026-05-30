@@ -123,13 +123,56 @@ function normalizePathForRecord(value: string): string {
 
 function normalizeSourceOfTruthRole(value: unknown): string {
   const role = text(value);
-  if (['control', 'evidence', 'projection', 'read_model'].includes(role)) return role;
+  if (
+    [
+      'acceptance_oracle',
+      'audit_convergence_authority',
+      'audit_dispatch_contract',
+      'audit_profile_contract',
+      'audit_triad_convergence_authority',
+      'closeout_oracle',
+      'control',
+      'evidence',
+      'execution_runtime_mode_selection',
+      'historical_requirement_context',
+      'host_surface_projection',
+      'implementation',
+      'read_model',
+      'runtime_next_action_authority',
+      'semantic_coverage_gate_receipt',
+      'projection',
+    ].includes(role)
+  )
+    return role;
   if (role === 'derived') return 'evidence';
   return 'evidence';
 }
 
 function sha256File(file: string): string {
   return `sha256:${crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex')}`;
+}
+
+function sha256Directory(directory: string): string {
+  const entries: string[] = [];
+  const walk = (current: string): void => {
+    for (const entry of fs.readdirSync(current, { withFileTypes: true }).sort((left, right) => left.name.localeCompare(right.name))) {
+      const absolute = path.join(current, entry.name);
+      const relative = normalizePathForRecord(path.relative(directory, absolute));
+      if (entry.isDirectory()) {
+        walk(absolute);
+      } else if (entry.isFile()) {
+        entries.push(`${relative}:${sha256File(absolute)}`);
+      }
+    }
+  };
+  walk(directory);
+  return `sha256:${crypto.createHash('sha256').update(entries.join('\n')).digest('hex')}`;
+}
+
+function sha256ExistingPath(absolutePath: string): string {
+  const stat = fs.statSync(absolutePath);
+  if (stat.isDirectory()) return sha256Directory(absolutePath);
+  return sha256File(absolutePath);
 }
 
 function appendJsonl(file: string, value: JsonObject): void {
@@ -286,7 +329,7 @@ function validateArtifacts(packet: JsonObject): string[] {
       mismatches.push(`artifact_legacy_write_path_forbidden:${normalizedPath}`);
     }
     const absolute = path.isAbsolute(artifactPath) ? artifactPath : path.resolve(process.cwd(), artifactPath);
-    if (artifactPath && fs.existsSync(absolute) && hash && sha256File(absolute) !== hash) {
+    if (artifactPath && fs.existsSync(absolute) && hash && sha256ExistingPath(absolute) !== hash) {
       mismatches.push(`artifact_hash_mismatch:${artifactPath}`);
     }
   };

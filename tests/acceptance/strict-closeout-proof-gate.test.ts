@@ -513,6 +513,62 @@ describe('strict closeout proof gate', () => {
     }
   });
 
+  it('accepts default dataset release artifacts and typed execution closure writer for current attempts', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'strict-closeout-default-dataset-'));
+    try {
+      const { recordPath, base, sourcePath } = writeFixture(root);
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      const manifestRef = record.artifactIndex.find(
+        (item: Record<string, unknown>) => item.artifactType === 'dataset_release_manifest'
+      ) as Record<string, string>;
+      const releaseRef = record.artifactIndex.find(
+        (item: Record<string, unknown>) => item.artifactType === 'dataset_release_gate_report'
+      ) as Record<string, string>;
+      const defaultReleaseDir = path.join(root, '_bmad-output', 'runtime', 'datasets', 'req-closeout-governed-sft', 'v1');
+      mkdirSync(defaultReleaseDir, { recursive: true });
+      writeFileSync(
+        path.join(defaultReleaseDir, 'dataset-manifest.json'),
+        readFileSync(manifestRef.path, 'utf8'),
+        'utf8'
+      );
+      writeFileSync(
+        path.join(defaultReleaseDir, 'dataset-release-gate-report.json'),
+        readFileSync(releaseRef.path, 'utf8'),
+        'utf8'
+      );
+      record.artifactIndex = record.artifactIndex.filter(
+        (item: Record<string, unknown>) =>
+          item.artifactType !== 'dataset_release_manifest' && item.artifactType !== 'dataset_release_gate_report'
+      );
+      writeJson(recordPath, record);
+      const eventLogPath = path.join(base, 'events', 'control-events.jsonl');
+      const event = JSON.parse(readFileSync(eventLogPath, 'utf8'));
+      event.writerId = 'execution-closure-gate-writer';
+      writeFileSync(eventLogPath, `${JSON.stringify(event)}\n`, 'utf8');
+
+      const reportPath = path.join(base, 'strict-report.json');
+      const code = mainStrictCloseoutProofGate([
+        '--requirement-record',
+        recordPath,
+        '--source',
+        sourcePath,
+        '--attempt-id',
+        ATTEMPT,
+        '--report-path',
+        reportPath,
+        '--json',
+      ]);
+
+      expect(code).toBe(0);
+      const report = JSON.parse(readFileSync(reportPath, 'utf8'));
+      expect(report.writerRegistryAuthorization.ok).toBe(true);
+      expect(report.sftProjectionLineage.ok).toBe(true);
+      expect(report.sftProjectionLineage.manifestPath).toContain('req-closeout-governed-sft');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('fails closed when implementationConfirmationHash exists but --source is omitted', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'strict-closeout-source-missing-'));
     try {

@@ -5,6 +5,8 @@ import { createRequire } from 'node:module';
 import * as crypto from 'node:crypto';
 import * as yaml from 'js-yaml';
 import type {
+  AuditExecutionProfile,
+  AuditTriadExecutionPlanRef,
   DispatchRoute,
   ExecutionPacket,
   PacketKind,
@@ -79,6 +81,26 @@ import { evaluateStrictCloseoutProof } from './strict-closeout-proof-gate';
 import { evaluateTargetArtifactRealization } from './target-artifact-realization-gate';
 import { resolveRuntimeScoringDataPath } from './runtime-scoring-data-path';
 import type { CodexWorkerAdapterReport } from './main-agent-codex-worker-adapter';
+import {
+  createAuditTriadExecutionPlan,
+  writeAuditTriadExecutionPlan,
+  sha256Json as sha256AuditTriadJson,
+} from './audit-triad-orchestrator';
+import {
+  resolveCriticalAuditorProfile,
+  stageProfileForCallPoint,
+  validateCriticalAuditorProfileForStage,
+} from './critical-auditor-profile';
+import {
+  validateNativeGoalReadiness,
+  writeExecutionRuntimeModeSelection,
+  writeRuntimeBlocker,
+} from './host-runtime-mode';
+import {
+  resolveSixModelRuntimeDecision,
+  writeSixModelRuntimeDecision,
+  writeSplitBrainBlocker,
+} from './six-model-runtime-decision';
 
 const requireCommonJs = createRequire(__filename);
 
@@ -231,6 +253,9 @@ export interface MainAgentOrchestrationSurface {
     };
   };
   preConfirmationDrilldownLane?: PreConfirmationDrilldownLaneState | null;
+  sixModelRuntimeDecision?: ReturnType<typeof resolveSixModelRuntimeDecision> | null;
+  sixModelRuntimeDecisionPath?: string | null;
+  splitBrainBlockerPath?: string | null;
 }
 
 export interface MainAgentDispatchInstruction {
@@ -320,9 +345,9 @@ function deriveNextActionFromTaskType(
 ): OrchestrationNextAction {
   switch (taskType) {
     case 'implement':
-      return 'dispatch_review';
+      return 'dispatch_implement';
     case 'audit':
-      return stage === 'post_audit' ? 'run_closeout' : 'await_user';
+      return stage === 'post_audit' ? 'dispatch_review' : 'await_user';
     case 'remediate':
       return 'rerun_gate';
     case 'document':
@@ -506,6 +531,40 @@ function modelResultFor(
     : null;
 }
 
+function modelStatusFor(record: Record<string, unknown> | null, model: string): string {
+  return normalizeText(modelResultFor(record, model)?.status);
+}
+
+function packetHasCurrentHashCompiledPromptRef(
+  packet: RecommendationPacket | ExecutionPacket | ResumePacket | null,
+  record: Record<string, unknown> | null
+): boolean {
+  if (!packet || !record) {
+    return false;
+  }
+  const candidate = packet as unknown as Record<string, unknown>;
+  if (normalizeText(candidate.taskType) !== 'implement') {
+    return false;
+  }
+  if (normalizeText(candidate.authorityMode) !== 'compiled_implementation_confirmation') {
+    return false;
+  }
+  const ref =
+    candidate.compiledPromptRef &&
+    typeof candidate.compiledPromptRef === 'object' &&
+    !Array.isArray(candidate.compiledPromptRef)
+      ? (candidate.compiledPromptRef as Record<string, unknown>)
+      : null;
+  if (!ref) {
+    return false;
+  }
+  return (
+    normalizeText(ref.sourceDocumentHash) === normalizeText(record.sourceDocumentHash) &&
+    normalizeText(ref.implementationConfirmationHash) ===
+      normalizeText(record.implementationConfirmationHash)
+  );
+}
+
 function stringArrayFrom(value: unknown): string[] {
   return Array.isArray(value) ? value.map((item) => normalizeText(item)).filter(Boolean) : [];
 }
@@ -587,8 +646,14 @@ function buildMainAgentStageSummary(input: {
   };
 }
 
-function mergeAllowedWriteScope(base: string[], extras: string[]): string[] {
-  return Array.from(new Set([...base, ...extras]));
+function normalizeAllowedWriteScope(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+    : [];
+}
+
+function mergeAllowedWriteScope(base: unknown, extras: unknown): string[] {
+  return Array.from(new Set([...normalizeAllowedWriteScope(base), ...normalizeAllowedWriteScope(extras)]));
 }
 
 function resolveMappedAllowedWriteScope(
@@ -619,7 +684,7 @@ function resolveMappedAllowedWriteScope(
       'specs/**',
     ]);
   }
-  return mapping.allowedWriteScope;
+  return normalizeAllowedWriteScope(mapping.allowedWriteScope);
 }
 
 function resolveTaskBindingAllowedWriteScope(
@@ -877,6 +942,16 @@ function taskTypeFromNextAction(
       return 'remediate';
     case 'dispatch_implement':
       return 'implement';
+    case 'run_execution_closure_gate':
+    case 'run_implementation_readiness_gate':
+    case 'enter_architecture_confirmation':
+    case 'prepare_architecture_confirmation':
+    case 'run_closeout':
+    case 'record_closed':
+    case 'run_pre_confirmation_drilldown':
+    case 'recompute_current_model_gate':
+    case 'await_user':
+      return null;
     default:
       return null;
   }
@@ -950,6 +1025,10 @@ function writePacketFile(
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, JSON.stringify(packet, null, 2) + '\n', 'utf8');
   return file;
+}
+
+function safeSegment(value: string): string {
+  return value.replace(/[^A-Za-z0-9._-]+/g, '-') || 'unknown';
 }
 
 function relativePathFromRoot(projectRoot: string, filePath: string): string {
@@ -1038,6 +1117,168 @@ function writeEmptySddArtifactManifestRef(input: {
     status: validation.ok ? 'pass' : 'blocked',
     blockingReasons: validation.blockingReasons,
   };
+}
+
+function readJsonObject(filePath: string): Record<string, unknown> | null {
+  try {
+    if (!filePath || !fs.existsSync(filePath)) return null;
+    const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8')) as unknown;
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function latestCurrentCompiledPromptRef(input: {
+  projectRoot: string;
+  sessionId: string;
+  record: Record<string, unknown> | null;
+}): ExecutionPacket['compiledPromptRef'] {
+  if (!input.record) return null;
+  const packetDir = path.join(
+    input.projectRoot,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    safeSegment(input.sessionId),
+    'prompts',
+    'prompt-packets'
+  );
+  if (!fs.existsSync(packetDir)) return null;
+  const sourceHash = normalizeText(input.record.sourceDocumentHash);
+  const confirmationHash = normalizeText(input.record.implementationConfirmationHash);
+  const candidates = fs
+    .readdirSync(packetDir, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
+    .map((entry) => {
+      const filePath = path.join(packetDir, entry.name);
+      return { filePath, packet: readJsonObject(filePath), stat: fs.statSync(filePath) };
+    })
+    .filter(({ packet }) => {
+      const ref = packet?.compiledPromptRef as Record<string, unknown> | undefined;
+      return (
+        normalizeText(packet?.taskType) === 'implement' &&
+        normalizeText(packet?.authorityMode) === 'compiled_implementation_confirmation' &&
+        normalizeText(ref?.sourceDocumentHash) === sourceHash &&
+        normalizeText(ref?.implementationConfirmationHash) === confirmationHash &&
+        normalizeText(ref?.modelPacketHash) !== ''
+      );
+    })
+    .sort((a, b) => b.stat.mtimeMs - a.stat.mtimeMs);
+  return (candidates[0]?.packet?.compiledPromptRef as ExecutionPacket['compiledPromptRef']) ?? null;
+}
+
+function auditArtifactsDir(projectRoot: string, recordId: string, attemptId: string): string {
+  return path.join(
+    projectRoot,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    safeSegment(recordId),
+    'audit-review',
+    safeSegment(attemptId)
+  );
+}
+
+function writeAuditExecutionProfile(input: {
+  projectRoot: string;
+  recordId: string;
+  requirementSetId: string;
+  attemptId: string;
+  stage: string;
+  compiledPromptRef: NonNullable<ExecutionPacket['compiledPromptRef']>;
+}): { profile: AuditExecutionProfile; path: string; triadRef: AuditTriadExecutionPlanRef } {
+  const criticalProfile = resolveCriticalAuditorProfile(input.projectRoot);
+  const stageProfileId = stageProfileForCallPoint('audit_review');
+  const validation = validateCriticalAuditorProfileForStage({
+    profile: criticalProfile,
+    stageProfileId,
+  });
+  if (!validation.ok || !validation.stageProfile) {
+    throw new Error(`audit_execution_profile_invalid:${validation.blockingReasons.join(',')}`);
+  }
+  const requiredCheckItemSetHash = sha256AuditTriadJson(
+    validation.stageProfile.requiredCheckItemIds
+  );
+  const evidenceHash = sha256Text(
+    [
+      input.compiledPromptRef.modelPacketHash,
+      input.compiledPromptRef.auditReceiptHash,
+      input.compiledPromptRef.goalExecutionHash ?? 'no-goal',
+    ].join('|')
+  );
+  const triadPlan = createAuditTriadExecutionPlan({
+    projectRoot: input.projectRoot,
+    recordId: input.recordId,
+    stage: input.stage,
+    callPoint: 'audit_review',
+    attemptId: input.attemptId,
+    sourceDocumentHash: input.compiledPromptRef.sourceDocumentHash,
+    implementationConfirmationHash: input.compiledPromptRef.implementationConfirmationHash,
+    modelPacketHash: input.compiledPromptRef.modelPacketHash,
+    auditReceiptHash: input.compiledPromptRef.auditReceiptHash,
+    goalExecutionHash: input.compiledPromptRef.goalExecutionHash ?? null,
+    currentAttemptHash: sha256Text(input.attemptId),
+    currentEvidenceHash: evidenceHash,
+  });
+  const triadPath = writeAuditTriadExecutionPlan(input.projectRoot, triadPlan);
+  const triadRef: AuditTriadExecutionPlanRef = {
+    path: triadPath,
+    contentHash: sha256Text(fs.readFileSync(triadPath, 'utf8')),
+    attemptId: triadPlan.attemptId,
+    stageProfileId: triadPlan.stageProfileId,
+    criticalAuditorProfileHash: triadPlan.criticalAuditorProfileHash,
+    criticalAuditorStageProfileHash: triadPlan.criticalAuditorStageProfileHash,
+    requiredCheckItemSetHash: triadPlan.requiredCheckItemSetHash,
+    auditReceiptHash: triadPlan.auditReceiptHash ?? null,
+    goalExecutionHash: triadPlan.goalExecutionHash ?? null,
+    currentAttemptHash: triadPlan.currentAttemptHash,
+    currentEvidenceHash: triadPlan.currentEvidenceHash,
+  };
+  const dir = auditArtifactsDir(input.projectRoot, input.recordId, input.attemptId);
+  const reportPath = path.join(dir, 'AUDIT_current_attempt.md');
+  const profile: AuditExecutionProfile = {
+    schemaVersion: 'audit-execution-profile/v1',
+    profileId: 'main-agent-audit-review-execution',
+    profileHash: criticalProfile.profileHash,
+    stageProfileId,
+    stageProfileHash: validation.stageProfile.stageProfileHash,
+    requiredCheckItemSetHash,
+    perspectives: criticalProfile.perspectives,
+    auditScoringConvergencePolicy: {
+      auditPassRequired: true,
+      criticalAuditorNoNewGapRequired: true,
+      scoreReceiptRequired: true,
+      dimensionContractMatchRequired: true,
+      thresholdPassRequired: true,
+      vetoForbidden: true,
+      iterationCountRequired: true,
+      freshHashesRequired: true,
+    },
+    runAuditorHostArgs: {
+      projectRoot: input.projectRoot,
+      stage: input.stage,
+      artifactPath: input.compiledPromptRef.modelPacketPath,
+      reportPath,
+    },
+    currentAttemptBinding: {
+      recordId: input.recordId,
+      requirementSetId: input.requirementSetId,
+      attemptId: input.attemptId,
+      sourceDocumentHash: input.compiledPromptRef.sourceDocumentHash,
+      implementationConfirmationHash: input.compiledPromptRef.implementationConfirmationHash,
+      modelPacketHash: input.compiledPromptRef.modelPacketHash,
+      currentAttemptHash: triadPlan.currentAttemptHash,
+      currentEvidenceHash: evidenceHash,
+    },
+    selfReviewDenied: true,
+  };
+  const filePath = path.join(dir, 'audit-execution-profile-packet.json');
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, `${JSON.stringify(profile, null, 2)}\n`, 'utf8');
+  return { profile, path: filePath, triadRef };
 }
 
 function sha256Text(value: string): string {
@@ -6370,6 +6611,29 @@ function deriveNextActionFromRequirementRecord(input: {
       }
       return { nextAction: 'run_implementation_readiness_gate', ready: false, blockingReasonRefs };
     }
+  } else if (currentMentalModel === 'execution_closure') {
+    const executionClosureStatus = normalizeText(currentModelResult?.status);
+    if (executionClosureStatus === 'pass') {
+      return { nextAction: 'dispatch_review', ready: true, blockingReasonRefs };
+    }
+    if (['blocked', 'fail'].includes(executionClosureStatus)) {
+      blockingReasonRefs.push({ sourceType: 'model_result', id: 'execution_closure' });
+      return { nextAction: 'dispatch_remediation', ready: true, blockingReasonRefs };
+    }
+    blockingReasonRefs.push({ sourceType: 'model_result', id: 'execution_closure' });
+    return { nextAction: 'dispatch_implement', ready: true, blockingReasonRefs };
+  } else if (currentMentalModel === 'audit_review') {
+    const auditReviewStatus = normalizeText(currentModelResult?.status);
+    const executionClosureStatus = modelStatusFor(input.record, 'execution_closure');
+    if (auditReviewStatus === 'pass' && executionClosureStatus === 'pass') {
+      return { nextAction: 'run_closeout', ready: true, blockingReasonRefs };
+    }
+    if (['blocked', 'fail'].includes(auditReviewStatus)) {
+      blockingReasonRefs.push({ sourceType: 'model_result', id: 'audit_review' });
+      return { nextAction: 'dispatch_remediation', ready: true, blockingReasonRefs };
+    }
+    blockingReasonRefs.push({ sourceType: 'model_result', id: 'audit_review' });
+    return { nextAction: 'dispatch_review', ready: true, blockingReasonRefs };
   } else if (currentMentalModel) {
     blockingReasonRefs.push({ sourceType: 'model_result', id: currentMentalModel });
     return { nextAction: 'await_user', ready: false, blockingReasonRefs };
@@ -6397,15 +6661,43 @@ function deriveNextActionFromRequirementRecord(input: {
   if (blockingReasonRefs.length > 0) {
     return { nextAction: 'await_user', ready: false, blockingReasonRefs };
   }
-  const requirementNextAction =
-    input.stage === 'post_audit' ? 'run_closeout' : 'dispatch_implement';
+  const executionClosurePass = modelStatusFor(input.record, 'execution_closure') === 'pass';
+  const auditReviewPass = modelStatusFor(input.record, 'audit_review') === 'pass';
+  const hasCurrentCompiledPromptRef = packetHasCurrentHashCompiledPromptRef(
+    input.pendingPacket,
+    input.record
+  );
+  const requirementNextAction = !executionClosurePass
+    ? 'dispatch_implement'
+    : !auditReviewPass
+      ? 'dispatch_review'
+      : 'run_closeout';
+  if (!executionClosurePass) {
+    if (!hasCurrentCompiledPromptRef) {
+      blockingReasonRefs.push({
+        sourceType: 'compiled_prompt_ref',
+        id: 'missing_current_hash_compiledPromptRef',
+      });
+    }
+    return {
+      nextAction: requirementNextAction,
+      ready: true,
+      blockingReasonRefs,
+    };
+  }
+  if (!auditReviewPass) {
+    return {
+      nextAction: requirementNextAction,
+      ready: true,
+      blockingReasonRefs,
+    };
+  }
   const requirementTaskType = taskTypeFromNextAction(requirementNextAction);
   const stateNextAction = input.state?.nextAction ?? null;
   const stateTaskType = taskTypeFromNextAction(stateNextAction);
   const lastTaskReportStatus = input.state?.lastTaskReport?.status ?? null;
   const canReuseStateTransition =
     stateNextAction === requirementNextAction ||
-    lastTaskReportStatus === 'done' ||
     (lastTaskReportStatus === 'partial' && stateNextAction === 'dispatch_remediation') ||
     (lastTaskReportStatus === 'blocked' &&
       (stateNextAction === 'dispatch_implement' ||
@@ -6441,8 +6733,11 @@ function deriveNextActionFromRequirementRecord(input: {
       };
     }
     return {
-      nextAction: input.state.nextAction,
-      ready: input.state.nextAction !== 'await_user' && input.state.nextAction !== 'blocked',
+      nextAction:
+        input.state.nextAction === requirementNextAction
+          ? input.state.nextAction
+          : requirementNextAction,
+      ready: true,
       blockingReasonRefs,
     };
   }
@@ -6644,6 +6939,42 @@ export function resolveMainAgentOrchestrationSurface(
         continueDecision: continueState.continueDecision,
         implementationEntryDecision: implementationEntryGate?.decision ?? null,
       });
+  const matrixAttemptId =
+    scopedState.state?.pendingPacket?.packetId ??
+    normalizeText(runtimeContext?.runId) ??
+    normalizeText(requirementRecord?.requirementSetId) ??
+    'inspect';
+  const sixModelRuntimeDecision = useRequirementRecordProjection
+    ? resolveSixModelRuntimeDecision({
+        record: requirementRecord,
+        attemptId: matrixAttemptId,
+        pendingPacketId: scopedState.state?.pendingPacket?.packetId ?? null,
+        lastTaskReportStatus: scopedState.state?.lastTaskReport?.status ?? null,
+      })
+    : null;
+  const sixModelRuntimeDecisionPath =
+    input.projectRoot && sixModelRuntimeDecision
+      ? writeSixModelRuntimeDecision({
+          projectRoot: input.projectRoot,
+          decision: sixModelRuntimeDecision,
+        })
+      : null;
+  const actionNextAction = sixModelRuntimeDecision?.nextAction ?? action.nextAction;
+  const actionReady = sixModelRuntimeDecision?.ready ?? action.ready;
+  const splitBrainBlockerPath =
+    input.projectRoot &&
+    sixModelRuntimeDecision &&
+    scopedState.state?.nextAction &&
+    scopedState.state.nextAction !== sixModelRuntimeDecision.nextAction
+      ? writeSplitBrainBlocker({
+          projectRoot: input.projectRoot,
+          decision: sixModelRuntimeDecision,
+          orchestrationStateNextAction: scopedState.state.nextAction,
+          pendingPacketId: scopedState.state.pendingPacket?.packetId ?? null,
+          lastTaskReportStatus: scopedState.state.lastTaskReport?.status ?? null,
+          decisionRef: sixModelRuntimeDecisionPath ?? 'not_written',
+        })
+      : null;
   const implementationEntryGateComesFromRecord =
     !explicitImplementationEntryGateProvided && recordHasImplementationEntryGate(requirementRecord);
   const implementationEntryGateIsBridgeOnly =
@@ -6670,8 +7001,8 @@ export function resolveMainAgentOrchestrationSurface(
       : undefined;
   const mainAgentStageSummary = buildMainAgentStageSummary({
     record: requirementRecord,
-    nextAction: action.nextAction,
-    ready: action.ready,
+    nextAction: actionNextAction,
+    ready: actionReady,
   });
 
   return {
@@ -6689,20 +7020,23 @@ export function resolveMainAgentOrchestrationSurface(
     diagnostics,
     mainAgentCanContinue: continueState.canContinue,
     continueDecision: continueState.continueDecision,
-    mainAgentNextAction: action.nextAction,
-    mainAgentReady: action.ready,
+    mainAgentNextAction: actionNextAction,
+    mainAgentReady: actionReady,
     mainAgentStageSummary,
+    sixModelRuntimeDecision,
+    sixModelRuntimeDecisionPath,
+    splitBrainBlockerPath,
     preConfirmationDrilldownLane,
     ...(useRequirementRecordProjection
       ? {
           runtimeResumeProjection: {
             projectionType: 'runtime_resume_projection' as const,
             source: 'requirement_record' as const,
-            runtimeNextAction: action.nextAction,
-            ready: action.ready === true,
+            runtimeNextAction: actionNextAction,
+            ready: actionReady === true,
             blockingReasonRefs: normalizeBlockingReasonRefs(
               'blockingReasonRefs' in action ? action.blockingReasonRefs : []
-            ),
+            ).concat(sixModelRuntimeDecision?.blockingReasonRefs ?? []),
             ...(terminalState ? { terminalState } : {}),
             diagnostics,
             observedLegacyState: {
@@ -6773,7 +7107,7 @@ export function ingestMainAgentTaskReport(
           ? 'audit'
           : 'implement';
 
-  const nextAction =
+  const legacyNextAction =
     options.nextActionHint ??
     (report.status === 'done'
       ? deriveNextActionFromTaskType(taskType, options.currentStage ?? state.currentPhase)
@@ -6795,9 +7129,9 @@ export function ingestMainAgentTaskReport(
     });
   }
 
-  return updateOrchestrationState(projectRoot, sessionId, (current) => ({
+  const evidenceState = updateOrchestrationState(projectRoot, sessionId, (current) => ({
     ...current,
-    nextAction,
+    nextAction: legacyNextAction,
     lastTaskReport: {
       packetId: report.packetId,
       status: report.status,
@@ -6806,6 +7140,33 @@ export function ingestMainAgentTaskReport(
       evidence: report.evidence,
       ...(report.driftFlags ? { driftFlags: report.driftFlags } : {}),
     },
+  }));
+  const runtimeContext = loadRuntimeContextForMainAgent({
+    projectRoot,
+    flow: evidenceState.flow as RuntimeFlowId,
+    stage: options.currentStage ?? evidenceState.currentPhase,
+  });
+  const requirementRecord = readRequirementRecordFromRuntimeContext(runtimeContext);
+  const matrix = resolveSixModelRuntimeDecision({
+    record: requirementRecord,
+    attemptId: report.packetId,
+    pendingPacketId: evidenceState.pendingPacket?.packetId ?? null,
+    lastTaskReportStatus: report.status,
+  });
+  const matrixPath = writeSixModelRuntimeDecision({ projectRoot, decision: matrix });
+  if (legacyNextAction !== matrix.nextAction) {
+    writeSplitBrainBlocker({
+      projectRoot,
+      decision: matrix,
+      orchestrationStateNextAction: legacyNextAction,
+      pendingPacketId: evidenceState.pendingPacket?.packetId ?? null,
+      lastTaskReportStatus: report.status,
+      decisionRef: matrixPath,
+    });
+  }
+  return updateOrchestrationState(projectRoot, sessionId, (current) => ({
+    ...current,
+    nextAction: (matrix.nextAction ?? 'await_user') as OrchestrationNextAction,
   }));
 }
 
@@ -6888,9 +7249,58 @@ export function ensureMainAgentDispatchPacket(
                 ? 'claude-code'
                 : 'cursor-ide',
           executionDisciplineProfile,
-          goalCommandAvailable: host === 'codex' ? 'auto' : 'false',
+          goalCommandAvailable: host === 'codex' || host === 'claude' ? 'true' : 'false',
         })
       : null;
+  const activeRecord = readRequirementRecordFromRuntimeContext(runtimeContext);
+  const inheritedCompiledPromptRef =
+    taskType === 'audit'
+      ? latestCurrentCompiledPromptRef({
+          projectRoot: input.projectRoot,
+          sessionId,
+          record: activeRecord,
+        })
+      : null;
+  const auditExecution =
+    taskType === 'audit' && inheritedCompiledPromptRef
+      ? writeAuditExecutionProfile({
+          projectRoot: input.projectRoot,
+          recordId: normalizeText(activeRecord?.recordId) || sessionId,
+          requirementSetId: normalizeText(activeRecord?.requirementSetId) || sessionId,
+          attemptId: packetId,
+          stage: input.stage,
+          compiledPromptRef: inheritedCompiledPromptRef,
+        })
+      : null;
+  const runtimeModeSelection =
+    taskType === 'implement' && compiledRun?.status === 'pass' && compiledRun.compiledPromptRef
+      ? writeExecutionRuntimeModeSelection({
+          projectRoot: input.projectRoot,
+          recordId: normalizeText(activeRecord?.recordId) || sessionId,
+          packetId,
+          attemptId: packetId,
+          host,
+          compiledPromptRef: compiledRun.compiledPromptRef,
+        })
+      : null;
+  if (runtimeModeSelection && compiledRun?.compiledPromptRef) {
+    const nativeGoalBlocker = validateNativeGoalReadiness({
+      projectRoot: input.projectRoot,
+      recordId: normalizeText(activeRecord?.recordId) || sessionId,
+      packetId,
+      attemptId: packetId,
+      host,
+      compiledPromptRef: compiledRun.compiledPromptRef,
+    });
+    if (nativeGoalBlocker) {
+      writeRuntimeBlocker(
+        input.projectRoot,
+        normalizeText(activeRecord?.recordId) || sessionId,
+        packetId,
+        nativeGoalBlocker
+      );
+    }
+  }
   const executionStrategy =
     compiledRun?.status === 'pass'
       ? ensurePolicyDefaultExecutionStrategy({
@@ -6944,21 +7354,29 @@ export function ensureMainAgentDispatchPacket(
           successCriteria: ['bounded task report returned', 'state updated'],
           stopConditions: ['true blocker detected', 'scope must widen'],
           authorityMode:
-            compiledRun?.status === 'pass'
+            taskType === 'audit'
+              ? 'compiled_implementation_confirmation'
+              : compiledRun?.status === 'pass'
               ? 'compiled_implementation_confirmation'
               : compiledRun?.status === 'no_confirmed_source' || compiledRun === null
                 ? 'legacy_generic_prompt'
                 : 'compiled_implementation_confirmation',
-          compiledPromptRef: compiledRun?.compiledPromptRef ?? null,
+          compiledPromptRef: compiledRun?.compiledPromptRef ?? inheritedCompiledPromptRef ?? null,
           executionDisciplineProfile,
           executionStrategy,
           sddArtifactManifestRef,
+          auditExecutionProfile: auditExecution?.profile ?? null,
+          auditTriadExecutionPlanRef: auditExecution?.triadRef ?? null,
           legacyPromptFallbackReason:
-            compiledRun?.status === 'no_confirmed_source' || compiledRun === null
+            taskType === 'audit'
+              ? null
+              : compiledRun?.status === 'no_confirmed_source' || compiledRun === null
               ? 'no_confirmed_source'
               : null,
           compilerBlock:
-            compiledRun && compiledRun.status !== 'pass' && compiledRun.status !== 'no_confirmed_source'
+            taskType === 'audit' && !inheritedCompiledPromptRef
+              ? ['audit_current_attempt_compiledPromptRef_missing']
+              : compiledRun && compiledRun.status !== 'pass' && compiledRun.status !== 'no_confirmed_source'
               ? compiledRun.blockingReasons
               : null,
         });

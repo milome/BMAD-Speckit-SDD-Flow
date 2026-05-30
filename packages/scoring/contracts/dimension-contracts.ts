@@ -29,6 +29,8 @@ const CONTRACT_BY_STAGE: Record<string, { mode: DimensionMode; contractId: strin
   architecture: { mode: 'arch', contractId: 'architecture_design' },
   implementation_readiness: { mode: 'readiness', contractId: 'implementation_readiness' },
   readiness: { mode: 'readiness', contractId: 'implementation_readiness' },
+  delivery_confirmation: { mode: 'delivery', contractId: 'delivery_confirmation' },
+  delivery: { mode: 'delivery', contractId: 'delivery_confirmation' },
   story: { mode: 'story', contractId: 'story_document' },
   tasks: { mode: 'tasks', contractId: 'tasks_decomposition' },
   standalone_tasks: { mode: 'tasks', contractId: 'tasks_decomposition' },
@@ -52,6 +54,12 @@ const EXPECTED_DIMENSIONS_BY_MODE: Record<DimensionMode, string[]> = {
   story: ['Story Scope Integrity', 'Story Acceptance Coverage', 'Story Evidence Traceability', 'Story Execution Readiness'],
   tasks: ['Task Atomicity', 'Task Dependency Order', 'Task Evidence Binding', 'Task Execution Readiness'],
   bugfix: ['Root Cause Accuracy', 'Fix Correctness', 'Regression Protection', 'Bugfix Evidence Closure'],
+  delivery: [
+    'Delivery Evidence Closure',
+    'Current Attempt Binding',
+    'Audit Convergence Receipt',
+    'Closeout Authority',
+  ],
 };
 
 function normalize(value: string | null | undefined): string {
@@ -68,6 +76,8 @@ function contractMode(contractId: string): DimensionMode | null {
       return 'bugfix';
     case 'implementation_readiness':
       return 'readiness';
+    case 'delivery_confirmation':
+      return 'delivery';
     case 'architecture_design':
       return 'arch';
     case 'prd_document':

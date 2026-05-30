@@ -1117,7 +1117,10 @@ function goalObjectiveFromHints(hints, recordId) {
 
 function normalizeHostExecutionHints(rawHints, recordId) {
   const hints = rawHints && typeof rawHints === 'object' ? rawHints : {};
-  const legacyGoalAllowed = hints.codexCapable?.goalModeAllowed === true;
+  const legacyGoalAllowed =
+    typeof hints.codexCapable?.goalModeAllowed === 'boolean'
+      ? hints.codexCapable.goalModeAllowed
+      : undefined;
   const legacyObjective = goalObjectiveFromHints(hints.codexCapable ?? hints, recordId);
   const legacyNonCodex = String(
     hints.nonCodex?.instruction ??
@@ -1128,14 +1131,14 @@ function normalizeHostExecutionHints(rawHints, recordId) {
     ...hints,
     codex: {
       strategy: 'goal_if_available_else_continue_nonstop',
-      goalModeAllowed: hints.codex?.goalModeAllowed ?? legacyGoalAllowed,
+      goalModeAllowed: hints.codex?.goalModeAllowed ?? legacyGoalAllowed ?? true,
       goalObjectiveTemplate: goalObjectiveFromHints(hints.codex ?? hints.codexCapable, recordId),
       fallbackDirective: hints.codex?.fallbackDirective ?? 'continue nonstop',
       ...(hints.codex ?? {}),
     },
     claudeCode: {
       strategy: 'goal_if_available_else_prompt_loop',
-      goalModeAllowed: hints.claudeCode?.goalModeAllowed ?? legacyGoalAllowed,
+      goalModeAllowed: hints.claudeCode?.goalModeAllowed ?? legacyGoalAllowed ?? true,
       goalObjectiveTemplate: goalObjectiveFromHints(hints.claudeCode ?? hints.codexCapable, recordId),
       fallbackDirective:
         hints.claudeCode?.fallbackDirective ??

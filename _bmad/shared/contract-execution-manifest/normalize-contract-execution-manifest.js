@@ -39,6 +39,15 @@ function normalizeRequiredCommands(manifest, confirmation) {
     command: text(row.command),
     role: text(row.role) || text(row.commandRole) || text(row.gate),
     expectedMode: text(row.expectedMode) || text(row.expectedExitCodeAfterImplementation),
+    files: [
+      text(row.file),
+      text(row.path),
+      text(row.testFile),
+      text(row.testPath),
+      ...strings(row.files),
+      ...strings(row.testFiles),
+      ...strings(row.targetFiles),
+    ].filter(Boolean),
     traceRefs: strings(row.traceRows).concat(strings(row.traceRefs)),
     evidenceRefs: strings(row.evidenceRefs),
   }));

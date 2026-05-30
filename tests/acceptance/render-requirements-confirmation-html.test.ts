@@ -2324,6 +2324,137 @@ describe('render-requirements-confirmation-html', () => {
     });
   });
 
+  it('fails closed when required reconfirmation omits diffSummary', () => {
+    const source = writeSource();
+    const original = fs.readFileSync(source, 'utf8');
+    const drifted = original
+      .replace('status: draft', 'status: reconfirmation_required')
+      .replace(
+        'sourceDocumentHash: null',
+        `sourceDocumentHash: sha256:old-source
+  implementationConfirmationHash: sha256:old-confirmation
+  reconfirmationRequest:
+    required: true
+    reasonCode: controlled_amendment_modified_source_after_previous_confirmation
+    reason: sourceDocumentHash_changed
+    userFacingTitle: "需要重新确认本次需求"
+    userFacingSummary: "MUST-001 的证据命令说明发生语义变化，需要用户确认新边界。"
+    persuasiveRationale:
+      whyReconfirmNow: "当前语义 hash 已不同于上次确认，不能沿用历史确认。"
+      riskIfSkipped: "跳过会把未确认的 MUST-001 证据命令变化当作已确认范围执行。"
+      whyEvidenceIsSufficient: "MUST/EVD/TRACE 引用和命令引用共同指向同一变化。"
+    evidenceBundle:
+      sufficiencyVerdict: sufficient
+      items:
+        - id: RCEVD-001
+          kind: evidence
+          title: "MUST-001 evidence command clarification"
+          summary: "MUST-001 的证据命令被澄清并绑定到 EVD-001 与 TRACE-001。"
+          sourceRefs: ["MUST-001"]
+          proofRefs: ["EVD-001", "TRACE-001", "CMD-001"]
+    previousSourceDocumentHash: sha256:old-source
+    previousImplementationConfirmationHash: sha256:old-confirmation
+    impactedIds: ["MUST-001", "EVD-001", "TRACE-001"]
+    impactedTraceRows: ["TRACE-001"]
+    affectedRequirementIds: ["MUST-001", "EVD-001"]
+    affectedTraceRows: ["TRACE-001"]
+    allowedUserActions:
+      - confirm_current_version
+`
+      );
+    fs.writeFileSync(source, drifted, 'utf8');
+    const mermaidBundle = writeMockMermaidBundle();
+    const out = path.join(tempDir, 'reconfirm-missing-diff-summary.html');
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+    ]);
+
+    expect(result.status).toBe(3);
+    const html = fs.readFileSync(out, 'utf8');
+    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
+    expect(report.confirmability).toBe('blocked');
+    expect(report.blockingIssues.map((issue: { code: string }) => issue.code)).toContain(
+      'reconfirmation_missing_diff_summary'
+    );
+    expect(html).toContain('reconfirmation_missing_diff_summary');
+  });
+
+  it('recognizes expanded ID namespaces in Mermaid blocks and known source projections', () => {
+    const source = writeSource();
+    const original = fs.readFileSync(source, 'utf8');
+    fs.writeFileSync(
+      source,
+      original.replace(
+        '\n  sequenceViews:',
+        `
+  implementationTasks:
+    - taskId: TASK-001
+      mustRef: MUST-001
+      task: "Fixture implementation task for expanded namespace binding."
+      targetFiles: ["src/upload.ts"]
+      acceptanceRefs: ["ACC-001"]
+      traceRefs: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
+      projectionStatus: synchronized
+  sequenceViews:`
+      ),
+      'utf8'
+    );
+    fs.appendFileSync(
+      source,
+      `
+
+\`\`\`mermaid
+flowchart TD
+  A[Audit triad TASK-001] --> B[Failure FAIL-001]
+  B --> C[Edge EDGE-001]
+  C --> D[Artifact ART-CONFIRM-001]
+  D --> E[Command CMD-001]
+  E --> F[Sequence SEQ-001]
+  F --> G[Flow FLOW-001]
+  G --> H[Boundary BOUNDARY-001]
+\`\`\`
+`,
+      'utf8'
+    );
+    const mermaidBundle = writeMockMermaidBundle();
+    const out = path.join(tempDir, 'expanded-id-namespace.html');
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+    ]);
+
+    expect(result.status).toBe(0);
+    const html = fs.readFileSync(out, 'utf8');
+    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
+    expect(report.confirmability).toBe('confirmable');
+    expect(report.blockingIssues.map((issue: { code: string }) => issue.code)).not.toContain('diagram_unknown_id');
+    for (const id of ['TASK-001', 'FAIL-001', 'EDGE-001', 'ART-CONFIRM-001', 'CMD-001', 'SEQ-001', 'FLOW-001', 'BOUNDARY-001']) {
+      expect(html).toContain(id);
+    }
+  });
+
   it('renders the full instance confirmation HTML, summary, render report, hashes, and required views', () => {
     const source = writeSource();
     const original = fs.readFileSync(source, 'utf8');

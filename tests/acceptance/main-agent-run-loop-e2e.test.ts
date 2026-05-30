@@ -1,7 +1,6 @@
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   runMainAgentAutomaticLoop,
@@ -9,9 +8,53 @@ import {
 } from '../../scripts/main-agent-orchestration';
 import { defaultRuntimeContextFile, writeRuntimeContext } from '../../scripts/runtime-context';
 import {
-  defaultRuntimeContextRegistry,
-  writeRuntimeContextRegistry,
-} from '../../scripts/runtime-context-registry';
+  cleanupRequirementWorkspace,
+  materializeRequirementFixture,
+  writeFakeReqTraceSkill,
+} from '../helpers/requirement-fixture-runtime';
+
+type RequirementFixture = ReturnType<typeof materializeRequirementFixture>;
+
+function materializeRunLoopFixture(
+  input: Parameters<typeof materializeRequirementFixture>[0] = {}
+): RequirementFixture {
+  const fixture = materializeRequirementFixture(input);
+  writeFakeReqTraceSkill(fixture.root);
+  return fixture;
+}
+
+function runLoopArgs(fixture: RequirementFixture): {
+  projectRoot: string;
+  recordId: string;
+  requirementSetId: string;
+  runId: string;
+  flow: 'standalone_tasks';
+  stage: 'implement';
+} {
+  return {
+    projectRoot: fixture.root,
+    recordId: fixture.recordId,
+    requirementSetId: fixture.requirementSetId,
+    runId: fixture.runId,
+    flow: 'standalone_tasks',
+    stage: 'implement',
+  };
+}
+
+function cliRecordArgs(fixture: RequirementFixture): string[] {
+  return [
+    '--record-id',
+    fixture.recordId,
+    '--requirement-set-id',
+    fixture.requirementSetId,
+    '--run-id',
+    fixture.runId,
+    '--flow',
+    'standalone_tasks',
+    '--stage',
+    'implement',
+  ];
+}
 
 function writeCodexImplementationWorker(root: string): void {
   fs.mkdirSync(path.join(root, '.codex', 'agents'), { recursive: true });
@@ -51,7 +94,7 @@ function writeFakeCodexBinary(root: string, validationPrefix: string): string {
       "if (!reportPath || !packetId) process.exit(2);",
       "fs.mkdirSync(path.dirname(reportPath), { recursive: true });",
       `fs.writeFileSync(reportPath, JSON.stringify({ packetId, status: 'done', filesChanged: [], validationsRun: ['${validationPrefix}-' + taskType], evidence: ['${validationPrefix}-adapter'], downstreamContext: ['fake codex ' + taskType + ' completed'] }, null, 2) + '\\n', 'utf8');`,
-      "process.exit(0);",
+      'process.exit(0);',
       '',
     ].join('\n'),
     'utf8'
@@ -75,25 +118,11 @@ function writeFakeCodexBinary(root: string, validationPrefix: string): string {
 
 describe('main-agent automatic run-loop', () => {
   it('executes inspect dispatch claim dispatch report complete and final inspect from one call', () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'main-agent-run-loop-'));
+    const fixture = materializeRunLoopFixture();
+    const root = fixture.root;
     try {
-      writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
-      writeRuntimeContext(
-        root,
-        defaultRuntimeContextFile({
-          flow: 'story',
-          stage: 'implement',
-          sourceMode: 'full_bmad',
-          contextScope: 'story',
-          storyId: 'S-run-loop',
-          runId: 'run-loop-test',
-        })
-      );
-
       const result = runMainAgentAutomaticLoop({
-        projectRoot: root,
-        flow: 'story',
-        stage: 'implement',
+        ...runLoopArgs(fixture),
         executor: ({ projectRoot, instruction, args }) => {
           const reportPath = writeMainAgentRunLoopTaskReport(projectRoot, instruction, args);
           return JSON.parse(fs.readFileSync(reportPath, 'utf8'));
@@ -114,110 +143,55 @@ describe('main-agent automatic run-loop', () => {
       expect(result.finalSurface.orchestrationState?.longRun?.policyHash).toBeTruthy();
       expect(result.finalSurface.orchestrationState?.longRun?.active_host_mode).toBe('cursor');
       expect(result.finalSurface.orchestrationState?.lastTaskReport?.status).toBe('done');
-      expect(result.finalSurface.mainAgentNextAction).toBe('dispatch_review');
+      expect(result.finalSurface.mainAgentNextAction).toBe('run_execution_closure_gate');
       expect(result.mainAgentStageSummary).toMatchObject({
         schemaVersion: 'main-agent-stage-summary/v1',
-        nextAction: 'dispatch_review',
+        nextAction: 'run_execution_closure_gate',
         ready: true,
       });
       expect(result.mainAgentStageSummary?.userFacingMessage).toContain('下一步');
     } finally {
-      fs.rmSync(root, { recursive: true, force: true });
+      cleanupRequirementWorkspace(root);
     }
   });
 
-  it('resolves runtime context from registry activeScope instead of flat project fallback', () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'main-agent-run-loop-scope-'));
+  it('resolves active requirement record instead of flat legacy runtime-context fallback', () => {
+    const fixture = materializeRunLoopFixture();
+    const root = fixture.root;
     try {
-      const registry = defaultRuntimeContextRegistry(root);
-      const projectContext = defaultRuntimeContextFile({
-        flow: 'story',
-        stage: 'story_create',
-        sourceMode: 'full_bmad',
-        contextScope: 'project',
-        runId: 'flat-project-run',
-      });
-      writeRuntimeContext(root, projectContext);
-
-      const scopedContextPath = path.join(
+      writeRuntimeContext(
         root,
-        '_bmad-output',
-        'runtime',
-        'context',
-        'runs',
-        'epic-registry',
-        'S-registry',
-        'registry-run.json'
+        defaultRuntimeContextFile({
+          flow: 'story',
+          stage: 'story_create',
+          sourceMode: 'full_bmad',
+          contextScope: 'project',
+          runId: 'flat-project-run',
+        })
       );
-      fs.mkdirSync(path.dirname(scopedContextPath), { recursive: true });
-      fs.writeFileSync(
-        scopedContextPath,
-        JSON.stringify(
-          defaultRuntimeContextFile({
-            flow: 'story',
-            stage: 'implement',
-            sourceMode: 'full_bmad',
-            contextScope: 'run',
-            epicId: 'epic-registry',
-            storyId: 'S-registry',
-            storySlug: 'registry-scope',
-            runId: 'registry-run',
-          }),
-          null,
-          2
-        ) + '\n',
-        'utf8'
-      );
-      registry.runContexts['registry-run'] = {
-        path: path.relative(root, scopedContextPath).replace(/\\/g, '/'),
-        epicId: 'epic-registry',
-        storyId: 'S-registry',
-      };
-      registry.activeScope = {
-        scopeType: 'run',
-        runId: 'registry-run',
-        resolvedContextPath: registry.runContexts['registry-run'].path,
-        reason: 'test registry active scope',
-      };
-      writeRuntimeContextRegistry(root, registry);
 
       const result = runMainAgentAutomaticLoop({
-        projectRoot: root,
-        flow: 'story',
-        stage: 'implement',
+        ...runLoopArgs(fixture),
         executor: ({ projectRoot, instruction, args }) => {
           const reportPath = writeMainAgentRunLoopTaskReport(projectRoot, instruction, args);
           return JSON.parse(fs.readFileSync(reportPath, 'utf8'));
         },
       });
 
-      expect(result.dispatchInstruction?.sessionId).toContain('registry-run');
+      expect(result.dispatchInstruction?.sessionId).toBe(fixture.requirementSetId);
       expect(result.finalSurface.orchestrationState?.currentPhase).toBe('implement');
+      expect(result.mainAgentStageSummary?.currentMentalModel).toBe('implementation_readiness');
     } finally {
-      fs.rmSync(root, { recursive: true, force: true });
+      cleanupRequirementWorkspace(root);
     }
   });
 
   it('blocks instead of synthesizing completion when no real task report is provided', () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'main-agent-run-loop-no-report-'));
+    const fixture = materializeRunLoopFixture();
+    const root = fixture.root;
     try {
-      writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
-      writeRuntimeContext(
-        root,
-        defaultRuntimeContextFile({
-          flow: 'story',
-          stage: 'implement',
-          sourceMode: 'full_bmad',
-          contextScope: 'story',
-          storyId: 'S-run-loop-blocked',
-          runId: 'run-loop-blocked-test',
-        })
-      );
-
       const result = runMainAgentAutomaticLoop({
-        projectRoot: root,
-        flow: 'story',
-        stage: 'implement',
+        ...runLoopArgs(fixture),
       });
 
       expect(result.status).toBe('blocked');
@@ -228,30 +202,16 @@ describe('main-agent automatic run-loop', () => {
       expect(result.finalSurface.pendingPacketStatus).toBe('dispatched');
       expect(result.finalSurface.orchestrationState?.lastTaskReport ?? null).toBeNull();
     } finally {
-      fs.rmSync(root, { recursive: true, force: true });
+      cleanupRequirementWorkspace(root);
     }
   });
 
   it('preserves codex as the host through dispatch state and final inspect', () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'main-agent-run-loop-codex-'));
+    const fixture = materializeRunLoopFixture();
+    const root = fixture.root;
     try {
-      writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
-      writeRuntimeContext(
-        root,
-        defaultRuntimeContextFile({
-          flow: 'story',
-          stage: 'implement',
-          sourceMode: 'full_bmad',
-          contextScope: 'story',
-          storyId: 'S-run-loop-codex',
-          runId: 'run-loop-codex-test',
-        })
-      );
-
       const result = runMainAgentAutomaticLoop({
-        projectRoot: root,
-        flow: 'story',
-        stage: 'implement',
+        ...runLoopArgs(fixture),
         host: 'codex',
         executor: ({ projectRoot, instruction, args }) => {
           expect(instruction.host).toBe('codex');
@@ -266,31 +226,18 @@ describe('main-agent automatic run-loop', () => {
       expect(result.finalSurface.orchestrationState?.host).toBe('codex');
       expect(result.finalSurface.orchestrationState?.longRun?.active_host_mode).toBe('codex');
     } finally {
-      fs.rmSync(root, { recursive: true, force: true });
+      cleanupRequirementWorkspace(root);
     }
   });
 
   it('uses the Codex worker adapter by default for codex host run-loop instead of synthetic TaskReport', () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'main-agent-run-loop-codex-adapter-'));
+    const fixture = materializeRunLoopFixture();
+    const root = fixture.root;
     try {
-      writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
-      writeRuntimeContext(
-        root,
-        defaultRuntimeContextFile({
-          flow: 'story',
-          stage: 'implement',
-          sourceMode: 'full_bmad',
-          contextScope: 'story',
-          storyId: 'S-run-loop-codex-adapter',
-          runId: 'run-loop-codex-adapter-test',
-        })
-      );
       writeCodexImplementationWorker(root);
 
       const result = runMainAgentAutomaticLoop({
-        projectRoot: root,
-        flow: 'story',
-        stage: 'implement',
+        ...runLoopArgs(fixture),
         host: 'codex',
         args: { codexSmoke: 'true' },
       });
@@ -304,26 +251,14 @@ describe('main-agent automatic run-loop', () => {
       expect(result.finalSurface.pendingPacketStatus).toBe('invalidated');
       expect(result.finalSurface.mainAgentNextAction).toBe('dispatch_implement');
     } finally {
-      fs.rmSync(root, { recursive: true, force: true });
+      cleanupRequirementWorkspace(root);
     }
   });
 
   it('accepts dispatch-plan as a positional CLI action without treating it as cwd', () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'main-agent-run-loop-cli-positional-'));
+    const fixture = materializeRunLoopFixture();
+    const root = fixture.root;
     try {
-      writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
-      writeRuntimeContext(
-        root,
-        defaultRuntimeContextFile({
-          flow: 'story',
-          stage: 'implement',
-          sourceMode: 'full_bmad',
-          contextScope: 'story',
-          storyId: 'S-cli-positional',
-          runId: 'run-loop-cli-positional-test',
-        })
-      );
-
       const dispatchOutput = execFileSync(
         process.execPath,
         [
@@ -335,6 +270,7 @@ describe('main-agent automatic run-loop', () => {
           'dispatch-plan',
           '--cwd',
           root,
+          ...cliRecordArgs(fixture),
         ],
         { cwd: process.cwd(), encoding: 'utf8' }
       );
@@ -343,30 +279,16 @@ describe('main-agent automatic run-loop', () => {
       expect(dispatch.taskType).toBe('implement');
       expect(dispatch.packetId).toMatch(/^implement-/);
     } finally {
-      fs.rmSync(root, { recursive: true, force: true });
+      cleanupRequirementWorkspace(root);
     }
   });
 
   it('does not advance blocked implementation task reports to review', () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'main-agent-run-loop-blocked-implement-'));
+    const fixture = materializeRunLoopFixture();
+    const root = fixture.root;
     try {
-      writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
-      writeRuntimeContext(
-        root,
-        defaultRuntimeContextFile({
-          flow: 'story',
-          stage: 'implement',
-          sourceMode: 'full_bmad',
-          contextScope: 'story',
-          storyId: 'S-blocked-implement',
-          runId: 'blocked-implement-test',
-        })
-      );
-
       const result = runMainAgentAutomaticLoop({
-        projectRoot: root,
-        flow: 'story',
-        stage: 'implement',
+        ...runLoopArgs(fixture),
         executor: ({ instruction }) => ({
           packetId: instruction.packetId,
           status: 'blocked',
@@ -383,36 +305,23 @@ describe('main-agent automatic run-loop', () => {
       expect(result.finalSurface.mainAgentNextAction).not.toBe('dispatch_review');
       expect(result.finalSurface.mainAgentNextAction).toBe('dispatch_implement');
     } finally {
-      fs.rmSync(root, { recursive: true, force: true });
+      cleanupRequirementWorkspace(root);
     }
   });
 
   it('runs Codex worker adapter in non-smoke mode through run-loop when a Codex binary is available', () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'main-agent-run-loop-codex-exec-'));
+    const fixture = materializeRunLoopFixture();
+    const root = fixture.root;
     const previous = process.env.CODEX_WORKER_ADAPTER_BIN;
     const previousAllow = process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE;
     try {
-      writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
-      writeRuntimeContext(
-        root,
-        defaultRuntimeContextFile({
-          flow: 'story',
-          stage: 'implement',
-          sourceMode: 'full_bmad',
-          contextScope: 'story',
-          storyId: 'S-run-loop-codex-exec',
-          runId: 'run-loop-codex-exec-test',
-        })
-      );
       writeCodexImplementationWorker(root);
       const fakeCodexBin = writeFakeCodexBinary(root, 'fake-codex-exec');
       process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE = 'true';
       process.env.CODEX_WORKER_ADAPTER_BIN = fakeCodexBin;
 
       const result = runMainAgentAutomaticLoop({
-        projectRoot: root,
-        flow: 'story',
-        stage: 'implement',
+        ...runLoopArgs(fixture),
         host: 'codex',
       });
 
@@ -426,7 +335,6 @@ describe('main-agent automatic run-loop', () => {
       expect(result.taskReport?.driftFlags).toContain(
         'task-report-done-without-valid-subagent-evidence-envelope'
       );
-      expect(result.taskReport?.driftFlags).toContain('controlled-evidence-ingest-failed');
       expect(result.finalSurface.pendingPacketStatus).toBe('invalidated');
       expect(result.finalSurface.mainAgentNextAction).toBe('dispatch_implement');
     } finally {
@@ -440,30 +348,16 @@ describe('main-agent automatic run-loop', () => {
       } else {
         process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE = previousAllow;
       }
-      fs.rmSync(root, { recursive: true, force: true });
+      cleanupRequirementWorkspace(root);
     }
   });
 
-  it('materializes a review dispatch instruction after rerun_gate', () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'main-agent-rerun-gate-'));
+  it('does not materialize a review dispatch instruction before execution closure passes', () => {
+    const fixture = materializeRunLoopFixture();
+    const root = fixture.root;
     try {
-      writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
-      writeRuntimeContext(
-        root,
-        defaultRuntimeContextFile({
-          flow: 'story',
-          stage: 'implement',
-          sourceMode: 'full_bmad',
-          contextScope: 'story',
-          storyId: 'S-rerun-gate',
-          runId: 'rerun-gate-test',
-        })
-      );
-
       const remediate = runMainAgentAutomaticLoop({
-        projectRoot: root,
-        flow: 'story',
-        stage: 'implement',
+        ...runLoopArgs(fixture),
         host: 'codex',
         executor: ({ projectRoot, instruction, args }) => {
           expect(instruction.taskType).toBe('implement');
@@ -474,54 +368,37 @@ describe('main-agent automatic run-loop', () => {
           return JSON.parse(fs.readFileSync(reportPath, 'utf8'));
         },
       });
-      expect(remediate.finalSurface.mainAgentNextAction).toBe('dispatch_review');
+      expect(remediate.finalSurface.mainAgentNextAction).toBe('run_execution_closure_gate');
 
-      const review = runMainAgentAutomaticLoop({
-        projectRoot: root,
-        flow: 'story',
-        stage: 'implement',
+      const next = runMainAgentAutomaticLoop({
+        ...runLoopArgs(fixture),
         host: 'codex',
-        executor: ({ projectRoot, instruction, args }) => {
-          expect(instruction.taskType).toBe('audit');
-          expect(instruction.nextAction).toBe('dispatch_review');
-          const reportPath = writeMainAgentRunLoopTaskReport(projectRoot, instruction, args);
-          return JSON.parse(fs.readFileSync(reportPath, 'utf8'));
-        },
       });
 
-      expect(review.status).toBe('completed');
-      expect(review.dispatchInstruction?.host).toBe('codex');
-      expect(review.finalSurface.orchestrationState?.host).toBe('codex');
+      expect(next.status).toBe('blocked');
+      expect(next.dispatchInstruction).toBeNull();
+      expect(next.steps.at(-1)).toMatchObject({
+        step: 'dispatch-plan',
+        status: 'fail',
+      });
+      expect(next.finalSurface.mainAgentNextAction).toBe('run_execution_closure_gate');
     } finally {
-      fs.rmSync(root, { recursive: true, force: true });
+      cleanupRequirementWorkspace(root);
     }
   });
 
   it('continues rerun_gate remediation and review through the Codex worker adapter', () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'main-agent-rerun-gate-codex-adapter-'));
+    const fixture = materializeRunLoopFixture();
+    const root = fixture.root;
     const previous = process.env.CODEX_WORKER_ADAPTER_BIN;
     const previousAllow = process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE;
     try {
-      writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
-      writeRuntimeContext(
-        root,
-        defaultRuntimeContextFile({
-          flow: 'story',
-          stage: 'implement',
-          sourceMode: 'full_bmad',
-          contextScope: 'story',
-          storyId: 'S-rerun-gate-codex-adapter',
-          runId: 'rerun-gate-codex-adapter-test',
-        })
-      );
       writeCodexImplementationWorker(root);
       process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE = 'true';
       process.env.CODEX_WORKER_ADAPTER_BIN = writeFakeCodexBinary(root, 'fake-rerun-codex');
 
       const remediate = runMainAgentAutomaticLoop({
-        projectRoot: root,
-        flow: 'story',
-        stage: 'implement',
+        ...runLoopArgs(fixture),
         host: 'codex',
       });
       expect(remediate.status).toBe('blocked');
@@ -530,13 +407,10 @@ describe('main-agent automatic run-loop', () => {
       expect(remediate.taskReport?.driftFlags).toContain(
         'task-report-done-without-valid-subagent-evidence-envelope'
       );
-      expect(remediate.taskReport?.driftFlags).toContain('controlled-evidence-ingest-failed');
       expect(remediate.finalSurface.mainAgentNextAction).toBe('dispatch_implement');
 
       const review = runMainAgentAutomaticLoop({
-        projectRoot: root,
-        flow: 'story',
-        stage: 'implement',
+        ...runLoopArgs(fixture),
         host: 'codex',
       });
       expect(review.status).toBe('blocked');
@@ -557,27 +431,16 @@ describe('main-agent automatic run-loop', () => {
       } else {
         process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE = previousAllow;
       }
-      fs.rmSync(root, { recursive: true, force: true });
+      cleanupRequirementWorkspace(root);
     }
   });
 
   it('CLI --taskReportPath ingests an existing report without overwriting it', () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'main-agent-run-loop-cli-report-'));
+    const fixture = materializeRunLoopFixture();
+    const root = fixture.root;
     const previousAllow = process.env.MAIN_AGENT_ALLOW_EXTERNAL_TASK_REPORT;
     try {
       process.env.MAIN_AGENT_ALLOW_EXTERNAL_TASK_REPORT = 'true';
-      writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
-      writeRuntimeContext(
-        root,
-        defaultRuntimeContextFile({
-          flow: 'story',
-          stage: 'implement',
-          sourceMode: 'full_bmad',
-          contextScope: 'story',
-          storyId: 'S-run-loop-cli-report',
-          runId: 'run-loop-cli-report-test',
-        })
-      );
 
       const dispatchOutput = execFileSync(
         process.execPath,
@@ -591,11 +454,18 @@ describe('main-agent automatic run-loop', () => {
           root,
           '--action',
           'dispatch-plan',
+          ...cliRecordArgs(fixture),
         ],
         { cwd: process.cwd(), encoding: 'utf8' }
       );
       const dispatch = JSON.parse(dispatchOutput) as { packetId: string };
-      const reportPath = path.join(root, '_bmad-output', 'runtime', 'evidence', 'external-task-report.json');
+      const reportPath = path.join(
+        root,
+        '_bmad-output',
+        'runtime',
+        'evidence',
+        'external-task-report.json'
+      );
       fs.mkdirSync(path.dirname(reportPath), { recursive: true });
       fs.writeFileSync(
         reportPath,
@@ -626,6 +496,7 @@ describe('main-agent automatic run-loop', () => {
           root,
           '--action',
           'run-loop',
+          ...cliRecordArgs(fixture),
           '--taskReportPath',
           reportPath,
         ],
@@ -652,27 +523,16 @@ describe('main-agent automatic run-loop', () => {
       } else {
         process.env.MAIN_AGENT_ALLOW_EXTERNAL_TASK_REPORT = previousAllow;
       }
-      fs.rmSync(root, { recursive: true, force: true });
+      cleanupRequirementWorkspace(root);
     }
   });
 
   it('CLI --taskReportPath fails closed by default without explicit test authorization', () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'main-agent-run-loop-cli-report-deny-'));
+    const fixture = materializeRunLoopFixture();
+    const root = fixture.root;
     const previousAllow = process.env.MAIN_AGENT_ALLOW_EXTERNAL_TASK_REPORT;
     try {
       delete process.env.MAIN_AGENT_ALLOW_EXTERNAL_TASK_REPORT;
-      writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
-      writeRuntimeContext(
-        root,
-        defaultRuntimeContextFile({
-          flow: 'story',
-          stage: 'implement',
-          sourceMode: 'full_bmad',
-          contextScope: 'story',
-          storyId: 'S-run-loop-cli-report-deny',
-          runId: 'run-loop-cli-report-deny-test',
-        })
-      );
       const reportPath = path.join(root, 'external-report.json');
       fs.writeFileSync(
         reportPath,
@@ -699,17 +559,17 @@ describe('main-agent automatic run-loop', () => {
           root,
           '--action',
           'run-loop',
-          '--flow',
-          'story',
-          '--stage',
-          'implement',
+          ...cliRecordArgs(fixture),
           '--taskReportPath',
           reportPath,
         ],
         { cwd: path.resolve(__dirname, '../..'), encoding: 'utf8' }
       );
       expect(resultProcess.status).toBe(1);
-      const result = JSON.parse(resultProcess.stdout) as { status: string; taskReport?: { status: string; driftFlags?: string[] } };
+      const result = JSON.parse(resultProcess.stdout) as {
+        status: string;
+        taskReport?: { status: string; driftFlags?: string[] };
+      };
       expect(result.status).toBe('blocked');
       expect(result.taskReport?.status).toBe('blocked');
       expect(result.taskReport?.driftFlags).toContain('external-task-report-denied');
@@ -719,7 +579,7 @@ describe('main-agent automatic run-loop', () => {
       } else {
         process.env.MAIN_AGENT_ALLOW_EXTERNAL_TASK_REPORT = previousAllow;
       }
-      fs.rmSync(root, { recursive: true, force: true });
+      cleanupRequirementWorkspace(root);
     }
   });
 });

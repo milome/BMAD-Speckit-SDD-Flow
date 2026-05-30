@@ -728,6 +728,60 @@ describe('target artifact realization gate', () => {
     }
   });
 
+  it('does not treat architecture state-check events as legacy completion proof', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'target-artifact-architecture-state-check-'));
+    try {
+      const fixture = passingRecord(root);
+      const sourcePath = path.join(root, 'architecture-state-check-source.md');
+      const confirmation = {
+        status: 'user_confirmed',
+        artifactAutomationPlan: [
+          {
+            id: 'ART-TARGET',
+            artifactType: 'report',
+            path: fixture.artifactPath.replace(/\\/gu, '/'),
+            producer: 'fixture-producer',
+            sourceOfTruthRole: 'implementation',
+            traceRows: ['TRACE-001'],
+            evidenceRefs: ['EVD-001'],
+          },
+        ],
+        currentTargetMap: {
+          canonicalArtifacts: [{ targetPathOrField: 'RequirementRecord.genericCanonicalField' }],
+          pathRegistry: [],
+          existingArtifacts: [
+            {
+              currentPath: 'architecture_confirmation_state_checked',
+              completionProofPolicy: 'legacy_only',
+            },
+          ],
+        },
+      };
+      writeText(
+        sourcePath,
+        `implementationConfirmation:\n${JSON.stringify(confirmation, null, 2)
+          .split('\n')
+          .map((line) => `  ${line}`)
+          .join('\n')}\n`
+      );
+      const report = evaluateTargetArtifactRealization({
+        sourcePath,
+        record: {
+          ...fixture.record,
+          sourcePath,
+          implementationConfirmationHash: implementationConfirmationHash(confirmation),
+          lastEventType: 'architecture_confirmation_state_checked',
+        },
+        recordPath: fixture.recordPath,
+        attemptId: ATTEMPT,
+      });
+      expect(report.blockingReasons).not.toContain('legacy_artifact_used_as_completion_proof');
+      expect(report.decision).toBe('pass');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('does not treat legacy compatibility snapshots as completion proof usage', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'target-artifact-legacy-snapshot-'));
     try {
@@ -1045,6 +1099,106 @@ describe('target artifact realization gate', () => {
         attemptId: ATTEMPT,
       });
       expect(report.blockingReasons).not.toContain('target_artifact_hash_mismatch');
+      expect(report.decision).toBe('pass');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('accepts current-attempt artifact index entries for dynamic producer paths', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'target-artifact-dynamic-producer-path-'));
+    try {
+      const attemptId = 'implement-dynamic-001';
+      const sourcePath = path.join(root, 'source.md');
+      const base = path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'REQ-DYNAMIC');
+      const eventPath = path.join(base, 'events', 'control-events.jsonl');
+      const declaredPath =
+        '_bmad-output/runtime/requirement-records/<recordId>/audit-review/<attemptId>/audit-execution-profile-packet.json';
+      const actualPath = path.join(
+        base,
+        'audit-review',
+        'audit-1780143913436',
+        'audit-execution-profile-packet.json'
+      );
+      writeJson(actualPath, { ok: true });
+      writeText(eventPath, '');
+
+      const confirmation = {
+        status: 'user_confirmed',
+        artifactAutomationPlan: [
+          {
+            id: 'ART-008',
+            artifactType: 'report',
+            path: declaredPath,
+            producer: 'fixture-producer',
+            sourceOfTruthRole: 'audit_dispatch_contract',
+            traceRows: ['TRACE-011'],
+            evidenceRefs: ['EVD-009'],
+          },
+        ],
+        currentTargetMap: {
+          canonicalArtifacts: [],
+          pathRegistry: [],
+          existingArtifacts: [],
+        },
+      };
+      writeText(
+        sourcePath,
+        [
+          'implementationConfirmation:',
+          '  status: user_confirmed',
+          '  artifactAutomationPlan:',
+          '    - id: ART-008',
+          '      artifactType: report',
+          `      path: ${declaredPath}`,
+          '      producer: fixture-producer',
+          '      sourceOfTruthRole: audit_dispatch_contract',
+          '      traceRows: [TRACE-011]',
+          '      evidenceRefs: [EVD-009]',
+          '  currentTargetMap:',
+          '    canonicalArtifacts: []',
+          '    pathRegistry: []',
+          '    existingArtifacts: []',
+          '',
+        ].join('\n')
+      );
+
+      const record = {
+        recordId: 'REQ-DYNAMIC',
+        requirementSetId: 'REQ-DYNAMIC',
+        sourcePath,
+        status: 'user_confirmed',
+        implementationConfirmationHash: implementationConfirmationHash(confirmation),
+        controlStore: { eventLogPath: eventPath.replace(/\\/gu, '/') },
+        executionIterations: [],
+        artifactIndex: [
+          {
+            artifactType: 'audit_dispatch_contract',
+            sourceOfTruthRole: 'audit_dispatch_contract',
+            path: actualPath.replace(/\\/gu, '/'),
+            contentHash: sha256File(actualPath),
+            producer: 'fixture-producer',
+            purpose: 'current-attempt target artifact snapshot for ART-008',
+            relatedRequirementIds: ['TRACE-011', 'EVD-009'],
+            traceRows: ['TRACE-011'],
+            evidenceRefs: ['EVD-009'],
+            status: 'active',
+            inputVersion: attemptId,
+            outputVersion: attemptId,
+          },
+        ],
+      };
+
+      const report = evaluateTargetArtifactRealization({
+        sourcePath,
+        record,
+        recordPath: path.join(base, 'requirement-record.json'),
+        attemptId,
+      });
+      expect(report.targetCount).toBe(1);
+      expect(report.blockingReasons).not.toContain('target_artifact_missing');
+      expect(report.blockingReasons).not.toContain('target_artifact_index_missing');
+      expect(report.blockingReasons).not.toContain('target_artifact_attempt_binding_missing');
       expect(report.decision).toBe('pass');
     } finally {
       rmSync(root, { recursive: true, force: true });

@@ -28,6 +28,7 @@ interface ParsedArgs {
   eventLog?: string;
   artifactIndex?: string;
   action?: string;
+  persistStateCheck?: boolean;
   json?: boolean;
   help?: boolean;
 }
@@ -46,6 +47,10 @@ function parseArgs(argv: string[]): ParsedArgs {
     }
     if (arg === '--json') {
       out.json = true;
+      continue;
+    }
+    if (arg === '--persist-state-check') {
+      out.persistStateCheck = true;
       continue;
     }
     if (!arg.startsWith('--')) {
@@ -661,16 +666,26 @@ export function mainIngestArchitectureConfirmation(argv: string[]): number {
     const checkedAt = args.confirmedAt ?? new Date().toISOString();
     const checkedBy = args.confirmedBy ?? 'agent';
     const result = architectureStateCheck(record, checkedAt, checkedBy);
+    const commit = args.persistStateCheck
+      ? appendControlEventAndReplay({
+          recordPath,
+          writerId: 'architecture-confirmation-ingest',
+          eventType: 'architecture_confirmation_state_checked',
+          recordedAt: checkedAt,
+          payload: { event: result.event },
+          reduce: () => result.nextRecord,
+        })
+      : null;
     const output = {
       ok: result.decision === 'pass',
       event: result.event,
       mismatches: result.mismatches,
       requirementRecordPath: normalizePathForRecord(recordPath),
-      diagnosticOnly: true,
-      eventLogPath: null,
-      controlEventId: null,
-      controlEventHash: null,
-      receiptPath: null,
+      diagnosticOnly: !args.persistStateCheck,
+      eventLogPath: commit ? normalizePathForRecord(commit.eventLogPath) : null,
+      controlEventId: commit?.event.eventId ?? null,
+      controlEventHash: commit?.event.eventHash ?? null,
+      receiptPath: commit ? normalizePathForRecord(commit.receiptPath) : null,
     };
     process.stdout.write(args.json ? `${JSON.stringify(output, null, 2)}\n` : `architecture_confirmation_state=${result.decision}\n`);
     return result.decision === 'pass' ? 0 : 1;

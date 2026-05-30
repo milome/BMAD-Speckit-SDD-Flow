@@ -59,6 +59,31 @@ describe('shared ContractExecutionManifest canonicalization', () => {
     });
   });
 
+  it('preserves explicit required command targetFiles in canonical command files', () => {
+    const manifest = buildContractExecutionManifest({
+      confirmation: confirmation({
+        requiredCommands: [
+          {
+            id: 'CMD-001',
+            command: 'npx tsc --noEmit --project tsconfig.node.json --pretty false',
+            targetFiles: ['tsconfig.node.json'],
+            traceRows: ['TRACE-001'],
+            evidenceRefs: ['EVD-001'],
+          },
+        ],
+      }),
+    });
+
+    expect(manifest.requiredCommands).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'CMD-001',
+          files: ['tsconfig.node.json'],
+        }),
+      ])
+    );
+  });
+
   it('keeps hash stable for presentation-only projection changes', () => {
     const first = buildContractExecutionManifest({ confirmation: confirmation() });
     const baseProjection = confirmation().aiTddContractExecutionManifestProjection as Record<

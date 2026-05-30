@@ -305,6 +305,13 @@ export function runMainAgentCompiledPrompt(input: {
   if (goalMode === 'native_goal_inline') {
     blockingReasons.push('native_goal_inline_rejected');
   }
+  if (
+    input.goalCommandAvailable === 'true' &&
+    (input.executionHost === 'codex' || input.executionHost === 'claude-code') &&
+    goalMode !== 'native_goal_document_ref'
+  ) {
+    blockingReasons.push(`native_goal_document_ref_required:${goalMode || 'missing'}`);
+  }
   if (goalMode === 'native_goal_document_ref' && !fs.existsSync(goalExecutionPath)) {
     blockingReasons.push('goal_execution_missing');
   }

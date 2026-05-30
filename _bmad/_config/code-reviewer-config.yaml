@@ -94,6 +94,45 @@ modes:
           - "PRD -> Architecture -> Epic Story 可追溯"
           - "Four-Signal Contract Verification 有结论"
 
+  delivery:
+    name: "交付确认审计"
+    description: "审计 delivery_confirmation 的当前尝试证据、审计收敛和关闭权限"
+    prompt_template: "audit-prompts-readiness.md"
+    pass_criteria:
+      A: "交付证据、当前 attempt 绑定、审计收敛和 closeout authority 全部闭合"
+      B: "主要闭合，minor 问题须在本阶段审计闭环内完成修复"
+      C: "存在交付证据或 authority 缺口，需修复后重新审计"
+      D: "关键 closeout authority 缺失，禁止关闭"
+    dimensions:
+      - name: "交付证据闭合"
+        name_en: "Delivery Evidence Closure"
+        weight: 25
+        checks:
+          - "delivery closeout report 当前有效"
+          - "所有 required command evidence 可回查"
+          - "artifact index 覆盖交付证据"
+      - name: "当前尝试绑定"
+        name_en: "Current Attempt Binding"
+        weight: 25
+        checks:
+          - "closeoutAttemptId 与 execution iteration 一致"
+          - "sourceDocumentHash 与 implementationConfirmationHash 当前一致"
+          - "stale evidence 不能作为 pass 证据"
+      - name: "审计收敛回执"
+        name_en: "Audit Convergence Receipt"
+        weight: 25
+        checks:
+          - "三轮 no-new-valid-gap 回执当前有效"
+          - "runAuditorHost receipt 可回查"
+          - "score receipt 使用当前 stage profile"
+      - name: "关闭权限"
+        name_en: "Closeout Authority"
+        weight: 25
+        checks:
+          - "record_closed 只能来自 delivery_confirmation pass"
+          - "reviewer prose、dashboard green、score green 不能关闭记录"
+          - "open failure / RCA / rerun blocker 为零"
+
   story:
     name: "Story 文档审计"
     description: "审计已确认需求投影后的 Story 文档质量"

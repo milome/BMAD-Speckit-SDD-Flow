@@ -27,6 +27,7 @@ English | [简体中文](README.zh-CN.md)
 - [Prerequisites](#prerequisites)
 - [Quick Start](#quick-start)
 - [Runtime Model](#runtime-model)
+- [1.x Five-Layer Architecture](#1x-five-layer-architecture)
 - [AI-TDD Control Plane](#ai-tdd-control-plane)
 - [Six Mental Models](#six-mental-models)
 - [Manifest And Trace Evidence](#manifest-and-trace-evidence)
@@ -144,9 +145,29 @@ Daily operation should stay simple: activate the host skill, let the Main Agent 
 
 ---
 
+## 1.x Five-Layer Architecture
+
+The 1.x release line remains the delivery map that connects BMAD product discovery to Speckit implementation. It is still the easiest way to explain how product intent becomes audited, reviewable delivery.
+
+<p align="center">
+  <img src="docs/assets/readme-architecture-overview.final.svg" alt="BMAD-Speckit 1.x five-layer architecture from product intent to audited delivery" width="100%" />
+</p>
+
+| Layer | Purpose | Primary output |
+| --- | --- | --- |
+| Layer 1: Product Brief | Define product intent, users, goals, and problem framing. | Product brief and discovery notes. |
+| Layer 2: PRD + Architecture | Turn intent into requirements, architecture boundaries, and risk decisions. | PRD and architecture documents. |
+| Layer 3: Epic / Story | Split product and architecture scope into executable story units. | Epics, stories, and story context. |
+| Layer 4: Speckit Workflow | Run `specify -> plan -> GAPS -> tasks -> implement` for technical execution. | Specs, plans, gap analysis, tasks, code, and tests. |
+| Layer 5: Closeout And Integration | Audit implementation, score evidence, and prepare reviewable delivery. | Post-audit, scoring, PR, human review, and release evidence. |
+
+In the 2.0.0 release line, this five-layer architecture is not removed. It becomes the upstream delivery map that feeds the AI-TDD control plane: product and story artifacts become requirement-contract inputs, Speckit work becomes bounded execution packets, and delivery still closes only through controlled evidence gates.
+
+---
+
 ## AI-TDD Control Plane
 
-AI-TDD in this project means Manifest-level, acceptance-driven development. The Manifest is the requirement contract matrix: it carries `MUST`, `MUST NOT`, `NOT DONE`, `EVIDENCE`, and `TRACE MATRIX` definitions that both humans and agents can verify.
+AI-TDD in this project means Manifest-level, acceptance-driven development. The Manifest is the requirement contract matrix: it carries `MUST`, `NEG` (`MUST NOT` negative assertions), `OUT` (`OUT OF SCOPE` boundaries), `TRACE`, `EVD`, `ACC/E2E`, `FAIL/EDGE`, `CMD`, `ART`, and `TASK` definitions that both humans and agents can verify. `MUST NOT` is the conceptual alias for `NEG-*`; older `NOT DONE` wording means `OUT OF SCOPE / OUT-*`.
 
 The control plane exists to enforce two rules:
 
@@ -273,7 +294,7 @@ Delivery evidence is different from the CLI command-surface screenshot. It is th
 
 The 1.x release line BMAD + Speckit assets remain part of the compatibility surface: Product Brief, PRD, Architecture, Epic/Story, Speckit specify/plan/GAPS/tasks, implementation, audit, scoring, dashboard, Coach, and SFT extraction remain useful.
 
-The 2.0.0 release line intentionally does not lead with the old five-layer architecture diagram. Its primary architecture is the AI-TDD toolchain ecosystem and the Main Agent control plane. 1.x artifacts are inputs and projections inside that control plane, not a replacement for requirement-contract authority.
+The 2.0.0 release line now presents the five-layer architecture as the 1.x delivery map before introducing AI-TDD. Its primary authority is still the AI-TDD toolchain ecosystem and the Main Agent control plane. 1.x artifacts are inputs and projections inside that control plane, not a replacement for requirement-contract authority.
 
 ---
 

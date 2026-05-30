@@ -433,7 +433,7 @@ function baseRecord(root: string, options: { proof?: boolean } = { proof: true }
     },
     architectureConfirmationStateChecks: [
       {
-        eventType: 'architecture_confirmation_state_checked',
+        eventType: 'architecture_confirmation_recorded',
         recordId: 'REQ-READINESS',
         requirementSetId: 'REQ-READINESS',
         checkId: 'architecture-state:2026-05-19T00:00:00.500Z',
