@@ -14,7 +14,8 @@ import {
 import type { ExecutionPacket, TaskReport } from '../../scripts/orchestration-dispatch-contract';
 
 const SOURCE_HASH = 'sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570';
-const IMPLEMENTATION_HASH = 'sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a';
+const IMPLEMENTATION_HASH =
+  'sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a';
 const ARCHITECTURE_HASH = 'sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da';
 
 function sha256(content: string): string {
@@ -70,7 +71,13 @@ function traceStatusPolicy() {
       'followUpRecordId',
       'followUpDueCondition',
     ],
-    userApprovedOutOfScopeRequiredFields: ['userApprovalRef', 'approvedAt', 'approvedBy', 'impactSummary', 'confirmationDeltaRef'],
+    userApprovedOutOfScopeRequiredFields: [
+      'userApprovalRef',
+      'approvedAt',
+      'approvedBy',
+      'impactSummary',
+      'confirmationDeltaRef',
+    ],
     bareDeferredForbidden: true,
     bareOutOfScopeForbidden: true,
     fullCloseoutForUserScopedStatusesForbidden: true,
@@ -93,7 +100,13 @@ function artifactRef(artifactPath: string, contentHash: string, relatedRequireme
 }
 
 function writeFixture(root: string) {
-  const base = path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'REQ-CLOSED-LOOP-DESIGN');
+  const base = path.join(
+    root,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    'REQ-CLOSED-LOOP-DESIGN'
+  );
   const evidenceDir = path.join(base, 'evidence', 'TRACE-035', 'fixture');
   mkdirSync(evidenceDir, { recursive: true });
   const evidenceArtifactPath = path.join(evidenceDir, 'subagent-proof.json');
@@ -119,7 +132,8 @@ function writeFixture(root: string) {
             sourcePath: 'docs/design/需求实现完整性门禁与重跑闭环设计.md',
             sourceDocumentHash: SOURCE_HASH,
             implementationConfirmationHash: IMPLEMENTATION_HASH,
-            confirmationPageHash: 'sha256:d8eae14f55643500a39e3f8cc7b58537b8588208e0bfc18b324797f7ab57c20c',
+            confirmationPageHash:
+              'sha256:d8eae14f55643500a39e3f8cc7b58537b8588208e0bfc18b324797f7ab57c20c',
             confirmationText: 'confirmed',
             renderReportPath: 'confirmation-render-report.json',
             htmlPath: 'confirmation.html',
@@ -377,7 +391,8 @@ describe('subagent evidence envelope acceptance', () => {
 
       const wrongHash = {
         ...fixture.envelope,
-        architectureConfirmationHash: 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        architectureConfirmationHash:
+          'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
       };
       const record = JSON.parse(readFileSync(fixture.recordPath, 'utf8'));
       expect(validateSubagentEvidenceEnvelope(wrongHash, { record }).mismatches).toContain(
@@ -439,7 +454,9 @@ describe('subagent evidence envelope acceptance', () => {
           },
         ],
       });
-      expect(blocked.mismatches.join('\n')).toContain('subagent_envelope_artifact_refs_not_indexed');
+      expect(blocked.mismatches.join('\n')).toContain(
+        'subagent_envelope_artifact_refs_not_indexed'
+      );
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

@@ -13,7 +13,9 @@ describe('Deferred Gap Dev Story contract', () => {
 
     expect(content).toContain('读取并验证 `deferred-gap-register.yaml`');
     expect(content).toContain('读取并验证 `journey-ledger`、`trace-map`、`closure-notes`');
-    expect(content).toContain('active deferred gap 但无 task binding、Smoke Task Chain、Closure Task ID 或 production path 映射');
+    expect(content).toContain(
+      'active deferred gap 但无 task binding、Smoke Task Chain、Closure Task ID 或 production path 映射'
+    );
   });
 
   it('requires Claude post-audit to inspect runnable journey evidence and deferred gap closure state', () => {
@@ -37,12 +39,22 @@ describe('Deferred Gap Dev Story contract', () => {
 
     expect(content).toContain('验证 `deferred-gap-register.yaml` 已存在且可读');
     expect(content).toContain('优先检查独立工件: `journey-ledger`、`trace-map`、`closure-notes/`');
-    expect(content).toContain('active deferred gap 但无 Smoke Task Chain、Closure Task ID 或 production path 映射');
+    expect(content).toContain(
+      'active deferred gap 但无 Smoke Task Chain、Closure Task ID 或 production path 映射'
+    );
   });
 
   it('keeps Create Story bypass warning explicit in workflow instructions', () => {
     const content = readFileSync(
-      join(ROOT, '_bmad', 'bmm', 'workflows', '4-implementation', 'create-story', 'instructions.xml'),
+      join(
+        ROOT,
+        '_bmad',
+        'bmm',
+        'workflows',
+        '4-implementation',
+        'create-story',
+        'instructions.xml'
+      ),
       'utf8'
     );
 

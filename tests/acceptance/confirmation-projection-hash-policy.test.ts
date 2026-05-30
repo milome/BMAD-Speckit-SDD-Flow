@@ -949,7 +949,6 @@ describe('confirmation projection hash policy', () => {
     const source = writeSource();
     const first = writeRenderReport(source, OLD_PAGE_HASH);
     expect(ingestConfirmation(source, first.reportPath, first.confirmTextPath).status).toBe(0);
-    const beforeRecord = fs.readFileSync(recordPath(), 'utf8');
     const beforeSource = fs.readFileSync(source, 'utf8');
     fs.writeFileSync(
       source,
@@ -968,13 +967,27 @@ describe('confirmation projection hash policy', () => {
       action: 'route-confirmation-drift',
       route: 'semantic_reconfirmation_required',
       block: 'CONFIRMATION_REQUIRED',
-      nextRequiredAction: 'author_reconfirmation_evidence_and_render_confirmation_page',
+      nextRequiredAction: 'await_exact_confirmation_phrase_with_hashes',
+      requestId: expect.stringMatching(/^reconfirm-/u),
       classification: {
         kind: 'semantic_reconfirmation_required',
         requiresUserReconfirmation: true,
       },
     });
-    expect(fs.readFileSync(recordPath(), 'utf8')).toBe(beforeRecord);
+    const record = JSON.parse(fs.readFileSync(recordPath(), 'utf8'));
+    expect(record.status).toBe('reconfirm_required');
+    expect(record.reconfirmationRequests).toEqual([
+      expect.objectContaining({
+        requestId: expect.stringMatching(/^reconfirm-/u),
+        targetModel: 'requirement_confirmation',
+        status: 'blocking_open',
+      }),
+    ]);
+    const eventLog = fs.readFileSync(
+      path.join(path.dirname(recordPath()), 'events', 'control-events.jsonl'),
+      'utf8'
+    );
+    expect(eventLog).toContain('"eventType":"reconfirmation_requested"');
   });
 
   it('keeps architecture and recipe drift as architecture readiness hard stops', () => {

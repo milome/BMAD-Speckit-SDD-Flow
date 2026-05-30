@@ -45,8 +45,8 @@ describe('runtime-governance templates (T9)', () => {
   });
 
   it('schema 拒绝模板 patch scoringEnabled', () => {
-    expect(() => assertValidRuntimePolicyTemplatePatch({ scoringEnabled: false }, 'bad_tpl')).toThrow(
-      /must NOT have additional properties/i
-    );
+    expect(() =>
+      assertValidRuntimePolicyTemplatePatch({ scoringEnabled: false }, 'bad_tpl')
+    ).toThrow(/must NOT have additional properties/i);
   });
 });

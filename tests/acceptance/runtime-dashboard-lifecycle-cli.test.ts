@@ -6,7 +6,11 @@ import { spawnSync } from 'node:child_process';
 
 const PKG_ROOT = join(import.meta.dirname, '..', '..');
 const BIN = join(PKG_ROOT, 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js');
-const { startRuntimeDashboardServer, getRuntimeDashboardStatus, stopServerByState } = require('../../scripts/start-runtime-dashboard-server.cjs');
+const {
+  startRuntimeDashboardServer,
+  getRuntimeDashboardStatus,
+  stopServerByState,
+} = require('../../scripts/start-runtime-dashboard-server.cjs');
 
 function run(cmd: string, cwd: string): string {
   const shell =
@@ -66,7 +70,11 @@ describe('runtime dashboard lifecycle cli', () => {
     const target = mkdtempSync(join(tmpdir(), 'accept-dashboard-lifecycle-'));
     roots.push(target);
 
-    writeFileSync(join(target, 'package.json'), JSON.stringify({ name: 'consumer-app', version: '1.0.0', private: true }), 'utf8');
+    writeFileSync(
+      join(target, 'package.json'),
+      JSON.stringify({ name: 'consumer-app', version: '1.0.0', private: true }),
+      'utf8'
+    );
     const pkgPath = join(PKG_ROOT).replace(/\\/g, '/');
     run(`npm install --save-dev file:${pkgPath}`, target);
 
@@ -87,7 +95,11 @@ describe('runtime dashboard lifecycle cli', () => {
     const target = mkdtempSync(join(tmpdir(), 'accept-dashboard-reuse-'));
     roots.push(target);
 
-    writeFileSync(join(target, 'package.json'), JSON.stringify({ name: 'consumer-app', version: '1.0.0', private: true }), 'utf8');
+    writeFileSync(
+      join(target, 'package.json'),
+      JSON.stringify({ name: 'consumer-app', version: '1.0.0', private: true }),
+      'utf8'
+    );
     const pkgPath = join(PKG_ROOT).replace(/\\/g, '/');
     run(`npm install --save-dev file:${pkgPath}`, target);
 

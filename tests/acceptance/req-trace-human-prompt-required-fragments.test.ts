@@ -5,8 +5,20 @@ import * as path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 const ROOT = process.cwd();
-const SCRIPT = path.join(ROOT, '_bmad', 'skills', 'req-trace-matrix-prompt-generator', 'scripts', 'generate_prompt.js');
-const SOURCE = path.join(ROOT, 'docs', 'requirements', '2026-05-25-ai-tdd-manifest-closeout-runner.md');
+const SCRIPT = path.join(
+  ROOT,
+  '_bmad',
+  'skills',
+  'req-trace-matrix-prompt-generator',
+  'scripts',
+  'generate_prompt.js'
+);
+const SOURCE = path.join(
+  ROOT,
+  'docs',
+  'requirements',
+  '2026-05-25-ai-tdd-manifest-closeout-runner.md'
+);
 const RECORD = path.join(
   ROOT,
   '_bmad-output',
@@ -82,7 +94,17 @@ describe('req trace human prompt required fragment audit', () => {
     const patchedScriptDir = path.join(tempDir, 'patched-scripts');
     fs.mkdirSync(patchedScriptDir, { recursive: true });
     const patchedScript = path.join(patchedScriptDir, 'generate_prompt.js');
-    fs.copyFileSync(path.join(ROOT, '_bmad', 'skills', 'req-trace-matrix-prompt-generator', 'scripts', 'load-js-yaml.js'), path.join(patchedScriptDir, 'load-js-yaml.js'));
+    fs.copyFileSync(
+      path.join(
+        ROOT,
+        '_bmad',
+        'skills',
+        'req-trace-matrix-prompt-generator',
+        'scripts',
+        'load-js-yaml.js'
+      ),
+      path.join(patchedScriptDir, 'load-js-yaml.js')
+    );
     fs.copyFileSync(
       path.join(
         ROOT,

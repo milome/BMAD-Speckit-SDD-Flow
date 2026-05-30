@@ -1,4 +1,12 @@
-import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import * as fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -130,12 +138,25 @@ function runSpeckitRuntimeCheck(): SmokeResult[] {
       process.platform === 'win32'
         ? commandResult(
             'cmd.exe',
-            ['/d', '/s', '/c', `npm run main-agent-orchestration -- --cwd ${fixture.root} --action dispatch-plan`],
+            [
+              '/d',
+              '/s',
+              '/c',
+              `npm run main-agent-orchestration -- --cwd ${fixture.root} --action dispatch-plan`,
+            ],
             repoRoot()
           )
         : commandResult(
             'npm',
-            ['run', 'main-agent-orchestration', '--', '--cwd', fixture.root, '--action', 'dispatch-plan'],
+            [
+              'run',
+              'main-agent-orchestration',
+              '--',
+              '--cwd',
+              fixture.root,
+              '--action',
+              'dispatch-plan',
+            ],
             repoRoot()
           );
 
@@ -148,7 +169,12 @@ function runSpeckitRuntimeCheck(): SmokeResult[] {
       process.platform === 'win32'
         ? commandResult(
             'cmd.exe',
-            ['/d', '/s', '/c', `npm run main-agent-orchestration -- --cwd ${fixture.root} --action inspect`],
+            [
+              '/d',
+              '/s',
+              '/c',
+              `npm run main-agent-orchestration -- --cwd ${fixture.root} --action inspect`,
+            ],
             repoRoot()
           )
         : commandResult(

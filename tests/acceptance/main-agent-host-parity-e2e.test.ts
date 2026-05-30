@@ -2,7 +2,10 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { buildMainAgentDispatchInstruction, ensureMainAgentDispatchPacket } from '../../scripts/main-agent-orchestration';
+import {
+  buildMainAgentDispatchInstruction,
+  ensureMainAgentDispatchPacket,
+} from '../../scripts/main-agent-orchestration';
 import { defaultRuntimeContextFile, writeRuntimeContext } from '../../scripts/runtime-context';
 import {
   defaultRuntimeContextRegistry,

@@ -123,7 +123,8 @@ describe('reviewer schema contract', () => {
       scoringFailureMode: 'succeeded',
       scoreRecord: {
         effective_verdict: 'blocked',
-        blocking_reason: 'Critical readiness drift detected against the current implementation baseline.',
+        blocking_reason:
+          'Critical readiness drift detected against the current implementation baseline.',
         re_readiness_required: true,
         drift_severity: 'critical',
       },

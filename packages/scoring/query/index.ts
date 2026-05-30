@@ -37,11 +37,7 @@ export function queryByEpic(epicId: number, dataPath?: string): RunScoreRecord[]
  * @param {string} [dataPath] - Optional data path
  * @returns {RunScoreRecord[]} Matching RunScoreRecord array
  */
-export function queryByStory(
-  epicId: number,
-  storyId: number,
-  dataPath?: string
-): RunScoreRecord[] {
+export function queryByStory(epicId: number, storyId: number, dataPath?: string): RunScoreRecord[] {
   const records = loadAndDedupeRecords(dataPath);
   const realDev = filterRealDev(records);
   return realDev.filter((r) => {
@@ -75,11 +71,7 @@ export function queryLatest(n: number, dataPath?: string): RunScoreRecord[] {
  * @param {string} [dataPath] - Optional data path
  * @returns {RunScoreRecord[]} Matching RunScoreRecord array
  */
-export function queryByStage(
-  runId: string,
-  stage: string,
-  dataPath?: string
-): RunScoreRecord[] {
+export function queryByStage(runId: string, stage: string, dataPath?: string): RunScoreRecord[] {
   const records = loadAndDedupeRecords(dataPath);
   return records.filter((r) => r.run_id === runId && r.stage === stage);
 }
@@ -90,10 +82,7 @@ export function queryByStage(
  * @param {string} [dataPath] - Optional data path
  * @returns {RunScoreRecord[]} Matching RunScoreRecord array
  */
-export function queryByScenario(
-  scenario: string,
-  dataPath?: string
-): RunScoreRecord[] {
+export function queryByScenario(scenario: string, dataPath?: string): RunScoreRecord[] {
   if (scenario !== 'real_dev' && scenario !== 'eval_question') return [];
   const records = loadAndDedupeRecords(dataPath);
   return records.filter((r) => r.scenario === scenario);

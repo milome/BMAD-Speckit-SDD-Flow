@@ -12,12 +12,7 @@ export type {
   WriteScoreRecordOptions,
 } from './types';
 export { validateRunScoreRecord, validateScenarioConstraints } from './validate';
-export {
-  ensureDataDir,
-  writeSingleFile,
-  appendJsonl,
-  writeScoreRecordSync,
-} from './write-score';
+export { ensureDataDir, writeSingleFile, appendJsonl, writeScoreRecordSync } from './write-score';
 
 import { writeScoreRecordSync } from './write-score';
 import type { RunScoreRecord, WriteMode, WriteScoreRecordOptions } from './types';

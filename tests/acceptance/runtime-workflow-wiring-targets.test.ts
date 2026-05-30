@@ -14,7 +14,10 @@ describe('runtime workflow wiring targets', () => {
       path.join(root, '_bmad', 'speckit', 'scripts', 'powershell', 'check-sprint-ready.ps1'),
       'utf8'
     );
-    const registryScript = readFileSync(path.join(root, 'scripts', 'runtime-context-registry.ts'), 'utf8');
+    const registryScript = readFileSync(
+      path.join(root, 'scripts', 'runtime-context-registry.ts'),
+      'utf8'
+    );
 
     expect(registryScript).toContain('runtimeContextRegistryPath');
     expect(registryScript).toContain('buildProjectRegistryFromSprintStatus');

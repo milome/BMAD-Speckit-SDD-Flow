@@ -6,7 +6,9 @@ export type OrchestrationHost = 'cursor' | 'claude' | 'codex';
 export type OrchestrationFlow = 'story' | 'bugfix' | 'standalone_tasks';
 export type OrchestrationTaskType = 'implement' | 'audit' | 'remediate' | 'document';
 export type PacketKind = 'recommendation' | 'execution' | 'resume';
-export type ExecutionAuthorityMode = 'legacy_generic_prompt' | 'compiled_implementation_confirmation';
+export type ExecutionAuthorityMode =
+  | 'legacy_generic_prompt'
+  | 'compiled_implementation_confirmation';
 export type LegacyPromptFallbackReason = 'no_confirmed_source';
 const DEFAULT_AUDIT_CURRENT_EVIDENCE_HASH =
   'sha256:c8ed309d65d96bc2341ebb69cb0ab61499f75f4b526ccb79b1c5afe59727e408';
@@ -20,7 +22,9 @@ function isSha256Hash(value: string): boolean {
 }
 
 function currentEvidenceHashForCompiledPromptRef(ref: CompiledPromptRef): string {
-  return sha256Text([ref.modelPacketHash, ref.auditReceiptHash, ref.goalExecutionHash ?? 'no-goal'].join('|'));
+  return sha256Text(
+    [ref.modelPacketHash, ref.auditReceiptHash, ref.goalExecutionHash ?? 'no-goal'].join('|')
+  );
 }
 export type ExecutionStrategyId =
   | 'compiled_trace_direct'
@@ -270,7 +274,11 @@ export function packetArtifactDir(projectRoot: string, sessionId: string): strin
         const recordPath = path.join(recordsRoot, dirent.name, 'requirement-record.json');
         if (!fs.existsSync(recordPath)) continue;
         const record = JSON.parse(fs.readFileSync(recordPath, 'utf8')) as Record<string, unknown>;
-        if (record.runId === sessionId || record.recordId === sessionId || record.requirementSetId === sessionId) {
+        if (
+          record.runId === sessionId ||
+          record.recordId === sessionId ||
+          record.requirementSetId === sessionId
+        ) {
           return path.join(recordsRoot, dirent.name, 'prompts', 'prompt-packets');
         }
       }
@@ -278,14 +286,7 @@ export function packetArtifactDir(projectRoot: string, sessionId: string): strin
   } catch {
     // Keep the legacy dev fallback below when the fs probe is unavailable.
   }
-  return path.join(
-    projectRoot,
-    '_bmad-output',
-    'runtime',
-    'governance',
-    'packets',
-    sessionId
-  );
+  return path.join(projectRoot, '_bmad-output', 'runtime', 'governance', 'packets', sessionId);
 }
 
 export function packetArtifactPath(
@@ -353,7 +354,9 @@ export function createExecutionPacket(input: ExecutionPacket): ExecutionPacket {
     );
   }
   if (input.authorityMode === 'legacy_generic_prompt' && !input.legacyPromptFallbackReason) {
-    throw new Error('legacyPromptFallbackReason is required when authorityMode=legacy_generic_prompt');
+    throw new Error(
+      'legacyPromptFallbackReason is required when authorityMode=legacy_generic_prompt'
+    );
   }
   if (
     input.authorityMode === 'compiled_implementation_confirmation' &&
@@ -401,7 +404,9 @@ export function createExecutionPacket(input: ExecutionPacket): ExecutionPacket {
       input.auditExecutionProfile.currentAttemptBinding.implementationConfirmationHash !==
       input.compiledPromptRef.implementationConfirmationHash
     ) {
-      throw new Error('auditExecutionProfile implementationConfirmationHash must match compiledPromptRef');
+      throw new Error(
+        'auditExecutionProfile implementationConfirmationHash must match compiledPromptRef'
+      );
     }
     if (
       input.auditExecutionProfile.currentAttemptBinding.modelPacketHash !==
@@ -413,33 +418,51 @@ export function createExecutionPacket(input: ExecutionPacket): ExecutionPacket {
     if (!currentAttemptHash || !isSha256Hash(currentAttemptHash)) {
       throw new Error('auditExecutionProfile currentAttemptHash must be a canonical sha256 hash');
     }
-    if (currentAttemptHash !== sha256Text(input.auditExecutionProfile.currentAttemptBinding.attemptId)) {
+    if (
+      currentAttemptHash !== sha256Text(input.auditExecutionProfile.currentAttemptBinding.attemptId)
+    ) {
       throw new Error('auditExecutionProfile currentAttemptHash must be derived from attemptId');
     }
-    const currentEvidenceHash = input.auditExecutionProfile.currentAttemptBinding.currentEvidenceHash;
+    const currentEvidenceHash =
+      input.auditExecutionProfile.currentAttemptBinding.currentEvidenceHash;
     if (
       !currentEvidenceHash ||
       !isSha256Hash(currentEvidenceHash) ||
       currentEvidenceHash === DEFAULT_AUDIT_CURRENT_EVIDENCE_HASH
     ) {
-      throw new Error('auditExecutionProfile currentEvidenceHash must be a fresh non-placeholder hash');
+      throw new Error(
+        'auditExecutionProfile currentEvidenceHash must be a fresh non-placeholder hash'
+      );
     }
     if (currentEvidenceHash !== currentEvidenceHashForCompiledPromptRef(input.compiledPromptRef)) {
-      throw new Error('auditExecutionProfile currentEvidenceHash must match compiledPromptRef evidence hashes');
+      throw new Error(
+        'auditExecutionProfile currentEvidenceHash must match compiledPromptRef evidence hashes'
+      );
     }
-    if (input.auditTriadExecutionPlanRef.auditReceiptHash !== input.compiledPromptRef.auditReceiptHash) {
+    if (
+      input.auditTriadExecutionPlanRef.auditReceiptHash !== input.compiledPromptRef.auditReceiptHash
+    ) {
       throw new Error('auditTriadExecutionPlanRef auditReceiptHash must match compiledPromptRef');
     }
-    if ((input.auditTriadExecutionPlanRef.goalExecutionHash ?? null) !== (input.compiledPromptRef.goalExecutionHash ?? null)) {
+    if (
+      (input.auditTriadExecutionPlanRef.goalExecutionHash ?? null) !==
+      (input.compiledPromptRef.goalExecutionHash ?? null)
+    ) {
       throw new Error('auditTriadExecutionPlanRef goalExecutionHash must match compiledPromptRef');
     }
     if (input.auditTriadExecutionPlanRef.currentAttemptHash !== currentAttemptHash) {
-      throw new Error('auditTriadExecutionPlanRef currentAttemptHash must match auditExecutionProfile');
+      throw new Error(
+        'auditTriadExecutionPlanRef currentAttemptHash must match auditExecutionProfile'
+      );
     }
     if (input.auditTriadExecutionPlanRef.currentEvidenceHash !== currentEvidenceHash) {
-      throw new Error('auditTriadExecutionPlanRef currentEvidenceHash must match auditExecutionProfile');
+      throw new Error(
+        'auditTriadExecutionPlanRef currentEvidenceHash must match auditExecutionProfile'
+      );
     }
-    if (input.auditTriadExecutionPlanRef.stageProfileId !== input.auditExecutionProfile.stageProfileId) {
+    if (
+      input.auditTriadExecutionPlanRef.stageProfileId !== input.auditExecutionProfile.stageProfileId
+    ) {
       throw new Error('auditTriadExecutionPlanRef stageProfileId must match auditExecutionProfile');
     }
     if (
@@ -452,13 +475,17 @@ export function createExecutionPacket(input: ExecutionPacket): ExecutionPacket {
       input.auditTriadExecutionPlanRef.criticalAuditorStageProfileHash !==
       input.auditExecutionProfile.stageProfileHash
     ) {
-      throw new Error('auditTriadExecutionPlanRef stageProfileHash must match auditExecutionProfile');
+      throw new Error(
+        'auditTriadExecutionPlanRef stageProfileHash must match auditExecutionProfile'
+      );
     }
     if (
       input.auditTriadExecutionPlanRef.requiredCheckItemSetHash !==
       input.auditExecutionProfile.requiredCheckItemSetHash
     ) {
-      throw new Error('auditTriadExecutionPlanRef requiredCheckItemSetHash must match auditExecutionProfile');
+      throw new Error(
+        'auditTriadExecutionPlanRef requiredCheckItemSetHash must match auditExecutionProfile'
+      );
     }
   }
   if (input.executionStrategy && input.executionStrategy.availability !== 'available') {
@@ -484,7 +511,9 @@ export function createExecutionPacket(input: ExecutionPacket): ExecutionPacket {
     input.executionStrategy.implementationConfirmationHash !==
       input.compiledPromptRef.implementationConfirmationHash
   ) {
-    throw new Error('executionStrategy implementationConfirmationHash must match compiledPromptRef');
+    throw new Error(
+      'executionStrategy implementationConfirmationHash must match compiledPromptRef'
+    );
   }
   return {
     ...input,

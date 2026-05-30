@@ -14,7 +14,9 @@ describe('mergeLanguagePolicyIntoProjectContext', () => {
   it('merges languagePolicy when project context file exists', () => {
     const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ctx-lang-'));
     try {
-      fs.cpSync(path.join(process.cwd(), '_bmad'), path.join(tempRoot, '_bmad'), { recursive: true });
+      fs.cpSync(path.join(process.cwd(), '_bmad'), path.join(tempRoot, '_bmad'), {
+        recursive: true,
+      });
       fs.mkdirSync(path.join(tempRoot, '.cursor', 'agents'), { recursive: true });
       fs.copyFileSync(
         path.join(tempRoot, '_bmad', 'cursor', 'agents', 'party-mode-facilitator.md'),
@@ -59,7 +61,9 @@ describe('mergeLanguagePolicyIntoProjectContext', () => {
   it('restores the default facilitator runtime when project context is rewritten without languagePolicy', () => {
     const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ctx-lang-base-'));
     try {
-      fs.cpSync(path.join(process.cwd(), '_bmad'), path.join(tempRoot, '_bmad'), { recursive: true });
+      fs.cpSync(path.join(process.cwd(), '_bmad'), path.join(tempRoot, '_bmad'), {
+        recursive: true,
+      });
       fs.mkdirSync(path.join(tempRoot, '.cursor', 'agents'), { recursive: true });
       fs.copyFileSync(
         path.join(tempRoot, '_bmad', 'cursor', 'agents', 'party-mode-facilitator.md'),

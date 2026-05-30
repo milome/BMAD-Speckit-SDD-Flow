@@ -3,7 +3,10 @@ import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
-import type { ExecutionPacket, RecommendationPacket } from '../../scripts/orchestration-dispatch-contract';
+import type {
+  ExecutionPacket,
+  RecommendationPacket,
+} from '../../scripts/orchestration-dispatch-contract';
 import {
   buildMainAgentDispatchInstruction,
   claimMainAgentPendingPacket,
@@ -81,7 +84,11 @@ function sourceDocumentHashFor(
   return sha256Text(sourceText.replace(blockText, normalizedBlock));
 }
 
-function writePacket(root: string, sessionId: string, packet: RecommendationPacket | ExecutionPacket): string {
+function writePacket(
+  root: string,
+  sessionId: string,
+  packet: RecommendationPacket | ExecutionPacket
+): string {
   const packetPath = path.join(
     root,
     '_bmad-output',
@@ -683,9 +690,7 @@ describe('main-agent orchestration consumer', () => {
 
       expect(result.scoreRecord.stage).toBe('implementation_readiness');
       expect(result.scoreRecord.scenario).toBe('real_dev');
-      expect(result.scoringRecordPath.replace(/\\/g, '/')).toContain(
-        '/_bmad-output/scoring/'
-      );
+      expect(result.scoringRecordPath.replace(/\\/g, '/')).toContain('/_bmad-output/scoring/');
       expect(
         existsSync(path.join(root, 'packages', 'scoring', 'data', `${result.scoringRunId}.json`))
       ).toBe(false);
@@ -1236,13 +1241,17 @@ describe('main-agent orchestration consumer', () => {
         authorityMode: 'compiled_implementation_confirmation',
         compiledPromptRef: {
           modelPacketPath: 'old/model_packet.json',
-          modelPacketHash: 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          modelPacketHash:
+            'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
           humanPromptPath: 'old/human_prompt.txt',
-          humanPromptHash: 'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+          humanPromptHash:
+            'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
           auditReceiptPath: 'old/audit_receipt.json',
-          auditReceiptHash: 'sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+          auditReceiptHash:
+            'sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
           goalExecutionPath: 'old/goal_execution.md',
-          goalExecutionHash: 'sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+          goalExecutionHash:
+            'sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
           sourceDocumentHash:
             'sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
           implementationConfirmationHash: String(record.implementationConfirmationHash),

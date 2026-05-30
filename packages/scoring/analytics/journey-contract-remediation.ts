@@ -44,7 +44,5 @@ export function buildJourneyContractRemediationHintsFromSummary(
 export function buildJourneyContractRemediationHints(
   records: RunScoreRecord[]
 ): JourneyContractRemediationHint[] {
-  return buildJourneyContractRemediationHintsFromSummary(
-    summarizeJourneyContractSignals(records)
-  );
+  return buildJourneyContractRemediationHintsFromSummary(summarizeJourneyContractSignals(records));
 }

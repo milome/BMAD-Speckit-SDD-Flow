@@ -10,22 +10,78 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-const docPath = path.resolve(process.cwd(), 'packages', 'scoring', 'docs', 'SCORING_CRITERIA_AUTHORITATIVE.md');
+const docPath = path.resolve(
+  process.cwd(),
+  'packages',
+  'scoring',
+  'docs',
+  'SCORING_CRITERIA_AUTHORITATIVE.md'
+);
 const forbiddenWords = ['可选', '后续', '待定', '酌情', '视情况', '先实现', '或后续扩展'];
 
 // 24 项关键字（用于 AC-1 简化校验）
 const requiredKeywords = [
-  'BMAD Layer', '阶段', '表 A', '表 B', 'prd', 'arch', 'epics', 'story', 'specify', 'plan', 'gaps', 'tasks', 'implement', 'post_impl', 'pr_review',
-  '环节 1', '环节 2', '环节 3', '环节 4', '环节 5', '环节 6',
-  '20', '25', '15', '10', '5', // 权重
-  'L5', 'L4', 'L3', 'L2', 'L1', '90', '80', '60', '40', '0', // L1-L5
-  'run_id', 'scenario', 'stage', 'phase_score', 'check_items', 'iteration_count', 'iteration_records', 'first_pass',
-  'OWASP', 'CWE-798', 'owasp.org', 'cwe.mitre.org',
-  'Code Reviewer', '全链路 Skill', 'AI 代码教练',
-  'Epic 综合', '一票否决',
-  '_bmad-output/config', 'scoring/rules',
-  'Implementation Gaps', '阶梯式扣分',
-  '已实现', '目标题', '题池', '更新日期',
+  'BMAD Layer',
+  '阶段',
+  '表 A',
+  '表 B',
+  'prd',
+  'arch',
+  'epics',
+  'story',
+  'specify',
+  'plan',
+  'gaps',
+  'tasks',
+  'implement',
+  'post_impl',
+  'pr_review',
+  '环节 1',
+  '环节 2',
+  '环节 3',
+  '环节 4',
+  '环节 5',
+  '环节 6',
+  '20',
+  '25',
+  '15',
+  '10',
+  '5', // 权重
+  'L5',
+  'L4',
+  'L3',
+  'L2',
+  'L1',
+  '90',
+  '80',
+  '60',
+  '40',
+  '0', // L1-L5
+  'run_id',
+  'scenario',
+  'stage',
+  'phase_score',
+  'check_items',
+  'iteration_count',
+  'iteration_records',
+  'first_pass',
+  'OWASP',
+  'CWE-798',
+  'owasp.org',
+  'cwe.mitre.org',
+  'Code Reviewer',
+  '全链路 Skill',
+  'AI 代码教练',
+  'Epic 综合',
+  '一票否决',
+  '_bmad-output/config',
+  'scoring/rules',
+  'Implementation Gaps',
+  '阶梯式扣分',
+  '已实现',
+  '目标题',
+  '题池',
+  '更新日期',
 ];
 
 function main(): void {
@@ -68,7 +124,8 @@ function main(): void {
   }
 
   // AC-3: 含题量表述
-  const hasQuestionCount = content.includes('已实现') && (content.includes('目标题') || content.includes('题池'));
+  const hasQuestionCount =
+    content.includes('已实现') && (content.includes('目标题') || content.includes('题池'));
   const hasUpdateDate = /\d{4}-\d{2}-\d{2}|更新日期/.test(content);
   if (hasQuestionCount && hasUpdateDate) {
     console.log('AC-3: PASS');
@@ -78,8 +135,20 @@ function main(): void {
   }
 
   // AC-4: spec/tasks 含 24 项核对清单（本脚本存在即表示 tasks 已定义，由人工验收）
-  const specPath = path.resolve(process.cwd(), 'specs', 'epic-2', 'story-2-eval-authority-doc', 'spec-E2-S2.md');
-  const tasksPath = path.resolve(process.cwd(), 'specs', 'epic-2', 'story-2-eval-authority-doc', 'tasks-E2-S2.md');
+  const specPath = path.resolve(
+    process.cwd(),
+    'specs',
+    'epic-2',
+    'story-2-eval-authority-doc',
+    'spec-E2-S2.md'
+  );
+  const tasksPath = path.resolve(
+    process.cwd(),
+    'specs',
+    'epic-2',
+    'story-2-eval-authority-doc',
+    'tasks-E2-S2.md'
+  );
   if (fs.existsSync(specPath) && fs.existsSync(tasksPath)) {
     const specContent = fs.readFileSync(specPath, 'utf-8');
     if (specContent.includes('24 项') && specContent.includes('核对清单')) {

@@ -91,7 +91,11 @@ function makeSample(overrides: SampleOverrides = {}): CanonicalSftSample {
     export_compatibility: {
       openai_chat: { compatible: true, reasons: [], warnings: [] },
       hf_conversational: { compatible: true, reasons: [], warnings: [] },
-      hf_tool_calling: { compatible: false, reasons: ['target_incompatible_hf_tool_calling'], warnings: [] },
+      hf_tool_calling: {
+        compatible: false,
+        reasons: ['target_incompatible_hf_tool_calling'],
+        warnings: [],
+      },
       ...(export_compatibility || {}),
     },
     ...topLevelOverrides,

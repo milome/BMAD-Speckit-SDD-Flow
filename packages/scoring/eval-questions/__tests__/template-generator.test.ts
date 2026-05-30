@@ -69,7 +69,14 @@ describe('generateQuestionTemplate', () => {
 });
 
 describe('addQuestionToManifest', () => {
-  const FIXTURES = path.resolve(process.cwd(), 'packages', 'scoring', 'eval-questions', '__tests__', 'fixtures');
+  const FIXTURES = path.resolve(
+    process.cwd(),
+    'packages',
+    'scoring',
+    'eval-questions',
+    '__tests__',
+    'fixtures'
+  );
   let tmpDir: string;
 
   beforeEach(() => {

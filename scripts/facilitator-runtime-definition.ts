@@ -42,7 +42,10 @@ function detectMaterializedMode(
   explicitMode?: FacilitatorMaterializedMode
 ): DetectedFacilitatorMaterializedMode {
   const ctxPathRelative = path
-    .relative(projectRoot, path.join(projectRoot, '_bmad-output', 'runtime', 'context', 'project.json'))
+    .relative(
+      projectRoot,
+      path.join(projectRoot, '_bmad-output', 'runtime', 'context', 'project.json')
+    )
     .replace(/\\/g, '/');
   if (explicitMode) {
     return {
@@ -129,10 +132,7 @@ function injectGeneratedHeader(
 }
 
 function stripExistingGeneratedHeader(content: string): string {
-  return content.replace(
-    /<!-- RUNTIME-MATERIALIZED facilitator[\s\S]*? -->\r?\n?/u,
-    ''
-  );
+  return content.replace(/<!-- RUNTIME-MATERIALIZED facilitator[\s\S]*? -->\r?\n?/u, '');
 }
 
 function rewriteCanonicalBindings(

@@ -31,7 +31,12 @@ export function validateQuestionVersionForEval(
   questionVersion: string | undefined
 ): void {
   if (scenario !== 'eval_question') return;
-  if (questionVersion == null || (typeof questionVersion === 'string' && questionVersion.trim() === '')) {
-    throw new Error('validateScenarioConstraints: question_version 必填 when scenario=eval_question');
+  if (
+    questionVersion == null ||
+    (typeof questionVersion === 'string' && questionVersion.trim() === '')
+  ) {
+    throw new Error(
+      'validateScenarioConstraints: question_version 必填 when scenario=eval_question'
+    );
   }
 }

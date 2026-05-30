@@ -43,8 +43,7 @@ function shadowDiff(
   governanceOverride?: ReturnType<typeof resolveRuntimePolicy>
 ): { legacy: LegacySlice; governance: ReturnType<typeof resolveRuntimePolicy>; diff: boolean } {
   const legacy = buildLegacySlice(stage, config);
-  const governance =
-    governanceOverride ?? resolveRuntimePolicy({ flow, stage, config });
+  const governance = governanceOverride ?? resolveRuntimePolicy({ flow, stage, config });
   const diff =
     legacy.auditRequired !== governance.auditRequired ||
     legacy.validationLevel !== governance.validationLevel ||

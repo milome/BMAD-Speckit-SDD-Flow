@@ -8,5 +8,7 @@ export const requirementRecordSchemaEvolutionPolicy = {
 } as const;
 
 if (require.main === module) {
-  console.log(JSON.stringify({ ok: true, policy: requirementRecordSchemaEvolutionPolicy }, null, 2));
+  console.log(
+    JSON.stringify({ ok: true, policy: requirementRecordSchemaEvolutionPolicy }, null, 2)
+  );
 }

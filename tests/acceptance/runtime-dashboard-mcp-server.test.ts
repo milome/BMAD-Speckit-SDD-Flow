@@ -20,9 +20,7 @@ function encodeMessage(message: JsonRpcMessage): string {
   return `Content-Length: ${Buffer.byteLength(body, 'utf8')}\r\n\r\n${body}`;
 }
 
-async function readMessage(
-  proc: ReturnType<typeof spawn>
-): Promise<JsonRpcMessage> {
+async function readMessage(proc: ReturnType<typeof spawn>): Promise<JsonRpcMessage> {
   return new Promise((resolve, reject) => {
     let buffer = '';
     const onData = (chunk: Buffer) => {
@@ -69,7 +67,13 @@ describe('runtime dashboard mcp server', () => {
       roots.push(fixture.root);
       ensureScoringBuild(process.cwd());
 
-      const binPath = path.join(process.cwd(), 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js');
+      const binPath = path.join(
+        process.cwd(),
+        'packages',
+        'bmad-speckit',
+        'bin',
+        'bmad-speckit.js'
+      );
       const proc = spawn('node', [binPath, 'runtime-mcp', '--dashboard-port', '0'], {
         cwd: fixture.root,
         stdio: ['pipe', 'pipe', 'pipe'],

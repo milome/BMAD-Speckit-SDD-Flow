@@ -193,6 +193,8 @@ function parseConfirmationText(text) {
     if (!match) throw new Error(`confirmation text missing ${key}`);
     values[key] = match[1];
   }
+  const requestMatch = String(text ?? '').match(/requestId=([A-Za-z0-9._:-]+)/i);
+  if (requestMatch) values.requestId = requestMatch[1].trim();
   return values;
 }
 
@@ -362,6 +364,71 @@ function buildRequirementRecord(existing, event, projectionEvent = null) {
     confirmationProjectionHistory,
     lastEventType: 'confirmation_recorded',
     updatedAt: event.confirmedAt,
+  };
+}
+
+function openRuntimeReconfirmationRequests(record) {
+  return Array.isArray(record?.reconfirmationRequests)
+    ? record.reconfirmationRequests.filter((request) =>
+        ['blocking_open', 'open', 'in_progress'].includes(String(request?.status ?? '').trim())
+      )
+    : [];
+}
+
+function closeRuntimeReconfirmationRequest(record, requestId, event) {
+  if (!requestId) return record;
+  const openRequests = openRuntimeReconfirmationRequests(record);
+  const matching = openRequests.find((request) => String(request?.requestId ?? '') === requestId);
+  if (!matching) {
+    throw new Error(`reconfirmation_request_not_open:${requestId}`);
+  }
+  const confirmationEventId = `confirmation_recorded:${event.confirmedAt}:${event.recordId}`;
+  return {
+    ...record,
+    status: 'user_confirmed',
+    currentMentalModel: 'requirement_confirmation',
+    currentStage: 'requirement_confirmation',
+    reconfirmationRequests: (Array.isArray(record.reconfirmationRequests)
+      ? record.reconfirmationRequests
+      : []
+    ).map((request) =>
+      String(request?.requestId ?? '') === requestId
+        ? {
+            ...request,
+            status: 'controlled_confirmed',
+            closedAt: event.confirmedAt,
+            closedBy: event.confirmedBy,
+            confirmationEventId,
+          }
+        : request
+    ),
+    sixModelResults: {
+      ...(record.sixModelResults && typeof record.sixModelResults === 'object'
+        ? record.sixModelResults
+        : {}),
+      requirement_confirmation: {
+        ...((record.sixModelResults?.requirement_confirmation &&
+        typeof record.sixModelResults.requirement_confirmation === 'object')
+          ? record.sixModelResults.requirement_confirmation
+          : {}),
+        payloadKind: 'model_result',
+        model: 'requirement_confirmation',
+        recordId: event.recordId,
+        requirementSetId: event.requirementSetId,
+        sourceDocumentHash: event.sourceDocumentHash,
+        implementationConfirmationHash: event.implementationConfirmationHash,
+        status: 'pass',
+        resultRecordedAt: event.confirmedAt,
+        resultRecordedBy: event.confirmedBy,
+        blockingReasons: [],
+        sourceRefs: [{ sourceType: 'reconfirmation_request', id: requestId }],
+        currentHashes: {
+          sourceDocumentHash: event.sourceDocumentHash,
+          implementationConfirmationHash: event.implementationConfirmationHash,
+          confirmationPageHash: event.confirmationPageHash,
+        },
+      },
+    },
   };
 }
 
@@ -955,6 +1022,8 @@ function main(argv) {
     globalContractTraceabilityPolicy: buildGlobalContractTraceabilityPolicy(extracted.confirmation),
     traceStatusPolicy: buildTraceStatusPolicy(),
   };
+  const requestId = args.requestId ?? provided.requestId ?? report.requestId ?? report.reconfirmationRequest?.requestId ?? null;
+  if (requestId) event.requestId = requestId;
   const projectionEvent = projectionHashChanged
     ? {
         eventType: 'confirmation_projection_refreshed',
@@ -1020,11 +1089,15 @@ function main(argv) {
       return 3;
     }
   }
-  const nextRecord = buildRequirementRecord(
+  const baseNextRecord = buildRequirementRecord(
     existingRecord,
     isProjectionOnlyRefresh ? null : event,
     projectionEvent
   );
+  const nextRecord =
+    !isProjectionOnlyRefresh && requestId
+      ? closeRuntimeReconfirmationRequest(baseNextRecord, requestId, event)
+      : baseNextRecord;
   fs.mkdirSync(path.dirname(recordPath), { recursive: true });
   fs.writeFileSync(recordPath, `${JSON.stringify(nextRecord, null, 2)}\n`, 'utf8');
   const requirementRecordIndexPath = isProjectionOnlyRefresh

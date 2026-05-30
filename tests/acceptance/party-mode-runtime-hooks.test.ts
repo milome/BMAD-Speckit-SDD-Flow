@@ -50,7 +50,9 @@ describe('party-mode runtime hooks', () => {
       expect(output.hookSpecificOutput?.additionalContext).toContain(
         '"host_native_agent_turn_supported": false'
       );
-      expect(output.hookSpecificOutput?.additionalContext).toContain('"closure_level": "high_confidence"');
+      expect(output.hookSpecificOutput?.additionalContext).toContain(
+        '"closure_level": "high_confidence"'
+      );
       expect(output.hookSpecificOutput?.additionalContext).toContain(
         '"event_writer_mode": "host_reconstruction_from_visible_output"'
       );

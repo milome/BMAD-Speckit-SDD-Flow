@@ -241,7 +241,9 @@ describe.skip('legacy archived: stop-hook background drain trigger', () => {
         prioritizedSignals: ['smoke_task_chain'],
       });
       expect(
-        stopResult.workerResult?.remediationAuditTrace?.journeyContractHints?.map((item) => item.signal)
+        stopResult.workerResult?.remediationAuditTrace?.journeyContractHints?.map(
+          (item) => item.signal
+        )
       ).toEqual(['smoke_task_chain']);
       expect(stopResult.workerResult?.remediationAuditTrace?.summaryLines).toEqual(
         expect.arrayContaining([
@@ -305,17 +307,9 @@ describe.skip('legacy archived: stop-hook background drain trigger', () => {
   it('normalizes handwritten readiness packets on stop even when no pending queue exists', () => {
     const fixture = createFixtureProject();
     try {
-      const outDir = path.join(
-        fixture.root,
-        '_bmad-output',
-        'planning-artifacts',
-        'dev'
-      );
+      const outDir = path.join(fixture.root, '_bmad-output', 'planning-artifacts', 'dev');
       mkdirSync(outDir, { recursive: true });
-      const artifactPath = path.join(
-        outDir,
-        'implementation-readiness-remediation-2026-04-09.md'
-      );
+      const artifactPath = path.join(outDir, 'implementation-readiness-remediation-2026-04-09.md');
       writeFileSync(
         artifactPath,
         [

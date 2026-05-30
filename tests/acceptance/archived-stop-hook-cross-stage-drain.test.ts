@@ -442,16 +442,13 @@ describe.skip('legacy archived: stop-hook cross-stage background drain', () => {
               projectRoot: fixture.root,
               configPath: fixture.configPath,
               runnerInput: {
-                ...wave2aTailBaseInput(
-                  fixture.root,
-                  prReviewOutput,
-                  'attempt-stop-wave2a-tail-04'
-                ),
+                ...wave2aTailBaseInput(fixture.root, prReviewOutput, 'attempt-stop-wave2a-tail-04'),
                 loopStateId: firstRun.loopState.loopStateId,
                 rerunGateResult: {
                   gate: 'bmad_story_stage4',
                   status: 'pass',
-                  summary: 'Post-audit passed; the next step must wait for explicit human PR review.',
+                  summary:
+                    'Post-audit passed; the next step must wait for explicit human PR review.',
                   updatedArtifacts: ['AUDIT_Story_15-3_stage4.md'],
                 },
               },

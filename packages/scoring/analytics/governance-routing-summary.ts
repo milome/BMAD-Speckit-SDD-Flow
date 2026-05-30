@@ -1,8 +1,5 @@
 import { parseEpicStoryFromRecord } from '../query';
-import type {
-  GovernanceRerunHistoryEntry,
-  RunScoreRecord,
-} from '../writer/types';
+import type { GovernanceRerunHistoryEntry, RunScoreRecord } from '../writer/types';
 
 export interface GovernanceRoutingSummary {
   routingMode: 'targeted' | 'generic';
@@ -78,11 +75,9 @@ export function summarizeGovernanceRouting(
     prioritizedSignals: [...latestWithRouting.event.executor_routing.prioritized_signals].sort(),
     summaryLines: [...(latestWithRouting.event.summary_lines ?? [])],
     runnerSummaryLines: [
-      ...(
-        latestWithRouting.event.runner_summary_lines ??
+      ...(latestWithRouting.event.runner_summary_lines ??
         latestWithRouting.event.summary_lines ??
-        []
-      ),
+        []),
     ],
     source: 'scoring-governance-history',
     latestTimestamp: latestWithRouting.event.timestamp,

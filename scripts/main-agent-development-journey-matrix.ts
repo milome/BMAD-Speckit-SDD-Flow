@@ -57,7 +57,13 @@ function prepareHostBranchRoot(root: string, hostKind: MainAgentHostKind): strin
 }
 
 function prepareHostMatrixRoot(root: string): string {
-  const hostMatrixRoot = path.join(root, '_bmad-output', 'runtime', 'journey-matrix', 'host-matrix');
+  const hostMatrixRoot = path.join(
+    root,
+    '_bmad-output',
+    'runtime',
+    'journey-matrix',
+    'host-matrix'
+  );
   fs.rmSync(hostMatrixRoot, { recursive: true, force: true });
   fs.mkdirSync(path.join(hostMatrixRoot, '_bmad', '_config'), { recursive: true });
   fs.mkdirSync(path.join(hostMatrixRoot, '_bmad-output', 'implementation-artifacts'), {

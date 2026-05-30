@@ -8,20 +8,8 @@ import {
 } from '../helpers/runtime-dashboard-fixture-manifest';
 
 const repoRoot = process.cwd();
-const fixtureRoot = path.join(
-  repoRoot,
-  'packages',
-  'scoring',
-  'parsers',
-  '__tests__',
-  'fixtures'
-);
-const conventionsDoc = path.join(
-  repoRoot,
-  'docs',
-  'reference',
-  'test-fixture-conventions.md'
-);
+const fixtureRoot = path.join(repoRoot, 'packages', 'scoring', 'parsers', '__tests__', 'fixtures');
+const conventionsDoc = path.join(repoRoot, 'docs', 'reference', 'test-fixture-conventions.md');
 
 describe('runtime dashboard fixture contract', () => {
   it('documents stage-aligned fixture rules for runtime dashboard and CLI smoke tests', () => {
@@ -52,9 +40,15 @@ describe('runtime dashboard fixture contract', () => {
     expect(redacted.reportFixture).toContain('tasks');
     expect(blocked.reportFixture).toContain('plan');
 
-    expect(getReportFixturePathForStage(clean.stage)).toBe(path.join(fixtureRoot, clean.reportFixture));
-    expect(getReportFixturePathForStage(redacted.stage)).toBe(path.join(fixtureRoot, redacted.reportFixture));
-    expect(getReportFixturePathForStage(blocked.stage)).toBe(path.join(fixtureRoot, blocked.reportFixture));
+    expect(getReportFixturePathForStage(clean.stage)).toBe(
+      path.join(fixtureRoot, clean.reportFixture)
+    );
+    expect(getReportFixturePathForStage(redacted.stage)).toBe(
+      path.join(fixtureRoot, redacted.reportFixture)
+    );
+    expect(getReportFixturePathForStage(blocked.stage)).toBe(
+      path.join(fixtureRoot, blocked.reportFixture)
+    );
 
     const cleanContent = fs.readFileSync(getReportFixturePathForStage(clean.stage), 'utf8');
     const redactedContent = fs.readFileSync(getReportFixturePathForStage(redacted.stage), 'utf8');

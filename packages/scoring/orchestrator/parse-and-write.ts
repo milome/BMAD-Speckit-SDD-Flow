@@ -26,7 +26,13 @@ import { evaluateReadinessDrift } from '../governance/readiness-drift';
 import { getScoringDataPath, resolveRulesDir } from '../constants/path';
 import { computeContentHash, computeStringHash, getGitHeadHash } from '../utils/hash';
 import { persistPatchSnapshot } from '../utils/patch-snapshot';
-import type { CheckItem, DimensionScore, IterationRecord, JourneyContractSignals, RunScoreRecord } from '../writer/types';
+import type {
+  CheckItem,
+  DimensionScore,
+  IterationRecord,
+  JourneyContractSignals,
+  RunScoreRecord,
+} from '../writer/types';
 import { appendRuntimeEvent } from '../runtime';
 
 /**
@@ -141,9 +147,10 @@ function deriveJourneyContractSignals(checkItems: CheckItem[]): JourneyContractS
   return Object.keys(signals).length > 0 ? signals : undefined;
 }
 
-function deriveStructuredDriftSignals(
-  content: string
-): { blockPresent: boolean; signals?: JourneyContractSignals } {
+function deriveStructuredDriftSignals(content: string): {
+  blockPresent: boolean;
+  signals?: JourneyContractSignals;
+} {
   const block = extractStructuredDriftSignalBlock(content);
   if (!block.present) {
     return { blockPresent: false };
@@ -246,7 +253,9 @@ function parseIterationReportToRecord(
  * @returns {Promise<void>} Promise that resolves when write completes.
  * @throws Error when reportPath and content are both missing/empty.
  */
-export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Promise<RunScoreRecord> {
+export async function parseAndWriteScore(
+  options: ParseAndWriteScoreOptions
+): Promise<RunScoreRecord> {
   const scopedConsoleError = console.error;
   const { stage, runId, scenario, writeMode, dataPath } = options;
   let content = options.content;
@@ -348,9 +357,7 @@ export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Pr
   const baseCommitHash = options.skipAutoHash
     ? options.baseCommitHash
     : (options.baseCommitHash ?? getGitHeadHash(gitCwd));
-  const contentHash = options.skipAutoHash
-    ? undefined
-    : computeStringHash(content);
+  const contentHash = options.skipAutoHash ? undefined : computeStringHash(content);
 
   let sourceHash: string | undefined;
   if (options.sourceHashFilePath) {
@@ -441,7 +448,7 @@ export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Pr
     ...(contentHash != null ? { content_hash: contentHash } : {}),
     ...(sourceHash != null ? { source_hash: sourceHash } : {}),
     ...(patchSnapshot ?? {}),
-    ...(computeSourcePath(stage, options.artifactDocPath, reportPath)),
+    ...computeSourcePath(stage, options.artifactDocPath, reportPath),
     ...(options.triggerStage != null ? { trigger_stage: options.triggerStage } : {}),
     dimension_contract_id: dimensionContract.dimensionContractId ?? undefined,
     dimension_mode: dimensionContract.dimensionMode,
@@ -466,8 +473,12 @@ export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Pr
     );
   }
 
-  if ((stage === 'implement' || stage === 'post_impl') && readinessDrift.effective_verdict !== 'approved') {
-    const blocker = readinessDrift.blocking_reason ?? 'Readiness drift requires another gated pass.';
+  if (
+    (stage === 'implement' || stage === 'post_impl') &&
+    readinessDrift.effective_verdict !== 'approved'
+  ) {
+    const blocker =
+      readinessDrift.blocking_reason ?? 'Readiness drift requires another gated pass.';
     scopedConsoleError(
       `WARN: implement stage effective verdict is ${readinessDrift.effective_verdict}. ${blocker}`
     );
@@ -491,28 +502,31 @@ export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Pr
     writeMode === 'jsonl'
       ? path.join(resolvedDataPath, 'scores.jsonl')
       : path.join(resolvedDataPath, `${runId}.json`);
-  appendRuntimeEvent({
-    event_id: randomUUID(),
-    event_type: 'score.written',
-    event_version: 1,
-    timestamp: recordToWrite.timestamp,
-    run_id: runId,
-    flow: 'story',
-    stage,
-    payload: {
-      score_record_id: `${runId}:${stage}`,
-      path: scoreRecordPath,
-      phase_score: recordToWrite.phase_score,
-      veto_triggered: recordToWrite.veto_triggered ?? false,
+  appendRuntimeEvent(
+    {
+      event_id: randomUUID(),
+      event_type: 'score.written',
+      event_version: 1,
+      timestamp: recordToWrite.timestamp,
+      run_id: runId,
+      flow: 'story',
+      stage,
+      payload: {
+        score_record_id: `${runId}:${stage}`,
+        path: scoreRecordPath,
+        phase_score: recordToWrite.phase_score,
+        veto_triggered: recordToWrite.veto_triggered ?? false,
+      },
+      source: {
+        source_path: recordToWrite.source_path,
+        base_commit_hash: recordToWrite.base_commit_hash,
+        content_hash: recordToWrite.content_hash,
+      },
     },
-    source: {
-      source_path: recordToWrite.source_path,
-      base_commit_hash: recordToWrite.base_commit_hash,
-      content_hash: recordToWrite.content_hash,
-    },
-  }, {
-    root: inferRuntimeRootFromDataPath(dataPath),
-  });
+    {
+      root: inferRuntimeRootFromDataPath(dataPath),
+    }
+  );
 
   return recordToWrite;
 }

@@ -1,15 +1,13 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-const {
-  appendRunnerSummaryToArtifactMarkdown,
-  renderGovernanceRunnerSummaryLines,
-} = require('../_bmad/runtime/hooks/governance-runner-summary-format.cjs') as {
-  appendRunnerSummaryToArtifactMarkdown: (
-    artifactMarkdown: string,
-    runnerSummaryLines: string[]
-  ) => string;
-  renderGovernanceRunnerSummaryLines: (runnerSummaryLines: string[]) => string;
-};
+const { appendRunnerSummaryToArtifactMarkdown, renderGovernanceRunnerSummaryLines } =
+  require('../_bmad/runtime/hooks/governance-runner-summary-format.cjs') as {
+    appendRunnerSummaryToArtifactMarkdown: (
+      artifactMarkdown: string,
+      runnerSummaryLines: string[]
+    ) => string;
+    renderGovernanceRunnerSummaryLines: (runnerSummaryLines: string[]) => string;
+  };
 import type {
   GovernanceRemediationArtifactResult,
   GovernanceRemediationArtifactInput,
@@ -25,10 +23,7 @@ import type {
 } from './governance-provider-adapter';
 import { resolveModelHintsViaGovernanceProvider } from './governance-provider-adapter';
 import type { ModelGovernanceHintCandidate } from './model-governance-hints-schema';
-import type {
-  ExecutionIntentCandidate,
-  ExecutionPlanDecision,
-} from './execution-intent-schema';
+import type { ExecutionIntentCandidate, ExecutionPlanDecision } from './execution-intent-schema';
 import { resolveGovernanceSkillInventory } from './skill-inventory-provider';
 import type { RuntimeContextFile } from './runtime-context';
 import { readRuntimeContext } from './runtime-context';
@@ -57,9 +52,7 @@ export type GovernanceExecutionMode =
   | 'codex-spawn-agent'
   | 'generic-prompt-packet';
 export type GovernanceRoutingMode = 'targeted' | 'generic';
-export type GovernanceExecutorRoute =
-  | 'journey-contract-remediation'
-  | 'default-gate-remediation';
+export type GovernanceExecutorRoute = 'journey-contract-remediation' | 'default-gate-remediation';
 
 export interface GovernanceRerunDecision {
   mode?: 'targeted' | 'generic' | 'idle';
@@ -160,8 +153,10 @@ export interface GovernanceExecutorPacket {
   stopConditions: string[];
 }
 
-export interface RunGovernanceRemediationInput
-  extends Omit<GovernanceRemediationArtifactInput, 'modelHintsCandidate' | 'journeyContractHints'> {
+export interface RunGovernanceRemediationInput extends Omit<
+  GovernanceRemediationArtifactInput,
+  'modelHintsCandidate' | 'journeyContractHints'
+> {
   hostKind: GovernanceHostKind;
   providerAdapter?: GovernanceProviderAdapter;
   maxAttempts?: number;
@@ -218,7 +213,9 @@ function blockerSignature(result: GovernanceRerunGateResult | null): string {
   if (!result || result.status !== 'fail') {
     return '';
   }
-  return unique([...(result.blockerIds ?? [])]).sort().join('|');
+  return unique([...(result.blockerIds ?? [])])
+    .sort()
+    .join('|');
 }
 
 function resolveAbsolutePath(projectRoot: string, targetPath: string): string {
@@ -306,9 +303,7 @@ function buildJourneyContractActionLines(hints: JourneyContractRemediationHint[]
 
 function uniqueSignals(signals: Array<string | null | undefined>): string[] {
   return [
-    ...new Set(
-      signals.filter((signal): signal is string => Boolean(signal && signal.trim()))
-    ),
+    ...new Set(signals.filter((signal): signal is string => Boolean(signal && signal.trim()))),
   ].sort();
 }
 
@@ -319,8 +314,7 @@ function resolveExecutorRouting(input: {
   const hintSignals = input.journeyContractHints.map((hint) => hint.signal);
   const decisionSignals = input.rerunDecision?.signals ?? [];
   const prioritizedSignals = uniqueSignals([...decisionSignals, ...hintSignals]);
-  const targeted =
-    input.rerunDecision?.mode === 'targeted' || prioritizedSignals.length > 0;
+  const targeted = input.rerunDecision?.mode === 'targeted' || prioritizedSignals.length > 0;
 
   if (targeted) {
     return {
@@ -416,7 +410,9 @@ function activeRerunStage(state: GovernanceAttemptLoopState): GovernanceRerunSta
   return chain[index];
 }
 
-function syncLoopStateWithActiveRerunStage(state: GovernanceAttemptLoopState): GovernanceAttemptLoopState {
+function syncLoopStateWithActiveRerunStage(
+  state: GovernanceAttemptLoopState
+): GovernanceAttemptLoopState {
   const chain = activeRerunChain(state);
   const index = Math.min(Math.max(state.rerunStageIndex ?? 0, 0), chain.length - 1);
   const stage = chain[index];
@@ -482,9 +478,9 @@ function defaultGovernanceAttemptLoopState(
   loopStateId: string
 ): GovernanceAttemptLoopState {
   const timestamp = nowIso();
-  const rerunChain = (input.rerunChain?.length ? input.rerunChain : [createRerunStageFromInput(input)]).map(
-    (stage) => normalizeRerunStage(stage)
-  );
+  const rerunChain = (
+    input.rerunChain?.length ? input.rerunChain : [createRerunStageFromInput(input)]
+  ).map((stage) => normalizeRerunStage(stage));
   const firstStage = rerunChain[0];
   return {
     version: 1,
@@ -685,7 +681,7 @@ function buildPacketPrompt(input: {
     : ['- (none)'];
   const resumeExecution =
     input.rerunStage?.stageKind === 'resume_original_flow'
-      ? input.rerunStage.resumeOriginalExecution ?? null
+      ? (input.rerunStage.resumeOriginalExecution ?? null)
       : null;
   const isResumeStage = Boolean(resumeExecution?.promptText);
   if (isResumeStage && resumeExecution) {
@@ -761,9 +757,7 @@ function buildPacketPrompt(input: {
     `- Routing Mode: ${input.executorRouting.routingMode}`,
     `- Executor Route: ${input.executorRouting.executorRoute}`,
     `- Packet Strategy: ${input.executorRouting.packetStrategy}`,
-    `- Prioritized Signals: ${
-      input.executorRouting.prioritizedSignals.join(', ') || '(none)'
-    }`,
+    `- Prioritized Signals: ${input.executorRouting.prioritizedSignals.join(', ') || '(none)'}`,
     `- Routing Reason: ${input.executorRouting.reason}`,
     '',
     '## Guardrails',
@@ -1223,21 +1217,19 @@ export async function runGovernanceRemediation(
         : input.sourceGateFailureIds,
     capabilitySlot: stage.capabilitySlot,
     canonicalAgent: stage.canonicalAgent,
-      actualExecutor: stage.actualExecutor ?? input.actualExecutor,
-      adapterPath: stage.adapterPath ?? input.adapterPath,
-      targetArtifacts: stage.targetArtifacts,
-      availableSkills: resolvedSkillInventory.availableSkills,
-      skillPaths: resolvedSkillInventory.skillPaths,
-      skillInventory: resolvedSkillInventory.skillInventory,
-      expectedDelta: stage.expectedDelta || input.expectedDelta,
+    actualExecutor: stage.actualExecutor ?? input.actualExecutor,
+    adapterPath: stage.adapterPath ?? input.adapterPath,
+    targetArtifacts: stage.targetArtifacts,
+    availableSkills: resolvedSkillInventory.availableSkills,
+    skillPaths: resolvedSkillInventory.skillPaths,
+    skillInventory: resolvedSkillInventory.skillInventory,
+    expectedDelta: stage.expectedDelta || input.expectedDelta,
     rerunOwner: stage.rerunOwner ?? input.rerunOwner,
     rerunGate: stage.rerunGate,
     outcome: stage.outcome ?? input.outcome,
     sharedArtifactsUpdated,
-    contradictionsDelta:
-      input.contradictionsDelta ?? input.rerunGateResult?.contradictionsDelta,
-    externalProofAdded:
-      input.externalProofAdded ?? input.rerunGateResult?.externalProofAdded,
+    contradictionsDelta: input.contradictionsDelta ?? input.rerunGateResult?.contradictionsDelta,
+    externalProofAdded: input.externalProofAdded ?? input.rerunGateResult?.externalProofAdded,
     readyToRerunGate: input.readyToRerunGate ?? false,
     stopReason: input.stopReason,
     executorRouting,
@@ -1327,8 +1319,7 @@ export async function runGovernanceRemediation(
     artifactResult: artifactWithRunnerSummary,
     executionIntentCandidate:
       artifactWithRunnerSummary.executionIntentCandidate ?? executionIntentCandidate,
-    executionPlanDecision:
-      artifactWithRunnerSummary.executionPlanDecision ?? executionPlanDecision,
+    executionPlanDecision: artifactWithRunnerSummary.executionPlanDecision ?? executionPlanDecision,
     journeyContractHints: artifactWithRunnerSummary.journeyContractHints,
     runtimeContext,
     runtimeRegistry,
@@ -1418,7 +1409,9 @@ export function buildGovernanceRemediationRunnerSummaryLines(
   ];
 
   const packetPaths = result.packetPaths
-    ? Object.entries(result.packetPaths).filter((entry): entry is [string, string] => Boolean(entry[1]))
+    ? Object.entries(result.packetPaths).filter((entry): entry is [string, string] =>
+        Boolean(entry[1])
+      )
     : [];
   if (packetPaths.length > 0) {
     lines.push('');
@@ -1431,17 +1424,15 @@ export function buildGovernanceRemediationRunnerSummaryLines(
   return lines;
 }
 
-function renderGovernanceRemediationRunnerSummary(
-  result: RunGovernanceRemediationResult
-): string {
-  return renderGovernanceRunnerSummaryLines(
-    buildGovernanceRemediationRunnerSummaryLines(result)
-  );
+function renderGovernanceRemediationRunnerSummary(result: RunGovernanceRemediationResult): string {
+  return renderGovernanceRunnerSummaryLines(buildGovernanceRemediationRunnerSummaryLines(result));
 }
 
 async function main(): Promise<void> {
   const argvTokens = process.argv.map((value) => path.basename(String(value)).toLowerCase());
-  const isDirectRunnerCli = argvTokens.some((value) => value.includes('governance-remediation-runner'));
+  const isDirectRunnerCli = argvTokens.some((value) =>
+    value.includes('governance-remediation-runner')
+  );
   if (process.env.BMAD_DISABLE_EMBEDDED_GOVERNANCE_CLIS === '1') {
     return;
   }
@@ -1452,7 +1443,9 @@ async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const jsonInputPath = argValue(args, '--jsonInputPath');
   if (jsonInputPath) {
-    const payload = JSON.parse(fs.readFileSync(path.resolve(jsonInputPath), 'utf8')) as RunGovernanceRemediationInput;
+    const payload = JSON.parse(
+      fs.readFileSync(path.resolve(jsonInputPath), 'utf8')
+    ) as RunGovernanceRemediationInput;
     const result = await runGovernanceRemediation(payload);
     process.stdout.write(JSON.stringify(result));
     return;
@@ -1475,8 +1468,14 @@ async function main(): Promise<void> {
     projectRoot,
     outputPath,
     promptText: argValue(args, '--promptText'),
-    stageContextKnown: parseBooleanFlag(argValue(args, '--stageContextKnown'), '--stageContextKnown'),
-    gateFailureExists: parseBooleanFlag(argValue(args, '--gateFailureExists'), '--gateFailureExists'),
+    stageContextKnown: parseBooleanFlag(
+      argValue(args, '--stageContextKnown'),
+      '--stageContextKnown'
+    ),
+    gateFailureExists: parseBooleanFlag(
+      argValue(args, '--gateFailureExists'),
+      '--gateFailureExists'
+    ),
     blockerOwnershipLocked: parseBooleanFlag(
       argValue(args, '--blockerOwnershipLocked'),
       '--blockerOwnershipLocked'

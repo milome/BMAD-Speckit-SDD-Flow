@@ -6,7 +6,14 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import * as yaml from 'js-yaml';
 
-const STAGE_MAPPING = join(import.meta.dirname, '..', '..', '_bmad', '_config', 'stage-mapping.yaml');
+const STAGE_MAPPING = join(
+  import.meta.dirname,
+  '..',
+  '..',
+  '_bmad',
+  '_config',
+  'stage-mapping.yaml'
+);
 
 describe('stage-mapping.yaml runtime segment', () => {
   it('保留 version / layer_to_stages / stage_to_phase / trigger_modes 且含 runtime_flow_stage_to_trigger_stage', () => {

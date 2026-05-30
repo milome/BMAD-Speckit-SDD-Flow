@@ -14,9 +14,7 @@ function main(): void {
   const templateBasename = process.argv[3];
   const projectRoot = process.argv[4] || process.cwd();
   if (!refsDir || !templateBasename) {
-    console.error(
-      'Usage: print-resolved-audit-prompt <refsDir> <templateBasename> [projectRoot]'
-    );
+    console.error('Usage: print-resolved-audit-prompt <refsDir> <templateBasename> [projectRoot]');
     process.exit(2);
   }
   const locale = getAuditPromptLocaleFromRuntimeContext(projectRoot);

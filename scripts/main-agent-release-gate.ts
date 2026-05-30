@@ -126,7 +126,13 @@ function runCommand(command: string): {
 function writeReport(report: ReleaseGateReport): string {
   const targetPath =
     normalizeText(process.env.MAIN_AGENT_RELEASE_GATE_REPORT_PATH) ||
-    path.join(process.cwd(), '_bmad-output', 'runtime', 'gates', 'main-agent-release-gate-report.json');
+    path.join(
+      process.cwd(),
+      '_bmad-output',
+      'runtime',
+      'gates',
+      'main-agent-release-gate-report.json'
+    );
   fs.mkdirSync(path.dirname(targetPath), { recursive: true });
   fs.writeFileSync(targetPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
   return targetPath;
@@ -175,9 +181,7 @@ function checkJsonFile<T>(
       exitCode: result.passed ? 0 : 1,
       stdout: result.summary,
       stderr: result.passed ? '' : result.summary,
-      ...(result.passed
-        ? {}
-        : { failureReason: `invalid evidence: ${id}: ${result.summary}` }),
+      ...(result.passed ? {} : { failureReason: `invalid evidence: ${id}: ${result.summary}` }),
     };
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
@@ -233,7 +237,9 @@ function appendScriptProvenanceArgs(
     runId: JSON.stringify(provenance.runId),
     storyKey: JSON.stringify(provenance.storyKey),
     evidenceBundleId: JSON.stringify(provenance.evidenceBundleId),
-    recordId: normalizeText(options.recordId) ? JSON.stringify(normalizeText(options.recordId)) : null,
+    recordId: normalizeText(options.recordId)
+      ? JSON.stringify(normalizeText(options.recordId))
+      : null,
     requirementSetId: normalizeText(options.requirementSetId)
       ? JSON.stringify(normalizeText(options.requirementSetId))
       : null,
@@ -269,39 +275,39 @@ function writeReleaseQualityProofCodexShim(proofDir: string): string {
       "const matchLine = (label) => input.match(new RegExp(`${label}: (.+)`, 'i'))?.[1]?.trim();",
       "const packetId = matchLine('Packet ID');",
       "const packetPath = matchLine('Read dispatch packet');",
-      "const taskReportPath = input.match(/write a JSON TaskReport to: (.+)/i)?.[1]?.trim();",
+      'const taskReportPath = input.match(/write a JSON TaskReport to: (.+)/i)?.[1]?.trim();',
       "const expectedDelta = matchLine('Expected delta') || 'release quality proof';",
-      "const requiredArtifacts = [",
+      'const requiredArtifacts = [',
       "  '_bmad/_config/main-agent-quality-gate.thresholds.json',",
       "  'scripts/main-agent-quality-gate.ts',",
       "  'scripts/main-agent-release-gate.ts',",
-      "];",
-      "if (!packetId || !packetPath || !taskReportPath) {",
+      '];',
+      'if (!packetId || !packetPath || !taskReportPath) {',
       "  console.error('release quality proof shim missing prompt fields');",
-      "  process.exit(2);",
-      "}",
-      "const missing = [packetPath, ...requiredArtifacts].filter((item) => !fs.existsSync(path.resolve(process.cwd(), item)));",
-      "if (missing.length > 0) {",
+      '  process.exit(2);',
+      '}',
+      'const missing = [packetPath, ...requiredArtifacts].filter((item) => !fs.existsSync(path.resolve(process.cwd(), item)));',
+      'if (missing.length > 0) {',
       "  console.error(`release quality proof shim missing artifacts: ${missing.join(', ')}`);",
-      "  process.exit(3);",
-      "}",
-      "const report = {",
-      "  packetId,",
+      '  process.exit(3);',
+      '}',
+      'const report = {',
+      '  packetId,',
       "  status: 'done',",
-      "  filesChanged: [],",
-      "  validationsRun: [",
+      '  filesChanged: [],',
+      '  validationsRun: [',
       "    'release-quality-proof-deterministic-codex-exec-shim',",
-      "    ...requiredArtifacts.map((item) => `inspect:${item}`),",
-      "  ],",
-      "  evidence: [",
+      '    ...requiredArtifacts.map((item) => `inspect:${item}`),',
+      '  ],',
+      '  evidence: [',
       "    `dispatch-packet:${path.relative(process.cwd(), packetPath).replace(/\\\\/g, '/')}`,",
-      "    ...requiredArtifacts.map((item) => `artifact-exists:${item}`),",
-      "  ],",
-      "  downstreamContext: [expectedDelta],",
-      "};",
-      "fs.mkdirSync(path.dirname(taskReportPath), { recursive: true });",
+      '    ...requiredArtifacts.map((item) => `artifact-exists:${item}`),',
+      '  ],',
+      '  downstreamContext: [expectedDelta],',
+      '};',
+      'fs.mkdirSync(path.dirname(taskReportPath), { recursive: true });',
       "fs.writeFileSync(taskReportPath, `${JSON.stringify(report, null, 2)}\\n`, 'utf8');",
-      "process.exit(0);",
+      'process.exit(0);',
       '',
     ].join('\n'),
     'utf8'
@@ -327,7 +333,10 @@ function runReleaseQualityProofAdapter(input: {
   recordId?: string;
   requirementSetId?: string;
   runId?: string;
-}): { report: ReturnType<typeof runCodexWorkerAdapter>; proofMode: 'deterministic_release_shim' | 'live_codex_cli' } {
+}): {
+  report: ReturnType<typeof runCodexWorkerAdapter>;
+  proofMode: 'deterministic_release_shim' | 'live_codex_cli';
+} {
   if (process.env.MAIN_AGENT_RELEASE_GATE_CODEX_PROOF_MODE === 'live') {
     return {
       proofMode: 'live_codex_cli',
@@ -618,7 +627,9 @@ function main(argv: string[]): number {
         requirementSetId: args.requirementSetId,
       })
     : e2eCommand;
-  const useExplicitHostMatrixArtifact = Boolean(args.hostMatrixPath && fs.existsSync(hostMatrixPath));
+  const useExplicitHostMatrixArtifact = Boolean(
+    args.hostMatrixPath && fs.existsSync(hostMatrixPath)
+  );
   const e2eResult = useExplicitHostMatrixArtifact
     ? {
         exitCode: 0,
@@ -631,7 +642,9 @@ function main(argv: string[]): number {
     {
       id: 'multi-host-e2e-journey',
       passed: e2eResult.exitCode === 0,
-      command: useExplicitHostMatrixArtifact ? `use-explicit-host-matrix-artifact ${hostMatrixPath}` : e2eCommandWithProvenance,
+      command: useExplicitHostMatrixArtifact
+        ? `use-explicit-host-matrix-artifact ${hostMatrixPath}`
+        : e2eCommandWithProvenance,
       exitCode: e2eResult.exitCode,
       stdout: e2eResult.stdout,
       stderr: e2eResult.stderr,
@@ -676,30 +689,41 @@ function main(argv: string[]): number {
         summary: `mode=${value.journeyMode}, journey=${value.journeyE2EPassed}, cursor=${value.hostMatrix?.hostsPassed?.cursor}, claude=${value.hostMatrix?.hostsPassed?.claude}, codex=${value.hostMatrix?.hostsPassed?.codex}, allRequiredHostsPassed=${value.hostMatrix?.allRequiredHostsPassed}, githubPrApi=${value.githubPrApi?.passed}, prUrl=${value.githubPrApi?.prUrl ?? 'missing'}, ${provenance.summary}`,
       };
     }),
-    checkJsonFile<PrTopology & { evidence_provenance?: EvidenceProvenance }>('pr-topology-release-artifact', prTopologyPath, (value) => {
-      const provenance = validateEvidenceProvenance(value, expectedProvenance);
-      const validation = validatePrTopologyForReleaseGate(value);
-      const closed =
-        value.all_affected_stories_passed === true &&
-        value.required_nodes.every((node) =>
-          ['merged', 'closed_not_needed'].includes(node.state)
-        );
-      return {
-        passed: validation.passed && closed && provenance.passed,
-        summary: `all_affected_stories_passed=${value.all_affected_stories_passed}, nodes=${value.required_nodes.map((node) => `${node.node_id}:${node.state}`).join(',')}, ${provenance.summary}`,
-      };
-    }),
-    checkJsonFile<{ critical_failures: number; evidence_provenance?: EvidenceProvenance }>('quality-gate-artifact', qualityGatePath, (value) => {
-      const provenance = validateEvidenceProvenance(value, expectedProvenance);
-      return {
-        passed: value.critical_failures === 0 && provenance.passed,
-        summary: `critical_failures=${value.critical_failures}, ${provenance.summary}`,
-      };
-    }),
+    checkJsonFile<PrTopology & { evidence_provenance?: EvidenceProvenance }>(
+      'pr-topology-release-artifact',
+      prTopologyPath,
+      (value) => {
+        const provenance = validateEvidenceProvenance(value, expectedProvenance);
+        const validation = validatePrTopologyForReleaseGate(value);
+        const closed =
+          value.all_affected_stories_passed === true &&
+          value.required_nodes.every((node) =>
+            ['merged', 'closed_not_needed'].includes(node.state)
+          );
+        return {
+          passed: validation.passed && closed && provenance.passed,
+          summary: `all_affected_stories_passed=${value.all_affected_stories_passed}, nodes=${value.required_nodes.map((node) => `${node.node_id}:${node.state}`).join(',')}, ${provenance.summary}`,
+        };
+      }
+    ),
+    checkJsonFile<{ critical_failures: number; evidence_provenance?: EvidenceProvenance }>(
+      'quality-gate-artifact',
+      qualityGatePath,
+      (value) => {
+        const provenance = validateEvidenceProvenance(value, expectedProvenance);
+        return {
+          passed: value.critical_failures === 0 && provenance.passed,
+          summary: `critical_failures=${value.critical_failures}, ${provenance.summary}`,
+        };
+      }
+    ),
   ];
 
   for (const [id, command] of [
-    ['single-source-whitelist', args.singleSourceCommand ?? 'npm run validate:single-source-whitelist'],
+    [
+      'single-source-whitelist',
+      args.singleSourceCommand ?? 'npm run validate:single-source-whitelist',
+    ],
     ['rerun-gate-e2e-loop', args.rerunGateCommand ?? 'npm run test:main-agent-rerun-gate-e2e-loop'],
   ] as const) {
     const result = runCommand(command);
@@ -710,15 +734,17 @@ function main(argv: string[]): number {
       exitCode: result.exitCode,
       stdout: result.stdout,
       stderr: result.stderr,
-      ...(result.exitCode === 0
-        ? {}
-        : { failureReason: `release prerequisite failed: ${id}` }),
+      ...(result.exitCode === 0 ? {} : { failureReason: `release prerequisite failed: ${id}` }),
     });
   }
 
   {
     if (explicitLedgerPath) {
-      const ledgerCheck = validateExecutionAuditLedger(root, explicitLedgerPath, expectedProvenance);
+      const ledgerCheck = validateExecutionAuditLedger(
+        root,
+        explicitLedgerPath,
+        expectedProvenance
+      );
       checks.push({
         id: 'execution-audit-ledger',
         passed: ledgerCheck.passed,
@@ -748,7 +774,12 @@ function main(argv: string[]): number {
     blocking_reasons: blockingReasons,
   };
   if (blockingReasons.length === 0) {
-    const contractPath = path.join(root, '_bmad', '_config', 'orchestration-governance.contract.yaml');
+    const contractPath = path.join(
+      root,
+      '_bmad',
+      '_config',
+      'orchestration-governance.contract.yaml'
+    );
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
     const token = `${'release-gate:pass'}:${storyKey}:${Date.now()}:${crypto.randomBytes(8).toString('hex')}`;
     const gateReportHash = sha256(

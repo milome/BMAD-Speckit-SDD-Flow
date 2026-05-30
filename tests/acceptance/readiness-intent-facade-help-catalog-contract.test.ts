@@ -49,7 +49,9 @@ describe('readiness intent facade and bmad-help catalog contract', () => {
       expect(workflow).toContain('governed_runtime_readiness_gate');
       expect(workflow).toContain('readiness_auto_remediation');
       expect(workflow).toContain('must not trigger remediation');
-      expect(workflow).toContain('Only `main_agent_orchestration` and controlled ingest may progress');
+      expect(workflow).toContain(
+        'Only `main_agent_orchestration` and controlled ingest may progress'
+      );
     }
   });
 

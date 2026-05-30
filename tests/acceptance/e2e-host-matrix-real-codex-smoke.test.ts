@@ -14,8 +14,18 @@ describe('host-matrix real codex smoke', () => {
   it('uses the codex worker adapter smoke in real mode instead of only checking codex --version', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'host-matrix-real-codex-'));
     try {
-      const contractPath = path.join(root, '_bmad', '_config', 'orchestration-governance.contract.yaml');
-      const sprintStatusPath = path.join(root, '_bmad-output', 'implementation-artifacts', 'sprint-status.yaml');
+      const contractPath = path.join(
+        root,
+        '_bmad',
+        '_config',
+        'orchestration-governance.contract.yaml'
+      );
+      const sprintStatusPath = path.join(
+        root,
+        '_bmad-output',
+        'implementation-artifacts',
+        'sprint-status.yaml'
+      );
       fs.mkdirSync(path.dirname(contractPath), { recursive: true });
       fs.mkdirSync(path.dirname(sprintStatusPath), { recursive: true });
       fs.writeFileSync(
@@ -69,4 +79,3 @@ describe('host-matrix real codex smoke', () => {
     }
   }, 120_000);
 });
-

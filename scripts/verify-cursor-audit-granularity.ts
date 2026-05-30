@@ -1,5 +1,11 @@
 import { readFileSync } from 'node:fs';
-import { loadConfig, getCurrentMode, getStageConfig, getSubagentParams, type StageName } from './bmad-config';
+import {
+  loadConfig,
+  getCurrentMode,
+  getStageConfig,
+  getSubagentParams,
+  type StageName,
+} from './bmad-config';
 
 const CURSOR_RULE_PATH = '.cursor/rules/bmad-story-assistant.mdc';
 const REQUIRED_KEYWORDS = [

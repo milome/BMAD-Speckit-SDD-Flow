@@ -5,6 +5,7 @@ import * as path from 'node:path';
 import { resolveArchitectureConfirmationHashRecipe } from './architecture-confirmation-hash-recipe';
 import { evaluateAiTddContractGate } from './ai-tdd-contract-gate';
 import { appendControlEventAndReplay, sha256Text } from './requirement-record-control-store';
+import { openReconfirmationRequests } from './reconfirmation-runtime';
 
 type JsonObject = Record<string, unknown>;
 type ReadinessDecision = 'pass' | 'blocked';
@@ -415,6 +416,15 @@ function evaluate(
 } {
   const checks: JsonObject[] = [];
   const blockingReasons: string[] = [];
+  const openReconfirmations = openReconfirmationRequests(record);
+  checks.push({
+    id: 'no-open-reconfirmation-request',
+    passed: openReconfirmations.length === 0,
+    openRequestIds: openReconfirmations.map((request) => text(request.requestId)).filter(Boolean),
+  });
+  if (openReconfirmations.length > 0) {
+    blockingReasons.push('open_reconfirmation_request_exists');
+  }
   const runKind = resolveImplementationRunKind(record, input.implementationRunKind);
   checks.push({
     id: 'implementation-run-kind-resolved',

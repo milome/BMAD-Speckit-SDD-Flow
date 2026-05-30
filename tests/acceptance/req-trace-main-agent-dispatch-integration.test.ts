@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -43,39 +43,39 @@ function writeFakeReqTraceSkill(root: string, behavior: FakeReqTraceBehavior): s
       "const fs = require('node:fs');",
       "const path = require('node:path');",
       "const crypto = require('node:crypto');",
-      "function arg(name) { const i = process.argv.indexOf(name); return i === -1 ? null : process.argv[i + 1]; }",
+      'function arg(name) { const i = process.argv.indexOf(name); return i === -1 ? null : process.argv[i + 1]; }',
       "function sha(v) { return 'sha256:' + crypto.createHash('sha256').update(v, 'utf8').digest('hex'); }",
       "const outDir = arg('--out-dir');",
       "const recordPath = arg('--requirement-record');",
       "const sourcePath = arg('--source-document');",
       "const profilePath = arg('--execution-discipline-profile-ref');",
       "if (!outDir || !recordPath || !sourcePath) { console.log('BLOCK: missing args'); process.exit(3); }",
-      "fs.mkdirSync(outDir, { recursive: true });",
+      'fs.mkdirSync(outDir, { recursive: true });',
       "fs.writeFileSync(path.join(outDir, 'compiler-invocation.json'), JSON.stringify({ main: require.main.filename, argv: process.argv.slice(2) }, null, 2));",
       "const record = JSON.parse(fs.readFileSync(recordPath, 'utf8'));",
       "const profile = profilePath ? JSON.parse(fs.readFileSync(profilePath, 'utf8')) : null;",
       behavior === 'block'
         ? "fs.writeFileSync(path.join(outDir, 'audit_receipt.json'), JSON.stringify({ decision: 'blocked', blockingReasons: ['FAKE_BLOCK'], executionDisciplineProfile: profile }, null, 2)); console.log('BLOCK: FAKE_BLOCK'); process.exit(3);"
-        : "void 0;",
+        : 'void 0;',
       "const modelPacket = { artifactRole: 'execution_authority', sourceDocumentHash: record.sourceDocumentHash, implementationConfirmationHash: record.implementationConfirmationHash, executionDisciplineProfile: profile };",
       behavior === 'missingModel'
-        ? "void 0;"
+        ? 'void 0;'
         : "fs.writeFileSync(path.join(outDir, 'model_packet.json'), JSON.stringify(modelPacket, null, 2));",
       "fs.writeFileSync(path.join(outDir, 'human_prompt.txt'), `Execution Discipline Profile\\nprofileId: ${profile.profileId}\\nprofileHash: ${profile.profileHash}\\nmodel_packet.json is the machine-readable execution authority\\ncompiled direct body\\n`);",
       behavior === 'inlineGoal'
         ? "const goalCommand = { mode: 'native_goal_inline' };"
         : behavior === 'fallbackGoal'
           ? "const goalCommand = { mode: 'fallback_prompt_contract' };"
-        : behavior === 'missingGoalDocument'
-          ? "const goalCommand = { mode: 'native_goal_document_ref', documentPath: path.join(outDir, 'goal_execution.md'), documentHash: 'sha256:0000000000000000000000000000000000000000000000000000000000000000' };"
-          : behavior === 'overlongGoal'
-            ? "console.log('BLOCK: GOAL_COMMAND_TOO_LONG'); process.exit(3);"
-            : "const goalPath = path.join(outDir, 'goal_execution.md'); fs.writeFileSync(goalPath, `## Execution Discipline Profile\\nprofileId: ${profile.profileId}\\nprofileHash: ${profile.profileHash}\\n`); const goalCommand = { mode: 'native_goal_document_ref', documentHash: sha(fs.readFileSync(goalPath, 'utf8')) };",
+          : behavior === 'missingGoalDocument'
+            ? "const goalCommand = { mode: 'native_goal_document_ref', documentPath: path.join(outDir, 'goal_execution.md'), documentHash: 'sha256:0000000000000000000000000000000000000000000000000000000000000000' };"
+            : behavior === 'overlongGoal'
+              ? "console.log('BLOCK: GOAL_COMMAND_TOO_LONG'); process.exit(3);"
+              : "const goalPath = path.join(outDir, 'goal_execution.md'); fs.writeFileSync(goalPath, `## Execution Discipline Profile\\nprofileId: ${profile.profileId}\\nprofileHash: ${profile.profileHash}\\n`); const goalCommand = { mode: 'native_goal_document_ref', documentHash: sha(fs.readFileSync(goalPath, 'utf8')) };",
       "const receipt = { decision: 'pass', goalCommand, executionHost: arg('--execution-host'), humanPromptProfile: arg('--human-prompt-profile'), humanPromptLanguage: arg('--prompt-language'), continuationDirective: { strategy: 'test' }, humanPromptRequiredFragmentsPassed: true, executionDisciplineProfile: { profileId: profile.profileId, profileHash: profile.profileHash, humanPromptProfileRendered: true, goalExecutionProfileRendered: true } };",
       behavior === 'missingAudit'
-        ? "void 0;"
+        ? 'void 0;'
         : "fs.writeFileSync(path.join(outDir, 'audit_receipt.json'), JSON.stringify(receipt, null, 2));",
-      "process.exit(0);",
+      'process.exit(0);',
       '',
     ].join('\n'),
     'utf8'
@@ -83,14 +83,23 @@ function writeFakeReqTraceSkill(root: string, behavior: FakeReqTraceBehavior): s
   return skillDir;
 }
 
-function writeRequirementRecord(root: string, options: { confirmed: boolean; sourceExists?: boolean }): {
+function writeRequirementRecord(
+  root: string,
+  options: { confirmed: boolean; sourceExists?: boolean }
+): {
   recordPath: string;
   sourcePath: string;
   sourceDocumentHash: string;
   implementationConfirmationHash: string;
 } {
   const suffix = `${options.confirmed ? 'confirmed' : 'draft'}-${options.sourceExists === false ? 'missing' : 'present'}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-  const recordDir = path.join(root, '_bmad-output', 'runtime', 'requirement-records', `REQ-DISPATCH-${suffix}`);
+  const recordDir = path.join(
+    root,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    `REQ-DISPATCH-${suffix}`
+  );
   const sourcePath = path.join(root, 'docs', 'requirements', `dispatch-${suffix}.md`);
   if (options.sourceExists ?? true) {
     mkdirSync(path.dirname(sourcePath), { recursive: true });
@@ -127,19 +136,19 @@ describe('req-trace main-agent dispatch integration', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'req-trace-dispatch-resolution-'));
     try {
       const confirmed = writeRequirementRecord(root, { confirmed: true });
-      expect(resolveConfirmedSource({ projectRoot: root, recordPath: confirmed.recordPath }).status).toBe(
-        'confirmed'
-      );
+      expect(
+        resolveConfirmedSource({ projectRoot: root, recordPath: confirmed.recordPath }).status
+      ).toBe('confirmed');
 
       const unconfirmed = writeRequirementRecord(root, { confirmed: false });
-      expect(resolveConfirmedSource({ projectRoot: root, recordPath: unconfirmed.recordPath }).status).toBe(
-        'no_confirmed_source'
-      );
+      expect(
+        resolveConfirmedSource({ projectRoot: root, recordPath: unconfirmed.recordPath }).status
+      ).toBe('no_confirmed_source');
 
       const broken = writeRequirementRecord(root, { confirmed: true, sourceExists: false });
-      expect(resolveConfirmedSource({ projectRoot: root, recordPath: broken.recordPath }).status).toBe(
-        'confirmed_source_unresolvable'
-      );
+      expect(
+        resolveConfirmedSource({ projectRoot: root, recordPath: broken.recordPath }).status
+      ).toBe('confirmed_source_unresolvable');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -183,10 +192,10 @@ describe('req-trace main-agent dispatch integration', () => {
       expect(invocation.argv).toContain('--source-document');
       expect(invocation.argv).toContain('--out-dir');
       expect(invocation.argv).toContain('--execution-discipline-profile-ref');
-      expect(invocation.argv).toEqual(
-        expect.arrayContaining(['--goal-command-available', 'true'])
+      expect(invocation.argv).toEqual(expect.arrayContaining(['--goal-command-available', 'true']));
+      const modelPacket = JSON.parse(
+        readFileSync(result.compiledPromptRef!.modelPacketPath, 'utf8')
       );
-      const modelPacket = JSON.parse(readFileSync(result.compiledPromptRef!.modelPacketPath, 'utf8'));
       expect(modelPacket.artifactRole).toBe('execution_authority');
       const humanPrompt = readFileSync(result.compiledPromptRef!.humanPromptPath, 'utf8');
       expect(humanPrompt).toContain('Execution Discipline Profile');
@@ -294,7 +303,8 @@ describe('req-trace main-agent dispatch integration', () => {
       });
       expect(options.status).toBe('pass');
       expect(
-        options.options.find((option) => option.strategyId === 'compiled_trace_direct')?.availability
+        options.options.find((option) => option.strategyId === 'compiled_trace_direct')
+          ?.availability
       ).toBe('available');
       expect(
         options.options.find((option) => option.strategyId === 'compiled_trace_with_sdd_artifacts')

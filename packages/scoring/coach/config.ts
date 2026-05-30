@@ -5,7 +5,13 @@ import yaml from 'js-yaml';
 import type { CoachConfig } from './types';
 
 const DEFAULT_CONFIG: CoachConfig = {
-  required_skill_path: path.join(os.homedir(), '.cursor', 'skills', 'bmad-code-reviewer-lifecycle', 'SKILL.md'),
+  required_skill_path: path.join(
+    os.homedir(),
+    '.cursor',
+    'skills',
+    'bmad-code-reviewer-lifecycle',
+    'SKILL.md'
+  ),
   auto_trigger_post_impl: false,
   run_mode: 'manual_or_post_impl',
 };
@@ -46,9 +52,7 @@ export function loadCoachConfig(configPath?: string): CoachConfig {
 
   return {
     required_skill_path: expanded,
-    auto_trigger_post_impl:
-      parsed.auto_trigger_post_impl ?? DEFAULT_CONFIG.auto_trigger_post_impl,
+    auto_trigger_post_impl: parsed.auto_trigger_post_impl ?? DEFAULT_CONFIG.auto_trigger_post_impl,
     run_mode: parsed.run_mode ?? DEFAULT_CONFIG.run_mode,
   };
 }
-

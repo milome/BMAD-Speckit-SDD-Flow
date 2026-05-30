@@ -30,7 +30,8 @@ describe('party-mode pretooluse fail-closed turn lock', () => {
           tool_input: {
             description: 'Party-mode facilitator for Cursor subagents',
             subagent_type: 'general-purpose',
-            prompt: 'PARTY MODE ACTIVATED!\n\n讨论主题：如何让 Cursor 编辑器识别并调用其自定义的 Subagents',
+            prompt:
+              'PARTY MODE ACTIVATED!\n\n讨论主题：如何让 Cursor 编辑器识别并调用其自定义的 Subagents',
           },
         }),
         encoding: 'utf8',
@@ -48,7 +49,13 @@ describe('party-mode pretooluse fail-closed turn lock', () => {
       expect(firstOut.continue).toBe(false);
       expect(firstOut.stopReason).toContain('general-purpose 包装调用已被阻止');
 
-      const lockPath = path.join(tempRoot, '.claude', 'state', 'runtime', 'party-mode-turn-lock.json');
+      const lockPath = path.join(
+        tempRoot,
+        '.claude',
+        'state',
+        'runtime',
+        'party-mode-turn-lock.json'
+      );
       expect(fs.existsSync(lockPath)).toBe(true);
 
       const lockGuard = path.join(ROOT, '_bmad', 'runtime', 'hooks', 'party-mode-turn-lock.cjs');
@@ -79,7 +86,9 @@ describe('party-mode pretooluse fail-closed turn lock', () => {
         'Previous party-mode launch was already fail-closed in this assistant turn.'
       );
       expect(secondOut.systemMessage).toContain('Blocked follow-up tool: `Read`');
-      expect(secondOut.systemMessage).toContain('Do not continue this party-mode request in the main thread');
+      expect(secondOut.systemMessage).toContain(
+        'Do not continue this party-mode request in the main thread'
+      );
     } finally {
       fs.rmSync(tempRoot, { recursive: true, force: true });
     }
@@ -88,13 +97,9 @@ describe('party-mode pretooluse fail-closed turn lock', () => {
   it('clears the turn lock on Stop so the next turn is not poisoned', () => {
     const tempRoot = makeHookReadyRoot();
     try {
-      const lockGuard = require(path.join(
-        ROOT,
-        '_bmad',
-        'runtime',
-        'hooks',
-        'party-mode-turn-lock.cjs'
-      )) as {
+      const lockGuard = require(
+        path.join(ROOT, '_bmad', 'runtime', 'hooks', 'party-mode-turn-lock.cjs')
+      ) as {
         partyModeTurnLockPath: (projectRoot: string) => string;
         writePartyModeTurnLock: (
           projectRoot: string,
@@ -103,7 +108,8 @@ describe('party-mode pretooluse fail-closed turn lock', () => {
       };
 
       lockGuard.writePartyModeTurnLock(tempRoot, {
-        reason: 'Party-Mode 必须使用正式 facilitator contract，当前 general-purpose 包装调用已被阻止。',
+        reason:
+          'Party-Mode 必须使用正式 facilitator contract，当前 general-purpose 包装调用已被阻止。',
         system_message: 'blocked',
       });
 

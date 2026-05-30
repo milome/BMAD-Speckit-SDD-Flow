@@ -20,9 +20,7 @@ describe('isVetoTriggered', () => {
 
   it('returns false when veto item_id has passed=true', () => {
     const vetoIds = new Set(['veto_core_logic']);
-    const checkItems: CheckItem[] = [
-      { item_id: 'veto_core_logic', passed: true, score_delta: 0 },
-    ];
+    const checkItems: CheckItem[] = [{ item_id: 'veto_core_logic', passed: true, score_delta: 0 }];
     expect(isVetoTriggered(checkItems, vetoIds)).toBe(false);
   });
 
@@ -36,9 +34,15 @@ describe('isVetoTriggered', () => {
 
   it('covers veto_cwe798, veto_core_unmapped, veto_gaps_conflict', () => {
     const vetoIds = new Set(['veto_cwe798', 'veto_core_unmapped', 'veto_gaps_conflict']);
-    expect(isVetoTriggered([{ item_id: 'veto_cwe798', passed: false, score_delta: -10 }], vetoIds)).toBe(true);
-    expect(isVetoTriggered([{ item_id: 'veto_core_unmapped', passed: false, score_delta: -10 }], vetoIds)).toBe(true);
-    expect(isVetoTriggered([{ item_id: 'veto_gaps_conflict', passed: false, score_delta: -10 }], vetoIds)).toBe(true);
+    expect(
+      isVetoTriggered([{ item_id: 'veto_cwe798', passed: false, score_delta: -10 }], vetoIds)
+    ).toBe(true);
+    expect(
+      isVetoTriggered([{ item_id: 'veto_core_unmapped', passed: false, score_delta: -10 }], vetoIds)
+    ).toBe(true);
+    expect(
+      isVetoTriggered([{ item_id: 'veto_gaps_conflict', passed: false, score_delta: -10 }], vetoIds)
+    ).toBe(true);
   });
 });
 

@@ -10,5 +10,15 @@ export const BMAD_LAYER_TO_STAGES: Record<string, readonly string[]> = {
 } as const;
 
 export const ALL_STAGES: readonly string[] = [
-  'prd', 'arch', 'epics', 'story', 'specify', 'plan', 'gaps', 'tasks', 'implement', 'post_impl', 'pr_review',
+  'prd',
+  'arch',
+  'epics',
+  'story',
+  'specify',
+  'plan',
+  'gaps',
+  'tasks',
+  'implement',
+  'post_impl',
+  'pr_review',
 ] as const;

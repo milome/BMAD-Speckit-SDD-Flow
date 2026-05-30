@@ -53,14 +53,16 @@ const {
   extractImplementationConfirmation,
   sourceDocumentHashFor,
   implementationConfirmationHashFor,
-} = requireForGate(path.join(
-  ROOT,
-  '_bmad',
-  'skills',
-  'requirements-contract-authoring',
-  'scripts',
-  'pre_render_definition_drilldown_lib.js'
-));
+} = requireForGate(
+  path.join(
+    ROOT,
+    '_bmad',
+    'skills',
+    'requirements-contract-authoring',
+    'scripts',
+    'pre_render_definition_drilldown_lib.js'
+  )
+);
 const { buildAuditInputHash } = requireForGate(PRE_RENDER_MUST_GATE);
 
 beforeEach(() => {
@@ -72,7 +74,10 @@ afterEach(() => {
 });
 
 function runNode(script: string, args: string[], cwd = ROOT) {
-  const result = spawnSync(process.execPath, [script, ...args, '--json'], { cwd, encoding: 'utf8' });
+  const result = spawnSync(process.execPath, [script, ...args, '--json'], {
+    cwd,
+    encoding: 'utf8',
+  });
   return {
     result,
     json: JSON.parse(result.stdout || result.stderr),
@@ -82,7 +87,9 @@ function runNode(script: string, args: string[], cwd = ROOT) {
 function extractTargetModificationPaths() {
   const rows = asArray(readCheckpointImplementationConfirmation().targetModificationPaths);
   if (!rows.length) {
-    throw new Error('targetModificationPaths block not found in checkpoint automation source document');
+    throw new Error(
+      'targetModificationPaths block not found in checkpoint automation source document'
+    );
   }
 
   return rows.map((row) => ({
@@ -95,7 +102,9 @@ function readCheckpointImplementationConfirmation(): Record<string, any> {
   const source = fs.readFileSync(CHECKPOINT_REQUIREMENT_DOC, 'utf8');
   const match = source.match(/\nimplementationConfirmation:\n[\s\S]*?(?=\n## |\n# |$)/u);
   if (!match) {
-    throw new Error('implementationConfirmation block not found in checkpoint automation source document');
+    throw new Error(
+      'implementationConfirmation block not found in checkpoint automation source document'
+    );
   }
   const parsed = yaml.load(match[0]) as Record<string, any>;
   if (!parsed?.implementationConfirmation) {
@@ -110,7 +119,13 @@ function asArray(value: unknown): any[] {
 
 function refs(row: Record<string, any>, keys: string[]): string[] {
   return Array.from(
-    new Set(keys.flatMap((key) => (Array.isArray(row[key]) ? row[key].filter((value: unknown) => typeof value === 'string') : [])))
+    new Set(
+      keys.flatMap((key) =>
+        Array.isArray(row[key])
+          ? row[key].filter((value: unknown) => typeof value === 'string')
+          : []
+      )
+    )
   );
 }
 
@@ -123,7 +138,9 @@ function fileHash(filePath: string): string {
 }
 
 function mustGateSource(packetHash = fixedHash('a'), overrides = ''): string {
-  const inventedTraceBackRef = overrides.includes('SOURCE_INVENTED_TRACE_ROW') ? '' : `      derivedFromMustRef: MUST-001
+  const inventedTraceBackRef = overrides.includes('SOURCE_INVENTED_TRACE_ROW')
+    ? ''
+    : `      derivedFromMustRef: MUST-001
       derivedFromPacketHash: ${packetHash}`;
   return `# MUST Gate Fixture
 
@@ -403,7 +420,10 @@ Definition of Done
 }
 
 function writeMustGateFixture(overrides = '') {
-  const fixtureDir = path.join(tempDir, `must-gate-${overrides.replace(/[^A-Z0-9_]+/g, '-').toLowerCase() || 'valid'}`);
+  const fixtureDir = path.join(
+    tempDir,
+    `must-gate-${overrides.replace(/[^A-Z0-9_]+/g, '-').toLowerCase() || 'valid'}`
+  );
   const authoringDir = path.join(fixtureDir, 'authoring');
   fs.mkdirSync(authoringDir, { recursive: true });
   const source = path.join(fixtureDir, 'source.md');
@@ -411,7 +431,11 @@ function writeMustGateFixture(overrides = '') {
   fs.writeFileSync(source, mustGateSource(packetHash, overrides), 'utf8');
   const text = fs.readFileSync(source, 'utf8');
   const extracted = extractImplementationConfirmation(text);
-  const sourceDocumentHash = sourceDocumentHashFor(text, extracted.blockText, extracted.confirmation);
+  const sourceDocumentHash = sourceDocumentHashFor(
+    text,
+    extracted.blockText,
+    extracted.confirmation
+  );
   const implementationConfirmationHash = implementationConfirmationHashFor(extracted.confirmation);
   const kernelHash = fixedHash('b');
   const kernel = {
@@ -426,7 +450,9 @@ function writeMustGateFixture(overrides = '') {
     mustCandidates: ['MUST-001'],
     kernelHash,
   };
-  const taskCount = overrides.includes('UNDER_SPLIT') ? { expectedTaskCount: 2, actualTaskCount: 1 } : { expectedTaskCount: 1, actualTaskCount: 1 };
+  const taskCount = overrides.includes('UNDER_SPLIT')
+    ? { expectedTaskCount: 2, actualTaskCount: 1 }
+    : { expectedTaskCount: 1, actualTaskCount: 1 };
   const packet = {
     schemaVersion: 'must-decomposition-packet/v1',
     recordId: 'REQ-MUST-GATE',
@@ -441,42 +467,109 @@ function writeMustGateFixture(overrides = '') {
       {
         mustRef: 'MUST-001',
         mustIntent: 'Render only after atomic decomposition converges.',
-        decompositionBasis: { observableBehaviors: ['block missing packet'], targetSurfaces: ['pre_render_must_decomposition_gate.js'] },
+        decompositionBasis: {
+          observableBehaviors: ['block missing packet'],
+          targetSurfaces: ['pre_render_must_decomposition_gate.js'],
+        },
         atomicityDrivers: { behaviorSurfaceOracleUnits: ['gate report oracle'] },
-        questionCoverage: { requiredCategories: ['intent_boundary'], answeredCategories: ['intent_boundary'], missingCategories: [], coverageVerdict: overrides.includes('INCOMPLETE_QUESTION') ? 'incomplete' : 'complete' },
-        atomicityCompleteness: { splitRule: 'one_task_per_independent_behavior_surface_oracle', completenessVerdict: overrides.includes('UNDER_SPLIT') ? 'under_split' : 'complete', ...taskCount },
+        questionCoverage: {
+          requiredCategories: ['intent_boundary'],
+          answeredCategories: ['intent_boundary'],
+          missingCategories: [],
+          coverageVerdict: overrides.includes('INCOMPLETE_QUESTION') ? 'incomplete' : 'complete',
+        },
+        atomicityCompleteness: {
+          splitRule: 'one_task_per_independent_behavior_surface_oracle',
+          completenessVerdict: overrides.includes('UNDER_SPLIT') ? 'under_split' : 'complete',
+          ...taskCount,
+        },
         mustAtomicTasks: [
           {
             id: 'TASK-001',
-            targetFiles: ['_bmad/skills/requirements-contract-authoring/scripts/pre_render_must_decomposition_gate.js'],
-            redProofPlan: overrides.includes('MISSING_RED_PROOF') ? '' : 'Gate fails without packet.',
+            targetFiles: [
+              '_bmad/skills/requirements-contract-authoring/scripts/pre_render_must_decomposition_gate.js',
+            ],
+            redProofPlan: overrides.includes('MISSING_RED_PROOF')
+              ? ''
+              : 'Gate fails without packet.',
             overBroad: overrides.includes('OVER_BROAD_TASK'),
-            materializedTo: overrides.includes('PROJECTION_NOT_MATERIALIZED') ? [] : ['implementationConfirmation.atomicImplementationTaskList[TASK-001]'],
+            materializedTo: overrides.includes('PROJECTION_NOT_MATERIALIZED')
+              ? []
+              : ['implementationConfirmation.atomicImplementationTaskList[TASK-001]'],
           },
         ],
-        mustExecutionDecompositionMatrix: [{ id: 'MDM-001', materializedTo: ['implementationConfirmation.mustExecutionDecompositionMatrix[MDM-001]'] }],
-        mustEvidenceProjection: [{ id: 'EVD-001', materializedTo: ['implementationConfirmation.evidence[EVD-001]'] }],
-        mustTraceProjection: [{ id: 'TRACE-001', materializedTo: ['implementationConfirmation.traceRows[TRACE-001]'] }],
+        mustExecutionDecompositionMatrix: [
+          {
+            id: 'MDM-001',
+            materializedTo: [
+              'implementationConfirmation.mustExecutionDecompositionMatrix[MDM-001]',
+            ],
+          },
+        ],
+        mustEvidenceProjection: [
+          { id: 'EVD-001', materializedTo: ['implementationConfirmation.evidence[EVD-001]'] },
+        ],
+        mustTraceProjection: [
+          { id: 'TRACE-001', materializedTo: ['implementationConfirmation.traceRows[TRACE-001]'] },
+        ],
         mustAcceptanceProjection: [
-          { id: 'ACC-001', materializedTo: ['implementationConfirmation.acceptanceTests[ACC-001]'] },
+          {
+            id: 'ACC-001',
+            materializedTo: ['implementationConfirmation.acceptanceTests[ACC-001]'],
+          },
           { id: 'E2E-001', materializedTo: ['implementationConfirmation.e2eSuites[E2E-001]'] },
         ],
         mustFailureEdgeProjection: [
           { id: 'FAIL-001', materializedTo: ['implementationConfirmation.failurePaths[FAIL-001]'] },
           { id: 'EDGE-001', materializedTo: ['implementationConfirmation.edgeCases[EDGE-001]'] },
         ],
-        mustTargetPathProjection: [{ id: 'TARGET-MOD-001', materializedTo: ['implementationConfirmation.targetModificationPaths[TARGET-MOD-001]'] }],
-        mustArtifactProjection: [{ id: 'ART-001', materializedTo: ['implementationConfirmation.artifactAutomationPlan[ART-001]'] }],
-        mustCommandProjection: [{ id: 'CMD-001', materializedTo: ['implementationConfirmation.requiredCommands[CMD-001]'] }],
+        mustTargetPathProjection: [
+          {
+            id: 'TARGET-MOD-001',
+            materializedTo: ['implementationConfirmation.targetModificationPaths[TARGET-MOD-001]'],
+          },
+        ],
+        mustArtifactProjection: [
+          {
+            id: 'ART-001',
+            materializedTo: ['implementationConfirmation.artifactAutomationPlan[ART-001]'],
+          },
+        ],
+        mustCommandProjection: [
+          {
+            id: 'CMD-001',
+            materializedTo: ['implementationConfirmation.requiredCommands[CMD-001]'],
+          },
+        ],
       },
     ],
     mustDerivedProjectionMap: [
-      { mustRef: 'MUST-001', materializedTo: ['implementationConfirmation.currentTargetMap', 'implementationConfirmation.aiTddContractExecutionManifestProjection', 'implementationConfirmation.closeoutReadinessPreview'] },
+      {
+        mustRef: 'MUST-001',
+        materializedTo: [
+          'implementationConfirmation.currentTargetMap',
+          'implementationConfirmation.aiTddContractExecutionManifestProjection',
+          'implementationConfirmation.closeoutReadinessPreview',
+        ],
+      },
     ],
   };
-  fs.writeFileSync(path.join(authoringDir, 'semantic-kernel.json'), JSON.stringify({ semanticKernel: kernel }, null, 2), 'utf8');
-  fs.writeFileSync(path.join(authoringDir, 'must_decomposition_packet.json'), JSON.stringify({ must_decomposition_packet: packet }, null, 2), 'utf8');
-  const auditInputHash = buildAuditInputHash({ sourceDocumentHash, implementationConfirmationHash, kernel, packet });
+  fs.writeFileSync(
+    path.join(authoringDir, 'semantic-kernel.json'),
+    JSON.stringify({ semanticKernel: kernel }, null, 2),
+    'utf8'
+  );
+  fs.writeFileSync(
+    path.join(authoringDir, 'must_decomposition_packet.json'),
+    JSON.stringify({ must_decomposition_packet: packet }, null, 2),
+    'utf8'
+  );
+  const auditInputHash = buildAuditInputHash({
+    sourceDocumentHash,
+    implementationConfirmationHash,
+    kernel,
+    packet,
+  });
   if (!overrides.includes('MISSING_CRITIC')) {
     const rounds = overrides.includes('LESS_THAN_3_ROUNDS') ? 2 : 3;
     for (let index = 1; index <= rounds; index += 1) {
@@ -487,7 +580,10 @@ function writeMustGateFixture(overrides = '') {
           inputHash: overrides.includes('STALE_CRITIC') ? fixedHash('e') : auditInputHash,
           attackVectors: ['missing_projection'],
           gapCandidates: [],
-          validatedGaps: overrides.includes('UNRESOLVED_GAP') && index === rounds ? [{ id: 'GAP-001', status: 'open' }] : [],
+          validatedGaps:
+            overrides.includes('UNRESOLVED_GAP') && index === rounds
+              ? [{ id: 'GAP-001', status: 'open' }]
+              : [],
           rejectedGapCandidates: [{ id: `REJ-${index}` }],
           mutationPressureFindings: [],
           overBroadTaskFindings: [],
@@ -502,7 +598,11 @@ function writeMustGateFixture(overrides = '') {
           },
         },
       };
-      fs.writeFileSync(path.join(authoringDir, `critical-auditor-receipt-round-${index}.json`), JSON.stringify(receipt, null, 2), 'utf8');
+      fs.writeFileSync(
+        path.join(authoringDir, `critical-auditor-receipt-round-${index}.json`),
+        JSON.stringify(receipt, null, 2),
+        'utf8'
+      );
     }
   }
   return { source, authoringDir };
@@ -541,25 +641,80 @@ function writeValidMustGateArtifactsForSource(source: string, authoringDir: stri
       return {
         mustRef: must.id,
         mustIntent: must.text,
-        decompositionBasis: { observableBehaviors: [must.text], targetSurfaces: ['confirmation source'] },
+        decompositionBasis: {
+          observableBehaviors: [must.text],
+          targetSurfaces: ['confirmation source'],
+        },
         atomicityDrivers: { behaviorSurfaceOracleUnits: [`${must.id} oracle`] },
-        questionCoverage: { requiredCategories: ['intent_boundary'], answeredCategories: ['intent_boundary'], missingCategories: [], coverageVerdict: 'complete' },
-        atomicityCompleteness: { expectedTaskCount: 1, actualTaskCount: 1, completenessVerdict: 'complete' },
-        mustAtomicTasks: [{ id: taskId, targetFiles: ['tests/acceptance/requirements-contract-checkpoint-automation.test.ts'], redProofPlan: `${must.id} red proof`, materializedTo: [`implementationConfirmation.atomicImplementationTaskList[${taskId}]`] }],
-        mustExecutionDecompositionMatrix: [{ id: `MDM-${String(index + 1).padStart(3, '0')}`, materializedTo: [`implementationConfirmation.mustExecutionDecompositionMatrix[MDM-${String(index + 1).padStart(3, '0')}]`] }],
-        mustEvidenceProjection: asArray(confirmation.evidence).map((row: any) => ({ id: row.id, materializedTo: [`implementationConfirmation.evidence[${row.id}]`] })),
-        mustTraceProjection: asArray(confirmation.traceRows).map((row: any) => ({ id: row.id, materializedTo: [`implementationConfirmation.traceRows[${row.id}]`] })),
+        questionCoverage: {
+          requiredCategories: ['intent_boundary'],
+          answeredCategories: ['intent_boundary'],
+          missingCategories: [],
+          coverageVerdict: 'complete',
+        },
+        atomicityCompleteness: {
+          expectedTaskCount: 1,
+          actualTaskCount: 1,
+          completenessVerdict: 'complete',
+        },
+        mustAtomicTasks: [
+          {
+            id: taskId,
+            targetFiles: ['tests/acceptance/requirements-contract-checkpoint-automation.test.ts'],
+            redProofPlan: `${must.id} red proof`,
+            materializedTo: [`implementationConfirmation.atomicImplementationTaskList[${taskId}]`],
+          },
+        ],
+        mustExecutionDecompositionMatrix: [
+          {
+            id: `MDM-${String(index + 1).padStart(3, '0')}`,
+            materializedTo: [
+              `implementationConfirmation.mustExecutionDecompositionMatrix[MDM-${String(index + 1).padStart(3, '0')}]`,
+            ],
+          },
+        ],
+        mustEvidenceProjection: asArray(confirmation.evidence).map((row: any) => ({
+          id: row.id,
+          materializedTo: [`implementationConfirmation.evidence[${row.id}]`],
+        })),
+        mustTraceProjection: asArray(confirmation.traceRows).map((row: any) => ({
+          id: row.id,
+          materializedTo: [`implementationConfirmation.traceRows[${row.id}]`],
+        })),
         mustAcceptanceProjection: [
-          ...asArray(confirmation.acceptanceTests).map((row: any) => ({ id: row.id, materializedTo: [`implementationConfirmation.acceptanceTests[${row.id}]`] })),
-          ...asArray(confirmation.e2eSuites).map((row: any) => ({ id: row.id, materializedTo: [`implementationConfirmation.e2eSuites[${row.id}]`] })),
+          ...asArray(confirmation.acceptanceTests).map((row: any) => ({
+            id: row.id,
+            materializedTo: [`implementationConfirmation.acceptanceTests[${row.id}]`],
+          })),
+          ...asArray(confirmation.e2eSuites).map((row: any) => ({
+            id: row.id,
+            materializedTo: [`implementationConfirmation.e2eSuites[${row.id}]`],
+          })),
         ],
         mustFailureEdgeProjection: [
-          ...asArray(confirmation.failurePaths).map((row: any) => ({ id: row.id, materializedTo: [`implementationConfirmation.failurePaths[${row.id}]`] })),
-          ...asArray(confirmation.edgeCases).map((row: any) => ({ id: row.id, materializedTo: [`implementationConfirmation.edgeCases[${row.id}]`] })),
+          ...asArray(confirmation.failurePaths).map((row: any) => ({
+            id: row.id,
+            materializedTo: [`implementationConfirmation.failurePaths[${row.id}]`],
+          })),
+          ...asArray(confirmation.edgeCases).map((row: any) => ({
+            id: row.id,
+            materializedTo: [`implementationConfirmation.edgeCases[${row.id}]`],
+          })),
         ],
-        mustTargetPathProjection: asArray(confirmation.targetModificationPaths).map((row: any) => ({ id: row.id, materializedTo: [`implementationConfirmation.targetModificationPaths[${row.id}]`] })),
-        mustArtifactProjection: asArray(confirmation.artifactAutomationPlan).map((row: any) => ({ id: row.artifactId ?? row.id, materializedTo: [`implementationConfirmation.artifactAutomationPlan[${row.artifactId ?? row.id}]`] })),
-        mustCommandProjection: asArray(confirmation.requiredCommands).map((row: any) => ({ id: row.id, materializedTo: [`implementationConfirmation.requiredCommands[${row.id}]`] })),
+        mustTargetPathProjection: asArray(confirmation.targetModificationPaths).map((row: any) => ({
+          id: row.id,
+          materializedTo: [`implementationConfirmation.targetModificationPaths[${row.id}]`],
+        })),
+        mustArtifactProjection: asArray(confirmation.artifactAutomationPlan).map((row: any) => ({
+          id: row.artifactId ?? row.id,
+          materializedTo: [
+            `implementationConfirmation.artifactAutomationPlan[${row.artifactId ?? row.id}]`,
+          ],
+        })),
+        mustCommandProjection: asArray(confirmation.requiredCommands).map((row: any) => ({
+          id: row.id,
+          materializedTo: [`implementationConfirmation.requiredCommands[${row.id}]`],
+        })),
       };
     }),
     mustDerivedProjectionMap: [
@@ -569,10 +724,11 @@ function writeValidMustGateArtifactsForSource(source: string, authoringDir: stri
       },
     ],
   };
-  const addBackRefs = (rows: any[]) => rows.forEach((row) => {
-    row.derivedFromMustRef = row.derivedFromMustRef ?? mustRows[0]?.id ?? 'MUST-001';
-    row.derivedFromPacketHash = packetHash;
-  });
+  const addBackRefs = (rows: any[]) =>
+    rows.forEach((row) => {
+      row.derivedFromMustRef = row.derivedFromMustRef ?? mustRows[0]?.id ?? 'MUST-001';
+      row.derivedFromPacketHash = packetHash;
+    });
   confirmation.atomicImplementationTaskList = mustRows.map((must: any, index: number) => ({
     id: `TASK-${String(index + 1).padStart(3, '0')}`,
     text: `${must.id} atomic fixture task`,
@@ -602,16 +758,37 @@ function writeValidMustGateArtifactsForSource(source: string, authoringDir: stri
     derivedFromMustRef: mustRows[0]?.id ?? 'MUST-001',
     derivedFromPacketHash: packetHash,
   };
-  fs.writeFileSync(source, `# Source\n\n${yaml.dump({ implementationConfirmation: confirmation }, { lineWidth: -1 })}`, 'utf8');
+  fs.writeFileSync(
+    source,
+    `# Source\n\n${yaml.dump({ implementationConfirmation: confirmation }, { lineWidth: -1 })}`,
+    'utf8'
+  );
   const finalText = fs.readFileSync(source, 'utf8');
   const finalExtracted = extractImplementationConfirmation(finalText);
-  sourceDocumentHash = sourceDocumentHashFor(finalText, finalExtracted.blockText, finalExtracted.confirmation);
+  sourceDocumentHash = sourceDocumentHashFor(
+    finalText,
+    finalExtracted.blockText,
+    finalExtracted.confirmation
+  );
   implementationConfirmationHash = implementationConfirmationHashFor(finalExtracted.confirmation);
   kernel.sourceDocumentHash = sourceDocumentHash;
   packet.sourceDocumentHash = sourceDocumentHash;
-  const auditInputHash = buildAuditInputHash({ sourceDocumentHash, implementationConfirmationHash, kernel, packet });
-  fs.writeFileSync(path.join(authoringDir, 'semantic-kernel.json'), JSON.stringify({ semanticKernel: kernel }, null, 2), 'utf8');
-  fs.writeFileSync(path.join(authoringDir, 'must_decomposition_packet.json'), JSON.stringify({ must_decomposition_packet: packet }, null, 2), 'utf8');
+  const auditInputHash = buildAuditInputHash({
+    sourceDocumentHash,
+    implementationConfirmationHash,
+    kernel,
+    packet,
+  });
+  fs.writeFileSync(
+    path.join(authoringDir, 'semantic-kernel.json'),
+    JSON.stringify({ semanticKernel: kernel }, null, 2),
+    'utf8'
+  );
+  fs.writeFileSync(
+    path.join(authoringDir, 'must_decomposition_packet.json'),
+    JSON.stringify({ must_decomposition_packet: packet }, null, 2),
+    'utf8'
+  );
   for (let roundIndex = 1; roundIndex <= 3; roundIndex += 1) {
     fs.writeFileSync(
       path.join(authoringDir, `critical-auditor-receipt-round-${roundIndex}.json`),
@@ -660,8 +837,15 @@ Small single behavior with no governance modules.
 
 function writeLargeSource(root = tempDir): string {
   const file = path.join(root, 'large.md');
-  const sections = Array.from({ length: 32 }, (_, index) => `## Section ${index + 1}\n\nGovernance event, runtime recovery, script hook, dashboard score, current target map.\n`).join('\n');
-  const ids = Array.from({ length: 28 }, (_, index) => `- MUST-${String(index + 1).padStart(3, '0')} requirement\n`).join('');
+  const sections = Array.from(
+    { length: 32 },
+    (_, index) =>
+      `## Section ${index + 1}\n\nGovernance event, runtime recovery, script hook, dashboard score, current target map.\n`
+  ).join('\n');
+  const ids = Array.from(
+    { length: 28 },
+    (_, index) => `- MUST-${String(index + 1).padStart(3, '0')} requirement\n`
+  ).join('');
   fs.writeFileSync(file, `# Large Requirement\n\n${sections}\n${ids}\n`, 'utf8');
   return file;
 }
@@ -1177,13 +1361,23 @@ implementationConfirmation:
 
 function initGitRepo(root: string) {
   spawnSync('git', ['init'], { cwd: root, encoding: 'utf8' });
-  spawnSync('git', ['config', 'user.email', 'test@example.invalid'], { cwd: root, encoding: 'utf8' });
+  spawnSync('git', ['config', 'user.email', 'test@example.invalid'], {
+    cwd: root,
+    encoding: 'utf8',
+  });
   spawnSync('git', ['config', 'user.name', 'Test User'], { cwd: root, encoding: 'utf8' });
   fs.mkdirSync(path.join(root, 'docs', 'requirements'), { recursive: true });
 }
 
 function authoringDirForGlobalGateRecord(root = tempDir): string {
-  return path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'REQ-GLOBAL-GATE', 'authoring');
+  return path.join(
+    root,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    'REQ-GLOBAL-GATE',
+    'authoring'
+  );
 }
 
 describe('requirements contract checkpoint automation', () => {
@@ -1251,16 +1445,20 @@ describe('requirements contract checkpoint automation', () => {
       expect.arrayContaining(['governanceEvents', 'runtimeRecovery', 'scriptsAndHooks'])
     );
     expect(json.recommendedCheckpoints).toEqual(SEMANTIC_CHECKPOINT_IDS);
-    expect(json.hardTriggerBreakdown.filter((item: any) => item.triggered).map((item: any) => item.id)).toContain(
-      'conditional_domains_gte_2'
-    );
+    expect(
+      json.hardTriggerBreakdown.filter((item: any) => item.triggered).map((item: any) => item.id)
+    ).toContain('conditional_domains_gte_2');
     expect(result.stderr).toContain('decision=checkpoint_required');
   });
 
   it('routes to checkpoint_required when progress already exists', () => {
     const source = writeSmallSource();
     const progress = path.join(tempDir, 'semantic-checkpoint-progress.json');
-    fs.writeFileSync(progress, JSON.stringify({ schemaVersion: 'semantic-checkpoint-progress/v1' }), 'utf8');
+    fs.writeFileSync(
+      progress,
+      JSON.stringify({ schemaVersion: 'semantic-checkpoint-progress/v1' }),
+      'utf8'
+    );
 
     const { result, json } = runNode(ASSESS, ['--source', source, '--progress', progress]);
 
@@ -1281,7 +1479,9 @@ describe('requirements contract checkpoint automation', () => {
     expect(json.decision).toBe('checkpoint_required_with_amendment');
     expect(json.authoringMode).toBe('semantic_kernel_then_packet_with_amendment');
     expect(json.signals.amendmentRisk).toBe(true);
-    expect(json.hardTriggerBreakdown.find((item: any) => item.id === 'amendment_risk')?.triggered).toBe(true);
+    expect(
+      json.hardTriggerBreakdown.find((item: any) => item.id === 'amendment_risk')?.triggered
+    ).toBe(true);
     expect(result.stderr).toContain('TRIGGERED amendment_risk');
   });
 
@@ -1341,16 +1541,27 @@ describe('requirements contract checkpoint automation', () => {
     writeValidMustGateArtifactsForSource(source, authoringDir);
     const packetPath = path.join(authoringDir, 'must_decomposition_packet.json');
     const packetWrapper = JSON.parse(fs.readFileSync(packetPath, 'utf8'));
-    packetWrapper.must_decomposition_packet.mustPackets[0].mustAtomicTasks = Array.from({ length: 21 }, (_, index) => ({
-      id: `TASK-GROWTH-${String(index + 1).padStart(3, '0')}`,
-      targetFiles: ['tests/acceptance/requirements-contract-checkpoint-automation.test.ts'],
-      redProofPlan: `growth red proof ${index + 1}`,
-    }));
+    packetWrapper.must_decomposition_packet.mustPackets[0].mustAtomicTasks = Array.from(
+      { length: 21 },
+      (_, index) => ({
+        id: `TASK-GROWTH-${String(index + 1).padStart(3, '0')}`,
+        targetFiles: ['tests/acceptance/requirements-contract-checkpoint-automation.test.ts'],
+        redProofPlan: `growth red proof ${index + 1}`,
+      })
+    );
     fs.writeFileSync(packetPath, JSON.stringify(packetWrapper, null, 2), 'utf8');
     const initial = path.join(authoringDir, 'scale-assessment-initial.json');
     const postPacket = path.join(authoringDir, 'scale-assessment-post-packet.json');
     const route = path.join(authoringDir, 'scale-routing-decision.json');
-    runNode(ASSESS, ['--source', source, '--phase', 'initial_assessment', '--out', initial, '--quiet']);
+    runNode(ASSESS, [
+      '--source',
+      source,
+      '--phase',
+      'initial_assessment',
+      '--out',
+      initial,
+      '--quiet',
+    ]);
 
     const { result, json } = runNode(ASSESS, [
       '--source',
@@ -1374,10 +1585,14 @@ describe('requirements contract checkpoint automation', () => {
     expect(json.phase).toBe('post_packet_assessment');
     expect(json.signals.mustAtomicTaskCount).toBeGreaterThan(0);
     expect(json.signals.projectionRowCount).toBeGreaterThan(0);
-    expect(json.signals.conditionalDomainCount).toBe(json.signals.applicableConditionalDomains.length);
+    expect(json.signals.conditionalDomainCount).toBe(
+      json.signals.applicableConditionalDomains.length
+    );
     expect(json.decision).toBe('checkpoint_required');
     expect(json.blockingReasons).toEqual([]);
-    expect(json.hardTriggerBreakdown.map((item: any) => item.id)).toContain('must_atomic_task_count_gt_20');
+    expect(json.hardTriggerBreakdown.map((item: any) => item.id)).toContain(
+      'must_atomic_task_count_gt_20'
+    );
     expect(routing.decision).toBe('checkpoint_required');
     expect(routing.decisionSource).toBe('post_packet_assessment');
     expect(routing.latestCompletedPhase).toBe('post_packet_assessment');
@@ -1417,9 +1632,20 @@ describe('requirements contract checkpoint automation', () => {
     fs.writeFileSync(reconciliation, JSON.stringify({ verdict: 'pass' }, null, 2), 'utf8');
     const initial = path.join(authoringDir, 'scale-assessment-initial.json');
     const postPacket = path.join(authoringDir, 'scale-assessment-post-packet.json');
-    const postMaterialization = path.join(authoringDir, 'scale-assessment-post-materialization.json');
+    const postMaterialization = path.join(
+      authoringDir,
+      'scale-assessment-post-materialization.json'
+    );
     const route = path.join(authoringDir, 'scale-routing-decision.json');
-    runNode(ASSESS, ['--source', source, '--phase', 'initial_assessment', '--out', initial, '--quiet']);
+    runNode(ASSESS, [
+      '--source',
+      source,
+      '--phase',
+      'initial_assessment',
+      '--out',
+      initial,
+      '--quiet',
+    ]);
     fs.writeFileSync(
       postPacket,
       JSON.stringify({
@@ -1448,7 +1674,11 @@ describe('requirements contract checkpoint automation', () => {
       route,
     ]);
     const routing = JSON.parse(fs.readFileSync(route, 'utf8'));
-    const rewritten = { ...routing, createdAt: '2099-01-01T00:00:00.000Z', checkpointPersistenceSatisfied: true };
+    const rewritten = {
+      ...routing,
+      createdAt: '2099-01-01T00:00:00.000Z',
+      checkpointPersistenceSatisfied: true,
+    };
     const reroute = path.join(authoringDir, 'scale-routing-decision-rewritten.json');
     fs.writeFileSync(reroute, JSON.stringify(rewritten, null, 2), 'utf8');
 
@@ -1508,7 +1738,9 @@ describe('requirements contract checkpoint automation', () => {
 
     expect(result.status).toBe(0);
     expect(json.authoringMode).toBe('semantic_kernel_then_packet');
-    expect(json.checkpoints.map((checkpoint: any) => checkpoint.id)).toEqual(SEMANTIC_CHECKPOINT_IDS);
+    expect(json.checkpoints.map((checkpoint: any) => checkpoint.id)).toEqual(
+      SEMANTIC_CHECKPOINT_IDS
+    );
     expect(json.nextCheckpoint).toBe('cp-00-semantic-kernel');
     expect(json.semanticDrilldown.semanticKernel.status).toBe('missing');
     expect(json.semanticDrilldown.nextAction).toBe('create_semantic_kernel');
@@ -1520,19 +1752,37 @@ describe('requirements contract checkpoint automation', () => {
       ['missing must_decomposition_packet', 'MISSING_PACKET', 'missing_must_decomposition_packet'],
       ['stale packet hash', 'STALE_PACKET', 'must_packet_source_hash_stale'],
       ['missing Critical Auditor receipt', 'MISSING_CRITIC', 'critical_auditor_receipt_missing'],
-      ['less than three no-new-gap rounds', 'LESS_THAN_3_ROUNDS', 'critical_auditor_less_than_three_no_new_gap_rounds'],
+      [
+        'less than three no-new-gap rounds',
+        'LESS_THAN_3_ROUNDS',
+        'critical_auditor_less_than_three_no_new_gap_rounds',
+      ],
       ['unresolved validated gap', 'UNRESOLVED_GAP', 'critical_auditor_validated_gap_unresolved'],
-      ['question coverage incomplete', 'INCOMPLETE_QUESTION', 'must_packet_question_coverage_incomplete'],
+      [
+        'question coverage incomplete',
+        'INCOMPLETE_QUESTION',
+        'must_packet_question_coverage_incomplete',
+      ],
       ['actual task count below expected', 'UNDER_SPLIT', 'must_packet_under_split'],
       ['over-broad atomic task', 'OVER_BROAD_TASK', 'must_packet_over_broad_atomic_task'],
-      ['source row independently invented', 'SOURCE_INVENTED_TRACE_ROW', 'source_row_independently_invented'],
-      ['packet projection not materialized', 'PROJECTION_NOT_MATERIALIZED', 'packet_projection_not_materialized'],
+      [
+        'source row independently invented',
+        'SOURCE_INVENTED_TRACE_ROW',
+        'source_row_independently_invented',
+      ],
+      [
+        'packet projection not materialized',
+        'PROJECTION_NOT_MATERIALIZED',
+        'packet_projection_not_materialized',
+      ],
     ];
 
     for (const [_label, override, code] of cases) {
       const fixture = writeMustGateFixture(override);
-      if (override === 'MISSING_KERNEL') fs.rmSync(path.join(fixture.authoringDir, 'semantic-kernel.json'));
-      if (override === 'MISSING_PACKET') fs.rmSync(path.join(fixture.authoringDir, 'must_decomposition_packet.json'));
+      if (override === 'MISSING_KERNEL')
+        fs.rmSync(path.join(fixture.authoringDir, 'semantic-kernel.json'));
+      if (override === 'MISSING_PACKET')
+        fs.rmSync(path.join(fixture.authoringDir, 'must_decomposition_packet.json'));
 
       const { result, json } = runNode(PRE_RENDER_MUST_GATE, [
         '--source',
@@ -1544,8 +1794,16 @@ describe('requirements contract checkpoint automation', () => {
       expect(result.status, `${override} should fail`).toBe(1);
       expect(json.confirmability).toBe('blocked');
       expect(json.failedChecks).toContain(code);
-      expect(fs.existsSync(path.join(fixture.authoringDir, 'pre-render-must-decomposition-gate-report.json'))).toBe(true);
-      expect(fs.existsSync(path.join(fixture.authoringDir, 'must_packet_source_reconciliation_report.json'))).toBe(true);
+      expect(
+        fs.existsSync(
+          path.join(fixture.authoringDir, 'pre-render-must-decomposition-gate-report.json')
+        )
+      ).toBe(true);
+      expect(
+        fs.existsSync(
+          path.join(fixture.authoringDir, 'must_packet_source_reconciliation_report.json')
+        )
+      ).toBe(true);
     }
   });
 
@@ -1558,8 +1816,15 @@ describe('requirements contract checkpoint automation', () => {
       '--authoring-dir',
       fixture.authoringDir,
     ]);
-    const receipt = JSON.parse(fs.readFileSync(path.join(fixture.authoringDir, 'must_decomposition_receipt.json'), 'utf8'));
-    const reconciliation = JSON.parse(fs.readFileSync(path.join(fixture.authoringDir, 'must_packet_source_reconciliation_report.json'), 'utf8'));
+    const receipt = JSON.parse(
+      fs.readFileSync(path.join(fixture.authoringDir, 'must_decomposition_receipt.json'), 'utf8')
+    );
+    const reconciliation = JSON.parse(
+      fs.readFileSync(
+        path.join(fixture.authoringDir, 'must_packet_source_reconciliation_report.json'),
+        'utf8'
+      )
+    );
 
     expect(result.status).toBe(0);
     expect(json.verdict).toBe('PASS');
@@ -1587,7 +1852,14 @@ describe('requirements contract checkpoint automation', () => {
       'utf8'
     );
 
-    const { result, json } = runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'status']);
+    const { result, json } = runNode(CHECKPOINTS, [
+      '--source',
+      source,
+      '--progress',
+      progress,
+      '--mode',
+      'status',
+    ]);
 
     expect(result.status).toBe(1);
     expect(json.code).toBe('document_hash_mismatch');
@@ -1621,10 +1893,22 @@ describe('requirements contract checkpoint automation', () => {
 
     const { result, json } = runNode(
       CHECKPOINTS,
-      ['--source', source, '--progress', progress, '--mode', 'run', '--checkpoint', 'cp-01-header-scope-decisions'],
+      [
+        '--source',
+        source,
+        '--progress',
+        progress,
+        '--mode',
+        'run',
+        '--checkpoint',
+        'cp-01-header-scope-decisions',
+      ],
       tempDir
     );
-    const committedFiles = spawnSync('git', ['show', '--name-only', '--format=', 'HEAD'], { cwd: tempDir, encoding: 'utf8' })
+    const committedFiles = spawnSync('git', ['show', '--name-only', '--format=', 'HEAD'], {
+      cwd: tempDir,
+      encoding: 'utf8',
+    })
       .stdout.split(/\r?\n/u)
       .filter(Boolean);
 
@@ -1632,8 +1916,12 @@ describe('requirements contract checkpoint automation', () => {
     expect(json.ok).toBe(true);
     expect(json.commitHash).toMatch(/^[a-f0-9]{40}$/u);
     expect(fs.existsSync(progress)).toBe(true);
-    expect(JSON.parse(fs.readFileSync(progress, 'utf8')).lastCompletedCheckpoint).toBe('cp-01-must-decomposition-packet');
-    expect(JSON.parse(fs.readFileSync(progress, 'utf8')).checkpoints[0].idempotencyKey).toMatch(/^[a-f0-9]{64}$/u);
+    expect(JSON.parse(fs.readFileSync(progress, 'utf8')).lastCompletedCheckpoint).toBe(
+      'cp-01-must-decomposition-packet'
+    );
+    expect(JSON.parse(fs.readFileSync(progress, 'utf8')).checkpoints[0].idempotencyKey).toMatch(
+      /^[a-f0-9]{64}$/u
+    );
     expect(committedFiles).toEqual(['docs/requirements/source.md']);
   });
 
@@ -1642,15 +1930,43 @@ describe('requirements contract checkpoint automation', () => {
     const source = writeGloballyConsistentSource(tempDir);
     const progress = path.join(tempDir, 'progress.json');
     writeValidMustGateArtifactsForSource(source, authoringDirForGlobalGateRecord(tempDir));
-    runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'run', '--checkpoint', 'cp-01-header-scope-decisions'], tempDir);
-    const beforeCount = spawnSync('git', ['rev-list', '--count', 'HEAD'], { cwd: tempDir, encoding: 'utf8' }).stdout.trim();
+    runNode(
+      CHECKPOINTS,
+      [
+        '--source',
+        source,
+        '--progress',
+        progress,
+        '--mode',
+        'run',
+        '--checkpoint',
+        'cp-01-header-scope-decisions',
+      ],
+      tempDir
+    );
+    const beforeCount = spawnSync('git', ['rev-list', '--count', 'HEAD'], {
+      cwd: tempDir,
+      encoding: 'utf8',
+    }).stdout.trim();
 
     const { result, json } = runNode(
       CHECKPOINTS,
-      ['--source', source, '--progress', progress, '--mode', 'run', '--checkpoint', 'cp-01-header-scope-decisions'],
+      [
+        '--source',
+        source,
+        '--progress',
+        progress,
+        '--mode',
+        'run',
+        '--checkpoint',
+        'cp-01-header-scope-decisions',
+      ],
       tempDir
     );
-    const afterCount = spawnSync('git', ['rev-list', '--count', 'HEAD'], { cwd: tempDir, encoding: 'utf8' }).stdout.trim();
+    const afterCount = spawnSync('git', ['rev-list', '--count', 'HEAD'], {
+      cwd: tempDir,
+      encoding: 'utf8',
+    }).stdout.trim();
 
     expect(result.status).toBe(0);
     expect(json.noOp).toBe(true);
@@ -1663,11 +1979,28 @@ describe('requirements contract checkpoint automation', () => {
     const source = writeGloballyConsistentSource(tempDir);
     const progress = path.join(tempDir, 'progress.json');
     writeValidMustGateArtifactsForSource(source, authoringDirForGlobalGateRecord(tempDir));
-    runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'run', '--checkpoint', 'cp-01-header-scope-decisions'], tempDir);
+    runNode(
+      CHECKPOINTS,
+      [
+        '--source',
+        source,
+        '--progress',
+        progress,
+        '--mode',
+        'run',
+        '--checkpoint',
+        'cp-01-header-scope-decisions',
+      ],
+      tempDir
+    );
     fs.copyFileSync(progress, `${progress}.bak`);
     fs.writeFileSync(progress, '{broken json', 'utf8');
 
-    const { result, json } = runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'status'], tempDir);
+    const { result, json } = runNode(
+      CHECKPOINTS,
+      ['--source', source, '--progress', progress, '--mode', 'status'],
+      tempDir
+    );
 
     expect(result.status).toBe(0);
     expect(json.status).toBe('ready');
@@ -1681,11 +2014,28 @@ describe('requirements contract checkpoint automation', () => {
     const source = writeGloballyConsistentSource(tempDir);
     const progress = path.join(tempDir, 'progress.json');
     writeValidMustGateArtifactsForSource(source, authoringDirForGlobalGateRecord(tempDir));
-    runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'run', '--checkpoint', 'cp-01-header-scope-decisions'], tempDir);
+    runNode(
+      CHECKPOINTS,
+      [
+        '--source',
+        source,
+        '--progress',
+        progress,
+        '--mode',
+        'run',
+        '--checkpoint',
+        'cp-01-header-scope-decisions',
+      ],
+      tempDir
+    );
     fs.writeFileSync(progress, '{broken json', 'utf8');
     fs.writeFileSync(`${progress}.bak`, '{also broken', 'utf8');
 
-    const { result, json } = runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'status'], tempDir);
+    const { result, json } = runNode(
+      CHECKPOINTS,
+      ['--source', source, '--progress', progress, '--mode', 'status'],
+      tempDir
+    );
 
     expect(result.status).toBe(0);
     expect(json.status).toBe('ready');
@@ -1698,12 +2048,32 @@ describe('requirements contract checkpoint automation', () => {
     const source = writeGloballyConsistentSource(tempDir);
     const progress = path.join(tempDir, 'progress.json');
     writeValidMustGateArtifactsForSource(source, authoringDirForGlobalGateRecord(tempDir));
-    runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'run', '--checkpoint', 'cp-01-header-scope-decisions'], tempDir);
+    runNode(
+      CHECKPOINTS,
+      [
+        '--source',
+        source,
+        '--progress',
+        progress,
+        '--mode',
+        'run',
+        '--checkpoint',
+        'cp-01-header-scope-decisions',
+      ],
+      tempDir
+    );
     fs.copyFileSync(progress, `${progress}.bak`);
     fs.writeFileSync(progress, '{broken json', 'utf8');
 
-    const { result, json } = runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'run'], tempDir);
-    const commitCount = spawnSync('git', ['rev-list', '--count', 'HEAD'], { cwd: tempDir, encoding: 'utf8' }).stdout.trim();
+    const { result, json } = runNode(
+      CHECKPOINTS,
+      ['--source', source, '--progress', progress, '--mode', 'run'],
+      tempDir
+    );
+    const commitCount = spawnSync('git', ['rev-list', '--count', 'HEAD'], {
+      cwd: tempDir,
+      encoding: 'utf8',
+    }).stdout.trim();
 
     expect(result.status).toBe(1);
     expect(json.code).toBe('checkpoint_source_edit_missing');
@@ -1721,7 +2091,16 @@ describe('requirements contract checkpoint automation', () => {
 
     const { result, json } = runNode(
       CHECKPOINTS,
-      ['--source', source, '--progress', progress, '--mode', 'run', '--checkpoint', 'cp-01-header-scope-decisions'],
+      [
+        '--source',
+        source,
+        '--progress',
+        progress,
+        '--mode',
+        'run',
+        '--checkpoint',
+        'cp-01-header-scope-decisions',
+      ],
       tempDir
     );
 
@@ -1736,12 +2115,22 @@ describe('requirements contract checkpoint automation', () => {
     const progress = path.join(tempDir, 'progress.json');
     fs.writeFileSync(source, '# Source\n\nCheckpoint content.\n', 'utf8');
 
-    const { result, json } = runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'run'], tempDir);
-    const commitHashes = spawnSync('git', ['log', '--format=%H'], { cwd: tempDir, encoding: 'utf8' })
+    const { result, json } = runNode(
+      CHECKPOINTS,
+      ['--source', source, '--progress', progress, '--mode', 'run'],
+      tempDir
+    );
+    const commitHashes = spawnSync('git', ['log', '--format=%H'], {
+      cwd: tempDir,
+      encoding: 'utf8',
+    })
       .stdout.split(/\r?\n/u)
       .filter(Boolean);
     const committedFileSets = commitHashes.map((hash) =>
-      spawnSync('git', ['show', '--name-only', '--format=', hash], { cwd: tempDir, encoding: 'utf8' })
+      spawnSync('git', ['show', '--name-only', '--format=', hash], {
+        cwd: tempDir,
+        encoding: 'utf8',
+      })
         .stdout.split(/\r?\n/u)
         .filter(Boolean)
     );
@@ -1767,8 +2156,15 @@ describe('requirements contract checkpoint automation', () => {
     const source = writeGloballyConsistentSource(tempDir);
     const progress = path.join(tempDir, 'progress.json');
 
-    const { result, json } = runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'run'], tempDir);
-    const commitHashes = spawnSync('git', ['log', '--format=%H'], { cwd: tempDir, encoding: 'utf8' })
+    const { result, json } = runNode(
+      CHECKPOINTS,
+      ['--source', source, '--progress', progress, '--mode', 'run'],
+      tempDir
+    );
+    const commitHashes = spawnSync('git', ['log', '--format=%H'], {
+      cwd: tempDir,
+      encoding: 'utf8',
+    })
       .stdout.split(/\r?\n/u)
       .filter(Boolean);
 
@@ -1778,7 +2174,9 @@ describe('requirements contract checkpoint automation', () => {
     expect(json.code).toBe('checkpoint_authoring_evidence_missing');
     expect(json.failedCheckpoint).toBe('cp-00-semantic-kernel');
     expect(commitHashes).toHaveLength(0);
-    expect(json.issues.map((issue: any) => issue.code)).toContain('semantic_kernel_required_before_checkpoint');
+    expect(json.issues.map((issue: any) => issue.code)).toContain(
+      'semantic_kernel_required_before_checkpoint'
+    );
     expect(fs.existsSync(progress)).toBe(false);
   });
 
@@ -1795,14 +2193,11 @@ describe('requirements contract checkpoint automation', () => {
     };
     fs.writeFileSync(route, JSON.stringify(routeDecision, null, 2), 'utf8');
 
-    const { result, json } = runNode(CHECKPOINTS, [
-      '--source',
-      source,
-      '--mode',
-      'run',
-      '--route-decision',
-      route,
-    ], tempDir);
+    const { result, json } = runNode(
+      CHECKPOINTS,
+      ['--source', source, '--mode', 'run', '--route-decision', route],
+      tempDir
+    );
 
     expect(result.status).toBe(1);
     expect(json.status).toBe('blocked');
@@ -1831,18 +2226,22 @@ describe('requirements contract checkpoint automation', () => {
     fs.writeFileSync(route, JSON.stringify(routeDecision, null, 2), 'utf8');
     const before = fs.readFileSync(route, 'utf8');
 
-    const { result, json } = runNode(CHECKPOINTS, [
-      '--source',
-      source,
-      '--progress',
-      progress,
-      '--mode',
-      'run',
-      '--checkpoint',
-      'cp-01-header-scope-decisions',
-      '--route-decision',
-      route,
-    ], tempDir);
+    const { result, json } = runNode(
+      CHECKPOINTS,
+      [
+        '--source',
+        source,
+        '--progress',
+        progress,
+        '--mode',
+        'run',
+        '--checkpoint',
+        'cp-01-header-scope-decisions',
+        '--route-decision',
+        route,
+      ],
+      tempDir
+    );
     const after = fs.readFileSync(route, 'utf8');
 
     expect(result.status).toBe(0);
@@ -1877,7 +2276,11 @@ describe('requirements contract checkpoint automation', () => {
       ),
       'utf8'
     );
-    runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'pre-render-gate'], tempDir);
+    runNode(
+      CHECKPOINTS,
+      ['--source', source, '--progress', progress, '--mode', 'pre-render-gate'],
+      tempDir
+    );
     const { buildScaleRoutingDecision } = requireForGate(ASSESS);
     const routeDecision = buildScaleRoutingDecision({
       sourcePath: source,
@@ -1893,16 +2296,20 @@ describe('requirements contract checkpoint automation', () => {
     fs.writeFileSync(route, JSON.stringify(routeDecision, null, 2), 'utf8');
     const before = fs.readFileSync(route, 'utf8');
 
-    const { result, json } = runNode(CHECKPOINTS, [
-      '--source',
-      source,
-      '--progress',
-      progress,
-      '--mode',
-      'checkpoint-persistence',
-      '--route-decision',
-      route,
-    ], tempDir);
+    const { result, json } = runNode(
+      CHECKPOINTS,
+      [
+        '--source',
+        source,
+        '--progress',
+        progress,
+        '--mode',
+        'checkpoint-persistence',
+        '--route-decision',
+        route,
+      ],
+      tempDir
+    );
     const after = fs.readFileSync(route, 'utf8');
 
     expect(result.status).toBe(0);
@@ -1912,9 +2319,15 @@ describe('requirements contract checkpoint automation', () => {
     expect(json.checkpointPersistenceRef.completedCheckpointIds).toEqual(SEMANTIC_CHECKPOINT_IDS);
     expect(json.completedCheckpointIds).toEqual(SEMANTIC_CHECKPOINT_IDS);
     expect(json.checkpointPersistenceRef.progressHash).toMatch(/^sha256:[a-f0-9]{64}$/u);
-    expect(json.checkpointPersistenceRef.preRenderMustDecompositionGateHash).toMatch(/^sha256:[a-f0-9]{64}$/u);
-    expect(json.checkpointPersistenceRef.preRenderGlobalConsistencyHash).toMatch(/^sha256:[a-f0-9]{64}$/u);
-    expect(json.checkpointPersistenceRef.packetSourceReconciliationHash).toMatch(/^sha256:[a-f0-9]{64}$/u);
+    expect(json.checkpointPersistenceRef.preRenderMustDecompositionGateHash).toMatch(
+      /^sha256:[a-f0-9]{64}$/u
+    );
+    expect(json.checkpointPersistenceRef.preRenderGlobalConsistencyHash).toMatch(
+      /^sha256:[a-f0-9]{64}$/u
+    );
+    expect(json.checkpointPersistenceRef.packetSourceReconciliationHash).toMatch(
+      /^sha256:[a-f0-9]{64}$/u
+    );
     expect(after).toBe(before);
   });
 
@@ -1925,12 +2338,28 @@ describe('requirements contract checkpoint automation', () => {
     writeValidMustGateArtifactsForSource(source, authoringDirForGlobalGateRecord(tempDir));
     runNode(
       CHECKPOINTS,
-      ['--source', source, '--progress', progress, '--mode', 'run', '--checkpoint', 'cp-01-header-scope-decisions'],
+      [
+        '--source',
+        source,
+        '--progress',
+        progress,
+        '--mode',
+        'run',
+        '--checkpoint',
+        'cp-01-header-scope-decisions',
+      ],
       tempDir
     );
 
-    const { result, json } = runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'resume'], tempDir);
-    const commitCount = spawnSync('git', ['rev-list', '--count', 'HEAD'], { cwd: tempDir, encoding: 'utf8' }).stdout.trim();
+    const { result, json } = runNode(
+      CHECKPOINTS,
+      ['--source', source, '--progress', progress, '--mode', 'resume'],
+      tempDir
+    );
+    const commitCount = spawnSync('git', ['rev-list', '--count', 'HEAD'], {
+      cwd: tempDir,
+      encoding: 'utf8',
+    }).stdout.trim();
     const savedProgress = JSON.parse(fs.readFileSync(progress, 'utf8'));
 
     expect(result.status).toBe(1);
@@ -1946,12 +2375,18 @@ describe('requirements contract checkpoint automation', () => {
     const source = writeEighteenTraceFalsePositiveSource(tempDir);
     const progress = path.join(tempDir, 'progress.json');
 
-    const { result, json } = runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'pre-render-gate'], tempDir);
+    const { result, json } = runNode(
+      CHECKPOINTS,
+      ['--source', source, '--progress', progress, '--mode', 'pre-render-gate'],
+      tempDir
+    );
 
     expect(result.status).toBe(1);
     expect(json.verdict).toBe('FAIL');
     expect(json.failedChecks).toContain('global_trace_unknown_evidence_ref');
-    expect(json.issues.filter((issue: any) => issue.code === 'global_trace_unknown_evidence_ref')).toHaveLength(18);
+    expect(
+      json.issues.filter((issue: any) => issue.code === 'global_trace_unknown_evidence_ref')
+    ).toHaveLength(18);
   });
 
   it('fails the pre-render gate when currentTargetMap applies but the confirmation view pack is hidden', () => {
@@ -1959,12 +2394,18 @@ describe('requirements contract checkpoint automation', () => {
     const source = writeCurrentTargetHiddenFalsePositiveSource(tempDir);
     const progress = path.join(tempDir, 'progress.json');
 
-    const { result, json } = runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'pre-render-gate'], tempDir);
+    const { result, json } = runNode(
+      CHECKPOINTS,
+      ['--source', source, '--progress', progress, '--mode', 'pre-render-gate'],
+      tempDir
+    );
 
     expect(result.status).toBe(1);
     expect(json.verdict).toBe('FAIL');
     expect(json.failedChecks).toContain('global_current_target_required_view_pack_missing');
-    expect(json.issues.map((issue: any) => issue.code)).toContain('global_current_target_required_view_pack_missing');
+    expect(json.issues.map((issue: any) => issue.code)).toContain(
+      'global_current_target_required_view_pack_missing'
+    );
   });
 
   it('fails retention cleanup when no confirmed retention strategy is provided', () => {
@@ -1972,7 +2413,11 @@ describe('requirements contract checkpoint automation', () => {
     const source = path.join(tempDir, 'docs', 'requirements', 'source.md');
     fs.writeFileSync(source, '# Source\n', 'utf8');
 
-    const { result, json } = runNode(RETENTION_CLEANUP, ['--source', source, '--mode', 'dry-run'], tempDir);
+    const { result, json } = runNode(
+      RETENTION_CLEANUP,
+      ['--source', source, '--mode', 'dry-run'],
+      tempDir
+    );
 
     expect(result.status).toBe(2);
     expect(json.verdict).toBe('FAIL');
@@ -1988,11 +2433,23 @@ describe('requirements contract checkpoint automation', () => {
 
     const { result, json } = runNode(
       RETENTION_CLEANUP,
-      ['--source', source, '--strategy', 'confirmed-local-only', '--mode', 'dry-run', '--receipt', receipt],
+      [
+        '--source',
+        source,
+        '--strategy',
+        'confirmed-local-only',
+        '--mode',
+        'dry-run',
+        '--receipt',
+        receipt,
+      ],
       tempDir
     );
-    const staged = spawnSync('git', ['diff', '--cached', '--name-only'], { cwd: tempDir, encoding: 'utf8' }).stdout
-      .split(/\r?\n/u)
+    const staged = spawnSync('git', ['diff', '--cached', '--name-only'], {
+      cwd: tempDir,
+      encoding: 'utf8',
+    })
+      .stdout.split(/\r?\n/u)
       .filter(Boolean);
 
     expect(result.status).toBe(0);
@@ -2013,14 +2470,29 @@ describe('requirements contract checkpoint automation', () => {
 
     const { result, json } = runNode(
       RETENTION_CLEANUP,
-      ['--source', source, '--strategy', 'confirmed-local-only', '--mode', 'apply', '--receipt', receipt],
+      [
+        '--source',
+        source,
+        '--strategy',
+        'confirmed-local-only',
+        '--mode',
+        'apply',
+        '--receipt',
+        receipt,
+      ],
       tempDir
     );
-    const staged = spawnSync('git', ['diff', '--cached', '--name-only'], { cwd: tempDir, encoding: 'utf8' }).stdout
-      .split(/\r?\n/u)
+    const staged = spawnSync('git', ['diff', '--cached', '--name-only'], {
+      cwd: tempDir,
+      encoding: 'utf8',
+    })
+      .stdout.split(/\r?\n/u)
       .filter(Boolean);
-    const untracked = spawnSync('git', ['ls-files', '--others', '--exclude-standard'], { cwd: tempDir, encoding: 'utf8' }).stdout
-      .split(/\r?\n/u)
+    const untracked = spawnSync('git', ['ls-files', '--others', '--exclude-standard'], {
+      cwd: tempDir,
+      encoding: 'utf8',
+    })
+      .stdout.split(/\r?\n/u)
       .filter(Boolean);
 
     expect(result.status).toBe(0);
@@ -2069,14 +2541,19 @@ describe('requirements contract checkpoint automation', () => {
     const failRows = asArray(confirmation.failurePaths);
     const edgeRows = asArray(confirmation.edgeCases);
     const traceRows = asArray(confirmation.traceRows);
-    const acceptanceRows = [...asArray(confirmation.acceptanceTests), ...asArray(confirmation.e2eSuites)];
+    const acceptanceRows = [
+      ...asArray(confirmation.acceptanceTests),
+      ...asArray(confirmation.e2eSuites),
+    ];
     const viewRows = [
       ...asArray(confirmation.sequenceViews),
       ...asArray(confirmation.flowViews),
       ...asArray(confirmation.edgeCaseViews),
       ...asArray(confirmation.boundaryViews),
     ];
-    const failNegRefs = new Map(failRows.map((row) => [row.id, refs(row, ['linkedNegIds', 'negRefs'])]));
+    const failNegRefs = new Map(
+      failRows.map((row) => [row.id, refs(row, ['linkedNegIds', 'negRefs'])])
+    );
 
     const acceptanceFor = (key: 'failurePathRefs' | 'edgeCaseRefs', id: string) =>
       acceptanceRows.filter((row) => refs(row, [key]).includes(id));
@@ -2102,7 +2579,12 @@ describe('requirements contract checkpoint automation', () => {
     });
     const edgeGaps = edgeRows.flatMap((row) => {
       const failureRefs = refs(row, ['linkedFailurePathIds', 'failurePathRefs']);
-      const negRefs = Array.from(new Set([...refs(row, ['linkedNegIds', 'negRefs']), ...failureRefs.flatMap((id) => failNegRefs.get(id) ?? [])]));
+      const negRefs = Array.from(
+        new Set([
+          ...refs(row, ['linkedNegIds', 'negRefs']),
+          ...failureRefs.flatMap((id) => failNegRefs.get(id) ?? []),
+        ])
+      );
       const evidenceRefs = refs(row, ['linkedEvidenceIds', 'evidenceRefs']);
       return [
         ...(failureRefs.length + negRefs.length > 0 ? [] : [`${row.id}:failure-or-neg`]),
@@ -2117,6 +2599,10 @@ describe('requirements contract checkpoint automation', () => {
     expect(edgeRows.length).toBeGreaterThan(0);
     expect(failGaps).toEqual([]);
     expect(edgeGaps).toEqual([]);
-    expect(acceptanceRows.filter((row) => row.id !== 'ACC-001' && refs(row, ['failurePathRefs', 'edgeCaseRefs']).length > 0).length).toBeGreaterThan(0);
+    expect(
+      acceptanceRows.filter(
+        (row) => row.id !== 'ACC-001' && refs(row, ['failurePathRefs', 'edgeCaseRefs']).length > 0
+      ).length
+    ).toBeGreaterThan(0);
   });
 });

@@ -35,9 +35,9 @@ export interface GenerateEvalAnswerOptions {
  */
 export class EvalAgentError extends Error {
   /**
- * Constructor for EvalAgentError
- * @param {string} message - Error message
- */
+   * Constructor for EvalAgentError
+   * @param {string} message - Error message
+   */
   constructor(message: string) {
     super(message);
     this.name = 'EvalAgentError';
@@ -60,12 +60,15 @@ export async function generateEvalAnswer(
     throw new EvalAgentError('SCORING_LLM_API_KEY 未设置，无法调用 Agent 作答');
   }
 
-  const baseUrl = (options?.baseUrl ?? process.env.SCORING_LLM_BASE_URL ?? 'https://api.openai.com/v1').replace(
-    /\/$/,
-    ''
-  );
+  const baseUrl = (
+    options?.baseUrl ??
+    process.env.SCORING_LLM_BASE_URL ??
+    'https://api.openai.com/v1'
+  ).replace(/\/$/, '');
   const model = options?.model ?? process.env.SCORING_LLM_MODEL ?? 'gpt-4o-mini';
-  const timeoutMs = options?.timeoutMs ?? (parseInt(String(process.env.SCORING_LLM_TIMEOUT_MS ?? 60000), 10) || 60000);
+  const timeoutMs =
+    options?.timeoutMs ??
+    (parseInt(String(process.env.SCORING_LLM_TIMEOUT_MS ?? 60000), 10) || 60000);
 
   const url = `${baseUrl}/chat/completions`;
   const body = {

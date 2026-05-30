@@ -3,11 +3,20 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { resolveExecutionDisciplineProfile } from '../../scripts/execution-discipline-profiles';
-import type { CompiledPromptRef, ExecutionPacket } from '../../scripts/orchestration-dispatch-contract';
+import type {
+  CompiledPromptRef,
+  ExecutionPacket,
+} from '../../scripts/orchestration-dispatch-contract';
 import { packetArtifactPath } from '../../scripts/orchestration-dispatch-contract';
-import { createDefaultOrchestrationState, writeOrchestrationStateAtPath } from '../../scripts/orchestration-state';
+import {
+  createDefaultOrchestrationState,
+  writeOrchestrationStateAtPath,
+} from '../../scripts/orchestration-state';
 import { defaultRuntimeContextFile, writeRuntimeContext } from '../../scripts/runtime-context';
-import { defaultRuntimeContextRegistry, writeRuntimeContextRegistry } from '../../scripts/runtime-context-registry';
+import {
+  defaultRuntimeContextRegistry,
+  writeRuntimeContextRegistry,
+} from '../../scripts/runtime-context-registry';
 
 export const SIX_MODEL_HARDENING_FIXTURE_ID =
   'REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING';
@@ -66,7 +75,9 @@ function stableStringify(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map((item) => stableStringify(item)).join(',')}]`;
   return `{${Object.keys(value as Record<string, unknown>)
     .sort()
-    .map((key) => `${JSON.stringify(key)}:${stableStringify((value as Record<string, unknown>)[key])}`)
+    .map(
+      (key) => `${JSON.stringify(key)}:${stableStringify((value as Record<string, unknown>)[key])}`
+    )
     .join(',')}}`;
 }
 
@@ -117,9 +128,7 @@ function expandSixModelResults(input: {
             ? value.sourceRefs
             : [{ sourceType: 'confirmation_history', id: 'confirmation_recorded' }],
           currentHashes: objectRecord(value.currentHashes),
-          ...(Object.keys(objectRecord(value.currentHashes)).length > 0
-            ? {}
-            : { currentHashes }),
+          ...(Object.keys(objectRecord(value.currentHashes)).length > 0 ? {} : { currentHashes }),
         },
       ];
     })
@@ -134,15 +143,21 @@ export function cleanupRequirementWorkspace(root: string): void {
   fs.rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 }
 
-export function materializeRequirementFixture(input: {
-  fixtureId?: string;
-  root?: string;
-  currentMentalModel?: string;
-  sixModelResults?: Record<string, unknown>;
-  orchestrationNextAction?: string | null;
-  pendingPacket?: { packetId: string; packetKind?: 'execution' | 'resume' | 'recommendation'; status?: string } | null;
-  lastTaskReport?: { packetId: string; status: 'done' | 'partial' | 'blocked' } | null;
-} = {}): MaterializedRequirementFixture {
+export function materializeRequirementFixture(
+  input: {
+    fixtureId?: string;
+    root?: string;
+    currentMentalModel?: string;
+    sixModelResults?: Record<string, unknown>;
+    orchestrationNextAction?: string | null;
+    pendingPacket?: {
+      packetId: string;
+      packetKind?: 'execution' | 'resume' | 'recommendation';
+      status?: string;
+    } | null;
+    lastTaskReport?: { packetId: string; status: 'done' | 'partial' | 'blocked' } | null;
+  } = {}
+): MaterializedRequirementFixture {
   const fixtureId = input.fixtureId ?? SIX_MODEL_HARDENING_FIXTURE_ID;
   const root = input.root ?? createTempRequirementWorkspace(`fixture-${safeSegment(fixtureId)}-`);
   copyProjectConfigForRuntime(root);
@@ -152,7 +167,13 @@ export function materializeRequirementFixture(input: {
   const requirementSetId = String(manifest.requirementSetId);
   const runId = String(manifest.runId);
   const sourceText = fs.readFileSync(path.join(fixtureRoot, String(manifest.sourceFile)), 'utf8');
-  const sourcePath = path.join(root, 'test-inputs', 'requirements', fixtureId, 'source.requirement.md');
+  const sourcePath = path.join(
+    root,
+    'test-inputs',
+    'requirements',
+    fixtureId,
+    'source.requirement.md'
+  );
   fs.mkdirSync(path.dirname(sourcePath), { recursive: true });
   fs.writeFileSync(sourcePath, sourceText, 'utf8');
 
@@ -162,10 +183,24 @@ export function materializeRequirementFixture(input: {
     requirementSetId,
     flow: manifest.flow,
     stage: manifest.stage,
-    traceRows: ['TRACE-010', 'TRACE-011', 'TRACE-012', 'TRACE-013', 'TRACE-014', 'TRACE-015', 'TRACE-016'],
+    traceRows: [
+      'TRACE-010',
+      'TRACE-011',
+      'TRACE-012',
+      'TRACE-013',
+      'TRACE-014',
+      'TRACE-015',
+      'TRACE-016',
+    ],
   };
   const implementationConfirmationHash = sha256Text(stableStringify(semanticConfirmation));
-  const recordRoot = path.join(root, '_bmad-output', 'runtime', 'requirement-records', requirementSetId);
+  const recordRoot = path.join(
+    root,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    requirementSetId
+  );
   const recordPath = path.join(recordRoot, 'requirement-record.json');
   const recoveryRoot = path.join(recordRoot, 'recovery');
   const runtimePolicySnapshotPath = path.join(recoveryRoot, 'runtime-policy-snapshot.json');
@@ -350,12 +385,12 @@ export function writeFakeReqTraceSkill(root: string): string {
       "const fs = require('node:fs');",
       "const path = require('node:path');",
       "const crypto = require('node:crypto');",
-      "function arg(name) { const i = process.argv.indexOf(name); return i === -1 ? null : process.argv[i + 1]; }",
+      'function arg(name) { const i = process.argv.indexOf(name); return i === -1 ? null : process.argv[i + 1]; }',
       "function shaFile(file) { return 'sha256:' + crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex'); }",
       "const outDir = arg('--out-dir');",
       "const recordPath = arg('--requirement-record');",
       "const profilePath = arg('--execution-discipline-profile-ref');",
-      "fs.mkdirSync(outDir, { recursive: true });",
+      'fs.mkdirSync(outDir, { recursive: true });',
       "const record = JSON.parse(fs.readFileSync(recordPath, 'utf8'));",
       "const profile = profilePath ? JSON.parse(fs.readFileSync(profilePath, 'utf8')) : null;",
       "const modelPacket = { schemaVersion: 'model-packet-fixture/v1', artifactRole: 'execution_authority', sourceDocumentHash: record.sourceDocumentHash, implementationConfirmationHash: record.implementationConfirmationHash, executionDisciplineProfile: profile, traceOrder: ['TRACE-010','TRACE-011','TRACE-012','TRACE-013','TRACE-014','TRACE-015','TRACE-016'] };",

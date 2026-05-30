@@ -14,12 +14,7 @@ import {
 
 export type AuditPromptLocale = 'zh' | 'en';
 
-const PROJECT_RUNTIME_CONTEXT = path.join(
-  '_bmad-output',
-  'runtime',
-  'context',
-  'project.json'
-);
+const PROJECT_RUNTIME_CONTEXT = path.join('_bmad-output', 'runtime', 'context', 'project.json');
 
 /**
  * Maps `languagePolicy.resolvedMode` to which sidecar to prefer.
@@ -85,7 +80,9 @@ export function resolveAuditPromptPath(
   };
 }
 
-function mapAuditPromptVariant(variant: LocalizedMarkdownVariant): ResolveAuditPromptResult['variant'] {
+function mapAuditPromptVariant(
+  variant: LocalizedMarkdownVariant
+): ResolveAuditPromptResult['variant'] {
   switch (variant) {
     case 'en':
       return 'en';

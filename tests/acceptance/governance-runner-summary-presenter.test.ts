@@ -5,37 +5,35 @@ const require = createRequire(import.meta.url);
 
 describe('governance runner summary presenter', () => {
   it('separates structured metadata lines from raw event lines and exposes a combined CLI presentation', () => {
-    const {
-      buildGovernanceRunnerCliPresentation,
-      printGovernanceRunnerCliPresentation,
-    } = require('../../_bmad/runtime/hooks/governance-runner-summary-presenter.cjs') as {
-      buildGovernanceRunnerCliPresentation: (input: {
-        executionPlanDecision?: Record<string, unknown>;
-        shouldContinue?: boolean | null;
-        stopReason?: string | null;
-        loopStateId?: string | null;
-        currentAttemptNumber?: number | null;
-        nextAttemptNumber?: number | null;
-        artifactPath?: string | null;
-        packetPaths?: Record<string, string>;
-        executorRouting?: {
-          routingMode?: string;
-          executorRoute?: string;
-          prioritizedSignals?: string[];
-        } | null;
-        runnerSummaryLines?: string[];
-      }) => {
-        structuredMetadataLines: string[];
-        rawEventLines: string[];
-        combinedLines: string[];
+    const { buildGovernanceRunnerCliPresentation, printGovernanceRunnerCliPresentation } =
+      require('../../_bmad/runtime/hooks/governance-runner-summary-presenter.cjs') as {
+        buildGovernanceRunnerCliPresentation: (input: {
+          executionPlanDecision?: Record<string, unknown>;
+          shouldContinue?: boolean | null;
+          stopReason?: string | null;
+          loopStateId?: string | null;
+          currentAttemptNumber?: number | null;
+          nextAttemptNumber?: number | null;
+          artifactPath?: string | null;
+          packetPaths?: Record<string, string>;
+          executorRouting?: {
+            routingMode?: string;
+            executorRoute?: string;
+            prioritizedSignals?: string[];
+          } | null;
+          runnerSummaryLines?: string[];
+        }) => {
+          structuredMetadataLines: string[];
+          rawEventLines: string[];
+          combinedLines: string[];
+        };
+        printGovernanceRunnerCliPresentation: (
+          presentation: {
+            combinedLines?: string[];
+          },
+          log?: (line: string) => void
+        ) => void;
       };
-      printGovernanceRunnerCliPresentation: (
-        presentation: {
-          combinedLines?: string[];
-        },
-        log?: (line: string) => void
-      ) => void;
-    };
 
     const presentation = buildGovernanceRunnerCliPresentation({
       executionPlanDecision: {
@@ -106,9 +104,7 @@ describe('governance runner summary presenter', () => {
           stageHints: [
             { value: 'architecture', score: 10004, provenanceSkillIds: ['speckit-workflow'] },
           ],
-          actionHints: [
-            { value: 'patch', score: 10004, provenanceSkillIds: ['speckit-workflow'] },
-          ],
+          actionHints: [{ value: 'patch', score: 10004, provenanceSkillIds: ['speckit-workflow'] }],
           interactionHints: [
             {
               value: 'implement-first',

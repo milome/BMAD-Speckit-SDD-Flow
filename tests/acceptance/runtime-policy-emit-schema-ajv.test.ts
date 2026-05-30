@@ -23,8 +23,9 @@ describe('runtime-policy-emit.schema.json (AJV)', () => {
     const ok = validate(obj);
     expect(validate.errors).toBeFalsy();
     expect(ok).toBe(true);
-    expect((obj as { reviewerContract?: { reviewerIdentity?: string } }).reviewerContract)
-      .toMatchObject({ reviewerIdentity: 'bmad_code_reviewer' });
+    expect(
+      (obj as { reviewerContract?: { reviewerIdentity?: string } }).reviewerContract
+    ).toMatchObject({ reviewerIdentity: 'bmad_code_reviewer' });
   });
 
   it('validates success policy JSON when identity carries story/run/artifact fields', () => {
@@ -63,7 +64,10 @@ describe('runtime-policy-emit.schema.json (AJV)', () => {
     expect(
       (
         obj as {
-          reviewerContract?: { registryVersion?: string; activeAuditConsumer?: { scoreStage?: string } | null };
+          reviewerContract?: {
+            registryVersion?: string;
+            activeAuditConsumer?: { scoreStage?: string } | null;
+          };
         }
       ).reviewerContract
     ).toMatchObject({

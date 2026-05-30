@@ -8,11 +8,7 @@ import { buildJourneyContractRemediationHints } from '../analytics/journey-contr
 import { loadCoachConfig } from './config';
 import { loadRunRecords } from './loader';
 import { loadForbiddenWords, validateForbiddenWords } from './forbidden';
-import type {
-  CoachDiagnoseOptions,
-  CoachDiagnoseResult,
-  CoachDiagnosisReport,
-} from './types';
+import type { CoachDiagnoseOptions, CoachDiagnoseResult, CoachDiagnosisReport } from './types';
 
 interface AiCoachPersona {
   role: string;
@@ -218,7 +214,9 @@ function loadAiCoachPersona(options: CoachDiagnoseOptions): AiCoachPersona {
   if (manifestRow != null) {
     const manifestPersonaPath = manifestRow.path;
     if (manifestPersonaPath != null && manifestPersonaPath.trim().length > 0) {
-      const fromManifestPath = loadPersonaFromMarkdownFile(resolveAbsolutePath(manifestPersonaPath));
+      const fromManifestPath = loadPersonaFromMarkdownFile(
+        resolveAbsolutePath(manifestPersonaPath)
+      );
       if (fromManifestPath != null) {
         return fromManifestPath;
       }
@@ -338,7 +336,7 @@ export async function coachDiagnose(
   }
 
   const phaseIterationCounts: Record<string, number> = {};
-  const byStage = new Map<string, { record: typeof scored[0]['record']; timestamp: number }[]>();
+  const byStage = new Map<string, { record: (typeof scored)[0]['record']; timestamp: number }[]>();
   for (const item of scored) {
     const ts = new Date(item.record.timestamp).getTime();
     const arr = byStage.get(item.record.stage) ?? [];
@@ -379,7 +377,12 @@ export async function coachDiagnose(
   // 公式来源：scoring/docs/VETO_AND_ITERATION_RULES.md §3.4.2（AI 代码教练一票否决权）
   const iterationPassed = !epicVeto.triggered && !hasStageVeto && !hasFatalPhaseZero;
   const weakAreas = buildWeakAreas(phaseScores);
-  let recommendations = buildRecommendations(hasStageVeto, epicVeto.triggered, fallbackMode, persona);
+  let recommendations = buildRecommendations(
+    hasStageVeto,
+    epicVeto.triggered,
+    fallbackMode,
+    persona
+  );
   const hasHighIteration = Object.values(phaseIterationCounts).some((c) => c > 0);
   if (hasHighIteration) {
     recommendations = [
@@ -433,9 +436,7 @@ export async function coachDiagnose(
   const validationText = `${report.summary}\n${report.recommendations.join('\n')}`;
   const forbiddenValidation = validateForbiddenWords(validationText, forbiddenWords);
   if (!forbiddenValidation.passed) {
-    throw new Error(
-      `forbidden_dominant_terms: ${forbiddenValidation.violations.join(',')}`
-    );
+    throw new Error(`forbidden_dominant_terms: ${forbiddenValidation.violations.join(',')}`);
   }
   if (forbiddenValidation.warnings.length > 0) {
     report.recommendations.push(

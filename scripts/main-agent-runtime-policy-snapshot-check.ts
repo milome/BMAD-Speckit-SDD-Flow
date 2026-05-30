@@ -59,12 +59,17 @@ function strings(value: unknown): string[] {
 
 function objects(value: unknown): JsonObject[] {
   return Array.isArray(value)
-    ? value.filter((item): item is JsonObject => Boolean(item) && typeof item === 'object' && !Array.isArray(item))
+    ? value.filter(
+        (item): item is JsonObject =>
+          Boolean(item) && typeof item === 'object' && !Array.isArray(item)
+      )
     : [];
 }
 
 function asObject(value: unknown): JsonObject | undefined {
-  return value && typeof value === 'object' && !Array.isArray(value) ? (value as JsonObject) : undefined;
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as JsonObject)
+    : undefined;
 }
 
 function normalizePathForRecord(value: string): string {
@@ -117,10 +122,17 @@ function architectureHash(record: JsonObject): string {
 }
 
 function artifactMatches(ref: JsonObject, artifactPath: string, hash: string): boolean {
-  return normalizePathForRecord(text(ref.path)) === normalizePathForRecord(artifactPath) && firstHash(ref) === hash;
+  return (
+    normalizePathForRecord(text(ref.path)) === normalizePathForRecord(artifactPath) &&
+    firstHash(ref) === hash
+  );
 }
 
-function findIndexedArtifact(record: JsonObject, artifactPath: string, hash: string): JsonObject | undefined {
+function findIndexedArtifact(
+  record: JsonObject,
+  artifactPath: string,
+  hash: string
+): JsonObject | undefined {
   return objects(record.artifactIndex).find((ref) => artifactMatches(ref, artifactPath, hash));
 }
 
@@ -145,26 +157,37 @@ function validateArtifactRef(input: {
   if (!artifactPath) issues.push('runtimePolicySnapshotRef_path_missing');
   if (ref) {
     if (text(ref.artifactType) !== 'runtime_policy_snapshot') {
-      issues.push(`runtimePolicySnapshotRef_artifactType_invalid:${text(ref.artifactType) || '<missing>'}`);
+      issues.push(
+        `runtimePolicySnapshotRef_artifactType_invalid:${text(ref.artifactType) || '<missing>'}`
+      );
     }
     if (!NON_CONTROL_ROLES.has(text(ref.sourceOfTruthRole))) {
-      issues.push(`runtimePolicySnapshotRef_sourceOfTruthRole_must_not_be_control:${text(ref.sourceOfTruthRole) || '<missing>'}`);
+      issues.push(
+        `runtimePolicySnapshotRef_sourceOfTruthRole_must_not_be_control:${text(ref.sourceOfTruthRole) || '<missing>'}`
+      );
     }
     if (!artifactHash) issues.push('runtimePolicySnapshotRef_hash_missing');
     if (!text(ref.producer)) issues.push('runtimePolicySnapshotRef_producer_missing');
     if (!text(ref.purpose)) issues.push('runtimePolicySnapshotRef_purpose_missing');
-    if (strings(ref.relatedRequirementIds).length === 0) issues.push('runtimePolicySnapshotRef_relatedRequirementIds_missing');
+    if (strings(ref.relatedRequirementIds).length === 0)
+      issues.push('runtimePolicySnapshotRef_relatedRequirementIds_missing');
     if (!text(ref.status)) issues.push('runtimePolicySnapshotRef_status_missing');
     if (!text(ref.inputVersion)) issues.push('runtimePolicySnapshotRef_inputVersion_missing');
     if (!text(ref.outputVersion)) issues.push('runtimePolicySnapshotRef_outputVersion_missing');
   }
-  if (artifactHash && !SHA256_RE.test(artifactHash)) issues.push('runtimePolicySnapshotRef_hash_invalid');
+  if (artifactHash && !SHA256_RE.test(artifactHash))
+    issues.push('runtimePolicySnapshotRef_hash_invalid');
   if (!absolutePath || !fs.existsSync(absolutePath)) {
     issues.push(`runtimePolicySnapshot_missing:${artifactPath || '<missing>'}`);
   } else if (artifactHash && sha256File(absolutePath) !== artifactHash) {
     issues.push(`runtimePolicySnapshot_hash_mismatch:${artifactPath}`);
   }
-  if (ref && artifactPath && artifactHash && !findIndexedArtifact(input.record, artifactPath, artifactHash)) {
+  if (
+    ref &&
+    artifactPath &&
+    artifactHash &&
+    !findIndexedArtifact(input.record, artifactPath, artifactHash)
+  ) {
     issues.push(`runtimePolicySnapshot_not_indexed:${artifactPath}`);
   }
   return { issues, artifactPath, artifactHash, absolutePath };
@@ -179,11 +202,13 @@ function validateSnapshot(input: {
 }): string[] {
   const { snapshot, record } = input;
   const issues: string[] = [];
-  if (text(snapshot.kind) !== 'runtime-policy-snapshot') issues.push('runtimePolicySnapshot_kind_invalid');
+  if (text(snapshot.kind) !== 'runtime-policy-snapshot')
+    issues.push('runtimePolicySnapshot_kind_invalid');
   if (text(snapshot.schemaVersion) !== 'runtime-policy-snapshot/v1') {
     issues.push('runtimePolicySnapshot_schemaVersion_invalid');
   }
-  if (text(snapshot.recordId) !== text(record.recordId)) issues.push('runtimePolicySnapshot_recordId_mismatch');
+  if (text(snapshot.recordId) !== text(record.recordId))
+    issues.push('runtimePolicySnapshot_recordId_mismatch');
   if (text(snapshot.requirementSetId) !== text(record.requirementSetId)) {
     issues.push('runtimePolicySnapshot_requirementSetId_mismatch');
   }
@@ -199,31 +224,39 @@ function validateSnapshot(input: {
     const actual = text(snapshot[field]);
     if (!expected) issues.push(`runtimePolicySnapshot_${field}_expected_missing`);
     if (!actual) issues.push(`runtimePolicySnapshot_${field}_missing`);
-    if (expected && actual && expected !== actual) issues.push(`runtimePolicySnapshot_${field}_mismatch`);
+    if (expected && actual && expected !== actual)
+      issues.push(`runtimePolicySnapshot_${field}_mismatch`);
   }
 
   const policyHash = text(snapshot.policyHash);
-  if (!SHA256_RE.test(policyHash)) issues.push('runtimePolicySnapshot_policyHash_invalid_or_missing');
+  if (!SHA256_RE.test(policyHash))
+    issues.push('runtimePolicySnapshot_policyHash_invalid_or_missing');
   const policy = asObject(snapshot.policy);
   if (policy && policyHash && stableHash(policy) !== policyHash) {
     issues.push('runtimePolicySnapshot_policyHash_mismatch');
   }
   if (!LOCALES.has(text(snapshot.locale))) {
-    issues.push(`runtimePolicySnapshot_locale_invalid_or_missing:${text(snapshot.locale) || '<missing>'}`);
+    issues.push(
+      `runtimePolicySnapshot_locale_invalid_or_missing:${text(snapshot.locale) || '<missing>'}`
+    );
   }
   if (!text(snapshot.host)) issues.push('runtimePolicySnapshot_host_missing');
   if (!text(snapshot.stage)) issues.push('runtimePolicySnapshot_stage_missing');
   if (!STRICTNESS.has(text(snapshot.strictness))) {
-    issues.push(`runtimePolicySnapshot_strictness_invalid_or_missing:${text(snapshot.strictness) || '<missing>'}`);
+    issues.push(
+      `runtimePolicySnapshot_strictness_invalid_or_missing:${text(snapshot.strictness) || '<missing>'}`
+    );
   }
-  if (!Array.isArray(snapshot.mandatoryGates)) issues.push('runtimePolicySnapshot_mandatoryGates_missing');
+  if (!Array.isArray(snapshot.mandatoryGates))
+    issues.push('runtimePolicySnapshot_mandatoryGates_missing');
 
   const isolation = asObject(snapshot.localeIsolation);
   if (!isolation) {
     issues.push('runtimePolicySnapshot_localeIsolation_missing');
   } else {
     for (const flag of LOCALE_ISOLATION_FLAGS) {
-      if (isolation[flag] !== false) issues.push(`runtimePolicySnapshot_localeIsolation_flag_must_be_false:${flag}`);
+      if (isolation[flag] !== false)
+        issues.push(`runtimePolicySnapshot_localeIsolation_flag_must_be_false:${flag}`);
     }
   }
   return issues;
@@ -240,7 +273,10 @@ function buildReport(args: ParsedArgs): JsonObject {
     recordPath,
     snapshotPath: args.snapshotPath,
   });
-  const snapshot = artifact.absolutePath && fs.existsSync(artifact.absolutePath) ? readJson(artifact.absolutePath) : {};
+  const snapshot =
+    artifact.absolutePath && fs.existsSync(artifact.absolutePath)
+      ? readJson(artifact.absolutePath)
+      : {};
   const snapshotIssues = validateSnapshot({
     snapshot,
     record,
@@ -279,12 +315,18 @@ function buildReport(args: ParsedArgs): JsonObject {
 export function mainRuntimePolicySnapshotCheck(argv: string[]): number {
   const args = parseArgs(argv);
   if (args.help) {
-    console.log('Usage: main-agent-runtime-policy-snapshot-check --requirement-record <json> [--report-path <json>] [--json]');
+    console.log(
+      'Usage: main-agent-runtime-policy-snapshot-check --requirement-record <json> [--report-path <json>] [--json]'
+    );
     return 0;
   }
   const report = buildReport(args);
   const reportPath = path.resolve(
-    args.reportPath ?? path.join(path.dirname(path.resolve(args.requirementRecord!)), 'runtime-policy-snapshot-check.json')
+    args.reportPath ??
+      path.join(
+        path.dirname(path.resolve(args.requirementRecord!)),
+        'runtime-policy-snapshot-check.json'
+      )
   );
   fs.mkdirSync(path.dirname(reportPath), { recursive: true });
   fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
@@ -294,7 +336,11 @@ export function mainRuntimePolicySnapshotCheck(argv: string[]): number {
     decision: report.decision,
     blockingReasons: report.blockingReasons,
   };
-  process.stdout.write(args.json ? `${JSON.stringify(output, null, 2)}\n` : `runtime_policy_snapshot=${report.decision}\n`);
+  process.stdout.write(
+    args.json
+      ? `${JSON.stringify(output, null, 2)}\n`
+      : `runtime_policy_snapshot=${report.decision}\n`
+  );
   return report.decision === 'pass' ? 0 : 1;
 }
 
@@ -302,7 +348,13 @@ if (require.main === module) {
   try {
     process.exitCode = mainRuntimePolicySnapshotCheck(process.argv.slice(2));
   } catch (error) {
-    console.error(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : String(error) }, null, 2));
+    console.error(
+      JSON.stringify(
+        { ok: false, error: error instanceof Error ? error.message : String(error) },
+        null,
+        2
+      )
+    );
     process.exitCode = 2;
   }
 }

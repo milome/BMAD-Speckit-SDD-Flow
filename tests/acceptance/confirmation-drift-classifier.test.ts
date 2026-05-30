@@ -5,8 +5,7 @@ const {
 } = require('../../_bmad/skills/requirements-contract-authoring/scripts/confirmation_drift_classifier.js');
 
 const SOURCE_HASH = 'sha256:1111111111111111111111111111111111111111111111111111111111111111';
-const CONFIRMATION_HASH =
-  'sha256:2222222222222222222222222222222222222222222222222222222222222222';
+const CONFIRMATION_HASH = 'sha256:2222222222222222222222222222222222222222222222222222222222222222';
 const OLD_PAGE_HASH = 'sha256:3333333333333333333333333333333333333333333333333333333333333333';
 const NEW_PAGE_HASH = 'sha256:4444444444444444444444444444444444444444444444444444444444444444';
 
@@ -43,26 +42,26 @@ function confirmation(overrides: Record<string, unknown> = {}): Record<string, u
   };
 }
 
-function classify(input: {
-  confirmation?: Record<string, unknown>;
-  requirementRecord?: Record<string, unknown>;
-  renderReport?: Record<string, unknown>;
-  currentHashes?: Record<string, unknown>;
-} = {}) {
+function classify(
+  input: {
+    confirmation?: Record<string, unknown>;
+    requirementRecord?: Record<string, unknown>;
+    renderReport?: Record<string, unknown>;
+    currentHashes?: Record<string, unknown>;
+  } = {}
+) {
   return classifyConfirmationDrift({
     confirmation: input.confirmation ?? confirmation(),
     requirementRecord: input.requirementRecord ?? record(),
-    renderReport:
-      input.renderReport ?? {
-        confirmationPageHash: OLD_PAGE_HASH,
-        reportPath: 'confirmation-render-report.json',
-        confirmInstruction: 'confirm',
-      },
-    currentHashes:
-      input.currentHashes ?? {
-        sourceDocumentHash: SOURCE_HASH,
-        implementationConfirmationHash: CONFIRMATION_HASH,
-      },
+    renderReport: input.renderReport ?? {
+      confirmationPageHash: OLD_PAGE_HASH,
+      reportPath: 'confirmation-render-report.json',
+      confirmInstruction: 'confirm',
+    },
+    currentHashes: input.currentHashes ?? {
+      sourceDocumentHash: SOURCE_HASH,
+      implementationConfirmationHash: CONFIRMATION_HASH,
+    },
   });
 }
 

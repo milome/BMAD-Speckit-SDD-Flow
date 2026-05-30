@@ -6,7 +6,8 @@ import { mainImplementationReadinessGate } from '../../scripts/main-agent-implem
 import { resolveArchitectureConfirmationHashRecipe } from '../../scripts/architecture-confirmation-hash-recipe';
 
 const SOURCE_HASH = 'sha256:1111111111111111111111111111111111111111111111111111111111111111';
-const IMPLEMENTATION_HASH = 'sha256:2222222222222222222222222222222222222222222222222222222222222222';
+const IMPLEMENTATION_HASH =
+  'sha256:2222222222222222222222222222222222222222222222222222222222222222';
 const PAGE_HASH = 'sha256:3333333333333333333333333333333333333333333333333333333333333333';
 const ARCH_HASH = 'sha256:4444444444444444444444444444444444444444444444444444444444444444';
 
@@ -38,8 +39,10 @@ function writeRecord(root: string): string {
             implementationConfirmationHash: IMPLEMENTATION_HASH,
             confirmationPageHash: PAGE_HASH,
             confirmationText: 'confirmed',
-            renderReportPath: '_bmad-output/runtime/requirement-records/REQ-READINESS/confirmation/report.json',
-            htmlPath: '_bmad-output/runtime/requirement-records/REQ-READINESS/confirmation/confirmation.html',
+            renderReportPath:
+              '_bmad-output/runtime/requirement-records/REQ-READINESS/confirmation/report.json',
+            htmlPath:
+              '_bmad-output/runtime/requirement-records/REQ-READINESS/confirmation/confirmation.html',
           },
         ],
         architectureConfirmationState: {

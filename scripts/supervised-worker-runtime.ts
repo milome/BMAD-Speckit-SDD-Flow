@@ -46,10 +46,15 @@ export function appendTaskProgress(projectRoot: string, progress: TaskProgress):
   return filePath;
 }
 
-export function readTaskProgress(projectRoot: string, recordId: string, attemptId: string): TaskProgress[] {
+export function readTaskProgress(
+  projectRoot: string,
+  recordId: string,
+  attemptId: string
+): TaskProgress[] {
   const filePath = progressPath(projectRoot, recordId, attemptId);
   if (!fs.existsSync(filePath)) return [];
-  return fs.readFileSync(filePath, 'utf8')
+  return fs
+    .readFileSync(filePath, 'utf8')
     .split(/\r?\n/u)
     .filter(Boolean)
     .map((line) => JSON.parse(line) as TaskProgress);
@@ -75,7 +80,9 @@ export function evaluateSupervisedWorker(input: {
   const now = Date.parse(input.nowIso);
   const started = Date.parse(input.startedAtIso);
   const lastHeartbeat = latest ? Date.parse(latest.heartbeatAt) : NaN;
-  const lastProgress = [...progress].reverse().find((item) => item.progressSeq > (input.lastProgressSeq ?? -1));
+  const lastProgress = [...progress]
+    .reverse()
+    .find((item) => item.progressSeq > (input.lastProgressSeq ?? -1));
   let decision: SupervisorDecision['decision'] = 'running';
   let reasonCode = 'heartbeat_within_timeout';
   let terminatedProcess = false;

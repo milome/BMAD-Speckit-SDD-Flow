@@ -41,12 +41,7 @@ describe('party-mode host-native capability boundary', () => {
 
   it('keeps the runtime gap note honest about bridge vs native support', () => {
     const governanceGuide = fs.readFileSync(
-      path.join(
-        ROOT,
-        'docs',
-        'how-to',
-        'runtime-governance-auto-inject-cursor-claude.md'
-      ),
+      path.join(ROOT, 'docs', 'how-to', 'runtime-governance-auto-inject-cursor-claude.md'),
       'utf8'
     );
 

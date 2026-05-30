@@ -3,11 +3,19 @@ import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const ROOT = process.cwd();
-const TEMPLATE = path.join(ROOT, '_bmad', 'shared', 'goal-contract', 'goal-execution-contract-template.md');
+const TEMPLATE = path.join(
+  ROOT,
+  '_bmad',
+  'shared',
+  'goal-contract',
+  'goal-execution-contract-template.md'
+);
 const PROFILE = path.join(ROOT, '_bmad', 'shared', 'goal-contract', 'goal-contract-profile.json');
 
 function loadRenderer() {
-  return require(path.join(ROOT, '_bmad', 'shared', 'goal-contract', 'scripts', 'render-goal-contract.js')) as {
+  return require(
+    path.join(ROOT, '_bmad', 'shared', 'goal-contract', 'scripts', 'render-goal-contract.js')
+  ) as {
     renderGoalContract: (input: {
       templateText: string;
       profile: Record<string, any>;
@@ -46,13 +54,17 @@ function slotData(overrides: Record<string, string> = {}) {
       '**Human-facing projection:** `goal_execution.md is not execution authority`.',
       '**Completion boundary:** `/goal completion is not closeout proof`.',
     ].join('\n\n'),
-    rootCause: '- Current behavior: local hardcoded rendering.\n- Required behavior: shared slot renderer.',
+    rootCause:
+      '- Current behavior: local hardcoded rendering.\n- Required behavior: shared slot renderer.',
     domainAddenda: '- Renderer may replace slot contents only.',
     implementationTasks: '### G00 Baseline\n\n**Purpose:** Verify baseline.',
-    strictAcceptanceChecklist: '- [ ] `AC-01` Renderer preserves static prose.\n- [ ] `AC-02` Invariants render.\n- [ ] `AC-03` Commands exist.',
-    acceptanceTraceabilityMatrix: '| AC ID | Requirement | Owning Task | Evidence Command |\n| --- | --- | --- | --- |\n| AC-01 | Static prose preserved. | G00 | `node test` |',
+    strictAcceptanceChecklist:
+      '- [ ] `AC-01` Renderer preserves static prose.\n- [ ] `AC-02` Invariants render.\n- [ ] `AC-03` Commands exist.',
+    acceptanceTraceabilityMatrix:
+      '| AC ID | Requirement | Owning Task | Evidence Command |\n| --- | --- | --- | --- |\n| AC-01 | Static prose preserved. | G00 | `node test` |',
     requiredTestCommands: '```powershell\nnode test\n```',
-    manualVerificationScenarios: '### Scenario A\n\n- Setup: valid slots.\n- Expected: pass.\n- Forbidden: prose rewrite.',
+    manualVerificationScenarios:
+      '### Scenario A\n\n- Setup: valid slots.\n- Expected: pass.\n- Forbidden: prose rewrite.',
     completionEvidencePacket: '- Files changed.\n- Commands run.',
     stopConditions: '- Stop on semantic gap.\n\nDo not stop merely because tests need fixtures.',
     ...overrides,
@@ -66,9 +78,15 @@ describe('shared goal contract renderer', () => {
     const { renderGoalContract } = loadRenderer();
     const result = renderGoalContract({ templateText, profile, slotData: slotData() });
 
-    expect(result.document).toContain('The Markdown template is the human canonical contract source.');
-    expect(result.document).toContain('Every checkbox must have direct evidence before completion is claimed.');
-    expect(result.document).toContain('model_packet.json is the machine-readable execution authority');
+    expect(result.document).toContain(
+      'The Markdown template is the human canonical contract source.'
+    );
+    expect(result.document).toContain(
+      'Every checkbox must have direct evidence before completion is claimed.'
+    );
+    expect(result.document).toContain(
+      'model_packet.json is the machine-readable execution authority'
+    );
     expect(result.document).toContain('goal_execution.md is not execution authority');
     expect(result.document).toContain('/goal completion is not closeout proof');
     expect(result.audit.requiredSlotsPassed).toBe(true);

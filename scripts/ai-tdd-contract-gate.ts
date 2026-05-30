@@ -278,7 +278,7 @@ let activeProjectRoot = process.cwd();
 
 function findProjectRoot(start: string): string {
   let current = path.resolve(start);
-  while (true) {
+  while (current) {
     if (
       fs.existsSync(path.join(current, 'package.json')) ||
       fs.existsSync(path.join(current, '.git')) ||
@@ -1234,7 +1234,9 @@ function closeoutProof(
   requiredCommandRows: JsonObject[],
   commandTargets: JsonObject
 ): JsonObject {
-  const projection = nested(nested(confirmation.aiTddContractExecutionManifestProjection).closeoutProof);
+  const projection = nested(
+    nested(confirmation.aiTddContractExecutionManifestProjection).closeoutProof
+  );
   const preview = nested(confirmation.closeoutReadinessPreview);
   const projectedCommands = strings(projection.requiredCommands);
   const previewCommands = strings(preview.requiredCommands);
@@ -1262,10 +1264,14 @@ function closeoutProof(
     ...objects(confirmation.acceptanceTests).flatMap((row) => commandRefs(row)),
     ...objects(confirmation.e2eSuites).flatMap((row) => commandRefs(row)),
   ]);
-  const closeoutCandidateCommands = manifestCommandTargets.filter((id) => explicitCommandRefs.has(id));
+  const closeoutCandidateCommands = manifestCommandTargets.filter((id) =>
+    explicitCommandRefs.has(id)
+  );
   const normalizedRequiredCommands = unique([...requiredCommands, ...closeoutCandidateCommands]);
   const unresolvedCommands = normalizedRequiredCommands.filter((id) => !commandIds.has(id));
-  const missingFromProjection = closeoutCandidateCommands.filter((id) => !projectedCommands.includes(id));
+  const missingFromProjection = closeoutCandidateCommands.filter(
+    (id) => !projectedCommands.includes(id)
+  );
   const missing = [
     ...(normalizedRequiredCommands.length > 0 ? [] : ['closeout_proof_required_commands_missing']),
     ...unresolvedCommands.map((id) => `closeout_proof_required_command_missing:${id}`),
@@ -1402,7 +1408,7 @@ function applyReadinessAutoRemediationOverlay(
       objects(confirmation.evidence),
       objects(overlay.evidenceBindings),
       (row, patch) => {
-        let out = mergeUniqueRefs(row, 'requiredCommandRefs', strings(patch.requiredCommandRefs));
+        const out = mergeUniqueRefs(row, 'requiredCommandRefs', strings(patch.requiredCommandRefs));
         return mergeUniqueRefs(out, 'artifactRefs', strings(patch.artifactRefs));
       }
     ),
@@ -1410,7 +1416,7 @@ function applyReadinessAutoRemediationOverlay(
       objects(confirmation.requiredCommands),
       objects(overlay.commandBindings),
       (row, patch) => {
-        let out = mergeUniqueRefs(row, 'traceRows', strings(patch.traceRows));
+        const out = mergeUniqueRefs(row, 'traceRows', strings(patch.traceRows));
         return mergeUniqueRefs(out, 'evidenceRefs', strings(patch.evidenceRefs));
       }
     ),

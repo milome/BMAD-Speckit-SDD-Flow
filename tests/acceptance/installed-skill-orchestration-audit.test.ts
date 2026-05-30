@@ -4,7 +4,10 @@ import {
   type SkillOrchestrationAuditEntry,
 } from '../../scripts/skill-orchestration-audit';
 
-function bySkillId(entries: SkillOrchestrationAuditEntry[], skillId: string): SkillOrchestrationAuditEntry {
+function bySkillId(
+  entries: SkillOrchestrationAuditEntry[],
+  skillId: string
+): SkillOrchestrationAuditEntry {
   const entry = entries.find((candidate) => candidate.skillId === skillId);
   expect(entry, `missing skill audit entry for ${skillId}`).toBeDefined();
   return entry as SkillOrchestrationAuditEntry;
@@ -48,9 +51,11 @@ describe('installed project skill orchestration audit', () => {
     const entry = bySkillId(audit.entries, 'bmad-party-mode');
 
     expect(entry.classification).toBe('checkpoint-batched-main-agent');
-    expect(entry.evidence.checkpointMatches.some((match) => /batch-boundary checkpoint/iu.test(match.text))).toBe(
-      true
-    );
+    expect(
+      entry.evidence.checkpointMatches.some((match) =>
+        /batch-boundary checkpoint/iu.test(match.text)
+      )
+    ).toBe(true);
     expect(
       entry.evidence.checkpointMatches.some((match) => /不得.*交还主 Agent/iu.test(match.text))
     ).toBe(true);
@@ -64,7 +69,9 @@ describe('installed project skill orchestration audit', () => {
       entry.evidence.resumeControlMatches.some((match) => /CLI Calling Summary/iu.test(match.text))
     ).toBe(true);
     expect(
-      entry.evidence.mainAgentTextMatches.some((match) => /\bMain Agent\b|主 Agent/iu.test(match.text))
+      entry.evidence.mainAgentTextMatches.some((match) =>
+        /\bMain Agent\b|主 Agent/iu.test(match.text)
+      )
     ).toBe(true);
   });
 

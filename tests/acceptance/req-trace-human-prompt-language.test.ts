@@ -7,8 +7,20 @@ import yaml from 'js-yaml';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 const ROOT = process.cwd();
-const SCRIPT = path.join(ROOT, '_bmad', 'skills', 'req-trace-matrix-prompt-generator', 'scripts', 'generate_prompt.js');
-const SOURCE = path.join(ROOT, 'docs', 'requirements', '2026-05-25-ai-tdd-manifest-closeout-runner.md');
+const SCRIPT = path.join(
+  ROOT,
+  '_bmad',
+  'skills',
+  'req-trace-matrix-prompt-generator',
+  'scripts',
+  'generate_prompt.js'
+);
+const SOURCE = path.join(
+  ROOT,
+  'docs',
+  'requirements',
+  '2026-05-25-ai-tdd-manifest-closeout-runner.md'
+);
 const RECORD = path.join(
   ROOT,
   '_bmad-output',
@@ -28,7 +40,10 @@ afterEach(() => {
   fs.rmSync(tempDir, { recursive: true, force: true });
 });
 
-function runPrompt(language: string, profile = 'full'): { prompt: string; receipt: Record<string, any> } {
+function runPrompt(
+  language: string,
+  profile = 'full'
+): { prompt: string; receipt: Record<string, any> } {
   const outDir = path.join(tempDir, `${language}-${profile}`.replace(/[^a-z0-9-]/gi, '-'));
   execFileSync(
     process.execPath,
@@ -113,7 +128,10 @@ function extractConfirmationBlock(sourceText: string): string {
 
 function writePromptLanguagePriorityFixture(): { source: string; record: string } {
   const original = fs.readFileSync(SOURCE, 'utf8');
-  const sourceText = original.replace('  confirmationLanguage: zh-CN', '  confirmationLanguage: zh-CN\n  promptLanguage: en-US');
+  const sourceText = original.replace(
+    '  confirmationLanguage: zh-CN',
+    '  confirmationLanguage: zh-CN\n  promptLanguage: en-US'
+  );
   const blockText = extractConfirmationBlock(sourceText);
   const parsed = yaml.load(blockText) as { implementationConfirmation?: Record<string, unknown> };
   const confirmation = parsed.implementationConfirmation;
@@ -133,7 +151,8 @@ function writePromptLanguagePriorityFixture(): { source: string; record: string 
           {
             eventType: 'confirmation_recorded',
             ...hashes,
-            confirmationPageHash: 'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+            confirmationPageHash:
+              'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
           },
         ],
       },

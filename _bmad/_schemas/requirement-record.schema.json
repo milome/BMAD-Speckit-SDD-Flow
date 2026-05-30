@@ -593,7 +593,9 @@
       "required": ["intakeId", "status", "sourceRefs"],
       "properties": {
         "intakeId": { "$ref": "#/$defs/nonEmptyString" },
-        "status": { "$ref": "#/$defs/nonEmptyString" },
+        "status": {
+          "enum": ["blocking_open", "open", "in_progress", "controlled_confirmed", "closed", "cancelled"]
+        },
         "sourceRefs": { "type": "array", "items": { "$ref": "#/$defs/sourceRef" } }
       }
     },

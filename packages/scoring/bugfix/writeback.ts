@@ -32,9 +32,7 @@ function extractCompletedTasks(content: string): string[] {
   const startIdx = content.indexOf(sectionMatch[0]);
   const afterSection = content.slice(startIdx + sectionMatch[0].length);
   const nextSection = afterSection.match(/\n##\s+/);
-  const sectionContent = nextSection
-    ? afterSection.slice(0, nextSection.index)
-    : afterSection;
+  const sectionContent = nextSection ? afterSection.slice(0, nextSection.index) : afterSection;
   const lines = sectionContent.split(/\r?\n/);
   const result: string[] = [];
   for (const line of lines) {

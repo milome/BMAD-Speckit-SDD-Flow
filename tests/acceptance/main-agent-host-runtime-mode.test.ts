@@ -48,15 +48,19 @@ describe('Main Agent host runtime mode contract', () => {
         compiledPromptRef: compiled.compiledPromptRef,
       });
       expect(fs.existsSync(written.path)).toBe(true);
-      expect(written.selection.goalExecutionHash).toBe(compiled.compiledPromptRef.goalExecutionHash);
-      expect(validateNativeGoalReadiness({
-        projectRoot: fixture.root,
-        recordId: fixture.recordId,
-        packetId: 'implement-current',
-        attemptId: 'implement-current',
-        host: 'codex',
-        compiledPromptRef: compiled.compiledPromptRef,
-      })).toBeNull();
+      expect(written.selection.goalExecutionHash).toBe(
+        compiled.compiledPromptRef.goalExecutionHash
+      );
+      expect(
+        validateNativeGoalReadiness({
+          projectRoot: fixture.root,
+          recordId: fixture.recordId,
+          packetId: 'implement-current',
+          attemptId: 'implement-current',
+          host: 'codex',
+          compiledPromptRef: compiled.compiledPromptRef,
+        })
+      ).toBeNull();
     } finally {
       cleanupRequirementWorkspace(fixture.root);
     }
@@ -84,14 +88,16 @@ describe('Main Agent host runtime mode contract', () => {
         expect.arrayContaining(['goalExecutionPath', 'goalExecutionHash'])
       );
 
-      expect(validateNativeGoalInvocationReceipt({
-        projectRoot: fixture.root,
-        recordId: fixture.recordId,
-        attemptId: 'implement-current',
-        packetId: 'implement-current',
-        host: 'codex',
-        goalExecutionHash: compiled.compiledPromptRef.goalExecutionHash!,
-      })?.reasonCode).toBe('native_goal_receipt_missing');
+      expect(
+        validateNativeGoalInvocationReceipt({
+          projectRoot: fixture.root,
+          recordId: fixture.recordId,
+          attemptId: 'implement-current',
+          packetId: 'implement-current',
+          host: 'codex',
+          goalExecutionHash: compiled.compiledPromptRef.goalExecutionHash!,
+        })?.reasonCode
+      ).toBe('native_goal_receipt_missing');
       writeNativeGoalInvocationReceipt({
         projectRoot: fixture.root,
         recordId: fixture.recordId,
@@ -103,14 +109,16 @@ describe('Main Agent host runtime mode contract', () => {
         stderrRef: 'stderr.log',
         exitCode: 0,
       });
-      expect(validateNativeGoalInvocationReceipt({
-        projectRoot: fixture.root,
-        recordId: fixture.recordId,
-        attemptId: 'implement-current',
-        packetId: 'implement-current',
-        host: 'codex',
-        goalExecutionHash: compiled.compiledPromptRef.goalExecutionHash!,
-      })).toBeNull();
+      expect(
+        validateNativeGoalInvocationReceipt({
+          projectRoot: fixture.root,
+          recordId: fixture.recordId,
+          attemptId: 'implement-current',
+          packetId: 'implement-current',
+          host: 'codex',
+          goalExecutionHash: compiled.compiledPromptRef.goalExecutionHash!,
+        })
+      ).toBeNull();
     } finally {
       cleanupRequirementWorkspace(fixture.root);
     }

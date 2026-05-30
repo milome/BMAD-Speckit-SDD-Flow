@@ -190,7 +190,9 @@ function normalizePolicyRows(value: unknown): GovernanceEventTypeRegistryPolicy 
 
 export function governanceEventTypeRegistryHash(registry: unknown): string {
   return sha256Object(
-    normalizeRegistryRows(registry).sort((left, right) => left.eventType.localeCompare(right.eventType))
+    normalizeRegistryRows(registry).sort((left, right) =>
+      left.eventType.localeCompare(right.eventType)
+    )
   );
 }
 
@@ -204,8 +206,8 @@ export function governanceEventTypeRegistryPolicyHash(policy: unknown): string {
     controlWriteModePolicies: [...(normalized.controlWriteModePolicies ?? [])].sort((left, right) =>
       left.allowedControlWriteMode.localeCompare(right.allowedControlWriteMode)
     ),
-    eventSpecificRequirements: [...(normalized.eventSpecificRequirements ?? [])].sort((left, right) =>
-      left.eventType.localeCompare(right.eventType)
+    eventSpecificRequirements: [...(normalized.eventSpecificRequirements ?? [])].sort(
+      (left, right) => left.eventType.localeCompare(right.eventType)
     ),
   });
 }
@@ -246,7 +248,9 @@ function registryPolicyFor(
       continue;
     }
     if (controlWriteModePolicies.has(row.allowedControlWriteMode)) {
-      mismatches.push(`envelope_event_registry_policy_write_mode_duplicate:${row.allowedControlWriteMode}`);
+      mismatches.push(
+        `envelope_event_registry_policy_write_mode_duplicate:${row.allowedControlWriteMode}`
+      );
     }
     for (const field of row.allowedWritesControlFields ?? []) {
       if (!controlFieldVocabulary.has(field)) {
@@ -262,13 +266,18 @@ function registryPolicyFor(
       continue;
     }
     if (eventSpecificRequirements.has(row.eventType)) {
-      mismatches.push(`envelope_event_registry_policy_event_requirement_duplicate:${row.eventType}`);
+      mismatches.push(
+        `envelope_event_registry_policy_event_requirement_duplicate:${row.eventType}`
+      );
     }
     eventSpecificRequirements.set(row.eventType, row);
   }
-  if (!controlFieldVocabulary.size) mismatches.push('envelope_event_registry_policy_control_field_vocabulary_missing');
-  if (!payloadKindContracts.size) mismatches.push('envelope_event_registry_policy_payload_kind_contracts_missing');
-  if (!controlWriteModePolicies.size) mismatches.push('envelope_event_registry_policy_control_write_modes_missing');
+  if (!controlFieldVocabulary.size)
+    mismatches.push('envelope_event_registry_policy_control_field_vocabulary_missing');
+  if (!payloadKindContracts.size)
+    mismatches.push('envelope_event_registry_policy_payload_kind_contracts_missing');
+  if (!controlWriteModePolicies.size)
+    mismatches.push('envelope_event_registry_policy_control_write_modes_missing');
   return {
     controlFieldVocabulary,
     payloadKindContracts,
@@ -292,12 +301,20 @@ function registryMapFor(
   }
   const map = new Map<string, GovernanceEventTypeRegistryEntry>();
   for (const row of rows) {
-    if (map.has(row.eventType)) mismatches.push(`envelope_event_registry_duplicate:${row.eventType}`);
-    if (!row.payloadKind) mismatches.push(`envelope_event_registry_payload_kind_missing:${row.eventType}`);
-    if (!row.payloadContract) mismatches.push(`envelope_event_registry_payload_contract_missing:${row.eventType}`);
+    if (map.has(row.eventType))
+      mismatches.push(`envelope_event_registry_duplicate:${row.eventType}`);
+    if (!row.payloadKind)
+      mismatches.push(`envelope_event_registry_payload_kind_missing:${row.eventType}`);
+    if (!row.payloadContract)
+      mismatches.push(`envelope_event_registry_payload_contract_missing:${row.eventType}`);
     map.set(row.eventType, row);
   }
-  return { rows: map, registryHash: sha256Object(rows.sort((left, right) => left.eventType.localeCompare(right.eventType))) };
+  return {
+    rows: map,
+    registryHash: sha256Object(
+      rows.sort((left, right) => left.eventType.localeCompare(right.eventType))
+    ),
+  };
 }
 
 function validatePolicyConformance(
@@ -309,28 +326,38 @@ function validatePolicyConformance(
   const payloadContract = row.payloadContract;
   const payloadKindPolicy = policy.payloadKindContracts.get(row.payloadKind);
   if (!payloadKindPolicy) {
-    mismatches.push(`envelope_event_registry_policy_payload_kind_unknown:${row.eventType}:${row.payloadKind || '<missing>'}`);
+    mismatches.push(
+      `envelope_event_registry_policy_payload_kind_unknown:${row.eventType}:${row.payloadKind || '<missing>'}`
+    );
     return;
   }
   for (const field of payloadKindPolicy.requiredFields ?? []) {
     if (!payloadContract?.requiredFields?.includes(field)) {
-      mismatches.push(`envelope_event_registry_policy_required_field_missing:${row.eventType}:${field}`);
+      mismatches.push(
+        `envelope_event_registry_policy_required_field_missing:${row.eventType}:${field}`
+      );
     }
   }
   for (const field of payloadKindPolicy.forbiddenFields ?? []) {
     if (!payloadContract?.forbiddenFields?.includes(field)) {
-      mismatches.push(`envelope_event_registry_policy_forbidden_field_missing:${row.eventType}:${field}`);
+      mismatches.push(
+        `envelope_event_registry_policy_forbidden_field_missing:${row.eventType}:${field}`
+      );
     }
   }
   if (
     payloadContract?.allowedControlWriteMode &&
-    !(payloadKindPolicy.allowedControlWriteModes ?? []).includes(payloadContract.allowedControlWriteMode)
+    !(payloadKindPolicy.allowedControlWriteModes ?? []).includes(
+      payloadContract.allowedControlWriteMode
+    )
   ) {
     mismatches.push(
       `envelope_event_registry_policy_write_mode_invalid:${row.eventType}:${payloadContract.allowedControlWriteMode}`
     );
   }
-  const writeModePolicy = policy.controlWriteModePolicies.get(payloadContract?.allowedControlWriteMode ?? '');
+  const writeModePolicy = policy.controlWriteModePolicies.get(
+    payloadContract?.allowedControlWriteMode ?? ''
+  );
   if (!writeModePolicy) {
     mismatches.push(
       `envelope_event_registry_policy_write_mode_unknown:${row.eventType}:${payloadContract?.allowedControlWriteMode || '<missing>'}`
@@ -338,26 +365,36 @@ function validatePolicyConformance(
   } else {
     for (const field of row.writesControlFields ?? []) {
       if (!policy.controlFieldVocabulary.has(field)) {
-        mismatches.push(`envelope_event_registry_policy_control_field_unknown:${row.eventType}:${field}`);
+        mismatches.push(
+          `envelope_event_registry_policy_control_field_unknown:${row.eventType}:${field}`
+        );
       }
       if (!(writeModePolicy.allowedWritesControlFields ?? []).includes(field)) {
-        mismatches.push(`envelope_event_registry_policy_control_field_disallowed:${row.eventType}:${field}`);
+        mismatches.push(
+          `envelope_event_registry_policy_control_field_disallowed:${row.eventType}:${field}`
+        );
       }
     }
   }
   const eventPolicy = policy.eventSpecificRequirements.get(row.eventType);
   if (!eventPolicy) return;
   if (eventPolicy.payloadKind && eventPolicy.payloadKind !== row.payloadKind) {
-    mismatches.push(`envelope_event_registry_policy_payload_kind_mismatch:${row.eventType}:${row.payloadKind}`);
+    mismatches.push(
+      `envelope_event_registry_policy_payload_kind_mismatch:${row.eventType}:${row.payloadKind}`
+    );
   }
   for (const field of eventPolicy.requiredFields ?? []) {
     if (!payloadContract?.requiredFields?.includes(field)) {
-      mismatches.push(`envelope_event_registry_policy_event_required_field_missing:${row.eventType}:${field}`);
+      mismatches.push(
+        `envelope_event_registry_policy_event_required_field_missing:${row.eventType}:${field}`
+      );
     }
   }
   for (const field of eventPolicy.forbiddenFields ?? []) {
     if (!payloadContract?.forbiddenFields?.includes(field)) {
-      mismatches.push(`envelope_event_registry_policy_event_forbidden_field_missing:${row.eventType}:${field}`);
+      mismatches.push(
+        `envelope_event_registry_policy_event_forbidden_field_missing:${row.eventType}:${field}`
+      );
     }
   }
   if (eventPolicy.requiredSourceRefs === true && payloadContract?.requiredSourceRefs !== true) {
@@ -390,7 +427,10 @@ function listFieldValue(envelope: Record<string, unknown>, field: string): unkno
   return Array.isArray(value) ? value : [];
 }
 
-function presentControlFields(envelope: Record<string, unknown>, vocabulary: Set<string>): string[] {
+function presentControlFields(
+  envelope: Record<string, unknown>,
+  vocabulary: Set<string>
+): string[] {
   const fields = new Set<string>();
   for (const key of Object.keys(envelope)) {
     if (vocabulary.has(key)) fields.add(key);
@@ -462,15 +502,27 @@ export function validateGovernanceTransportEnvelope(
 ): GovernanceTransportValidation {
   const mismatches: string[] = [];
   const registryPolicy = registryPolicyFor(options.governanceEventTypeRegistryPolicy, mismatches);
-  const { rows: eventRegistry, registryHash } = registryMapFor(options.governanceEventTypeRegistry, mismatches);
+  const { rows: eventRegistry, registryHash } = registryMapFor(
+    options.governanceEventTypeRegistry,
+    mismatches
+  );
   const requireRegistryBinding = options.requireRegistryBinding !== false;
   if (requireRegistryBinding && !options.governanceEventTypeRegistryPolicy) {
     mismatches.push('envelope_event_registry_policy_missing');
   }
-  if (options.registryPolicyHash && registryPolicy.registryPolicyHash !== options.registryPolicyHash) {
-    mismatches.push(`envelope_event_registry_policy_hash_mismatch:${registryPolicy.registryPolicyHash ?? '<missing>'}`);
+  if (
+    options.registryPolicyHash &&
+    registryPolicy.registryPolicyHash !== options.registryPolicyHash
+  ) {
+    mismatches.push(
+      `envelope_event_registry_policy_hash_mismatch:${registryPolicy.registryPolicyHash ?? '<missing>'}`
+    );
   }
-  if (requireRegistryBinding && !options.registryPolicyHash && !options.governanceEventTypeRegistryPolicy) {
+  if (
+    requireRegistryBinding &&
+    !options.registryPolicyHash &&
+    !options.governanceEventTypeRegistryPolicy
+  ) {
     mismatches.push('envelope_event_registry_policy_hash_missing');
   }
   if (options.expectedRegistryHash && registryHash !== options.expectedRegistryHash) {
@@ -486,12 +538,19 @@ export function validateGovernanceTransportEnvelope(
     options.expectedArchitectureConfirmationHash &&
     options.architectureConfirmationHash !== options.expectedArchitectureConfirmationHash
   ) {
-    mismatches.push(`envelope_architecture_confirmation_hash_mismatch:${options.architectureConfirmationHash || '<missing>'}`);
+    mismatches.push(
+      `envelope_architecture_confirmation_hash_mismatch:${options.architectureConfirmationHash || '<missing>'}`
+    );
   }
-  if (requireRegistryBinding && !options.expectedArchitectureConfirmationHash && !options.architectureConfirmationHash) {
+  if (
+    requireRegistryBinding &&
+    !options.expectedArchitectureConfirmationHash &&
+    !options.architectureConfirmationHash
+  ) {
     mismatches.push('envelope_architecture_confirmation_hash_missing');
   }
-  if (!isObject(input)) return { ok: false, mismatches: ['envelope_object_required'], registryHash };
+  if (!isObject(input))
+    return { ok: false, mismatches: ['envelope_object_required'], registryHash };
   const envelope = input as Record<string, unknown>;
   for (const field of [
     'hostKind',
@@ -519,18 +578,24 @@ export function validateGovernanceTransportEnvelope(
     }
   }
   const expectedKind = eventDefinition?.payloadKind ?? null;
-  if (!eventDefinition) mismatches.push(`envelope_event_type_unsupported:${eventType || '<missing>'}`);
+  if (!eventDefinition)
+    mismatches.push(`envelope_event_type_unsupported:${eventType || '<missing>'}`);
   if (expectedKind && payloadKind !== expectedKind) {
     mismatches.push(`envelope_payload_kind_mismatch:${eventType}:${payloadKind || '<missing>'}`);
   }
   const payloadContract = eventDefinition?.payloadContract;
   for (const field of payloadContract?.requiredFields ?? []) {
-    if (!fieldPresent(envelope, field)) mismatches.push(`envelope_required_field_missing:${eventType}:${field}`);
+    if (!fieldPresent(envelope, field))
+      mismatches.push(`envelope_required_field_missing:${eventType}:${field}`);
   }
   for (const field of payloadContract?.forbiddenFields ?? []) {
-    if (fieldPresent(envelope, field)) mismatches.push(`envelope_forbidden_field_present:${eventType}:${field}`);
+    if (fieldPresent(envelope, field))
+      mismatches.push(`envelope_forbidden_field_present:${eventType}:${field}`);
   }
-  if (payloadContract?.requiredSourceRefs === true && listFieldValue(envelope, 'sourceRefs').length === 0) {
+  if (
+    payloadContract?.requiredSourceRefs === true &&
+    listFieldValue(envelope, 'sourceRefs').length === 0
+  ) {
     mismatches.push(`envelope_source_refs_missing:${eventType}`);
   }
   const decisionValues = eventDefinition?.allowedDecisionValues ?? [];

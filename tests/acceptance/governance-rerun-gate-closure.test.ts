@@ -16,7 +16,12 @@ describe('governance rerun gate closure', () => {
   it('closes remediation only when rerun gate passes', async () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'gov-rerun-gate-closure-'));
     try {
-      const packetPath = path.join(root, '_bmad-output', 'planning-artifacts', 'attempt-1.cursor-packet.md');
+      const packetPath = path.join(
+        root,
+        '_bmad-output',
+        'planning-artifacts',
+        'attempt-1.cursor-packet.md'
+      );
       mkdirSync(path.dirname(packetPath), { recursive: true });
       writeFileSync(packetPath, '# packet\n', 'utf8');
 

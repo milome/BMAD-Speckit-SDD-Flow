@@ -48,16 +48,20 @@ describe('Main Agent supervised worker timeout semantics', () => {
       });
       expect(staleDecision.decision).toBe('stale_recovery');
       expect(staleDecision.reasonCode).toBe('heartbeat_timeout');
-      expect(fs.existsSync(path.join(
-        fixture.root,
-        '_bmad-output',
-        'runtime',
-        'requirement-records',
-        fixture.recordId,
-        'runtime-mode',
-        'implement-current',
-        'runtime-blocker.json'
-      ))).toBe(false);
+      expect(
+        fs.existsSync(
+          path.join(
+            fixture.root,
+            '_bmad-output',
+            'runtime',
+            'requirement-records',
+            fixture.recordId,
+            'runtime-mode',
+            'implement-current',
+            'runtime-blocker.json'
+          )
+        )
+      ).toBe(false);
 
       const blockedDecision = evaluateSupervisedWorker({
         projectRoot: fixture.root,

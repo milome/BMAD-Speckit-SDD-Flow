@@ -8,7 +8,10 @@ export type GateProfileId =
   | 'decision_root_cause_50';
 export type ClosureLevel = 'none' | 'standard' | 'high_confidence';
 export type BatchCommitStatus = 'pending' | 'checkpoint_ready' | 'completed';
-export type BatchRecoveryAction = 'replay_current_batch' | 'replay_checkpoint' | 'advance_next_batch';
+export type BatchRecoveryAction =
+  | 'replay_current_batch'
+  | 'replay_checkpoint'
+  | 'advance_next_batch';
 
 export interface KnownGateProfile {
   minRounds: number;
@@ -342,10 +345,7 @@ export function requestsQuickProbe(inputText: string | undefined): boolean {
 }
 
 export function isPartyModeFacilitatorIntent(inputText: string | undefined): boolean {
-  return includesAny(
-    String(inputText ?? '').toLowerCase(),
-    PARTY_MODE_FACILITATOR_INTENT_MARKERS
-  );
+  return includesAny(String(inputText ?? '').toLowerCase(), PARTY_MODE_FACILITATOR_INTENT_MARKERS);
 }
 
 export function buildPartyModeContractViolationMessage(inputText: string | undefined): string {
@@ -732,9 +732,7 @@ function sanitizeSummaryList(value: string[] | undefined): string[] {
   if (!Array.isArray(value)) {
     return [];
   }
-  return value
-    .map((entry) => String(entry ?? '').trim())
-    .filter((entry) => entry.length > 0);
+  return value.map((entry) => String(entry ?? '').trim()).filter((entry) => entry.length > 0);
 }
 
 function formatElapsedMs(elapsedMs: number): string {
@@ -779,7 +777,8 @@ function resolveBatchFields(
   const batchSize = input.batchSize ?? existingMeta?.batch_size ?? DEFAULT_BATCH_SIZE;
   assertPositiveInteger(batchSize, 'batch_size');
 
-  const targetRoundsTotal = input.targetRoundsTotal ?? existingMeta?.target_rounds_total ?? profile.minRounds;
+  const targetRoundsTotal =
+    input.targetRoundsTotal ?? existingMeta?.target_rounds_total ?? profile.minRounds;
   assertPositiveInteger(targetRoundsTotal, 'target_rounds_total');
   assertTargetRoundsTotalMatchesProfile(targetRoundsTotal, gateProfileId, profile);
 
@@ -1118,7 +1117,9 @@ export function startSession(projectRoot: string, input: StartSessionInput): Ses
   assertGateProfileSelectionAllowed(input.gateProfileId, input.inputText);
   const paths = derivePartyModeSessionPaths(projectRoot, input.sessionKey);
   const now = new Date().toISOString();
-  const existingMeta = fs.existsSync(paths.metaPath) ? readJsonFile<SessionMeta>(paths.metaPath) : null;
+  const existingMeta = fs.existsSync(paths.metaPath)
+    ? readJsonFile<SessionMeta>(paths.metaPath)
+    : null;
   if (existingMeta && existingMeta.gate_profile_id !== input.gateProfileId) {
     throw new Error(
       `Session ${input.sessionKey} already exists with gate_profile_id=${existingMeta.gate_profile_id}; cannot switch to ${input.gateProfileId}`
@@ -1265,7 +1266,9 @@ function writeSessionMeta(projectRoot: string, sessionKey: string, meta: Session
   return meta;
 }
 
-function assertCurrentBatchState(meta: SessionMeta): Required<
+function assertCurrentBatchState(
+  meta: SessionMeta
+): Required<
   Pick<
     SessionMeta,
     | 'batch_size'
@@ -1334,7 +1337,10 @@ function buildCheckpointArtifact(
     deterministic_state: {
       current_round: batchState.current_batch_target_round,
       target_rounds_total: batchState.target_rounds_total,
-      remaining_rounds: Math.max(batchState.target_rounds_total - batchState.current_batch_target_round, 0),
+      remaining_rounds: Math.max(
+        batchState.target_rounds_total - batchState.current_batch_target_round,
+        0
+      ),
       challenger_ratio: result.challenger_ratio,
       tail_window_no_new_gap: result.last_tail_no_new_gap,
       source_log_sha256: `sha256:${result.source_log_sha256}`,
@@ -1406,7 +1412,11 @@ export function writeCheckpointArtifacts(
   const artifact = buildCheckpointArtifact(meta, batchState, result, summary);
   writeJsonFile(checkpointPaths.checkpointJsonPath, artifact);
   ensureParentDir(checkpointPaths.checkpointMarkdownPath);
-  fs.writeFileSync(checkpointPaths.checkpointMarkdownPath, renderCheckpointMarkdown(artifact), 'utf8');
+  fs.writeFileSync(
+    checkpointPaths.checkpointMarkdownPath,
+    renderCheckpointMarkdown(artifact),
+    'utf8'
+  );
   return checkpointPaths;
 }
 
@@ -1583,7 +1593,10 @@ export function markBatchCheckpointReady(projectRoot: string, sessionKey: string
     sessionKey,
     batchState.current_batch_target_round
   );
-  if (!fs.existsSync(checkpointPaths.checkpointJsonPath) || !fs.existsSync(checkpointPaths.checkpointMarkdownPath)) {
+  if (
+    !fs.existsSync(checkpointPaths.checkpointJsonPath) ||
+    !fs.existsSync(checkpointPaths.checkpointMarkdownPath)
+  ) {
     throw new Error(
       `Cannot mark checkpoint_ready without checkpoint artifacts for batch ${batchState.current_batch_index}`
     );
@@ -1633,7 +1646,8 @@ export function recoverBatchProgress(projectRoot: string, sessionKey: string): B
     batchState.current_batch_target_round
   );
   const hasCheckpointArtifacts =
-    fs.existsSync(checkpointPaths.checkpointJsonPath) && fs.existsSync(checkpointPaths.checkpointMarkdownPath);
+    fs.existsSync(checkpointPaths.checkpointJsonPath) &&
+    fs.existsSync(checkpointPaths.checkpointMarkdownPath);
   const hasReceipt = fs.existsSync(checkpointPaths.receiptPath);
 
   let action: BatchRecoveryAction;
@@ -1649,8 +1663,7 @@ export function recoverBatchProgress(projectRoot: string, sessionKey: string): B
     batchState.current_batch_target_round >= batchState.target_rounds_total
       ? null
       : batchState.current_batch_target_round + 1;
-  const nextBatchIndex =
-    nextBatchStartRound == null ? null : batchState.current_batch_index + 1;
+  const nextBatchIndex = nextBatchStartRound == null ? null : batchState.current_batch_index + 1;
   const nextBatchTargetRound =
     nextBatchStartRound == null
       ? null

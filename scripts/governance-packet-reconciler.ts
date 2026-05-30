@@ -27,7 +27,10 @@ function listPacketFiles(root: string): string[] {
     const full = path.join(root, entry.name);
     if (entry.isDirectory()) {
       results.push(...listPacketFiles(full));
-    } else if (entry.isFile() && /\.((cursor|claude|codex|generic)-packet)\.md$/i.test(entry.name)) {
+    } else if (
+      entry.isFile() &&
+      /\.((cursor|claude|codex|generic)-packet)\.md$/i.test(entry.name)
+    ) {
       results.push(full);
     }
   }
@@ -56,30 +59,11 @@ export function reconcileGovernanceExecutionRecords(
 
   for (const record of records) {
     if (record.status === 'leased' && isExpired(record.leaseExpiresAt, now)) {
-      updateGovernancePacketExecutionRecord(projectRoot, record.loopStateId, record.attemptNumber, (current) => ({
-        ...current,
-        status: 'retry_pending',
-        leaseOwner: null,
-        leaseAcquiredAt: null,
-        leaseExpiresAt: null,
-        history: [
-          ...current.history,
-          {
-            at: nowIso(now),
-            kind: 'reconciled',
-            note: 'expired lease moved back to retry_pending',
-          },
-        ],
-      }));
-      updatedRecordIds.push(record.executionId);
-      continue;
-    }
-
-    if (record.status === 'running') {
-      const updatedAt = Date.parse(record.updatedAt);
-      const timeoutMs = (config.execution?.execution.timeoutMinutes ?? 30) * 60 * 1000;
-      if ((Number.isFinite(updatedAt) && updatedAt + timeoutMs <= now.getTime()) || isExpired(record.leaseExpiresAt, now)) {
-        updateGovernancePacketExecutionRecord(projectRoot, record.loopStateId, record.attemptNumber, (current) => ({
+      updateGovernancePacketExecutionRecord(
+        projectRoot,
+        record.loopStateId,
+        record.attemptNumber,
+        (current) => ({
           ...current,
           status: 'retry_pending',
           leaseOwner: null,
@@ -90,10 +74,42 @@ export function reconcileGovernanceExecutionRecords(
             {
               at: nowIso(now),
               kind: 'reconciled',
-              note: 'stale running execution moved back to retry_pending',
+              note: 'expired lease moved back to retry_pending',
             },
           ],
-        }));
+        })
+      );
+      updatedRecordIds.push(record.executionId);
+      continue;
+    }
+
+    if (record.status === 'running') {
+      const updatedAt = Date.parse(record.updatedAt);
+      const timeoutMs = (config.execution?.execution.timeoutMinutes ?? 30) * 60 * 1000;
+      if (
+        (Number.isFinite(updatedAt) && updatedAt + timeoutMs <= now.getTime()) ||
+        isExpired(record.leaseExpiresAt, now)
+      ) {
+        updateGovernancePacketExecutionRecord(
+          projectRoot,
+          record.loopStateId,
+          record.attemptNumber,
+          (current) => ({
+            ...current,
+            status: 'retry_pending',
+            leaseOwner: null,
+            leaseAcquiredAt: null,
+            leaseExpiresAt: null,
+            history: [
+              ...current.history,
+              {
+                at: nowIso(now),
+                kind: 'reconciled',
+                note: 'stale running execution moved back to retry_pending',
+              },
+            ],
+          })
+        );
         updatedRecordIds.push(record.executionId);
         continue;
       }
@@ -102,20 +118,27 @@ export function reconcileGovernanceExecutionRecords(
     if (
       record.status === 'awaiting_rerun_gate' &&
       record.rerunGateSchedule?.scheduledAt &&
-      Date.parse(record.rerunGateSchedule.scheduledAt) + (config.execution?.execution.timeoutMinutes ?? 30) * 60 * 1000 <= now.getTime()
+      Date.parse(record.rerunGateSchedule.scheduledAt) +
+        (config.execution?.execution.timeoutMinutes ?? 30) * 60 * 1000 <=
+        now.getTime()
     ) {
-      updateGovernancePacketExecutionRecord(projectRoot, record.loopStateId, record.attemptNumber, (current) => ({
-        ...current,
-        status: 'retry_pending',
-        history: [
-          ...current.history,
-          {
-            at: nowIso(now),
-            kind: 'reconciled',
-            note: 'awaiting_rerun_gate timed out and moved back to retry_pending',
-          },
-        ],
-      }));
+      updateGovernancePacketExecutionRecord(
+        projectRoot,
+        record.loopStateId,
+        record.attemptNumber,
+        (current) => ({
+          ...current,
+          status: 'retry_pending',
+          history: [
+            ...current.history,
+            {
+              at: nowIso(now),
+              kind: 'reconciled',
+              note: 'awaiting_rerun_gate timed out and moved back to retry_pending',
+            },
+          ],
+        })
+      );
       updatedRecordIds.push(record.executionId);
     }
   }
@@ -125,7 +148,9 @@ export function reconcileGovernanceExecutionRecords(
   );
   const orphanExecutionRecordIds = listGovernancePacketExecutionRecords(projectRoot)
     .filter((record) =>
-      Object.values(record.packetPaths).some((packetPath) => packetPath && !fs.existsSync(packetPath))
+      Object.values(record.packetPaths).some(
+        (packetPath) => packetPath && !fs.existsSync(packetPath)
+      )
     )
     .map((record) => record.executionId);
 
@@ -162,9 +187,7 @@ function main(): void {
     return;
   }
   const projectRoot = process.argv[2] || process.cwd();
-  process.stdout.write(
-    JSON.stringify(reconcileGovernanceExecutionRecords(projectRoot), null, 2)
-  );
+  process.stdout.write(JSON.stringify(reconcileGovernanceExecutionRecords(projectRoot), null, 2));
 }
 
 main();

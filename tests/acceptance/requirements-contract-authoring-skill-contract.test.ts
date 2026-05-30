@@ -13,7 +13,9 @@ describe('requirements-contract-authoring published contract', () => {
   it('documents governanceEventTypeRegistryPolicy as mandatory when governance events apply', () => {
     const skill = readSkillFile('SKILL.md');
     const template = readSkillFile(path.join('references', 'contract-template.md'));
-    const rendererSpec = readSkillFile(path.join('references', 'html-confirmation-renderer-spec.md'));
+    const rendererSpec = readSkillFile(
+      path.join('references', 'html-confirmation-renderer-spec.md')
+    );
 
     for (const content of [skill, template, rendererSpec]) {
       expect(content).toContain('governanceEventTypeRegistryPolicy');
@@ -23,17 +25,25 @@ describe('requirements-contract-authoring published contract', () => {
       expect(content).toContain('eventSpecificRequirements');
     }
 
-    expect(skill).toContain('When governance events apply, require `governanceEventTypeRegistryPolicy`');
+    expect(skill).toContain(
+      'When governance events apply, require `governanceEventTypeRegistryPolicy`'
+    );
     expect(template).toContain('governanceEventTypeRegistryPolicy:');
     expect(template).toContain('controlFieldVocabulary:');
-    expect(rendererSpec).toContain('the current event type must list it in `writesControlFields[]`');
-    expect(rendererSpec).toContain('strict mode must require both `governanceEventTypeRegistryPolicy` and `governanceEventTypeRegistry[]`');
+    expect(rendererSpec).toContain(
+      'the current event type must list it in `writesControlFields[]`'
+    );
+    expect(rendererSpec).toContain(
+      'strict mode must require both `governanceEventTypeRegistryPolicy` and `governanceEventTypeRegistry[]`'
+    );
   });
 
   it('documents controlledIngestWriterRegistry as the only writer permission authority', () => {
     const skill = readSkillFile('SKILL.md');
     const template = readSkillFile(path.join('references', 'contract-template.md'));
-    const rendererSpec = readSkillFile(path.join('references', 'html-confirmation-renderer-spec.md'));
+    const rendererSpec = readSkillFile(
+      path.join('references', 'html-confirmation-renderer-spec.md')
+    );
 
     for (const content of [skill, template, rendererSpec]) {
       expect(content).toContain('controlledIngestWriterRegistry');
@@ -43,41 +53,65 @@ describe('requirements-contract-authoring published contract', () => {
       expect(content).toContain('canModifyWriterRegistry');
     }
 
-    expect(skill).toContain('the only machine-readable authority for which writer may write control records');
-    expect(template).toContain('A writer that receives a registered event type outside its `allowedEventTypes[]` must fail closed');
+    expect(skill).toContain(
+      'the only machine-readable authority for which writer may write control records'
+    );
+    expect(template).toContain(
+      'A writer that receives a registered event type outside its `allowedEventTypes[]` must fail closed'
+    );
     expect(rendererSpec).toContain('strict mode must require `controlledIngestWriterRegistry[]`');
   });
 
   it('publishes architecture confirmation prepare as the user-facing entry', () => {
     const skill = readSkillFile('SKILL.md');
-    const rendererSpec = readSkillFile(path.join('references', 'html-confirmation-renderer-spec.md'));
+    const rendererSpec = readSkillFile(
+      path.join('references', 'html-confirmation-renderer-spec.md')
+    );
 
     for (const content of [skill, rendererSpec]) {
       expect(content).toContain('prepare-architecture-confirmation-page.ts');
       expect(content).toContain('architecture_confirmation_state_checked');
-      expect(content).toContain('generate requirement-scoped `architecture-confirmation-<runId>.json`');
-      expect(content).toContain('Do not expose stale check or JSON producer commands as manual user steps');
+      expect(content).toContain(
+        'generate requirement-scoped `architecture-confirmation-<runId>.json`'
+      );
+      expect(content).toContain(
+        'Do not expose stale check or JSON producer commands as manual user steps'
+      );
     }
 
-    expect(skill).toContain('The user-facing next step is only to open the architecture confirmation HTML and confirm the hashes in chat');
-    expect(rendererSpec).toContain('The user-facing next step must only be to open the architecture confirmation HTML and confirm the hashes in chat');
+    expect(skill).toContain(
+      'The user-facing next step is only to open the architecture confirmation HTML and confirm the hashes in chat'
+    );
+    expect(rendererSpec).toContain(
+      'The user-facing next step must only be to open the architecture confirmation HTML and confirm the hashes in chat'
+    );
   });
 
   it('documents the automated controlled confirmation ingest that must run immediately after chat confirmation', () => {
     const skill = readSkillFile('SKILL.md');
     const template = readSkillFile(path.join('references', 'contract-template.md'));
-    const rendererSpec = readSkillFile(path.join('references', 'html-confirmation-renderer-spec.md'));
+    const rendererSpec = readSkillFile(
+      path.join('references', 'html-confirmation-renderer-spec.md')
+    );
 
-    expect(skill).toContain('Immediately after exact chat confirmation, the agent must run the high-level confirmation ingest action');
+    expect(skill).toContain(
+      'Immediately after exact chat confirmation, the agent must run the high-level confirmation ingest action'
+    );
     expect(skill).toContain('bmad-speckit confirm-scope');
     expect(skill).toContain('bmad-speckit main-agent:confirm-scope');
     expect(skill).toContain('main-agent-orchestration.ts');
     expect(skill).toContain('--action confirm-scope');
     expect(skill).toContain('confirm-requirements-scope.js');
     expect(template).toContain('bmad-speckit confirm-scope');
-    expect(template).toContain('automated post-confirmation step that delegates to the skill-local controlled ingest wrapper');
-    expect(template).toContain('Do not require the user or agent to remember lower-level ingest commands manually');
-    expect(rendererSpec).toContain('Post-confirmation control writes are handled by the high-level confirmation ingest action, not by the renderer');
+    expect(template).toContain(
+      'automated post-confirmation step that delegates to the skill-local controlled ingest wrapper'
+    );
+    expect(template).toContain(
+      'Do not require the user or agent to remember lower-level ingest commands manually'
+    );
+    expect(rendererSpec).toContain(
+      'Post-confirmation control writes are handled by the high-level confirmation ingest action, not by the renderer'
+    );
     expect(rendererSpec).toContain('bmad-speckit confirm-scope');
     expect(rendererSpec).toContain('bmad-speckit main-agent:confirm-scope');
   });
@@ -87,9 +121,13 @@ describe('requirements-contract-authoring published contract', () => {
 
     expect(skill).toContain('Default to `author-confirmation-ready-source`');
     expect(skill).toContain('Do not collapse these modes into one long execution chain');
-    expect(skill).toContain('"Generate requirements contract document" means author the confirmation-ready source document');
+    expect(skill).toContain(
+      '"Generate requirements contract document" means author the confirmation-ready source document'
+    );
     expect(skill).toContain('The target is not a loose draft');
-    expect(skill).toContain('ready to render a confirmation page with minimal or no renderer repair');
+    expect(skill).toContain(
+      'ready to render a confirmation page with minimal or no renderer repair'
+    );
   });
 
   it('requires authority-first fact collection and ID matrix design before authoring prose', () => {
@@ -98,8 +136,12 @@ describe('requirements-contract-authoring published contract', () => {
     expect(skill).toContain('Use authority-first, expand-on-signal fact collection');
     expect(skill).toContain('Do not run broad repository searches before authoring');
     expect(skill).toContain('Before writing the source document body, build the ID matrix');
-    expect(skill).toContain('Every `MUST-*` and `NEG-*` must have evidence, trace coverage, at least one view, and at least one `ACC-*` or `E2E-*` coverage row');
-    expect(skill).toContain('Treat `acceptanceTests[]` and `e2eSuites[]` as first-class contract rows');
+    expect(skill).toContain(
+      'Every `MUST-*` and `NEG-*` must have evidence, trace coverage, at least one view, and at least one `ACC-*` or `E2E-*` coverage row'
+    );
+    expect(skill).toContain(
+      'Treat `acceptanceTests[]` and `e2eSuites[]` as first-class contract rows'
+    );
     expect(skill).toContain('`OUT-*` must not appear in `traceRows[].covers`');
   });
 
@@ -110,11 +152,19 @@ describe('requirements-contract-authoring published contract', () => {
     expect(skill).toContain('pre_render_definition_drilldown.js');
     expect(skill).toContain('deterministic automation equivalent of a `grill-with-docs` pass');
     expect(skill).toContain('direct contradiction matrix findings');
-    expect(skill).toContain('external side effects that lack timeout/failure/idempotency/recovery/evidence semantics');
+    expect(skill).toContain(
+      'external side effects that lack timeout/failure/idempotency/recovery/evidence semantics'
+    );
     expect(skill).toContain('Core arrays are present and non-empty');
-    expect(skill).toContain('Governance event types that write control fields have controlled writers');
-    expect(skill).toContain('Mermaid diagrams reference only declared IDs and use renderer-compatible labels');
-    expect(skill).toContain('repair renderer blocking issues until the page is confirmable or a real blocker is found');
+    expect(skill).toContain(
+      'Governance event types that write control fields have controlled writers'
+    );
+    expect(skill).toContain(
+      'Mermaid diagrams reference only declared IDs and use renderer-compatible labels'
+    );
+    expect(skill).toContain(
+      'repair renderer blocking issues until the page is confirmable or a real blocker is found'
+    );
   });
 
   it('documents stage-specific reverse audit CLIs and deprecated generic wrapper semantics', () => {
@@ -156,7 +206,9 @@ describe('requirements-contract-authoring published contract', () => {
 
   it('documents scale assessment and semantic checkpoint runner before render', () => {
     const skill = readSkillFile('SKILL.md');
-    const checkpointWorkflow = readSkillFile(path.join('references', 'semantic-checkpoint-workflow.md'));
+    const checkpointWorkflow = readSkillFile(
+      path.join('references', 'semantic-checkpoint-workflow.md')
+    );
 
     for (const content of [skill, checkpointWorkflow]) {
       expect(content).toContain('assess_contract_authoring_scale.js');
@@ -177,17 +229,27 @@ describe('requirements-contract-authoring published contract', () => {
 
   it('publishes semantic checkpoint workflow as a skill reference', () => {
     const skill = readSkillFile('SKILL.md');
-    const checkpointWorkflow = readSkillFile(path.join('references', 'semantic-checkpoint-workflow.md'));
+    const checkpointWorkflow = readSkillFile(
+      path.join('references', 'semantic-checkpoint-workflow.md')
+    );
 
     expect(skill).toContain('semantic-checkpoint-workflow.md');
     expect(skill).toContain('normative checkpoint workflow');
     expect(skill).toContain('Every checkpoint remains a bounded source-document edit');
     expect(skill).toContain('degrade checkpoint work into status-only progress markers');
-    expect(checkpointWorkflow).toContain('This reference is part of `requirements-contract-authoring`');
-    expect(checkpointWorkflow).toContain('one semantic checkpoint -> one bounded source-document edit');
-    expect(checkpointWorkflow).toContain("The checkpoint runner's `--until pre-render-ready` scope covers checkpoints 1-8");
+    expect(checkpointWorkflow).toContain(
+      'This reference is part of `requirements-contract-authoring`'
+    );
+    expect(checkpointWorkflow).toContain(
+      'one semantic checkpoint -> one bounded source-document edit'
+    );
+    expect(checkpointWorkflow).toContain(
+      "The checkpoint runner's `--until pre-render-ready` scope covers checkpoints 1-8"
+    );
     expect(checkpointWorkflow).toContain('The runner must preserve checkpoint authoring semantics');
-    expect(checkpointWorkflow).toContain('`run_semantic_checkpoints.js` is not the semantic authoring engine');
+    expect(checkpointWorkflow).toContain(
+      '`run_semantic_checkpoints.js` is not the semantic authoring engine'
+    );
     expect(checkpointWorkflow).toContain('append status-only checkpoint logs');
     expect(checkpointWorkflow).toContain('must already exist from `authoring-repair`');
   });
@@ -195,8 +257,12 @@ describe('requirements-contract-authoring published contract', () => {
   it('keeps skill-local command references portable across installation roots', () => {
     const skill = readSkillFile('SKILL.md');
     const template = readSkillFile(path.join('references', 'contract-template.md'));
-    const rendererSpec = readSkillFile(path.join('references', 'html-confirmation-renderer-spec.md'));
-    const checkpointWorkflow = readSkillFile(path.join('references', 'semantic-checkpoint-workflow.md'));
+    const rendererSpec = readSkillFile(
+      path.join('references', 'html-confirmation-renderer-spec.md')
+    );
+    const checkpointWorkflow = readSkillFile(
+      path.join('references', 'semantic-checkpoint-workflow.md')
+    );
     const portableDocs = [skill, template, rendererSpec, checkpointWorkflow];
 
     for (const content of portableDocs) {
@@ -206,9 +272,15 @@ describe('requirements-contract-authoring published contract', () => {
     }
 
     expect(skill).toContain('## Skill Directory Resolution');
-    expect(skill).toContain('Treat `<skill-dir>` as the directory that contains the `SKILL.md` loaded for this invocation');
-    expect(skill).toContain('Do not assume the skill is installed under `_bmad/skills`, `.codex/skills`, `~/.codex/skills`, or any other fixed root');
-    expect(skill).toContain('Scripts inside this skill must locate sibling files with `__dirname` or the ESM equivalent `import.meta.url`');
+    expect(skill).toContain(
+      'Treat `<skill-dir>` as the directory that contains the `SKILL.md` loaded for this invocation'
+    );
+    expect(skill).toContain(
+      'Do not assume the skill is installed under `_bmad/skills`, `.codex/skills`, `~/.codex/skills`, or any other fixed root'
+    );
+    expect(skill).toContain(
+      'Scripts inside this skill must locate sibling files with `__dirname` or the ESM equivalent `import.meta.url`'
+    );
     expect(template).toContain('commandRef:');
     expect(template).toContain('skill: requirements-contract-authoring');
     expect(template).toContain('script: scripts/render-requirements-confirmation-html.ts');
@@ -247,7 +319,9 @@ describe('requirements-contract-authoring published contract', () => {
   it('requires the pre-confirmation atomic decomposition loop before any confirmable HTML', () => {
     const skill = readSkillFile('SKILL.md');
     const template = readSkillFile(path.join('references', 'contract-template.md'));
-    const rendererSpec = readSkillFile(path.join('references', 'html-confirmation-renderer-spec.md'));
+    const rendererSpec = readSkillFile(
+      path.join('references', 'html-confirmation-renderer-spec.md')
+    );
 
     for (const content of [skill, template, rendererSpec]) {
       expect(content).toContain('pre-confirmation atomic decomposition loop');
@@ -258,15 +332,23 @@ describe('requirements-contract-authoring published contract', () => {
       expect(content).toContain('pre_render_must_decomposition_gate.js');
     }
 
-    expect(skill).toContain('single_pass also cannot skip the pre-confirmation atomic decomposition loop');
-    expect(skill).toContain('Checkpointing is only persistence, recovery, single-file commit, and receipt strategy');
-    expect(rendererSpec).toContain('missing pre-confirmation semantic drilldown gate report -> confirmability=blocked');
+    expect(skill).toContain(
+      'single_pass also cannot skip the pre-confirmation atomic decomposition loop'
+    );
+    expect(skill).toContain(
+      'Checkpointing is only persistence, recovery, single-file commit, and receipt strategy'
+    );
+    expect(rendererSpec).toContain(
+      'missing pre-confirmation semantic drilldown gate report -> confirmability=blocked'
+    );
   });
 
   it('publishes preConfirmationDrilldown metadata while keeping inline implementationConfirmation authoritative', () => {
     const skill = readSkillFile('SKILL.md');
     const template = readSkillFile(path.join('references', 'contract-template.md'));
-    const rendererSpec = readSkillFile(path.join('references', 'html-confirmation-renderer-spec.md'));
+    const rendererSpec = readSkillFile(
+      path.join('references', 'html-confirmation-renderer-spec.md')
+    );
 
     for (const content of [skill, template, rendererSpec]) {
       expect(content).toContain('preConfirmationDrilldown');
@@ -277,12 +359,16 @@ describe('requirements-contract-authoring published contract', () => {
       expect(content).toContain('pre-render-must-decomposition-gate-report.json');
     }
 
-    expect(template).toContain('Final confirmation authority remains the inline `implementationConfirmation` block');
+    expect(template).toContain(
+      'Final confirmation authority remains the inline `implementationConfirmation` block'
+    );
   });
 
   it('documents the semantic checkpoint sequence as semantic-layer checkpoints rather than chapter checkpoints', () => {
     const skill = readSkillFile('SKILL.md');
-    const checkpointWorkflow = readSkillFile(path.join('references', 'semantic-checkpoint-workflow.md'));
+    const checkpointWorkflow = readSkillFile(
+      path.join('references', 'semantic-checkpoint-workflow.md')
+    );
 
     for (const content of [skill, checkpointWorkflow]) {
       expect(content).toContain('cp-00 semantic kernel');
@@ -313,7 +399,9 @@ describe('requirements-contract-authoring published contract', () => {
   });
 
   it('documents renderer drilldown sections and confirmation-only reverse audit layering', () => {
-    const rendererSpec = readSkillFile(path.join('references', 'html-confirmation-renderer-spec.md'));
+    const rendererSpec = readSkillFile(
+      path.join('references', 'html-confirmation-renderer-spec.md')
+    );
     const reverseAuditGate = readSkillFile(path.join('references', 'reverse-audit-gate.md'));
 
     for (const heading of [

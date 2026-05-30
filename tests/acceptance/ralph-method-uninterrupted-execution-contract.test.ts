@@ -30,7 +30,9 @@ describe('ralph-method uninterrupted execution contract', () => {
     const content = readFileSync('.claude/skills/speckit-workflow/SKILL.md', 'utf8');
 
     expect(content).toContain('不中断执行 contract');
-    expect(content).toContain('continue through all remaining scoped tasks/User Stories in sequence');
+    expect(content).toContain(
+      'continue through all remaining scoped tasks/User Stories in sequence'
+    );
     expect(content).toContain('ralph-method forced prefix');
     expect(content).toContain('main-agent-orchestration');
     expect(content).toContain('dispatch-plan');

@@ -54,7 +54,11 @@ describe('Audit triad reset on reconfirmation', () => {
       };
       const decision = evaluateAuditTriadConvergence({
         plan,
-        rounds: [staleSourceRound, { ...staleSourceRound, roundId: 'r2' }, { ...staleSourceRound, roundId: 'r3' }],
+        rounds: [
+          staleSourceRound,
+          { ...staleSourceRound, roundId: 'r2' },
+          { ...staleSourceRound, roundId: 'r3' },
+        ],
         scoreReceiptRequired: true,
         runAuditorHostReceiptRequired: true,
       });

@@ -7,11 +7,7 @@ import { resolveGovernanceSkillInventory } from '../../scripts/skill-inventory-p
 function writeSkill(root: string, relativePath: string, content?: string): void {
   const skillDir = path.join(root, relativePath);
   mkdirSync(skillDir, { recursive: true });
-  writeFileSync(
-    path.join(skillDir, 'SKILL.md'),
-    content ?? `# ${path.basename(skillDir)}`,
-    'utf8'
-  );
+  writeFileSync(path.join(skillDir, 'SKILL.md'), content ?? `# ${path.basename(skillDir)}`, 'utf8');
 }
 
 describe('skill inventory provider', () => {
@@ -39,7 +35,9 @@ describe('skill inventory provider', () => {
         'requesting-code-review',
         'code-reviewer',
       ]);
-      expect(result.skillInventory.map((entry) => [entry.skillId, entry.source, entry.priority])).toEqual([
+      expect(
+        result.skillInventory.map((entry) => [entry.skillId, entry.source, entry.priority])
+      ).toEqual([
         ['bmad-party-mode', 'project-host', 100],
         ['speckit-workflow', 'project-host', 100],
         ['requesting-code-review', 'project-agents', 90],
@@ -48,7 +46,9 @@ describe('skill inventory provider', () => {
       expect(result.skillPaths).toEqual([
         path.join(root, '.cursor', 'skills', 'bmad-party-mode', 'SKILL.md').replace(/\\/g, '/'),
         path.join(root, '.cursor', 'skills', 'speckit-workflow', 'SKILL.md').replace(/\\/g, '/'),
-        path.join(root, '.agents', 'skills', 'requesting-code-review', 'SKILL.md').replace(/\\/g, '/'),
+        path
+          .join(root, '.agents', 'skills', 'requesting-code-review', 'SKILL.md')
+          .replace(/\\/g, '/'),
         path.join(home, '.cursor', 'skills', 'code-reviewer', 'SKILL.md').replace(/\\/g, '/'),
       ]);
       expect(result.availableSkills).not.toContain('code-review');

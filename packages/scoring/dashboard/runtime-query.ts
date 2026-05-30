@@ -250,10 +250,13 @@ export interface DashboardSftSummary {
   downgraded: number;
   training_ready_candidates: number;
   by_split: Record<'train' | 'validation' | 'test' | 'holdout', number>;
-  target_availability: Record<DatasetExportTarget, {
-    compatible: number;
-    incompatible: number;
-  }>;
+  target_availability: Record<
+    DatasetExportTarget,
+    {
+      compatible: number;
+      incompatible: number;
+    }
+  >;
   rejection_reasons: Array<{
     reason: string;
     count: number;
@@ -453,8 +456,14 @@ function slugFromPath(sourcePath?: string | null): string | null {
   if (!normalized) return null;
   const basename = normalized.split('/').pop() ?? normalized;
   const withoutExtension = basename.replace(/\.[a-z0-9]+$/i, '');
-  const withoutPrefix = withoutExtension.replace(/^bugfix[-_]+/i, '').replace(/^standalone[-_]+/i, '');
-  const slug = withoutPrefix.trim().replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase();
+  const withoutPrefix = withoutExtension
+    .replace(/^bugfix[-_]+/i, '')
+    .replace(/^standalone[-_]+/i, '');
+  const slug = withoutPrefix
+    .trim()
+    .replace(/[^a-zA-Z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .toLowerCase();
   return slug || null;
 }
 
@@ -520,7 +529,10 @@ function normalizeStoryKey(epicToken?: string | null, storyToken?: string | null
   return `${epicToken}-${storyToken}`;
 }
 
-function classifyArtifactScope(sourcePath?: string | null, scope?: RuntimeScopeRef | null): DashboardArtifactScope {
+function classifyArtifactScope(
+  sourcePath?: string | null,
+  scope?: RuntimeScopeRef | null
+): DashboardArtifactScope {
   if (scope?.story_key) return 'story_scoped';
   const normalized = normalizePath(sourcePath);
   if (normalized.includes('/_orphan/')) return 'orphan_scoped';
@@ -557,14 +569,26 @@ function inferScopeFromSeed(seed: RunWorkItemSeed): RuntimeScopeRef | null {
   return null;
 }
 
-function inferFlowForSeed(seed: Pick<RunWorkItemSeed, 'flow' | 'scope' | 'source_path'>): DashboardWorkItem['flow'] {
+function inferFlowForSeed(
+  seed: Pick<RunWorkItemSeed, 'flow' | 'scope' | 'source_path'>
+): DashboardWorkItem['flow'] {
   if (seed.scope?.story_key) return 'story';
-  if (seed.flow === 'story' || seed.flow === 'standalone_tasks' || seed.flow === 'bugfix' || seed.flow === 'epic') {
+  if (
+    seed.flow === 'story' ||
+    seed.flow === 'standalone_tasks' ||
+    seed.flow === 'bugfix' ||
+    seed.flow === 'epic'
+  ) {
     return seed.flow;
   }
   const normalized = normalizePath(seed.source_path).toLowerCase();
   if (normalized.includes('/standalone_tasks/')) return 'standalone_tasks';
-  if (normalized.includes('/bugfix/') || normalized.includes('/bugfix_') || normalized.includes('/bugfix-')) return 'bugfix';
+  if (
+    normalized.includes('/bugfix/') ||
+    normalized.includes('/bugfix_') ||
+    normalized.includes('/bugfix-')
+  )
+    return 'bugfix';
   if (normalized.includes('/story-') || normalized.includes('/story/')) return 'story';
   return 'unknown';
 }
@@ -719,7 +743,11 @@ function deriveBoardStatus(
   latestScoreRecord: RunScoreRecord | null
 ): DashboardBoardStatus {
   const hasStageExecution = seeds.some((seed) => seed.has_stage_execution);
-  if (latestScoreRecord == null && !hasStageExecution && (runtimeStatus === 'pending' || runtimeStatus === 'unknown')) {
+  if (
+    latestScoreRecord == null &&
+    !hasStageExecution &&
+    (runtimeStatus === 'pending' || runtimeStatus === 'unknown')
+  ) {
     return 'todo';
   }
   if (runtimeStatus === 'running' || runtimeStatus === 'failed' || runtimeStatus === 'vetoed') {
@@ -734,7 +762,10 @@ function deriveBoardStatus(
   return latestScoreRecord == null ? 'todo' : 'done';
 }
 
-function deriveSftStatus(boardStatus: DashboardBoardStatus, latestScoreRecord: RunScoreRecord | null): DashboardWorkItem['sft_status'] {
+function deriveSftStatus(
+  boardStatus: DashboardBoardStatus,
+  latestScoreRecord: RunScoreRecord | null
+): DashboardWorkItem['sft_status'] {
   if (boardStatus === 'todo' || latestScoreRecord == null) return 'none';
   if (latestScoreRecord.phase_score >= 90) return 'ready';
   return 'partial';
@@ -769,10 +800,20 @@ function buildRunWorkItemSeeds(
     const seed = ensureSeed(event.run_id);
     if (event.scope) seed.scope = { ...(seed.scope ?? {}), ...event.scope };
     if (event.flow) seed.flow = event.flow;
-    const sourcePath = event.source?.source_path ?? (typeof event.payload?.path === 'string' ? event.payload.path : null);
+    const sourcePath =
+      event.source?.source_path ??
+      (typeof event.payload?.path === 'string' ? event.payload.path : null);
     if (sourcePath) seed.source_path = sourcePath;
-    seed.last_updated_at = compareTimestamps(seed.last_updated_at, event.timestamp) > 0 ? seed.last_updated_at : event.timestamp;
-    if (event.event_type === 'stage.started' || event.event_type === 'stage.completed' || event.event_type === 'stage.failed' || event.event_type === 'stage.vetoed') {
+    seed.last_updated_at =
+      compareTimestamps(seed.last_updated_at, event.timestamp) > 0
+        ? seed.last_updated_at
+        : event.timestamp;
+    if (
+      event.event_type === 'stage.started' ||
+      event.event_type === 'stage.completed' ||
+      event.event_type === 'stage.failed' ||
+      event.event_type === 'stage.vetoed'
+    ) {
       seed.has_stage_execution = true;
     }
   }
@@ -784,8 +825,12 @@ function buildRunWorkItemSeeds(
     seed.runtime_status = projection.status;
     seed.current_stage = projection.current_stage;
     seed.has_stage_execution = seed.has_stage_execution || projection.stage_history.length > 0;
-    seed.last_updated_at = compareTimestamps(seed.last_updated_at, projection.last_event_at) > 0 ? seed.last_updated_at : projection.last_event_at;
-    const projectedSourcePath = projection.artifact_refs[0]?.path ?? projection.score_refs[0]?.path ?? seed.source_path;
+    seed.last_updated_at =
+      compareTimestamps(seed.last_updated_at, projection.last_event_at) > 0
+        ? seed.last_updated_at
+        : projection.last_event_at;
+    const projectedSourcePath =
+      projection.artifact_refs[0]?.path ?? projection.score_refs[0]?.path ?? seed.source_path;
     if (projectedSourcePath) seed.source_path = projectedSourcePath;
   }
 
@@ -795,7 +840,10 @@ function buildRunWorkItemSeeds(
     if (seed.runtime_status === 'unknown') seed.runtime_status = 'passed';
     if (seed.current_stage == null) seed.current_stage = record.stage;
     if (record.source_path) seed.source_path = record.source_path;
-    seed.last_updated_at = compareTimestamps(seed.last_updated_at, record.timestamp) > 0 ? seed.last_updated_at : record.timestamp;
+    seed.last_updated_at =
+      compareTimestamps(seed.last_updated_at, record.timestamp) > 0
+        ? seed.last_updated_at
+        : record.timestamp;
   }
 
   return [...seeds.values()];
@@ -840,44 +888,61 @@ function buildWorkboard(
     else grouped.set(identity.work_item_id, { identity, seeds: [seed] });
   }
 
-  const workItems: WorkItemAggregateCandidate[] = [...grouped.values()].map(({ identity, seeds }) => {
-    const allScoreRecords = seeds.flatMap((seed) => seed.score_records).sort((left, right) => compareTimestamps(left.timestamp, right.timestamp));
-    const latestScoreRecord = allScoreRecords[0] ?? null;
-    const runtimeStatus = summarizeRuntimeStatus(seeds);
-    const findingsCount = allScoreRecords.reduce((count, record) => count + buildScoreFindings(record).length, 0);
-    const boardStatus = deriveBoardStatus(runtimeStatus, seeds, findingsCount, latestScoreRecord);
-    const latestSeed = [...seeds].sort((left, right) => compareTimestamps(left.last_updated_at, right.last_updated_at))[0] ?? seeds[0];
-    const primarySeed = seeds.find((seed) => seed.run_id === selectedRunId) ?? seeds.find((seed) => seed.runtime_status === 'running') ?? latestSeed;
+  const workItems: WorkItemAggregateCandidate[] = [...grouped.values()].map(
+    ({ identity, seeds }) => {
+      const allScoreRecords = seeds
+        .flatMap((seed) => seed.score_records)
+        .sort((left, right) => compareTimestamps(left.timestamp, right.timestamp));
+      const latestScoreRecord = allScoreRecords[0] ?? null;
+      const runtimeStatus = summarizeRuntimeStatus(seeds);
+      const findingsCount = allScoreRecords.reduce(
+        (count, record) => count + buildScoreFindings(record).length,
+        0
+      );
+      const boardStatus = deriveBoardStatus(runtimeStatus, seeds, findingsCount, latestScoreRecord);
+      const latestSeed =
+        [...seeds].sort((left, right) =>
+          compareTimestamps(left.last_updated_at, right.last_updated_at)
+        )[0] ?? seeds[0];
+      const primarySeed =
+        seeds.find((seed) => seed.run_id === selectedRunId) ??
+        seeds.find((seed) => seed.runtime_status === 'running') ??
+        latestSeed;
 
-    return {
-      work_item_id: identity.work_item_id,
-      work_item_type: identity.work_item_type,
-      artifact_scope: identity.artifact_scope,
-      title: identity.title,
-      slug: identity.slug,
-      flow: identity.flow,
-      board_group_id: identity.board_group_id,
-      board_group_label: identity.board_group_label,
-      board_status: boardStatus,
-      epic_id: identity.epic_id ?? null,
-      story_key: identity.story_key ?? null,
-      linked_story_key: identity.linked_story_key ?? null,
-      linked_epic_id: identity.linked_epic_id ?? null,
-      primary_run_id: primarySeed?.run_id ?? null,
-      run_ids: seeds.map((seed) => seed.run_id),
-      runtime_status: runtimeStatus,
-      current_stage: primarySeed?.current_stage ?? latestScoreRecord?.stage ?? null,
-      phase_score: boardStatus === 'todo' ? null : latestScoreRecord?.phase_score ?? null,
-      findings_count: findingsCount,
-      sft_status: deriveSftStatus(boardStatus, latestScoreRecord),
-      source_path: primarySeed?.source_path ?? latestScoreRecord?.source_path ?? null,
-      artifact_doc_path: latestScoreRecord?.source_path ?? primarySeed?.source_path ?? null,
-      last_updated_at: primarySeed?.last_updated_at ?? latestScoreRecord?.timestamp ?? null,
-      _board_group_kind: identity.board_group_kind,
-    };
-  });
+      return {
+        work_item_id: identity.work_item_id,
+        work_item_type: identity.work_item_type,
+        artifact_scope: identity.artifact_scope,
+        title: identity.title,
+        slug: identity.slug,
+        flow: identity.flow,
+        board_group_id: identity.board_group_id,
+        board_group_label: identity.board_group_label,
+        board_status: boardStatus,
+        epic_id: identity.epic_id ?? null,
+        story_key: identity.story_key ?? null,
+        linked_story_key: identity.linked_story_key ?? null,
+        linked_epic_id: identity.linked_epic_id ?? null,
+        primary_run_id: primarySeed?.run_id ?? null,
+        run_ids: seeds.map((seed) => seed.run_id),
+        runtime_status: runtimeStatus,
+        current_stage: primarySeed?.current_stage ?? latestScoreRecord?.stage ?? null,
+        phase_score: boardStatus === 'todo' ? null : (latestScoreRecord?.phase_score ?? null),
+        findings_count: findingsCount,
+        sft_status: deriveSftStatus(boardStatus, latestScoreRecord),
+        source_path: primarySeed?.source_path ?? latestScoreRecord?.source_path ?? null,
+        artifact_doc_path: latestScoreRecord?.source_path ?? primarySeed?.source_path ?? null,
+        last_updated_at: primarySeed?.last_updated_at ?? latestScoreRecord?.timestamp ?? null,
+        _board_group_kind: identity.board_group_kind,
+      };
+    }
+  );
 
-  workItems.sort((left, right) => compareTimestamps(left.last_updated_at, right.last_updated_at) || left.title.localeCompare(right.title));
+  workItems.sort(
+    (left, right) =>
+      compareTimestamps(left.last_updated_at, right.last_updated_at) ||
+      left.title.localeCompare(right.title)
+  );
 
   const groupMap = new Map<string, DashboardBoardGroup>();
   for (const item of workItems) {
@@ -886,7 +951,8 @@ function buildWorkboard(
       board_group_label: item.board_group_label,
       kind: item._board_group_kind,
       board_status: 'todo',
-      sort_order: item._board_group_kind === 'epic' ? 0 : item._board_group_kind === 'standalone_ops' ? 1 : 2,
+      sort_order:
+        item._board_group_kind === 'epic' ? 0 : item._board_group_kind === 'standalone_ops' ? 1 : 2,
       counts: { todo: 0, in_progress: 0, done: 0 },
     };
     existing.counts[item.board_status] += 1;
@@ -924,17 +990,26 @@ function buildWorkboard(
     }
   }
 
-  const boardGroups = [...dedupedBoardGroups.values()].sort((left, right) => left.sort_order - right.sort_order || left.board_group_label.localeCompare(right.board_group_label));
+  const boardGroups = [...dedupedBoardGroups.values()].sort(
+    (left, right) =>
+      left.sort_order - right.sort_order ||
+      left.board_group_label.localeCompare(right.board_group_label)
+  );
   const boardGroupSwimlanes = {
     todo: boardGroups.filter((group) => group.board_status === 'todo'),
     in_progress: boardGroups.filter((group) => group.board_status === 'in_progress'),
     done: boardGroups.filter((group) => group.board_status === 'done'),
   };
   const selectedWorkItem = selectedRunId
-    ? workItems.find((item) => item.run_ids.includes(selectedRunId)) ?? null
+    ? (workItems.find((item) => item.run_ids.includes(selectedRunId)) ?? null)
     : null;
   const preferredBoardGroupId = preferredBoardGroupIdForSelectedRun(workItems, selectedRunId);
-  const activeBoardGroupId = options.boardGroupId ?? preferredBoardGroupId ?? selectedWorkItem?.board_group_id ?? boardGroups[0]?.board_group_id ?? null;
+  const activeBoardGroupId =
+    options.boardGroupId ??
+    preferredBoardGroupId ??
+    selectedWorkItem?.board_group_id ??
+    boardGroups[0]?.board_group_id ??
+    null;
   const filteredWorkItems = workItems
     .filter((item) => item.board_group_id === activeBoardGroupId)
     .sort((left, right) => {
@@ -945,13 +1020,16 @@ function buildWorkboard(
       const rightHasFindings = right.findings_count > 0 ? 0 : 1;
       if (leftHasFindings !== rightHasFindings) return leftHasFindings - rightHasFindings;
 
-      return compareTimestamps(left.last_updated_at, right.last_updated_at) || left.title.localeCompare(right.title);
+      return (
+        compareTimestamps(left.last_updated_at, right.last_updated_at) ||
+        left.title.localeCompare(right.title)
+      );
     });
   const activeWorkItemId =
     options.workItemId ??
     (selectedWorkItem && selectedWorkItem.board_group_id === activeBoardGroupId
       ? selectedWorkItem.work_item_id
-      : filteredWorkItems[0]?.work_item_id ?? null);
+      : (filteredWorkItems[0]?.work_item_id ?? null));
 
   const payload: DashboardWorkboardPayload = {
     active_board_group_id: activeBoardGroupId,
@@ -959,16 +1037,23 @@ function buildWorkboard(
     board_groups: boardGroups,
     work_items: workItems.map(({ _board_group_kind, ...item }) => item),
     swimlanes: {
-      todo: filteredWorkItems.filter((item) => item.board_status === 'todo').map(({ _board_group_kind, ...item }) => item),
-      in_progress: filteredWorkItems.filter((item) => item.board_status === 'in_progress').map(({ _board_group_kind, ...item }) => item),
-      done: filteredWorkItems.filter((item) => item.board_status === 'done').map(({ _board_group_kind, ...item }) => item),
+      todo: filteredWorkItems
+        .filter((item) => item.board_status === 'todo')
+        .map(({ _board_group_kind, ...item }) => item),
+      in_progress: filteredWorkItems
+        .filter((item) => item.board_status === 'in_progress')
+        .map(({ _board_group_kind, ...item }) => item),
+      done: filteredWorkItems
+        .filter((item) => item.board_status === 'done')
+        .map(({ _board_group_kind, ...item }) => item),
     },
     board_group_swimlanes: boardGroupSwimlanes,
   };
 
   return {
     payload,
-    active_work_item: payload.work_items.find((item) => item.work_item_id === activeWorkItemId) ?? null,
+    active_work_item:
+      payload.work_items.find((item) => item.work_item_id === activeWorkItemId) ?? null,
   };
 }
 
@@ -1030,9 +1115,7 @@ function inferRuntimeRootFromDataPath(dataPath: string | undefined, fallbackRoot
   return fallbackRoot;
 }
 
-function selectRuntimeProjection(
-  projections: RuntimeRunProjection[]
-): RuntimeRunProjection | null {
+function selectRuntimeProjection(projections: RuntimeRunProjection[]): RuntimeRunProjection | null {
   if (projections.length === 0) {
     return null;
   }
@@ -1248,9 +1331,12 @@ function buildStageTimeline(
   scoreDetailRecords: DashboardScoreDetailRecord[],
   activeWorkItem: DashboardWorkItem | null
 ): DashboardStageTimelineEntry[] {
-  const stageOrder = STANDARD_STAGE_SEQUENCE[activeWorkItem?.flow ?? 'unknown'] ?? STANDARD_STAGE_SEQUENCE.unknown;
+  const stageOrder =
+    STANDARD_STAGE_SEQUENCE[activeWorkItem?.flow ?? 'unknown'] ?? STANDARD_STAGE_SEQUENCE.unknown;
   const byStage = new Map<string, DashboardScoreDetailRecord>();
-  for (const record of [...scoreDetailRecords].sort((left, right) => compareTimestampsAsc(left.timestamp, right.timestamp))) {
+  for (const record of [...scoreDetailRecords].sort((left, right) =>
+    compareTimestampsAsc(left.timestamp, right.timestamp)
+  )) {
     byStage.set(record.stage, record);
   }
 
@@ -1290,7 +1376,9 @@ function createEmptyTargetAvailability(): DashboardSftSummary['target_availabili
   };
 }
 
-function countRejectionReasons(samples: CanonicalSftSample[]): DashboardSftSummary['rejection_reasons'] {
+function countRejectionReasons(
+  samples: CanonicalSftSample[]
+): DashboardSftSummary['rejection_reasons'] {
   const counts = new Map<string, number>();
 
   for (const sample of samples) {
@@ -1362,7 +1450,10 @@ function bundleMatchesWorkItem(
     return true;
   }
 
-  if (scope.scope_type === 'standalone_task' && activeWorkItem?.work_item_type === 'standalone_task') {
+  if (
+    scope.scope_type === 'standalone_task' &&
+    activeWorkItem?.work_item_type === 'standalone_task'
+  ) {
     return true;
   }
 
@@ -1500,7 +1591,9 @@ function buildExecutionStateSummary(
 
   return {
     source: 'execution_record',
-    selection_match: executionRecordMatchesWorkItem(matched, activeWorkItem) ? 'work_item' : 'global',
+    selection_match: executionRecordMatchesWorkItem(matched, activeWorkItem)
+      ? 'work_item'
+      : 'global',
     execution_id: matched.executionId ?? null,
     execution_status: matched.status ?? null,
     configured_authoritative_host:
@@ -1508,7 +1601,9 @@ function buildExecutionStateSummary(
     dispatched_host: dispatchedHost,
     fallback_used: Boolean(launchMetadata.fallbackUsed),
     last_rerun_gate_status: matched.lastRerunGateResult?.status ?? null,
-    artifact_path: matched.artifactPath ? path.relative(root, matched.artifactPath).replace(/\\/g, '/') : null,
+    artifact_path: matched.artifactPath
+      ? path.relative(root, matched.artifactPath).replace(/\\/g, '/')
+      : null,
     packet_paths: Object.fromEntries(
       Object.entries(matched.packetPaths ?? {}).map(([hostKind, packetPath]) => [
         hostKind,
@@ -1534,9 +1629,7 @@ function toBundleSummary(
     bundle_dir: path.relative(root, bundleDir).replace(/\\/g, '/'),
     manifest_path: path.relative(root, manifestPath).replace(/\\/g, '/'),
     ...(manifest.source_scope ? { source_scope: manifest.source_scope } : {}),
-    ...(manifest.validation_summary
-      ? { validation_summary: manifest.validation_summary }
-      : {}),
+    ...(manifest.validation_summary ? { validation_summary: manifest.validation_summary } : {}),
   };
 }
 
@@ -1589,16 +1682,29 @@ function findLatestBundles(
     };
   }
 
-  manifests.sort((left, right) => compareTimestamps(left.manifest.created_at, right.manifest.created_at));
+  manifests.sort((left, right) =>
+    compareTimestamps(left.manifest.created_at, right.manifest.created_at)
+  );
   const globalLatest = manifests[0]!;
-  const scopedLatest = manifests.find(({ manifest }) =>
-    bundleMatchesWorkItem(manifest, activeWorkItem, activeBoardGroupId)
-  ) ?? null;
+  const scopedLatest =
+    manifests.find(({ manifest }) =>
+      bundleMatchesWorkItem(manifest, activeWorkItem, activeBoardGroupId)
+    ) ?? null;
 
   return {
-    global_last_bundle: toBundleSummary(root, globalLatest.bundleDir, globalLatest.manifestPath, globalLatest.manifest),
+    global_last_bundle: toBundleSummary(
+      root,
+      globalLatest.bundleDir,
+      globalLatest.manifestPath,
+      globalLatest.manifest
+    ),
     scoped_last_bundle: scopedLatest
-      ? toBundleSummary(root, scopedLatest.bundleDir, scopedLatest.manifestPath, scopedLatest.manifest)
+      ? toBundleSummary(
+          root,
+          scopedLatest.bundleDir,
+          scopedLatest.manifestPath,
+          scopedLatest.manifest
+        )
       : null,
   };
 }
@@ -1712,22 +1818,36 @@ export function buildRuntimeDashboardModel(input: {
   const scoreRecords = input.scoreRecords.filter((record) => record.scenario !== 'eval_question');
   const projections = buildRuntimeProjections(input.events);
   const selectedProjection = selectRuntimeProjection(projections);
-  const selectedScoreRecords = resolveSelectedScoreRecords(scoreRecords, options, selectedProjection);
+  const selectedScoreRecords = resolveSelectedScoreRecords(
+    scoreRecords,
+    options,
+    selectedProjection
+  );
   const workboardScoreRecords = resolveWorkboardScoreRecords(scoreRecords, selectedScoreRecords);
   const selectedRunId =
     selectedProjection?.run_id ??
     (selectedScoreRecords.length > 0
-      ? [...new Set(selectedScoreRecords.map((record) => record.run_id))][0] ?? null
+      ? ([...new Set(selectedScoreRecords.map((record) => record.run_id))][0] ?? null)
       : null);
 
-  const workboardResolution = buildWorkboard(input.events, projections, workboardScoreRecords, selectedRunId, {
-    workItemId: options.workItemId,
-    boardGroupId: options.boardGroupId,
-  });
+  const workboardResolution = buildWorkboard(
+    input.events,
+    projections,
+    workboardScoreRecords,
+    selectedRunId,
+    {
+      workItemId: options.workItemId,
+      boardGroupId: options.boardGroupId,
+    }
+  );
   const workboard = workboardResolution.payload;
   const activeWorkItem = workboardResolution.active_work_item;
-  const activeWorkItemScoreRecords = filterScoreRecordsForActiveWorkItem(workboardScoreRecords, activeWorkItem);
-  const detailSourceRecords = activeWorkItemScoreRecords.length > 0 ? activeWorkItemScoreRecords : selectedScoreRecords;
+  const activeWorkItemScoreRecords = filterScoreRecordsForActiveWorkItem(
+    workboardScoreRecords,
+    activeWorkItem
+  );
+  const detailSourceRecords =
+    activeWorkItemScoreRecords.length > 0 ? activeWorkItemScoreRecords : selectedScoreRecords;
   const scoreDetailRecords = buildScoreDetailRecords(detailSourceRecords);
   const scoreFindings = detailSourceRecords
     .flatMap((record) => buildScoreFindings(record))
@@ -1748,11 +1868,7 @@ export function buildRuntimeDashboardModel(input: {
         work_item: null,
       }
     : buildSyntheticRuntimeContext(scoreDetailRecords);
-  const executionState = buildExecutionStateSummary(
-    root,
-    activeWorkItem,
-    runtimeContext
-  );
+  const executionState = buildExecutionStateSummary(root, activeWorkItem, runtimeContext);
 
   const selection: RuntimeDashboardSelection = {
     run_id: selectedRunId,
@@ -1781,12 +1897,12 @@ export function buildRuntimeDashboardModel(input: {
 
   const readinessCarrierRecord =
     detailSourceRecords.length > 0
-      ? selectedScoreRecords.find(
+      ? (selectedScoreRecords.find(
           (record) =>
             record.run_id === detailSourceRecords[0]!.run_id &&
             record.stage === detailSourceRecords[0]!.stage &&
             record.timestamp === detailSourceRecords[0]!.timestamp
-        ) ?? null
+        ) ?? null)
       : null;
 
   const readinessProjection = buildReadinessDriftProjection({
@@ -1832,9 +1948,7 @@ export function buildRuntimeDashboardModel(input: {
       weak_top3: getWeakTop3(selectedScoreRecords),
       high_iteration_top3: getHighIterationTop3(selectedScoreRecords),
       score_record_count: selectedScoreRecords.length,
-      last_updated_at:
-        runtimeContext.last_event_at ??
-        (scoreDetailRecords[0]?.timestamp ?? null),
+      last_updated_at: runtimeContext.last_event_at ?? scoreDetailRecords[0]?.timestamp ?? null,
     },
     runtime_context: runtimeContext,
     execution_state: executionState,

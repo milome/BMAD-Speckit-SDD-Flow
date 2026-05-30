@@ -56,7 +56,15 @@ async function run(): Promise<void> {
 
     await parseAndWriteScore({
       content: fs.readFileSync(
-        path.join(process.cwd(), 'packages', 'scoring', 'parsers', '__tests__', 'fixtures', 'sample-implement-report-with-four-dimensions.md'),
+        path.join(
+          process.cwd(),
+          'packages',
+          'scoring',
+          'parsers',
+          '__tests__',
+          'fixtures',
+          'sample-implement-report-with-four-dimensions.md'
+        ),
         'utf-8'
       ),
       stage: 'implement',
@@ -70,7 +78,15 @@ async function run(): Promise<void> {
 
     await parseAndWriteScore({
       content: fs.readFileSync(
-        path.join(process.cwd(), 'packages', 'scoring', 'parsers', '__tests__', 'fixtures', 'sample-implement-report-high-score.md'),
+        path.join(
+          process.cwd(),
+          'packages',
+          'scoring',
+          'parsers',
+          '__tests__',
+          'fixtures',
+          'sample-implement-report-high-score.md'
+        ),
         'utf-8'
       ),
       stage: 'implement',
@@ -78,13 +94,22 @@ async function run(): Promise<void> {
       scenario: 'real_dev',
       writeMode: 'jsonl',
       dataPath: fixture.dataPath,
-      artifactDocPath: '_bmad-output/implementation-artifacts/_orphan/standalone_tasks/improve-audit-rollup.md',
+      artifactDocPath:
+        '_bmad-output/implementation-artifacts/_orphan/standalone_tasks/improve-audit-rollup.md',
       baseCommitHash: 'playwright-smoke-standalone-base-commit',
     });
 
     await parseAndWriteScore({
       content: fs.readFileSync(
-        path.join(process.cwd(), 'packages', 'scoring', 'parsers', '__tests__', 'fixtures', 'sample-plan-report.md'),
+        path.join(
+          process.cwd(),
+          'packages',
+          'scoring',
+          'parsers',
+          '__tests__',
+          'fixtures',
+          'sample-plan-report.md'
+        ),
         'utf-8'
       ),
       stage: 'plan',
@@ -92,7 +117,8 @@ async function run(): Promise<void> {
       scenario: 'real_dev',
       writeMode: 'jsonl',
       dataPath: fixture.dataPath,
-      artifactDocPath: '_bmad-output/implementation-artifacts/_orphan/bugfix/fix-runtime-dashboard-findings-duplication.md',
+      artifactDocPath:
+        '_bmad-output/implementation-artifacts/_orphan/bugfix/fix-runtime-dashboard-findings-duplication.md',
       baseCommitHash: 'playwright-smoke-bugfix-base-commit',
     });
 
@@ -117,7 +143,10 @@ async function run(): Promise<void> {
     await expectContains(enPage, '#run-list', 'Bugfix Queue');
     const boardLaneCount = await enPage.locator('#run-list [data-board-swimlane]').count();
     assert.equal(boardLaneCount, 3, 'board group list should render three swimlanes');
-    const epic15Count = await enPage.locator('#run-list').getByText('Epic 15', { exact: true }).count();
+    const epic15Count = await enPage
+      .locator('#run-list')
+      .getByText('Epic 15', { exact: true })
+      .count();
     assert.equal(epic15Count, 1, 'board group list should not duplicate Epic 15');
     await expectContains(enPage, '#stage-list', 'Current Stage');
     await expectContains(enPage, '#stage-list', 'Status');
@@ -143,16 +172,33 @@ async function run(): Promise<void> {
     const railBox = await enPage.locator('.dashboard-left-column').boundingBox();
     const mainBox = await enPage.locator('.dashboard-main').boundingBox();
     assert.ok(railBox && mainBox, 'dashboard columns should be measurable');
-    assert.ok((railBox?.width ?? 0) >= 400, 'left rail should be widened for board groups and work items');
-    assert.ok((railBox.y + railBox.height) <= (mainBox.y + 4), 'left rail should not overlap main content vertically');
+    assert.ok(
+      (railBox?.width ?? 0) >= 400,
+      'left rail should be widened for board groups and work items'
+    );
+    assert.ok(
+      railBox.y + railBox.height <= mainBox.y + 4,
+      'left rail should not overlap main content vertically'
+    );
 
     await enPage.click('button[data-board-group-id="epic:epic-15"]');
     await expectContains(enPage, '#run-list', 'Epic 15');
     await expectContains(enPage, '#stage-list', 'DONE');
-    const workItemCardText = await enPage.locator('button[data-work-item-id="story:15-1-runtime-dashboard-sft"]').textContent();
-    assert.ok(workItemCardText?.includes('Status'), 'work item card should keep status block visible after widening');
-    assert.ok(workItemCardText?.includes('Current Stage'), 'work item card should keep stage block visible after widening');
-    assert.ok(workItemCardText?.includes('Score'), 'work item card should keep score block visible after widening');
+    const workItemCardText = await enPage
+      .locator('button[data-work-item-id="story:15-1-runtime-dashboard-sft"]')
+      .textContent();
+    assert.ok(
+      workItemCardText?.includes('Status'),
+      'work item card should keep status block visible after widening'
+    );
+    assert.ok(
+      workItemCardText?.includes('Current Stage'),
+      'work item card should keep stage block visible after widening'
+    );
+    assert.ok(
+      workItemCardText?.includes('Score'),
+      'work item card should keep score block visible after widening'
+    );
     await enPage.click('button[data-work-item-id="story:15-1-runtime-dashboard-sft"]');
     await expectContains(enPage, '#inspector-runtime', 'Epic 15');
 
@@ -203,7 +249,10 @@ async function run(): Promise<void> {
     await expectText(zhPage, '#runs-heading', '看板分组');
     await expectText(zhPage, '#stage-rail-heading', '工作项');
     await expectContains(zhPage, '#run-list', 'Epic 15');
-    const zhEpic15Count = await zhPage.locator('#run-list').getByText('Epic 15', { exact: true }).count();
+    const zhEpic15Count = await zhPage
+      .locator('#run-list')
+      .getByText('Epic 15', { exact: true })
+      .count();
     assert.equal(zhEpic15Count, 1, 'board group list should not duplicate Epic 15 in zh locale');
     await zhPage.click('button[data-tab="overview"]');
     await expectContains(zhPage, '#panel-overview', '维度驱动项');

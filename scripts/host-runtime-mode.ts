@@ -3,7 +3,12 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import type { CompiledPromptRef } from './orchestration-dispatch-contract';
 
-export type CanonicalRuntimeHost = 'codex' | 'claude-code-cli' | 'cursor-ide' | 'cursor-cli' | 'unknown';
+export type CanonicalRuntimeHost =
+  | 'codex'
+  | 'claude-code-cli'
+  | 'cursor-ide'
+  | 'cursor-cli'
+  | 'unknown';
 export type ExecutionRuntimeMode =
   | 'native_goal'
   | 'cursor_ide_subagent_ralph_tdd_loop'
@@ -185,16 +190,20 @@ export function validateNativeGoalReadiness(input: {
   if (
     input.compiledPromptRef.goalExecutionPath &&
     (!fs.existsSync(input.compiledPromptRef.goalExecutionPath) ||
-      sha256File(input.compiledPromptRef.goalExecutionPath) !== input.compiledPromptRef.goalExecutionHash)
+      sha256File(input.compiledPromptRef.goalExecutionPath) !==
+        input.compiledPromptRef.goalExecutionHash)
   ) {
     invalidFields.push('goalExecutionHash');
   }
   if (!fs.existsSync(input.compiledPromptRef.auditReceiptPath)) {
     invalidFields.push('auditReceiptPath');
   } else {
-    const receipt = JSON.parse(fs.readFileSync(input.compiledPromptRef.auditReceiptPath, 'utf8')) as Record<string, unknown>;
+    const receipt = JSON.parse(
+      fs.readFileSync(input.compiledPromptRef.auditReceiptPath, 'utf8')
+    ) as Record<string, unknown>;
     const goalCommand = receipt.goalCommand as Record<string, unknown> | undefined;
-    if (goalCommand?.mode !== 'native_goal_document_ref') invalidFields.push('audit_receipt.goalCommand.mode');
+    if (goalCommand?.mode !== 'native_goal_document_ref')
+      invalidFields.push('audit_receipt.goalCommand.mode');
     if (goalCommand?.documentHash !== input.compiledPromptRef.goalExecutionHash) {
       invalidFields.push('audit_receipt.goalCommand.documentHash');
     }
@@ -225,8 +234,16 @@ export function validateNativeGoalReadiness(input: {
   };
 }
 
-export function writeRuntimeBlocker(projectRoot: string, recordId: string, attemptId: string, blocker: RuntimeBlocker): string {
-  const filePath = path.join(runtimeModeDir(projectRoot, recordId, attemptId), 'runtime-blocker.json');
+export function writeRuntimeBlocker(
+  projectRoot: string,
+  recordId: string,
+  attemptId: string,
+  blocker: RuntimeBlocker
+): string {
+  const filePath = path.join(
+    runtimeModeDir(projectRoot, recordId, attemptId),
+    'runtime-blocker.json'
+  );
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, `${JSON.stringify(blocker, null, 2)}\n`, 'utf8');
   return filePath;
@@ -292,7 +309,14 @@ export function validateNativeGoalInvocationReceipt(input: {
       goalExecutionHash: input.goalExecutionHash,
       receiptHash: 'missing',
       exitCode: 'not_available',
-      blockedActions: ['task_report_acceptance', 'execution_closure_result_recorded', 'dispatch_review', 'run_closeout', 'delivery_confirmation_result_recorded', 'record_closed'],
+      blockedActions: [
+        'task_report_acceptance',
+        'execution_closure_result_recorded',
+        'dispatch_review',
+        'run_closeout',
+        'delivery_confirmation_result_recorded',
+        'record_closed',
+      ],
       recordHash: sha256Text(input.recordId),
       reasonDetails: { missingPath: filePath.replace(/\\/g, '/') },
     };
@@ -302,7 +326,8 @@ export function validateNativeGoalInvocationReceipt(input: {
   if (receipt.packetId !== input.packetId) invalidFields.push('packetId');
   if (receipt.attemptId !== input.attemptId) invalidFields.push('attemptId');
   if (receipt.invokedCommandKind !== 'host_native_goal') invalidFields.push('invokedCommandKind');
-  if (receipt.goalExecutionHash !== input.goalExecutionHash) invalidFields.push('goalExecutionHash');
+  if (receipt.goalExecutionHash !== input.goalExecutionHash)
+    invalidFields.push('goalExecutionHash');
   if (!receipt.stdoutRef) invalidFields.push('stdoutRef');
   if (!receipt.stderrRef) invalidFields.push('stderrRef');
   if (receipt.exitCode !== 0) invalidFields.push('exitCode');
@@ -317,7 +342,14 @@ export function validateNativeGoalInvocationReceipt(input: {
     goalExecutionHash: input.goalExecutionHash,
     receiptHash: sha256File(filePath),
     exitCode: receipt.exitCode ?? 'not_available',
-    blockedActions: ['task_report_acceptance', 'execution_closure_result_recorded', 'dispatch_review', 'run_closeout', 'delivery_confirmation_result_recorded', 'record_closed'],
+    blockedActions: [
+      'task_report_acceptance',
+      'execution_closure_result_recorded',
+      'dispatch_review',
+      'run_closeout',
+      'delivery_confirmation_result_recorded',
+      'record_closed',
+    ],
     recordHash: sha256Text(input.recordId),
     reasonDetails: { invalidFields },
   };

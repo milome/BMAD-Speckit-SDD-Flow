@@ -103,9 +103,15 @@ describe('verifyPassConsistency / verifyRalphCompliance', () => {
       .readFileSync(result.paths.progressPath, 'utf8')
       .replace('Status: PENDING', 'Status: PASSED')
       .replace('[TDD-RED] _pending_', '[TDD-RED] T1 pytest tests/runtime.test.ts -v => 1 failed')
-      .replace('[TDD-GREEN] _pending_', '[TDD-GREEN] T1 pytest tests/runtime.test.ts -v => 1 passed')
+      .replace(
+        '[TDD-GREEN] _pending_',
+        '[TDD-GREEN] T1 pytest tests/runtime.test.ts -v => 1 passed'
+      )
       .replace('[TDD-REFACTOR] _pending_', '[TDD-REFACTOR] T1 No refactor needed ✓')
-      .replace('## US-002: Document behavior\nStatus: PENDING\n[DONE] _pending_', '## US-002: Document behavior\nStatus: PASSED\n[DONE] T2 Documentation updated ✓')
+      .replace(
+        '## US-002: Document behavior\nStatus: PENDING\n[DONE] _pending_',
+        '## US-002: Document behavior\nStatus: PASSED\n[DONE] T2 Documentation updated ✓'
+      )
       .replace('Completed: 0', 'Completed: 2')
       .replace('Current story: 1', 'Current story: 2')
       .replace(
@@ -144,7 +150,10 @@ describe('verifyPassConsistency / verifyRalphCompliance', () => {
       .readFileSync(result.paths.progressPath, 'utf8')
       .replace('Status: PENDING', 'Status: PASSED')
       .replace('[TDD-RED] _pending_', '[TDD-RED] T1 pytest tests/runtime.test.ts -v => 1 failed')
-      .replace('[TDD-GREEN] _pending_', '[TDD-GREEN] T1 pytest tests/runtime.test.ts -v => 1 passed')
+      .replace(
+        '[TDD-GREEN] _pending_',
+        '[TDD-GREEN] T1 pytest tests/runtime.test.ts -v => 1 passed'
+      )
       .replace('[TDD-REFACTOR] _pending_', '[TDD-REFACTOR] T1 No refactor needed ✓')
       .replace('Completed: 0', 'Completed: 2');
     fs.writeFileSync(result.paths.progressPath, progress, 'utf8');

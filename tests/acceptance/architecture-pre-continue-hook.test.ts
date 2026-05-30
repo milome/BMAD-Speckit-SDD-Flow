@@ -1,4 +1,12 @@
-import { readFileSync, mkdtempSync, rmSync, writeFileSync, mkdirSync, existsSync, readdirSync } from 'node:fs';
+import {
+  readFileSync,
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+  mkdirSync,
+  existsSync,
+  readdirSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -9,7 +17,10 @@ const ROOT = join(import.meta.dirname, '..', '..');
 describe('architecture pre-continue gate hook', () => {
   it('declares architecture gate config', () => {
     const yaml = readFileSync(join(ROOT, '_bmad', '_config', 'architecture-gates.yaml'), 'utf8');
-    const routing = readFileSync(join(ROOT, '_bmad', '_config', 'continue-gate-routing.yaml'), 'utf8');
+    const routing = readFileSync(
+      join(ROOT, '_bmad', '_config', 'continue-gate-routing.yaml'),
+      'utf8'
+    );
     expect(yaml).toContain('schema: unified_gate_v1');
     expect(yaml).toContain('architecture_contract_gate');
     expect(yaml).toContain('brief_contract_gate');
@@ -59,11 +70,19 @@ describe('architecture pre-continue gate hook', () => {
       let stderr = '';
       let status = 0;
       try {
-        stdout = execFileSync(process.execPath, [join(ROOT, '_bmad', 'runtime', 'hooks', 'pre-continue-check.cjs'), 'bmad-create-architecture', 'step-04-decisions'], {
-          cwd: project,
-          encoding: 'utf8',
-          stdio: ['ignore', 'pipe', 'pipe'],
-        });
+        stdout = execFileSync(
+          process.execPath,
+          [
+            join(ROOT, '_bmad', 'runtime', 'hooks', 'pre-continue-check.cjs'),
+            'bmad-create-architecture',
+            'step-04-decisions',
+          ],
+          {
+            cwd: project,
+            encoding: 'utf8',
+            stdio: ['ignore', 'pipe', 'pipe'],
+          }
+        );
       } catch (error: any) {
         stdout = error.stdout || '';
         stderr = error.stderr || '';
@@ -91,7 +110,10 @@ describe('architecture pre-continue gate hook', () => {
 
   it('sync/install wiring includes pre-continue-check for claude and cursor', () => {
     const initScript = readFileSync(join(ROOT, 'scripts', 'init-to-root.js'), 'utf8');
-    const syncService = readFileSync(join(ROOT, 'packages', 'bmad-speckit', 'src', 'services', 'sync-service.js'), 'utf8');
+    const syncService = readFileSync(
+      join(ROOT, 'packages', 'bmad-speckit', 'src', 'services', 'sync-service.js'),
+      'utf8'
+    );
     const claudeSettings = readFileSync(join(ROOT, '_bmad', 'claude', 'settings.json'), 'utf8');
 
     expect(initScript).toContain('pre-continue-check.cjs');
@@ -110,16 +132,24 @@ describe('architecture pre-continue gate hook', () => {
   it('consumer install produces pre-continue hook files', () => {
     const target = mkdtempSync(join(tmpdir(), 'arch-gate-install-'));
     try {
-      execFileSync(process.execPath, [join(ROOT, 'scripts', 'init-to-root.js'), target, '--agent', 'claude-code'], {
-        cwd: ROOT,
-        encoding: 'utf8',
-        stdio: ['ignore', 'pipe', 'pipe'],
-      });
-      execFileSync(process.execPath, [join(ROOT, 'scripts', 'init-to-root.js'), target, '--agent', 'cursor'], {
-        cwd: ROOT,
-        encoding: 'utf8',
-        stdio: ['ignore', 'pipe', 'pipe'],
-      });
+      execFileSync(
+        process.execPath,
+        [join(ROOT, 'scripts', 'init-to-root.js'), target, '--agent', 'claude-code'],
+        {
+          cwd: ROOT,
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'pipe'],
+        }
+      );
+      execFileSync(
+        process.execPath,
+        [join(ROOT, 'scripts', 'init-to-root.js'), target, '--agent', 'cursor'],
+        {
+          cwd: ROOT,
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'pipe'],
+        }
+      );
 
       expect(existsSync(join(target, '.claude', 'hooks', 'pre-continue-check.cjs'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'hooks', 'pre-continue-check.cjs'))).toBe(true);
@@ -128,7 +158,9 @@ describe('architecture pre-continue gate hook', () => {
       expect(cursorHooksJson).toContain('pre-continue-check.cjs');
       expect(cursorHooksJson).not.toContain('preToolUseCommands');
       expect(cursorHooksJson).toContain('subagentStop');
-      expect(existsSync(join(target, '.cursor', 'hooks', 'subagent-result-summary.cjs'))).toBe(true);
+      expect(existsSync(join(target, '.cursor', 'hooks', 'subagent-result-summary.cjs'))).toBe(
+        true
+      );
       expect(claudeSettingsJson).toContain('runtime-policy-inject.cjs');
       expect(claudeSettingsJson).not.toContain('runtime-policy-inject.js');
       expect(claudeSettingsJson).toContain('WorktreeCreate');

@@ -21,7 +21,8 @@ function sha256Text(value: string): string {
 
 function confirmationStableStringify(value: unknown): string {
   if (value === null || typeof value !== 'object') return JSON.stringify(value);
-  if (Array.isArray(value)) return `[${value.map((item) => confirmationStableStringify(item)).join(',')}]`;
+  if (Array.isArray(value))
+    return `[${value.map((item) => confirmationStableStringify(item)).join(',')}]`;
   const record = value as Record<string, unknown>;
   return `{${Object.keys(record)
     .sort()
@@ -258,7 +259,9 @@ function writeReverseAuditSource(root: string, attemptId: string) {
     ].join('\n')
   );
   const sourceTextValue = readFileSync(sourcePath, 'utf8');
-  const sourceHash = sha256Text(sourceTextValue.replace(/implementationConfirmation:[\s\S]*?\n\n## Reverse Audit Report/u, ''));
+  const sourceHash = sha256Text(
+    sourceTextValue.replace(/implementationConfirmation:[\s\S]*?\n\n## Reverse Audit Report/u, '')
+  );
   const implementationHash = implementationConfirmationHash(confirmation);
   const currentConfirmation = {
     ...confirmation,
@@ -378,7 +381,9 @@ function writeReverseAuditSource(root: string, attemptId: string) {
         runId: 'run-current',
         traceRows: ['TRACE-001'],
         evidenceRefs: ['EVD-001'],
-        commandRunRefs: [{ commandId: 'CMD-001', runId: 'run-current', closeoutAttemptId: attemptId, exitCode: 0 }],
+        commandRunRefs: [
+          { commandId: 'CMD-001', runId: 'run-current', closeoutAttemptId: attemptId, exitCode: 0 },
+        ],
       },
     ],
     artifactIndex: [artifact],
@@ -392,7 +397,9 @@ describe('target artifact realization gate', () => {
     const confirmation = {
       status: 'user_confirmed',
       zetaField: { lower: true },
-      aiTddContractExecutionManifestProjection: { closeoutProof: { requiredCommands: ['CMD-001'] } },
+      aiTddContractExecutionManifestProjection: {
+        closeoutProof: { requiredCommands: ['CMD-001'] },
+      },
       currentTargetMap: { canonicalArtifacts: [] },
       AlphaField: ['forces default sort to differ from localeCompare'],
       implementationConfirmationHash: 'sha256:old-bookkeeping',
@@ -492,7 +499,11 @@ describe('target artifact realization gate', () => {
         status: 'active',
         relatedRequirementIds: ['TRACE-001', 'EVD-001'],
       };
-      const eventPath = path.join(path.dirname(fixture.recordPath), 'events', 'projection-control-events.jsonl');
+      const eventPath = path.join(
+        path.dirname(fixture.recordPath),
+        'events',
+        'projection-control-events.jsonl'
+      );
       writeText(
         eventPath,
         `${JSON.stringify({
@@ -611,7 +622,15 @@ describe('target artifact realization gate', () => {
         traceRows: ['TRACE-001'],
         evidenceRefs: ['EVD-001'],
       };
-      const eventPath = path.join(root, '_bmad-output', 'runtime', 'requirement-records', recordId, 'events', 'control-events.jsonl');
+      const eventPath = path.join(
+        root,
+        '_bmad-output',
+        'runtime',
+        'requirement-records',
+        recordId,
+        'events',
+        'control-events.jsonl'
+      );
       writeText(
         eventPath,
         `${JSON.stringify({
@@ -653,12 +672,21 @@ describe('target artifact realization gate', () => {
             runId,
             traceRows: ['TRACE-001'],
             evidenceRefs: ['EVD-001'],
-            commandRunRefs: [{ commandId: 'CMD-001', closeoutAttemptId: attemptId, runId, exitCode: 0 }],
+            commandRunRefs: [
+              { commandId: 'CMD-001', closeoutAttemptId: attemptId, runId, exitCode: 0 },
+            ],
           },
         ],
         artifactIndex: [artifact],
       };
-      const recordPath = path.join(root, '_bmad-output', 'runtime', 'requirement-records', recordId, 'requirement-record.json');
+      const recordPath = path.join(
+        root,
+        '_bmad-output',
+        'runtime',
+        'requirement-records',
+        recordId,
+        'requirement-record.json'
+      );
       writeJson(recordPath, record);
       const report = evaluateTargetArtifactRealization({
         sourcePath,
@@ -971,7 +999,10 @@ describe('target artifact realization gate', () => {
       const base = path.join(root, '_bmad-output', 'runtime', 'requirement-records', recordId);
       const confirmationDir = path.join(base, 'confirmation');
       const htmlPath = path.join(confirmationDir, `closeout-review-${attemptId}.html`);
-      const reportPath = path.join(confirmationDir, `closeout-review-${attemptId}.render-report.json`);
+      const reportPath = path.join(
+        confirmationDir,
+        `closeout-review-${attemptId}.render-report.json`
+      );
       writeText(htmlPath, '<!doctype html><title>closeout review</title>\n');
       const sourcePath = path.join(root, 'source.md');
       const confirmation = {
@@ -1009,7 +1040,8 @@ describe('target artifact realization gate', () => {
       const implementationHash = implementationConfirmationHash(confirmation);
       writeJson(reportPath, {
         mode: 'closeout-review',
-        sourceDocumentHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+        sourceDocumentHash:
+          'sha256:1111111111111111111111111111111111111111111111111111111111111111',
         implementationConfirmationHash: implementationHash,
         finalAcceptanceReview: {
           ready: true,
@@ -1021,7 +1053,8 @@ describe('target artifact realization gate', () => {
         recordId,
         requirementSetId: recordId,
         sourcePath,
-        sourceDocumentHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+        sourceDocumentHash:
+          'sha256:1111111111111111111111111111111111111111111111111111111111111111',
         implementationConfirmationHash: implementationHash,
         lastEventType: 'record_closed',
         closeout: { currentAttemptId: attemptId, decision: 'pass' },

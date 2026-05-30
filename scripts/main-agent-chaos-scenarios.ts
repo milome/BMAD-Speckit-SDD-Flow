@@ -15,7 +15,12 @@ type ChaosState = {
   rerunGateStatus: 'none' | 'pending' | 'pass';
   sessionRecovered: boolean;
   hostMode: 'cursor' | 'claude' | 'no-hooks';
-  nextAction: 'dispatch_plan' | 'dispatch_remediation' | 'run_closeout' | 'inspect' | 'continue_ready';
+  nextAction:
+    | 'dispatch_plan'
+    | 'dispatch_remediation'
+    | 'run_closeout'
+    | 'inspect'
+    | 'continue_ready';
 };
 
 type ChaosResult = {
@@ -118,7 +123,8 @@ export function runChaosScenarios(input: { projectRoot?: string } = {}): {
   recoveryRate: number;
   scenarios: ChaosResult[];
 } {
-  const projectRoot = input.projectRoot ?? fs.mkdtempSync(path.join(os.tmpdir(), 'main-agent-chaos-'));
+  const projectRoot =
+    input.projectRoot ?? fs.mkdtempSync(path.join(os.tmpdir(), 'main-agent-chaos-'));
   const scenarioIds: ChaosScenarioId[] = [
     'pending_packet_loss',
     'closeout_failure',

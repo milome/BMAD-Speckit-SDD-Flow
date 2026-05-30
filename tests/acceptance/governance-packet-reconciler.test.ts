@@ -19,7 +19,12 @@ describe('governance packet reconciler', () => {
   it('retries expired leases, retries stale running executions, and reports orphans', () => {
     const root = setupRoot();
     try {
-      const packetPath = path.join(root, '_bmad-output', 'planning-artifacts', 'attempt-1.cursor-packet.md');
+      const packetPath = path.join(
+        root,
+        '_bmad-output',
+        'planning-artifacts',
+        'attempt-1.cursor-packet.md'
+      );
       mkdirSync(path.dirname(packetPath), { recursive: true });
       writeFileSync(packetPath, '# packet\n', 'utf8');
       writeFileSync(
@@ -51,7 +56,9 @@ describe('governance packet reconciler', () => {
         attemptNumber: 1,
         rerunGate: 'implementation-readiness',
         artifactPath: path.join(root, 'attempt-2.md'),
-        packetPaths: { cursor: path.join(root, '_bmad-output', 'planning-artifacts', 'missing.cursor-packet.md') },
+        packetPaths: {
+          cursor: path.join(root, '_bmad-output', 'planning-artifacts', 'missing.cursor-packet.md'),
+        },
         authoritativeHost: 'cursor',
       });
       updateGovernancePacketExecutionRecord(root, 'loop-running', 1, (record) => ({
@@ -63,12 +70,21 @@ describe('governance packet reconciler', () => {
         leaseExpiresAt: '2026-04-09T00:01:00.000Z',
       }));
 
-      const report = reconcileGovernanceExecutionRecords(root, new Date('2026-04-09T01:00:00.000Z'));
+      const report = reconcileGovernanceExecutionRecords(
+        root,
+        new Date('2026-04-09T01:00:00.000Z')
+      );
 
-      expect(readGovernancePacketExecutionRecord(root, 'loop-lease', 1)?.status).toBe('retry_pending');
-      expect(readGovernancePacketExecutionRecord(root, 'loop-running', 1)?.status).toBe('retry_pending');
+      expect(readGovernancePacketExecutionRecord(root, 'loop-lease', 1)?.status).toBe(
+        'retry_pending'
+      );
+      expect(readGovernancePacketExecutionRecord(root, 'loop-running', 1)?.status).toBe(
+        'retry_pending'
+      );
       expect(report.updatedRecordIds).toHaveLength(2);
-      expect(report.orphanPacketPaths.some((file) => file.endsWith('orphan.cursor-packet.md'))).toBe(true);
+      expect(
+        report.orphanPacketPaths.some((file) => file.endsWith('orphan.cursor-packet.md'))
+      ).toBe(true);
       expect(report.orphanExecutionRecordIds).toContain('gov-exec-loop-running-0001');
     } finally {
       rmSync(root, { recursive: true, force: true });

@@ -7,10 +7,7 @@ import {
   linkRepoNodeModulesIntoProject,
   writeMinimalRegistryAndProjectContext,
 } from '../helpers/runtime-registry-fixture';
-import {
-  defaultRuntimeContextFile,
-  readRuntimeContext,
-} from '../../scripts/runtime-context';
+import { defaultRuntimeContextFile, readRuntimeContext } from '../../scripts/runtime-context';
 import {
   defaultRuntimeContextRegistry,
   writeRuntimeContextRegistry,
@@ -199,9 +196,12 @@ describe('runtime-policy-inject (dual host entry)', () => {
   it('resolve-for-session bundle uses temporary resolvedMode materialization when project context sync is skipped', () => {
     const tempRoot = makeStoryScopedRootWithoutProjectContext();
     try {
-      const resolveSession = require.resolve('@bmad-speckit/runtime-emit/dist/resolve-for-session.cjs', {
-        paths: [tempRoot],
-      });
+      const resolveSession = require.resolve(
+        '@bmad-speckit/runtime-emit/dist/resolve-for-session.cjs',
+        {
+          paths: [tempRoot],
+        }
+      );
       const r = spawnSync(process.execPath, [resolveSession], {
         cwd: tempRoot,
         input: JSON.stringify({
@@ -239,9 +239,9 @@ describe('runtime-policy-inject (dual host entry)', () => {
         'utf8'
       );
       expect(runtime).toContain('RUNTIME-MATERIALIZED facilitator resolvedMode=en');
-      expect(fs.existsSync(path.join(tempRoot, '_bmad-output', 'runtime', 'context', 'project.json'))).toBe(
-        false
-      );
+      expect(
+        fs.existsSync(path.join(tempRoot, '_bmad-output', 'runtime', 'context', 'project.json'))
+      ).toBe(false);
     } finally {
       fs.rmSync(tempRoot, { recursive: true, force: true });
     }
@@ -290,7 +290,9 @@ describe('runtime-policy-inject (dual host entry)', () => {
       expect(r.status).toBe(0);
       const out = JSON.parse(r.stdout || '{}') as { systemMessage?: string };
       expect(out.systemMessage).toContain('本回合 Runtime Governance（JSON）');
-      expect(out.systemMessage).not.toContain('routing this discussion through `mcp_task/generalPurpose` is forbidden');
+      expect(out.systemMessage).not.toContain(
+        'routing this discussion through `mcp_task/generalPurpose` is forbidden'
+      );
     } finally {
       fs.rmSync(tempRoot, { recursive: true, force: true });
     }
@@ -387,8 +389,12 @@ describe('runtime-policy-inject (dual host entry)', () => {
         hookSpecificOutput?: { additionalContext?: string };
       };
       const additionalContext = out.hookSpecificOutput?.additionalContext ?? '';
-      expect(additionalContext).toContain('Cursor Party-Mode execution mode: generalPurpose compatibility path');
-      expect(additionalContext).toContain('do not pause or hand control back to the main Agent before the final round target');
+      expect(additionalContext).toContain(
+        'Cursor Party-Mode execution mode: generalPurpose compatibility path'
+      );
+      expect(additionalContext).toContain(
+        'do not pause or hand control back to the main Agent before the final round target'
+      );
       expect(additionalContext).toContain('"target_rounds_total": 50');
       expect(additionalContext).toContain('"sidecar_final_path":');
       expect(additionalContext).toContain(
@@ -415,19 +421,23 @@ describe('runtime-policy-inject (dual host entry)', () => {
       expect(currentSession.agent_turn_event_source_mode).toBe(
         'cursor_visible_output_reconstruction'
       );
-      expect(String(currentSession.sidecar_started_path || '')).toContain('/_bmad-output/party-mode/sidecar/');
-      expect(String(currentSession.sidecar_final_path || '')).toContain('/_bmad-output/party-mode/sidecar/');
-      expect(fs.existsSync(path.resolve(tempRoot, String(currentSession.sidecar_started_path || '')))).toBe(true);
+      expect(String(currentSession.sidecar_started_path || '')).toContain(
+        '/_bmad-output/party-mode/sidecar/'
+      );
+      expect(String(currentSession.sidecar_final_path || '')).toContain(
+        '/_bmad-output/party-mode/sidecar/'
+      );
+      expect(
+        fs.existsSync(path.resolve(tempRoot, String(currentSession.sidecar_started_path || '')))
+      ).toBe(true);
 
       const sessionsDir = path.join(tempRoot, '_bmad-output', 'party-mode', 'sessions');
       const metaFiles = fs.readdirSync(sessionsDir).filter((file) => file.endsWith('.meta.json'));
       expect(metaFiles).toHaveLength(1);
-      const meta = JSON.parse(
-        fs.readFileSync(path.join(sessionsDir, metaFiles[0]), 'utf8')
-      ) as { agent_turn_event_source_mode?: string };
-      expect(meta.agent_turn_event_source_mode).toBe(
-        'cursor_visible_output_reconstruction'
-      );
+      const meta = JSON.parse(fs.readFileSync(path.join(sessionsDir, metaFiles[0]), 'utf8')) as {
+        agent_turn_event_source_mode?: string;
+      };
+      expect(meta.agent_turn_event_source_mode).toBe('cursor_visible_output_reconstruction');
     } finally {
       fs.rmSync(tempRoot, { recursive: true, force: true });
     }
@@ -475,37 +485,45 @@ describe('runtime-policy-inject (dual host entry)', () => {
       });
       expect(pretooluse.status).toBe(0);
 
-      const subagentStart = spawnSync(process.execPath, [inject, '--cursor-host', '--subagent-start'], {
-        cwd: repoRoot,
-        input: JSON.stringify({
-          cwd: tempRoot,
-          subagent_type: 'generalPurpose',
-          task: [
-            '## 用户选择',
-            '强度: 100 (final_solution_task_list_100)',
-            '',
-            '【自检完成】Cursor party-mode',
-            '- 强度选项: 已展示',
-            '- 用户选择: 100 (final_solution_task_list_100)',
-            '- 执行方式: generalPurpose-compatible facilitator',
-            '- Session Bootstrap: 由宿主在 SubagentStart 注入',
-            '可以发起。',
-            '',
-            'Run party-mode-facilitator with the stale 100-tier payload',
-          ].join('\n'),
-        }),
-        encoding: 'utf8',
-        env: {
-          ...process.env,
-          CURSOR_PROJECT_ROOT: tempRoot,
-          CLAUDE_PROJECT_DIR: tempRoot,
-        },
-      });
+      const subagentStart = spawnSync(
+        process.execPath,
+        [inject, '--cursor-host', '--subagent-start'],
+        {
+          cwd: repoRoot,
+          input: JSON.stringify({
+            cwd: tempRoot,
+            subagent_type: 'generalPurpose',
+            task: [
+              '## 用户选择',
+              '强度: 100 (final_solution_task_list_100)',
+              '',
+              '【自检完成】Cursor party-mode',
+              '- 强度选项: 已展示',
+              '- 用户选择: 100 (final_solution_task_list_100)',
+              '- 执行方式: generalPurpose-compatible facilitator',
+              '- Session Bootstrap: 由宿主在 SubagentStart 注入',
+              '可以发起。',
+              '',
+              'Run party-mode-facilitator with the stale 100-tier payload',
+            ].join('\n'),
+          }),
+          encoding: 'utf8',
+          env: {
+            ...process.env,
+            CURSOR_PROJECT_ROOT: tempRoot,
+            CLAUDE_PROJECT_DIR: tempRoot,
+          },
+        }
+      );
 
       expect(subagentStart.status).toBe(1);
-      expect(subagentStart.stderr).toContain('does not match the last confirmed preToolUse selection');
+      expect(subagentStart.stderr).toContain(
+        'does not match the last confirmed preToolUse selection'
+      );
       expect(subagentStart.stderr).toContain('Confirmed preToolUse gate profile: `quick_probe_20`');
-      expect(subagentStart.stderr).toContain('SubagentStart gate profile: `final_solution_task_list_100`');
+      expect(subagentStart.stderr).toContain(
+        'SubagentStart gate profile: `final_solution_task_list_100`'
+      );
 
       const currentSessionPath = path.join(
         tempRoot,
@@ -630,7 +648,9 @@ describe('runtime-policy-inject (dual host entry)', () => {
       expect(out.stopReason).toContain('必须完成自检清单');
       expect(out.systemMessage).toContain('Cursor party-mode preflight');
       expect(out.systemMessage).toContain('【自检完成】Cursor party-mode');
-      expect(out.systemMessage).toContain('完成以上自检后，再沿用同一档位立即重试当前 party-mode 发起');
+      expect(out.systemMessage).toContain(
+        '完成以上自检后，再沿用同一档位立即重试当前 party-mode 发起'
+      );
     } finally {
       fs.rmSync(tempRoot, { recursive: true, force: true });
     }
@@ -697,7 +717,9 @@ describe('runtime-policy-inject (dual host entry)', () => {
       expect(out.stopReason).toContain('先由主 Agent 询问用户选择 20/50/100 强度');
       expect(out.systemMessage).toContain('structured gate profile was present');
       expect(out.systemMessage).toContain('不能替代用户授权本身');
-      expect(out.systemMessage).toContain('不要把推荐档位 / 默认档位 / 自检中的“已选择档位”当作用户回复');
+      expect(out.systemMessage).toContain(
+        '不要把推荐档位 / 默认档位 / 自检中的“已选择档位”当作用户回复'
+      );
       expect(out.systemMessage).toContain('本条助手消息必须停在问题处');
       expect(out.systemMessage).toContain('## 用户选择');
       expect(out.systemMessage).toContain('强度: 100 (final_solution_task_list_100)');
@@ -757,7 +779,9 @@ describe('runtime-policy-inject (dual host entry)', () => {
       expect(out.systemMessage).toContain(
         'high-confidence final outputs require a canonical markdown document path'
       );
-      expect(out.systemMessage).toContain('_bmad-output/implementation-artifacts/_orphan/BUGFIX_<slug>.md');
+      expect(out.systemMessage).toContain(
+        '_bmad-output/implementation-artifacts/_orphan/BUGFIX_<slug>.md'
+      );
       expect(out.systemMessage).toContain('must write/update that document directly');
     } finally {
       fs.rmSync(tempRoot, { recursive: true, force: true });
@@ -808,7 +832,9 @@ describe('runtime-policy-inject (dual host entry)', () => {
       expect(out.stopReason).toContain('先由主 Agent 询问用户选择 20/50/100 强度');
       expect(out.systemMessage).toContain('必须等待用户明确回复 `20` / `50` / `100` 后再继续');
       expect(out.systemMessage).toContain('提问消息必须停在这里');
-      expect(out.systemMessage).toContain('禁止在同一条助手消息中追加「或按推荐档位开始」「现在启动」');
+      expect(out.systemMessage).toContain(
+        '禁止在同一条助手消息中追加「或按推荐档位开始」「现在启动」'
+      );
     } finally {
       fs.rmSync(tempRoot, { recursive: true, force: true });
     }
@@ -896,7 +922,7 @@ describe('runtime-policy-inject (dual host entry)', () => {
           '## User Journeys',
           'Filled.',
         ].join('\n'),
-        'utf8',
+        'utf8'
       );
 
       const inject = path.join(repoRoot, '_bmad/claude/hooks/runtime-policy-inject.cjs');

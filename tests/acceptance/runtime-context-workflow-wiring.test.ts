@@ -2,13 +2,22 @@ import { describe, expect, it } from 'vitest';
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { buildProjectRegistryFromSprintStatus, writeRuntimeContextRegistry, runtimeContextRegistryPath } from '../../scripts/runtime-context-registry';
+import {
+  buildProjectRegistryFromSprintStatus,
+  writeRuntimeContextRegistry,
+  runtimeContextRegistryPath,
+} from '../../scripts/runtime-context-registry';
 
 describe('runtime-context workflow wiring', () => {
   it('can persist a sprint-derived registry in the runtime output area', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'workflow-wire-'));
     try {
-      const sprintStatusPath = path.join(root, '_bmad-output', 'implementation-artifacts', 'sprint-status.yaml');
+      const sprintStatusPath = path.join(
+        root,
+        '_bmad-output',
+        'implementation-artifacts',
+        'sprint-status.yaml'
+      );
       mkdirSync(path.dirname(sprintStatusPath), { recursive: true });
       writeFileSync(
         sprintStatusPath,

@@ -655,7 +655,14 @@ describe('main-agent readiness auto remediation lane', () => {
       expect(
         mainImplementationReadinessGate([
           '--requirement-record',
-          path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'REQ-AUTO-REMEDIATE', 'requirement-record.json'),
+          path.join(
+            root,
+            '_bmad-output',
+            'runtime',
+            'requirement-records',
+            'REQ-AUTO-REMEDIATE',
+            'requirement-record.json'
+          ),
           '--implementation-run-kind',
           'first-implementation',
           '--evaluated-at',

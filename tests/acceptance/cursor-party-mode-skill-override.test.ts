@@ -28,7 +28,9 @@ describe('cursor party-mode skill override', () => {
     expect(source).toContain('Long-Run Compact Mode');
     expect(source).toContain('one short substantive speaker line per round');
     expect(source).toContain('_bmad-output/party-mode/runtime/current-session.json');
-    expect(source).toContain('missing session-log files or missing capture files alone is not sufficient evidence');
+    expect(source).toContain(
+      'missing session-log files or missing capture files alone is not sufficient evidence'
+    );
 
     const target = mkdtempSync(join(tmpdir(), 'cursor-party-mode-skill-'));
     try {
@@ -55,7 +57,9 @@ describe('cursor party-mode skill override', () => {
       expect(installed).toContain('Long-Run Compact Mode');
       expect(installed).toContain('one short substantive speaker line per round');
       expect(installed).toContain('_bmad-output/party-mode/runtime/current-session.json');
-      expect(installed).toContain('missing session-log files or missing capture files alone is not sufficient evidence');
+      expect(installed).toContain(
+        'missing session-log files or missing capture files alone is not sufficient evidence'
+      );
     } finally {
       rmSync(target, { recursive: true, force: true });
     }

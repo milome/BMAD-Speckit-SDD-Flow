@@ -2,13 +2,17 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import {
-  appendControlEventAndReplay,
-} from '../../scripts/requirement-record-control-store';
+import { appendControlEventAndReplay } from '../../scripts/requirement-record-control-store';
 
 type JsonObject = Record<string, unknown>;
 
-const RELATIONSHIPS = ['orphan', 'linked', 'adopted_by_story', 'promoted_to_story', 'story'] as const;
+const RELATIONSHIPS = [
+  'orphan',
+  'linked',
+  'adopted_by_story',
+  'promoted_to_story',
+  'story',
+] as const;
 const SPRINT_STATUS_PATH = '_bmad-output/implementation-artifacts/sprint-status.yaml';
 
 function baseRecord(): JsonObject {
@@ -29,14 +33,17 @@ function baseRecord(): JsonObject {
         confirmedAt: '2026-05-28T00:00:00.000Z',
         confirmedBy: 'test',
         sourcePath: 'docs/requirements/bmad-association.md',
-        sourceDocumentHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+        sourceDocumentHash:
+          'sha256:1111111111111111111111111111111111111111111111111111111111111111',
         implementationConfirmationHash:
           'sha256:2222222222222222222222222222222222222222222222222222222222222222',
         confirmationPageHash:
           'sha256:3333333333333333333333333333333333333333333333333333333333333333',
         confirmationText: 'confirmed',
-        renderReportPath: '_bmad-output/runtime/requirement-records/REQSET-BMAD-ASSOCIATION/confirmation/report.json',
-        htmlPath: '_bmad-output/runtime/requirement-records/REQSET-BMAD-ASSOCIATION/confirmation/confirmation.html',
+        renderReportPath:
+          '_bmad-output/runtime/requirement-records/REQSET-BMAD-ASSOCIATION/confirmation/report.json',
+        htmlPath:
+          '_bmad-output/runtime/requirement-records/REQSET-BMAD-ASSOCIATION/confirmation/confirmation.html',
       },
     ],
     currentMentalModel: 'delivery_confirmation',
@@ -89,8 +96,9 @@ describe('BMAD association boundary', () => {
       const sprintStatusPath = path.join(root, SPRINT_STATUS_PATH);
       expect(() => {
         const record = JSON.parse(readFileSync(recordPath, 'utf8'));
-        const currentAuth = ((record.sprintStatusUpdateAuthorizations as JsonObject[]) ?? [])
-          .find((authorization) => authorization.status === 'current');
+        const currentAuth = ((record.sprintStatusUpdateAuthorizations as JsonObject[]) ?? []).find(
+          (authorization) => authorization.status === 'current'
+        );
         if (!currentAuth) throw new Error('sprint_status_update_requires_current_authorization');
         writeFileSync(sprintStatusPath, 'story: done\n', 'utf8');
       }).toThrow('sprint_status_update_requires_current_authorization');

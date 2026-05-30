@@ -40,7 +40,10 @@ describe('dimension-parser', () => {
   });
 
   it('extracts weighted dimensions from /100 style report', () => {
-    const content = fs.readFileSync(path.join(FIXTURES, 'sample-prd-report-with-dimensions.md'), 'utf-8');
+    const content = fs.readFileSync(
+      path.join(FIXTURES, 'sample-prd-report-with-dimensions.md'),
+      'utf-8'
+    );
     const scores = parseDimensionScores(content, 'prd');
 
     expect(scores.length).toBe(4);
@@ -80,14 +83,23 @@ describe('dimension-parser', () => {
   });
 
   it('supports weighted sum calculation in orchestrator formula', () => {
-    const content = fs.readFileSync(path.join(FIXTURES, 'sample-prd-report-with-dimensions.md'), 'utf-8');
+    const content = fs.readFileSync(
+      path.join(FIXTURES, 'sample-prd-report-with-dimensions.md'),
+      'utf-8'
+    );
     const scores = parseDimensionScores(content, 'prd');
-    const weighted = scores.reduce((sum, current) => sum + (current.score * current.weight) / 100, 0);
+    const weighted = scores.reduce(
+      (sum, current) => sum + (current.score * current.weight) / 100,
+      0
+    );
     expect(weighted).toBe(78);
   });
 
   it('returns empty array when config file is missing', () => {
-    const content = fs.readFileSync(path.join(FIXTURES, 'sample-prd-report-with-dimensions.md'), 'utf-8');
+    const content = fs.readFileSync(
+      path.join(FIXTURES, 'sample-prd-report-with-dimensions.md'),
+      'utf-8'
+    );
     const missingPath = path.join(process.cwd(), 'config', 'code-reviewer-config.not-exists.yaml');
     expect(parseDimensionScores(content, 'prd', missingPath)).toEqual([]);
   });

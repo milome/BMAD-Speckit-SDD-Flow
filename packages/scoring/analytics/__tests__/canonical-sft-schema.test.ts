@@ -17,7 +17,9 @@ function createValidator(schema: object) {
   return ajv.compile(schema);
 }
 
-function expectTraceCompletenessError(errors: Array<{ instancePath?: string; schemaPath?: string }> | null | undefined) {
+function expectTraceCompletenessError(
+  errors: Array<{ instancePath?: string; schemaPath?: string }> | null | undefined
+) {
   return errors?.some(
     (error) =>
       error.instancePath === '/quality/trace_completeness' ||

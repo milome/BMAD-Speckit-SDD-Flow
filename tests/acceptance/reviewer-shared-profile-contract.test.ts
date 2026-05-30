@@ -4,7 +4,10 @@ import {
   REVIEWER_SHARED_CORE_PROFILE_PACK,
   REVIEWER_SHARED_CORE_METADATA,
 } from '../../scripts/reviewer-shared-core';
-import { REVIEWER_AUDIT_STAGE_CONSUMERS, listReviewerRegistrations } from '../../scripts/reviewer-registry';
+import {
+  REVIEWER_AUDIT_STAGE_CONSUMERS,
+  listReviewerRegistrations,
+} from '../../scripts/reviewer-registry';
 
 describe('reviewer shared profile contract', () => {
   it('keeps shared reviewer profile pack aligned with frozen reviewer profiles', () => {

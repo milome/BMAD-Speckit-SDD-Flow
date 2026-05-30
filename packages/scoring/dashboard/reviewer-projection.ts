@@ -172,7 +172,8 @@ function buildBlockedReviewerRolloutGate(): ReviewerRouteExplainability['rollout
     blockingProofs: REQUIRED_ROLLOUT_PROOFS,
     cleanupAllowed: false,
     canClaimFullIsomorphism: false,
-    summary: 'Reviewer rollout remains blocked until Codex closeout and scoring proofs are present.',
+    summary:
+      'Reviewer rollout remains blocked until Codex closeout and scoring proofs are present.',
   };
 }
 
@@ -293,9 +294,7 @@ export function mapFlowStageToReviewerAuditEntryStage(
     return null;
   }
   if (flow === 'bugfix') {
-    return stage === 'bugfix' || stage === 'implement' || stage === 'post_audit'
-      ? 'bugfix'
-      : null;
+    return stage === 'bugfix' || stage === 'implement' || stage === 'post_audit' ? 'bugfix' : null;
   }
   if (flow === 'standalone_tasks') {
     return ['document', 'standalone_tasks', 'tasks', 'implement', 'post_audit'].includes(stage)

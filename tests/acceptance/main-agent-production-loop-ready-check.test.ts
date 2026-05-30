@@ -6,7 +6,8 @@ import { describe, expect, it } from 'vitest';
 import { mainProductionLoopReadyCheck } from '../../scripts/main-agent-production-loop-ready-check';
 
 const SOURCE_HASH = 'sha256:1111111111111111111111111111111111111111111111111111111111111111';
-const IMPLEMENTATION_HASH = 'sha256:2222222222222222222222222222222222222222222222222222222222222222';
+const IMPLEMENTATION_HASH =
+  'sha256:2222222222222222222222222222222222222222222222222222222222222222';
 const ARCHITECTURE_HASH = 'sha256:3333333333333333333333333333333333333333333333333333333333333333';
 
 const SUBSYSTEM_IDS = [
@@ -123,7 +124,9 @@ function extension(recordId: string, requirementSetId: string) {
     performanceMetrics: [{ name: 'closeout_eval_duration_ms', threshold: '<= 5000' }],
     businessMetrics: [{ name: 'requirement_reopen_rate', threshold: '<= 5%' }],
     alerts: [{ name: 'production_loop_blocked', owner: 'main-agent' }],
-    rollbackConditions: [{ condition: 'hash_mismatch_or_slo_violation', action: 'block_closeout_and_open_rca' }],
+    rollbackConditions: [
+      { condition: 'hash_mismatch_or_slo_violation', action: 'block_closeout_and_open_rca' },
+    ],
     feedbackRouting: {
       failureRecordEventTypes: ['failure_recorded'],
       rcaRecordEventTypes: ['rca_created'],
@@ -141,7 +144,11 @@ function artifact(filePath: string, artifactType: string) {
   };
 }
 
-function writeDatasetFixture(root: string, recordId: string, options: { onlySftFile?: boolean } = {}) {
+function writeDatasetFixture(
+  root: string,
+  recordId: string,
+  options: { onlySftFile?: boolean } = {}
+) {
   const datasetId = `${recordId}-governed-sft`.toLowerCase();
   const datasetRoot = path.join(root, '_bmad-output', 'runtime', 'datasets', datasetId, 'v1');
   const trainPath = path.join(datasetRoot, 'exports', 'train.jsonl');
@@ -221,7 +228,10 @@ function writeDatasetFixture(root: string, recordId: string, options: { onlySftF
   });
 }
 
-function writeFixture(root: string, options: { completeExtension?: boolean; onlySftFile?: boolean } = {}) {
+function writeFixture(
+  root: string,
+  options: { completeExtension?: boolean; onlySftFile?: boolean } = {}
+) {
   const recordId = 'REQ-PRODUCTION-LOOP';
   writeDatasetFixture(root, recordId, { onlySftFile: options.onlySftFile });
   const base = path.join(root, '_bmad-output', 'runtime', 'requirement-records', recordId);
@@ -235,57 +245,52 @@ function writeFixture(root: string, options: { completeExtension?: boolean; only
   }
   writeJson(extensionPath, extensionValue);
   const recordPath = path.join(base, 'requirement-record.json');
-  const relativeExtensionPath = path
-    .relative(root, extensionPath)
-    .replace(/\\/gu, '/');
-  writeJson(
-    recordPath,
+  const relativeExtensionPath = path.relative(root, extensionPath).replace(/\\/gu, '/');
+  writeJson(recordPath, {
+    recordId,
+    requirementSetId: recordId,
+    status: 'user_confirmed',
+    sourceDocumentHash: SOURCE_HASH,
+    implementationConfirmationHash: IMPLEMENTATION_HASH,
+    confirmationHistory: [
       {
+        eventType: 'confirmation_recorded',
         recordId,
         requirementSetId: recordId,
-        status: 'user_confirmed',
+        confirmedAt: '2026-05-19T00:00:00.000Z',
+        confirmedBy: 'user',
+        sourcePath: 'docs/design/example.md',
         sourceDocumentHash: SOURCE_HASH,
         implementationConfirmationHash: IMPLEMENTATION_HASH,
-        confirmationHistory: [
-          {
-            eventType: 'confirmation_recorded',
-            recordId,
-            requirementSetId: recordId,
-            confirmedAt: '2026-05-19T00:00:00.000Z',
-            confirmedBy: 'user',
-            sourcePath: 'docs/design/example.md',
-            sourceDocumentHash: SOURCE_HASH,
-            implementationConfirmationHash: IMPLEMENTATION_HASH,
-            confirmationPageHash:
-              'sha256:4444444444444444444444444444444444444444444444444444444444444444',
-            confirmationText: 'confirm',
-            renderReportPath: 'confirmation-render-report.json',
-            htmlPath: 'confirmation.html',
-          },
-        ],
-        architectureConfirmationState: {
-          status: 'active',
-          currentArchitectureConfirmationHash: ARCHITECTURE_HASH,
-        },
-        extensionRefs: [
-          {
-            eventType: 'artifact_indexed',
-            artifactType: 'observability_extension',
-            sourceOfTruthRole: 'evidence',
-            recordId,
-            requirementSetId: recordId,
-            path: relativeExtensionPath,
-            contentHash: sha256File(extensionPath),
-            producer: 'main-agent-production-loop-ready-check.test',
-            purpose: 'prove observability extension and sixteen subsystem machine-readable readiness',
-            relatedRequirementIds: ['MUST-011', 'MUST-017', 'EVD-010'],
-            status: 'active',
-            inputVersion: 'trace-007',
-            outputVersion: 'observability-extension-v1',
-          },
-        ],
-      }
-  );
+        confirmationPageHash:
+          'sha256:4444444444444444444444444444444444444444444444444444444444444444',
+        confirmationText: 'confirm',
+        renderReportPath: 'confirmation-render-report.json',
+        htmlPath: 'confirmation.html',
+      },
+    ],
+    architectureConfirmationState: {
+      status: 'active',
+      currentArchitectureConfirmationHash: ARCHITECTURE_HASH,
+    },
+    extensionRefs: [
+      {
+        eventType: 'artifact_indexed',
+        artifactType: 'observability_extension',
+        sourceOfTruthRole: 'evidence',
+        recordId,
+        requirementSetId: recordId,
+        path: relativeExtensionPath,
+        contentHash: sha256File(extensionPath),
+        producer: 'main-agent-production-loop-ready-check.test',
+        purpose: 'prove observability extension and sixteen subsystem machine-readable readiness',
+        relatedRequirementIds: ['MUST-011', 'MUST-017', 'EVD-010'],
+        status: 'active',
+        inputVersion: 'trace-007',
+        outputVersion: 'observability-extension-v1',
+      },
+    ],
+  });
   return { recordPath };
 }
 
@@ -393,16 +398,27 @@ describe('main-agent production loop ready check', () => {
       process.chdir(root);
       const { recordPath } = writeFixture(root);
       const record = JSON.parse(readFileSync(recordPath, 'utf8'));
-      const extensionPath = path.resolve(root, (record.extensionRefs[0].path as string).replace(/\//gu, path.sep));
+      const extensionPath = path.resolve(
+        root,
+        (record.extensionRefs[0].path as string).replace(/\//gu, path.sep)
+      );
       const extensionValue = JSON.parse(readFileSync(extensionPath, 'utf8'));
-      extensionValue.subsystemReadiness = extensionValue.subsystemReadiness.map((item: Record<string, unknown>) => {
-        const { commandRuns, artifactRefs, controlledEventRefs, recoveryActionEvidence, ...rest } = item;
-        void commandRuns;
-        void artifactRefs;
-        void controlledEventRefs;
-        void recoveryActionEvidence;
-        return rest;
-      });
+      extensionValue.subsystemReadiness = extensionValue.subsystemReadiness.map(
+        (item: Record<string, unknown>) => {
+          const {
+            commandRuns,
+            artifactRefs,
+            controlledEventRefs,
+            recoveryActionEvidence,
+            ...rest
+          } = item;
+          void commandRuns;
+          void artifactRefs;
+          void controlledEventRefs;
+          void recoveryActionEvidence;
+          return rest;
+        }
+      );
       writeJson(extensionPath, extensionValue);
       record.extensionRefs[0].contentHash = sha256File(extensionPath);
       writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');

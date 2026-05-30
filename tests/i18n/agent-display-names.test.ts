@@ -71,7 +71,11 @@ describe('agent display names registry', () => {
     expect(missingRegistry.source).toBe('manifest-fallback');
 
     fs.mkdirSync(path.join(root, '_bmad', 'i18n'), { recursive: true });
-    fs.writeFileSync(path.join(root, '_bmad', 'i18n', 'agent-display-names.yaml'), 'version: [', 'utf8');
+    fs.writeFileSync(
+      path.join(root, '_bmad', 'i18n', 'agent-display-names.yaml'),
+      'version: [',
+      'utf8'
+    );
 
     const invalidRegistry = resolveLocalizedAgentDisplayProfile(root, 'architect', 'zh');
     expect(invalidRegistry.displayName).toBe('Winston');

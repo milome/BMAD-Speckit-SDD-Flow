@@ -7,7 +7,8 @@ import { mainIngestImplementationEvidence } from '../../scripts/ingest-implement
 import { mainRuntimePolicySnapshotCheck } from '../../scripts/main-agent-runtime-policy-snapshot-check';
 
 const SOURCE_HASH = 'sha256:1111111111111111111111111111111111111111111111111111111111111111';
-const IMPLEMENTATION_HASH = 'sha256:2222222222222222222222222222222222222222222222222222222222222222';
+const IMPLEMENTATION_HASH =
+  'sha256:2222222222222222222222222222222222222222222222222222222222222222';
 const ARCHITECTURE_HASH = 'sha256:3333333333333333333333333333333333333333333333333333333333333333';
 
 const globalContractTraceabilityPolicy = {
@@ -101,7 +102,13 @@ function artifactRef(artifactPath: string, hash: string, overrides: Record<strin
 }
 
 function writeFixture(root: string, locale = 'zh-CN') {
-  const base = path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'REQ-RUNTIME-POLICY');
+  const base = path.join(
+    root,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    'REQ-RUNTIME-POLICY'
+  );
   const recoveryDir = path.join(base, 'recovery');
   const evidenceDir = path.join(base, 'evidence', 'TRACE-019', 'run-001');
   mkdirSync(recoveryDir, { recursive: true });
@@ -143,7 +150,10 @@ function writeFixture(root: string, locale = 'zh-CN') {
   const snapshotPath = path.join(recoveryDir, 'runtime-policy-snapshot.json');
   writeJson(snapshotPath, snapshot);
   const snapshotHash = sha256Buffer(readFileSync(snapshotPath));
-  const runtimeRef = artifactRef(path.relative(root, snapshotPath).replace(/\\/g, '/'), snapshotHash);
+  const runtimeRef = artifactRef(
+    path.relative(root, snapshotPath).replace(/\\/g, '/'),
+    snapshotHash
+  );
   const recordPath = path.join(base, 'requirement-record.json');
   writeJson(recordPath, {
     recordId: 'REQ-RUNTIME-POLICY',
@@ -195,15 +205,26 @@ function writeFixture(root: string, locale = 'zh-CN') {
 }
 
 function writeEvidencePacket(root: string, fixture: ReturnType<typeof writeFixture>): string {
-  const evidencePath = path.join(path.dirname(fixture.summaryPath), 'implementation-evidence-packet.json');
-  const summaryRef = artifactRef(path.relative(root, fixture.summaryPath).replace(/\\/g, '/'), sha256Buffer(readFileSync(fixture.summaryPath)), {
-    artifactType: 'implementation_delta_summary',
-    sourceOfTruthRole: 'evidence',
-  });
-  const negativeRef = artifactRef(path.relative(root, fixture.negativePath).replace(/\\/g, '/'), sha256Buffer(readFileSync(fixture.negativePath)), {
-    artifactType: 'negative_assertion_report',
-    sourceOfTruthRole: 'evidence',
-  });
+  const evidencePath = path.join(
+    path.dirname(fixture.summaryPath),
+    'implementation-evidence-packet.json'
+  );
+  const summaryRef = artifactRef(
+    path.relative(root, fixture.summaryPath).replace(/\\/g, '/'),
+    sha256Buffer(readFileSync(fixture.summaryPath)),
+    {
+      artifactType: 'implementation_delta_summary',
+      sourceOfTruthRole: 'evidence',
+    }
+  );
+  const negativeRef = artifactRef(
+    path.relative(root, fixture.negativePath).replace(/\\/g, '/'),
+    sha256Buffer(readFileSync(fixture.negativePath)),
+    {
+      artifactType: 'negative_assertion_report',
+      sourceOfTruthRole: 'evidence',
+    }
+  );
   writeJson(evidencePath, {
     eventType: 'execution_iteration_recorded',
     recordId: 'REQ-RUNTIME-POLICY',
@@ -228,7 +249,8 @@ function writeEvidencePacket(root: string, fixture: ReturnType<typeof writeFixtu
     commandRuns: [
       {
         commandId: 'CMD-RUNTIME-POLICY-SNAPSHOT-CHECK',
-        command: 'npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-runtime-policy-snapshot-check.ts',
+        command:
+          'npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-runtime-policy-snapshot-check.ts',
         runId: 'run-019',
         closeoutAttemptId: 'closeout-019',
         exitCode: 0,
@@ -243,7 +265,8 @@ function writeEvidencePacket(root: string, fixture: ReturnType<typeof writeFixtu
       requiredCommands: [
         {
           commandId: 'CMD-RUNTIME-POLICY-SNAPSHOT-CHECK',
-          command: 'npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-runtime-policy-snapshot-check.ts',
+          command:
+            'npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-runtime-policy-snapshot-check.ts',
           commandType: 'delivery_evidence',
           blockingIfMissing: true,
           traceRows: ['TRACE-019'],
@@ -305,13 +328,23 @@ describe('main-agent runtime policy snapshot check', () => {
       const record = JSON.parse(readFileSync(fixture.recordPath, 'utf8'));
       delete record.runtimePolicySnapshotRef;
       writeJson(fixture.recordPath, record);
-      const missingCode = mainRuntimePolicySnapshotCheck(['--requirement-record', fixture.recordPath]);
+      const missingCode = mainRuntimePolicySnapshotCheck([
+        '--requirement-record',
+        fixture.recordPath,
+      ]);
       expect(missingCode).toBe(1);
 
       record.runtimePolicySnapshotRef = fixture.runtimeRef;
       writeJson(fixture.recordPath, record);
-      writeFileSync(fixture.snapshotPath, `${readFileSync(fixture.snapshotPath, 'utf8')}\n`, 'utf8');
-      const driftCode = mainRuntimePolicySnapshotCheck(['--requirement-record', fixture.recordPath]);
+      writeFileSync(
+        fixture.snapshotPath,
+        `${readFileSync(fixture.snapshotPath, 'utf8')}\n`,
+        'utf8'
+      );
+      const driftCode = mainRuntimePolicySnapshotCheck([
+        '--requirement-record',
+        fixture.recordPath,
+      ]);
       expect(driftCode).toBe(1);
     } finally {
       rmSync(root, { recursive: true, force: true });

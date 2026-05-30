@@ -2,18 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
-const {
-  buildContractExecutionManifest,
-  buildDerivedContractExecutionManifest,
-} = require('../../_bmad/shared/contract-execution-manifest/build-contract-execution-manifest.js') as {
-  buildContractExecutionManifest(input: Record<string, unknown>): Record<string, unknown>;
-  buildDerivedContractExecutionManifest(input: Record<string, unknown>): Record<string, unknown>;
-};
-const {
-  auditContractExecutionManifest,
-} = require('../../_bmad/shared/contract-execution-manifest/audit-contract-execution-manifest.js') as {
-  auditContractExecutionManifest(input: Record<string, unknown>): Record<string, unknown>;
-};
+const { buildContractExecutionManifest, buildDerivedContractExecutionManifest } =
+  require('../../_bmad/shared/contract-execution-manifest/build-contract-execution-manifest.js') as {
+    buildContractExecutionManifest(input: Record<string, unknown>): Record<string, unknown>;
+    buildDerivedContractExecutionManifest(input: Record<string, unknown>): Record<string, unknown>;
+  };
+const { auditContractExecutionManifest } =
+  require('../../_bmad/shared/contract-execution-manifest/audit-contract-execution-manifest.js') as {
+    auditContractExecutionManifest(input: Record<string, unknown>): Record<string, unknown>;
+  };
 
 function confirmation(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {

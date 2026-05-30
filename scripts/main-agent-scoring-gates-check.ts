@@ -41,7 +41,10 @@ function text(value: unknown): string {
 
 function objects(value: unknown): JsonObject[] {
   return Array.isArray(value)
-    ? value.filter((item): item is JsonObject => Boolean(item) && typeof item === 'object' && !Array.isArray(item))
+    ? value.filter(
+        (item): item is JsonObject =>
+          Boolean(item) && typeof item === 'object' && !Array.isArray(item)
+      )
     : [];
 }
 
@@ -105,7 +108,11 @@ function resolvedScoringPolicyFromSnapshot(snapshot: JsonObject | null): JsonObj
 }
 
 function latestGate(record: JsonObject, gate: string): JsonObject | null {
-  return objects(record.gateChecks).filter((check) => text(check.gate) === gate).at(-1) ?? null;
+  return (
+    objects(record.gateChecks)
+      .filter((check) => text(check.gate) === gate)
+      .at(-1) ?? null
+  );
 }
 
 function gateId(gate: JsonObject | null): string {
@@ -122,7 +129,9 @@ function scoreArtifacts(record: JsonObject): JsonObject[] {
       artifactPath.includes('/score-')
     );
   };
-  return [...objects(record.artifactIndex), ...objects(record.extensionRefs)].filter(isScoreArtifact);
+  return [...objects(record.artifactIndex), ...objects(record.extensionRefs)].filter(
+    isScoreArtifact
+  );
 }
 
 function readScoreArtifact(root: string, artifact: JsonObject): JsonObject | null {
@@ -139,7 +148,11 @@ function readScoreArtifact(root: string, artifact: JsonObject): JsonObject | nul
   }
 }
 
-function scoreArtifactIssues(root: string, record: JsonObject, resolvedPolicy: JsonObject): string[] {
+function scoreArtifactIssues(
+  root: string,
+  record: JsonObject,
+  resolvedPolicy: JsonObject
+): string[] {
   const issues: string[] = [];
   const requiredKinds = Array.isArray(resolvedPolicy.requiredScoreArtifactKinds)
     ? resolvedPolicy.requiredScoreArtifactKinds.map(text).filter(Boolean)
@@ -156,12 +169,16 @@ function scoreArtifactIssues(root: string, record: JsonObject, resolvedPolicy: J
       }
     }
   }
-  const controlArtifact = artifacts.find((artifact) => text(artifact.sourceOfTruthRole) === 'control');
+  const controlArtifact = artifacts.find(
+    (artifact) => text(artifact.sourceOfTruthRole) === 'control'
+  );
   if (controlArtifact) issues.push('score_artifact_must_not_be_control');
   const evidenceArtifact = artifacts
     .filter((artifact) => ['evidence', 'read_model'].includes(text(artifact.sourceOfTruthRole)))
     .reverse()
-    .find((artifact) => ['score', 'score_record', 'score_report'].includes(text(artifact.artifactType)));
+    .find((artifact) =>
+      ['score', 'score_record', 'score_report'].includes(text(artifact.artifactType))
+    );
   if (!evidenceArtifact) issues.push('score_artifact_evidence_or_read_model_missing');
   const scoreRecord = evidenceArtifact ? readScoreArtifact(root, evidenceArtifact) : null;
   if (!scoreRecord) {
@@ -191,14 +208,19 @@ function hasFailure(record: JsonObject, type: string, sourceId: string): boolean
   return objects(record.failureRecords).some((failure) => {
     if (text(failure.type) !== type) return false;
     if (!['open', 'in_progress', 'blocked'].includes(text(failure.status))) return false;
-    return objects(failure.sourceRefs).some((ref) => text(ref.id) === sourceId || text(ref.sourceType) === 'gate_check');
+    return objects(failure.sourceRefs).some(
+      (ref) => text(ref.id) === sourceId || text(ref.sourceType) === 'gate_check'
+    );
   });
 }
 
 function hasRerunForGate(record: JsonObject, sourceId: string): boolean {
-  return objects(record.rerunLoops).some((loop) =>
-    ['open', 'in_progress', 'no_progress', 'blocked'].includes(text(loop.status)) &&
-    [...objects(loop.sourceRefs), ...objects(loop.blockerRefs)].some((ref) => text(ref.id) === sourceId || text(ref.sourceType) === 'gate_check')
+  return objects(record.rerunLoops).some(
+    (loop) =>
+      ['open', 'in_progress', 'no_progress', 'blocked'].includes(text(loop.status)) &&
+      [...objects(loop.sourceRefs), ...objects(loop.blockerRefs)].some(
+        (ref) => text(ref.id) === sourceId || text(ref.sourceType) === 'gate_check'
+      )
   );
 }
 
@@ -210,7 +232,10 @@ function openScoreFailures(record: JsonObject): JsonObject[] {
   );
 }
 
-function evaluateScoringGates(root: string, record: JsonObject): { decision: ScoringGateDecision; blockingReasons: string[]; checks: JsonObject[] } {
+function evaluateScoringGates(
+  root: string,
+  record: JsonObject
+): { decision: ScoringGateDecision; blockingReasons: string[]; checks: JsonObject[] } {
   const checks: JsonObject[] = [];
   const blockingReasons: string[] = [];
   if (Object.prototype.hasOwnProperty.call(record, 'score')) {
@@ -218,13 +243,19 @@ function evaluateScoringGates(root: string, record: JsonObject): { decision: Sco
   }
   const snapshot = readRuntimePolicySnapshot(root, record);
   const scoringRequired = scoringRequiredFromSnapshot(snapshot);
-  checks.push({ id: 'runtime-policy-scoring-required-resolved', passed: scoringRequired !== null, scoringRequired });
+  checks.push({
+    id: 'runtime-policy-scoring-required-resolved',
+    passed: scoringRequired !== null,
+    scoringRequired,
+  });
   if (scoringRequired === null) blockingReasons.push('runtime_policy_scoring_required_unresolved');
   let resolvedPolicy: JsonObject | null = null;
   try {
     resolvedPolicy = resolveScoringPolicy({ root }) as unknown as JsonObject;
   } catch (error) {
-    blockingReasons.push(`resolved_scoring_policy_unavailable:${error instanceof Error ? error.message : String(error)}`);
+    blockingReasons.push(
+      `resolved_scoring_policy_unavailable:${error instanceof Error ? error.message : String(error)}`
+    );
   }
   const snapshotResolvedPolicy = resolvedScoringPolicyFromSnapshot(snapshot);
   checks.push({
@@ -233,8 +264,13 @@ function evaluateScoringGates(root: string, record: JsonObject): { decision: Sco
     scoringPolicyHash: text(resolvedPolicy?.scoringPolicyHash),
     snapshotScoringPolicyHash: text(snapshotResolvedPolicy?.scoringPolicyHash),
   });
-  if (!snapshotResolvedPolicy) blockingReasons.push('runtime_snapshot_resolved_scoring_policy_missing');
-  if (resolvedPolicy && snapshotResolvedPolicy && text(resolvedPolicy.scoringPolicyHash) !== text(snapshotResolvedPolicy.scoringPolicyHash)) {
+  if (!snapshotResolvedPolicy)
+    blockingReasons.push('runtime_snapshot_resolved_scoring_policy_missing');
+  if (
+    resolvedPolicy &&
+    snapshotResolvedPolicy &&
+    text(resolvedPolicy.scoringPolicyHash) !== text(snapshotResolvedPolicy.scoringPolicyHash)
+  ) {
     blockingReasons.push('runtime_snapshot_resolved_scoring_policy_hash_mismatch');
   }
 
@@ -244,8 +280,13 @@ function evaluateScoringGates(root: string, record: JsonObject): { decision: Sco
   const evaluationDecision = text(evaluation?.decision);
 
   if (scoringRequired === false) {
-    const skipped = materialization && ['not_applicable', 'skipped_by_policy'].includes(materializationDecision);
-    checks.push({ id: 'score-materialization-explicitly-skipped-by-policy', passed: Boolean(skipped), decision: materializationDecision });
+    const skipped =
+      materialization && ['not_applicable', 'skipped_by_policy'].includes(materializationDecision);
+    checks.push({
+      id: 'score-materialization-explicitly-skipped-by-policy',
+      passed: Boolean(skipped),
+      decision: materializationDecision,
+    });
     if (!skipped) blockingReasons.push('score_materialization_policy_skip_gate_missing');
     return {
       decision: blockingReasons.length === 0 ? 'pass' : 'blocked',
@@ -255,11 +296,16 @@ function evaluateScoringGates(root: string, record: JsonObject): { decision: Sco
   }
 
   const materializationPass = materializationDecision === 'pass';
-  checks.push({ id: 'score-materialization-gate-pass', passed: materializationPass, decision: materializationDecision || '<missing>' });
+  checks.push({
+    id: 'score-materialization-gate-pass',
+    passed: materializationPass,
+    decision: materializationDecision || '<missing>',
+  });
   if (!materialization) blockingReasons.push('score_materialization_gate_missing');
   if (materialization && ['fail', 'blocked'].includes(materializationDecision)) {
     const sourceId = gateId(materialization);
-    if (!hasFailure(record, 'score_write_failed', sourceId)) blockingReasons.push('score_write_failed_failure_record_missing');
+    if (!hasFailure(record, 'score_write_failed', sourceId))
+      blockingReasons.push('score_write_failed_failure_record_missing');
     blockingReasons.push('score_materialization_gate_failed');
   }
 
@@ -270,19 +316,28 @@ function evaluateScoringGates(root: string, record: JsonObject): { decision: Sco
   }
 
   const evaluationPass = evaluationDecision === 'pass';
-  checks.push({ id: 'score-evaluation-gate-pass', passed: evaluationPass, decision: evaluationDecision || '<missing>' });
+  checks.push({
+    id: 'score-evaluation-gate-pass',
+    passed: evaluationPass,
+    decision: evaluationDecision || '<missing>',
+  });
   if (!evaluation) blockingReasons.push('score_evaluation_gate_missing');
   if (evaluation && ['fail', 'blocked'].includes(evaluationDecision)) {
     const sourceId = gateId(evaluation);
     if (!hasFailure(record, 'score_threshold_or_dimension_failed', sourceId)) {
       blockingReasons.push('score_threshold_or_dimension_failed_failure_record_missing');
     }
-    if (!hasRerunForGate(record, sourceId)) blockingReasons.push('score_evaluation_rerun_loop_missing');
+    if (!hasRerunForGate(record, sourceId))
+      blockingReasons.push('score_evaluation_rerun_loop_missing');
     blockingReasons.push('score_evaluation_gate_failed');
   }
 
   const openFailures = openScoreFailures(record);
-  checks.push({ id: 'score-failures-resolved-before-closeout', passed: openFailures.length === 0, openCount: openFailures.length });
+  checks.push({
+    id: 'score-failures-resolved-before-closeout',
+    passed: openFailures.length === 0,
+    openCount: openFailures.length,
+  });
   if (openFailures.length > 0) blockingReasons.push('open_score_failure_record_exists');
 
   return {
@@ -295,7 +350,9 @@ function evaluateScoringGates(root: string, record: JsonObject): { decision: Sco
 export function mainScoringGatesCheck(argv: string[]): number {
   const args = parseArgs(argv);
   if (args.help) {
-    console.log('Usage: main-agent-scoring-gates-check --requirement-record <json> [--report-path <json>] [--json]');
+    console.log(
+      'Usage: main-agent-scoring-gates-check --requirement-record <json> [--report-path <json>] [--json]'
+    );
     return 0;
   }
   if (!args.requirementRecord) throw new Error('missing required args: requirementRecord');
@@ -303,7 +360,9 @@ export function mainScoringGatesCheck(argv: string[]): number {
   const root = process.cwd();
   const record = readJson(recordPath);
   const evaluatedAt = args.evaluatedAt ?? new Date().toISOString();
-  const reportPath = path.resolve(args.reportPath ?? path.join(path.dirname(recordPath), 'scoring-gates-report.json'));
+  const reportPath = path.resolve(
+    args.reportPath ?? path.join(path.dirname(recordPath), 'scoring-gates-report.json')
+  );
   const evaluation = evaluateScoringGates(root, record);
   const report = {
     reportType: 'scoring_gates_report',
@@ -323,7 +382,9 @@ export function mainScoringGatesCheck(argv: string[]): number {
     decision: evaluation.decision,
     blockingReasons: evaluation.blockingReasons,
   };
-  process.stdout.write(args.json ? `${JSON.stringify(output, null, 2)}\n` : `scoring_gates=${evaluation.decision}\n`);
+  process.stdout.write(
+    args.json ? `${JSON.stringify(output, null, 2)}\n` : `scoring_gates=${evaluation.decision}\n`
+  );
   return evaluation.decision === 'pass' ? 0 : 1;
 }
 
@@ -331,7 +392,13 @@ if (require.main === module) {
   try {
     process.exitCode = mainScoringGatesCheck(process.argv.slice(2));
   } catch (error) {
-    console.error(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : String(error) }, null, 2));
+    console.error(
+      JSON.stringify(
+        { ok: false, error: error instanceof Error ? error.message : String(error) },
+        null,
+        2
+      )
+    );
     process.exitCode = 2;
   }
 }

@@ -129,7 +129,12 @@ function writeLatestBundleFixture(root: string): void {
     'utf-8'
   );
 
-  const globalBundleRoot = path.join(root, '_bmad-output', 'datasets', 'openai_chat-global-runtime-query');
+  const globalBundleRoot = path.join(
+    root,
+    '_bmad-output',
+    'datasets',
+    'openai_chat-global-runtime-query'
+  );
   fs.mkdirSync(globalBundleRoot, { recursive: true });
   fs.writeFileSync(
     path.join(globalBundleRoot, 'manifest.json'),
@@ -217,7 +222,9 @@ describe('runtime-aware dashboard query', () => {
               closeoutEnvelope: {
                 resultCode: 'blocked',
                 requiredFixes: ['Need re-readiness rerun'],
-                requiredFixesDetail: [{ id: 'rf-1', summary: 'Need re-readiness rerun', severity: 'required' }],
+                requiredFixesDetail: [
+                  { id: 'rf-1', summary: 'Need re-readiness rerun', severity: 'required' },
+                ],
                 rerunDecision: 'rerun_required',
                 scoringFailureMode: 'succeeded',
                 packetExecutionClosureStatus: 'awaiting_rerun_gate',
@@ -273,7 +280,9 @@ describe('runtime-aware dashboard query', () => {
               closeoutEnvelope: {
                 resultCode: 'blocked',
                 requiredFixes: ['Need re-readiness rerun'],
-                requiredFixesDetail: [{ id: 'rf-1', summary: 'Need re-readiness rerun', severity: 'required' }],
+                requiredFixesDetail: [
+                  { id: 'rf-1', summary: 'Need re-readiness rerun', severity: 'required' },
+                ],
                 rerunDecision: 'rerun_required',
                 scoringFailureMode: 'succeeded',
                 packetExecutionClosureStatus: 'awaiting_rerun_gate',
@@ -525,7 +534,11 @@ describe('runtime-aware dashboard query', () => {
         },
         export_compatibility: {
           openai_chat: { compatible: true, reasons: [], warnings: [] },
-          hf_conversational: { compatible: false, reasons: ['target_incompatible_hf_conversational'], warnings: [] },
+          hf_conversational: {
+            compatible: false,
+            reasons: ['target_incompatible_hf_conversational'],
+            warnings: [],
+          },
           hf_tool_calling: { compatible: true, reasons: [], warnings: [] },
         },
         tools: [
@@ -654,7 +667,8 @@ describe('runtime-aware dashboard query', () => {
               epic_id: 'epic-15',
               story_id: '15-1-runtime-dashboard-sft',
               flow: 'story',
-              resolved_context_path: '_bmad-output/runtime/context/runs/epic-15/15-1-runtime-dashboard-sft/run.json',
+              resolved_context_path:
+                '_bmad-output/runtime/context/runs/epic-15/15-1-runtime-dashboard-sft/run.json',
             },
           }),
           makeEvent({
@@ -714,7 +728,9 @@ describe('runtime-aware dashboard query', () => {
       expect(snapshot.overview.health_score).toBe(91);
       expect(snapshot.overview.veto_count).toBe(0);
       expect(snapshot.overview.trend).toBe('升');
-      expect(snapshot.runtime_context.scope?.resolved_context_path).toContain('_bmad-output/runtime/context/runs');
+      expect(snapshot.runtime_context.scope?.resolved_context_path).toContain(
+        '_bmad-output/runtime/context/runs'
+      );
       expect(snapshot.runtime_context.reviewer_contract).toEqual(
         expect.objectContaining({
           reviewerIdentity: 'bmad_code_reviewer',
@@ -876,8 +892,18 @@ describe('runtime-aware dashboard query', () => {
         'attempt-1.md'
       ),
       packetPaths: {
-        cursor: path.join(fixture.root, '_bmad-output', 'planning-artifacts', 'attempt-1.cursor-packet.md'),
-        claude: path.join(fixture.root, '_bmad-output', 'planning-artifacts', 'attempt-1.claude-packet.md'),
+        cursor: path.join(
+          fixture.root,
+          '_bmad-output',
+          'planning-artifacts',
+          'attempt-1.cursor-packet.md'
+        ),
+        claude: path.join(
+          fixture.root,
+          '_bmad-output',
+          'planning-artifacts',
+          'attempt-1.claude-packet.md'
+        ),
       },
       authoritativeHost: 'cursor',
       fallbackHosts: ['claude'],
@@ -1058,8 +1084,12 @@ describe('runtime-aware dashboard query', () => {
       expect.arrayContaining(['epic:epic-15', 'queue:standalone-ops'])
     );
     expect(snapshot.workboard.active_board_group_id).toBe('queue:standalone-ops');
-    expect(snapshot.workboard.work_items.filter((item) => item.board_group_id === 'queue:standalone-ops')).toHaveLength(1);
-    expect(snapshot.workboard.active_work_item_id).toBe('standalone_task:orphan:run-standalone-ops-001');
+    expect(
+      snapshot.workboard.work_items.filter((item) => item.board_group_id === 'queue:standalone-ops')
+    ).toHaveLength(1);
+    expect(snapshot.workboard.active_work_item_id).toBe(
+      'standalone_task:orphan:run-standalone-ops-001'
+    );
   });
 
   it('aggregates a full stage timeline for the active work item across runs', () => {
@@ -1140,7 +1170,8 @@ describe('runtime-aware dashboard query', () => {
           drifted_dimensions: ['Smoke E2E Readiness', 'P0 Journey Coverage'],
           drift_severity: 'critical',
           re_readiness_required: true,
-          blocking_reason: 'Critical readiness drift detected against the current implementation baseline.',
+          blocking_reason:
+            'Critical readiness drift detected against the current implementation baseline.',
           effective_verdict: 'blocked',
         }),
         makeScoreRecord({
@@ -1163,7 +1194,14 @@ describe('runtime-aware dashboard query', () => {
       },
     });
 
-    expect(snapshot.stage_timeline.map((entry) => entry.stage)).toEqual(['brief', 'prd', 'arch', 'tasks', 'implement', 'plan']);
+    expect(snapshot.stage_timeline.map((entry) => entry.stage)).toEqual([
+      'brief',
+      'prd',
+      'arch',
+      'tasks',
+      'implement',
+      'plan',
+    ]);
     expect(snapshot.readiness_projection).toEqual(
       expect.objectContaining({
         readiness_baseline_run_id: 'run-readiness-001',
@@ -1193,7 +1231,8 @@ describe('runtime-aware dashboard query', () => {
           run_id: 'run-bugfix-queue-001',
           stage: 'plan',
           timestamp: '2026-03-28T00:02:00.000Z',
-          source_path: '_bmad-output/implementation-artifacts/_orphan/bugfix/fix-runtime-dashboard-findings-duplication.md',
+          source_path:
+            '_bmad-output/implementation-artifacts/_orphan/bugfix/fix-runtime-dashboard-findings-duplication.md',
           check_items: [
             { item_id: 'dup-1', note: 'same finding', passed: false, score_delta: -10 },
             { item_id: 'dup-1', note: 'same finding', passed: false, score_delta: -10 },
@@ -1243,7 +1282,9 @@ describe('runtime-aware dashboard query', () => {
       ],
     });
 
-    const epic15Groups = snapshot.workboard.board_groups.filter((group) => group.board_group_label === 'Epic 15');
+    const epic15Groups = snapshot.workboard.board_groups.filter(
+      (group) => group.board_group_label === 'Epic 15'
+    );
     expect(epic15Groups).toHaveLength(1);
   });
 
@@ -1275,7 +1316,8 @@ describe('runtime-aware dashboard query', () => {
         makeScoreRecord({
           run_id: 'run-standalone-done-001',
           phase_score: 97,
-          source_path: '_bmad-output/implementation-artifacts/_orphan/standalone_tasks/finished-item.md',
+          source_path:
+            '_bmad-output/implementation-artifacts/_orphan/standalone_tasks/finished-item.md',
           timestamp: '2026-03-28T00:20:00.000Z',
         }),
       ],
@@ -1295,13 +1337,15 @@ describe('runtime-aware dashboard query', () => {
       scoreRecords: [
         makeScoreRecord({
           run_id: 'run-standalone-ops-001',
-          source_path: '_bmad-output/implementation-artifacts/_orphan/standalone_tasks/improve-audit-rollup.md',
+          source_path:
+            '_bmad-output/implementation-artifacts/_orphan/standalone_tasks/improve-audit-rollup.md',
           phase_score: 93,
         }),
         makeScoreRecord({
           run_id: 'run-bugfix-queue-001',
           stage: 'plan',
-          source_path: '_bmad-output/implementation-artifacts/_orphan/bugfix/fix-runtime-dashboard-findings-duplication.md',
+          source_path:
+            '_bmad-output/implementation-artifacts/_orphan/bugfix/fix-runtime-dashboard-findings-duplication.md',
           phase_score: 90,
           timestamp: '2026-03-28T00:30:00.000Z',
         }),
@@ -1348,7 +1392,8 @@ describe('runtime-aware dashboard query', () => {
         makeScoreRecord({
           run_id: 'run-standalone-done-001',
           phase_score: 97,
-          source_path: '_bmad-output/implementation-artifacts/_orphan/standalone_tasks/finished-item.md',
+          source_path:
+            '_bmad-output/implementation-artifacts/_orphan/standalone_tasks/finished-item.md',
           timestamp: '2026-03-28T00:20:00.000Z',
         }),
       ],
@@ -1382,12 +1427,14 @@ describe('runtime-aware dashboard query', () => {
         }),
         makeScoreRecord({
           run_id: 'run-bugfix-queue-001',
-          source_path: '_bmad-output/implementation-artifacts/_orphan/bugfix/fix-runtime-dashboard.md',
+          source_path:
+            '_bmad-output/implementation-artifacts/_orphan/bugfix/fix-runtime-dashboard.md',
           timestamp: '2026-03-28T00:30:00.000Z',
         }),
         makeScoreRecord({
           run_id: 'run-standalone-ops-001',
-          source_path: '_bmad-output/implementation-artifacts/_orphan/standalone_tasks/improve-dashboard.md',
+          source_path:
+            '_bmad-output/implementation-artifacts/_orphan/standalone_tasks/improve-dashboard.md',
           timestamp: '2026-03-28T00:40:00.000Z',
         }),
       ],
@@ -1437,18 +1484,22 @@ describe('runtime-aware dashboard query', () => {
         }),
         makeScoreRecord({
           run_id: 'run-bugfix-queue-001',
-          source_path: '_bmad-output/implementation-artifacts/_orphan/bugfix/fix-runtime-dashboard.md',
+          source_path:
+            '_bmad-output/implementation-artifacts/_orphan/bugfix/fix-runtime-dashboard.md',
           timestamp: '2026-03-28T00:30:00.000Z',
         }),
         makeScoreRecord({
           run_id: 'run-standalone-ops-001',
-          source_path: '_bmad-output/implementation-artifacts/_orphan/standalone_tasks/improve-dashboard.md',
+          source_path:
+            '_bmad-output/implementation-artifacts/_orphan/standalone_tasks/improve-dashboard.md',
           timestamp: '2026-03-28T00:40:00.000Z',
         }),
       ],
     });
 
-    expect(snapshot.six_model_projection.models.map((model) => model.id)).toEqual(SIX_MENTAL_MODEL_ORDER);
+    expect(snapshot.six_model_projection.models.map((model) => model.id)).toEqual(
+      SIX_MENTAL_MODEL_ORDER
+    );
     expect(Object.keys(snapshot.six_model_projection.businessObjectViews)).toEqual([
       'epicStoryView',
       'taskView',
@@ -1470,15 +1521,17 @@ describe('runtime-aware dashboard query', () => {
       }
     }
 
-    expect(snapshot.six_model_projection.forbiddenDashboardDisplays.map((item) => item.id)).toEqual([
-      'epicsDoneAsCloseoutPass',
-      'storiesDoneAsRequirementPass',
-      'tasksDoneAsDeliveryPass',
-      'scoreGreenAsCloseoutPass',
-      'reportExistsAsAuditPass',
-      'sftDatasetGeneratedAsProductionReady',
-      'dashboardGreenWithoutCurrentAttempt',
-    ]);
+    expect(snapshot.six_model_projection.forbiddenDashboardDisplays.map((item) => item.id)).toEqual(
+      [
+        'epicsDoneAsCloseoutPass',
+        'storiesDoneAsRequirementPass',
+        'tasksDoneAsDeliveryPass',
+        'scoreGreenAsCloseoutPass',
+        'reportExistsAsAuditPass',
+        'sftDatasetGeneratedAsProductionReady',
+        'dashboardGreenWithoutCurrentAttempt',
+      ]
+    );
     expect(snapshot.six_model_projection.forbiddenDashboardDisplays).toContainEqual(
       expect.objectContaining({
         id: 'dashboardGreenWithoutCurrentAttempt',
@@ -1488,7 +1541,9 @@ describe('runtime-aware dashboard query', () => {
     expect(snapshot.six_model_projection.projectionGate).toEqual(
       expect.objectContaining({
         decision: 'blocked',
-        issues: expect.arrayContaining(['forbidden_dashboard_display:dashboardGreenWithoutCurrentAttempt']),
+        issues: expect.arrayContaining([
+          'forbidden_dashboard_display:dashboardGreenWithoutCurrentAttempt',
+        ]),
       })
     );
   });

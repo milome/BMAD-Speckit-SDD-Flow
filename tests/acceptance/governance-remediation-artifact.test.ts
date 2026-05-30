@@ -54,7 +54,9 @@ describe('governance remediation artifact entrypoint', () => {
     expect(written).toContain('## Model Hint Debug');
     expect(written).toContain('## Execution Intent Candidate');
     expect(written).toContain('## Execution Plan Decision');
-    expect(written).toContain('Resolution order: `stage context -> gate failure -> artifact state -> PromptRoutingHints`');
+    expect(written).toContain(
+      'Resolution order: `stage context -> gate failure -> artifact state -> PromptRoutingHints`'
+    );
     expect(written).toContain('- Blocker ownership affected: no');
     expect(written).toContain('- Model hint present: no');
     expect(result.promptHintUsage.hintAppliedTo).toContain('adapter-selection');
@@ -150,7 +152,8 @@ describe('governance remediation artifact entrypoint', () => {
         executorRoute: 'journey-contract-remediation',
         prioritizedSignals: ['smoke_task_chain'],
         packetStrategy: 'journey-contract-remediation-packet',
-        reason: 'journey contract hints detected; use targeted remediation routing before generic blocker cleanup',
+        reason:
+          'journey contract hints detected; use targeted remediation routing before generic blocker cleanup',
       },
     });
 
@@ -215,7 +218,9 @@ describe('governance remediation artifact entrypoint', () => {
       'blockerOwnership'
     );
     expect(result.markdown).toContain('- Model hint present: yes');
-    expect(result.markdown).toContain('Stripped forbidden overrides: blockerOwnership, artifactRootTarget');
+    expect(result.markdown).toContain(
+      'Stripped forbidden overrides: blockerOwnership, artifactRootTarget'
+    );
     expect(result.markdown).toContain('- Model hints remain advisory only: yes');
   });
 
@@ -235,7 +240,8 @@ describe('governance remediation artifact entrypoint', () => {
           skillId: 'stage-audit-workflow',
           path: 'D:/skills/stage-audit-workflow/SKILL.md',
           title: 'Stage Audit Workflow',
-          description: 'Facilitates party mode architecture debate and multi-role review orchestration.',
+          description:
+            'Facilitates party mode architecture debate and multi-role review orchestration.',
           summary: 'Use for party mode facilitation during architecture review and patch planning.',
         },
       ],
@@ -374,9 +380,7 @@ describe('governance remediation artifact entrypoint', () => {
     expect(result.markdown).toContain(
       '- Provider Recommended Skill Chain: provider-recommended-skill, code-reviewer'
     );
-    expect(result.markdown).toContain(
-      '- Provider Recommended Subagent Roles: provider-reviewer'
-    );
+    expect(result.markdown).toContain('- Provider Recommended Subagent Roles: provider-reviewer');
     expect(result.markdown).toContain(
       '  - provider-recommended-skill [source=model-provider; confidence=high; consumed=yes; reason=Provider wants a focused remediation lane.; filteredBecause=(none)]'
     );
@@ -423,9 +427,7 @@ describe('governance remediation artifact entrypoint', () => {
     expect(result.markdown).toContain(
       '- Skill Chain: provider-recommended-skill, code-reviewer, speckit-workflow'
     );
-    expect(result.markdown).toContain(
-      '- Subagent Roles: provider-reviewer, critical-auditor'
-    );
+    expect(result.markdown).toContain('- Subagent Roles: provider-reviewer, critical-auditor');
     expect(result.markdown).toContain('- Reviewer Route Explainability:');
     expect(result.markdown).toContain(
       '  - code-reviewer => identity=bmad_code_reviewer; registry=reviewer_registry_v1; closeout=runAuditorHost; maturity=projection_wired'

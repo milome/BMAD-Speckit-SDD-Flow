@@ -34,7 +34,9 @@ describe('Codex agent parity with Claude branch', () => {
       path.relative(claudeRoot, file).replace(/\\/g, '/').replace(/\.md$/u, '.toml')
     );
     const codexAgents = new Set(
-      listFiles(codexRoot, '.toml').map((file) => path.relative(codexRoot, file).replace(/\\/g, '/'))
+      listFiles(codexRoot, '.toml').map((file) =>
+        path.relative(codexRoot, file).replace(/\\/g, '/')
+      )
     );
 
     for (const agent of claudeAgents) {
@@ -71,7 +73,13 @@ describe('Codex agent parity with Claude branch', () => {
       });
 
       const runtimeAgent = path.join(target, '.codex', 'agents', 'implementation-worker.toml');
-      const nestedAgent = path.join(target, '.codex', 'agents', 'layers', 'bmad-layer4-speckit-implement.toml');
+      const nestedAgent = path.join(
+        target,
+        '.codex',
+        'agents',
+        'layers',
+        'bmad-layer4-speckit-implement.toml'
+      );
       expect(fs.existsSync(runtimeAgent)).toBe(true);
       expect(fs.existsSync(nestedAgent)).toBe(true);
       const runtimeAgentContent = fs.readFileSync(runtimeAgent, 'utf8');
@@ -97,8 +105,16 @@ describe('Codex agent parity with Claude branch', () => {
       expect(paths).toContain('.codex/agents/layers');
       expect(paths).toContain('.codex/protocols/audit-result-schema.md');
       expect(paths).toContain('.codex/skills/speckit-workflow');
-      expect(fs.existsSync(path.join(target, '.codex', 'protocols', 'handoff-schema.md'))).toBe(true);
-      const storySkillPath = path.join(target, '.codex', 'skills', 'bmad-story-assistant', 'SKILL.md');
+      expect(fs.existsSync(path.join(target, '.codex', 'protocols', 'handoff-schema.md'))).toBe(
+        true
+      );
+      const storySkillPath = path.join(
+        target,
+        '.codex',
+        'skills',
+        'bmad-story-assistant',
+        'SKILL.md'
+      );
       expect(fs.existsSync(storySkillPath)).toBe(true);
       expect(fs.readFileSync(storySkillPath, 'utf8').startsWith('---')).toBe(true);
       expect(validateSelectedAITargets(target, 'codex')).toEqual({ valid: true, missing: [] });

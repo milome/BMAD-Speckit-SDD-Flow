@@ -43,7 +43,11 @@ function semanticConfirmationForHash(
   return Object.fromEntries(Object.entries(confirmation).filter(([key]) => !bookkeeping.has(key)));
 }
 
-function sourceHashes(sourceText: string, blockText: string, confirmation: Record<string, unknown>) {
+function sourceHashes(
+  sourceText: string,
+  blockText: string,
+  confirmation: Record<string, unknown>
+) {
   const semantic = semanticConfirmationForHash(confirmation);
   const normalizedBlock = `implementationConfirmation:${stableStringify(semantic)}`;
   return {
@@ -181,15 +185,17 @@ function writeSource(recordId: string): {
   return { sourcePath, hashes: sourceHashes(sourceText, blockText, confirmation) };
 }
 
-function writeClosedRecordFixture(options: {
-  recordId?: string;
-  closeoutDecision?: string;
-  semanticHashOverride?: Partial<ReturnType<typeof sourceHashes>>;
-  currentArtifactBody?: string;
-  historicalArtifactHash?: string;
-  postCloseSignals?: Array<Record<string, unknown>>;
-  writeArtifactIndex?: boolean;
-} = {}): { sourcePath: string; recordPath: string; targetPath: string; recordId: string } {
+function writeClosedRecordFixture(
+  options: {
+    recordId?: string;
+    closeoutDecision?: string;
+    semanticHashOverride?: Partial<ReturnType<typeof sourceHashes>>;
+    currentArtifactBody?: string;
+    historicalArtifactHash?: string;
+    postCloseSignals?: Array<Record<string, unknown>>;
+    writeArtifactIndex?: boolean;
+  } = {}
+): { sourcePath: string; recordPath: string; targetPath: string; recordId: string } {
   const recordId = options.recordId ?? 'REQ-POST-CLOSE-001';
   const { sourcePath, hashes } = writeSource(recordId);
   const targetPath = path.join(root, 'scripts', 'target-artifact.ts');
@@ -212,7 +218,8 @@ function writeClosedRecordFixture(options: {
     status: 'user_confirmed',
     currentMentalModel: 'delivery_confirmation',
     sourcePath: path.relative(root, sourcePath).replace(/\\/g, '/'),
-    sourceDocumentHash: options.semanticHashOverride?.sourceDocumentHash ?? hashes.sourceDocumentHash,
+    sourceDocumentHash:
+      options.semanticHashOverride?.sourceDocumentHash ?? hashes.sourceDocumentHash,
     implementationConfirmationHash:
       options.semanticHashOverride?.implementationConfirmationHash ??
       hashes.implementationConfirmationHash,
@@ -343,7 +350,8 @@ function writeGatePassFixture(): {
     requiredCommands: [
       {
         id: 'CMD-POST-CLOSE-PASS',
-        command: 'node -e "process.exit(0)" tests/acceptance/main-agent-post-close-defect-intake.test.ts',
+        command:
+          'node -e "process.exit(0)" tests/acceptance/main-agent-post-close-defect-intake.test.ts',
         files: ['tests/acceptance/main-agent-post-close-defect-intake.test.ts'],
         traceRefs: ['TRACE-001'],
         evidenceRefs: ['EVD-001'],

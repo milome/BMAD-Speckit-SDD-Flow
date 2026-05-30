@@ -199,7 +199,9 @@ const promptRoutingHintsSchema = {
 const validatePromptRoutingRuleSet = ajv.compile(promptRoutingRuleSetSchema);
 const validatePromptRoutingHints = ajv.compile(promptRoutingHintsSchema);
 
-export function assertValidPromptRoutingRuleSet(ruleSet: unknown): asserts ruleSet is PromptRoutingRuleSet {
+export function assertValidPromptRoutingRuleSet(
+  ruleSet: unknown
+): asserts ruleSet is PromptRoutingRuleSet {
   if (!validatePromptRoutingRuleSet(ruleSet)) {
     throw new Error(
       `Invalid prompt routing rule set: ${ajv.errorsText(validatePromptRoutingRuleSet.errors, {

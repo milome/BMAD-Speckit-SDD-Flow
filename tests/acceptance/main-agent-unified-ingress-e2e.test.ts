@@ -142,10 +142,13 @@ const GOVERNANCE_EVENT_TYPE_REGISTRY_POLICY = {
 
 const REGISTRY_BINDING = {
   governanceEventTypeRegistryPolicy: GOVERNANCE_EVENT_TYPE_REGISTRY_POLICY,
-  governanceEventTypeRegistryPolicyHash: governanceEventTypeRegistryPolicyHash(GOVERNANCE_EVENT_TYPE_REGISTRY_POLICY),
+  governanceEventTypeRegistryPolicyHash: governanceEventTypeRegistryPolicyHash(
+    GOVERNANCE_EVENT_TYPE_REGISTRY_POLICY
+  ),
   governanceEventTypeRegistry: GOVERNANCE_EVENT_TYPE_REGISTRY,
   governanceEventTypeRegistryHash: governanceEventTypeRegistryHash(GOVERNANCE_EVENT_TYPE_REGISTRY),
-  architectureConfirmationHash: 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+  architectureConfirmationHash:
+    'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
 };
 
 function writeFakeCodexBinary(root: string): string {
@@ -155,18 +158,20 @@ function writeFakeCodexBinary(root: string): string {
     [
       "const fs = require('fs');",
       "const input = fs.readFileSync(0, 'utf8');",
-      "const reportPath = input.match(/write a JSON TaskReport to: (.+)/i)?.[1]?.trim();",
-      "const packetId = input.match(/Packet ID: (.+)/i)?.[1]?.trim();",
-      "if (!reportPath || !packetId) process.exit(2);",
+      'const reportPath = input.match(/write a JSON TaskReport to: (.+)/i)?.[1]?.trim();',
+      'const packetId = input.match(/Packet ID: (.+)/i)?.[1]?.trim();',
+      'if (!reportPath || !packetId) process.exit(2);',
       "fs.mkdirSync(require('path').dirname(reportPath), { recursive: true });",
       "fs.writeFileSync(reportPath, JSON.stringify({ packetId, status: 'done', filesChanged: [], validationsRun: ['fake-codex-unified-ingress'], evidence: ['fake-codex-unified-ingress'], downstreamContext: ['codex cli ingress completed'] }, null, 2) + '\\n', 'utf8');",
-      "process.exit(0);",
+      'process.exit(0);',
       '',
     ].join('\n'),
     'utf8'
   );
   const fakeCodexBin =
-    process.platform === 'win32' ? path.join(root, 'fake-codex.cmd') : path.join(root, 'fake-codex');
+    process.platform === 'win32'
+      ? path.join(root, 'fake-codex.cmd')
+      : path.join(root, 'fake-codex');
   fs.writeFileSync(
     fakeCodexBin,
     process.platform === 'win32'
@@ -211,8 +216,10 @@ function codexHookTrustEnvelope(
         path: 'hook-trust-receipt.json',
         contentHash: 'sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
       },
-      managedHookConfigHash: 'sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
-      runtimePolicySnapshotHash: 'sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+      managedHookConfigHash:
+        'sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+      runtimePolicySnapshotHash:
+        'sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
     },
     ...overrides,
   };

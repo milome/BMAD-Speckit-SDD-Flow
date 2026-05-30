@@ -69,10 +69,7 @@ import { buildReadinessDriftProjection } from '../packages/scoring/governance/re
 import { loadAndDedupeRecords } from '../packages/scoring/query/loader';
 import { readGovernanceRemediationConfig } from './governance-remediation-config';
 import type { ResolvedRuntimeContext } from './resolve-active-requirement';
-import {
-  runControlledReadinessAuditBridge,
-  type ControlledReadinessAuditResult,
-} from './controlled-readiness-audit-bridge';
+import { runControlledReadinessAuditBridge } from './controlled-readiness-audit-bridge';
 import { appendControlEventAndReplay } from './requirement-record-control-store';
 import { mainImplementationReadinessGate } from './main-agent-implementation-readiness-gate';
 import { evaluateAiTddContractGate } from './ai-tdd-contract-gate';
@@ -101,6 +98,11 @@ import {
   writeSixModelRuntimeDecision,
   writeSplitBrainBlocker,
 } from './six-model-runtime-decision';
+import {
+  buildOpenReconfirmationBlockingReasonRefs,
+  hasOpenReconfirmationRequest,
+  requestSemanticReconfirmation,
+} from './reconfirmation-runtime';
 
 const requireCommonJs = createRequire(__filename);
 
@@ -311,7 +313,11 @@ interface ReadinessRemediationAction {
   blocker: string;
   schemaVersion: 'readiness-blocker-classification/v1';
   classification: ReadinessRemediationClassification;
-  sourceAuthorityImpact: 'none' | 'proof_or_projection' | 'source_authority' | 'ambiguous_source_authority';
+  sourceAuthorityImpact:
+    | 'none'
+    | 'proof_or_projection'
+    | 'source_authority'
+    | 'ambiguous_source_authority';
   autoRemediationAllowed: boolean;
   requiredNextAction: ReadinessRemediationNextAction;
   action: string;
@@ -656,7 +662,9 @@ function normalizeAllowedWriteScope(value: unknown): string[] {
 }
 
 function mergeAllowedWriteScope(base: unknown, extras: unknown): string[] {
-  return Array.from(new Set([...normalizeAllowedWriteScope(base), ...normalizeAllowedWriteScope(extras)]));
+  return Array.from(
+    new Set([...normalizeAllowedWriteScope(base), ...normalizeAllowedWriteScope(extras)])
+  );
 }
 
 function resolveMappedAllowedWriteScope(
@@ -804,7 +812,9 @@ function resolveScopedOrchestrationState(
       }
       if (
         resolvedContext(runtimeContext)?.recordPath &&
-        state.pendingPacket?.packetPath?.startsWith(path.dirname(resolvedContext(runtimeContext)!.recordPath))
+        state.pendingPacket?.packetPath?.startsWith(
+          path.dirname(resolvedContext(runtimeContext)!.recordPath)
+        )
       ) {
         addRequirementMatchScore(120);
       }
@@ -994,8 +1004,9 @@ function pendingPacketMatchesNextAction(surface: MainAgentOrchestrationSurface):
 
 function isCodexSmokeOnlyTaskReport(report: TaskReport): boolean {
   return (
-    report.validationsRun.some((validation) => normalizeText(validation) === 'codex-worker-adapter-smoke') ||
-    report.evidence.some((evidence) => normalizeText(evidence).startsWith('codex-smoke:'))
+    report.validationsRun.some(
+      (validation) => normalizeText(validation) === 'codex-worker-adapter-smoke'
+    ) || report.evidence.some((evidence) => normalizeText(evidence).startsWith('codex-smoke:'))
   );
 }
 
@@ -1013,9 +1024,7 @@ function blockSmokeOnlyImplementationReport(
       ...report.downstreamContext,
       'Codex smoke validates the worker adapter only; implementation dispatch remains open for real execution.',
     ],
-    driftFlags: [
-      ...new Set([...(report.driftFlags ?? []), 'codex-smoke-non-delivery-evidence']),
-    ],
+    driftFlags: [...new Set([...(report.driftFlags ?? []), 'codex-smoke-non-delivery-evidence'])],
   };
 }
 
@@ -1039,7 +1048,10 @@ function relativePathFromRoot(projectRoot: string, filePath: string): string {
   return path.relative(projectRoot, filePath).replace(/\\/gu, '/');
 }
 
-function recordIdentityFromPath(recordPath: string | undefined, fallbackSessionId: string): {
+function recordIdentityFromPath(
+  recordPath: string | undefined,
+  fallbackSessionId: string
+): {
   recordId: string;
   requirementSetId: string;
 } {
@@ -1659,10 +1671,6 @@ function projectionBackRef(packetHash: string, mustRef = 'MUST-001'): Record<str
     derivedFromPacketHash: packetHash,
     projectionStatus: 'synchronized',
   };
-}
-
-function uniqueStrings(values: string[]): string[] {
-  return [...new Set(values.map((value) => normalizeText(value)).filter(Boolean))];
 }
 
 function requirementOrdinal(index: number): string {
@@ -5533,7 +5541,8 @@ export function runMainAgentPreConfirmationDrilldown(
       finalStandards: {
         newSkillFlowEntersAtomicDecompositionLoopBeforeMaterialization: true,
         singlePassCannotSkipAtomicDecompositionLoop: true,
-        mustDecompositionPacketSynchronizedBeforeMaterialization: finalPacket.status === 'synchronized',
+        mustDecompositionPacketSynchronizedBeforeMaterialization:
+          finalPacket.status === 'synchronized',
       },
     });
   }
@@ -5810,14 +5819,20 @@ export function runMainAgentPreConfirmationDrilldown(
       normalizeText(checkpointPersistenceEvidence?.routeDecisionHash) !==
         normalizeText(routingDecision.routeDecisionHash) ||
       normalizeText(
-        (checkpointPersistenceEvidence?.checkpointPersistenceRef as Record<string, unknown> | undefined)
-          ?.routeDecisionHash
+        (
+          checkpointPersistenceEvidence?.checkpointPersistenceRef as
+            | Record<string, unknown>
+            | undefined
+        )?.routeDecisionHash
       ) !== normalizeText(routingDecision.routeDecisionHash)
     ) {
       const issue = preConfirmationIssue(
         'checkpoint_persistence_evidence_missing',
         'Checkpoint persistence evidence is required before scale routing can continue after checkpoint_required.',
-        [toRootRelativePath(root, paths.scaleRoutingDecision), toRootRelativePath(root, paths.progress)],
+        [
+          toRootRelativePath(root, paths.scaleRoutingDecision),
+          toRootRelativePath(root, paths.progress),
+        ],
         'run_semantic_checkpoints.checkpoint_persistence'
       );
       return buildPreConfirmationResult({
@@ -6539,7 +6554,8 @@ function deriveNextActionFromRequirementRecord(input: {
       ? (input.record.sixModelResults as Record<string, unknown>)
       : null;
   const currentModelResult =
-    currentMentalModel && sixModelResults?.[currentMentalModel] &&
+    currentMentalModel &&
+    sixModelResults?.[currentMentalModel] &&
     typeof sixModelResults[currentMentalModel] === 'object' &&
     !Array.isArray(sixModelResults[currentMentalModel])
       ? (sixModelResults[currentMentalModel] as Record<string, unknown>)
@@ -6557,6 +6573,14 @@ function deriveNextActionFromRequirementRecord(input: {
     ['fail', 'blocked'].includes(normalizeText(gate.decision))
   );
   const blockingReasonRefs: Array<{ sourceType: string; id: string }> = [];
+  if (hasOpenReconfirmationRequest(input.record)) {
+    blockingReasonRefs.push(...buildOpenReconfirmationBlockingReasonRefs(input.record));
+    return {
+      nextAction: 'run_pre_confirmation_drilldown',
+      ready: false,
+      blockingReasonRefs,
+    };
+  }
   const preConfirmationLane = readPreConfirmationLaneStateFromRecord(input.record);
   if (!input.record || normalizeText(input.record.status) !== 'user_confirmed') {
     blockingReasonRefs.push({
@@ -7247,11 +7271,7 @@ export function ensureMainAgentDispatchPacket(
           packetId,
           flow,
           executionHost:
-            host === 'codex'
-              ? 'codex'
-              : host === 'claude'
-                ? 'claude-code'
-                : 'cursor-ide',
+            host === 'codex' ? 'codex' : host === 'claude' ? 'claude-code' : 'cursor-ide',
           executionDisciplineProfile,
           goalCommandAvailable: host === 'codex' || host === 'claude' ? 'true' : 'false',
         })
@@ -7361,10 +7381,10 @@ export function ensureMainAgentDispatchPacket(
             taskType === 'audit'
               ? 'compiled_implementation_confirmation'
               : compiledRun?.status === 'pass'
-              ? 'compiled_implementation_confirmation'
-              : compiledRun?.status === 'no_confirmed_source' || compiledRun === null
-                ? 'legacy_generic_prompt'
-                : 'compiled_implementation_confirmation',
+                ? 'compiled_implementation_confirmation'
+                : compiledRun?.status === 'no_confirmed_source' || compiledRun === null
+                  ? 'legacy_generic_prompt'
+                  : 'compiled_implementation_confirmation',
           compiledPromptRef: compiledRun?.compiledPromptRef ?? inheritedCompiledPromptRef ?? null,
           executionDisciplineProfile,
           executionStrategy,
@@ -7375,17 +7395,21 @@ export function ensureMainAgentDispatchPacket(
             taskType === 'audit'
               ? null
               : compiledRun?.status === 'no_confirmed_source' || compiledRun === null
-              ? 'no_confirmed_source'
-              : null,
+                ? 'no_confirmed_source'
+                : null,
           compilerBlock:
             taskType === 'audit' && !inheritedCompiledPromptRef
               ? ['audit_current_attempt_compiledPromptRef_missing']
-              : compiledRun && compiledRun.status !== 'pass' && compiledRun.status !== 'no_confirmed_source'
-              ? compiledRun.blockingReasons
-              : null,
+              : compiledRun &&
+                  compiledRun.status !== 'pass' &&
+                  compiledRun.status !== 'no_confirmed_source'
+                ? compiledRun.blockingReasons
+                : null,
         });
   const compilerBlocked =
-    'compilerBlock' in packet && Array.isArray(packet.compilerBlock) && packet.compilerBlock.length > 0;
+    'compilerBlock' in packet &&
+    Array.isArray(packet.compilerBlock) &&
+    packet.compilerBlock.length > 0;
 
   const packetKind: PacketKind = 'originalExecutionPacketId' in packet ? 'resume' : 'execution';
   const packetPath = writePacketFile(input.projectRoot, sessionId, packetId, packet);
@@ -7725,6 +7749,13 @@ export interface MainAgentConfirmScopeResult {
   route?: string;
   block?: string;
   nextRequiredAction?: string;
+  requestId?: string;
+  eventId?: string | null;
+  rollbackEventId?: string | null;
+  receiptPath?: string | null;
+  eventLogPath?: string;
+  requirementRecordIndexPath?: string | null;
+  reusedExistingRequest?: boolean;
   classification?: Record<string, unknown>;
   delegatedResult?: MainAgentConfirmScopeResult;
   mainAgentStageSummary?: MainAgentStageSummary | null;
@@ -7795,9 +7826,7 @@ function directRequirementRecordPathForCommand(
   const fromOutput =
     normalizeText(output?.requirementRecordPath) ||
     normalizeText(
-      output?.stdout &&
-        typeof output.stdout === 'object' &&
-        !Array.isArray(output.stdout)
+      output?.stdout && typeof output.stdout === 'object' && !Array.isArray(output.stdout)
         ? (output.stdout as Record<string, unknown>).requirementRecordPath
         : null
     );
@@ -7838,7 +7867,9 @@ export function runMainAgentConfirmCloseoutAcceptance(
     throw new Error('confirm-closeout-acceptance requires --source <source-document.md>');
   }
   if (!normalizeText(args.renderReport)) {
-    throw new Error('confirm-closeout-acceptance requires --render-report <closeout-render-report.json>');
+    throw new Error(
+      'confirm-closeout-acceptance requires --render-report <closeout-render-report.json>'
+    );
   }
   if (!normalizeText(args.confirmationText) && !normalizeText(args.confirmationTextFile)) {
     throw new Error(
@@ -8050,9 +8081,7 @@ function confirmationTextFromRenderReport(report: Record<string, unknown>): stri
   const implementationConfirmationHash = normalizeText(report.implementationConfirmationHash);
   const confirmationPageHash = normalizeText(report.confirmationPageHash);
   if (!sourceDocumentHash || !implementationConfirmationHash || !confirmationPageHash) {
-    throw new Error(
-      'route-confirmation-drift projection refresh requires render report hashes'
-    );
+    throw new Error('route-confirmation-drift projection refresh requires render report hashes');
   }
   return [
     `sourceDocumentHash=${sourceDocumentHash}`,
@@ -8075,11 +8104,11 @@ export function runMainAgentConfirmationDriftRoute(
   }
   const sourcePath = path.resolve(root, stripWrappingQuotes(source));
   const recordPath = path.resolve(root, stripWrappingQuotes(requirementRecord));
-  const record = fs.existsSync(recordPath) ? readJsonIfExists(recordPath) ?? {} : {};
+  const record = fs.existsSync(recordPath) ? (readJsonIfExists(recordPath) ?? {}) : {};
   const renderReportPath = normalizeText(args.renderReport)
     ? path.resolve(root, stripWrappingQuotes(normalizeText(args.renderReport)))
     : null;
-  const renderReport = renderReportPath ? readJsonIfExists(renderReportPath) ?? {} : {};
+  const renderReport = renderReportPath ? (readJsonIfExists(renderReportPath) ?? {}) : {};
   const hashes = currentConfirmationHashes(sourcePath);
   const { classifyConfirmationDrift } = loadConfirmationDriftClassifier(root);
   const classification = classifyConfirmationDrift({
@@ -8097,7 +8126,9 @@ export function runMainAgentConfirmationDriftRoute(
     return {
       ok: true,
       action: 'route-confirmation-drift',
-      delegatedEntry: path.relative(root, resolveSkillScript(root, 'confirmation_drift_classifier.js')).replace(/\\/g, '/'),
+      delegatedEntry: path
+        .relative(root, resolveSkillScript(root, 'confirmation_drift_classifier.js'))
+        .replace(/\\/g, '/'),
       exitCode: 0,
       route: 'confirmed_current',
       classification,
@@ -8122,7 +8153,9 @@ export function runMainAgentConfirmationDriftRoute(
       return {
         ok: false,
         action: 'route-confirmation-drift',
-        delegatedEntry: path.relative(root, resolveSkillScript(root, 'confirm-requirements-scope.js')).replace(/\\/g, '/'),
+        delegatedEntry: path
+          .relative(root, resolveSkillScript(root, 'confirm-requirements-scope.js'))
+          .replace(/\\/g, '/'),
         exitCode: 3,
         route: 'projection_refresh',
         block: 'PROJECTION_REFRESH_RENDER_REPORT_REQUIRED',
@@ -8131,13 +8164,17 @@ export function runMainAgentConfirmationDriftRoute(
     }
     const priorProjectionHash =
       normalizeText(classification.latestProjectionHash) ||
-      normalizeText((record as { latestConfirmationProjectionHash?: unknown }).latestConfirmationProjectionHash) ||
+      normalizeText(
+        (record as { latestConfirmationProjectionHash?: unknown }).latestConfirmationProjectionHash
+      ) ||
       normalizeText((record as { confirmationPageHash?: unknown }).confirmationPageHash);
     if (!priorProjectionHash) {
       return {
         ok: false,
         action: 'route-confirmation-drift',
-        delegatedEntry: path.relative(root, resolveSkillScript(root, 'confirm-requirements-scope.js')).replace(/\\/g, '/'),
+        delegatedEntry: path
+          .relative(root, resolveSkillScript(root, 'confirm-requirements-scope.js'))
+          .replace(/\\/g, '/'),
         exitCode: 3,
         route: 'projection_refresh',
         block: 'PROJECTION_REFRESH_PRIOR_PROJECTION_HASH_REQUIRED',
@@ -8165,14 +8202,28 @@ export function runMainAgentConfirmationDriftRoute(
   }
 
   if (kind === 'semantic_reconfirmation_required') {
+    const reconfirmation = requestSemanticReconfirmation({
+      recordPath,
+      classification,
+      recordedBy: 'main-agent-reconfirmation-router',
+    });
     return {
       ok: false,
       action: 'route-confirmation-drift',
-      delegatedEntry: path.relative(root, resolveSkillScript(root, 'confirmation_drift_classifier.js')).replace(/\\/g, '/'),
+      delegatedEntry: path
+        .relative(root, resolveSkillScript(root, 'confirmation_drift_classifier.js'))
+        .replace(/\\/g, '/'),
       exitCode: 3,
       route: 'semantic_reconfirmation_required',
       block: 'CONFIRMATION_REQUIRED',
-      nextRequiredAction: 'author_reconfirmation_evidence_and_render_confirmation_page',
+      nextRequiredAction: 'await_exact_confirmation_phrase_with_hashes',
+      requestId: reconfirmation.requestId,
+      eventId: reconfirmation.eventId,
+      rollbackEventId: reconfirmation.rollbackEventId,
+      receiptPath: reconfirmation.receiptPath,
+      eventLogPath: reconfirmation.eventLogPath,
+      requirementRecordIndexPath: reconfirmation.indexPath,
+      reusedExistingRequest: reconfirmation.reusedExistingRequest,
       classification,
     };
   }
@@ -8180,7 +8231,9 @@ export function runMainAgentConfirmationDriftRoute(
   return {
     ok: false,
     action: 'route-confirmation-drift',
-    delegatedEntry: path.relative(root, resolveSkillScript(root, 'confirmation_drift_classifier.js')).replace(/\\/g, '/'),
+    delegatedEntry: path
+      .relative(root, resolveSkillScript(root, 'confirmation_drift_classifier.js'))
+      .replace(/\\/g, '/'),
     exitCode: 3,
     route: 'unknown',
     block: 'UNKNOWN_CONFIRMATION_DRIFT_CLASSIFICATION',
@@ -8377,7 +8430,8 @@ function controlledIngestCodexWorkerEvidence(input: {
     taskRefs: envelope && Array.isArray(envelope.taskRefs) ? envelope.taskRefs : [],
     evidenceRefs: input.adapterReport.taskReport.evidence,
     filesChanged: input.adapterReport.taskReport.filesChanged,
-    diffSummary: 'Codex worker TaskReport ingested as iteration evidence only; not terminal closeout.',
+    diffSummary:
+      'Codex worker TaskReport ingested as iteration evidence only; not terminal closeout.',
     commandRunRefs: envelope && Array.isArray(envelope.commandRuns) ? envelope.commandRuns : [],
     evidenceArtifactRefs: artifactRefs,
     sourceRefs,
@@ -8566,11 +8620,7 @@ function readinessBlockerBaseId(blocker: string): string {
   if (normalized.startsWith('multiple_equal_candidate:')) {
     return normalized.slice('multiple_equal_candidate:'.length);
   }
-  for (const suffix of [
-    ':multiple_equal_candidates',
-    ':ambiguous_candidates',
-    ':ambiguous',
-  ]) {
+  for (const suffix of [':multiple_equal_candidates', ':ambiguous_candidates', ':ambiguous']) {
     if (normalized.endsWith(suffix)) return normalized.slice(0, -suffix.length);
   }
   return normalized;
@@ -8602,7 +8652,8 @@ function classifyReadinessBlocker(blocker: string): ReadinessRemediationAction {
     return deriveReadinessAction({
       blocker: blockerId,
       action: 'regenerate_pre_confirmation_drilldown_artifacts',
-      reason: 'pre-confirmation drilldown is a proof artifact projection for current confirmed source',
+      reason:
+        'pre-confirmation drilldown is a proof artifact projection for current confirmed source',
       reasonCode: 'proof_artifact_regeneration_allowed',
     });
   }
@@ -8610,7 +8661,8 @@ function classifyReadinessBlocker(blocker: string): ReadinessRemediationAction {
     return deriveReadinessAction({
       blocker: blockerId,
       action: 'rerun_packet_source_reconciliation',
-      reason: 'missing or stale reconciliation report can be rerun without changing source semantics',
+      reason:
+        'missing or stale reconciliation report can be rerun without changing source semantics',
       reasonCode: 'reconciliation_report_rerun_allowed',
     });
   }
@@ -8625,7 +8677,8 @@ function classifyReadinessBlocker(blocker: string): ReadinessRemediationAction {
     return deriveReadinessAction({
       blocker: blockerId,
       action: 'rerun_pre_render_gate',
-      reason: 'missing or stale pre-render gate report can be rerun without changing source semantics',
+      reason:
+        'missing or stale pre-render gate report can be rerun without changing source semantics',
       reasonCode: 'pre_render_report_rerun_allowed',
     });
   }
@@ -8637,7 +8690,8 @@ function classifyReadinessBlocker(blocker: string): ReadinessRemediationAction {
     return deriveReadinessAction({
       blocker: blockerId,
       action: 'materialize_existing_atomic_task_lineage',
-      reason: 'existing deterministic atomic packet lineage can be materialized for current confirmed source',
+      reason:
+        'existing deterministic atomic packet lineage can be materialized for current confirmed source',
       reasonCode: 'existing_atomic_lineage_materialization_allowed',
     });
   }
@@ -9008,7 +9062,10 @@ function explicitPostCloseClassification(signal: string): PostCloseIntakeClassif
 }
 
 function defaultRunId(recordId: string): string {
-  return `post-close-revalidation-run-${recordId}-${new Date().toISOString().replace(/[-:]/gu, '').replace(/\.\d{3}Z$/u, 'Z')}`;
+  return `post-close-revalidation-run-${recordId}-${new Date()
+    .toISOString()
+    .replace(/[-:]/gu, '')
+    .replace(/\.\d{3}Z$/u, 'Z')}`;
 }
 
 function postCloseReportPath(input: {
@@ -9033,12 +9090,19 @@ function gateReportRef(filePath: string, report: Record<string, unknown>): Recor
   };
 }
 
-function writeGateReport(filePath: string, report: Record<string, unknown>): Record<string, unknown> {
+function writeGateReport(
+  filePath: string,
+  report: Record<string, unknown>
+): Record<string, unknown> {
   writeJsonUtf8(filePath, report);
   return gateReportRef(filePath, report);
 }
 
-function captureNestedMainOutput(fn: () => number): { exitCode: number; stdout: string; stderr: string } {
+function captureNestedMainOutput(fn: () => number): {
+  exitCode: number;
+  stdout: string;
+  stderr: string;
+} {
   const stdoutChunks: string[] = [];
   const stderrChunks: string[] = [];
   const originalStdoutWrite = process.stdout.write.bind(process.stdout);
@@ -9078,7 +9142,9 @@ function preparePostCloseCarrierControlRecord(input: {
       recordId: normalizeText(input.originRecord.recordId),
       requirementSetId: normalizeText(input.originRecord.requirementSetId),
       sourceDocumentHash: normalizeText(input.originRecord.sourceDocumentHash),
-      implementationConfirmationHash: normalizeText(input.originRecord.implementationConfirmationHash),
+      implementationConfirmationHash: normalizeText(
+        input.originRecord.implementationConfirmationHash
+      ),
       closeoutAttemptId: currentCloseoutAttemptId(input.originRecord),
       carrierPolicy: 'post_close_revalidation_evidence_carrier_only',
       createsRequirementRecord: false,
@@ -9143,7 +9209,10 @@ function runPostCloseGateStack(input: {
     evaluatedBy: 'main-agent-orchestration:post-close-defect-intake',
   });
   gateReports.push(
-    writeGateReport(path.join(input.reportDir, 'target-artifact-realization-report.json'), targetReport)
+    writeGateReport(
+      path.join(input.reportDir, 'target-artifact-realization-report.json'),
+      targetReport
+    )
   );
   const strictReport = evaluateStrictCloseoutProof({
     sourcePath: input.sourcePath,
@@ -9153,7 +9222,9 @@ function runPostCloseGateStack(input: {
     evaluatedAt: new Date().toISOString(),
     evaluatedBy: 'main-agent-orchestration:post-close-defect-intake',
   });
-  gateReports.push(writeGateReport(path.join(input.reportDir, 'strict-closeout-proof-report.json'), strictReport));
+  gateReports.push(
+    writeGateReport(path.join(input.reportDir, 'strict-closeout-proof-report.json'), strictReport)
+  );
   const aiTddReport = evaluateAiTddContractGate({
     sourcePath: input.sourcePath,
     record: updatedRecord,
@@ -9163,7 +9234,12 @@ function runPostCloseGateStack(input: {
     evaluatedAt: new Date().toISOString(),
     evaluatedBy: 'main-agent-orchestration:post-close-defect-intake',
   });
-  gateReports.push(writeGateReport(path.join(input.reportDir, 'ai-tdd-contract-gate-closeout-report.json'), aiTddReport));
+  gateReports.push(
+    writeGateReport(
+      path.join(input.reportDir, 'ai-tdd-contract-gate-closeout-report.json'),
+      aiTddReport
+    )
+  );
   return {
     gateReports,
     blockingReasons: uniqueNonEmpty(
@@ -9260,10 +9336,10 @@ export function runMainAgentPostCloseDefectIntake(
   const proofDefect = hasCloseoutProofDefectSignal(record, signal);
   const classification: PostCloseIntakeClassification = proofDefect
     ? 'closeout_proof_defect'
-    : explicitClassification ??
+    : (explicitClassification ??
       (changedTargetArtifacts.length > 0
         ? 'post_close_revalidation_required'
-        : 'no_post_close_action_required');
+        : 'no_post_close_action_required'));
   const dryRun = args.dryRun === 'true';
   const gateReportDir = path.join(path.dirname(reportPath), runId);
   const gateStack =
@@ -9491,119 +9567,6 @@ function uniqueNonEmpty(values: string[]): string[] {
   return Array.from(new Set(values.map(normalizeText).filter(Boolean)));
 }
 
-function manifestRows(
-  report: Record<string, unknown> | null,
-  key: string
-): Record<string, unknown>[] {
-  const manifest = report?.contractExecutionManifest as Record<string, unknown> | undefined;
-  if (!manifest || typeof manifest !== 'object' || Array.isArray(manifest)) return [];
-  return objectsFrom(manifest[key]);
-}
-
-function idsOf(rows: Record<string, unknown>[]): string[] {
-  return uniqueNonEmpty(rows.map((row) => normalizeText(row.id)));
-}
-
-function deriveReadinessOverlayFromManifest(
-  report: Record<string, unknown> | null
-): Record<string, unknown> | null {
-  const acceptance = [
-    ...manifestRows(report, 'acceptanceTests'),
-    ...manifestRows(report, 'e2eSuites'),
-  ];
-  const traceRows = manifestRows(report, 'traceRows');
-  const evidenceRows = manifestRows(report, 'evidence');
-  const commandRows = manifestRows(report, 'requiredCommands');
-  const artifactRows = manifestRows(report, 'targetArtifacts');
-  const requirementRows = manifestRows(report, 'requirements');
-  if (acceptance.length === 0 || traceRows.length === 0) return null;
-
-  const traceBindings = traceRows
-    .map((trace) => ({
-      id: normalizeText(trace.id),
-      covers: uniqueNonEmpty(stringsFrom(trace.covers)),
-      evidenceRefs: uniqueNonEmpty(stringsFrom(trace.evidenceRefs)),
-      commandRefs: uniqueNonEmpty(stringsFrom(trace.commandRefs)),
-      acceptanceRefs: uniqueNonEmpty(stringsFrom(trace.acceptanceRefs)),
-      artifactRefs: uniqueNonEmpty(stringsFrom(trace.artifactRefs)),
-    }))
-    .filter((trace) => trace.id);
-  const acceptanceByTrace = new Map<string, Record<string, unknown>[]>();
-  for (const row of acceptance) {
-    for (const traceRef of stringsFrom(row.traceRefs)) {
-      acceptanceByTrace.set(traceRef, [...(acceptanceByTrace.get(traceRef) ?? []), row]);
-    }
-  }
-
-  const acceptanceBindings: Record<string, unknown>[] = [];
-  for (const row of acceptance) {
-    const existingCovers = uniqueNonEmpty(stringsFrom(row.covers));
-    if (existingCovers.length > 0) {
-      acceptanceBindings.push({ id: normalizeText(row.id), covers: existingCovers });
-      continue;
-    }
-    const traceRefs = stringsFrom(row.traceRefs);
-    const candidateCovers = uniqueNonEmpty(
-      traceRefs.flatMap((traceRef) => {
-        const trace = traceBindings.find((item) => item.id === traceRef);
-        return trace ? (trace.covers as string[]) : [];
-      })
-    );
-    const isE2e = normalizeText(row.kind) === 'e2e' || normalizeText(row.id).startsWith('E2E-');
-    const expectedPrefix = isE2e ? 'NEG-' : 'MUST-';
-    const filtered = candidateCovers.filter((id) => id.startsWith(expectedPrefix));
-    const covers =
-      filtered.length === 1 ? filtered : candidateCovers.length === 1 ? candidateCovers : [];
-    if (covers.length !== 1) return null;
-    acceptanceBindings.push({ id: normalizeText(row.id), covers });
-  }
-
-  const overlay = {
-    schemaVersion: 'readiness-auto-remediation-overlay/v1',
-    sourceMutationPolicy: 'non_semantic_projection_only',
-    acceptanceBindings,
-    traceBindings,
-    evidenceBindings: evidenceRows
-      .map((row) => ({
-        id: normalizeText(row.id),
-        requiredCommandRefs: uniqueNonEmpty(stringsFrom(row.requiredCommandRefs)),
-        artifactRefs: uniqueNonEmpty(stringsFrom(row.artifactRefs)),
-      }))
-      .filter((row) => row.id),
-    commandBindings: commandRows
-      .map((row) => ({
-        id: normalizeText(row.id),
-        traceRows: uniqueNonEmpty(stringsFrom(row.traceRefs)),
-        evidenceRefs: uniqueNonEmpty(stringsFrom(row.evidenceRefs)),
-      }))
-      .filter((row) => row.id),
-    artifactBindings: artifactRows
-      .map((row) => ({
-        id: normalizeText(row.id),
-        traceRows: uniqueNonEmpty(stringsFrom(row.traceRefs)),
-        traceRefs: uniqueNonEmpty(stringsFrom(row.traceRefs)),
-        evidenceRefs: uniqueNonEmpty(stringsFrom(row.evidenceRefs)),
-      }))
-      .filter((row) => row.id),
-    derivedFromRequirementRefs: idsOf(requirementRows),
-    derivedFromTraceRefs: idsOf(traceRows),
-    derivedFromEvidenceRefs: idsOf(evidenceRows),
-    derivedFromCommandRefs: idsOf(commandRows),
-    derivedFromArtifactRefs: idsOf(artifactRows),
-  };
-  const hasUsefulBinding =
-    objectsFrom(overlay.acceptanceBindings).some((row) => stringsFrom(row.covers).length > 0) ||
-    objectsFrom(overlay.traceBindings).some(
-      (row) =>
-        stringsFrom(row.covers).length > 0 ||
-        stringsFrom(row.evidenceRefs).length > 0 ||
-        stringsFrom(row.commandRefs).length > 0 ||
-        stringsFrom(row.acceptanceRefs).length > 0 ||
-        stringsFrom(row.artifactRefs).length > 0
-    );
-  return hasUsefulBinding ? overlay : null;
-}
-
 function appendReadinessRemediationControlEvent(input: {
   recordPath: string;
   receipt: Record<string, unknown>;
@@ -9728,9 +9691,7 @@ export function runMainAgentReadinessAutoRemediation(input: {
   const concreteActions = blockerActions.filter(
     (action) => action.blocker !== 'ai_tdd_pre_implementation_readiness_not_ready'
   );
-  const blockingActions = concreteActions.filter(
-    (action) => !action.autoRemediationAllowed
-  );
+  const blockingActions = concreteActions.filter((action) => !action.autoRemediationAllowed);
   if (blockingActions.length > 0) {
     const hasUserDecision = blockingActions.some(
       (action) => action.classification === 'requires_user_decision'
@@ -10233,10 +10194,7 @@ export function runMainAgentAutomaticLoop(input: {
       taskReport = {
         ...taskReport,
         status: 'blocked',
-        evidence: [
-          ...taskReport.evidence,
-          `controlled evidence ingest failed: ${message}`,
-        ],
+        evidence: [...taskReport.evidence, `controlled evidence ingest failed: ${message}`],
         driftFlags: [
           ...new Set([...(taskReport.driftFlags ?? []), 'controlled-evidence-ingest-failed']),
         ],
@@ -10301,9 +10259,7 @@ function readinessBaselineActivationTaskReport(): TaskReport {
     packetId: `readiness-baseline-activation-${Date.now()}`,
     status: 'done',
     filesChanged: [],
-    validationsRun: [
-      'main-agent-orchestration:readiness-baseline-activation',
-    ],
+    validationsRun: ['main-agent-orchestration:readiness-baseline-activation'],
     evidence: [
       'requirement-record:readinessBaselineActivation.status=current',
       'requirement-record:readinessBaselineMetadata.status=current',
@@ -10712,11 +10668,7 @@ export async function mainMainAgentOrchestrationAsync(argv: string[]): Promise<n
               : null
         : args.reportEvidence && host !== 'codex'
           ? ({ projectRoot, instruction, args: runArgs }) => {
-              const reportPath = writeMainAgentRunLoopTaskReport(
-                projectRoot,
-                instruction,
-                runArgs
-              );
+              const reportPath = writeMainAgentRunLoopTaskReport(projectRoot, instruction, runArgs);
               return readTaskReportFromFile(reportPath, instruction.packetId);
             }
           : undefined,

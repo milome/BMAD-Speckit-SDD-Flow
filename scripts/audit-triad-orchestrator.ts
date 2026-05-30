@@ -40,7 +40,11 @@ export interface AuditTriadExecutionPlan {
   requiredCheckItemSetHash: string;
   subagents: AuditTriadSubagentPlan[];
   roundPolicy: { consecutiveNoGapRoundsRequired: 3 };
-  repairPolicy: { repairOwner: 'main_agent'; repairReceiptRequired: true; feedbackDispatchRequired: true };
+  repairPolicy: {
+    repairOwner: 'main_agent';
+    repairReceiptRequired: true;
+    feedbackDispatchRequired: true;
+  };
   convergencePolicy: { resetOnHashChange: string[]; staleConvergenceForbidden: true };
 }
 
@@ -48,7 +52,10 @@ export interface AuditTriadRoundReceipt {
   schemaVersion: 'audit-triad-round-receipt/v1';
   roundId: string;
   stageProfileId: CriticalAuditorStageProfileId;
-  perspectiveResults: Record<CriticalAuditorPerspectiveId, { agentId: string; validGaps: string[] }>;
+  perspectiveResults: Record<
+    CriticalAuditorPerspectiveId,
+    { agentId: string; validGaps: string[] }
+  >;
   coveredCheckItemIds: string[];
   vetoItemResults: Array<{ itemId: string; passed: boolean }>;
   validatedGapRefs: string[];
@@ -89,7 +96,9 @@ function stableStringify(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map((item) => stableStringify(item)).join(',')}]`;
   return `{${Object.keys(value as Record<string, unknown>)
     .sort()
-    .map((key) => `${JSON.stringify(key)}:${stableStringify((value as Record<string, unknown>)[key])}`)
+    .map(
+      (key) => `${JSON.stringify(key)}:${stableStringify((value as Record<string, unknown>)[key])}`
+    )
     .join(',')}}`;
 }
 
@@ -130,7 +139,11 @@ export function createAuditTriadExecutionPlan(input: {
   const derivedCurrentEvidenceHash =
     input.modelPacketHash && input.auditReceiptHash
       ? sha256Text(
-          [input.modelPacketHash, input.auditReceiptHash, input.goalExecutionHash ?? 'no-goal'].join('|')
+          [
+            input.modelPacketHash,
+            input.auditReceiptHash,
+            input.goalExecutionHash ?? 'no-goal',
+          ].join('|')
         )
       : null;
   const hashBinding = {
@@ -144,7 +157,9 @@ export function createAuditTriadExecutionPlan(input: {
     requiredCheckItemSetHash,
     currentAttemptHash: input.currentAttemptHash ?? sha256Text(input.attemptId),
     currentEvidenceHash:
-      input.currentEvidenceHash ?? derivedCurrentEvidenceHash ?? DEFAULT_AUDIT_CURRENT_EVIDENCE_HASH,
+      input.currentEvidenceHash ??
+      derivedCurrentEvidenceHash ??
+      DEFAULT_AUDIT_CURRENT_EVIDENCE_HASH,
   };
   return {
     schemaVersion: 'audit-triad-execution-plan/v1',
@@ -162,22 +177,26 @@ export function createAuditTriadExecutionPlan(input: {
     criticalAuditorProfileHash: profile.profileHash,
     criticalAuditorStageProfileHash: validation.stageProfile.stageProfileHash,
     requiredCheckItemSetHash,
-    subagents: (['product_intent', 'model_projection', 'main_agent_execution'] as CriticalAuditorPerspectiveId[]).map(
-      (perspectiveId) => ({
-        agentId: `${perspectiveId}-${safeSegment(input.attemptId)}`,
-        perspectiveId,
-        model: 'gpt-5.4',
-        reasoningEffort: 'xhigh',
-        readScope: ['docs/**', 'scripts/**', 'tests/**', '_bmad-output/**'],
-        writeScope: [
-          `_bmad-output/runtime/requirement-records/${safeSegment(input.recordId)}/audit-triad/${safeSegment(input.attemptId)}/reports/**`,
-        ],
-        forbiddenActions: ['modify_source', 'modify_runtime_state', 'modify_generated_surface'],
-        reportPath: path.join(planDir, 'reports', `${perspectiveId}.json`),
-        requiredCheckItemIds: validation.stageProfile!.requiredCheckItemIds,
-        currentHashBinding: hashBinding,
-      })
-    ),
+    subagents: (
+      [
+        'product_intent',
+        'model_projection',
+        'main_agent_execution',
+      ] as CriticalAuditorPerspectiveId[]
+    ).map((perspectiveId) => ({
+      agentId: `${perspectiveId}-${safeSegment(input.attemptId)}`,
+      perspectiveId,
+      model: 'gpt-5.4',
+      reasoningEffort: 'xhigh',
+      readScope: ['docs/**', 'scripts/**', 'tests/**', '_bmad-output/**'],
+      writeScope: [
+        `_bmad-output/runtime/requirement-records/${safeSegment(input.recordId)}/audit-triad/${safeSegment(input.attemptId)}/reports/**`,
+      ],
+      forbiddenActions: ['modify_source', 'modify_runtime_state', 'modify_generated_surface'],
+      reportPath: path.join(planDir, 'reports', `${perspectiveId}.json`),
+      requiredCheckItemIds: validation.stageProfile!.requiredCheckItemIds,
+      currentHashBinding: hashBinding,
+    })),
     roundPolicy: { consecutiveNoGapRoundsRequired: 3 },
     repairPolicy: {
       repairOwner: 'main_agent',
@@ -203,7 +222,10 @@ export function createAuditTriadExecutionPlan(input: {
   };
 }
 
-export function writeAuditTriadExecutionPlan(projectRoot: string, plan: AuditTriadExecutionPlan): string {
+export function writeAuditTriadExecutionPlan(
+  projectRoot: string,
+  plan: AuditTriadExecutionPlan
+): string {
   const filePath = path.join(
     projectRoot,
     '_bmad-output',
@@ -281,28 +303,49 @@ export function evaluateAuditTriadConvergence(input: {
   }
   for (const [index, round] of rounds.entries()) {
     const prefix = `round_${index + 1}`;
-    if (round.stageProfileId !== input.plan.stageProfileId) blockers.push(`${prefix}_stage_profile_mismatch`);
-    for (const perspective of ['product_intent', 'model_projection', 'main_agent_execution'] as CriticalAuditorPerspectiveId[]) {
-      if (!round.perspectiveResults[perspective]) blockers.push(`${prefix}_perspective_missing:${perspective}`);
+    if (round.stageProfileId !== input.plan.stageProfileId)
+      blockers.push(`${prefix}_stage_profile_mismatch`);
+    for (const perspective of [
+      'product_intent',
+      'model_projection',
+      'main_agent_execution',
+    ] as CriticalAuditorPerspectiveId[]) {
+      if (!round.perspectiveResults[perspective])
+        blockers.push(`${prefix}_perspective_missing:${perspective}`);
     }
     const agentIds = Object.values(round.perspectiveResults).map((result) => result.agentId);
     if (new Set(agentIds).size !== agentIds.length) blockers.push(`${prefix}_duplicate_agent`);
     for (const item of input.plan.subagents[0]?.requiredCheckItemIds ?? []) {
-      if (!round.coveredCheckItemIds.includes(item)) blockers.push(`${prefix}_check_item_missing:${item}`);
+      if (!round.coveredCheckItemIds.includes(item))
+        blockers.push(`${prefix}_check_item_missing:${item}`);
     }
     if (round.validatedGapRefs.length > 0) blockers.push(`${prefix}_validated_gap_unresolved`);
-    if (round.vetoItemResults.some((item) => item.passed !== true)) blockers.push(`${prefix}_veto_failed`);
-    if (!same(round.sourceDocumentHash, input.plan.sourceDocumentHash)) blockers.push(`${prefix}_source_hash_mismatch`);
-    if (!same(round.implementationConfirmationHash, input.plan.implementationConfirmationHash)) blockers.push(`${prefix}_confirmation_hash_mismatch`);
-    if (!same(round.modelPacketHash ?? null, input.plan.modelPacketHash ?? null)) blockers.push(`${prefix}_model_packet_hash_mismatch`);
-    if (!same(round.auditReceiptHash ?? null, input.plan.auditReceiptHash ?? null)) blockers.push(`${prefix}_audit_receipt_hash_mismatch`);
-    if (!same(round.goalExecutionHash ?? null, input.plan.goalExecutionHash ?? null)) blockers.push(`${prefix}_goal_execution_hash_mismatch`);
-    if (!same(round.currentAttemptHash, input.plan.currentAttemptHash)) blockers.push(`${prefix}_current_attempt_hash_mismatch`);
-    if (!same(round.currentEvidenceHash, input.plan.currentEvidenceHash)) blockers.push(`${prefix}_current_evidence_hash_mismatch`);
-    if (!same(round.criticalAuditorProfileHash, input.plan.criticalAuditorProfileHash)) blockers.push(`${prefix}_profile_hash_mismatch`);
-    if (!same(round.criticalAuditorStageProfileHash, input.plan.criticalAuditorStageProfileHash)) blockers.push(`${prefix}_stage_profile_hash_mismatch`);
-    if (!same(round.requiredCheckItemSetHash, input.plan.requiredCheckItemSetHash)) blockers.push(`${prefix}_check_item_set_hash_mismatch`);
-    if (input.scoreReceiptRequired && (!round.scoreReceiptRefs || round.scoreReceiptRefs.length === 0)) {
+    if (round.vetoItemResults.some((item) => item.passed !== true))
+      blockers.push(`${prefix}_veto_failed`);
+    if (!same(round.sourceDocumentHash, input.plan.sourceDocumentHash))
+      blockers.push(`${prefix}_source_hash_mismatch`);
+    if (!same(round.implementationConfirmationHash, input.plan.implementationConfirmationHash))
+      blockers.push(`${prefix}_confirmation_hash_mismatch`);
+    if (!same(round.modelPacketHash ?? null, input.plan.modelPacketHash ?? null))
+      blockers.push(`${prefix}_model_packet_hash_mismatch`);
+    if (!same(round.auditReceiptHash ?? null, input.plan.auditReceiptHash ?? null))
+      blockers.push(`${prefix}_audit_receipt_hash_mismatch`);
+    if (!same(round.goalExecutionHash ?? null, input.plan.goalExecutionHash ?? null))
+      blockers.push(`${prefix}_goal_execution_hash_mismatch`);
+    if (!same(round.currentAttemptHash, input.plan.currentAttemptHash))
+      blockers.push(`${prefix}_current_attempt_hash_mismatch`);
+    if (!same(round.currentEvidenceHash, input.plan.currentEvidenceHash))
+      blockers.push(`${prefix}_current_evidence_hash_mismatch`);
+    if (!same(round.criticalAuditorProfileHash, input.plan.criticalAuditorProfileHash))
+      blockers.push(`${prefix}_profile_hash_mismatch`);
+    if (!same(round.criticalAuditorStageProfileHash, input.plan.criticalAuditorStageProfileHash))
+      blockers.push(`${prefix}_stage_profile_hash_mismatch`);
+    if (!same(round.requiredCheckItemSetHash, input.plan.requiredCheckItemSetHash))
+      blockers.push(`${prefix}_check_item_set_hash_mismatch`);
+    if (
+      input.scoreReceiptRequired &&
+      (!round.scoreReceiptRefs || round.scoreReceiptRefs.length === 0)
+    ) {
       blockers.push(`${prefix}_score_receipt_missing`);
     }
     if (
@@ -314,8 +357,10 @@ export function evaluateAuditTriadConvergence(input: {
   }
   const allValidatedGaps = input.rounds.flatMap((round) => round.validatedGapRefs);
   if (allValidatedGaps.length > 0) {
-    if ((input.repairReceiptRefs ?? []).length === 0) blockers.push('main_agent_repair_receipt_missing');
-    if ((input.repairFeedbackDispatchRefs ?? []).length === 0) blockers.push('repair_feedback_dispatch_missing');
+    if ((input.repairReceiptRefs ?? []).length === 0)
+      blockers.push('main_agent_repair_receipt_missing');
+    if ((input.repairFeedbackDispatchRefs ?? []).length === 0)
+      blockers.push('repair_feedback_dispatch_missing');
   }
   if (blockers.length > 0) {
     return { ok: false, blockingReasons: Array.from(new Set(blockers)) };

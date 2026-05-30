@@ -31,14 +31,18 @@ function compileValidator() {
   return ajv.compile(schema);
 }
 
-export function validateRequirementRecordSchemaObject(record: JsonObject): RequirementRecordSchemaValidationResult {
+export function validateRequirementRecordSchemaObject(
+  record: JsonObject
+): RequirementRecordSchemaValidationResult {
   const validate = compileValidator();
   const ok = validate(record);
   const errors = (validate.errors ?? []) as unknown as JsonObject[];
   return { ok, errorCount: errors.length, errors };
 }
 
-export function validateRequirementRecordSchema(recordPath: string): RequirementRecordSchemaValidationResult {
+export function validateRequirementRecordSchema(
+  recordPath: string
+): RequirementRecordSchemaValidationResult {
   return validateRequirementRecordSchemaObject(readJson(recordPath));
 }
 
@@ -61,7 +65,11 @@ export function mainRequirementRecordLiveSchemaGate(argv: string[]): number {
     errorCount: result.errorCount,
     errors: result.errors.slice(0, 50),
   };
-  process.stdout.write(json ? `${JSON.stringify(output, null, 2)}\n` : `requirement_record_schema=${result.ok ? 'pass' : 'fail'} errors=${result.errorCount}\n`);
+  process.stdout.write(
+    json
+      ? `${JSON.stringify(output, null, 2)}\n`
+      : `requirement_record_schema=${result.ok ? 'pass' : 'fail'} errors=${result.errorCount}\n`
+  );
   return result.ok ? 0 : 1;
 }
 
@@ -69,7 +77,13 @@ if (require.main === module && isDirectCli(process.argv[1])) {
   try {
     process.exitCode = mainRequirementRecordLiveSchemaGate(process.argv.slice(2));
   } catch (error) {
-    console.error(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : String(error) }, null, 2));
+    console.error(
+      JSON.stringify(
+        { ok: false, error: error instanceof Error ? error.message : String(error) },
+        null,
+        2
+      )
+    );
     process.exitCode = 2;
   }
 }

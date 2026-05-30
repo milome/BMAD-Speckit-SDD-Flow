@@ -82,9 +82,7 @@ describe('schema', () => {
       stage: 'implement',
       phase_score: 22,
       phase_weight: 0.25,
-      check_items: [
-        { item_id: 'a', passed: true, score_delta: -2, note: 'ok' },
-      ],
+      check_items: [{ item_id: 'a', passed: true, score_delta: -2, note: 'ok' }],
       timestamp: '2026-03-04T12:00:00.000Z',
       iteration_count: 0,
       iteration_records: [],

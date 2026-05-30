@@ -86,7 +86,9 @@ export function hashLongRunPolicy(policy: LongRunPolicy = LONG_RUN_RUNTIME_POLIC
 
 export function validateLongRunPolicy(policy: Partial<LongRunPolicy>): string[] {
   const missing = REQUIRED_KEYS.filter((key) => policy[key] == null).map(String);
-  const numericFailures = REQUIRED_KEYS.filter((key) => key.endsWith('_ms') || key.endsWith('_ticks'))
+  const numericFailures = REQUIRED_KEYS.filter(
+    (key) => key.endsWith('_ms') || key.endsWith('_ticks')
+  )
     .filter((key) => typeof policy[key] === 'number' && Number(policy[key]) <= 0)
     .map(String);
   return [...missing, ...numericFailures];
@@ -147,8 +149,7 @@ export function applyLongRunPolicyToState(
       last_progress_ts: previous?.last_progress_ts ?? input.nowIso,
       degradation_level: previous?.degradation_level ?? 'none',
       active_host_mode: input.activeHostMode,
-      resume_count:
-        (previous?.resume_count ?? 0) + (input.resumedFromCheckpoint ? 1 : 0),
+      resume_count: (previous?.resume_count ?? 0) + (input.resumedFromCheckpoint ? 1 : 0),
       resumed_from_checkpoint: input.resumedFromCheckpoint === true,
     },
   };

@@ -15,7 +15,12 @@ describe('runtime-context story lifecycle wiring', () => {
   it('keeps project registry, project context, story contexts, and active run aligned for a story lifecycle transition', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'story-lifecycle-wire-'));
     try {
-      const sprintStatusPath = path.join(root, '_bmad-output', 'implementation-artifacts', 'sprint-status.yaml');
+      const sprintStatusPath = path.join(
+        root,
+        '_bmad-output',
+        'implementation-artifacts',
+        'sprint-status.yaml'
+      );
       mkdirSync(path.dirname(sprintStatusPath), { recursive: true });
       writeFileSync(
         sprintStatusPath,

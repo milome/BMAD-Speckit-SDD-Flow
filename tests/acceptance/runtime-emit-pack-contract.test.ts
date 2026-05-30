@@ -57,7 +57,8 @@ describe('runtime-emit pack contract', () => {
       files: Array<{ path: string }>;
     }>;
     const packEntry = parsedPackOutput.find(
-      (entry) => Array.isArray(entry.files) && entry.files.some((file) => file.path === 'package.json')
+      (entry) =>
+        Array.isArray(entry.files) && entry.files.some((file) => file.path === 'package.json')
     );
     expect(packEntry).toBeDefined();
     const paths = packEntry!.files.map((file) => file.path);

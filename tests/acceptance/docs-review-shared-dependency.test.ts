@@ -59,7 +59,11 @@ describe('docs-review shared dependency checker', () => {
     const sharedSource = mkdtempSync(join(tmpdir(), 'docs-review-shared-source-'));
     try {
       writeDocsReview(codexHome);
-      writeFileSync(join(sharedSource, 'metabase-style-guide.md'), '# Metabase style guide\n', 'utf8');
+      writeFileSync(
+        join(sharedSource, 'metabase-style-guide.md'),
+        '# Metabase style guide\n',
+        'utf8'
+      );
 
       const result = spawnSync(process.execPath, [SCRIPT, '--auto-install'], {
         cwd: process.cwd(),

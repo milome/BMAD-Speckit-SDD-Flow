@@ -71,7 +71,10 @@ function text(value: unknown): string {
 
 function arrayOfObjects(value: unknown): JsonObject[] {
   return Array.isArray(value)
-    ? value.filter((item): item is JsonObject => Boolean(item) && typeof item === 'object' && !Array.isArray(item))
+    ? value.filter(
+        (item): item is JsonObject =>
+          Boolean(item) && typeof item === 'object' && !Array.isArray(item)
+      )
     : [];
 }
 
@@ -173,7 +176,9 @@ function checkBmadCatalog(projectRoot: string): Check {
     for (const [key, tokens] of Object.entries(requiredAuthoring) as Array<
       [keyof typeof requiredAuthoring, string[]]
     >) {
-      if (tokens.some((token) => new RegExp(`(^|[^a-z])${token}([^a-z]|$)`, 'u').test(searchable))) {
+      if (
+        tokens.some((token) => new RegExp(`(^|[^a-z])${token}([^a-z]|$)`, 'u').test(searchable))
+      ) {
         foundOutputs.add(key);
       }
     }
@@ -184,7 +189,10 @@ function checkBmadCatalog(projectRoot: string): Check {
   return {
     id: 'bmad-catalog-loaded',
     decision: missing.length === 0 ? 'pass' : 'blocked',
-    summary: missing.length === 0 ? 'BMAD catalog preserves native authoring outputs' : 'BMAD catalog misses native authoring outputs',
+    summary:
+      missing.length === 0
+        ? 'BMAD catalog preserves native authoring outputs'
+        : 'BMAD catalog misses native authoring outputs',
     details: {
       path: relativeToRoot(projectRoot, catalogPath),
       rowCount: rows.length,
@@ -201,7 +209,11 @@ function checkBmadWorkflow(projectRoot: string): Check {
     '_bmad/skills/bmad-help/workflow.md',
   ]);
   if (!workflowPath) {
-    return { id: 'bmad-native-workflow-preserved', decision: 'blocked', summary: 'bmad-help workflow missing' };
+    return {
+      id: 'bmad-native-workflow-preserved',
+      decision: 'blocked',
+      summary: 'bmad-help workflow missing',
+    };
   }
   const content = fs.readFileSync(workflowPath, 'utf8');
   const requiredTokens = [
@@ -214,7 +226,10 @@ function checkBmadWorkflow(projectRoot: string): Check {
   return {
     id: 'bmad-native-workflow-preserved',
     decision: missing.length === 0 ? 'pass' : 'blocked',
-    summary: missing.length === 0 ? 'BMAD native routing workflow is preserved' : 'BMAD native routing workflow lost required semantics',
+    summary:
+      missing.length === 0
+        ? 'BMAD native routing workflow is preserved'
+        : 'BMAD native routing workflow lost required semantics',
     details: {
       path: relativeToRoot(projectRoot, workflowPath),
       requiredTokens,
@@ -226,18 +241,26 @@ function checkBmadWorkflow(projectRoot: string): Check {
 function checkBmadAuthoringPaths(projectRoot: string): Check {
   const configPath = path.join(projectRoot, '_bmad', 'bmm', 'config.yaml');
   if (!fs.existsSync(configPath)) {
-    return { id: 'bmad-authoring-paths-preserved', decision: 'blocked', summary: 'BMM config missing' };
+    return {
+      id: 'bmad-authoring-paths-preserved',
+      decision: 'blocked',
+      summary: 'BMM config missing',
+    };
   }
   const config = yaml.load(fs.readFileSync(configPath, 'utf8')) as JsonObject;
   const planning = text(config.planning_artifacts);
   const implementation = text(config.implementation_artifacts);
   const missing: string[] = [];
   if (!planning.includes('_bmad-output/planning-artifacts')) missing.push('planning_artifacts');
-  if (!implementation.includes('_bmad-output/implementation-artifacts')) missing.push('implementation_artifacts');
+  if (!implementation.includes('_bmad-output/implementation-artifacts'))
+    missing.push('implementation_artifacts');
   return {
     id: 'bmad-authoring-paths-preserved',
     decision: missing.length === 0 ? 'pass' : 'blocked',
-    summary: missing.length === 0 ? 'BMAD planning and implementation artifact roots are preserved' : 'BMAD authoring output roots changed',
+    summary:
+      missing.length === 0
+        ? 'BMAD planning and implementation artifact roots are preserved'
+        : 'BMAD authoring output roots changed',
     details: {
       path: relativeToRoot(projectRoot, configPath),
       planning_artifacts: planning,
@@ -250,7 +273,11 @@ function checkBmadAuthoringPaths(projectRoot: string): Check {
 function checkFiveLayerMapping(projectRoot: string): Check {
   const mappingPath = path.join(projectRoot, '_bmad', '_config', 'stage-mapping.yaml');
   if (!fs.existsSync(mappingPath)) {
-    return { id: 'bmad-five-layer-mapping-defined', decision: 'blocked', summary: 'stage mapping missing' };
+    return {
+      id: 'bmad-five-layer-mapping-defined',
+      decision: 'blocked',
+      summary: 'stage mapping missing',
+    };
   }
   const mapping = yaml.load(fs.readFileSync(mappingPath, 'utf8')) as JsonObject;
   const layerToStages = mapping.layer_to_stages as JsonObject | undefined;
@@ -259,7 +286,10 @@ function checkFiveLayerMapping(projectRoot: string): Check {
   return {
     id: 'bmad-five-layer-mapping-defined',
     decision: missing.length === 0 ? 'pass' : 'blocked',
-    summary: missing.length === 0 ? 'BMAD five-layer mapping remains available' : 'BMAD five-layer mapping is incomplete',
+    summary:
+      missing.length === 0
+        ? 'BMAD five-layer mapping remains available'
+        : 'BMAD five-layer mapping is incomplete',
     details: {
       path: relativeToRoot(projectRoot, mappingPath),
       requiredLayers,
@@ -282,7 +312,8 @@ function checkArtifactBoundary(record: JsonObject | null): Check {
     return {
       id: 'artifact-boundary-hardcut',
       decision: 'pass',
-      summary: 'No requirement record supplied; artifact boundary check limited to static BMAD config',
+      summary:
+        'No requirement record supplied; artifact boundary check limited to static BMAD config',
       details: { recordSupplied: false },
     };
   }
@@ -309,23 +340,25 @@ function checkArtifactBoundary(record: JsonObject | null): Check {
     ) {
       legacyViolations.push({ path: artifactPath, role, status });
     }
-    if (
-      artifactPath.startsWith(DOCS_REFERENCE_PREFIX) &&
-      !DOCS_REFERENCE_ALLOWED_ROLES.has(role)
-    ) {
+    if (artifactPath.startsWith(DOCS_REFERENCE_PREFIX) && !DOCS_REFERENCE_ALLOWED_ROLES.has(role)) {
       docsReferenceViolations.push({ path: artifactPath, role, status });
     }
   }
 
   const blockingIssues = [
     ...legacyViolations.map((item) => `legacy_runtime_artifact_still_active:${item.path}`),
-    ...docsReferenceViolations.map((item) => `docs_reference_cannot_be_completion_evidence:${item.path}`),
+    ...docsReferenceViolations.map(
+      (item) => `docs_reference_cannot_be_completion_evidence:${item.path}`
+    ),
   ];
 
   return {
     id: 'artifact-boundary-hardcut',
     decision: blockingIssues.length === 0 ? 'pass' : 'blocked',
-    summary: blockingIssues.length === 0 ? 'No active control/evidence artifact uses legacy runtime or docs/reference completion paths' : 'Artifact boundary hardcut violations found',
+    summary:
+      blockingIssues.length === 0
+        ? 'No active control/evidence artifact uses legacy runtime or docs/reference completion paths'
+        : 'Artifact boundary hardcut violations found',
     details: {
       blockingIssues,
       legacyRuntimePrefixes: LEGACY_RUNTIME_PREFIXES,
@@ -347,35 +380,40 @@ function buildHardcutMatrix(): JsonObject[] {
       targetRole: 'bmad_native_authoring_artifact',
       targetState: 'preserved',
       canAffectControlFlow: false,
-      rationale: 'BMAD Product Brief, PRD, Architecture, and Epics authoring outputs remain native BMAD workflow artifacts.',
+      rationale:
+        'BMAD Product Brief, PRD, Architecture, and Epics authoring outputs remain native BMAD workflow artifacts.',
     },
     {
       pathPattern: '_bmad-output/implementation-artifacts/**',
       targetRole: 'bmad_native_implementation_artifact',
       targetState: 'preserved',
       canAffectControlFlow: false,
-      rationale: 'BMAD story/task/audit documents remain native workflow artifacts and are indexed as evidence when used by requirement records.',
+      rationale:
+        'BMAD story/task/audit documents remain native workflow artifacts and are indexed as evidence when used by requirement records.',
     },
     {
       pathPattern: '_bmad-output/runtime/requirement-records/<requirement-set-id>/**',
       targetRole: 'requirement_scoped_runtime_artifact',
       targetState: 'required_for_new_control_projection_and_evidence',
       canAffectControlFlow: true,
-      rationale: 'New controlled runtime state, projections, recovery, and evidence must be requirement-scoped.',
+      rationale:
+        'New controlled runtime state, projections, recovery, and evidence must be requirement-scoped.',
     },
     {
       pathPattern: 'docs/reference/**',
       targetRole: 'schema_or_contract_definition_only',
       targetState: 'not_completion_evidence',
       canAffectControlFlow: false,
-      rationale: 'Reference schemas define or validate contracts; they do not prove runtime completion.',
+      rationale:
+        'Reference schemas define or validate contracts; they do not prove runtime completion.',
     },
     ...LEGACY_RUNTIME_PREFIXES.map((prefix) => ({
       pathPattern: `${prefix}**`,
       targetRole: 'legacy_diagnostic_only',
       targetState: 'forbidden_for_new_outputs',
       canAffectControlFlow: false,
-      rationale: 'Useful producer capability must write directly to requirement-scoped paths; old runtime roots cannot be new control or pass evidence outputs.',
+      rationale:
+        'Useful producer capability must write directly to requirement-scoped paths; old runtime roots cannot be new control or pass evidence outputs.',
     })),
   ];
 }
@@ -414,7 +452,10 @@ function buildReport(input: {
     sourceDocumentHash: text(record?.sourceDocumentHash) || null,
     implementationConfirmationHash: text(record?.implementationConfirmationHash) || null,
     architectureConfirmationHash:
-      text((record?.architectureConfirmationState as JsonObject | undefined)?.currentArchitectureConfirmationHash) || null,
+      text(
+        (record?.architectureConfirmationState as JsonObject | undefined)
+          ?.currentArchitectureConfirmationHash
+      ) || null,
     inputs: {
       projectRoot: normalizePathForRecord(input.projectRoot),
       requirementRecordPath: input.requirementRecordPath
@@ -435,17 +476,27 @@ function defaultOutPath(projectRoot: string, requirementRecordPath: string | nul
       'bmad-artifact-hardcut-report.json'
     );
   }
-  return path.join(projectRoot, '_bmad-output', 'runtime', 'requirement-records', 'artifact-hardcut-report.json');
+  return path.join(
+    projectRoot,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    'artifact-hardcut-report.json'
+  );
 }
 
 export function mainBmadArtifactHardcut(argv: string[]): number {
   const args = parseArgs(argv);
   if (args.help) {
-    console.log('Usage: main-agent-bmad-artifact-hardcut --requirement-record <json> [--out <json>] [--json]');
+    console.log(
+      'Usage: main-agent-bmad-artifact-hardcut --requirement-record <json> [--out <json>] [--json]'
+    );
     return 0;
   }
   const projectRoot = path.resolve(args.projectRoot ?? process.cwd());
-  const requirementRecordPath = args.requirementRecord ? path.resolve(args.requirementRecord) : null;
+  const requirementRecordPath = args.requirementRecord
+    ? path.resolve(args.requirementRecord)
+    : null;
   const generatedAt = args.generatedAt ?? new Date().toISOString();
   const generatedBy = args.generatedBy ?? 'agent';
   const report = buildReport({ projectRoot, requirementRecordPath, generatedAt, generatedBy });
@@ -458,7 +509,11 @@ export function mainBmadArtifactHardcut(argv: string[]): number {
     reportHash: sha256File(outPath),
     blockingIssues: report.blockingIssues,
   };
-  process.stdout.write(args.json ? `${JSON.stringify(output, null, 2)}\n` : `bmad_artifact_hardcut=${report.decision}\n`);
+  process.stdout.write(
+    args.json
+      ? `${JSON.stringify(output, null, 2)}\n`
+      : `bmad_artifact_hardcut=${report.decision}\n`
+  );
   return report.decision === 'pass' ? 0 : 1;
 }
 
@@ -466,7 +521,13 @@ if (require.main === module) {
   try {
     process.exitCode = mainBmadArtifactHardcut(process.argv.slice(2));
   } catch (error) {
-    console.error(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : String(error) }, null, 2));
+    console.error(
+      JSON.stringify(
+        { ok: false, error: error instanceof Error ? error.message : String(error) },
+        null,
+        2
+      )
+    );
     process.exitCode = 2;
   }
 }

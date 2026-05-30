@@ -141,7 +141,8 @@ function buildCommands(): Record<string, CommandRef> {
     }),
     'CMD-DELIVERY-005': commandRef({
       commandId: 'CMD-DELIVERY-005',
-      command: 'rg "implementation_readiness|parseAndWriteScore|RunScoreRecord" scripts packages tests',
+      command:
+        'rg "implementation_readiness|parseAndWriteScore|RunScoreRecord" scripts packages tests',
       outputSummary:
         'rg exit 0; controlled-readiness-audit-bridge is the production parseAndWriteScore owner; boundary unit test passed',
     }),
@@ -210,7 +211,8 @@ function buildArtifacts(root: string): JsonObject[] {
       path: 'scripts/resolve-active-requirement.ts',
       contentHash: hashFile(root, 'scripts/resolve-active-requirement.ts'),
       producer: 'codex-execution',
-      purpose: 'active requirement resolver fallback, index repair projection, explicit selector recovery',
+      purpose:
+        'active requirement resolver fallback, index repair projection, explicit selector recovery',
       relatedRequirementIds: ['MUST-001', 'MUST-002', 'NEG-001', 'NEG-002'],
       traceRows: ['TRACE-001'],
       evidenceRefs: ['EVD-001', 'EVD-002'],
@@ -221,7 +223,8 @@ function buildArtifacts(root: string): JsonObject[] {
       path: 'tests/unit/resolve-active-requirement.test.ts',
       contentHash: hashFile(root, 'tests/unit/resolve-active-requirement.test.ts'),
       producer: 'codex-execution',
-      purpose: 'resolver fallback, explicit selector, ambiguity, and no runtime/context fallback tests',
+      purpose:
+        'resolver fallback, explicit selector, ambiguity, and no runtime/context fallback tests',
       relatedRequirementIds: ['MUST-001', 'MUST-002', 'NEG-001', 'NEG-002', 'NEG-006'],
       traceRows: ['TRACE-001', 'TRACE-005'],
       evidenceRefs: ['EVD-001', 'EVD-002', 'EVD-006'],
@@ -243,7 +246,8 @@ function buildArtifacts(root: string): JsonObject[] {
       path: 'scripts/controlled-readiness-audit-bridge.ts',
       contentHash: hashFile(root, 'scripts/controlled-readiness-audit-bridge.ts'),
       producer: 'codex-execution',
-      purpose: 'controlled audit/scoring bridge writes implementation_readiness RunScoreRecord with provenance',
+      purpose:
+        'controlled audit/scoring bridge writes implementation_readiness RunScoreRecord with provenance',
       relatedRequirementIds: ['MUST-004', 'MUST-005', 'MUST-006', 'NEG-003'],
       traceRows: ['TRACE-002', 'TRACE-003', 'TRACE-004'],
       evidenceRefs: ['EVD-004', 'EVD-005', 'EVD-010'],
@@ -254,7 +258,8 @@ function buildArtifacts(root: string): JsonObject[] {
       path: 'scripts/main-agent-orchestration.ts',
       contentHash: hashFile(root, 'scripts/main-agent-orchestration.ts'),
       producer: 'codex-execution',
-      purpose: 'inspect diagnostics, controlled readiness audit action, completed_no_dispatch, drift baseline surface',
+      purpose:
+        'inspect diagnostics, controlled readiness audit action, completed_no_dispatch, drift baseline surface',
       relatedRequirementIds: ['MUST-004', 'MUST-008', 'MUST-009', 'NEG-004', 'NEG-007'],
       traceRows: ['TRACE-002', 'TRACE-006', 'TRACE-007'],
       evidenceRefs: ['EVD-004', 'EVD-007', 'EVD-008'],
@@ -309,8 +314,17 @@ function buildArtifacts(root: string): JsonObject[] {
       path: 'tests/acceptance/main-agent-orchestration-consumer.test.ts',
       contentHash: hashFile(root, 'tests/acceptance/main-agent-orchestration-consumer.test.ts'),
       producer: 'codex-execution',
-      purpose: 'controlled audit, scoring bridge, current baseline, completed_no_dispatch, inspect diagnostics acceptance evidence',
-      relatedRequirementIds: ['MUST-004', 'MUST-005', 'MUST-006', 'MUST-008', 'MUST-009', 'NEG-004', 'NEG-007'],
+      purpose:
+        'controlled audit, scoring bridge, current baseline, completed_no_dispatch, inspect diagnostics acceptance evidence',
+      relatedRequirementIds: [
+        'MUST-004',
+        'MUST-005',
+        'MUST-006',
+        'MUST-008',
+        'MUST-009',
+        'NEG-004',
+        'NEG-007',
+      ],
       traceRows: ['TRACE-002', 'TRACE-003', 'TRACE-004', 'TRACE-006', 'TRACE-007'],
       evidenceRefs: ['EVD-004', 'EVD-005', 'EVD-007', 'EVD-008'],
     }),

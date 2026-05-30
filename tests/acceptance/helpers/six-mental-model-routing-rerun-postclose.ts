@@ -131,8 +131,7 @@ export function recordPostCloseCarrier(
             sourceOfTruthRole: 'evidence',
             recordId: record.recordId,
             requirementSetId: record.requirementSetId,
-            path:
-              '_bmad-output/runtime/requirement-records/REQ-SIX-MODEL-ROUTING-E2E/post-close/post-close-carrier-six-model-routing-e2e.json',
+            path: '_bmad-output/runtime/requirement-records/REQ-SIX-MODEL-ROUTING-E2E/post-close/post-close-carrier-six-model-routing-e2e.json',
             contentHash: PAGE_HASH,
             producer: 'post-close-defect-intake-carrier',
             purpose: 'prove post-close defect is carried outside origin record mutation',

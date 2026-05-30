@@ -282,7 +282,13 @@ function writeFixture(
 }
 
 function writeScopedAiTddFixture(root: string) {
-  const base = path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'REQ-AI-TDD-SCOPED');
+  const base = path.join(
+    root,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    'REQ-AI-TDD-SCOPED'
+  );
   const sourcePath = path.join(root, 'source.md');
   const confirmation = {
     status: 'user_confirmed',
@@ -524,7 +530,14 @@ describe('strict closeout proof gate', () => {
       const releaseRef = record.artifactIndex.find(
         (item: Record<string, unknown>) => item.artifactType === 'dataset_release_gate_report'
       ) as Record<string, string>;
-      const defaultReleaseDir = path.join(root, '_bmad-output', 'runtime', 'datasets', 'req-closeout-governed-sft', 'v1');
+      const defaultReleaseDir = path.join(
+        root,
+        '_bmad-output',
+        'runtime',
+        'datasets',
+        'req-closeout-governed-sft',
+        'v1'
+      );
       mkdirSync(defaultReleaseDir, { recursive: true });
       writeFileSync(
         path.join(defaultReleaseDir, 'dataset-manifest.json'),
@@ -538,7 +551,8 @@ describe('strict closeout proof gate', () => {
       );
       record.artifactIndex = record.artifactIndex.filter(
         (item: Record<string, unknown>) =>
-          item.artifactType !== 'dataset_release_manifest' && item.artifactType !== 'dataset_release_gate_report'
+          item.artifactType !== 'dataset_release_manifest' &&
+          item.artifactType !== 'dataset_release_gate_report'
       );
       writeJson(recordPath, record);
       const eventLogPath = path.join(base, 'events', 'control-events.jsonl');

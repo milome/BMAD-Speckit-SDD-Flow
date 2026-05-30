@@ -17,12 +17,12 @@ export function formatToMarkdown(report: CoachDiagnosisReport): string {
       return `- ${stage}: ${score}`;
     })
     .join('\n');
-  const weakAreaLines = report.weak_areas.length > 0
-    ? report.weak_areas.map((x) => `- ${x}`).join('\n')
-    : '- (none)';
-  const recommendationLines = report.recommendations.length > 0
-    ? report.recommendations.map((x) => `- ${x}`).join('\n')
-    : '- (none)';
+  const weakAreaLines =
+    report.weak_areas.length > 0 ? report.weak_areas.map((x) => `- ${x}`).join('\n') : '- (none)';
+  const recommendationLines =
+    report.recommendations.length > 0
+      ? report.recommendations.map((x) => `- ${x}`).join('\n')
+      : '- (none)';
   const journeyHintLines =
     report.journey_contract_hints != null && report.journey_contract_hints.length > 0
       ? report.journey_contract_hints
@@ -36,7 +36,9 @@ export function formatToMarkdown(report: CoachDiagnosisReport): string {
   const iterationSection =
     counts != null
       ? (() => {
-          const entries = Object.entries(counts).map(([s, v]) => [s, sanitizeIterationCount(v)] as const);
+          const entries = Object.entries(counts).map(
+            ([s, v]) => [s, sanitizeIterationCount(v)] as const
+          );
           const allZero = entries.every(([, v]) => v === 0);
           const desc =
             'Count of failed-audit rounds; 0 = passed first time; post-pass confirmation rounds do not count.';
@@ -72,12 +74,7 @@ export function formatToMarkdown(report: CoachDiagnosisReport): string {
     ...iterationSection,
     ...evolutionSection,
     ...(journeyHintLines != null
-      ? [
-          '',
-          '## Journey Contract Remediation',
-          '',
-          journeyHintLines,
-        ]
+      ? ['', '## Journey Contract Remediation', '', journeyHintLines]
       : []),
     '',
     '## Weak Areas',

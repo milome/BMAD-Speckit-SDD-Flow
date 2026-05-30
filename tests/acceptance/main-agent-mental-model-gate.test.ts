@@ -37,14 +37,17 @@ function baseRecord(): JsonObject {
         confirmedAt: '2026-05-28T00:00:00.000Z',
         confirmedBy: 'test',
         sourcePath: 'docs/requirements/mental-model.md',
-        sourceDocumentHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+        sourceDocumentHash:
+          'sha256:1111111111111111111111111111111111111111111111111111111111111111',
         implementationConfirmationHash:
           'sha256:2222222222222222222222222222222222222222222222222222222222222222',
         confirmationPageHash:
           'sha256:3333333333333333333333333333333333333333333333333333333333333333',
         confirmationText: 'confirmed',
-        renderReportPath: '_bmad-output/runtime/requirement-records/REQSET-MENTAL-MODEL-GATE/confirmation/report.json',
-        htmlPath: '_bmad-output/runtime/requirement-records/REQSET-MENTAL-MODEL-GATE/confirmation/confirmation.html',
+        renderReportPath:
+          '_bmad-output/runtime/requirement-records/REQSET-MENTAL-MODEL-GATE/confirmation/report.json',
+        htmlPath:
+          '_bmad-output/runtime/requirement-records/REQSET-MENTAL-MODEL-GATE/confirmation/confirmation.html',
       },
     ],
     currentMentalModel: 'requirement_confirmation',
@@ -139,7 +142,10 @@ describe('main-agent mental model gate', () => {
           return {
             ...record,
             currentMentalModel: payload.toModel,
-            mentalModelTransitions: [...((record.mentalModelTransitions as unknown[]) ?? []), payload],
+            mentalModelTransitions: [
+              ...((record.mentalModelTransitions as unknown[]) ?? []),
+              payload,
+            ],
             lastEventType: 'mental_model_transition_recorded',
           };
         },
@@ -235,8 +241,9 @@ describe('main-agent mental model gate', () => {
           sourceRefs: [{ sourceType: 'reconfirmation_request', id: 'reconfirm-001' }],
         },
         reduce: (currentRecord, payload) => {
-          const hasOpenBlockingRequest = ((currentRecord.reconfirmationRequests as JsonObject[]) ?? [])
-            .some((request) => request.status === 'blocking_open');
+          const hasOpenBlockingRequest = (
+            (currentRecord.reconfirmationRequests as JsonObject[]) ?? []
+          ).some((request) => request.status === 'blocking_open');
           if (!hasOpenBlockingRequest) {
             throw new Error('mental_model_rollback_requires_open_blocking_reconfirmation');
           }
@@ -254,9 +261,7 @@ describe('main-agent mental model gate', () => {
 
       record = JSON.parse(readFileSync(recordPath, 'utf8'));
       expect(record.currentMentalModel).toBe('requirement_confirmation');
-      expect(record.mentalModelTransitions.at(-1).eventType).toBe(
-        'mental_model_rollback_recorded'
-      );
+      expect(record.mentalModelTransitions.at(-1).eventType).toBe('mental_model_rollback_recorded');
     });
   });
 });

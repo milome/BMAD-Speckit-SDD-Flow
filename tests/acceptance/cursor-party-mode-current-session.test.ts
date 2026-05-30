@@ -196,10 +196,18 @@ describe('cursor party-mode current session binding', () => {
     expect(state.target_rounds_total).toBe(100);
     expect(state.status).toBe('launched');
     expect(state.agent_turn_event_source_mode).toBe('cursor_visible_output_reconstruction');
-    expect(String(state.visible_output_capture_path || '')).toContain('/_bmad-output/party-mode/captures/');
-    expect(String(state.launch_payload_capture_path || '').replace(/\\/g, '/')).toContain('/_bmad-output/party-mode/captures/');
-    expect(String(state.sidecar_started_path || '').replace(/\\/g, '/')).toContain('/_bmad-output/party-mode/sidecar/');
-    expect(String(state.sidecar_final_path || '').replace(/\\/g, '/')).toContain('/_bmad-output/party-mode/sidecar/');
+    expect(String(state.visible_output_capture_path || '')).toContain(
+      '/_bmad-output/party-mode/captures/'
+    );
+    expect(String(state.launch_payload_capture_path || '').replace(/\\/g, '/')).toContain(
+      '/_bmad-output/party-mode/captures/'
+    );
+    expect(String(state.sidecar_started_path || '').replace(/\\/g, '/')).toContain(
+      '/_bmad-output/party-mode/sidecar/'
+    );
+    expect(String(state.sidecar_final_path || '').replace(/\\/g, '/')).toContain(
+      '/_bmad-output/party-mode/sidecar/'
+    );
     expect(fs.existsSync(path.resolve(root, state.launch_payload_capture_path))).toBe(true);
     expect(fs.existsSync(path.resolve(root, state.sidecar_started_path))).toBe(true);
   });
@@ -241,7 +249,13 @@ describe('cursor party-mode current session binding', () => {
       gate_profile_id: 'final_solution_task_list_100',
       target_rounds_total: 100,
       status: 'launched',
-      session_log_path: path.join(root, '_bmad-output', 'party-mode', 'sessions', 'stale-100-launch.jsonl'),
+      session_log_path: path.join(
+        root,
+        '_bmad-output',
+        'party-mode',
+        'sessions',
+        'stale-100-launch.jsonl'
+      ),
       recorded_at: '2026-04-16T12:25:51.392Z',
     });
 
@@ -762,14 +776,18 @@ describe('cursor party-mode current session binding', () => {
     expect(finalSidecar.status).toBe('needs_retry');
     expect(finalSidecar.validation_status).toBe('FAIL');
     expect(finalSidecar.final_result).toBe('FAIL');
-    expect(finalSidecar.agent_turn_event_source_mode).toBe(
-      'cursor_visible_output_reconstruction'
-    );
+    expect(finalSidecar.agent_turn_event_source_mode).toBe('cursor_visible_output_reconstruction');
     expect(finalSidecar.visible_output_summary).toMatchObject({
       diagnostic_classification: 'carrier_return_without_visible_output',
     });
 
-    const helper = path.join(repoRoot, '_bmad', 'runtime', 'hooks', 'party-mode-read-current-session.cjs');
+    const helper = path.join(
+      repoRoot,
+      '_bmad',
+      'runtime',
+      'hooks',
+      'party-mode-read-current-session.cjs'
+    );
     const helperResult = spawnSync(process.execPath, [helper, '--project-root', root], {
       cwd: repoRoot,
       encoding: 'utf8',
@@ -779,9 +797,7 @@ describe('cursor party-mode current session binding', () => {
     expect(summary.execution_evidence_level).toBe('final');
     expect(summary.validation_status).toBe('FAIL');
     expect(summary.diagnostic_classification).toBe('carrier_return_without_visible_output');
-    expect(summary.agent_turn_event_source_mode).toBe(
-      'cursor_visible_output_reconstruction'
-    );
+    expect(summary.agent_turn_event_source_mode).toBe('cursor_visible_output_reconstruction');
   });
 
   it('does not let an unrelated post-tool-use event overwrite a successful current-session state back to FAIL', () => {

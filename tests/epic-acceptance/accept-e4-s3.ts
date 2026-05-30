@@ -22,7 +22,17 @@ const DOCS = [
   'scoring/docs/BMAD_INTEGRATION_POINTS.md',
 ];
 
-const FORBIDDEN_WORDS = ['可选', '可考虑', '后续', '先实现', '后续扩展', '待定', '酌情', '视情况', '技术债'];
+const FORBIDDEN_WORDS = [
+  '可选',
+  '可考虑',
+  '后续',
+  '先实现',
+  '后续扩展',
+  '待定',
+  '酌情',
+  '视情况',
+  '技术债',
+];
 
 function makeRecord(overrides: Partial<RunScoreRecord>): RunScoreRecord {
   return {
@@ -56,7 +66,9 @@ function main(): number {
 
   // 2) validateScenarioConstraints 通过/失败符合预期
   try {
-    validateScenarioConstraints(makeRecord({ scenario: 'eval_question', question_version: undefined }));
+    validateScenarioConstraints(
+      makeRecord({ scenario: 'eval_question', question_version: undefined })
+    );
     console.error('FAIL: eval_question 无 question_version 应抛错');
     failed++;
   } catch (e: unknown) {
@@ -82,7 +94,13 @@ function main(): number {
   // 3) 至少一个 BMAD 集成点可调用：直接调用 parseAndWriteScore
   const fixtures = path.join(cwd, 'scoring/parsers/__tests__/fixtures');
   const prdContent = fs.readFileSync(path.join(fixtures, 'sample-prd-report.md'), 'utf-8');
-  const tempDir = path.join(cwd, '_bmad-output', 'implementation-artifacts', '4-3-eval-scenario-bmad-integration', 'accept-e4-s3-out');
+  const tempDir = path.join(
+    cwd,
+    '_bmad-output',
+    'implementation-artifacts',
+    '4-3-eval-scenario-bmad-integration',
+    'accept-e4-s3-out'
+  );
   fs.mkdirSync(tempDir, { recursive: true });
   try {
     parseAndWriteScore({

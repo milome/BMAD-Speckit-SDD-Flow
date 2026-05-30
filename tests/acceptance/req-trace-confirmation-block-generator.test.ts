@@ -68,7 +68,9 @@ function sha256(content: string): string {
   return `sha256:${crypto.createHash('sha256').update(content, 'utf8').digest('hex')}`;
 }
 
-function semanticConfirmationForHash(confirmation: Record<string, unknown>): Record<string, unknown> {
+function semanticConfirmationForHash(
+  confirmation: Record<string, unknown>
+): Record<string, unknown> {
   const semantic: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(confirmation)) {
     if (!BOOKKEEPING_FIELDS.has(key)) semantic[key] = value;
@@ -544,12 +546,15 @@ describe('req trace generator confirmation block gate', () => {
     for (const file of files) {
       const content = fs.readFileSync(file, 'utf8');
       for (const fragment of forbiddenFixedRootFragments) {
-        expect(content, `${path.relative(ROOT, file)} contains fixed install root ${fragment}`).not.toContain(
-          fragment
-        );
+        expect(
+          content,
+          `${path.relative(ROOT, file)} contains fixed install root ${fragment}`
+        ).not.toContain(fragment);
       }
     }
-    expect(fs.readFileSync(path.join(CANONICAL_SKILL_DIR, 'SKILL.md'), 'utf8')).toContain('<skill-dir>/scripts/generate_prompt.js');
+    expect(fs.readFileSync(path.join(CANONICAL_SKILL_DIR, 'SKILL.md'), 'utf8')).toContain(
+      '<skill-dir>/scripts/generate_prompt.js'
+    );
   });
 
   it('compiles synchronized model packet, human prompt, and audit receipt artifacts', () => {
@@ -582,7 +587,9 @@ describe('req trace generator confirmation block gate', () => {
 
     expect(packet.artifactRole).toBe('execution_authority');
     expect(packet.sourceDocumentHash).toBe(currentHashes(source).sourceDocumentHash);
-    expect(packet.implementationConfirmationHash).toBe(currentHashes(source).implementationConfirmationHash);
+    expect(packet.implementationConfirmationHash).toBe(
+      currentHashes(source).implementationConfirmationHash
+    );
     expect(packet.preConfirmationDrilldown).toMatchObject({
       semanticKernelRef: 'authoring/semantic-kernel.json',
       preRenderGateReportRef: 'authoring/pre-render-must-decomposition-gate-report.json',
@@ -611,7 +618,9 @@ describe('req trace generator confirmation block gate', () => {
       failurePathRefs: ['FAIL-001'],
       edgeCaseRefs: ['EDGE-001'],
       artifactRefs: ['ART-001'],
-      targetModificationPaths: ['_bmad/skills/req-trace-matrix-prompt-generator/scripts/generate_prompt.js'],
+      targetModificationPaths: [
+        '_bmad/skills/req-trace-matrix-prompt-generator/scripts/generate_prompt.js',
+      ],
       deliveryCommandRefs: ['CMD-TEST-001'],
       tddProtocol: {
         states: ['RED', 'GREEN', 'REFACTOR', 'CLOSEOUT'],
@@ -634,7 +643,9 @@ describe('req trace generator confirmation block gate', () => {
     expect(packet.hostExecutionHints).toMatchObject({
       codex: expect.objectContaining({ strategy: 'goal_if_available_else_continue_nonstop' }),
       cursorIde: expect.objectContaining({ strategy: 'agent_panel_autonomous_prompt' }),
-      cursorCli: expect.objectContaining({ strategy: 'headless_command_with_external_supervisor_loop' }),
+      cursorCli: expect.objectContaining({
+        strategy: 'headless_command_with_external_supervisor_loop',
+      }),
     });
 
     expect(prompt).toContain('$executing-plans $verification-before-completion');
@@ -828,10 +839,14 @@ describe('req trace generator confirmation block gate', () => {
     const receipt = readJson<Record<string, any>>(path.join(outDir, 'audit_receipt.json'));
     expect(prompt).toContain('/goal Execute REQ-TRACE-001 by following');
     expect(prompt).toContain('goal_execution.md');
-    expect(prompt).toContain('The /goal command is an entry pointer only, not the full task scope.');
+    expect(prompt).toContain(
+      'The /goal command is an entry pointer only, not the full task scope.'
+    );
     expect(prompt).toContain('Execution scope is goal_execution.md + model_packet.json.');
     expect(prompt).not.toContain('\ncontinue nonstop\n');
-    expect(fs.readFileSync(path.join(outDir, 'goal_execution.md'), 'utf8')).toContain('AI-TDD protocol:');
+    expect(fs.readFileSync(path.join(outDir, 'goal_execution.md'), 'utf8')).toContain(
+      'AI-TDD protocol:'
+    );
     expect(receipt.continuationDirective).toMatchObject({
       strategy: 'goal_if_available_else_continue_nonstop',
       nativeGoalCommandUsed: true,
@@ -902,7 +917,9 @@ describe('req trace generator confirmation block gate', () => {
     expect(result.status).toBe(0);
     const prompt = fs.readFileSync(path.join(outDir, 'human_prompt.txt'), 'utf8');
     const receipt = readJson<Record<string, any>>(path.join(outDir, 'audit_receipt.json'));
-    expect(prompt).toContain('Continue until all final gates pass or semantic gap requires reconfirm_required');
+    expect(prompt).toContain(
+      'Continue until all final gates pass or semantic gap requires reconfirm_required'
+    );
     expect(prompt).not.toContain('/goal');
     expect(receipt.executionHost).toBe('generic');
     expect(receipt.continuationDirective.strategy).toBe('prompt_contract_only');
@@ -987,7 +1004,10 @@ describe('req trace generator confirmation block gate', () => {
     const source = writeSource(
       validCompilerSource()
         .replace(/ {2}preConfirmationDrilldown:[\s\S]*? {2}must:\n/u, '  must:\n')
-        .replace(/ {2}atomicImplementationTaskList:[\s\S]*? {2}acceptanceTests:\n/u, '  acceptanceTests:\n')
+        .replace(
+          / {2}atomicImplementationTaskList:[\s\S]*? {2}acceptanceTests:\n/u,
+          '  acceptanceTests:\n'
+        )
     );
     const record = writeRequirementRecord(source);
     const outDir = path.join(tempDir, 'blocked-trace-execution');
@@ -1005,7 +1025,10 @@ describe('req trace generator confirmation block gate', () => {
     const receipt = readJson<Record<string, any>>(path.join(outDir, 'audit_receipt.json'));
     expect(receipt.decision).toBe('blocked');
     expect(receipt.blockingReasons).toEqual(
-      expect.arrayContaining(['PRE_CONFIRMATION_DRILLDOWN_REQUIRED', 'ATOMIC_TASK_LINEAGE_REQUIRED'])
+      expect.arrayContaining([
+        'PRE_CONFIRMATION_DRILLDOWN_REQUIRED',
+        'ATOMIC_TASK_LINEAGE_REQUIRED',
+      ])
     );
     expect(fs.existsSync(path.join(outDir, 'model_packet.json'))).toBe(false);
     expect(fs.existsSync(path.join(outDir, 'human_prompt.txt'))).toBe(false);
@@ -1060,7 +1083,10 @@ describe('req trace generator confirmation block gate', () => {
           / {2}applicability:[\s\S]*? {2}preConfirmationDrilldown:\n/u,
           '  preConfirmationDrilldown:\n'
         )
-        .replace(/ {2}e2eSuites:[\s\S]*? {2}artifactAutomationPlan:\n/u, '  artifactAutomationPlan:\n')
+        .replace(
+          / {2}e2eSuites:[\s\S]*? {2}artifactAutomationPlan:\n/u,
+          '  artifactAutomationPlan:\n'
+        )
     );
     const record = writeRequirementRecord(source);
     const outDir = path.join(tempDir, 'missing-applicability-trace-execution');
@@ -1091,7 +1117,10 @@ describe('req trace generator confirmation block gate', () => {
       validCompilerSource()
         .replace('acceptanceRefs: ["ACC-001", "E2E-001"]', 'acceptanceRefs: ["ACC-MISSING"]')
         .replace('requiredCommandRefs: ["CMD-TEST-001"]', 'requiredCommandRefs: []')
-        .replace('contractValidationCommandRefs: ["CMD-TEST-001"]', 'contractValidationCommandRefs: []')
+        .replace(
+          'contractValidationCommandRefs: ["CMD-TEST-001"]',
+          'contractValidationCommandRefs: []'
+        )
         .replace('deliveryEvidenceCommandRefs: ["CMD-TEST-001"]', 'deliveryEvidenceCommandRefs: []')
         .replace(/commandRefs: \["CMD-TEST-001"\]/g, 'commandRefs: []')
     );
@@ -1151,7 +1180,10 @@ describe('req trace generator confirmation block gate', () => {
   it('blocks missing target modification bindings, invalid proof policy, and missing control store', () => {
     const source = writeSource(
       validCompilerSource()
-        .replace('      traceRows: ["TRACE-001"]\n      evidenceRefs: ["EVD-001"]\n  requiredCommands:', '  requiredCommands:')
+        .replace(
+          '      traceRows: ["TRACE-001"]\n      evidenceRefs: ["EVD-001"]\n  requiredCommands:',
+          '  requiredCommands:'
+        )
         .replace(
           'allowedAuthorities: ["AI_TDD_gate_report", "delivery_verification_report", "closeout_integrity_report"]',
           'allowedAuthorities: ["audit_receipt_json"]'
@@ -1199,10 +1231,14 @@ describe('req trace generator confirmation block gate', () => {
     expect(result.stdout).toContain('delivery gates: CMD-DELIVERY-001, CMD-DELIVERY-002');
     expect(result.stdout).toContain('Required commands:');
     expect(result.stdout).toContain('CMD-CONTRACT-001:');
-    expect(result.stdout).toContain('node <skill-dir>/scripts/render-requirements-confirmation-html.ts --source source.md');
+    expect(result.stdout).toContain(
+      'node <skill-dir>/scripts/render-requirements-confirmation-html.ts --source source.md'
+    );
     expect(result.stdout).toContain('Suggested smoke only, not acceptance by itself:');
     expect(result.stdout).toContain('npm run lint');
-    expect(result.stdout).toContain('PASS requires evidence for covered must, notDone, and evidence IDs');
+    expect(result.stdout).toContain(
+      'PASS requires evidence for covered must, notDone, and evidence IDs'
+    );
     expect(result.stdout).not.toContain('MISSING_INPUT: final gate commands');
     expect(result.stdout).not.toContain('$requirements-contract-authoring');
   });
@@ -1267,7 +1303,9 @@ describe('req trace generator confirmation block gate', () => {
   });
 
   it('blocks referenced required commands without runnable command text', () => {
-    const source = writeSource(validSource().replace('      command: "npm run test:e2e -- upload"', '      command: ""'));
+    const source = writeSource(
+      validSource().replace('      command: "npm run test:e2e -- upload"', '      command: ""')
+    );
     const record = writeRequirementRecord(source);
     const result = runNodePrompt(['--source-document', source, '--requirement-record', record]);
 
@@ -1295,10 +1333,22 @@ describe('req trace generator confirmation block gate', () => {
     const source = writeSource(
       validSource()
         .replace('      contractValidationCommandRefs: ["CMD-CONTRACT-001"]\n', '')
-        .replace('      deliveryEvidenceCommandRefs: ["CMD-DELIVERY-001", "CMD-DELIVERY-002"]\n', '')
-        .replace(/ {2}requiredCommands:[\s\S]* {2}closeoutReadinessPreview:\n {4}requiredCommands: \["CMD-CONTRACT-001", "CMD-DELIVERY-001", "CMD-DELIVERY-002"\]\n/u, '')
-        .replace('      gate: "npm run test:e2e -- upload"', '      gate: "Implementation Readiness Gate"')
-        .replace('      gate: "npm run test:e2e -- upload-invalid"', '      gate: "Manual Review Gate"')
+        .replace(
+          '      deliveryEvidenceCommandRefs: ["CMD-DELIVERY-001", "CMD-DELIVERY-002"]\n',
+          ''
+        )
+        .replace(
+          / {2}requiredCommands:[\s\S]* {2}closeoutReadinessPreview:\n {4}requiredCommands: \["CMD-CONTRACT-001", "CMD-DELIVERY-001", "CMD-DELIVERY-002"\]\n/u,
+          ''
+        )
+        .replace(
+          '      gate: "npm run test:e2e -- upload"',
+          '      gate: "Implementation Readiness Gate"'
+        )
+        .replace(
+          '      gate: "npm run test:e2e -- upload-invalid"',
+          '      gate: "Manual Review Gate"'
+        )
     );
     const record = writeRequirementRecord(source);
     const result = runNodePrompt(['--source-document', source, '--requirement-record', record]);

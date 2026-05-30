@@ -63,12 +63,14 @@ function auditStageRouting(): AuditReport {
       timestamp: new Date().toISOString(),
       fileAudited: masterAgentPath,
       summary: { totalChecks: 1, passed: 0, failed: 1, warnings: 0 },
-      results: [{
-        check: '文件存在性检查',
-        status: 'FAIL',
-        details: `文件不存在: ${masterAgentPath}`
-      }],
-      routingRules: []
+      results: [
+        {
+          check: '文件存在性检查',
+          status: 'FAIL',
+          details: `文件不存在: ${masterAgentPath}`,
+        },
+      ],
+      routingRules: [],
     };
   }
 
@@ -92,7 +94,7 @@ function auditStageRouting(): AuditReport {
     details: stageRoutingSectionFound
       ? `找到 Stage Routing 章节 (第 ${stageRoutingLineNumber} 行)`
       : '未找到 Stage Routing 章节',
-    lineNumber: stageRoutingLineNumber
+    lineNumber: stageRoutingLineNumber,
   });
 
   // 2. 检查必需的路由规则
@@ -105,24 +107,27 @@ function auditStageRouting(): AuditReport {
     { stage: 'gaps_passed', routeTo: 'tasks' },
     { stage: 'tasks_passed', routeTo: 'Story Type Detection' },
     { stage: 'implement_passed', routeTo: 'commit_gate' },
-    { stage: 'document_audit_passed', routeTo: 'commit_gate' }
+    { stage: 'document_audit_passed', routeTo: 'commit_gate' },
   ];
 
   for (const route of requiredRoutes) {
     const stageKeywords = route.stage.split('/');
     const routeKeywords = route.routeTo.split('/');
 
-    const stageFound = stageKeywords.every(kw => content.includes(kw));
-    const routeFound = routeKeywords.every(kw => content.includes(kw)) ||
+    const stageFound = stageKeywords.every((kw) => content.includes(kw));
+    const routeFound =
+      routeKeywords.every((kw) => content.includes(kw)) ||
       (route.routeTo === 'Story Type Detection' && content.includes('Story Type Detection'));
     const found = stageFound && routeFound;
 
     // 查找行号
     let lineNumber: number | undefined;
     for (let i = 0; i < lines.length; i++) {
-      if (lines[i].includes(`stage: ${route.stage}`) ||
-          (route.stage === 'null/new' && lines[i].includes('`stage: null`')) ||
-          lines[i].includes(`\`${route.stage}\``)) {
+      if (
+        lines[i].includes(`stage: ${route.stage}`) ||
+        (route.stage === 'null/new' && lines[i].includes('`stage: null`')) ||
+        lines[i].includes(`\`${route.stage}\``)
+      ) {
         lineNumber = i + 1;
         break;
       }
@@ -132,7 +137,7 @@ function auditStageRouting(): AuditReport {
       stage: route.stage,
       routeTo: route.routeTo,
       found,
-      lineNumber
+      lineNumber,
     });
 
     results.push({
@@ -141,7 +146,7 @@ function auditStageRouting(): AuditReport {
       details: found
         ? `找到路由规则 (第 ${lineNumber} 行)`
         : `未找到路由规则: ${route.stage} → ${route.routeTo}`,
-      lineNumber
+      lineNumber,
     });
   }
 
@@ -166,12 +171,16 @@ function auditStageRouting(): AuditReport {
 
   results.push({
     check: 'Story Type Detection 逻辑',
-    status: storyTypeDetectionFound && hasCodeFlow && hasDocumentFlow ? 'PASS' :
-            storyTypeDetectionFound ? 'WARNING' : 'FAIL',
+    status:
+      storyTypeDetectionFound && hasCodeFlow && hasDocumentFlow
+        ? 'PASS'
+        : storyTypeDetectionFound
+          ? 'WARNING'
+          : 'FAIL',
     details: storyTypeDetectionFound
       ? `找到 Story Type Detection (第 ${storyTypeLineNumber} 行). code_flow: ${hasCodeFlow}, document_flow: ${hasDocumentFlow}`
       : '未找到 Story Type Detection 逻辑',
-    lineNumber: storyTypeLineNumber
+    lineNumber: storyTypeLineNumber,
   });
 
   // 4. 检查 Epic-Level Routing 支持
@@ -191,12 +200,16 @@ function auditStageRouting(): AuditReport {
 
   results.push({
     check: 'Epic-Level Routing 支持',
-    status: hasEpicRoutingSection && epicRoutingFound ? 'PASS' :
-            hasEpicRoutingSection ? 'WARNING' : 'FAIL',
+    status:
+      hasEpicRoutingSection && epicRoutingFound
+        ? 'PASS'
+        : hasEpicRoutingSection
+          ? 'WARNING'
+          : 'FAIL',
     details: hasEpicRoutingSection
       ? `找到 Epic-Level Routing 章节 (第 ${epicRoutingLineNumber} 行). epic模式配置: ${epicRoutingFound}`
       : '未找到 Epic-Level Routing 章节',
-    lineNumber: epicRoutingLineNumber
+    lineNumber: epicRoutingLineNumber,
   });
 
   // 5. 检查 Auto-Continue 逻辑
@@ -220,18 +233,23 @@ function auditStageRouting(): AuditReport {
 
   results.push({
     check: 'Auto-Continue 逻辑',
-    status: autoContinueFound && hasAutoContinueCheck && hasActionToStageMap ? 'PASS' :
-            autoContinueFound ? 'WARNING' : 'FAIL',
+    status:
+      autoContinueFound && hasAutoContinueCheck && hasActionToStageMap
+        ? 'PASS'
+        : autoContinueFound
+          ? 'WARNING'
+          : 'FAIL',
     details: autoContinueFound
       ? `找到 Auto-Continue 逻辑 (第 ${autoContinueLineNumber} 行). enabled检查: ${hasAutoContinueCheck}, action映射: ${hasActionToStageMap}`
       : '未找到 Auto-Continue 逻辑',
-    lineNumber: autoContinueLineNumber
+    lineNumber: autoContinueLineNumber,
   });
 
   // 6. 检查输出格式要求
-  const hasOutputFormat = content.includes('Output Per Turn') ||
-                           content.includes('Always state:') ||
-                           content.includes('allowed_action');
+  const hasOutputFormat =
+    content.includes('Output Per Turn') ||
+    content.includes('Always state:') ||
+    content.includes('allowed_action');
 
   results.push({
     check: '输出格式要求',
@@ -239,13 +257,14 @@ function auditStageRouting(): AuditReport {
     details: hasOutputFormat
       ? '找到输出格式要求 (allowed_action, follow_up, state_patch 等)'
       : '未明确找到输出格式要求',
-    lineNumber: undefined
+    lineNumber: undefined,
   });
 
   // 7. 检查三层审计结构引用
-  const hasThreeLayerStructure = content.includes('Cursor Canonical Base') ||
-                                  content.includes('Claude/OMC Runtime Adapter') ||
-                                  content.includes('Repo Add-ons');
+  const hasThreeLayerStructure =
+    content.includes('Cursor Canonical Base') ||
+    content.includes('Claude/OMC Runtime Adapter') ||
+    content.includes('Repo Add-ons');
 
   results.push({
     check: '三层审计结构引用',
@@ -253,7 +272,7 @@ function auditStageRouting(): AuditReport {
     details: hasThreeLayerStructure
       ? '找到三层审计结构引用'
       : '未找到三层审计结构引用 (可能继承自通用协议)',
-    lineNumber: undefined
+    lineNumber: undefined,
   });
 
   // 8. 审计项 2: Auditor 文件存在性
@@ -268,7 +287,7 @@ function auditStageRouting(): AuditReport {
 
   let auditorMissing = false;
   const auditorDetails: string[] = [];
-  requiredAuditors.forEach(auditor => {
+  requiredAuditors.forEach((auditor) => {
     const filePath = path.join(process.cwd(), auditor.file);
     if (fs.existsSync(filePath)) {
       auditorDetails.push(`✅ ${auditor.stage} → ${auditor.file}`);
@@ -282,22 +301,38 @@ function auditStageRouting(): AuditReport {
     check: 'Auditor 文件存在性',
     status: auditorMissing ? 'FAIL' : 'PASS',
     details: auditorMissing
-      ? `部分 Auditor 文件缺失: ${auditorDetails.filter(d => d.startsWith('❌')).join('; ')}`
+      ? `部分 Auditor 文件缺失: ${auditorDetails.filter((d) => d.startsWith('❌')).join('; ')}`
       : `所有 ${requiredAuditors.length} 个 Auditor 文件均存在`,
-    lineNumber: undefined
+    lineNumber: undefined,
   });
 
   // 9. 审计项 4: Layer 4 Agent Prerequisites 一致性
   const prerequisiteChecks = [
-    { agent: 'plan', file: '.claude/agents/layers/bmad-layer4-speckit-plan.md', expected: 'specify_passed' },
-    { agent: 'gaps', file: '.claude/agents/layers/bmad-layer4-speckit-gaps.md', expected: 'plan_passed' },
-    { agent: 'tasks', file: '.claude/agents/layers/bmad-layer4-speckit-tasks.md', expected: 'gaps_passed' },
-    { agent: 'implement', file: '.claude/agents/layers/bmad-layer4-speckit-implement.md', expected: 'tasks_passed' },
+    {
+      agent: 'plan',
+      file: '.claude/agents/layers/bmad-layer4-speckit-plan.md',
+      expected: 'specify_passed',
+    },
+    {
+      agent: 'gaps',
+      file: '.claude/agents/layers/bmad-layer4-speckit-gaps.md',
+      expected: 'plan_passed',
+    },
+    {
+      agent: 'tasks',
+      file: '.claude/agents/layers/bmad-layer4-speckit-tasks.md',
+      expected: 'gaps_passed',
+    },
+    {
+      agent: 'implement',
+      file: '.claude/agents/layers/bmad-layer4-speckit-implement.md',
+      expected: 'tasks_passed',
+    },
   ];
 
   let prereqMismatch = false;
   const prereqDetails: string[] = [];
-  prerequisiteChecks.forEach(check => {
+  prerequisiteChecks.forEach((check) => {
     const filePath = path.join(process.cwd(), check.file);
     if (!fs.existsSync(filePath)) {
       prereqDetails.push(`❌ ${check.agent} agent 文件不存在`);
@@ -318,15 +353,15 @@ function auditStageRouting(): AuditReport {
     check: 'Layer 4 Agent Prerequisites 一致性',
     status: prereqMismatch ? 'FAIL' : 'PASS',
     details: prereqMismatch
-      ? `Prerequisites 不一致: ${prereqDetails.filter(d => d.startsWith('❌')).join('; ')}`
+      ? `Prerequisites 不一致: ${prereqDetails.filter((d) => d.startsWith('❌')).join('; ')}`
       : `所有 ${prerequisiteChecks.length} 个 Layer 4 Agent Prerequisites 与路由一致`,
-    lineNumber: undefined
+    lineNumber: undefined,
   });
 
   // 计算统计
-  const passed = results.filter(r => r.status === 'PASS').length;
-  const failed = results.filter(r => r.status === 'FAIL').length;
-  const warnings = results.filter(r => r.status === 'WARNING').length;
+  const passed = results.filter((r) => r.status === 'PASS').length;
+  const failed = results.filter((r) => r.status === 'FAIL').length;
+  const warnings = results.filter((r) => r.status === 'WARNING').length;
 
   const report: AuditReport = {
     timestamp: new Date().toISOString(),
@@ -335,25 +370,25 @@ function auditStageRouting(): AuditReport {
       totalChecks: results.length,
       passed,
       failed,
-      warnings
+      warnings,
     },
     results,
     routingRules,
     storyTypeDetection: {
       found: storyTypeDetectionFound,
       lineNumber: storyTypeLineNumber,
-      details: `code_flow: ${hasCodeFlow}, document_flow: ${hasDocumentFlow}`
+      details: `code_flow: ${hasCodeFlow}, document_flow: ${hasDocumentFlow}`,
     },
     epicLevelRouting: {
       found: hasEpicRoutingSection && epicRoutingFound,
       lineNumber: epicRoutingLineNumber,
-      details: `章节: ${hasEpicRoutingSection}, epic模式: ${epicRoutingFound}`
+      details: `章节: ${hasEpicRoutingSection}, epic模式: ${epicRoutingFound}`,
     },
     autoContinueLogic: {
       found: autoContinueFound && hasAutoContinueCheck && hasActionToStageMap,
       lineNumber: autoContinueLineNumber,
-      details: `auto_continue: ${autoContinueFound}, enabled检查: ${hasAutoContinueCheck}, action映射: ${hasActionToStageMap}`
-    }
+      details: `auto_continue: ${autoContinueFound}, enabled检查: ${hasAutoContinueCheck}, action映射: ${hasActionToStageMap}`,
+    },
   };
 
   return report;
@@ -379,8 +414,12 @@ function generateMarkdownReport(report: AuditReport): string {
   lines.push(`| 警告 | ${report.summary.warnings} |`);
   lines.push('');
 
-  const overallStatus = report.summary.failed === 0 ? '✅ 通过' :
-                         report.summary.warnings > 0 ? '⚠️ 有条件通过' : '❌ 失败';
+  const overallStatus =
+    report.summary.failed === 0
+      ? '✅ 通过'
+      : report.summary.warnings > 0
+        ? '⚠️ 有条件通过'
+        : '❌ 失败';
   lines.push(`**总体状态**: ${overallStatus}`);
   lines.push('');
 
@@ -389,8 +428,7 @@ function generateMarkdownReport(report: AuditReport): string {
   lines.push('');
 
   for (const result of report.results) {
-    const icon = result.status === 'PASS' ? '✅' :
-                  result.status === 'WARNING' ? '⚠️' : '❌';
+    const icon = result.status === 'PASS' ? '✅' : result.status === 'WARNING' ? '⚠️' : '❌';
     lines.push(`### ${icon} ${result.check}`);
     lines.push('');
     lines.push(`- **状态**: ${result.status}`);
@@ -460,7 +498,7 @@ function generateMarkdownReport(report: AuditReport): string {
   // Auditor 文件存在性
   lines.push('### Auditor 文件存在性');
   lines.push('');
-  const auditorResult = report.results.find(r => r.check === 'Auditor 文件存在性');
+  const auditorResult = report.results.find((r) => r.check === 'Auditor 文件存在性');
   if (auditorResult) {
     const icon = auditorResult.status === 'PASS' ? '✅' : '❌';
     lines.push(`- **状态**: ${icon} ${auditorResult.details}`);
@@ -470,7 +508,7 @@ function generateMarkdownReport(report: AuditReport): string {
   // Layer 4 Agent Prerequisites 一致性
   lines.push('### Layer 4 Agent Prerequisites 一致性');
   lines.push('');
-  const prereqResult = report.results.find(r => r.check === 'Layer 4 Agent Prerequisites 一致性');
+  const prereqResult = report.results.find((r) => r.check === 'Layer 4 Agent Prerequisites 一致性');
   if (prereqResult) {
     const icon = prereqResult.status === 'PASS' ? '✅' : '❌';
     lines.push(`- **状态**: ${icon} ${prereqResult.details}`);
@@ -481,8 +519,8 @@ function generateMarkdownReport(report: AuditReport): string {
   lines.push('## 问题诊断');
   lines.push('');
 
-  const failedChecks = report.results.filter(r => r.status === 'FAIL');
-  const warningChecks = report.results.filter(r => r.status === 'WARNING');
+  const failedChecks = report.results.filter((r) => r.status === 'FAIL');
+  const warningChecks = report.results.filter((r) => r.status === 'WARNING');
 
   if (failedChecks.length === 0 && warningChecks.length === 0) {
     lines.push('✅ **所有检查项均通过，未发现明显问题。**');
@@ -515,7 +553,7 @@ function generateMarkdownReport(report: AuditReport): string {
     lines.push('');
 
     // 检查缺失的路由规则
-    const missingRoutes = report.routingRules.filter(r => !r.found);
+    const missingRoutes = report.routingRules.filter((r) => !r.found);
     if (missingRoutes.length > 0) {
       lines.push('1. **补充缺失的路由规则**:');
       for (const route of missingRoutes) {
@@ -525,17 +563,23 @@ function generateMarkdownReport(report: AuditReport): string {
     }
 
     if (!report.storyTypeDetection?.found) {
-      lines.push('2. **添加 Story Type Detection 逻辑**: 在 tasks_passed stage 后添加 code_flow 和 document_flow 分支');
+      lines.push(
+        '2. **添加 Story Type Detection 逻辑**: 在 tasks_passed stage 后添加 code_flow 和 document_flow 分支'
+      );
       lines.push('');
     }
 
     if (!report.epicLevelRouting?.found) {
-      lines.push('3. **添加 Epic-Level Routing 支持**: 支持 audit_granularity.mode = epic 时的特殊路由');
+      lines.push(
+        '3. **添加 Epic-Level Routing 支持**: 支持 audit_granularity.mode = epic 时的特殊路由'
+      );
       lines.push('');
     }
 
     if (!report.autoContinueLogic?.found) {
-      lines.push('4. **完善 Auto-Continue 逻辑**: 添加 handoff readiness 和 runtime permission 检查');
+      lines.push(
+        '4. **完善 Auto-Continue 逻辑**: 添加 handoff readiness 和 runtime permission 检查'
+      );
       lines.push('');
     }
   }
@@ -576,7 +620,7 @@ function main(): void {
   // 输出关键发现
   if (report.summary.failed > 0) {
     console.log('❌ 发现以下问题：');
-    for (const result of report.results.filter(r => r.status === 'FAIL')) {
+    for (const result of report.results.filter((r) => r.status === 'FAIL')) {
       console.log(`   - ${result.check}: ${result.details}`);
     }
     console.log('');
@@ -584,7 +628,7 @@ function main(): void {
 
   if (report.summary.warnings > 0) {
     console.log('⚠️ 发现以下警告：');
-    for (const result of report.results.filter(r => r.status === 'WARNING')) {
+    for (const result of report.results.filter((r) => r.status === 'WARNING')) {
       console.log(`   - ${result.check}: ${result.details}`);
     }
     console.log('');

@@ -2,13 +2,7 @@ import { describe, it, expect } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import {
-  queryByEpic,
-  queryByStory,
-  queryLatest,
-  queryByStage,
-  queryByScenario,
-} from '../index';
+import { queryByEpic, queryByStory, queryLatest, queryByStage, queryByScenario } from '../index';
 import type { RunScoreRecord } from '../../writer/types';
 
 function makeRecord(

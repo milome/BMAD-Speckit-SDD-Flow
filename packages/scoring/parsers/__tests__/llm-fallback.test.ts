@@ -122,13 +122,17 @@ describe('llm-fallback', () => {
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({
-          choices: [{ message: { content: JSON.stringify({ grade: 'E', issues: [], veto_items: [] }) } }],
+          choices: [
+            { message: { content: JSON.stringify({ grade: 'E', issues: [], veto_items: [] }) } },
+          ],
         }),
       })
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({
-          choices: [{ message: { content: JSON.stringify({ grade: 'B', issues: [], veto_items: [] }) } }],
+          choices: [
+            { message: { content: JSON.stringify({ grade: 'B', issues: [], veto_items: [] }) } },
+          ],
         }),
       });
 
@@ -177,29 +181,33 @@ describe('llm-fallback', () => {
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({
-          choices: [{
-            message: {
-              content: JSON.stringify({
-                grade: 'B',
-                issues: [{ severity: 'x', description: 'x' }],
-                veto_items: [],
-              }),
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  grade: 'B',
+                  issues: [{ severity: 'x', description: 'x' }],
+                  veto_items: [],
+                }),
+              },
             },
-          }],
+          ],
         }),
       })
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({
-          choices: [{
-            message: {
-              content: JSON.stringify({
-                grade: 'B',
-                issues: [{ severity: '高', description: 'ok' }],
-                veto_items: [],
-              }),
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  grade: 'B',
+                  issues: [{ severity: '高', description: 'ok' }],
+                  veto_items: [],
+                }),
+              },
             },
-          }],
+          ],
         }),
       });
 

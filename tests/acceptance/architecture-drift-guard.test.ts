@@ -4,7 +4,10 @@ import { describe, expect, it } from 'vitest';
 import { runArchitectureDriftCheck } from '../../scripts/architecture-drift-check';
 
 const ROOT = process.cwd();
-const ADR_PATH = path.join(ROOT, 'docs/design/2026-04-24-orchestration-recommended-architecture-adr.md');
+const ADR_PATH = path.join(
+  ROOT,
+  'docs/design/2026-04-24-orchestration-recommended-architecture-adr.md'
+);
 const TASKS_PATH = path.join(ROOT, 'docs/plans/TASKS_v1.md');
 const HAS_LOCAL_DRIFT_DOCS = fs.existsSync(ADR_PATH) && fs.existsSync(TASKS_PATH);
 

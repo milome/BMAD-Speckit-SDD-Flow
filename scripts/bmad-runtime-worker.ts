@@ -1,31 +1,30 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-const {
-  buildGovernanceRunnerCliPresentation,
-  } = require('../_bmad/runtime/hooks/governance-runner-summary-presenter.cjs') as {
-  buildGovernanceRunnerCliPresentation: (input: {
-    executionIntentCandidate?: GovernanceExecutionResult['executionIntentCandidate'];
-    executionPlanDecision?: GovernanceExecutionResult['executionPlanDecision'];
-    shouldContinue?: boolean;
-    stopReason?: string | null;
-    loopStateId?: string | null;
-    currentAttemptNumber?: number | null;
-    nextAttemptNumber?: number | null;
-    artifactPath?: string | null;
-    packetPaths?: Record<string, string>;
-    executorRouting?: {
-      routingMode?: 'targeted' | 'generic';
-      executorRoute?: 'journey-contract-remediation' | 'default-gate-remediation';
-      prioritizedSignals?: string[];
+const { buildGovernanceRunnerCliPresentation } =
+  require('../_bmad/runtime/hooks/governance-runner-summary-presenter.cjs') as {
+    buildGovernanceRunnerCliPresentation: (input: {
+      executionIntentCandidate?: GovernanceExecutionResult['executionIntentCandidate'];
+      executionPlanDecision?: GovernanceExecutionResult['executionPlanDecision'];
+      shouldContinue?: boolean;
+      stopReason?: string | null;
+      loopStateId?: string | null;
+      currentAttemptNumber?: number | null;
+      nextAttemptNumber?: number | null;
+      artifactPath?: string | null;
+      packetPaths?: Record<string, string>;
+      executorRouting?: {
+        routingMode?: 'targeted' | 'generic';
+        executorRoute?: 'journey-contract-remediation' | 'default-gate-remediation';
+        prioritizedSignals?: string[];
+      };
+      runnerSummaryLines?: string[];
+    }) => {
+      structuredMetadataLines: string[];
+      rawEventLines: string[];
+      combinedLines: string[];
     };
-    runnerSummaryLines?: string[];
-  }) => {
-    structuredMetadataLines: string[];
-    rawEventLines: string[];
-    combinedLines: string[];
   };
-};
 import { writeGovernanceRerunHistory } from '../packages/scoring/governance/write-rerun-history';
 import {
   createGovernanceProviderAdapterFromConfig,
@@ -240,9 +239,7 @@ function deriveExecutorRoutingProjection(input: {
 
 function buildRemediationAuditTraceProjection(input: {
   result: Awaited<ReturnType<typeof runGovernanceRemediation>>;
-  executorRouting:
-    | GovernanceExecutorRoutingProjection
-    | undefined;
+  executorRouting: GovernanceExecutorRoutingProjection | undefined;
 }): GovernanceRemediationAuditTrace | undefined {
   if (!input.executorRouting) {
     return undefined;
@@ -278,7 +275,7 @@ function buildGovernancePresentationProjection(input: {
     | 'nextAttemptNumber'
     | 'loopStateId'
     | 'executorRouting'
-      | 'runnerSummaryLines'
+    | 'runnerSummaryLines'
   >;
   packetPaths: Record<string, string>;
   runtimeContext?: RuntimeContextFile | null;
@@ -287,7 +284,12 @@ function buildGovernancePresentationProjection(input: {
     ? mapFlowStageToReviewerAuditEntryStage(input.runtimeContext.flow, input.runtimeContext.stage)
     : null;
   const fallbackReviewerRouteExplainability = fallbackAuditEntryStage
-    ? [buildReviewerRouteExplainability({ requestedSkillId: 'code-reviewer', auditEntryStage: fallbackAuditEntryStage })]
+    ? [
+        buildReviewerRouteExplainability({
+          requestedSkillId: 'code-reviewer',
+          auditEntryStage: fallbackAuditEntryStage,
+        }),
+      ]
     : undefined;
   const existingReviewerRouteExplainability =
     input.result.executionPlanDecision?.reviewerRouteExplainability ??
@@ -310,9 +312,7 @@ function buildGovernancePresentationProjection(input: {
     executionPlanDecision: input.result.executionPlanDecision
       ? {
           ...input.result.executionPlanDecision,
-          ...(reviewerRouteExplainability
-            ? { reviewerRouteExplainability }
-            : {}),
+          ...(reviewerRouteExplainability ? { reviewerRouteExplainability } : {}),
         }
       : input.result.executionPlanDecision,
     shouldContinue: input.result.shouldContinue,
@@ -383,7 +383,9 @@ function syncExecutionProjectionIntoCurrentRun(
 async function processGovernanceRerunEvent(
   queueProjectRoot: string,
   item: GovernanceRuntimeQueueItem<GovernanceRemediationRerunPayload, GovernanceExecutionResult>
-): Promise<GovernanceRuntimeQueueItem<GovernanceRemediationRerunPayload, GovernanceExecutionResult>> {
+): Promise<
+  GovernanceRuntimeQueueItem<GovernanceRemediationRerunPayload, GovernanceExecutionResult>
+> {
   const payload = item.payload ?? {};
   const runnerProjectRoot = payload.projectRoot ?? queueProjectRoot;
   const config = readGovernanceRemediationConfig(runnerProjectRoot, payload.configPath);
@@ -557,7 +559,9 @@ async function processGovernanceRerunEvent(
 async function processGovernanceEvent(
   queueProjectRoot: string,
   item: GovernanceRuntimeQueueItem<GovernanceRemediationRerunPayload, GovernanceExecutionResult>
-): Promise<GovernanceRuntimeQueueItem<GovernanceRemediationRerunPayload, GovernanceExecutionResult>> {
+): Promise<
+  GovernanceRuntimeQueueItem<GovernanceRemediationRerunPayload, GovernanceExecutionResult>
+> {
   if (item.type === 'governance-pre-continue-check') {
     const payload = (item.payload ?? {}) as GovernancePreContinuePayload;
     const gateFailures = Array.isArray(payload.failures) ? payload.failures : [];
@@ -579,7 +583,10 @@ async function processGovernanceEvent(
 
     const result: GovernanceExecutionResult = {
       shouldContinue: gateCheck.status === 'pass' ? false : false,
-      stopReason: gateFailures.length > 0 ? 'gate failed - remediation required' : 'gate passed - awaiting workflow transition',
+      stopReason:
+        gateFailures.length > 0
+          ? 'gate failed - remediation required'
+          : 'gate passed - awaiting workflow transition',
       gateCheck,
     };
 
@@ -588,7 +595,9 @@ async function processGovernanceEvent(
       const config = readGovernanceRemediationConfig(runnerProjectRoot);
       const remediationResult = await runGovernanceRemediation({
         projectRoot: runnerProjectRoot,
-        outputPath: payload.artifactPath ?? path.join(runnerProjectRoot, '_bmad-output', 'planning-artifacts', 'gate-remediation.md'),
+        outputPath:
+          payload.artifactPath ??
+          path.join(runnerProjectRoot, '_bmad-output', 'planning-artifacts', 'gate-remediation.md'),
         promptText: `GateFailure for ${payload.workflow || 'unknown-workflow'} ${payload.step || 'workflow'}: ${gateFailures.join('; ')}`,
         stageContextKnown: true,
         gateFailureExists: true,
@@ -639,7 +648,10 @@ async function processGovernanceEvent(
             rerunDecision,
             rerunStage: activeStage,
           });
-          packetPaths[hostKind] = writeGovernanceExecutorPacket(remediationResult.artifactPath, packet);
+          packetPaths[hostKind] = writeGovernanceExecutorPacket(
+            remediationResult.artifactPath,
+            packet
+          );
         }
 
         if (config.execution?.enabled) {
@@ -727,7 +739,10 @@ async function processGovernanceEvent(
       );
     }
 
-    const passthroughItem: GovernanceRuntimeQueueItem<GovernanceRemediationRerunPayload, GovernanceExecutionResult> = {
+    const passthroughItem: GovernanceRuntimeQueueItem<
+      GovernanceRemediationRerunPayload,
+      GovernanceExecutionResult
+    > = {
       ...item,
       processedAt: new Date().toISOString(),
       result,
@@ -801,7 +816,7 @@ async function processGovernanceQueue(projectRoot: string): Promise<void> {
           {
             itemId,
             message: error instanceof Error ? error.message : String(error),
-            stack: error instanceof Error ? error.stack ?? null : null,
+            stack: error instanceof Error ? (error.stack ?? null) : null,
             processingPath,
             failedAt: new Date().toISOString(),
           },

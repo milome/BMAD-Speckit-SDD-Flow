@@ -26,7 +26,8 @@ describe('Main Agent CriticalAuditorProfile consumption', () => {
         profile,
         stageProfileId,
         expectedProfileHash: profile.profileHash,
-        expectedStageProfileHash: 'sha256:0000000000000000000000000000000000000000000000000000000000000000',
+        expectedStageProfileHash:
+          'sha256:0000000000000000000000000000000000000000000000000000000000000000',
       });
       expect(stale.ok).toBe(false);
       expect(stale.blockingReasons).toContain('critical_auditor_stage_profile_hash_stale');

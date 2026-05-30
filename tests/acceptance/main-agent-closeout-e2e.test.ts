@@ -53,7 +53,9 @@ describe('main-agent closeout E2E', () => {
           artifactPath: artifactDocPath,
         },
         {
-          scoreCommand: vi.fn().mockResolvedValue({ parsedRecord: { effective_verdict: 'approved' } }),
+          scoreCommand: vi
+            .fn()
+            .mockResolvedValue({ parsedRecord: { effective_verdict: 'approved' } }),
         }
       );
 

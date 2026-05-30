@@ -54,9 +54,7 @@ describe('rule-suggestion', () => {
     ];
     const records: RunScoreRecord[] = [];
     for (let i = 0; i < 10; i++) {
-      records.push(makeRecord('r' + i, [
-        { item_id: 'item_a', passed: i < 4, score_delta: -8 },
-      ]));
+      records.push(makeRecord('r' + i, [{ item_id: 'item_a', passed: i < 4, score_delta: -8 }]));
     }
 
     const suggestions = generateRuleSuggestions(clusters, records, rulesPath);
@@ -93,9 +91,7 @@ describe('rule-suggestion', () => {
     ];
     const records: RunScoreRecord[] = [];
     for (let i = 0; i < 10; i++) {
-      records.push(makeRecord('r' + i, [
-        { item_id: 'item_v', passed: i === 0, score_delta: -10 },
-      ]));
+      records.push(makeRecord('r' + i, [{ item_id: 'item_v', passed: i === 0, score_delta: -10 }]));
     }
 
     const suggestions = generateRuleSuggestions(clusters, records, rulesPath);
@@ -127,9 +123,7 @@ describe('rule-suggestion', () => {
       },
     ];
     const records: RunScoreRecord[] = [
-      makeRecord('r1', [
-        { item_id: 'nonexistent_xyz', passed: false, score_delta: -5 },
-      ]),
+      makeRecord('r1', [{ item_id: 'nonexistent_xyz', passed: false, score_delta: -5 }]),
     ];
 
     const suggestions = generateRuleSuggestions(clusters, records, rulesPath);

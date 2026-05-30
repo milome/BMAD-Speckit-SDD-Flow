@@ -13,23 +13,27 @@ function runCli(args: string[]) {
 }
 
 describe('sft dataset cli regression', () => {
-  it('exposes sft-preview, sft-validate, sft-bundle, and keeps sft-extract target compatibility option', { timeout: 60000 }, () => {
-    const preview = runCli(['sft-preview', '--help']);
-    const validate = runCli(['sft-validate', '--help']);
-    const bundle = runCli(['sft-bundle', '--help']);
-    const extract = runCli(['sft-extract', '--help']);
+  it(
+    'exposes sft-preview, sft-validate, sft-bundle, and keeps sft-extract target compatibility option',
+    { timeout: 60000 },
+    () => {
+      const preview = runCli(['sft-preview', '--help']);
+      const validate = runCli(['sft-validate', '--help']);
+      const bundle = runCli(['sft-bundle', '--help']);
+      const extract = runCli(['sft-extract', '--help']);
 
-    expect(preview.status).toBe(0);
-    expect((preview.stdout || '') + (preview.stderr || '')).toContain('sft-preview');
+      expect(preview.status).toBe(0);
+      expect((preview.stdout || '') + (preview.stderr || '')).toContain('sft-preview');
 
-    expect(validate.status).toBe(0);
-    expect((validate.stdout || '') + (validate.stderr || '')).toContain('sft-validate');
+      expect(validate.status).toBe(0);
+      expect((validate.stdout || '') + (validate.stderr || '')).toContain('sft-validate');
 
-    expect(bundle.status).toBe(0);
-    expect((bundle.stdout || '') + (bundle.stderr || '')).toContain('bundle-dir');
+      expect(bundle.status).toBe(0);
+      expect((bundle.stdout || '') + (bundle.stderr || '')).toContain('bundle-dir');
 
-    expect(extract.status).toBe(0);
-    expect((extract.stdout || '') + (extract.stderr || '')).toContain('--target');
-    expect((extract.stdout || '') + (extract.stderr || '')).toContain('legacy_instruction_io');
-  });
+      expect(extract.status).toBe(0);
+      expect((extract.stdout || '') + (extract.stderr || '')).toContain('--target');
+      expect((extract.stdout || '') + (extract.stderr || '')).toContain('legacy_instruction_io');
+    }
+  );
 });

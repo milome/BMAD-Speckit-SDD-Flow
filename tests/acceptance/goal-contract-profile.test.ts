@@ -5,10 +5,37 @@ import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const ROOT = process.cwd();
-const VERIFY_SCRIPT = path.join(ROOT, '_bmad', 'shared', 'goal-contract', 'scripts', 'verify-goal-contract-profile.js');
-const EXTRACT_SCRIPT = path.join(ROOT, '_bmad', 'shared', 'goal-contract', 'scripts', 'extract-goal-contract-profile.js');
-const UPDATE_SCRIPT = path.join(ROOT, '_bmad', 'shared', 'goal-contract', 'scripts', 'update-goal-contract-profile.js');
-const TEMPLATE = path.join(ROOT, '_bmad', 'shared', 'goal-contract', 'goal-execution-contract-template.md');
+const VERIFY_SCRIPT = path.join(
+  ROOT,
+  '_bmad',
+  'shared',
+  'goal-contract',
+  'scripts',
+  'verify-goal-contract-profile.js'
+);
+const EXTRACT_SCRIPT = path.join(
+  ROOT,
+  '_bmad',
+  'shared',
+  'goal-contract',
+  'scripts',
+  'extract-goal-contract-profile.js'
+);
+const UPDATE_SCRIPT = path.join(
+  ROOT,
+  '_bmad',
+  'shared',
+  'goal-contract',
+  'scripts',
+  'update-goal-contract-profile.js'
+);
+const TEMPLATE = path.join(
+  ROOT,
+  '_bmad',
+  'shared',
+  'goal-contract',
+  'goal-execution-contract-template.md'
+);
 const PROFILE = path.join(ROOT, '_bmad', 'shared', 'goal-contract', 'goal-contract-profile.json');
 const LOCK = path.join(ROOT, '_bmad', 'shared', 'goal-contract', 'goal-contract-profile.lock.json');
 
@@ -50,7 +77,9 @@ describe('shared goal contract profile', () => {
       unclosedSlots: string[];
     };
 
-    expect(output.templatePath).toBe('_bmad/shared/goal-contract/goal-execution-contract-template.md');
+    expect(output.templatePath).toBe(
+      '_bmad/shared/goal-contract/goal-execution-contract-template.md'
+    );
     expect(output.sections).toEqual(
       expect.arrayContaining([
         '/goal Entry',
@@ -90,7 +119,9 @@ describe('shared goal contract profile', () => {
         '/goal completion is not closeout proof',
       ])
     );
-    expect(profileText).not.toContain('Every checkbox must have direct evidence before completion is claimed.');
+    expect(profileText).not.toContain(
+      'Every checkbox must have direct evidence before completion is claimed.'
+    );
     expect(profileText.length).toBeLessThan(templateText.length);
     expect(lock.templateHash).toBe(profile.templateHash);
     expect(lock.profileHash).toBe(profile.profileHash);
@@ -99,8 +130,20 @@ describe('shared goal contract profile', () => {
   it('requires an explicit major bump for required structure changes', () => {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'goal-profile-change-'));
     try {
-      const module = require(path.join(ROOT, '_bmad', 'shared', 'goal-contract', 'scripts', 'update-goal-contract-profile.js')) as {
-        classifyProfileChange: (beforeProfile: Record<string, any>, afterProfile: Record<string, any>) => string;
+      const module = require(
+        path.join(
+          ROOT,
+          '_bmad',
+          'shared',
+          'goal-contract',
+          'scripts',
+          'update-goal-contract-profile.js'
+        )
+      ) as {
+        classifyProfileChange: (
+          beforeProfile: Record<string, any>,
+          afterProfile: Record<string, any>
+        ) => string;
       };
       const beforeProfile = readJson<Record<string, any>>(PROFILE);
       const afterProfile = {

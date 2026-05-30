@@ -115,9 +115,7 @@ export function evaluateAdaptiveIntakeProof(
       summary:
         missingQueueSync.length === 0
           ? 'all active mappings have applied queue-sync artifacts'
-          : `missing queue-sync: ${missingQueueSync
-              .map((item) => item.requirementId)
-              .join(', ')}`,
+          : `missing queue-sync: ${missingQueueSync.map((item) => item.requirementId).join(', ')}`,
     },
   ];
 

@@ -6,11 +6,6 @@ const path = require('node:path');
 
 const { syncAllAIs } = require('../src/commands/init');
 
-function writeJson(filePath, payload) {
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, JSON.stringify(payload, null, 2) + '\n', 'utf8');
-}
-
 function writeSentinelSkill(projectRoot, skillName) {
   const skillDir = path.join(projectRoot, '_bmad', 'skills', skillName);
   fs.mkdirSync(skillDir, { recursive: true });

@@ -20,7 +20,13 @@ const HASH_E = 'sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
 const HASH_F = 'sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 
 function writeRecord(root: string): string {
-  const recordDir = path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'REQ-STRATEGY');
+  const recordDir = path.join(
+    root,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    'REQ-STRATEGY'
+  );
   const recordPath = path.join(recordDir, 'requirement-record.json');
   mkdirSync(recordDir, { recursive: true });
   writeFileSync(
@@ -46,8 +52,10 @@ function writeRecord(root: string): string {
             implementationConfirmationHash: HASH_C,
             confirmationPageHash: HASH_D,
             confirmationText: 'confirmed',
-            renderReportPath: '_bmad-output/runtime/requirement-records/REQ-STRATEGY/confirmation/report.json',
-            htmlPath: '_bmad-output/runtime/requirement-records/REQ-STRATEGY/confirmation/confirmation.html',
+            renderReportPath:
+              '_bmad-output/runtime/requirement-records/REQ-STRATEGY/confirmation/report.json',
+            htmlPath:
+              '_bmad-output/runtime/requirement-records/REQ-STRATEGY/confirmation/confirmation.html',
           },
         ],
       },
@@ -172,7 +180,9 @@ describe('execution strategy selection', () => {
       const record = JSON.parse(readFileSync(recordPath, 'utf8')) as Record<string, any>;
       expect(record.lastEventType).toBe('execution_strategy_selected');
       expect(record.executionStrategySelections).toHaveLength(1);
-      expect(record.executionStrategySelections[0].selectedOptionHash).toBe(selection.selectedOptionHash);
+      expect(record.executionStrategySelections[0].selectedOptionHash).toBe(
+        selection.selectedOptionHash
+      );
 
       expect(
         validateExecutionStrategySelectionEvent({
@@ -201,7 +211,9 @@ describe('execution strategy selection', () => {
         requirementSetId: 'REQ-STRATEGY',
         strategyId: 'compiled_trace_with_sdd_artifacts',
         blockingReasons: ['blocked_until_artifact_realization_lane'],
-        sourceRefs: [{ sourceType: 'execution_strategy_option', id: 'compiled_trace_with_sdd_artifacts' }],
+        sourceRefs: [
+          { sourceType: 'execution_strategy_option', id: 'compiled_trace_with_sdd_artifacts' },
+        ],
         recordedAt: '2026-05-28T00:02:00.000Z',
         recordedBy: 'test',
       });

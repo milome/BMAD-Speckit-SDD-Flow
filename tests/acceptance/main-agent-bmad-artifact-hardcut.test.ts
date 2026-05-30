@@ -76,10 +76,12 @@ function writeRecord(root: string, artifacts: Array<Record<string, unknown>> = [
     recordId: 'REQ-HARDCUT',
     requirementSetId: 'REQ-HARDCUT',
     sourceDocumentHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
-    implementationConfirmationHash: 'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+    implementationConfirmationHash:
+      'sha256:2222222222222222222222222222222222222222222222222222222222222222',
     architectureConfirmationState: {
       status: 'active',
-      currentArchitectureConfirmationHash: 'sha256:3333333333333333333333333333333333333333333333333333333333333333',
+      currentArchitectureConfirmationHash:
+        'sha256:3333333333333333333333333333333333333333333333333333333333333333',
     },
     artifactIndex: artifacts,
   });
@@ -194,7 +196,9 @@ describe('main-agent BMAD artifact hardcut', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'bmad-hardcut-no-workflow-'));
     try {
       writeBmadFixture(root);
-      rmSync(path.join(root, '_bmad', 'core', 'skills', 'bmad-help', 'workflow.md'), { force: true });
+      rmSync(path.join(root, '_bmad', 'core', 'skills', 'bmad-help', 'workflow.md'), {
+        force: true,
+      });
       const recordPath = writeRecord(root);
       const outPath = path.join(root, 'report.json');
       const code = mainBmadArtifactHardcut([

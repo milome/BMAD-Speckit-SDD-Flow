@@ -1,5 +1,4 @@
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import * as crypto from 'node:crypto';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -7,10 +6,6 @@ import { mainExecutionClosureGate } from '../../scripts/main-agent-execution-clo
 import { validateRequirementRecordSchemaObject } from '../../scripts/requirement-record-live-schema-gate';
 
 const HASH = 'sha256:1111111111111111111111111111111111111111111111111111111111111111';
-
-function sha256File(filePath: string): string {
-  return `sha256:${crypto.createHash('sha256').update(readFileSync(filePath)).digest('hex')}`;
-}
 
 function writeJson(filePath: string, value: unknown): void {
   mkdirSync(path.dirname(filePath), { recursive: true });

@@ -168,19 +168,20 @@ function sourceText(input: {
   const legacyRefs = input.omitLegacyRefs
     ? []
     : ['        traceRows: [TRACE-001]', '        evidenceRefs: [EVD-001]'];
-  const projectionRows = input.manifestProjectionAddsCommand || input.manifestProjectionOmitsCommand
-    ? [
-        '  aiTddContractExecutionManifestProjection:',
-        '    closeoutProof:',
-        `      requiredCommands: [${input.manifestProjectionOmitsCommand ? 'CMD-001, CMD-002' : 'CMD-001, CMD-002, CMD-003'}]`,
-        '      policies:',
-        '        - no orphan commands, evidence, or artifacts may satisfy closeout',
-        '        - closeout consumes only current-attempt command and artifact evidence',
-        '        - record_closed is written only after delivery verification',
-        '      targetRefs: [ART-001]',
-        '      ready: true',
-      ]
-    : [];
+  const projectionRows =
+    input.manifestProjectionAddsCommand || input.manifestProjectionOmitsCommand
+      ? [
+          '  aiTddContractExecutionManifestProjection:',
+          '    closeoutProof:',
+          `      requiredCommands: [${input.manifestProjectionOmitsCommand ? 'CMD-001, CMD-002' : 'CMD-001, CMD-002, CMD-003'}]`,
+          '      policies:',
+          '        - no orphan commands, evidence, or artifacts may satisfy closeout',
+          '        - closeout consumes only current-attempt command and artifact evidence',
+          '        - record_closed is written only after delivery verification',
+          '      targetRefs: [ART-001]',
+          '      ready: true',
+        ]
+      : [];
   const closeoutPreviewRows = input.omitCloseoutPreview
     ? []
     : [
@@ -801,22 +802,22 @@ function writeFixture(
           closeoutAttemptId: commandAttempt,
           ...(options.exitCodeOnly ? {} : { artifactRefs: [artifactRef] }),
         },
-          {
-            commandId: 'CMD-002',
-            closeoutAttemptId: commandAttempt,
-            ...(options.exitCodeOnly ? {} : { artifactRefs: [artifactRef] }),
-          },
-          ...(options.manifestProjectionAddsCommand
-            ? [
-                {
-                  commandId: 'CMD-003',
-                  closeoutAttemptId: commandAttempt,
-                  ...(options.exitCodeOnly ? {} : { artifactRefs: [artifactRef] }),
-                },
-              ]
-            : []),
-        ],
-      },
+        {
+          commandId: 'CMD-002',
+          closeoutAttemptId: commandAttempt,
+          ...(options.exitCodeOnly ? {} : { artifactRefs: [artifactRef] }),
+        },
+        ...(options.manifestProjectionAddsCommand
+          ? [
+              {
+                commandId: 'CMD-003',
+                closeoutAttemptId: commandAttempt,
+                ...(options.exitCodeOnly ? {} : { artifactRefs: [artifactRef] }),
+              },
+            ]
+          : []),
+      ],
+    },
     artifactIndex: [artifactRef],
   };
   writeJson(recordPath, record);

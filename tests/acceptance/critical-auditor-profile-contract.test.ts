@@ -49,18 +49,22 @@ describe('CriticalAuditorProfile stage-aware contract', () => {
       expect(stageProfile.expectedDimensions.length).toBeGreaterThan(0);
       expect(stageProfile.requiredCheckItemIds.length).toBeGreaterThan(0);
       expect(stageProfile.stageProfileHash).toMatch(/^sha256:[0-9a-f]{64}$/u);
-      expect(validateCriticalAuditorProfileForStage({
-        profile,
-        stageProfileId: stageProfile.stageProfileId,
-        expectedProfileHash: profile.profileHash,
-        expectedStageProfileHash: stageProfile.stageProfileHash,
-      }).ok).toBe(true);
+      expect(
+        validateCriticalAuditorProfileForStage({
+          profile,
+          stageProfileId: stageProfile.stageProfileId,
+          expectedProfileHash: profile.profileHash,
+          expectedStageProfileHash: stageProfile.stageProfileHash,
+        }).ok
+      ).toBe(true);
     }
     expect(stageProfileForCallPoint('requirements_compiler')).toBe('requirements_compiler');
     expect(stageProfileForCallPoint('implementation_readiness')).toBe('implementation_readiness');
     expect(stageProfileForCallPoint('audit_review')).toBe('post_implementation_code_audit');
     expect(stageProfileForCallPoint('delivery_confirmation')).toBe('delivery_confirmation');
-    expect(profile.stageProfiles.delivery_confirmation.dimensionContractId).toBe('delivery_confirmation');
+    expect(profile.stageProfiles.delivery_confirmation.dimensionContractId).toBe(
+      'delivery_confirmation'
+    );
     expect(profile.stageProfiles.delivery_confirmation.dimensionMode).toBe('delivery');
     expect(profile.stageProfiles.delivery_confirmation.expectedDimensions).toEqual([
       'Delivery Evidence Closure',

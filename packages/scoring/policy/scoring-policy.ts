@@ -106,7 +106,11 @@ function validateLevelRanges(value: unknown): Array<{ level: string; min: number
   });
 }
 
-function resolveRuleRefs(root: string, ruleRoot: string, contract: JsonObject): ScoringPolicyRuleRef[] {
+function resolveRuleRefs(
+  root: string,
+  ruleRoot: string,
+  contract: JsonObject
+): ScoringPolicyRuleRef[] {
   const refs = Array.isArray(contract.stageRuleRefs) ? contract.stageRuleRefs : [];
   if (refs.length === 0) throw new Error('scoring policy stageRuleRefs missing');
   return refs.map((item, index) => {
@@ -114,9 +118,11 @@ function resolveRuleRefs(root: string, ruleRoot: string, contract: JsonObject): 
     const stage = typeof ref.stage === 'string' ? ref.stage.trim() : '';
     const kind = typeof ref.kind === 'string' ? ref.kind.trim() : '';
     const refPath = typeof ref.path === 'string' ? ref.path.trim() : '';
-    if (!stage || !kind || !refPath) throw new Error(`invalid scoring policy stageRuleRefs[${index}]`);
+    if (!stage || !kind || !refPath)
+      throw new Error(`invalid scoring policy stageRuleRefs[${index}]`);
     const absolute = resolvePolicyPath(ruleRoot, refPath);
-    if (!fs.existsSync(absolute)) throw new Error(`scoring policy rule fragment missing: ${refPath}`);
+    if (!fs.existsSync(absolute))
+      throw new Error(`scoring policy rule fragment missing: ${refPath}`);
     return {
       stage,
       kind,
@@ -137,15 +143,19 @@ export function resolveScoringPolicy(options?: ResolveScoringPolicyOptions): Res
   if (contract.schemaVersion !== 'scoring-policy.contract/v1') {
     throw new Error('scoring policy contract schemaVersion invalid');
   }
-  const policyId = typeof contract.policyId === 'string' && contract.policyId.trim()
-    ? contract.policyId.trim()
-    : 'default-scoring-policy';
+  const policyId =
+    typeof contract.policyId === 'string' && contract.policyId.trim()
+      ? contract.policyId.trim()
+      : 'default-scoring-policy';
   const resolvedWithoutHash = {
     schemaVersion: 'resolved-scoring-policy/v1' as const,
     policyId,
     contractPath: relativeFromRoot(root, contractAbsolute),
     contractHash: sha256Buffer(fs.readFileSync(contractAbsolute)),
-    scoreMaterializationPolicy: asObject(contract.scoreMaterializationPolicy, 'scoreMaterializationPolicy'),
+    scoreMaterializationPolicy: asObject(
+      contract.scoreMaterializationPolicy,
+      'scoreMaterializationPolicy'
+    ),
     scoreEvaluationPolicy: asObject(contract.scoreEvaluationPolicy, 'scoreEvaluationPolicy'),
     passThresholds: asObject(contract.passThresholds, 'passThresholds'),
     levelRanges: validateLevelRanges(contract.levelRanges),
@@ -153,7 +163,10 @@ export function resolveScoringPolicy(options?: ResolveScoringPolicyOptions): Res
     iterationPenaltyPolicy: asObject(contract.iterationPenaltyPolicy, 'iterationPenaltyPolicy'),
     severityOverridePolicy: asObject(contract.severityOverridePolicy, 'severityOverridePolicy'),
     stageRuleRefs: resolveRuleRefs(root, ruleRoot, contract),
-    requiredScoreArtifactKinds: asStringArray(contract.requiredScoreArtifactKinds, 'requiredScoreArtifactKinds'),
+    requiredScoreArtifactKinds: asStringArray(
+      contract.requiredScoreArtifactKinds,
+      'requiredScoreArtifactKinds'
+    ),
   };
   return {
     ...resolvedWithoutHash,

@@ -136,11 +136,21 @@ describe('orchestration dispatch contract', () => {
   it('writes packet artifacts to requirement-scoped prompt packet path when a record exists', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'dispatch-contract-req-'));
     try {
-      const recordDir = path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'REQSET-PACKET');
+      const recordDir = path.join(
+        root,
+        '_bmad-output',
+        'runtime',
+        'requirement-records',
+        'REQSET-PACKET'
+      );
       mkdirSync(recordDir, { recursive: true });
       writeFileSync(
         path.join(recordDir, 'requirement-record.json'),
-        JSON.stringify({ recordId: 'REQ-PACKET', requirementSetId: 'REQSET-PACKET', runId: 'run-packet' }) + '\n',
+        JSON.stringify({
+          recordId: 'REQ-PACKET',
+          requirementSetId: 'REQSET-PACKET',
+          runId: 'run-packet',
+        }) + '\n',
         'utf8'
       );
 
@@ -217,7 +227,8 @@ describe('orchestration dispatch contract', () => {
         auditReceiptHash: 'sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
         goalExecutionPath: null,
         goalExecutionHash: null,
-        sourceDocumentHash: 'sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+        sourceDocumentHash:
+          'sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
         implementationConfirmationHash:
           'sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
       },
@@ -226,10 +237,13 @@ describe('orchestration dispatch contract', () => {
         strategyId: 'compiled_trace_direct',
         availability: 'available',
         selectedBy: 'policy',
-        strategyOptionsHash: 'sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
-        selectedOptionHash: 'sha256:9999999999999999999999999999999999999999999999999999999999999999',
+        strategyOptionsHash:
+          'sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+        selectedOptionHash:
+          'sha256:9999999999999999999999999999999999999999999999999999999999999999',
         modelPacketHash: 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-        sourceDocumentHash: 'sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+        sourceDocumentHash:
+          'sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
         implementationConfirmationHash:
           'sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
       },
@@ -258,14 +272,18 @@ describe('orchestration dispatch contract', () => {
         authorityMode: 'compiled_implementation_confirmation',
         compiledPromptRef: {
           modelPacketPath: 'trace-execution/pkt-compiled/model_packet.json',
-          modelPacketHash: 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          modelPacketHash:
+            'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
           humanPromptPath: 'trace-execution/pkt-compiled/human_prompt.txt',
-          humanPromptHash: 'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+          humanPromptHash:
+            'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
           auditReceiptPath: 'trace-execution/pkt-compiled/audit_receipt.json',
-          auditReceiptHash: 'sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+          auditReceiptHash:
+            'sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
           goalExecutionPath: null,
           goalExecutionHash: null,
-          sourceDocumentHash: 'sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+          sourceDocumentHash:
+            'sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
           implementationConfirmationHash:
             'sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
         },
@@ -292,10 +310,14 @@ describe('orchestration dispatch contract', () => {
           strategyId: 'compiled_trace_direct',
           availability: 'available',
           selectedBy: 'policy',
-          strategyOptionsHash: 'sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
-          selectedOptionHash: 'sha256:9999999999999999999999999999999999999999999999999999999999999999',
-          modelPacketHash: 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-          sourceDocumentHash: 'sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+          strategyOptionsHash:
+            'sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+          selectedOptionHash:
+            'sha256:9999999999999999999999999999999999999999999999999999999999999999',
+          modelPacketHash:
+            'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          sourceDocumentHash:
+            'sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
           implementationConfirmationHash:
             'sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
         },
@@ -335,7 +357,12 @@ describe('orchestration dispatch contract', () => {
         pytestCleanupEvidenceRequired: false,
       },
       subagentContinuityPolicy: {
-        returnAllowedOnlyOn: ['scope_complete', 'real_blocker', 'audit_boundary', 'resume_checkpoint'],
+        returnAllowedOnlyOn: [
+          'scope_complete',
+          'real_blocker',
+          'audit_boundary',
+          'resume_checkpoint',
+        ],
       },
       auditReportContract: {
         parseableScoreBlockRequired: true,

@@ -27,11 +27,15 @@ function stableStringify(value: unknown): string {
   if (!value || typeof value !== 'object') return JSON.stringify(value);
   return `{${Object.keys(value as Record<string, unknown>)
     .sort()
-    .map((key) => `${JSON.stringify(key)}:${stableStringify((value as Record<string, unknown>)[key])}`)
+    .map(
+      (key) => `${JSON.stringify(key)}:${stableStringify((value as Record<string, unknown>)[key])}`
+    )
     .join(',')}}`;
 }
 
-function semanticConfirmationForHash(confirmation: Record<string, unknown>): Record<string, unknown> {
+function semanticConfirmationForHash(
+  confirmation: Record<string, unknown>
+): Record<string, unknown> {
   return Object.fromEntries(
     Object.entries(confirmation).filter(([key]) => !CONFIRMATION_BOOKKEEPING_FIELDS.has(key))
   );
@@ -41,7 +45,11 @@ function implementationConfirmationHash(confirmation: Record<string, unknown>): 
   return sha256Text(stableStringify(semanticConfirmationForHash(confirmation)));
 }
 
-function sourceDocumentHashFor(sourceText: string, blockText: string, confirmation: Record<string, unknown>): string {
+function sourceDocumentHashFor(
+  sourceText: string,
+  blockText: string,
+  confirmation: Record<string, unknown>
+): string {
   const normalizedBlock = `implementationConfirmation:${stableStringify(semanticConfirmationForHash(confirmation))}`;
   return sha256Text(sourceText.replace(blockText, normalizedBlock));
 }
@@ -59,7 +67,10 @@ function writeText(filePath: string, value: string): void {
   writeFileSync(filePath, value, 'utf8');
 }
 
-function writeReadinessFixture(root: string, options: { proof?: boolean } = {}): {
+function writeReadinessFixture(
+  root: string,
+  options: { proof?: boolean } = {}
+): {
   sourcePath: string;
   renderReportPath: string;
   sourceDocumentHash: string;
@@ -138,7 +149,12 @@ function writeReadinessFixture(root: string, options: { proof?: boolean } = {}):
         oracle: 'controlled red proof oracle',
       },
     ],
-    mustNot: [{ id: 'OUT-001', text: 'Scope boundary: record-only shortcut is legacy evidence, not readiness authority.' }],
+    mustNot: [
+      {
+        id: 'OUT-001',
+        text: 'Scope boundary: record-only shortcut is legacy evidence, not readiness authority.',
+      },
+    ],
     evidence: [
       {
         id: 'EVD-001',
@@ -232,7 +248,9 @@ function writeReadinessFixture(root: string, options: { proof?: boolean } = {}):
     ],
     sequenceViews: [{ id: 'SEQ-001', title: 'Readiness flow', covers: ['MUST-001', 'NEG-001'] }],
     flowViews: [{ id: 'FLOW-001', title: 'Readiness flow', covers: ['MUST-001', 'NEG-001'] }],
-    edgeCaseViews: [{ id: 'EDGEVIEW-001', title: 'Missing red proof', covers: ['NEG-001'], cases: ['EDGE-001'] }],
+    edgeCaseViews: [
+      { id: 'EDGEVIEW-001', title: 'Missing red proof', covers: ['NEG-001'], cases: ['EDGE-001'] },
+    ],
     boundaryViews: [{ id: 'BOUNDARY-001', title: 'AI-TDD boundary', covers: ['OUT-001'] }],
     artifactAutomationPlan: [
       {
@@ -248,13 +266,66 @@ function writeReadinessFixture(root: string, options: { proof?: boolean } = {}):
     currentTargetMap: {
       schemaVersion: 'current-target-map/v1',
       displayProfile: 'closed_loop_current_target_map',
-      currentSummary: [{ id: 'CUR-001', text: 'Record-only readiness can appear sufficient.', traceRows: ['TRACE-001'], evidenceRefs: ['EVD-001'] }],
-      targetSummary: [{ id: 'TAR-001', text: 'Stage audit and AI-TDD gate are both mandatory.', traceRows: ['TRACE-001'], evidenceRefs: ['EVD-001'] }],
-      diffRows: [{ id: 'DIFF-001', current: 'record-only', target: 'stage-audit-plus-ai-tdd', traceRows: ['TRACE-001'], evidenceRefs: ['EVD-001'] }],
-      process: [{ id: 'PROC-001', from: 'record', to: 'gate', action: 'run stage audit and AI-TDD gate', traceRows: ['TRACE-001'], evidenceRefs: ['EVD-001'] }],
-      artifactPaths: [{ id: 'PATH-001', path: 'scripts/main-agent-implementation-readiness-gate.ts', traceRows: ['TRACE-001'], evidenceRefs: ['EVD-001'] }],
-      canonicalArtifacts: [{ id: 'CANONICAL-001', targetPathOrField: 'scripts/main-agent-implementation-readiness-gate.ts', traceRows: ['TRACE-001'], evidenceRefs: ['EVD-001'] }],
-      existingArtifacts: [{ id: 'LEGACY-001', currentPath: 'record-only-readiness', completionProofPolicy: 'legacy_only', traceRows: ['TRACE-001'], evidenceRefs: ['EVD-001'] }],
+      currentSummary: [
+        {
+          id: 'CUR-001',
+          text: 'Record-only readiness can appear sufficient.',
+          traceRows: ['TRACE-001'],
+          evidenceRefs: ['EVD-001'],
+        },
+      ],
+      targetSummary: [
+        {
+          id: 'TAR-001',
+          text: 'Stage audit and AI-TDD gate are both mandatory.',
+          traceRows: ['TRACE-001'],
+          evidenceRefs: ['EVD-001'],
+        },
+      ],
+      diffRows: [
+        {
+          id: 'DIFF-001',
+          current: 'record-only',
+          target: 'stage-audit-plus-ai-tdd',
+          traceRows: ['TRACE-001'],
+          evidenceRefs: ['EVD-001'],
+        },
+      ],
+      process: [
+        {
+          id: 'PROC-001',
+          from: 'record',
+          to: 'gate',
+          action: 'run stage audit and AI-TDD gate',
+          traceRows: ['TRACE-001'],
+          evidenceRefs: ['EVD-001'],
+        },
+      ],
+      artifactPaths: [
+        {
+          id: 'PATH-001',
+          path: 'scripts/main-agent-implementation-readiness-gate.ts',
+          traceRows: ['TRACE-001'],
+          evidenceRefs: ['EVD-001'],
+        },
+      ],
+      canonicalArtifacts: [
+        {
+          id: 'CANONICAL-001',
+          targetPathOrField: 'scripts/main-agent-implementation-readiness-gate.ts',
+          traceRows: ['TRACE-001'],
+          evidenceRefs: ['EVD-001'],
+        },
+      ],
+      existingArtifacts: [
+        {
+          id: 'LEGACY-001',
+          currentPath: 'record-only-readiness',
+          completionProofPolicy: 'legacy_only',
+          traceRows: ['TRACE-001'],
+          evidenceRefs: ['EVD-001'],
+        },
+      ],
     },
     closeoutReadinessPreview: {
       requiredCommands: ['CMD-001', 'CMD-002'],
@@ -272,7 +343,10 @@ function writeReadinessFixture(root: string, options: { proof?: boolean } = {}):
     ],
   };
 
-  const initialBlock = `implementationConfirmation:\n${stableStringify(semanticConfirmation).split('\n').map((line) => `  ${line}`).join('\n')}`;
+  const initialBlock = `implementationConfirmation:\n${stableStringify(semanticConfirmation)
+    .split('\n')
+    .map((line) => `  ${line}`)
+    .join('\n')}`;
   const sourceTemplate = `# Readiness AI TDD Fixture\n\nMust Not Count As Completion: exit code only, stdout, HTTP 200, page render, and mock calls cannot satisfy readiness.\n\n\`\`\`yaml\n${initialBlock}\n\`\`\`\n\n\`\`\`mermaid\nsequenceDiagram\n  actor User\n  participant Gate\n  User->>Gate: Require mandatory AI-TDD readiness [MUST-001][EVD-001]\n  Gate-->>User: Block missing red proof [NEG-001][EVD-001]\n\`\`\`\n\n## Reverse Audit Report\n\nVerdict: PASS\n\n### implementationConfirmation Findings\n### HTML Confirmation Findings\n### Reconfirmation Findings\n### ID Reference Findings\n### Diagram And Step Findings\n### Artifact Automation Plan Findings\n### traceRows Findings\n### Row Quality Findings\n### E2E Anti-Smoke Findings\n### Open Findings\n\n## Definition of Done\n\n- Stage audit and AI-TDD gate pass before implementation dispatch.\n`;
   const confirmation = {
     ...semanticConfirmation,
@@ -292,7 +366,11 @@ function writeReadinessFixture(root: string, options: { proof?: boolean } = {}):
     .split('\n')
     .map((line) => `  ${line}`)
     .join('\n')}`;
-  const sourceHash = sourceDocumentHashFor(sourceTemplate.replace(initialBlock, finalBlock), finalBlock, confirmation);
+  const sourceHash = sourceDocumentHashFor(
+    sourceTemplate.replace(initialBlock, finalBlock),
+    finalBlock,
+    confirmation
+  );
   const pageHash = sha256Text(`confirmation:${sourceHash}:${implementationHash}`);
   const confirmationPhrase = `确认以上范围进入下一阶段\nsourceDocumentHash=${sourceHash}\nimplementationConfirmationHash=${implementationHash}\nconfirmationPageHash=${pageHash}`;
   confirmation.sourceDocumentHash = sourceHash;
@@ -392,7 +470,10 @@ function writeReadinessFixture(root: string, options: { proof?: boolean } = {}):
   };
 }
 
-function baseRecord(root: string, options: { proof?: boolean } = { proof: true }): Record<string, unknown> {
+function baseRecord(
+  root: string,
+  options: { proof?: boolean } = { proof: true }
+): Record<string, unknown> {
   const recipe = resolveArchitectureConfirmationHashRecipe();
   const fixture = writeReadinessFixture(root, options);
   return {
@@ -471,7 +552,10 @@ function baseRecord(root: string, options: { proof?: boolean } = { proof: true }
   };
 }
 
-function aiTddRecord(root: string, options: { proof?: boolean; rerun?: boolean } = {}): Record<string, unknown> {
+function aiTddRecord(
+  root: string,
+  options: { proof?: boolean; rerun?: boolean } = {}
+): Record<string, unknown> {
   const record = {
     ...baseRecord(root, { proof: options.proof === true }),
   };
@@ -508,7 +592,8 @@ function aiTddRecord(root: string, options: { proof?: boolean; rerun?: boolean }
             {
               artifactType: 'report',
               path: 'evidence/readiness-ai-tdd.json',
-              contentHash: 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+              contentHash:
+                'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
               producer: 'readiness-test',
               sourceOfTruthRole: 'evidence',
               relatedRequirementIds: ['TRACE-001'],
@@ -522,7 +607,8 @@ function aiTddRecord(root: string, options: { proof?: boolean; rerun?: boolean }
             {
               artifactType: 'report',
               path: 'evidence/readiness-ai-tdd.json',
-              contentHash: 'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+              contentHash:
+                'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
               producer: 'readiness-test',
               sourceOfTruthRole: 'evidence',
               relatedRequirementIds: ['TRACE-001'],
@@ -592,7 +678,9 @@ describe('requirement-scoped implementation readiness gate', () => {
   });
 
   it('blocks first implementation when AI-TDD pre-implementation red proof is missing', () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), 'implementation-readiness-ai-tdd-missing-proof-'));
+    const root = mkdtempSync(
+      path.join(os.tmpdir(), 'implementation-readiness-ai-tdd-missing-proof-')
+    );
     try {
       const recordPath = writeRecord(root, aiTddRecord(root));
       const code = mainImplementationReadinessGate([

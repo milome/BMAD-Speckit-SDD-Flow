@@ -90,9 +90,7 @@ describe('runtime dashboard MCP server', () => {
           hf_conversational: { compatible: 1, incompatible: 2 },
           hf_tool_calling: { compatible: 1, incompatible: 2 },
         },
-        rejection_reasons: [
-          { reason: 'redaction_blocked', count: 1 },
-        ],
+        rejection_reasons: [{ reason: 'redaction_blocked', count: 1 }],
         redaction_status_counts: {
           clean: 1,
           redacted: 1,
@@ -174,7 +172,12 @@ describe('runtime dashboard MCP server', () => {
       'http://127.0.0.1:43123',
       {}
     );
-    const preview = await invokeRuntimeMcpTool('preview_sft', undefined, 'http://127.0.0.1:43123', {});
+    const preview = await invokeRuntimeMcpTool(
+      'preview_sft',
+      undefined,
+      'http://127.0.0.1:43123',
+      {}
+    );
     const exportResult = await invokeRuntimeMcpTool(
       'export_sft',
       { target: 'hf_tool_calling' },

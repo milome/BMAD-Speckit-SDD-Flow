@@ -36,7 +36,9 @@ function allGovernanceEvents(records: RunScoreRecord[]): GovernanceEventEnvelope
   );
 }
 
-function eventMode(event: GovernanceRerunHistoryEntry): GovernanceRoutingModeDistributionEntry['mode'] | null {
+function eventMode(
+  event: GovernanceRerunHistoryEntry
+): GovernanceRoutingModeDistributionEntry['mode'] | null {
   return event.executor_routing?.routing_mode ?? event.decision_mode ?? null;
 }
 
@@ -129,7 +131,9 @@ export function summarizeGovernanceRerunGateFailureTrend(
 
   return [...byGate.entries()]
     .map(([rerunGate, events]) => {
-      const sorted = [...events].sort((left, right) => left.timestamp.localeCompare(right.timestamp));
+      const sorted = [...events].sort((left, right) =>
+        left.timestamp.localeCompare(right.timestamp)
+      );
       const first = sorted[0]!;
       const latest = sorted[sorted.length - 1]!;
       const firstFailed = isFailureOutcome(first.outcome);

@@ -122,9 +122,7 @@ function candidateRoots(input: ResolveGovernanceSkillInventoryInput): SkillInven
 
 function hasSkillMarkdown(dirPath: string): boolean {
   try {
-    return fs
-      .readdirSync(dirPath)
-      .some((entry) => /^SKILL(\.[^.]+)?\.md$/iu.test(entry));
+    return fs.readdirSync(dirPath).some((entry) => /^SKILL(\.[^.]+)?\.md$/iu.test(entry));
   } catch {
     return false;
   }
@@ -132,9 +130,7 @@ function hasSkillMarkdown(dirPath: string): boolean {
 
 function resolveSkillMarkdownPath(dirPath: string): string | null {
   try {
-    const fileName = fs
-      .readdirSync(dirPath)
-      .find((entry) => /^SKILL(\.[^.]+)?\.md$/iu.test(entry));
+    const fileName = fs.readdirSync(dirPath).find((entry) => /^SKILL(\.[^.]+)?\.md$/iu.test(entry));
     return fileName ? path.join(dirPath, fileName) : null;
   } catch {
     return null;

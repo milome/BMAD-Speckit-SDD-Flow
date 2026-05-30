@@ -23,7 +23,8 @@ describe('party-mode intensity selection', () => {
   });
 
   it('selects final_solution_task_list_100 for high-confidence final-output requests', () => {
-    const finalOutputPrompt = 'Run party-mode-facilitator for BUGFIX final solution and §7 task list';
+    const finalOutputPrompt =
+      'Run party-mode-facilitator for BUGFIX final solution and §7 task list';
 
     expect(requiresHighConfidenceFinalOutputs(finalOutputPrompt)).toBe(true);
     expect(inferGateProfileId(finalOutputPrompt)).toBe('final_solution_task_list_100');

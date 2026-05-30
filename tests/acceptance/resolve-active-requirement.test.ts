@@ -55,8 +55,7 @@ function writeRequirementRecord(overrides: Record<string, unknown> = {}): {
     sourceDocumentHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
     implementationConfirmationHash:
       'sha256:2222222222222222222222222222222222222222222222222222222222222222',
-    confirmationPageHash:
-      'sha256:3333333333333333333333333333333333333333333333333333333333333333',
+    confirmationPageHash: 'sha256:3333333333333333333333333333333333333333333333333333333333333333',
     epicId: 'epic-01',
     storyId: '1.1',
     runId: 'run-active-001',
@@ -155,7 +154,9 @@ function captureStdout(fn: () => number): { code: number; stdout: string; stderr
 describe('Active Requirement Resolver / ResolvedRuntimeContext', () => {
   it('resolves active requirement from requirement-records index without legacy project context', () => {
     const { recordPath, indexPath } = writeRequirementRecord();
-    expect(fs.existsSync(path.join(root, '_bmad-output', 'runtime', 'context', 'project.json'))).toBe(false);
+    expect(
+      fs.existsSync(path.join(root, '_bmad-output', 'runtime', 'context', 'project.json'))
+    ).toBe(false);
 
     const resolved = resolveActiveRequirement({ root });
     expect(resolved).toMatchObject({
@@ -249,7 +250,9 @@ describe('Active Requirement Resolver / ResolvedRuntimeContext', () => {
       stage: 'implement',
       runtimePolicySnapshotExists: false,
     });
-    expect(fs.existsSync(path.join(root, '_bmad-output', 'runtime', 'context', 'project.json'))).toBe(false);
+    expect(
+      fs.existsSync(path.join(root, '_bmad-output', 'runtime', 'context', 'project.json'))
+    ).toBe(false);
   });
 
   it('main-agent inspect uses requirement record implementation gate and orchestration hints', () => {
@@ -351,7 +354,13 @@ describe('Active Requirement Resolver / ResolvedRuntimeContext', () => {
       )}\n`,
       'utf8'
     );
-    const legacyStateDir = path.join(root, '_bmad-output', 'runtime', 'governance', 'orchestration-state');
+    const legacyStateDir = path.join(
+      root,
+      '_bmad-output',
+      'runtime',
+      'governance',
+      'orchestration-state'
+    );
     fs.mkdirSync(legacyStateDir, { recursive: true });
     fs.writeFileSync(
       path.join(legacyStateDir, 'story-old-session.json'),
@@ -365,7 +374,14 @@ describe('Active Requirement Resolver / ResolvedRuntimeContext', () => {
           nextAction: 'await_user',
           pendingPacket: {
             packetId: 'old-packet',
-            packetPath: path.join(root, '_bmad-output', 'runtime', 'governance', 'packets', 'old.json'),
+            packetPath: path.join(
+              root,
+              '_bmad-output',
+              'runtime',
+              'governance',
+              'packets',
+              'old.json'
+            ),
             packetKind: 'execution',
             status: 'completed',
             createdAt: '2026-05-20T00:00:00.000Z',

@@ -10,18 +10,12 @@ describe('governance hook jsdoc typing', () => {
     const cases = [
       {
         file: path.join(repoRoot, '_bmad', 'claude', 'hooks', 'post-tool-use.cjs'),
-        typedefs: [
-          'GovernanceBackgroundTrigger',
-          'GovernancePostToolUseResult',
-        ],
+        typedefs: ['GovernanceBackgroundTrigger', 'GovernancePostToolUseResult'],
         returns: '@returns {GovernancePostToolUseResult | null}',
       },
       {
         file: path.join(repoRoot, '_bmad', 'cursor', 'hooks', 'post-tool-use.cjs'),
-        typedefs: [
-          'GovernanceBackgroundTrigger',
-          'GovernancePostToolUseResult',
-        ],
+        typedefs: ['GovernanceBackgroundTrigger', 'GovernancePostToolUseResult'],
         returns: '@returns {GovernancePostToolUseResult | null}',
       },
       {
@@ -33,7 +27,7 @@ describe('governance hook jsdoc typing', () => {
 
     for (const testCase of cases) {
       const content = readFileSync(testCase.file, 'utf8');
-      expect(content).toContain("// @ts-check");
+      expect(content).toContain('// @ts-check');
       for (const typedefName of testCase.typedefs) {
         expect(content).toContain(
           `@typedef {import('../../../scripts/governance-hook-types').${typedefName}} ${typedefName}`

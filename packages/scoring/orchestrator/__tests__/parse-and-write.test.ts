@@ -221,7 +221,9 @@ describe('parseAndWriteScore', () => {
         skipAutoHash: true,
       });
 
-      const written = JSON.parse(fs.readFileSync(path.join(tempDir, 'post-impl-run.json'), 'utf-8'));
+      const written = JSON.parse(
+        fs.readFileSync(path.join(tempDir, 'post-impl-run.json'), 'utf-8')
+      );
       expect(written.stage).toBe('post_impl');
       expect(written.drift_signals).toEqual(['closure_task_id']);
       expect(written.drift_severity).toBe('critical');

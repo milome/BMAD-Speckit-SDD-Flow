@@ -56,7 +56,11 @@ function loadRecords(dataPath: string): RunScoreRecord[] {
   }
   const jsonlPath = path.join(base, 'scores.jsonl');
   if (fs.existsSync(jsonlPath)) {
-    for (const line of fs.readFileSync(jsonlPath, 'utf-8').split('\n').map((l) => l.trim()).filter(Boolean)) {
+    for (const line of fs
+      .readFileSync(jsonlPath, 'utf-8')
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean)) {
       try {
         records.push(JSON.parse(line) as RunScoreRecord);
       } catch {

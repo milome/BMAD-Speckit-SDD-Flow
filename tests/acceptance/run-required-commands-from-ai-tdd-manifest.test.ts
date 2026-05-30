@@ -98,20 +98,35 @@ function fixture(
     mode === 'missing-target-modification-paths'
       ? []
       : mode === 'missing-path'
-        ? ['  targetModificationPaths:', '    - id: TARGET-MOD-MISSING-PATH', '      traceRows: [TRACE-001]', '      evidenceRefs: [EVD-001]']
-      : mode === 'missing-refs'
-        ? ['  targetModificationPaths:', `    - ${targetPath}`]
-      : mode === 'missing-trace-refs'
-        ? ['  targetModificationPaths:', '    - id: TARGET-MOD-001', `      path: ${targetPath}`, '      evidenceRefs: [EVD-001]']
-      : mode === 'missing-evidence-refs'
-        ? ['  targetModificationPaths:', '    - id: TARGET-MOD-001', `      path: ${targetPath}`, '      traceRows: [TRACE-001]']
-      : [
-          '  targetModificationPaths:',
-          '    - id: TARGET-MOD-001',
-          `      path: ${targetPath}`,
-          `      traceRows: [${mode === 'broken-refs' ? 'TRACE-MISSING' : 'TRACE-001'}]`,
-          `      evidenceRefs: [${mode === 'broken-refs' ? 'EVD-MISSING' : 'EVD-001'}]`,
-        ];
+        ? [
+            '  targetModificationPaths:',
+            '    - id: TARGET-MOD-MISSING-PATH',
+            '      traceRows: [TRACE-001]',
+            '      evidenceRefs: [EVD-001]',
+          ]
+        : mode === 'missing-refs'
+          ? ['  targetModificationPaths:', `    - ${targetPath}`]
+          : mode === 'missing-trace-refs'
+            ? [
+                '  targetModificationPaths:',
+                '    - id: TARGET-MOD-001',
+                `      path: ${targetPath}`,
+                '      evidenceRefs: [EVD-001]',
+              ]
+            : mode === 'missing-evidence-refs'
+              ? [
+                  '  targetModificationPaths:',
+                  '    - id: TARGET-MOD-001',
+                  `      path: ${targetPath}`,
+                  '      traceRows: [TRACE-001]',
+                ]
+              : [
+                  '  targetModificationPaths:',
+                  '    - id: TARGET-MOD-001',
+                  `      path: ${targetPath}`,
+                  `      traceRows: [${mode === 'broken-refs' ? 'TRACE-MISSING' : 'TRACE-001'}]`,
+                  `      evidenceRefs: [${mode === 'broken-refs' ? 'EVD-MISSING' : 'EVD-001'}]`,
+                ];
   const sourcePath = path.join(root, 'source.md');
   writeText(
     sourcePath,
@@ -279,11 +294,17 @@ describe('manifest driven required command runner contract', () => {
   });
 
   it.each([
-    ['missing-target-modification-paths', 'targetModificationPathCoverage:target_modification_paths_missing'],
+    [
+      'missing-target-modification-paths',
+      'targetModificationPathCoverage:target_modification_paths_missing',
+    ],
     ['missing-path', 'targetModificationPathCoverage:target_modification_path_missing'],
     ['missing-refs', 'targetModificationPathCoverage:target_modification_trace_refs_missing'],
     ['missing-trace-refs', 'targetModificationPathCoverage:target_modification_trace_refs_missing'],
-    ['missing-evidence-refs', 'targetModificationPathCoverage:target_modification_evidence_refs_missing'],
+    [
+      'missing-evidence-refs',
+      'targetModificationPathCoverage:target_modification_evidence_refs_missing',
+    ],
     ['broken-refs', 'targetModificationPathCoverage:trace_ref_missing'],
   ] as const)('blocks closeout when targetModificationPathCoverage is %s', (mode, reason) => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'manifest-runner-target-paths-'));
@@ -357,7 +378,9 @@ describe('manifest driven required command runner contract', () => {
           path.join(evidenceDir, 'dynamic-runner-test-report.json').replace(/\\/gu, '/'),
           path.join(evidenceDir, 'legacy-guard-test-report.json').replace(/\\/gu, '/'),
           path.join(evidenceDir, 'final-closeout-runner-test-report.json').replace(/\\/gu, '/'),
-          path.resolve('scripts/run-required-commands-from-ai-tdd-manifest.ts').replace(/\\/gu, '/'),
+          path
+            .resolve('scripts/run-required-commands-from-ai-tdd-manifest.ts')
+            .replace(/\\/gu, '/'),
         ])
       );
       const packet = JSON.parse(
@@ -503,8 +526,9 @@ describe('manifest driven required command runner contract', () => {
         ])
       );
       expect(
-        record.executionIterations.flatMap((iteration: Record<string, unknown>) =>
-          (iteration.commandRunRefs as Record<string, unknown>[]) ?? []
+        record.executionIterations.flatMap(
+          (iteration: Record<string, unknown>) =>
+            (iteration.commandRunRefs as Record<string, unknown>[]) ?? []
         )
       ).toEqual(
         expect.arrayContaining([
@@ -512,7 +536,9 @@ describe('manifest driven required command runner contract', () => {
         ])
       );
       expect(
-        record.deliveryEvidence.requiredCommands.map((command: Record<string, unknown>) => command.commandId)
+        record.deliveryEvidence.requiredCommands.map(
+          (command: Record<string, unknown>) => command.commandId
+        )
       ).not.toContain('CMD-FULL-FAILURE-CASE-COVERAGE');
     } finally {
       rmSync(root, { recursive: true, force: true });

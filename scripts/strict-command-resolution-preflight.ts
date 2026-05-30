@@ -42,7 +42,10 @@ function text(value: unknown): string {
 
 function objects(value: unknown): JsonObject[] {
   return Array.isArray(value)
-    ? value.filter((item): item is JsonObject => Boolean(item) && typeof item === 'object' && !Array.isArray(item))
+    ? value.filter(
+        (item): item is JsonObject =>
+          Boolean(item) && typeof item === 'object' && !Array.isArray(item)
+      )
     : [];
 }
 
@@ -94,7 +97,8 @@ function extractImplementationConfirmation(sourceText: string): JsonObject {
 
 function resolveSourcePath(record: JsonObject, explicitSource?: string): string {
   const source = text(explicitSource) || text(record.sourcePath);
-  if (!source) throw new Error('source path missing; pass --source or set sourcePath in requirement record');
+  if (!source)
+    throw new Error('source path missing; pass --source or set sourcePath in requirement record');
   return path.resolve(source);
 }
 
@@ -188,7 +192,9 @@ function resolveSkillDir(projectRoot: string, skillName: string): string {
         ]
       : []),
   ];
-  return candidates.find((candidate) => fs.existsSync(path.join(candidate, 'SKILL.md'))) ?? candidates[0];
+  return (
+    candidates.find((candidate) => fs.existsSync(path.join(candidate, 'SKILL.md'))) ?? candidates[0]
+  );
 }
 
 function commandTemplateValues(input: {
@@ -200,7 +206,8 @@ function commandTemplateValues(input: {
 }): Record<string, string> {
   const render = nested(input.confirmation.confirmationRender);
   const htmlPath =
-    text(render.htmlPath) || path.join(path.dirname(input.recordPath), 'confirmation', 'confirmation.html');
+    text(render.htmlPath) ||
+    path.join(path.dirname(input.recordPath), 'confirmation', 'confirmation.html');
   return {
     '<source-document.md>': normalizePathForRecord(input.sourcePath),
     '<requirement-record.json>': normalizePathForRecord(input.recordPath),
@@ -301,7 +308,12 @@ function evaluate(input: {
   root: string;
   sourcePath: string;
   recordPath: string;
-}): { decision: Decision; blockingReasons: string[]; checks: JsonObject[]; commands: JsonObject[] } {
+}): {
+  decision: Decision;
+  blockingReasons: string[];
+  checks: JsonObject[];
+  commands: JsonObject[];
+} {
   const requiredCommands = objects(input.confirmation.requiredCommands);
   const scripts = packageScripts(input.root);
   const replacements = commandTemplateValues({
@@ -315,7 +327,9 @@ function evaluate(input: {
     resolveCommand({ command, root: input.root, scripts, replacements })
   );
   const blockingReasons = commands.flatMap((command) =>
-    strings(command.issues).map((issue) => `command_unresolved:${text(command.commandId) || '<missing>'}:${issue}`)
+    strings(command.issues).map(
+      (issue) => `command_unresolved:${text(command.commandId) || '<missing>'}:${issue}`
+    )
   );
   const requiredIds = new Set(
     objects(input.confirmation.traceRows).flatMap((trace) => [
@@ -346,8 +360,16 @@ function evaluate(input: {
     decision: blockingReasons.length === 0 ? 'pass' : 'blocked',
     blockingReasons: [...new Set(blockingReasons)],
     checks: [
-      { id: 'required-commands-present', passed: requiredCommands.length > 0, count: requiredCommands.length },
-      { id: 'all-trace-command-refs-defined', passed: [...requiredIds].every((id) => definedIds.has(id)), requiredCommandRefs: [...requiredIds] },
+      {
+        id: 'required-commands-present',
+        passed: requiredCommands.length > 0,
+        count: requiredCommands.length,
+      },
+      {
+        id: 'all-trace-command-refs-defined',
+        passed: [...requiredIds].every((id) => definedIds.has(id)),
+        requiredCommandRefs: [...requiredIds],
+      },
       ...hashChecks,
       ...commands.map((command) => ({
         id: `command-resolution:${text(command.commandId) || '<missing>'}`,
@@ -393,7 +415,9 @@ function updateRecord(
 export function mainStrictCommandResolutionPreflight(argv: string[]): number {
   const args = parseArgs(argv);
   if (args.help) {
-    console.log('Usage: strict-command-resolution-preflight --requirement-record <json> [--source <md>] [--json]');
+    console.log(
+      'Usage: strict-command-resolution-preflight --requirement-record <json> [--source <md>] [--json]'
+    );
     return 0;
   }
   if (!args.requirementRecord) throw new Error('missing required args: requirementRecord');
@@ -406,7 +430,13 @@ export function mainStrictCommandResolutionPreflight(argv: string[]): number {
   const reportPath = path.resolve(
     args.reportPath ?? path.join(path.dirname(recordPath), 'runnable-command-report.json')
   );
-  const evaluation = evaluate({ record, confirmation, root: process.cwd(), sourcePath, recordPath });
+  const evaluation = evaluate({
+    record,
+    confirmation,
+    root: process.cwd(),
+    sourcePath,
+    recordPath,
+  });
   const report = {
     reportType: 'strict_command_resolution_preflight',
     generatedAt: evaluatedAt,
@@ -445,7 +475,11 @@ export function mainStrictCommandResolutionPreflight(argv: string[]): number {
     eventLogPath: normalizePathForRecord(commit.eventLogPath),
     receiptPath: normalizePathForRecord(commit.receiptPath),
   };
-  process.stdout.write(args.json ? `${JSON.stringify(output, null, 2)}\n` : `strict_command_resolution=${evaluation.decision}\n`);
+  process.stdout.write(
+    args.json
+      ? `${JSON.stringify(output, null, 2)}\n`
+      : `strict_command_resolution=${evaluation.decision}\n`
+  );
   return evaluation.decision === 'pass' ? 0 : 1;
 }
 
@@ -453,7 +487,13 @@ if (require.main === module) {
   try {
     process.exitCode = mainStrictCommandResolutionPreflight(process.argv.slice(2));
   } catch (error) {
-    console.error(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : String(error) }, null, 2));
+    console.error(
+      JSON.stringify(
+        { ok: false, error: error instanceof Error ? error.message : String(error) },
+        null,
+        2
+      )
+    );
     process.exitCode = 2;
   }
 }

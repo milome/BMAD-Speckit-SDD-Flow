@@ -134,7 +134,7 @@ export function ensureReviewerRuntimeDefinition(
         ? path.join(projectRoot, '.cursor', 'agents')
         : host === 'codex'
           ? path.join(projectRoot, '.codex', 'agents')
-        : path.join(projectRoot, '.claude', 'agents');
+          : path.join(projectRoot, '.claude', 'agents');
     if (!fs.existsSync(runtimeDir)) {
       return {
         host,

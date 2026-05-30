@@ -63,20 +63,20 @@ describe('ralph-method schema v2', () => {
     const doc = {
       ...makeBaseDocument(),
       userStories: [
-      {
-        id: 'US-003',
-        title: 'Update docs',
-        description: 'Update documentation.',
-        acceptanceCriteria: ['Docs updated'],
-        priority: 3,
-        passes: false,
-        involvesProductionCode: false,
-        tddSteps: [
-          { phase: 'TDD-RED', passes: false },
-          { phase: 'TDD-GREEN', passes: false },
-          { phase: 'TDD-REFACTOR', passes: false },
-        ],
-      },
+        {
+          id: 'US-003',
+          title: 'Update docs',
+          description: 'Update documentation.',
+          acceptanceCriteria: ['Docs updated'],
+          priority: 3,
+          passes: false,
+          involvesProductionCode: false,
+          tddSteps: [
+            { phase: 'TDD-RED', passes: false },
+            { phase: 'TDD-GREEN', passes: false },
+            { phase: 'TDD-REFACTOR', passes: false },
+          ],
+        },
       ],
     } as unknown;
 

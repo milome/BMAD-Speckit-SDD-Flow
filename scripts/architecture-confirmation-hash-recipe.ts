@@ -52,7 +52,9 @@ export function normalizeArchitecturePath(value: string, repoRoot = process.cwd(
   const raw = value.replace(/\\/gu, '/').trim();
   const root = repoRoot.replace(/\\/gu, '/').replace(/\/$/u, '');
   const withoutRoot = raw.startsWith(`${root}/`) ? raw.slice(root.length + 1) : raw;
-  const normalized = path.posix.normalize(withoutRoot.replace(/^[a-zA-Z]:\//u, (drive) => drive.toLowerCase()));
+  const normalized = path.posix.normalize(
+    withoutRoot.replace(/^[a-zA-Z]:\//u, (drive) => drive.toLowerCase())
+  );
   return normalized.replace(/^\.\//u, '').replace(/\/$/u, '');
 }
 
@@ -71,14 +73,21 @@ export function resolveArchitectureConfirmationHashRecipe(
   const schemaVersion = text(config.schemaVersion);
   const recipeVersion = text(config.recipeVersion);
   if (schemaVersion !== EXPECTED_SCHEMA_VERSION) {
-    throw new Error(`ArchitectureConfirmationHashRecipe schemaVersion invalid: ${schemaVersion || '<missing>'}`);
+    throw new Error(
+      `ArchitectureConfirmationHashRecipe schemaVersion invalid: ${schemaVersion || '<missing>'}`
+    );
   }
   if (recipeVersion !== EXPECTED_RECIPE_VERSION) {
-    throw new Error(`ArchitectureConfirmationHashRecipe recipeVersion invalid: ${recipeVersion || '<missing>'}`);
+    throw new Error(
+      `ArchitectureConfirmationHashRecipe recipeVersion invalid: ${recipeVersion || '<missing>'}`
+    );
   }
   const volatileFields = strings(config.volatileFieldsExcludedFromArtifactHash);
-  const requiredStateHashFields = strings(object(config.stateTransitionHashCoverage).requiredHashFields);
-  if (volatileFields.length === 0) throw new Error('ArchitectureConfirmationHashRecipe volatile fields missing');
+  const requiredStateHashFields = strings(
+    object(config.stateTransitionHashCoverage).requiredHashFields
+  );
+  if (volatileFields.length === 0)
+    throw new Error('ArchitectureConfirmationHashRecipe volatile fields missing');
   if (requiredStateHashFields.length === 0) {
     throw new Error('ArchitectureConfirmationHashRecipe stateTransition hash coverage missing');
   }

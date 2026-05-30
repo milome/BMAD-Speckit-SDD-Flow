@@ -219,7 +219,10 @@ describe('Main Agent audit review fail-closed contract', () => {
       });
       expect(withoutReceipts.ok).toBe(false);
       expect(withoutReceipts.blockingReasons).toEqual(
-        expect.arrayContaining(['round_1_score_receipt_missing', 'round_1_run_auditor_host_receipt_missing'])
+        expect.arrayContaining([
+          'round_1_score_receipt_missing',
+          'round_1_run_auditor_host_receipt_missing',
+        ])
       );
     } finally {
       cleanupRequirementWorkspace(fixture.root);

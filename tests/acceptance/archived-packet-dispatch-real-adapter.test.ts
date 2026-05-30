@@ -14,9 +14,7 @@ import {
   createGovernancePacketExecutionRecord,
   readGovernancePacketExecutionRecord,
 } from '../../scripts/governance-packet-execution-store';
-import {
-  processPendingExecutionRecords,
-} from '../../scripts/governance-packet-dispatch-worker';
+import { processPendingExecutionRecords } from '../../scripts/governance-packet-dispatch-worker';
 import { createGovernanceHostDispatchAdapter } from '../../scripts/governance-host-dispatch-adapter';
 import { linkRepoNodeModulesIntoProject } from '../helpers/runtime-registry-fixture';
 
@@ -86,13 +84,18 @@ function createRecord(
   });
 }
 
-function createNodeLaunchEnv(hostKind: 'cursor' | 'claude', scriptPath: string, mode: 'json-stdout' | 'packet-stdin', startupTimeoutMs = 500) {
+function createNodeLaunchEnv(
+  hostKind: 'cursor' | 'claude',
+  scriptPath: string,
+  mode: 'json-stdout' | 'packet-stdin',
+  startupTimeoutMs = 500
+) {
   return {
     BMAD_GOVERNANCE_ALLOW_AUTONOMOUS_FALLBACK: '1',
-    [ `BMAD_GOVERNANCE_${hostKind.toUpperCase()}_LAUNCH_COMMAND` ]: process.execPath,
-    [ `BMAD_GOVERNANCE_${hostKind.toUpperCase()}_LAUNCH_ARGS_JSON` ]: JSON.stringify([scriptPath]),
-    [ `BMAD_GOVERNANCE_${hostKind.toUpperCase()}_LAUNCH_MODE` ]: mode,
-    [ `BMAD_GOVERNANCE_${hostKind.toUpperCase()}_STARTUP_TIMEOUT_MS` ]: String(startupTimeoutMs),
+    [`BMAD_GOVERNANCE_${hostKind.toUpperCase()}_LAUNCH_COMMAND`]: process.execPath,
+    [`BMAD_GOVERNANCE_${hostKind.toUpperCase()}_LAUNCH_ARGS_JSON`]: JSON.stringify([scriptPath]),
+    [`BMAD_GOVERNANCE_${hostKind.toUpperCase()}_LAUNCH_MODE`]: mode,
+    [`BMAD_GOVERNANCE_${hostKind.toUpperCase()}_STARTUP_TIMEOUT_MS`]: String(startupTimeoutMs),
   } as NodeJS.ProcessEnv;
 }
 
@@ -111,10 +114,10 @@ describe.skip('legacy archived: packet dispatch real-adapter path', () => {
           "process.stdin.on('data', (chunk) => { data += chunk; });",
           "process.stdin.on('end', () => {",
           `  fs.writeFileSync(${JSON.stringify(receiptPath)}, JSON.stringify({`,
-          "    executionId: process.env.BMAD_GOVERNANCE_EXECUTION_ID,",
-          "    packetPath: process.env.BMAD_GOVERNANCE_PACKET_PATH,",
+          '    executionId: process.env.BMAD_GOVERNANCE_EXECUTION_ID,',
+          '    packetPath: process.env.BMAD_GOVERNANCE_PACKET_PATH,',
           '    prompt: data',
-          "  }, null, 2));",
+          '  }, null, 2));',
           '});',
           'setTimeout(() => process.exit(0), 250);',
         ].join('\n'),
@@ -157,9 +160,9 @@ describe.skip('legacy archived: packet dispatch real-adapter path', () => {
         [
           "const fs = require('node:fs');",
           `fs.writeFileSync(${JSON.stringify(receiptPath)}, JSON.stringify({`,
-          "  executionId: process.env.BMAD_GOVERNANCE_EXECUTION_ID,",
-          "  packetPath: process.env.BMAD_GOVERNANCE_PACKET_PATH",
-          "}, null, 2));",
+          '  executionId: process.env.BMAD_GOVERNANCE_EXECUTION_ID,',
+          '  packetPath: process.env.BMAD_GOVERNANCE_PACKET_PATH',
+          '}, null, 2));',
           "process.stdout.write(JSON.stringify({ kind: 'accepted', externalRunId: 'cursor-launch-001', metadata: { lane: 'wrapper-json' } }));",
         ].join('\n'),
         'utf8'
@@ -195,10 +198,14 @@ describe.skip('legacy archived: packet dispatch real-adapter path', () => {
       });
 
       expect(updated?.status).toBe('retry_pending');
-      waitFor(() => {
-        const record = readGovernancePacketExecutionRecord(fixture.root, 'loop-cursor', 1);
-        return Boolean(record && record.status === 'retry_pending');
-      }, 5000, 100);
+      waitFor(
+        () => {
+          const record = readGovernancePacketExecutionRecord(fixture.root, 'loop-cursor', 1);
+          return Boolean(record && record.status === 'retry_pending');
+        },
+        5000,
+        100
+      );
       const finalRecord = readGovernancePacketExecutionRecord(fixture.root, 'loop-cursor', 1);
       expect(finalRecord?.status).toBe('retry_pending');
       expect(finalRecord?.lastDispatchError).toContain(

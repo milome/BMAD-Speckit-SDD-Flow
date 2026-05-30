@@ -56,24 +56,22 @@ describe('reviewer registry contract', () => {
   });
 
   it('freezes canonical route and closeout stage details for the specialized profiles', () => {
-    expect(getReviewerRegistration('story_audit').hosts.cursor.preferredRoute.subtypeOrExecutor).toBe(
-      'code-reviewer'
-    );
-    expect(getReviewerRegistration('story_audit').hosts.cursor.fallbackRoute.subtypeOrExecutor).toBe(
-      'generalPurpose'
-    );
-    expect(getReviewerRegistration('implement_audit').hosts.claude.preferredRoute.subtypeOrExecutor).toBe(
-      'code-reviewer'
-    );
-    expect(getReviewerRegistration('implement_audit').hosts.claude.fallbackRoute.subtypeOrExecutor).toBe(
-      'general-purpose'
-    );
+    expect(
+      getReviewerRegistration('story_audit').hosts.cursor.preferredRoute.subtypeOrExecutor
+    ).toBe('code-reviewer');
+    expect(
+      getReviewerRegistration('story_audit').hosts.cursor.fallbackRoute.subtypeOrExecutor
+    ).toBe('generalPurpose');
+    expect(
+      getReviewerRegistration('implement_audit').hosts.claude.preferredRoute.subtypeOrExecutor
+    ).toBe('code-reviewer');
+    expect(
+      getReviewerRegistration('implement_audit').hosts.claude.fallbackRoute.subtypeOrExecutor
+    ).toBe('general-purpose');
     expect(getReviewerRegistration('implement_audit').hosts.cursor.closeout.stage).toBe(
       'implement'
     );
-    expect(getReviewerRegistration('bugfix_doc_audit').hosts.cursor.closeout.stage).toBe(
-      'bugfix'
-    );
+    expect(getReviewerRegistration('bugfix_doc_audit').hosts.cursor.closeout.stage).toBe('bugfix');
     expect(getReviewerRegistration('tasks_doc_audit').hosts.cursor.closeout.stage).toBe(
       'standalone_tasks'
     );

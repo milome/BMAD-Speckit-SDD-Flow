@@ -71,9 +71,7 @@ export function appendRuntimeEvent(
   return filePath;
 }
 
-export function readRuntimeEvents(
-  options: RuntimeEventStoreOptions = {}
-): RuntimeEvent[] {
+export function readRuntimeEvents(options: RuntimeEventStoreOptions = {}): RuntimeEvent[] {
   const root = options.root ?? process.cwd();
   const eventsRoot = resolveRuntimeEventsPath(root);
 

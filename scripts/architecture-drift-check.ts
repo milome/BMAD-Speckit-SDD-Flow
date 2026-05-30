@@ -18,7 +18,10 @@ const REQUIRED_INVARIANTS = [
 ];
 
 export function runArchitectureDriftCheck(root: string): { passed: boolean; failures: string[] } {
-  const adrPath = path.join(root, 'docs/design/2026-04-24-orchestration-recommended-architecture-adr.md');
+  const adrPath = path.join(
+    root,
+    'docs/design/2026-04-24-orchestration-recommended-architecture-adr.md'
+  );
   const tasksPath = path.join(root, 'docs/plans/TASKS_v1.md');
   if (!fs.existsSync(adrPath) || !fs.existsSync(tasksPath)) {
     return { passed: true, failures: [] };
@@ -34,7 +37,8 @@ export function runArchitectureDriftCheck(root: string): { passed: boolean; fail
 
 export function main(argv: string[]): number {
   const cwdIndex = argv.indexOf('--cwd');
-  const root = cwdIndex >= 0 && argv[cwdIndex + 1] ? path.resolve(argv[cwdIndex + 1]) : process.cwd();
+  const root =
+    cwdIndex >= 0 && argv[cwdIndex + 1] ? path.resolve(argv[cwdIndex + 1]) : process.cwd();
   const result = runArchitectureDriftCheck(root);
   console.log(JSON.stringify(result, null, 2));
   return result.passed ? 0 : 1;

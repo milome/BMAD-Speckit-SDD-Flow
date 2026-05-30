@@ -36,10 +36,10 @@ describe('six mental model routing e2e matrix', () => {
       expect(record.status).toBe('closed');
       expect(record.currentMentalModel).toBe('delivery_confirmation');
       expect(record.lastEventType).toBe('record_closed');
-      expect((record.mentalModelTransitions as unknown[])).toHaveLength(5);
-      expect(ROUTE_ORDER.map((model) => (modelResults(record)[model] as JsonObject).status)).toEqual(
-        ['pass', 'pass', 'pass', 'pass', 'pass', 'pass']
-      );
+      expect(record.mentalModelTransitions as unknown[]).toHaveLength(5);
+      expect(
+        ROUTE_ORDER.map((model) => (modelResults(record)[model] as JsonObject).status)
+      ).toEqual(['pass', 'pass', 'pass', 'pass', 'pass', 'pass']);
       expect(validateRequirementRecordSchemaObject(record).ok).toBe(true);
     });
   });

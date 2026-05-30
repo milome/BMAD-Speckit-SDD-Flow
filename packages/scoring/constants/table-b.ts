@@ -5,8 +5,8 @@
 export const STAGE_TO_PHASE: Record<string, number | number[]> = {
   prd: 1,
   arch: [1, 2], // 环节 1 补充、环节 2 设计侧
-  epics: 0,     // 环节 1 输入依据（不单独计分）
-  story: 1,     // 环节 1 补充
+  epics: 0, // 环节 1 输入依据（不单独计分）
+  story: 1, // 环节 1 补充
   specify: 1,
   plan: [1, 2], // 环节 1 补充、环节 2 设计侧
   gaps: [1, 2, 3, 4, 5, 6], // 前置环节 1；后置环节 2–6

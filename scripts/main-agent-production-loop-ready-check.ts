@@ -55,8 +55,7 @@ function parseArgs(argv: string[]): ParsedArgs {
     else if (arg === '--dry-run') {
       // Accepted for older operator muscle memory; this checker is always read-only.
       continue;
-    }
-    else if (arg.startsWith('--')) {
+    } else if (arg.startsWith('--')) {
       const key = arg.slice(2).replace(/-([a-z])/gu, (_, letter: string) => letter.toUpperCase());
       const value = argv[index + 1];
       if (!value || value.startsWith('--')) throw new Error(`Missing value for ${arg}`);
@@ -75,7 +74,10 @@ function text(value: unknown): string {
 
 function objects(value: unknown): JsonObject[] {
   return Array.isArray(value)
-    ? value.filter((item): item is JsonObject => Boolean(item) && typeof item === 'object' && !Array.isArray(item))
+    ? value.filter(
+        (item): item is JsonObject =>
+          Boolean(item) && typeof item === 'object' && !Array.isArray(item)
+      )
     : [];
 }
 
@@ -111,7 +113,9 @@ function extensionRefs(record: JsonObject): JsonObject[] {
   return objects(record.extensionRefs).filter(
     (ref) =>
       text(ref.artifactType) === 'observability_extension' ||
-      strings(ref.relatedRequirementIds).some((id) => ['MUST-011', 'MUST-017', 'EVD-010'].includes(id))
+      strings(ref.relatedRequirementIds).some((id) =>
+        ['MUST-011', 'MUST-017', 'EVD-010'].includes(id)
+      )
   );
 }
 
@@ -144,7 +148,9 @@ function resolveDefaultDatasetManifest(record: JsonObject, recordPath: string): 
 }
 
 function resolveArtifactPath(recordPath: string, artifactPath: string): string {
-  return path.isAbsolute(artifactPath) ? artifactPath : path.resolve(path.dirname(recordPath), '..', '..', '..', '..', artifactPath);
+  return path.isAbsolute(artifactPath)
+    ? artifactPath
+    : path.resolve(path.dirname(recordPath), '..', '..', '..', '..', artifactPath);
 }
 
 function latestActiveExtension(record: JsonObject): JsonObject | null {
@@ -156,13 +162,13 @@ function hasCompleteArtifactRef(ref: JsonObject | null): boolean {
   if (!ref) return false;
   return Boolean(
     text(ref.path) &&
-      isSha256(artifactHash(ref)) &&
-      text(ref.producer) &&
-      text(ref.purpose) &&
-      text(ref.sourceOfTruthRole) === 'evidence' &&
-      strings(ref.relatedRequirementIds).length > 0 &&
-      text(ref.inputVersion) &&
-      text(ref.outputVersion)
+    isSha256(artifactHash(ref)) &&
+    text(ref.producer) &&
+    text(ref.purpose) &&
+    text(ref.sourceOfTruthRole) === 'evidence' &&
+    strings(ref.relatedRequirementIds).length > 0 &&
+    text(ref.inputVersion) &&
+    text(ref.outputVersion)
   );
 }
 
@@ -173,7 +179,8 @@ function artifactCompletenessIssues(ref: JsonObject): string[] {
   if (!text(ref.producer)) issues.push('producer_missing');
   if (!text(ref.purpose)) issues.push('purpose_missing');
   if (text(ref.sourceOfTruthRole) !== 'evidence') issues.push('source_of_truth_role_not_evidence');
-  if (strings(ref.relatedRequirementIds).length === 0) issues.push('related_requirement_ids_missing');
+  if (strings(ref.relatedRequirementIds).length === 0)
+    issues.push('related_requirement_ids_missing');
   if (!text(ref.inputVersion)) issues.push('input_version_missing');
   if (!text(ref.outputVersion)) issues.push('output_version_missing');
   if (text(ref.status) !== 'active') issues.push('status_not_active');
@@ -185,7 +192,8 @@ function concreteEvidenceIssues(item: JsonObject, prefix: string, itemId: string
   const commandEvidence = [...objects(item.commandRuns), ...objects(item.commandRunRefs)];
   if (commandEvidence.length === 0) issues.push(`${prefix}_command_evidence_missing:${itemId}`);
   for (const command of commandEvidence) {
-    if (!text(command.commandId) && !text(command.command)) issues.push(`${prefix}_command_identity_missing:${itemId}`);
+    if (!text(command.commandId) && !text(command.command))
+      issues.push(`${prefix}_command_identity_missing:${itemId}`);
     if (Number.isInteger(command.exitCode) && command.exitCode !== 0) {
       issues.push(`${prefix}_command_failed:${itemId}:${text(command.commandId) || '<missing>'}`);
     }
@@ -199,15 +207,22 @@ function concreteEvidenceIssues(item: JsonObject, prefix: string, itemId: string
     }
   }
 
-  const controlledEventRefs = [...objects(item.controlledEventRefs), ...objects(item.controlEventRefs)];
-  if (controlledEventRefs.length === 0) issues.push(`${prefix}_controlled_event_evidence_missing:${itemId}`);
+  const controlledEventRefs = [
+    ...objects(item.controlledEventRefs),
+    ...objects(item.controlEventRefs),
+  ];
+  if (controlledEventRefs.length === 0)
+    issues.push(`${prefix}_controlled_event_evidence_missing:${itemId}`);
   for (const eventRef of controlledEventRefs) {
     if (!text(eventRef.eventId) && !text(eventRef.eventType)) {
       issues.push(`${prefix}_controlled_event_identity_missing:${itemId}`);
     }
   }
 
-  const recoveryEvidence = [...objects(item.recoveryActionEvidence), ...objects(item.recoveryActionRefs)];
+  const recoveryEvidence = [
+    ...objects(item.recoveryActionEvidence),
+    ...objects(item.recoveryActionRefs),
+  ];
   if (recoveryEvidence.length === 0) issues.push(`${prefix}_recovery_evidence_missing:${itemId}`);
   for (const recovery of recoveryEvidence) {
     if (!text(recovery.action) && !text(recovery.recoveryAction)) {
@@ -224,18 +239,24 @@ function nested(obj: JsonObject, key: string): JsonObject {
 
 function extensionIdentityIssues(record: JsonObject, extension: JsonObject): string[] {
   const issues: string[] = [];
-  if (text(extension.recordId) !== text(record.recordId)) issues.push('extension_record_id_mismatch');
+  if (text(extension.recordId) !== text(record.recordId))
+    issues.push('extension_record_id_mismatch');
   if (text(extension.requirementSetId) !== text(record.requirementSetId)) {
     issues.push('extension_requirement_set_id_mismatch');
   }
   if (text(extension.sourceDocumentHash) !== text(record.sourceDocumentHash)) {
     issues.push('extension_source_document_hash_mismatch');
   }
-  if (text(extension.implementationConfirmationHash) !== text(record.implementationConfirmationHash)) {
+  if (
+    text(extension.implementationConfirmationHash) !== text(record.implementationConfirmationHash)
+  ) {
     issues.push('extension_implementation_confirmation_hash_mismatch');
   }
   const architectureState = nested(record, 'architectureConfirmationState');
-  if (text(extension.architectureConfirmationHash) !== text(architectureState.currentArchitectureConfirmationHash)) {
+  if (
+    text(extension.architectureConfirmationHash) !==
+    text(architectureState.currentArchitectureConfirmationHash)
+  ) {
     issues.push('extension_architecture_confirmation_hash_mismatch');
   }
   return issues;
@@ -269,10 +290,13 @@ function subsystemIssues(extension: JsonObject): string[] {
       issues.push(`subsystem_missing:${subsystemId}`);
       continue;
     }
-    if (strings(subsystem.inputRefs).length === 0) issues.push(`subsystem_input_refs_missing:${subsystemId}`);
-    if (strings(subsystem.outputRefs).length === 0) issues.push(`subsystem_output_refs_missing:${subsystemId}`);
+    if (strings(subsystem.inputRefs).length === 0)
+      issues.push(`subsystem_input_refs_missing:${subsystemId}`);
+    if (strings(subsystem.outputRefs).length === 0)
+      issues.push(`subsystem_output_refs_missing:${subsystemId}`);
     if (!text(subsystem.status)) issues.push(`subsystem_status_missing:${subsystemId}`);
-    if (strings(subsystem.evidenceRefs).length === 0) issues.push(`subsystem_evidence_refs_missing:${subsystemId}`);
+    if (strings(subsystem.evidenceRefs).length === 0)
+      issues.push(`subsystem_evidence_refs_missing:${subsystemId}`);
     if (!isSha256(text(subsystem.hash))) issues.push(`subsystem_hash_missing:${subsystemId}`);
     issues.push(...concreteEvidenceIssues(subsystem, 'subsystem', subsystemId));
     const failureHandling = nested(subsystem, 'failureHandling');
@@ -309,18 +333,26 @@ function confirmationAuthorityIssues(record: JsonObject): string[] {
 function artifactExistsAndMatches(ref: JsonObject): boolean {
   const artifactPath = text(ref.path);
   const hash = text(ref.hash ?? ref.contentHash);
-  return Boolean(artifactPath && isSha256(hash) && fs.existsSync(artifactPath) && sha256File(artifactPath) === hash);
+  return Boolean(
+    artifactPath &&
+    isSha256(hash) &&
+    fs.existsSync(artifactPath) &&
+    sha256File(artifactPath) === hash
+  );
 }
 
 function datasetManifestIssues(record: JsonObject, manifestPath: string): string[] {
   const issues: string[] = [];
   if (!fs.existsSync(manifestPath)) return ['dataset_manifest_missing'];
   const manifest = readJson(manifestPath);
-  if (text(manifest.manifestType) !== 'dataset_release_manifest') issues.push('dataset_manifest_type_invalid');
-  if (text(manifest.releaseDecision) !== 'pass') issues.push('dataset_manifest_release_decision_not_pass');
+  if (text(manifest.manifestType) !== 'dataset_release_manifest')
+    issues.push('dataset_manifest_type_invalid');
+  if (text(manifest.releaseDecision) !== 'pass')
+    issues.push('dataset_manifest_release_decision_not_pass');
   const source = nested(manifest, 'source');
   const architectureState = nested(record, 'architectureConfirmationState');
-  if (text(source.recordId) !== text(record.recordId)) issues.push('dataset_manifest_record_id_mismatch');
+  if (text(source.recordId) !== text(record.recordId))
+    issues.push('dataset_manifest_record_id_mismatch');
   if (text(source.requirementSetId) !== text(record.requirementSetId)) {
     issues.push('dataset_manifest_requirement_set_id_mismatch');
   }
@@ -330,13 +362,18 @@ function datasetManifestIssues(record: JsonObject, manifestPath: string): string
   if (text(source.implementationConfirmationHash) !== text(record.implementationConfirmationHash)) {
     issues.push('dataset_manifest_implementation_hash_mismatch');
   }
-  if (text(source.architectureConfirmationHash) !== text(architectureState.currentArchitectureConfirmationHash)) {
+  if (
+    text(source.architectureConfirmationHash) !==
+    text(architectureState.currentArchitectureConfirmationHash)
+  ) {
     issues.push('dataset_manifest_architecture_hash_mismatch');
   }
   const counts = nested(manifest, 'counts');
-  if (Number(counts.canonicalSamples ?? 0) <= 0) issues.push('dataset_manifest_canonical_samples_missing');
+  if (Number(counts.canonicalSamples ?? 0) <= 0)
+    issues.push('dataset_manifest_canonical_samples_missing');
   if (Number(counts.sampleRoutes ?? 0) <= 0) issues.push('dataset_manifest_sample_routes_missing');
-  if (Number(counts.blockedIssues ?? 1) !== 0) issues.push('dataset_manifest_blocked_issues_present');
+  if (Number(counts.blockedIssues ?? 1) !== 0)
+    issues.push('dataset_manifest_blocked_issues_present');
   if (Number(counts.subsystems ?? 0) !== REQUIRED_SUBSYSTEM_IDS.length) {
     issues.push('dataset_manifest_subsystem_count_mismatch');
   }
@@ -355,22 +392,29 @@ function datasetManifestIssues(record: JsonObject, manifestPath: string): string
     nested(nested(manifest, 'training'), 'evalReport'),
   ];
   refs.forEach((ref, index) => {
-    if (!artifactExistsAndMatches(ref)) issues.push(`dataset_manifest_artifact_hash_mismatch:${index}`);
+    if (!artifactExistsAndMatches(ref))
+      issues.push(`dataset_manifest_artifact_hash_mismatch:${index}`);
   });
   return issues;
 }
 
 function datasetReleaseIssues(record: JsonObject, recordPath: string, args: ParsedArgs): string[] {
   const issues: string[] = [];
-  const reportPath = path.resolve(args.datasetReleaseReport ?? resolveDefaultDatasetReleaseReport(record, recordPath));
-  const manifestPath = path.resolve(args.datasetManifest ?? resolveDefaultDatasetManifest(record, recordPath));
+  const reportPath = path.resolve(
+    args.datasetReleaseReport ?? resolveDefaultDatasetReleaseReport(record, recordPath)
+  );
+  const manifestPath = path.resolve(
+    args.datasetManifest ?? resolveDefaultDatasetManifest(record, recordPath)
+  );
   if (!fs.existsSync(reportPath)) {
     issues.push('dataset_release_report_missing');
   } else {
     const report = readJson(reportPath);
-    if (text(report.reportType) !== 'dataset_release_gate_report') issues.push('dataset_release_report_type_invalid');
+    if (text(report.reportType) !== 'dataset_release_gate_report')
+      issues.push('dataset_release_report_type_invalid');
     if (text(report.decision) !== 'pass') issues.push('dataset_release_gate_not_pass');
-    if (text(report.recordId) !== text(record.recordId)) issues.push('dataset_release_record_id_mismatch');
+    if (text(report.recordId) !== text(record.recordId))
+      issues.push('dataset_release_record_id_mismatch');
     if (text(report.requirementSetId) !== text(record.requirementSetId)) {
       issues.push('dataset_release_requirement_set_id_mismatch');
     }
@@ -388,7 +432,11 @@ function datasetReleaseIssues(record: JsonObject, recordPath: string, args: Pars
         issues.push(`dataset_release_check_not_passed:${requiredId}`);
       }
     }
-    if (text(report.manifestHash) && fs.existsSync(manifestPath) && sha256File(manifestPath) !== text(report.manifestHash)) {
+    if (
+      text(report.manifestHash) &&
+      fs.existsSync(manifestPath) &&
+      sha256File(manifestPath) !== text(report.manifestHash)
+    ) {
       issues.push('dataset_release_manifest_hash_mismatch');
     }
   }
@@ -396,7 +444,11 @@ function datasetReleaseIssues(record: JsonObject, recordPath: string, args: Pars
   return issues;
 }
 
-function evaluate(record: JsonObject, recordPath: string, args: ParsedArgs = {}): {
+function evaluate(
+  record: JsonObject,
+  recordPath: string,
+  args: ParsedArgs = {}
+): {
   decision: ProductionLoopDecision;
   blockingReasons: string[];
   checks: JsonObject[];
@@ -423,14 +475,19 @@ function evaluate(record: JsonObject, recordPath: string, args: ParsedArgs = {})
   checks.push({ id: 'observability-extension-ref-present', passed: Boolean(extensionRef) });
   checks.push({ id: 'observability-extension-ref-pass-grade', passed: extensionRefComplete });
   if (!extensionRef) blockingReasons.push('observability_extension_ref_missing');
-  if (extensionRef && !extensionRefComplete) blockingReasons.push('observability_extension_ref_incomplete');
+  if (extensionRef && !extensionRefComplete)
+    blockingReasons.push('observability_extension_ref_incomplete');
 
   let extension: JsonObject | null = null;
   if (extensionRef && extensionRefComplete) {
     const resolvedPath = resolveArtifactPath(recordPath, text(extensionRef.path));
     const exists = fs.existsSync(resolvedPath);
     const hashMatches = exists && sha256File(resolvedPath) === artifactHash(extensionRef);
-    checks.push({ id: 'observability-extension-file-exists', passed: exists, path: normalizePathForRecord(resolvedPath) });
+    checks.push({
+      id: 'observability-extension-file-exists',
+      passed: exists,
+      path: normalizePathForRecord(resolvedPath),
+    });
     checks.push({ id: 'observability-extension-hash-current', passed: hashMatches });
     if (!exists) blockingReasons.push('observability_extension_file_missing');
     if (exists && !hashMatches) blockingReasons.push('observability_extension_hash_mismatch');
@@ -441,8 +498,16 @@ function evaluate(record: JsonObject, recordPath: string, args: ParsedArgs = {})
     const identityIssues = extensionIdentityIssues(record, extension);
     const observationIssues = observabilityIssues(extension);
     const subsystemReadinessIssues = subsystemIssues(extension);
-    checks.push({ id: 'observability-extension-identity-current', passed: identityIssues.length === 0, issues: identityIssues });
-    checks.push({ id: 'observability-plan-complete', passed: observationIssues.length === 0, issues: observationIssues });
+    checks.push({
+      id: 'observability-extension-identity-current',
+      passed: identityIssues.length === 0,
+      issues: identityIssues,
+    });
+    checks.push({
+      id: 'observability-plan-complete',
+      passed: observationIssues.length === 0,
+      issues: observationIssues,
+    });
     checks.push({
       id: 'sixteen-subsystems-machine-readable',
       passed: subsystemReadinessIssues.length === 0,
@@ -454,7 +519,11 @@ function evaluate(record: JsonObject, recordPath: string, args: ParsedArgs = {})
   } else {
     checks.push({ id: 'observability-extension-identity-current', passed: false });
     checks.push({ id: 'observability-plan-complete', passed: false });
-    checks.push({ id: 'sixteen-subsystems-machine-readable', passed: false, expectedCount: REQUIRED_SUBSYSTEM_IDS.length });
+    checks.push({
+      id: 'sixteen-subsystems-machine-readable',
+      passed: false,
+      expectedCount: REQUIRED_SUBSYSTEM_IDS.length,
+    });
   }
 
   return {
@@ -469,14 +538,18 @@ function evaluate(record: JsonObject, recordPath: string, args: ParsedArgs = {})
 export function mainProductionLoopReadyCheck(argv: string[]): number {
   const args = parseArgs(argv);
   if (args.help) {
-    console.log('Usage: main-agent-production-loop-ready-check --requirement-record <json> [--json]');
+    console.log(
+      'Usage: main-agent-production-loop-ready-check --requirement-record <json> [--json]'
+    );
     return 0;
   }
   if (!args.requirementRecord) throw new Error('missing required args: requirementRecord');
   const recordPath = path.resolve(args.requirementRecord);
   const record = readJson(recordPath);
   const evaluatedAt = args.evaluatedAt ?? new Date().toISOString();
-  const reportPath = path.resolve(args.reportPath ?? path.join(path.dirname(recordPath), 'production-loop-ready-report.json'));
+  const reportPath = path.resolve(
+    args.reportPath ?? path.join(path.dirname(recordPath), 'production-loop-ready-report.json')
+  );
   const evaluation = evaluate(record, recordPath, args);
   const report = {
     reportType: 'production_loop_ready_report',
@@ -497,7 +570,11 @@ export function mainProductionLoopReadyCheck(argv: string[]): number {
     controlWrite: 'forbidden_use_controlled_ingest',
     blockingReasons: evaluation.blockingReasons,
   };
-  process.stdout.write(args.json ? `${JSON.stringify(output, null, 2)}\n` : `production_loop_ready=${evaluation.decision}\n`);
+  process.stdout.write(
+    args.json
+      ? `${JSON.stringify(output, null, 2)}\n`
+      : `production_loop_ready=${evaluation.decision}\n`
+  );
   return evaluation.decision === 'pass' ? 0 : 1;
 }
 
@@ -505,7 +582,13 @@ if (require.main === module) {
   try {
     process.exitCode = mainProductionLoopReadyCheck(process.argv.slice(2));
   } catch (error) {
-    console.error(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : String(error) }, null, 2));
+    console.error(
+      JSON.stringify(
+        { ok: false, error: error instanceof Error ? error.message : String(error) },
+        null,
+        2
+      )
+    );
     process.exitCode = 2;
   }
 }

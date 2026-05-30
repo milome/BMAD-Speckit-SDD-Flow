@@ -73,6 +73,25 @@ function loadValidator() {
   return ajv.compile(schema);
 }
 
+function openReconfirmationRequests(record: Record<string, unknown>): Record<string, unknown>[] {
+  return Array.isArray(record.reconfirmationRequests)
+    ? record.reconfirmationRequests.filter(
+        (request): request is Record<string, unknown> =>
+          Boolean(request) &&
+          typeof request === 'object' &&
+          !Array.isArray(request) &&
+          ['blocking_open', 'open', 'in_progress'].includes(String(request.status ?? ''))
+      )
+    : [];
+}
+
+function validateReconfirmationRuntimeInvariants(record: Record<string, unknown>): boolean {
+  const openRequests = openReconfirmationRequests(record);
+  if (record.status === 'user_confirmed' && openRequests.length > 0) return false;
+  if (record.status === 'reconfirm_required' && openRequests.length === 0) return false;
+  return true;
+}
+
 function validRecord() {
   const recipe = resolveArchitectureConfirmationHashRecipe();
   return {
@@ -309,6 +328,84 @@ describe('requirement-record.schema.json', () => {
     const record = validRecord();
 
     expect(validate(record), JSON.stringify(validate.errors, null, 2)).toBe(true);
+  });
+
+  it('accepts all declared runtime reconfirmation request status values', () => {
+    const validate = loadValidator();
+    for (const status of [
+      'blocking_open',
+      'open',
+      'in_progress',
+      'controlled_confirmed',
+      'closed',
+      'cancelled',
+    ]) {
+      const record = validRecord();
+      record.status = ['blocking_open', 'open', 'in_progress'].includes(status)
+        ? 'reconfirm_required'
+        : 'user_confirmed';
+      record.reconfirmationRequests = [
+        {
+          requestId: `reconfirm-${status}`,
+          targetModel: 'requirement_confirmation',
+          status,
+          sourceRefs: [{ sourceType: 'semantic_drift', id: status }],
+        },
+      ];
+      expect(validate(record), `${status}: ${JSON.stringify(validate.errors, null, 2)}`).toBe(true);
+      expect(validateReconfirmationRuntimeInvariants(record), status).toBe(true);
+    }
+  });
+
+  it('rejects user_confirmed runtime state while a reconfirmation request is open', () => {
+    const validate = loadValidator();
+    const record = validRecord();
+    record.status = 'user_confirmed';
+    record.reconfirmationRequests = [
+      {
+        requestId: 'reconfirm-open',
+        targetModel: 'requirement_confirmation',
+        status: 'blocking_open',
+        sourceRefs: [{ sourceType: 'semantic_drift', id: 'fixture' }],
+      },
+    ];
+
+    expect(validate(record), JSON.stringify(validate.errors, null, 2)).toBe(true);
+    expect(validateReconfirmationRuntimeInvariants(record)).toBe(false);
+  });
+
+  it('rejects reconfirm_required runtime state without an open reconfirmation request', () => {
+    const validate = loadValidator();
+    const record = validRecord();
+    record.status = 'reconfirm_required';
+    record.reconfirmationRequests = [
+      {
+        requestId: 'reconfirm-closed',
+        targetModel: 'requirement_confirmation',
+        status: 'controlled_confirmed',
+        sourceRefs: [{ sourceType: 'semantic_drift', id: 'fixture' }],
+      },
+    ];
+
+    expect(validate(record), JSON.stringify(validate.errors, null, 2)).toBe(true);
+    expect(validateReconfirmationRuntimeInvariants(record)).toBe(false);
+  });
+
+  it('accepts user_confirmed runtime state after all reconfirmation requests are terminal', () => {
+    const validate = loadValidator();
+    const record = validRecord();
+    record.status = 'user_confirmed';
+    record.reconfirmationRequests = ['controlled_confirmed', 'closed', 'cancelled'].map(
+      (status) => ({
+        requestId: `reconfirm-${status}`,
+        targetModel: 'requirement_confirmation',
+        status,
+        sourceRefs: [{ sourceType: 'semantic_drift', id: status }],
+      })
+    );
+
+    expect(validate(record), JSON.stringify(validate.errors, null, 2)).toBe(true);
+    expect(validateReconfirmationRuntimeInvariants(record)).toBe(true);
   });
 
   it('accepts AI-TDD pre-implementation readiness metadata', () => {

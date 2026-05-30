@@ -24,11 +24,6 @@ function writeRichSource(root: string, recordId = 'REQ-AUTHORING-REPAIR-PRESERVE
     `      derivedFromPacketHash: ${packetHash}`,
     `      projectionStatus: synchronized`,
   ].join('\n');
-  const indentedBackRef = [
-    `        derivedFromMustRef: MUST-001`,
-    `        derivedFromPacketHash: ${packetHash}`,
-    `        projectionStatus: synchronized`,
-  ].join('\n');
   writeFileSync(
     source,
     [
@@ -340,7 +335,14 @@ function writeRichSource(root: string, recordId = 'REQ-AUTHORING-REPAIR-PRESERVE
 }
 
 function authoringPaths(root: string, recordId: string) {
-  const dir = path.join(root, '_bmad-output', 'runtime', 'requirement-records', recordId, 'authoring');
+  const dir = path.join(
+    root,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    recordId,
+    'authoring'
+  );
   return {
     dir,
     kernel: path.join(dir, 'semantic-kernel.json'),
@@ -358,7 +360,11 @@ function rootRelative(root: string, filePath: string): string {
   return path.relative(root, filePath).replace(/\\/g, '/');
 }
 
-function writeNoNewGapResponse(requestPath: string, responsePath: string, overrides: Record<string, unknown> = {}) {
+function writeNoNewGapResponse(
+  requestPath: string,
+  responsePath: string,
+  overrides: Record<string, unknown> = {}
+) {
   const request = readJson(requestPath);
   const projectionRefs = request.packetProjectionSummary?.projectionRefs ?? [];
   const checkedProjectionGroups = request.packetProjectionSummary?.projectionGroups ?? [];
@@ -383,7 +389,9 @@ function writeNoNewGapResponse(requestPath: string, responsePath: string, overri
         evidenceRefs: [request.gateDryRun.reportPath],
       },
     ],
-    rejectedGapCandidates: [{ id: `REJ-${request.roundIndex}`, reason: 'no new valid gap detected' }],
+    rejectedGapCandidates: [
+      { id: `REJ-${request.roundIndex}`, reason: 'no new valid gap detected' },
+    ],
     validatedGaps: [],
     rationale: `Round ${request.roundIndex} found no new valid gap.`,
     ...overrides,
@@ -436,7 +444,11 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       const original = readFileSync(source, 'utf8');
       const paths = authoringPaths(root, recordId);
 
-      let result = runMainAgentAuthoringRepair(root, { source, recordId, mode: 'preserve-existing' });
+      let result = runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        mode: 'preserve-existing',
+      });
       expect(result.blockingStage).toBe('critical_auditor_round_required');
       expect(readJson(paths.request(1)).roundPerspective.id).toBe('round_1_must_atomicity');
       expect(readJson(paths.request(1)).gateDryRun.gateDryRunHash).toMatch(/^sha256:/);
@@ -452,7 +464,9 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       expect(result.consecutiveNoNewGapRounds).toBe(1);
       expect(existsSync(paths.receipt(1))).toBe(true);
       expect(existsSync(paths.request(2))).toBe(true);
-      expect(readJson(paths.request(2)).roundPerspective.id).toBe('round_2_projection_materialization');
+      expect(readJson(paths.request(2)).roundPerspective.id).toBe(
+        'round_2_projection_materialization'
+      );
       expect(existsSync(paths.gate)).toBe(false);
 
       writeNoNewGapResponse(paths.request(2), paths.response(2));
@@ -524,7 +538,9 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       expect(existsSync(paths.receipt(1))).toBe(false);
       expect(existsSync(paths.request(1))).toBe(true);
       expect(readJson(paths.request(1)).sourceDocumentHash).toBe(result.sourceDocumentHash);
-      expect(result.artifacts.some((artifact) => artifact.includes('stale-critical-auditor-'))).toBe(true);
+      expect(
+        result.artifacts.some((artifact) => artifact.includes('stale-critical-auditor-'))
+      ).toBe(true);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

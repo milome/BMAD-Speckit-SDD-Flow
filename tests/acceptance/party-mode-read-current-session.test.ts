@@ -24,7 +24,13 @@ describe('party-mode read current session helper', () => {
 
   it('returns a safe summary even when current-session.json is missing', () => {
     const root = makeRoot();
-    const helper = path.join(ROOT, '_bmad', 'runtime', 'hooks', 'party-mode-read-current-session.cjs');
+    const helper = path.join(
+      ROOT,
+      '_bmad',
+      'runtime',
+      'hooks',
+      'party-mode-read-current-session.cjs'
+    );
     const result = spawnSync(process.execPath, [helper, '--project-root', root], {
       cwd: ROOT,
       encoding: 'utf8',
@@ -74,8 +80,20 @@ describe('party-mode read current session helper', () => {
             'captures',
             'demo.tool-result.md'
           ),
-          snapshot_path: path.join(root, '_bmad-output', 'party-mode', 'snapshots', 'demo.latest.json'),
-          audit_verdict_path: path.join(root, '_bmad-output', 'party-mode', 'evidence', 'demo.audit.json'),
+          snapshot_path: path.join(
+            root,
+            '_bmad-output',
+            'party-mode',
+            'snapshots',
+            'demo.latest.json'
+          ),
+          audit_verdict_path: path.join(
+            root,
+            '_bmad-output',
+            'party-mode',
+            'evidence',
+            'demo.audit.json'
+          ),
         },
         null,
         2
@@ -83,7 +101,13 @@ describe('party-mode read current session helper', () => {
       'utf8'
     );
 
-    const helper = path.join(ROOT, '_bmad', 'runtime', 'hooks', 'party-mode-read-current-session.cjs');
+    const helper = path.join(
+      ROOT,
+      '_bmad',
+      'runtime',
+      'hooks',
+      'party-mode-read-current-session.cjs'
+    );
     const result = spawnSync(process.execPath, [helper, '--project-root', root], {
       cwd: ROOT,
       encoding: 'utf8',
@@ -121,7 +145,13 @@ describe('party-mode read current session helper', () => {
       session_log_path: sessionLogPath,
     });
 
-    const helper = path.join(ROOT, '_bmad', 'runtime', 'hooks', 'party-mode-read-current-session.cjs');
+    const helper = path.join(
+      ROOT,
+      '_bmad',
+      'runtime',
+      'hooks',
+      'party-mode-read-current-session.cjs'
+    );
     const result = spawnSync(process.execPath, [helper, '--project-root', root], {
       cwd: ROOT,
       encoding: 'utf8',
@@ -153,9 +183,27 @@ describe('party-mode read current session helper', () => {
       gate_profile_id: 'final_solution_task_list_100',
       status: 'launched',
       target_rounds_total: 100,
-      session_log_path: path.join(root, '_bmad-output', 'party-mode', 'sessions', `${staleSessionKey}.jsonl`),
-      snapshot_path: path.join(root, '_bmad-output', 'party-mode', 'snapshots', `${staleSessionKey}.latest.json`),
-      audit_verdict_path: path.join(root, '_bmad-output', 'party-mode', 'evidence', `${staleSessionKey}.audit.json`),
+      session_log_path: path.join(
+        root,
+        '_bmad-output',
+        'party-mode',
+        'sessions',
+        `${staleSessionKey}.jsonl`
+      ),
+      snapshot_path: path.join(
+        root,
+        '_bmad-output',
+        'party-mode',
+        'snapshots',
+        `${staleSessionKey}.latest.json`
+      ),
+      audit_verdict_path: path.join(
+        root,
+        '_bmad-output',
+        'party-mode',
+        'evidence',
+        `${staleSessionKey}.audit.json`
+      ),
       visible_output_capture_path: path.join(
         root,
         '_bmad-output',
@@ -223,7 +271,13 @@ describe('party-mode read current session helper', () => {
       'utf8'
     );
 
-    const helper = path.join(ROOT, '_bmad', 'runtime', 'hooks', 'party-mode-read-current-session.cjs');
+    const helper = path.join(
+      ROOT,
+      '_bmad',
+      'runtime',
+      'hooks',
+      'party-mode-read-current-session.cjs'
+    );
     const result = spawnSync(process.execPath, [helper, '--project-root', root], {
       cwd: ROOT,
       encoding: 'utf8',
@@ -267,7 +321,13 @@ describe('party-mode read current session helper', () => {
       gate_profile_id: 'final_solution_task_list_100',
       status: 'launched',
       target_rounds_total: 100,
-      session_log_path: path.join(root, '_bmad-output', 'party-mode', 'sessions', `${staleSessionKey}.jsonl`),
+      session_log_path: path.join(
+        root,
+        '_bmad-output',
+        'party-mode',
+        'sessions',
+        `${staleSessionKey}.jsonl`
+      ),
       recorded_at: '2026-04-16T12:00:00.000Z',
     });
 
@@ -279,9 +339,27 @@ describe('party-mode read current session helper', () => {
           gate_profile_id: 'final_solution_task_list_100',
           current_batch_target_round: 20,
           target_rounds_total: 100,
-          session_log_path: path.join(root, '_bmad-output', 'party-mode', 'sessions', `${hollowSessionKey}.jsonl`),
-          snapshot_path: path.join(root, '_bmad-output', 'party-mode', 'evidence', `${hollowSessionKey}.snapshot.json`),
-          audit_verdict_path: path.join(root, '_bmad-output', 'party-mode', 'evidence', `${hollowSessionKey}.audit.json`),
+          session_log_path: path.join(
+            root,
+            '_bmad-output',
+            'party-mode',
+            'sessions',
+            `${hollowSessionKey}.jsonl`
+          ),
+          snapshot_path: path.join(
+            root,
+            '_bmad-output',
+            'party-mode',
+            'evidence',
+            `${hollowSessionKey}.snapshot.json`
+          ),
+          audit_verdict_path: path.join(
+            root,
+            '_bmad-output',
+            'party-mode',
+            'evidence',
+            `${hollowSessionKey}.audit.json`
+          ),
           updated_at: '2026-04-17T13:00:00.000Z',
         },
         null,
@@ -298,9 +376,27 @@ describe('party-mode read current session helper', () => {
           gate_profile_id: 'quick_probe_20',
           current_batch_target_round: 20,
           target_rounds_total: 20,
-          session_log_path: path.join(root, '_bmad-output', 'party-mode', 'sessions', `${evidenceSessionKey}.jsonl`),
-          snapshot_path: path.join(root, '_bmad-output', 'party-mode', 'snapshots', `${evidenceSessionKey}.latest.json`),
-          audit_verdict_path: path.join(root, '_bmad-output', 'party-mode', 'evidence', `${evidenceSessionKey}.audit.json`),
+          session_log_path: path.join(
+            root,
+            '_bmad-output',
+            'party-mode',
+            'sessions',
+            `${evidenceSessionKey}.jsonl`
+          ),
+          snapshot_path: path.join(
+            root,
+            '_bmad-output',
+            'party-mode',
+            'snapshots',
+            `${evidenceSessionKey}.latest.json`
+          ),
+          audit_verdict_path: path.join(
+            root,
+            '_bmad-output',
+            'party-mode',
+            'evidence',
+            `${evidenceSessionKey}.audit.json`
+          ),
           updated_at: '2026-04-17T12:30:00.000Z',
         },
         null,
@@ -319,7 +415,13 @@ describe('party-mode read current session helper', () => {
       'utf8'
     );
 
-    const helper = path.join(ROOT, '_bmad', 'runtime', 'hooks', 'party-mode-read-current-session.cjs');
+    const helper = path.join(
+      ROOT,
+      '_bmad',
+      'runtime',
+      'hooks',
+      'party-mode-read-current-session.cjs'
+    );
     const result = spawnSync(process.execPath, [helper, '--project-root', root], {
       cwd: ROOT,
       encoding: 'utf8',
@@ -352,14 +454,24 @@ describe('party-mode read current session helper', () => {
           session_key: recoveredOldKey,
           gate_profile_id: 'final_solution_task_list_100',
           updated_at: '2026-04-17T10:00:00.000Z',
-          session_log_path: path.join(root, '_bmad-output', 'party-mode', 'sessions', `${recoveredOldKey}.jsonl`),
+          session_log_path: path.join(
+            root,
+            '_bmad-output',
+            'party-mode',
+            'sessions',
+            `${recoveredOldKey}.jsonl`
+          ),
         },
         null,
         2
       ),
       'utf8'
     );
-    fs.writeFileSync(path.join(capturesDir, `${recoveredOldKey}.subagent-start.raw.json`), '{"task":"old"}\n', 'utf8');
+    fs.writeFileSync(
+      path.join(capturesDir, `${recoveredOldKey}.subagent-start.raw.json`),
+      '{"task":"old"}\n',
+      'utf8'
+    );
 
     writePartyModeCurrentSessionState(root, {
       session_key: recoveredOldKey,
@@ -377,17 +489,33 @@ describe('party-mode read current session helper', () => {
           gate_profile_id: 'quick_probe_20',
           updated_at: '2026-04-17T11:00:00.000Z',
           target_rounds_total: 20,
-          session_log_path: path.join(root, '_bmad-output', 'party-mode', 'sessions', `${newerKey}.jsonl`),
+          session_log_path: path.join(
+            root,
+            '_bmad-output',
+            'party-mode',
+            'sessions',
+            `${newerKey}.jsonl`
+          ),
         },
         null,
         2
       ),
       'utf8'
     );
-    fs.writeFileSync(path.join(capturesDir, `${newerKey}.subagent-start.raw.json`), '{"task":"new"}\n', 'utf8');
+    fs.writeFileSync(
+      path.join(capturesDir, `${newerKey}.subagent-start.raw.json`),
+      '{"task":"new"}\n',
+      'utf8'
+    );
     fs.writeFileSync(path.join(capturesDir, `${newerKey}.tool-result.md`), '### Round 1\n', 'utf8');
 
-    const helper = path.join(ROOT, '_bmad', 'runtime', 'hooks', 'party-mode-read-current-session.cjs');
+    const helper = path.join(
+      ROOT,
+      '_bmad',
+      'runtime',
+      'hooks',
+      'party-mode-read-current-session.cjs'
+    );
     const result = spawnSync(process.execPath, [helper, '--project-root', root], {
       cwd: ROOT,
       encoding: 'utf8',
@@ -413,7 +541,13 @@ describe('party-mode read current session helper', () => {
       gate_profile_id: 'final_solution_task_list_100',
       status: 'launched',
       target_rounds_total: 100,
-      session_log_path: path.join(root, '_bmad-output', 'party-mode', 'sessions', `${sessionKey}.jsonl`),
+      session_log_path: path.join(
+        root,
+        '_bmad-output',
+        'party-mode',
+        'sessions',
+        `${sessionKey}.jsonl`
+      ),
       visible_output_capture_path: path.join(
         root,
         '_bmad-output',
@@ -451,7 +585,13 @@ describe('party-mode read current session helper', () => {
       'utf8'
     );
 
-    const helper = path.join(ROOT, '_bmad', 'runtime', 'hooks', 'party-mode-read-current-session.cjs');
+    const helper = path.join(
+      ROOT,
+      '_bmad',
+      'runtime',
+      'hooks',
+      'party-mode-read-current-session.cjs'
+    );
     const result = spawnSync(process.execPath, [helper, '--project-root', root], {
       cwd: ROOT,
       encoding: 'utf8',
@@ -486,7 +626,13 @@ describe('party-mode read current session helper', () => {
       gate_profile_id: 'final_solution_task_list_100',
       status: 'launched',
       target_rounds_total: 100,
-      session_log_path: path.join(root, '_bmad-output', 'party-mode', 'sessions', `${staleSessionKey}.jsonl`),
+      session_log_path: path.join(
+        root,
+        '_bmad-output',
+        'party-mode',
+        'sessions',
+        `${staleSessionKey}.jsonl`
+      ),
     });
 
     fs.writeFileSync(
@@ -497,7 +643,13 @@ describe('party-mode read current session helper', () => {
           gate_profile_id: 'final_solution_task_list_100',
           target_rounds_total: 100,
           updated_at: '2026-04-17T13:00:00.000Z',
-          session_log_path: path.join(root, '_bmad-output', 'party-mode', 'sessions', `${startedOnlyKey}.jsonl`),
+          session_log_path: path.join(
+            root,
+            '_bmad-output',
+            'party-mode',
+            'sessions',
+            `${startedOnlyKey}.jsonl`
+          ),
         },
         null,
         2
@@ -527,7 +679,13 @@ describe('party-mode read current session helper', () => {
           gate_profile_id: 'quick_probe_20',
           target_rounds_total: 20,
           updated_at: '2026-04-17T12:30:00.000Z',
-          session_log_path: path.join(root, '_bmad-output', 'party-mode', 'sessions', `${strongEvidenceKey}.jsonl`),
+          session_log_path: path.join(
+            root,
+            '_bmad-output',
+            'party-mode',
+            'sessions',
+            `${strongEvidenceKey}.jsonl`
+          ),
         },
         null,
         2
@@ -559,7 +717,13 @@ describe('party-mode read current session helper', () => {
       'utf8'
     );
 
-    const helper = path.join(ROOT, '_bmad', 'runtime', 'hooks', 'party-mode-read-current-session.cjs');
+    const helper = path.join(
+      ROOT,
+      '_bmad',
+      'runtime',
+      'hooks',
+      'party-mode-read-current-session.cjs'
+    );
     const result = spawnSync(process.execPath, [helper, '--project-root', root], {
       cwd: ROOT,
       encoding: 'utf8',
@@ -611,7 +775,13 @@ describe('party-mode read current session helper', () => {
       'utf8'
     );
 
-    const helper = path.join(ROOT, '_bmad', 'runtime', 'hooks', 'party-mode-read-current-session.cjs');
+    const helper = path.join(
+      ROOT,
+      '_bmad',
+      'runtime',
+      'hooks',
+      'party-mode-read-current-session.cjs'
+    );
     const result = spawnSync(process.execPath, [helper, '--project-root', root], {
       cwd: ROOT,
       encoding: 'utf8',
@@ -664,7 +834,11 @@ describe('party-mode read current session helper', () => {
       audit_verdict_path: path.join(evidenceDir, `${sessionKey}.audit.json`),
       visible_output_capture_path: path.join(capturesDir, `${sessionKey}.tool-result.md`),
     });
-    fs.writeFileSync(path.join(capturesDir, `${sessionKey}.tool-result.md`), `${lines.join('\n')}\n`, 'utf8');
+    fs.writeFileSync(
+      path.join(capturesDir, `${sessionKey}.tool-result.md`),
+      `${lines.join('\n')}\n`,
+      'utf8'
+    );
     fs.writeFileSync(
       path.join(evidenceDir, `${sessionKey}.audit.json`),
       JSON.stringify(
@@ -682,7 +856,13 @@ describe('party-mode read current session helper', () => {
       'utf8'
     );
 
-    const helper = path.join(ROOT, '_bmad', 'runtime', 'hooks', 'party-mode-read-current-session.cjs');
+    const helper = path.join(
+      ROOT,
+      '_bmad',
+      'runtime',
+      'hooks',
+      'party-mode-read-current-session.cjs'
+    );
     const result = spawnSync(process.execPath, [helper, '--project-root', root], {
       cwd: ROOT,
       encoding: 'utf8',
@@ -721,7 +901,13 @@ describe('party-mode read current session helper', () => {
       'utf8'
     );
 
-    const helper = path.join(ROOT, '_bmad', 'runtime', 'hooks', 'party-mode-read-current-session.cjs');
+    const helper = path.join(
+      ROOT,
+      '_bmad',
+      'runtime',
+      'hooks',
+      'party-mode-read-current-session.cjs'
+    );
     const result = spawnSync(process.execPath, [helper, '--project-root', root], {
       cwd: ROOT,
       encoding: 'utf8',
@@ -745,9 +931,27 @@ describe('party-mode read current session helper', () => {
       gate_profile_id: 'final_solution_task_list_100',
       status: 'launched',
       target_rounds_total: 100,
-      session_log_path: path.join(root, '_bmad-output', 'party-mode', 'sessions', `${sessionKey}.jsonl`),
-      snapshot_path: path.join(root, '_bmad-output', 'party-mode', 'snapshots', `${sessionKey}.latest.json`),
-      audit_verdict_path: path.join(root, '_bmad-output', 'party-mode', 'evidence', `${sessionKey}.audit.json`),
+      session_log_path: path.join(
+        root,
+        '_bmad-output',
+        'party-mode',
+        'sessions',
+        `${sessionKey}.jsonl`
+      ),
+      snapshot_path: path.join(
+        root,
+        '_bmad-output',
+        'party-mode',
+        'snapshots',
+        `${sessionKey}.latest.json`
+      ),
+      audit_verdict_path: path.join(
+        root,
+        '_bmad-output',
+        'party-mode',
+        'evidence',
+        `${sessionKey}.audit.json`
+      ),
       visible_output_capture_path: path.join(
         root,
         '_bmad-output',
@@ -757,7 +961,13 @@ describe('party-mode read current session helper', () => {
       ),
     });
 
-    const helper = path.join(ROOT, '_bmad', 'runtime', 'hooks', 'party-mode-read-current-session.cjs');
+    const helper = path.join(
+      ROOT,
+      '_bmad',
+      'runtime',
+      'hooks',
+      'party-mode-read-current-session.cjs'
+    );
     const result = spawnSync(process.execPath, [helper, '--project-root', root], {
       cwd: ROOT,
       encoding: 'utf8',
@@ -803,9 +1013,27 @@ describe('party-mode read current session helper', () => {
       validation_status: 'PASS',
       target_rounds_total: 100,
       observed_visible_round_count: 100,
-      session_log_path: path.join(root, '_bmad-output', 'party-mode', 'sessions', `${completedKey}.jsonl`),
-      audit_verdict_path: path.join(root, '_bmad-output', 'party-mode', 'evidence', `${completedKey}.audit.json`),
-      visible_output_capture_path: path.join(root, '_bmad-output', 'party-mode', 'captures', `${completedKey}.tool-result.md`),
+      session_log_path: path.join(
+        root,
+        '_bmad-output',
+        'party-mode',
+        'sessions',
+        `${completedKey}.jsonl`
+      ),
+      audit_verdict_path: path.join(
+        root,
+        '_bmad-output',
+        'party-mode',
+        'evidence',
+        `${completedKey}.audit.json`
+      ),
+      visible_output_capture_path: path.join(
+        root,
+        '_bmad-output',
+        'party-mode',
+        'captures',
+        `${completedKey}.tool-result.md`
+      ),
       recorded_at: '2026-04-17T09:00:00.000Z',
     });
     fs.writeFileSync(
@@ -817,7 +1045,13 @@ describe('party-mode read current session helper', () => {
           current_batch_target_round: 100,
           target_rounds_total: 100,
           current_batch_status: 'pending',
-          session_log_path: path.join(root, '_bmad-output', 'party-mode', 'sessions', `${pendingKey}.jsonl`),
+          session_log_path: path.join(
+            root,
+            '_bmad-output',
+            'party-mode',
+            'sessions',
+            `${pendingKey}.jsonl`
+          ),
           updated_at: '2026-04-17T10:00:00.000Z',
         },
         null,
@@ -846,7 +1080,13 @@ describe('party-mode read current session helper', () => {
       'utf8'
     );
 
-    const helper = path.join(ROOT, '_bmad', 'runtime', 'hooks', 'party-mode-read-current-session.cjs');
+    const helper = path.join(
+      ROOT,
+      '_bmad',
+      'runtime',
+      'hooks',
+      'party-mode-read-current-session.cjs'
+    );
     const result = spawnSync(process.execPath, [helper, '--project-root', root], {
       cwd: ROOT,
       encoding: 'utf8',

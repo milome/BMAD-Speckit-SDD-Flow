@@ -77,11 +77,11 @@ describe('main-agent long-run wall-clock soak', () => {
         [
           "const fs = require('node:fs');",
           "const path = require('node:path');",
-          "const tickDir = process.env.BMAD_REAL_DEV_TICK_DIR;",
+          'const tickDir = process.env.BMAD_REAL_DEV_TICK_DIR;',
           "const tick = Number(process.env.BMAD_REAL_DEV_TICK || '0');",
           "const report = { packetId: `packet-${tick}`, status: 'done', filesChanged: ['src/example.js'], validationsRun: ['tick-test'], evidence: [`real-tick-${tick}`], downstreamContext: [] };",
           "const record = { packetId: report.packetId, taskReport: report, runLoopIngest: { exitCode: 0 }, evidence: { taskReportPath: path.join(tickDir, 'task-report.json'), runLoopIngestPath: path.join(tickDir, 'ingest.json') } };",
-          "fs.mkdirSync(tickDir, { recursive: true });",
+          'fs.mkdirSync(tickDir, { recursive: true });',
           "fs.writeFileSync(path.join(tickDir, 'task-report.json'), JSON.stringify(report));",
           "fs.writeFileSync(path.join(tickDir, 'tick-record.json'), JSON.stringify(record));",
         ].join('\n'),

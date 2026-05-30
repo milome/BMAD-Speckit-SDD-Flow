@@ -86,9 +86,24 @@ describe('version-lock', () => {
     };
     const storyA = path.join(TMP, 'story-a.md').replace(/\\/g, '/');
     const storyB = path.join(TMP, 'story-b.md').replace(/\\/g, '/');
-    const r1 = { ...base, run_id: 'story-a-old', timestamp: '2026-03-05T10:00:00Z', source_path: storyA };
-    const r2 = { ...base, run_id: 'story-b-new', timestamp: '2026-03-05T12:00:00Z', source_path: storyB };
-    const r3 = { ...base, run_id: 'story-a-new', timestamp: '2026-03-05T13:00:00Z', source_path: storyA };
+    const r1 = {
+      ...base,
+      run_id: 'story-a-old',
+      timestamp: '2026-03-05T10:00:00Z',
+      source_path: storyA,
+    };
+    const r2 = {
+      ...base,
+      run_id: 'story-b-new',
+      timestamp: '2026-03-05T12:00:00Z',
+      source_path: storyB,
+    };
+    const r3 = {
+      ...base,
+      run_id: 'story-a-new',
+      timestamp: '2026-03-05T13:00:00Z',
+      source_path: storyA,
+    };
     fs.writeFileSync(path.join(TMP, 'a-old.json'), JSON.stringify(r1), 'utf-8');
     fs.writeFileSync(path.join(TMP, 'b-new.json'), JSON.stringify(r2), 'utf-8');
     fs.writeFileSync(path.join(TMP, 'a-new.json'), JSON.stringify(r3), 'utf-8');

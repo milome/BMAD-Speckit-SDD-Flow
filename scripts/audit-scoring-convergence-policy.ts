@@ -88,8 +88,8 @@ function hashesAreFresh(input: AuditScoringConvergenceInput): boolean {
   const auditHash = normalized(input.auditReportHash);
   return Boolean(
     auditHash &&
-      normalized(input.scoreAttemptAuditReportHash) === auditHash &&
-      normalized(input.scoreReceipt?.scoreRecordHash)
+    normalized(input.scoreAttemptAuditReportHash) === auditHash &&
+    normalized(input.scoreReceipt?.scoreRecordHash)
   );
 }
 
@@ -170,9 +170,10 @@ export function evaluateAuditScoringConvergence(
     normalized(input.auditReportHash) === normalized(input.scoreAttemptAuditReportHash);
   const sameDimensionContract = dimensionContractMatches(input);
   if (blockers.length > 0) {
-    nextAction = sameAuditHash && sameDimensionContract
-      ? 'rerun_score_materialization'
-      : 'rerun_audit_with_score_contract';
+    nextAction =
+      sameAuditHash && sameDimensionContract
+        ? 'rerun_score_materialization'
+        : 'rerun_audit_with_score_contract';
   }
 
   return {

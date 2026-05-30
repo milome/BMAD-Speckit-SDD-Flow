@@ -360,7 +360,8 @@ describe('governance remediation runner', () => {
       const command = [
         'npx',
         'ts-node',
-        '--project', 'tsconfig.node.json',
+        '--project',
+        'tsconfig.node.json',
         '--transpile-only',
         'scripts/governance-remediation-runner.ts',
         '--projectRoot',
@@ -416,9 +417,7 @@ describe('governance remediation runner', () => {
       expect(written).toContain(
         '- Provider Recommended Skill Chain: provider-recommended-skill, code-reviewer'
       );
-      expect(written).toContain(
-        '- Provider Recommended Subagent Roles: provider-reviewer'
-      );
+      expect(written).toContain('- Provider Recommended Subagent Roles: provider-reviewer');
       expect(written).toContain(
         'provider-recommended-skill [source=model-provider; confidence=high;'
       );
@@ -426,9 +425,7 @@ describe('governance remediation runner', () => {
       expect(written).toContain('- Skill Chain:');
       expect(written).toContain('code-reviewer');
       expect(written).toContain('speckit-workflow');
-      expect(written).toContain(
-        '- Subagent Roles: provider-reviewer, critical-auditor'
-      );
+      expect(written).toContain('- Subagent Roles: provider-reviewer, critical-auditor');
     } finally {
       fixture.cleanup();
     }
@@ -458,18 +455,14 @@ describe('governance remediation runner', () => {
       expect(written).toContain(
         '- Provider Recommended Skill Chain: provider-recommended-skill, code-reviewer'
       );
-      expect(written).toContain(
-        '- Provider Recommended Subagent Roles: provider-reviewer'
-      );
+      expect(written).toContain('- Provider Recommended Subagent Roles: provider-reviewer');
       expect(written).toContain(
         '  - provider-reviewer [source=model-provider; confidence=medium; consumed=yes; reason=Provider wants a reviewer role preserved.; filteredBecause=(none)]'
       );
       expect(written).toContain('- Skill Chain:');
       expect(written).toContain('code-reviewer');
       expect(written).toContain('speckit-workflow');
-      expect(written).toContain(
-        '- Subagent Roles: provider-reviewer, critical-auditor'
-      );
+      expect(written).toContain('- Subagent Roles: provider-reviewer, critical-auditor');
       expect(result.executionIntentCandidate?.skillChain).toEqual([
         'provider-recommended-skill',
         'code-reviewer',
@@ -487,7 +480,9 @@ describe('governance remediation runner', () => {
         'provider-reviewer',
         'critical-auditor',
       ]);
-      expect(result.executionIntentCandidate?.providerRecommendationItems.skills?.[0]).toMatchObject({
+      expect(
+        result.executionIntentCandidate?.providerRecommendationItems.skills?.[0]
+      ).toMatchObject({
         value: 'provider-recommended-skill',
         source: 'model-provider',
         reason: 'Provider wants a focused remediation lane.',

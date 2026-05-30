@@ -1,10 +1,4 @@
-export type RuntimeRunStatus =
-  | 'pending'
-  | 'running'
-  | 'passed'
-  | 'failed'
-  | 'vetoed'
-  | 'skipped';
+export type RuntimeRunStatus = 'pending' | 'running' | 'passed' | 'failed' | 'vetoed' | 'skipped';
 
 export interface RuntimeScopeRef {
   story_key?: string;

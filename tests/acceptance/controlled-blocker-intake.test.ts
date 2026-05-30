@@ -2,9 +2,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import {
-  appendControlEventAndReplay,
-} from '../../scripts/requirement-record-control-store';
+import { appendControlEventAndReplay } from '../../scripts/requirement-record-control-store';
 
 type JsonObject = Record<string, unknown>;
 
@@ -37,14 +35,17 @@ function baseRecord(): JsonObject {
         confirmedAt: '2026-05-28T00:00:00.000Z',
         confirmedBy: 'test',
         sourcePath: 'docs/requirements/blocker-intake.md',
-        sourceDocumentHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+        sourceDocumentHash:
+          'sha256:1111111111111111111111111111111111111111111111111111111111111111',
         implementationConfirmationHash:
           'sha256:2222222222222222222222222222222222222222222222222222222222222222',
         confirmationPageHash:
           'sha256:3333333333333333333333333333333333333333333333333333333333333333',
         confirmationText: 'confirmed',
-        renderReportPath: '_bmad-output/runtime/requirement-records/REQSET-BLOCKER-INTAKE/confirmation/report.json',
-        htmlPath: '_bmad-output/runtime/requirement-records/REQSET-BLOCKER-INTAKE/confirmation/confirmation.html',
+        renderReportPath:
+          '_bmad-output/runtime/requirement-records/REQSET-BLOCKER-INTAKE/confirmation/report.json',
+        htmlPath:
+          '_bmad-output/runtime/requirement-records/REQSET-BLOCKER-INTAKE/confirmation/confirmation.html',
       },
     ],
     currentMentalModel: 'implementation_readiness',

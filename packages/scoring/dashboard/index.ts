@@ -72,9 +72,6 @@ export type {
 export { renderDashboardSnapshotMarkdown, writeDashboardSnapshotFiles } from './snapshot';
 export type { WriteDashboardSnapshotOptions } from './snapshot';
 export { startLiveDashboardServer } from './live-server';
-export type {
-  LiveDashboardServerHandle,
-  LiveDashboardServerOptions,
-} from './live-server';
+export type { LiveDashboardServerHandle, LiveDashboardServerOptions } from './live-server';
 export { runRuntimeMcpServer } from './mcp-server';
 export type { RuntimeMcpServerOptions } from './mcp-server';

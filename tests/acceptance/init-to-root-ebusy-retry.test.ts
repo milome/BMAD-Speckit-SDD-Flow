@@ -17,7 +17,7 @@ describe('init-to-root Windows EBUSY retry', () => {
         shimPath,
         [
           "const fs = require('node:fs');",
-          "const original = fs.copyFileSync;",
+          'const original = fs.copyFileSync;',
           "const suffix = 'step-e-02-review.md';",
           'let injected = false;',
           'fs.copyFileSync = function patchedCopyFileSync(src, dest, ...rest) {',
@@ -37,7 +37,13 @@ describe('init-to-root Windows EBUSY retry', () => {
 
       execFileSync(
         process.execPath,
-        [join(ROOT, 'scripts', 'init-to-root.js'), target, '--agent', 'cursor', '--no-package-json'],
+        [
+          join(ROOT, 'scripts', 'init-to-root.js'),
+          target,
+          '--agent',
+          'cursor',
+          '--no-package-json',
+        ],
         {
           cwd: ROOT,
           stdio: 'pipe',

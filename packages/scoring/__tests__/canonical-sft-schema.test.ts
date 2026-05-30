@@ -30,9 +30,9 @@ describe('canonical sft schemas', () => {
         artifact_refs: [
           {
             path: 'docs/BUGFIX_sample.md',
-            content_hash: 'sha256:content'
-          }
-        ]
+            content_hash: 'sha256:content',
+          },
+        ],
       },
       messages: [
         { role: 'system', content: 'You are a senior coding agent.' },
@@ -41,23 +41,23 @@ describe('canonical sft schemas', () => {
           content: 'Fix the failing implementation and preserve behavior.',
           metadata: {
             legacy_instruction: 'Fix the failing implementation and preserve behavior.',
-            legacy_input: 'Current implementation:\nfoo()'
-          }
+            legacy_input: 'Current implementation:\nfoo()',
+          },
         },
         {
           role: 'assistant',
           content: 'Updated implementation',
           metadata: {
-            legacy_output: 'Updated implementation'
-          }
-        }
+            legacy_output: 'Updated implementation',
+          },
+        },
       ],
       metadata: {
         schema_targets: ['openai_chat', 'hf_conversational'],
         sample_kind: 'implementation',
         host: 'cursor',
         host_kind: 'cursor',
-        language: 'ts'
+        language: 'ts',
       },
       quality: {
         acceptance_decision: 'accepted',
@@ -73,7 +73,7 @@ describe('canonical sft schemas', () => {
         dedupe_cluster_id: null,
         safety_flags: [],
         rejection_reasons: [],
-        warnings: []
+        warnings: [],
       },
       provenance: {
         base_commit_hash: 'abc123',
@@ -84,37 +84,37 @@ describe('canonical sft schemas', () => {
         generator_version: 'candidate-builder.v2',
         schema_version: 'canonical-sft-sample.v1',
         lineage: ['score.written'],
-        generated_at: '2026-03-31T00:00:00.000Z'
+        generated_at: '2026-03-31T00:00:00.000Z',
       },
       split: {
         assignment: 'train',
         seed: 42,
         strategy: 'story_hash_v1',
-        group_key: 'story-15-1'
+        group_key: 'story-15-1',
       },
       redaction: {
         status: 'clean',
         applied_rules: [],
         findings: [],
-        redacted_fields: []
+        redacted_fields: [],
       },
       export_compatibility: {
         openai_chat: {
           compatible: true,
           reasons: [],
-          warnings: []
+          warnings: [],
         },
         hf_conversational: {
           compatible: true,
           reasons: [],
-          warnings: []
+          warnings: [],
         },
         hf_tool_calling: {
           compatible: false,
           reasons: ['missing tool schema'],
-          warnings: []
-        }
-      }
+          warnings: [],
+        },
+      },
     };
 
     expect(validate(sample)).toBe(true);
@@ -143,11 +143,11 @@ describe('canonical sft schemas', () => {
       filter_settings: {
         min_score: 90,
         drop_no_code_pair: true,
-        max_tokens: 4096
+        max_tokens: 4096,
       },
       split: {
         seed: 42,
-        strategy: 'story_hash_v1'
+        strategy: 'story_hash_v1',
       },
       counts: {
         total_candidates: 12,
@@ -157,7 +157,7 @@ describe('canonical sft schemas', () => {
         blocked: 1,
         train: 7,
         validation: 2,
-        test: 1
+        test: 1,
       },
       provider_summary: {},
       redaction_summary: {
@@ -177,8 +177,8 @@ describe('canonical sft schemas', () => {
         test_path: 'test.openai_chat.jsonl',
         manifest_path: 'manifest.json',
         validation_report_path: 'validation-report.json',
-        rejection_report_path: 'rejection-report.json'
-      }
+        rejection_report_path: 'rejection-report.json',
+      },
     };
 
     expect(validate(manifest)).toBe(true);

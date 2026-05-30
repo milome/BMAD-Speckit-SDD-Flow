@@ -59,16 +59,28 @@ function mappingFromRequirementRecord(
   projectRoot: string,
   recordEntry: Record<string, unknown>
 ): UserStoryMappingItem | null {
-  const recordPath = text(recordEntry.recordPath ?? recordEntry.path ?? recordEntry.controlRecordPath);
+  const recordPath = text(
+    recordEntry.recordPath ?? recordEntry.path ?? recordEntry.controlRecordPath
+  );
   const requirementSetId = text(recordEntry.requirementSetId ?? recordEntry.recordId);
   const absoluteRecordPath = recordPath
     ? path.resolve(projectRoot, normalizePathForRecord(recordPath))
     : requirementSetId
-      ? path.join(projectRoot, '_bmad-output', 'runtime', 'requirement-records', requirementSetId, 'requirement-record.json')
+      ? path.join(
+          projectRoot,
+          '_bmad-output',
+          'runtime',
+          'requirement-records',
+          requirementSetId,
+          'requirement-record.json'
+        )
       : '';
   if (!absoluteRecordPath || !fs.existsSync(absoluteRecordPath)) return null;
   try {
-    const record = JSON.parse(fs.readFileSync(absoluteRecordPath, 'utf8')) as Record<string, unknown>;
+    const record = JSON.parse(fs.readFileSync(absoluteRecordPath, 'utf8')) as Record<
+      string,
+      unknown
+    >;
     const flow = text(record.flow ?? record.entryFlow);
     if (flow !== 'story' && flow !== 'bugfix' && flow !== 'standalone_tasks') return null;
     const bindings = Array.isArray(record.taskBindings)
@@ -83,7 +95,11 @@ function mappingFromRequirementRecord(
       requirementId: text(record.recordId) || requirementSetId,
       sourceType: flow === 'bugfix' ? 'bugfix' : flow === 'standalone_tasks' ? 'standalone' : 'prd',
       epicId: text(activeBinding.epicId ?? record.epicId) || 'unscoped',
-      storyId: text(activeBinding.storyId ?? record.storyId) || text(record.recordId) || requirementSetId || 'unscoped',
+      storyId:
+        text(activeBinding.storyId ?? record.storyId) ||
+        text(record.recordId) ||
+        requirementSetId ||
+        'unscoped',
       flow,
       sprintId: text(activeBinding.sprintId ?? record.sprintId) || 'unscoped',
       allowedWriteScope:
@@ -111,14 +127,18 @@ function mappingFromRequirementRecord(
   }
 }
 
-function entriesFromRequirementRecordIndex(index: Record<string, unknown>): Record<string, unknown>[] {
+function entriesFromRequirementRecordIndex(
+  index: Record<string, unknown>
+): Record<string, unknown>[] {
   const records = index.records;
   if (Array.isArray(records)) {
     return records.filter((item): item is Record<string, unknown> => Boolean(object(item)));
   }
   if (records && typeof records === 'object') {
     return Object.entries(records as Record<string, unknown>).map(([id, value]) =>
-      typeof value === 'string' ? { requirementSetId: id, recordPath: value } : { requirementSetId: id, ...(object(value) ?? {}) }
+      typeof value === 'string'
+        ? { requirementSetId: id, recordPath: value }
+        : { requirementSetId: id, ...(object(value) ?? {}) }
     );
   }
   return [];
@@ -145,7 +165,8 @@ export function readUserStoryMappingIndexOrDefault(projectRoot: string): UserSto
   if (!fs.existsSync(file)) {
     return defaultUserStoryMappingIndex();
   }
-  const parsed = JSON.parse(fs.readFileSync(file, 'utf8')) as UserStoryMappingIndex & Record<string, unknown>;
+  const parsed = JSON.parse(fs.readFileSync(file, 'utf8')) as UserStoryMappingIndex &
+    Record<string, unknown>;
   if (!Array.isArray(parsed.items)) {
     return readRequirementRecordBackedIndex(projectRoot, file, parsed);
   }
@@ -200,7 +221,9 @@ function scoreRuntimeMatch(
   }
   if (runtimeContext?.artifactRoot) {
     const artifactRoot = runtimeContext.artifactRoot.toLowerCase();
-    score += stringList(item.allowedWriteScope).some((scope) => artifactRoot.includes(scope.toLowerCase()))
+    score += stringList(item.allowedWriteScope).some((scope) =>
+      artifactRoot.includes(scope.toLowerCase())
+    )
       ? 20
       : 0;
   }

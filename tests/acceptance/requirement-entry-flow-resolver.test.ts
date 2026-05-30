@@ -6,9 +6,11 @@ import {
 import './main-agent-entryflow-traceability-check.test';
 
 const EVIDENCE_SOURCES: ImplementationEntryEvidenceSources = {
-  readinessReportPath: '_bmad-output/runtime/requirement-records/REQ-ENTRYFLOW/implementation-readiness-report.json',
+  readinessReportPath:
+    '_bmad-output/runtime/requirement-records/REQ-ENTRYFLOW/implementation-readiness-report.json',
   remediationArtifactPath: null,
-  executionRecordPath: '_bmad-output/runtime/requirement-records/REQ-ENTRYFLOW/requirement-record.json',
+  executionRecordPath:
+    '_bmad-output/runtime/requirement-records/REQ-ENTRYFLOW/requirement-record.json',
   authoritativeAuditReportPath: null,
 };
 
@@ -19,7 +21,8 @@ describe('requirement entry flow resolver', () => {
       readinessStatus: 'ready_clean',
       complexity: 'medium',
       evidenceSources: EVIDENCE_SOURCES,
-      semanticFingerprint: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+      semanticFingerprint:
+        'sha256:1111111111111111111111111111111111111111111111111111111111111111',
       evaluatedAt: '2026-05-28T00:00:00.000Z',
     });
 

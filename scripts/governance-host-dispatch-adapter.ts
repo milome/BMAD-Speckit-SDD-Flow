@@ -1,9 +1,7 @@
 import * as fs from 'node:fs';
 import { spawn, spawnSync, type SpawnOptions, type SpawnSyncReturns } from 'node:child_process';
 import { readGovernanceRemediationConfig } from './governance-remediation-config';
-import type {
-  GovernanceHostKind,
-} from './governance-remediation-runner';
+import type { GovernanceHostKind } from './governance-remediation-runner';
 import type {
   GovernancePacketDispatchAccepted,
   GovernancePacketDispatchAdapter,
@@ -96,7 +94,10 @@ function failed(
   };
 }
 
-function defaultClaudeLaunchSpec(projectRoot: string, startupTimeoutMs?: number): GovernanceHostLaunchSpec {
+function defaultClaudeLaunchSpec(
+  projectRoot: string,
+  startupTimeoutMs?: number
+): GovernanceHostLaunchSpec {
   return {
     hostKind: 'claude',
     mode: 'packet-stdin',
@@ -132,10 +133,7 @@ function resolveHostLaunchSpec(
   if (command && command.trim() !== '') {
     return {
       hostKind,
-      mode:
-        modeRaw === 'packet-stdin' || modeRaw === 'json-stdout'
-          ? modeRaw
-          : 'json-stdout',
+      mode: modeRaw === 'packet-stdin' || modeRaw === 'json-stdout' ? modeRaw : 'json-stdout',
       command,
       args: parseArgsJson(argsJson, hostKind),
       startupTimeoutMs: envStartupTimeoutMs ?? 1500,
@@ -248,7 +246,7 @@ function spawnSyncJsonLaunch(
     args: spec.args,
     exitCode: spawnResult.status,
     stderr,
-    ...(('metadata' in parsed && parsed.metadata && typeof parsed.metadata === 'object')
+    ...('metadata' in parsed && parsed.metadata && typeof parsed.metadata === 'object'
       ? parsed.metadata
       : {}),
   };
@@ -372,10 +370,13 @@ export async function launchGovernanceExecutionViaHost(
     config.execution?.interactiveMode === 'main-agent' &&
     env.BMAD_GOVERNANCE_ALLOW_AUTONOMOUS_FALLBACK !== '1'
   ) {
-    return rejected('autonomous governance dispatch disabled unless explicit fallback mode is enabled', {
-      interactiveMode: config.execution?.interactiveMode,
-      fallbackAutonomousMode: config.execution?.fallbackAutonomousMode,
-    });
+    return rejected(
+      'autonomous governance dispatch disabled unless explicit fallback mode is enabled',
+      {
+        interactiveMode: config.execution?.interactiveMode,
+        fallbackAutonomousMode: config.execution?.fallbackAutonomousMode,
+      }
+    );
   }
   if (config.execution?.fallbackAutonomousMode === false) {
     return rejected('autonomous fallback dispatch is disabled by configuration', {

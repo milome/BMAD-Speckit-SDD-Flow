@@ -60,8 +60,14 @@ interface SampleCodePair {
   chunkKey: string | null;
 }
 
-function inferSampleKind(record: RunScoreRecord, codePairs: SampleCodePair[]): 'implementation' | 'documentation' {
-  if (record.stage === 'implement' && codePairs.some((pair) => pair.input.trim() || pair.output.trim())) {
+function inferSampleKind(
+  record: RunScoreRecord,
+  codePairs: SampleCodePair[]
+): 'implementation' | 'documentation' {
+  if (
+    record.stage === 'implement' &&
+    codePairs.some((pair) => pair.input.trim() || pair.output.trim())
+  ) {
     return 'implementation';
   }
   return 'documentation';
@@ -157,8 +163,10 @@ function createBuildCacheKey(
       source_hash: record.source_hash ?? null,
       patch_ref: record.patch_ref ?? null,
       patch_snapshot_path: record.patch_snapshot_path ?? null,
-      tool_trace_ref: (record as RunScoreRecord & { tool_trace_ref?: string }).tool_trace_ref ?? null,
-      tool_trace_path: (record as RunScoreRecord & { tool_trace_path?: string }).tool_trace_path ?? null,
+      tool_trace_ref:
+        (record as RunScoreRecord & { tool_trace_ref?: string }).tool_trace_ref ?? null,
+      tool_trace_path:
+        (record as RunScoreRecord & { tool_trace_path?: string }).tool_trace_path ?? null,
     })),
   });
 }
@@ -261,7 +269,7 @@ function parsePatchContentToUnits(patchContent: string): PatchChangeUnit[] {
 
     if (line.startsWith('+++ ')) {
       const newPath = normalizePatchPath(line.slice(4));
-      currentFilePath = newPath !== '/dev/null' ? newPath : pendingOldPath ?? currentFilePath;
+      currentFilePath = newPath !== '/dev/null' ? newPath : (pendingOldPath ?? currentFilePath);
       continue;
     }
 
@@ -329,12 +337,7 @@ function buildMessagesWithToolTrace(
     return baseMessages;
   }
 
-  return [
-    baseMessages[0]!,
-    baseMessages[1]!,
-    ...toolTrace.messages,
-    baseMessages[2]!,
-  ];
+  return [baseMessages[0]!, baseMessages[1]!, ...toolTrace.messages, baseMessages[2]!];
 }
 
 function estimateCodePairTokens(
@@ -552,7 +555,14 @@ function resolveCodePairsForRecord(
 
   const runtimeDiff = loadRuntimeDiff(record.base_commit_hash, cwd);
   if (runtimeDiff != null) {
-    return buildCodePairsFromPatchContent(runtimeDiff, instruction, assistantTarget, maxTokens, null, toolTrace);
+    return buildCodePairsFromPatchContent(
+      runtimeDiff,
+      instruction,
+      assistantTarget,
+      maxTokens,
+      null,
+      toolTrace
+    );
   }
 
   return [
@@ -580,7 +590,9 @@ function latestGovernanceHistoryEntry(record: RunScoreRecord): GovernanceRerunHi
   if (history.length === 0) {
     return null;
   }
-  return [...history].sort((left, right) => right.timestamp.localeCompare(left.timestamp))[0] ?? null;
+  return (
+    [...history].sort((left, right) => right.timestamp.localeCompare(left.timestamp))[0] ?? null
+  );
 }
 
 function resolveCanonicalProviderFacts(record: RunScoreRecord): {
@@ -593,7 +605,8 @@ function resolveCanonicalProviderFacts(record: RunScoreRecord): {
     provider_mode?: string;
   };
   const latestGovernanceHistory = latestGovernanceHistoryEntry(record);
-  const hostKind = record.host_kind ?? record.host ?? latestGovernanceHistory?.host_kind ?? undefined;
+  const hostKind =
+    record.host_kind ?? record.host ?? latestGovernanceHistory?.host_kind ?? undefined;
   return {
     providerId:
       derived.provider_id ??
@@ -624,7 +637,9 @@ function buildCanonicalSample(
   const providerFacts = resolveCanonicalProviderFacts(record);
   const split = assignDeterministicSplit({
     seed: options.splitSeed ?? 42,
-    groupKey: parsedStory ? `epic-${parsedStory.epicId}/story-${parsedStory.storyId}` : record.run_id,
+    groupKey: parsedStory
+      ? `epic-${parsedStory.epicId}/story-${parsedStory.storyId}`
+      : record.run_id,
   });
 
   const lineage = [record.run_id, `${record.run_id}:${record.stage}`];
@@ -681,7 +696,9 @@ function buildCanonicalSample(
     messages,
     ...(toolTrace ? { tools: toolTrace.tools } : {}),
     metadata: {
-      schema_targets: toolTrace ? ['openai_chat', 'hf_tool_calling'] : ['openai_chat', 'hf_conversational'],
+      schema_targets: toolTrace
+        ? ['openai_chat', 'hf_tool_calling']
+        : ['openai_chat', 'hf_conversational'],
       sample_kind: sampleKind,
       ...(record.host ? { host: record.host } : {}),
       ...(providerFacts.hostKind ? { host_kind: providerFacts.hostKind } : {}),
@@ -689,14 +706,17 @@ function buildCanonicalSample(
       notes: [
         codePair.input || codePair.output ? 'legacy_flat_compat' : 'legacy_instruction_only',
         ...(toolTrace ? ['tool_trace_injected'] : []),
-        ...(toolTrace ? [`tool_trace_summary=${JSON.stringify(summarizeToolTrace(toolTrace))}`] : []),
+        ...(toolTrace
+          ? [`tool_trace_summary=${JSON.stringify(summarizeToolTrace(toolTrace))}`]
+          : []),
       ],
     },
     quality: {
       acceptance_decision: 'accepted',
       phase_score: record.phase_score,
       raw_phase_score:
-        (record as RunScoreRecord & { raw_phase_score?: number }).raw_phase_score ?? record.phase_score,
+        (record as RunScoreRecord & { raw_phase_score?: number }).raw_phase_score ??
+        record.phase_score,
       dimension_scores: record.dimension_scores
         ? Object.fromEntries(record.dimension_scores.map((score) => [score.dimension, score.score]))
         : undefined,
@@ -798,7 +818,14 @@ export function buildCanonicalCandidatesFromRecordsSync(
     const instruction = extractInstruction(sourceContent) ?? '';
     const assistantTarget = extractAssistantTarget(sourceContent) ?? '';
     const toolTrace = loadToolTrace(record, cwd);
-    const codePairs = resolveCodePairsForRecord(record, instruction, assistantTarget, cwd, maxTokens, toolTrace);
+    const codePairs = resolveCodePairsForRecord(
+      record,
+      instruction,
+      assistantTarget,
+      cwd,
+      maxTokens,
+      toolTrace
+    );
     const sampleKind = inferSampleKind(record, codePairs);
 
     for (const codePair of codePairs) {

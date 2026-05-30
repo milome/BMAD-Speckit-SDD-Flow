@@ -44,8 +44,10 @@ export interface PromptRoutingGovernanceInput {
   skillInventory?: ExecutionSkillInventoryEntry[] | null;
 }
 
-export interface ResolvePromptHintUsageFromTextInput
-  extends Omit<PromptRoutingGovernanceInput, 'promptHints'> {
+export interface ResolvePromptHintUsageFromTextInput extends Omit<
+  PromptRoutingGovernanceInput,
+  'promptHints'
+> {
   projectRoot: string;
   promptText?: string | null;
 }
@@ -120,22 +122,20 @@ function normalizeSkillAvailability(input: {
   skillInventory?: ExecutionSkillInventoryEntry[] | null;
 }): { availableSkills: string[]; skillPaths: string[] } {
   const availableSkills = unique([
-    ...((input.availableSkills ?? []).map((skill) => normalizeSkillId(skill)).filter(Boolean)),
-    ...((input.skillInventory ?? [])
-      .map((entry) => normalizeSkillId(entry.skillId))
-      .filter(Boolean)),
-    ...((input.skillPaths ?? [])
+    ...(input.availableSkills ?? []).map((skill) => normalizeSkillId(skill)).filter(Boolean),
+    ...(input.skillInventory ?? []).map((entry) => normalizeSkillId(entry.skillId)).filter(Boolean),
+    ...(input.skillPaths ?? [])
       .map((skillPath) => skillIdFromPath(skillPath))
-      .filter((skillId): skillId is string => Boolean(skillId))),
-    ...((input.skillInventory ?? [])
+      .filter((skillId): skillId is string => Boolean(skillId)),
+    ...(input.skillInventory ?? [])
       .map((entry) => (entry.path ? skillIdFromPath(entry.path) : null))
-      .filter((skillId): skillId is string => Boolean(skillId))),
+      .filter((skillId): skillId is string => Boolean(skillId)),
   ]);
   const skillPaths = unique([
-    ...((input.skillPaths ?? []).map((skillPath) => normalizeSkillPath(skillPath)).filter(Boolean)),
-    ...((input.skillInventory ?? [])
+    ...(input.skillPaths ?? []).map((skillPath) => normalizeSkillPath(skillPath)).filter(Boolean),
+    ...(input.skillInventory ?? [])
       .map((entry) => (entry.path ? normalizeSkillPath(entry.path) : ''))
-      .filter(Boolean)),
+      .filter(Boolean),
   ]);
   return { availableSkills, skillPaths };
 }
@@ -160,7 +160,12 @@ function deriveSemanticSkillFeatures(entry: {
   };
 
   const collectScoredValues = <TValue extends string>(
-    entries: Array<{ value: TValue; priority: number; weight: number; rule: { tokensAny?: string[]; phrasesAny?: string[] } }>
+    entries: Array<{
+      value: TValue;
+      priority: number;
+      weight: number;
+      rule: { tokensAny?: string[]; phrasesAny?: string[] };
+    }>
   ): { values: TValue[]; scores: Record<string, number> } => {
     const scored = entries
       .filter((entryRule) => matchesRule(entryRule.rule))
@@ -299,9 +304,7 @@ function resolveSkillAvailability(input: {
           candidate.summary ?? '',
         ].join(' ')
       );
-      const overlapTokens = requestedTokens.filter((token) =>
-        candidateTokens.includes(token)
-      );
+      const overlapTokens = requestedTokens.filter((token) => candidateTokens.includes(token));
       score += overlapTokens.length * 250;
       if (requestedTokens.length > 0 && overlapTokens.length === requestedTokens.length) {
         score += 500;
@@ -623,11 +626,7 @@ function selectInteractionMode(input: {
   if (roles.has('party-mode')) {
     return 'party-mode';
   }
-  if (
-    input.action === 'review' ||
-    roles.has('critical-auditor') ||
-    roles.has('code-reviewer')
-  ) {
+  if (input.action === 'review' || roles.has('critical-auditor') || roles.has('code-reviewer')) {
     return 'review-first';
   }
   if (input.action === 'patch' || input.action === 'implement' || input.action === 'fix') {
@@ -664,7 +663,9 @@ function buildSkillChain(input: {
 function buildExecutionIntentCandidate(input: {
   promptHints?: PromptRoutingHints | null;
   modelHints?: PromptRoutingHints | null;
-  filteredModelHints?: ReturnType<typeof filterModelGovernanceHintCandidate>['filteredHints'] | null;
+  filteredModelHints?:
+    | ReturnType<typeof filterModelGovernanceHintCandidate>['filteredHints']
+    | null;
   availableSkills?: string[] | null;
   skillPaths?: string[] | null;
   skillInventory?: ExecutionSkillInventoryEntry[] | null;
@@ -782,12 +783,11 @@ function buildExecutionIntentCandidate(input: {
     semanticFeatureTopN: semanticTopN,
     ...(reviewerRouteExplainability ? { reviewerRouteExplainability } : {}),
     skillAvailabilityMode:
-      skillAvailability.skillAvailabilityMode === 'not-provided'
-        ? 'not-provided'
-        : 'advisory-only',
+      skillAvailability.skillAvailabilityMode === 'not-provided' ? 'not-provided' : 'advisory-only',
     interactionMode: semanticInteractionMode ?? interactionMode,
     researchPolicy:
-      selectResearchPolicy(input.promptHints, input.modelHints) === 'allowed' && semanticResearchPolicy
+      selectResearchPolicy(input.promptHints, input.modelHints) === 'allowed' &&
+      semanticResearchPolicy
         ? (semanticResearchPolicy as PromptRoutingHints['researchPolicy'])
         : selectResearchPolicy(input.promptHints, input.modelHints),
     delegationPreference:
@@ -868,19 +868,18 @@ function buildExecutionPlanDecision(
     delegationPreference: candidate.delegationPreference,
     governanceConstraints,
     blockedByGovernance,
-    rationale:
-      [
-        governanceConstraints.length > 0
-          ? `${candidate.rationale} Governance constraints preserved during execution planning.`
-          : `${candidate.rationale} No governance constraints altered the execution plan.`,
-        skillAvailability.skillAvailabilityMode === 'execution-filtered'
-          ? 'Available skill inventory filtered the local execution chain without creating new governance blockers.'
-          : skillAvailability.skillAvailabilityMode === 'not-provided'
-            ? 'No skill inventory was provided, so local execution chain filtering was skipped.'
-            : null,
-      ]
-        .filter((line): line is string => Boolean(line))
-        .join(' '),
+    rationale: [
+      governanceConstraints.length > 0
+        ? `${candidate.rationale} Governance constraints preserved during execution planning.`
+        : `${candidate.rationale} No governance constraints altered the execution plan.`,
+      skillAvailability.skillAvailabilityMode === 'execution-filtered'
+        ? 'Available skill inventory filtered the local execution chain without creating new governance blockers.'
+        : skillAvailability.skillAvailabilityMode === 'not-provided'
+          ? 'No skill inventory was provided, so local execution chain filtering was skipped.'
+          : null,
+    ]
+      .filter((line): line is string => Boolean(line))
+      .join(' '),
     advisoryOnly: false,
   };
   assertValidExecutionPlanDecision(decision);
@@ -979,9 +978,7 @@ function evaluateHints(
   };
 }
 
-export function resolvePromptHintUsage(
-  input: PromptRoutingGovernanceInput
-): PromptHintUsageRecord {
+export function resolvePromptHintUsage(input: PromptRoutingGovernanceInput): PromptHintUsageRecord {
   const filteredModel = input.modelHintsCandidate
     ? filterModelGovernanceHintCandidate(input.modelHintsCandidate, {
         gateFailure: input.gateFailure,
@@ -1040,10 +1037,7 @@ export function resolvePromptHintUsage(
     skillPaths: input.skillPaths,
     skillInventory: input.skillInventory,
   });
-  record.executionPlanDecision = buildExecutionPlanDecision(
-    input,
-    record.executionIntentCandidate
-  );
+  record.executionPlanDecision = buildExecutionPlanDecision(input, record.executionIntentCandidate);
 
   record.hintIgnoredBecause = [...new Set(record.hintIgnoredBecause)];
   record.hintAppliedTo = [...new Set(record.hintAppliedTo)];

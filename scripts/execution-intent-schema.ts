@@ -571,13 +571,7 @@ const executionIntentBaseSchema = {
               {
                 type: 'object',
                 additionalProperties: false,
-                required: [
-                  'entryStage',
-                  'profile',
-                  'closeoutStage',
-                  'auditorScript',
-                  'scoreStage',
-                ],
+                required: ['entryStage', 'profile', 'closeoutStage', 'auditorScript', 'scoreStage'],
                 properties: {
                   entryStage: { type: 'string' },
                   profile: { type: 'string' },
@@ -641,9 +635,12 @@ export function assertValidExecutionIntentCandidate(
 ): asserts value is ExecutionIntentCandidate {
   if (!validateExecutionIntentCandidate(value)) {
     throw new Error(
-      `Invalid execution intent candidate: ${ajv.errorsText(validateExecutionIntentCandidate.errors, {
-        separator: '; ',
-      })}`
+      `Invalid execution intent candidate: ${ajv.errorsText(
+        validateExecutionIntentCandidate.errors,
+        {
+          separator: '; ',
+        }
+      )}`
     );
   }
 }

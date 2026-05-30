@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  readBmadHelpRoutingModel,
-} from './helpers/bmad-help-doc-helpers';
+import { readBmadHelpRoutingModel } from './helpers/bmad-help-doc-helpers';
 import { resolveImplementationEntryGate } from '../../scripts/runtime-governance';
 
 describe('bmad-help implementation block behavior', () => {

@@ -47,7 +47,8 @@ function sortKeysDeep(value: unknown): unknown {
   if (value === null || typeof value !== 'object') return value;
   if (Array.isArray(value)) return value.map(sortKeysDeep);
   const out: JsonObject = {};
-  for (const key of Object.keys(value as JsonObject).sort()) out[key] = sortKeysDeep((value as JsonObject)[key]);
+  for (const key of Object.keys(value as JsonObject).sort())
+    out[key] = sortKeysDeep((value as JsonObject)[key]);
   return out;
 }
 
@@ -64,7 +65,9 @@ function text(value: unknown): string {
 }
 
 function asObject(value: unknown): JsonObject | undefined {
-  return value && typeof value === 'object' && !Array.isArray(value) ? (value as JsonObject) : undefined;
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as JsonObject)
+    : undefined;
 }
 
 function readJson(file: string): JsonObject {
@@ -205,7 +208,9 @@ function resolveScoringPolicyRuleRoot(root: string): string {
 export function mainWriteRuntimePolicySnapshotAndRecoveryContext(argv: string[]): number {
   const args = parseArgs(argv);
   if (args.help) {
-    console.log('Usage: write-runtime-policy-snapshot-and-recovery-context --record-id <id> --requirement-set-id <id> [--json]');
+    console.log(
+      'Usage: write-runtime-policy-snapshot-and-recovery-context --record-id <id> --requirement-set-id <id> [--json]'
+    );
     return 0;
   }
   const root = path.resolve(args.cwd ?? process.cwd());
@@ -251,7 +256,9 @@ export function mainWriteRuntimePolicySnapshotAndRecoveryContext(argv: string[])
     recoveryContextPath: normalizePathForRecord(recoveryContextPath),
     runtimePolicySnapshotRef: ref,
   };
-  process.stdout.write(args.json ? `${JSON.stringify(output, null, 2)}\n` : `runtime_policy_snapshot=${snapshotHash}\n`);
+  process.stdout.write(
+    args.json ? `${JSON.stringify(output, null, 2)}\n` : `runtime_policy_snapshot=${snapshotHash}\n`
+  );
   return 0;
 }
 
@@ -259,7 +266,13 @@ if (require.main === module) {
   try {
     process.exitCode = mainWriteRuntimePolicySnapshotAndRecoveryContext(process.argv.slice(2));
   } catch (error) {
-    console.error(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : String(error) }, null, 2));
+    console.error(
+      JSON.stringify(
+        { ok: false, error: error instanceof Error ? error.message : String(error) },
+        null,
+        2
+      )
+    );
     process.exitCode = 2;
   }
 }

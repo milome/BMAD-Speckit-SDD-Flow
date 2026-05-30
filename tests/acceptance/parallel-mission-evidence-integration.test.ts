@@ -12,7 +12,8 @@ import {
 import { sha256Object } from '../../scripts/subagent-evidence-envelope';
 
 const SOURCE_HASH = 'sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570';
-const IMPLEMENTATION_HASH = 'sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a';
+const IMPLEMENTATION_HASH =
+  'sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a';
 const ARCHITECTURE_HASH = 'sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da';
 
 function sha256File(filePath: string): string {
@@ -24,7 +25,11 @@ function writeJson(filePath: string, value: unknown): void {
   writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
 }
 
-function artifact(root: string, artifactPath: string, relatedRequirementIds: string[] = ['MUST-048', 'NEG-037', 'EVD-047']) {
+function artifact(
+  root: string,
+  artifactPath: string,
+  relatedRequirementIds: string[] = ['MUST-048', 'NEG-037', 'EVD-047']
+) {
   return {
     artifactType: 'parallel_mission_node_evidence',
     sourceOfTruthRole: 'evidence',
@@ -84,7 +89,8 @@ function record(root: string, reportArtifactRefs: Record<string, unknown>[] = []
     architectureConfirmationStateChecks: [
       {
         decision: 'pass',
-        resolvedRecipeHash: 'sha256:da10b7ad044a705fb04be14c32a0062e9dc5e91012e5d267a435b83c3ba86b75',
+        resolvedRecipeHash:
+          'sha256:da10b7ad044a705fb04be14c32a0062e9dc5e91012e5d267a435b83c3ba86b75',
         stateTransition: { toStatus: 'active' },
       },
     ],
@@ -125,7 +131,12 @@ function record(root: string, reportArtifactRefs: Record<string, unknown>[] = []
   };
 }
 
-function envelope(root: string, nodeId: string, packetId: string, artifactRefs: Record<string, unknown>[]) {
+function envelope(
+  root: string,
+  nodeId: string,
+  packetId: string,
+  artifactRefs: Record<string, unknown>[]
+) {
   return {
     envelopeVersion: 'subagent-evidence-envelope/v1',
     recordId: 'REQ-CLOSED-LOOP-DESIGN',
@@ -274,7 +285,10 @@ describe('parallel mission evidence integration', () => {
     try {
       const missionPlan = plan();
       missionPlan.merge_order = ['node-b'];
-      const topology = buildPrTopology({ plan: missionPlan, states: { 'node-a': 'open', 'node-b': 'merged' } });
+      const topology = buildPrTopology({
+        plan: missionPlan,
+        states: { 'node-a': 'open', 'node-b': 'merged' },
+      });
       topology.all_affected_stories_passed = true;
       const report = evaluateParallelMissionEvidenceIntegration({
         plan: missionPlan,
@@ -344,11 +358,20 @@ describe('parallel mission evidence integration', () => {
         integratedVerification: {
           closeoutAttemptId: 'closeout-current',
           workspaceRef: { kind: 'main_workspace', path: root },
-          commandRuns: [{ commandId: 'CMD-INTEGRATED', closeoutAttemptId: 'closeout-current', exitCode: 0, artifactRefs: [{}] }],
+          commandRuns: [
+            {
+              commandId: 'CMD-INTEGRATED',
+              closeoutAttemptId: 'closeout-current',
+              exitCode: 0,
+              artifactRefs: [{}],
+            },
+          ],
           artifactRefs: [{}],
         },
       });
-      expect(report.blockingReasons).toContain('write_scope_conflict_unresolved:src/shared.ts:node-a,node-b');
+      expect(report.blockingReasons).toContain(
+        'write_scope_conflict_unresolved:src/shared.ts:node-a,node-b'
+      );
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -357,7 +380,14 @@ describe('parallel mission evidence integration', () => {
   it('blocks Delivery Closeout Gate when current parallel mission integration report is missing', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'parallel-mission-closeout-missing-'));
     try {
-      const recordPath = path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'REQ-CLOSEOUT', 'requirement-record.json');
+      const recordPath = path.join(
+        root,
+        '_bmad-output',
+        'runtime',
+        'requirement-records',
+        'REQ-CLOSEOUT',
+        'requirement-record.json'
+      );
       writeJson(recordPath, record(root));
       const code = mainDeliveryCloseoutGate([
         '--requirement-record',
@@ -370,7 +400,9 @@ describe('parallel mission evidence integration', () => {
       expect(code).toBe(1);
       const updated = JSON.parse(readFileSync(recordPath, 'utf8'));
       expect(updated.closeout.decision).toBe('blocked');
-      expect(updated.closeout.attempts[0].blockingReasons).toContain('parallel_mission_evidence_integration_report_missing');
+      expect(updated.closeout.attempts[0].blockingReasons).toContain(
+        'parallel_mission_evidence_integration_report_missing'
+      );
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -393,7 +425,9 @@ describe('parallel mission evidence integration', () => {
           { id: 'pr-topology-reconciliation', passed: true, issues: [] },
           { id: 'main-workspace-integrated-verification', passed: true, issues: [] },
         ],
-        nodeResults: [{ node_id: 'node-a', passed: true, envelopeHash: 'sha256:'.concat('a'.repeat(64)) }],
+        nodeResults: [
+          { node_id: 'node-a', passed: true, envelopeHash: 'sha256:'.concat('a'.repeat(64)) },
+        ],
         integratedVerification: { passed: true, commandCount: 1, artifactCount: 1 },
       };
       writeJson(reportPath, report);
@@ -409,7 +443,14 @@ describe('parallel mission evidence integration', () => {
         inputVersion: 'trace-037',
         outputVersion: 'parallel-mission-evidence-integration-v1',
       };
-      const recordPath = path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'REQ-CLOSEOUT', 'requirement-record.json');
+      const recordPath = path.join(
+        root,
+        '_bmad-output',
+        'runtime',
+        'requirement-records',
+        'REQ-CLOSEOUT',
+        'requirement-record.json'
+      );
       writeJson(recordPath, record(root, [reportArtifact]));
       const code = mainDeliveryCloseoutGate([
         '--requirement-record',
@@ -420,8 +461,12 @@ describe('parallel mission evidence integration', () => {
         '2026-05-21T00:00:00.000Z',
       ]);
       const updated = JSON.parse(readFileSync(recordPath, 'utf8'));
-      expect(updated.closeout.attempts[0].blockingReasons).not.toContain('parallel_mission_evidence_integration_report_missing');
-      expect(updated.closeout.attempts[0].blockingReasons).not.toContain('parallel_mission_evidence_integration_current_report_missing');
+      expect(updated.closeout.attempts[0].blockingReasons).not.toContain(
+        'parallel_mission_evidence_integration_report_missing'
+      );
+      expect(updated.closeout.attempts[0].blockingReasons).not.toContain(
+        'parallel_mission_evidence_integration_current_report_missing'
+      );
       expect(code).toBe(1);
     } finally {
       rmSync(root, { recursive: true, force: true });
@@ -445,10 +490,15 @@ describe('parallel mission evidence integration', () => {
           { id: 'pr-topology-reconciliation', passed: true, issues: [] },
           { id: 'main-workspace-integrated-verification', passed: true, issues: [] },
         ],
-        nodeResults: [{ node_id: 'node-a', passed: true, envelopeHash: 'sha256:'.concat('a'.repeat(64)) }],
+        nodeResults: [
+          { node_id: 'node-a', passed: true, envelopeHash: 'sha256:'.concat('a'.repeat(64)) },
+        ],
         integratedVerification: { passed: true, commandCount: 1, artifactCount: 1 },
       };
-      writeJson(previousReportPath, { ...baseReport, currentCloseoutAttemptId: 'previous-attempt' });
+      writeJson(previousReportPath, {
+        ...baseReport,
+        currentCloseoutAttemptId: 'previous-attempt',
+      });
       writeJson(currentReportPath, { ...baseReport, currentCloseoutAttemptId: 'closeout-current' });
       const reportArtifact = (filePath: string) => ({
         artifactType: 'parallel_mission_evidence_integration_report',
@@ -462,8 +512,18 @@ describe('parallel mission evidence integration', () => {
         inputVersion: 'trace-037',
         outputVersion: 'parallel-mission-evidence-integration-v1',
       });
-      const recordPath = path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'REQ-CLOSEOUT', 'requirement-record.json');
-      writeJson(recordPath, record(root, [reportArtifact(previousReportPath), reportArtifact(currentReportPath)]));
+      const recordPath = path.join(
+        root,
+        '_bmad-output',
+        'runtime',
+        'requirement-records',
+        'REQ-CLOSEOUT',
+        'requirement-record.json'
+      );
+      writeJson(
+        recordPath,
+        record(root, [reportArtifact(previousReportPath), reportArtifact(currentReportPath)])
+      );
       const code = mainDeliveryCloseoutGate([
         '--requirement-record',
         recordPath,

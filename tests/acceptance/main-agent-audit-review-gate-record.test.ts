@@ -87,7 +87,11 @@ describe('main agent audit review gate', () => {
         'audit-current',
         'rounds.json'
       );
-      writeJson(roundsPath, [cleanRound(plan, 'r1'), cleanRound(plan, 'r2'), cleanRound(plan, 'r3')]);
+      writeJson(roundsPath, [
+        cleanRound(plan, 'r1'),
+        cleanRound(plan, 'r2'),
+        cleanRound(plan, 'r3'),
+      ]);
 
       const code = mainAuditReviewGate([
         '--requirement-record',
@@ -241,7 +245,11 @@ describe('main agent audit review gate', () => {
         'audit-current',
         'rounds.json'
       );
-      writeJson(roundsPath, [cleanRound(plan, 'r1'), cleanRound(plan, 'r2'), cleanRound(plan, 'r3')]);
+      writeJson(roundsPath, [
+        cleanRound(plan, 'r1'),
+        cleanRound(plan, 'r2'),
+        cleanRound(plan, 'r3'),
+      ]);
 
       const code = mainAuditReviewGate([
         '--requirement-record',

@@ -64,11 +64,7 @@ const SUBAGENT_PATTERNS = [
   /audit subagent/iu,
 ];
 
-const MAIN_AGENT_TEXT_PATTERNS = [
-  /\bMain Agent\b/iu,
-  /主 Agent/iu,
-  /@bmad-master/iu,
-];
+const MAIN_AGENT_TEXT_PATTERNS = [/\bMain Agent\b/iu, /主 Agent/iu, /@bmad-master/iu];
 
 const RUNTIME_HANDOFF_PATTERNS = [/mainAgentNextAction/iu, /mainAgentReady/iu];
 
@@ -172,10 +168,10 @@ function hasCanonicalMainAgentSurface(matches: SkillTextEvidenceMatch[]): boolea
   return /main-agent-orchestration/iu.test(joined) && /dispatch-plan/iu.test(joined);
 }
 
-function classifySkill(entry: {
-  skillId?: string;
-  evidence: SkillOrchestrationEvidence;
-}): { classification: SkillOrchestrationClassification; rationale: string } {
+function classifySkill(entry: { skillId?: string; evidence: SkillOrchestrationEvidence }): {
+  classification: SkillOrchestrationClassification;
+  rationale: string;
+} {
   const usesSubagents = entry.evidence.subagentMatches.length > 0;
   const hasMainAgentText = entry.evidence.mainAgentTextMatches.length > 0;
   const hasCheckpointGovernance = entry.evidence.checkpointMatches.length > 0;
@@ -188,7 +184,8 @@ function classifySkill(entry: {
   if (!usesSubagents) {
     return {
       classification: 'single-agent-local',
-      rationale: 'No subagent execution evidence was detected in the installed skill/workflow markdown.',
+      rationale:
+        'No subagent execution evidence was detected in the installed skill/workflow markdown.',
     };
   }
 
@@ -266,7 +263,9 @@ export function auditInstalledSkillOrchestration(
       const skillRoot = entryPath ? path.dirname(entryPath) : '';
       const markdownFiles = entryPath ? collectMarkdownFiles(skillRoot) : [];
       const evidence: SkillOrchestrationEvidence = {
-        markdownFiles: markdownFiles.map((file) => normalizePath(path.relative(input.projectRoot, file))),
+        markdownFiles: markdownFiles.map((file) =>
+          normalizePath(path.relative(input.projectRoot, file))
+        ),
         subagentMatches: collectPatternMatches(markdownFiles, input.projectRoot, SUBAGENT_PATTERNS),
         mainAgentTextMatches: collectPatternMatches(
           markdownFiles,
@@ -283,7 +282,11 @@ export function auditInstalledSkillOrchestration(
           input.projectRoot,
           CANONICAL_MAIN_AGENT_SURFACE_PATTERNS
         ),
-        checkpointMatches: collectPatternMatches(markdownFiles, input.projectRoot, CHECKPOINT_PATTERNS),
+        checkpointMatches: collectPatternMatches(
+          markdownFiles,
+          input.projectRoot,
+          CHECKPOINT_PATTERNS
+        ),
         resumeControlMatches: collectPatternMatches(
           markdownFiles,
           input.projectRoot,

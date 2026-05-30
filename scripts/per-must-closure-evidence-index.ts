@@ -87,7 +87,9 @@ function sha256FileIfExists(file: string): string {
 }
 
 function requirementMustRows(modelPacket: JsonObject): JsonObject[] {
-  return objects(nested(modelPacket.requirements).must).filter((row) => /^MUST-\d{3}$/u.test(text(row.id)));
+  return objects(nested(modelPacket.requirements).must).filter((row) =>
+    /^MUST-\d{3}$/u.test(text(row.id))
+  );
 }
 
 function traceRowsForMust(modelPacket: JsonObject, must: JsonObject): JsonObject[] {
@@ -103,7 +105,11 @@ function traceRowsForMust(modelPacket: JsonObject, must: JsonObject): JsonObject
   });
 }
 
-function commandRowsForMust(modelPacket: JsonObject, must: JsonObject, traces: JsonObject[]): JsonObject[] {
+function commandRowsForMust(
+  modelPacket: JsonObject,
+  must: JsonObject,
+  traces: JsonObject[]
+): JsonObject[] {
   const traceIds = new Set(traces.map((trace) => text(trace.traceId)).filter(Boolean));
   const evidenceRefs = new Set([
     ...strings(must.evidenceRefs),
@@ -111,7 +117,10 @@ function commandRowsForMust(modelPacket: JsonObject, must: JsonObject, traces: J
   ]);
   const commandRefs = new Set([
     ...strings(must.commandRefs),
-    ...traces.flatMap((trace) => [...strings(trace.commandRefs), ...strings(trace.deliveryCommandRefs)]),
+    ...traces.flatMap((trace) => [
+      ...strings(trace.commandRefs),
+      ...strings(trace.deliveryCommandRefs),
+    ]),
   ]);
   const commands = objects(modelPacket.requiredCommands);
   const directlyMapped = commands.filter((command) => {
@@ -126,7 +135,9 @@ function commandRowsForMust(modelPacket: JsonObject, must: JsonObject, traces: J
 }
 
 function latestClosure(record: JsonObject, mustId: string): JsonObject | null {
-  const matches = objects(record.requirementClosures).filter((closure) => text(closure.requirementId) === mustId);
+  const matches = objects(record.requirementClosures).filter(
+    (closure) => text(closure.requirementId) === mustId
+  );
   return matches.length > 0 ? matches[matches.length - 1] : null;
 }
 
@@ -170,14 +181,18 @@ function artifactCompletenessIssues(artifact: JsonObject): string[] {
   if (!text(artifact.artifactType)) issues.push('artifact_type_missing');
   if (!text(artifact.producer)) issues.push('producer_missing');
   if (!text(artifact.purpose)) issues.push('purpose_missing');
-  if (strings(artifact.relatedRequirementIds).length === 0) issues.push('related_requirement_ids_missing');
+  if (strings(artifact.relatedRequirementIds).length === 0)
+    issues.push('related_requirement_ids_missing');
   if (!text(artifact.status)) issues.push('status_missing');
   if (!text(artifact.inputVersion)) issues.push('input_version_missing');
   if (!text(artifact.outputVersion)) issues.push('output_version_missing');
   const role = text(artifact.sourceOfTruthRole);
   const artifactType = text(artifact.artifactType);
   const requiresEvidenceRole =
-    !role || role === 'evidence' || artifactType === 'command_output' || artifactType.startsWith('command_');
+    !role ||
+    role === 'evidence' ||
+    artifactType === 'command_output' ||
+    artifactType.startsWith('command_');
   if (requiresEvidenceRole && role !== 'evidence') issues.push('source_of_truth_role_not_evidence');
   return issues;
 }
@@ -185,7 +200,8 @@ function artifactCompletenessIssues(artifact: JsonObject): string[] {
 function artifactIndexed(record: JsonObject, artifact: JsonObject): boolean {
   const artifactPath = normalizePathForRecord(text(artifact.path));
   const artifactHash = text(artifact.hash ?? artifact.contentHash);
-  if (!artifactPath || !artifactHash || artifactCompletenessIssues(artifact).length > 0) return false;
+  if (!artifactPath || !artifactHash || artifactCompletenessIssues(artifact).length > 0)
+    return false;
   return objects(record.artifactIndex).some((indexed) => {
     if (artifactCompletenessIssues(indexed).length > 0) return false;
     return (
@@ -196,7 +212,11 @@ function artifactIndexed(record: JsonObject, artifact: JsonObject): boolean {
   });
 }
 
-function executionArtifactRefs(record: JsonObject, commandId: string, attemptId?: string): JsonObject[] {
+function executionArtifactRefs(
+  record: JsonObject,
+  commandId: string,
+  attemptId?: string
+): JsonObject[] {
   return objects(record.executionIterations).flatMap((iteration) => {
     const hasCommand = objects(iteration.commandRunRefs).some(
       (run) => text(run.commandId) === commandId && runMatchesAttempt(run, attemptId)
@@ -205,10 +225,16 @@ function executionArtifactRefs(record: JsonObject, commandId: string, attemptId?
   });
 }
 
-function artifactRefsForCommand(record: JsonObject, commandId: string, attemptId?: string): JsonObject[] {
+function artifactRefsForCommand(
+  record: JsonObject,
+  commandId: string,
+  attemptId?: string
+): JsonObject[] {
   const seen = new Set<string>();
   return [
-    ...deliveryCommands(record, commandId, attemptId).flatMap((command) => objects(command.artifactRefs)),
+    ...deliveryCommands(record, commandId, attemptId).flatMap((command) =>
+      objects(command.artifactRefs)
+    ),
     ...executionArtifactRefs(record, commandId, attemptId),
   ].filter((artifact) => {
     const key = `${normalizePathForRecord(text(artifact.path))}|${text(artifact.hash ?? artifact.contentHash)}`;
@@ -239,10 +265,13 @@ function commandStatus(input: {
   });
   const blockingReasons: string[] = [];
   if (!commandId) blockingReasons.push('command_id_missing');
-  if (!text(input.command.command)) blockingReasons.push(`command_text_missing:${commandId || '<missing>'}`);
+  if (!text(input.command.command))
+    blockingReasons.push(`command_text_missing:${commandId || '<missing>'}`);
   if (runs.length === 0) blockingReasons.push(`test_result_missing:${commandId || '<missing>'}`);
-  if (!runs.some((run) => run.exitCode === 0)) blockingReasons.push(`test_result_not_pass:${commandId || '<missing>'}`);
-  if (artifactRows.length === 0) blockingReasons.push(`artifact_missing:${commandId || '<missing>'}`);
+  if (!runs.some((run) => run.exitCode === 0))
+    blockingReasons.push(`test_result_not_pass:${commandId || '<missing>'}`);
+  if (artifactRows.length === 0)
+    blockingReasons.push(`artifact_missing:${commandId || '<missing>'}`);
   if (!artifactRows.some((artifact) => artifact.indexed === true)) {
     blockingReasons.push(`artifact_not_indexed:${commandId || '<missing>'}`);
   }
@@ -297,7 +326,9 @@ function rowForMust(input: {
     commandResults,
     artifactRefs: uniqueStrings(
       commandResults.flatMap((command) =>
-        objects(command.artifactRefs).map((artifact) => normalizePathForRecord(text(artifact.path))).filter(Boolean)
+        objects(command.artifactRefs)
+          .map((artifact) => normalizePathForRecord(text(artifact.path)))
+          .filter(Boolean)
       )
     ),
     closureStatus: closure ? text(closure.status) || 'open' : 'missing',
@@ -382,7 +413,8 @@ export function mainPerMustClosureEvidenceIndex(argv: string[]): number {
     requirementRecordPath,
   });
   const outPath = path.resolve(
-    args.out ?? path.join(path.dirname(requirementRecordPath), 'per-must-closure-evidence-index.json')
+    args.out ??
+      path.join(path.dirname(requirementRecordPath), 'per-must-closure-evidence-index.json')
   );
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
   fs.writeFileSync(outPath, `${JSON.stringify(index, null, 2)}\n`, 'utf8');
@@ -393,7 +425,11 @@ export function mainPerMustClosureEvidenceIndex(argv: string[]): number {
     counts: index.counts,
     blockingReasons: index.blockingReasons,
   };
-  process.stdout.write(args.json ? `${JSON.stringify(output, null, 2)}\n` : `per_must_closure=${text(index.decision)}\n`);
+  process.stdout.write(
+    args.json
+      ? `${JSON.stringify(output, null, 2)}\n`
+      : `per_must_closure=${text(index.decision)}\n`
+  );
   return text(index.decision) === 'pass' ? 0 : 1;
 }
 
@@ -402,7 +438,11 @@ if (require.main === module) {
     process.exitCode = mainPerMustClosureEvidenceIndex(process.argv.slice(2));
   } catch (error) {
     console.error(
-      JSON.stringify({ ok: false, error: error instanceof Error ? error.message : String(error) }, null, 2)
+      JSON.stringify(
+        { ok: false, error: error instanceof Error ? error.message : String(error) },
+        null,
+        2
+      )
     );
     process.exitCode = 2;
   }

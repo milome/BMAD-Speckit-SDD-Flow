@@ -7,7 +7,9 @@ const ROOT = join(import.meta.dirname, '..', '..');
 
 describe('unified gate schema', () => {
   it('covers planning and implementation gate families in one schema', () => {
-    const raw = yaml.load(readFileSync(join(ROOT, '_bmad', '_config', 'architecture-gates.yaml'), 'utf8')) as any;
+    const raw = yaml.load(
+      readFileSync(join(ROOT, '_bmad', '_config', 'architecture-gates.yaml'), 'utf8')
+    ) as any;
     expect(raw.schema).toBe('unified_gate_v1');
 
     const gateSets = raw.gate_sets;

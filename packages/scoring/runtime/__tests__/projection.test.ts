@@ -199,7 +199,10 @@ describe('runtime projection', () => {
   it('projects status transitions across pending, running, passed, failed, and vetoed', () => {
     const pendingProjection = buildRunProjection([makeEvent()], 'run-001');
     const runningProjection = buildRunProjection(
-      [makeEvent(), makeEvent({ event_id: 'evt-002', event_type: 'stage.started', stage: 'tasks' })],
+      [
+        makeEvent(),
+        makeEvent({ event_id: 'evt-002', event_type: 'stage.started', stage: 'tasks' }),
+      ],
       'run-001'
     );
     const failedProjection = buildRunProjection(

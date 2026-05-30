@@ -180,14 +180,16 @@ export function validateSddArtifactManifest(input: {
 }): SddArtifactManifestValidation {
   const manifest = input.manifest;
   const blockingReasons: string[] = [];
-  if (manifest.schemaVersion !== 'sdd-artifact-manifest/v1') blockingReasons.push('schema_version_invalid');
+  if (manifest.schemaVersion !== 'sdd-artifact-manifest/v1')
+    blockingReasons.push('schema_version_invalid');
   for (const field of ['recordId', 'flow', 'packetId', 'runtimeTraceExecutionDir'] as const) {
     if (!text(manifest[field])) blockingReasons.push(`${field}_missing`);
   }
   if (!text(manifest.workProductRoot?.implementationArtifactsRoot)) {
     blockingReasons.push('work_product_root_implementation_artifacts_missing');
   }
-  if (!text(manifest.workProductRoot?.specsRoot)) blockingReasons.push('work_product_root_specs_missing');
+  if (!text(manifest.workProductRoot?.specsRoot))
+    blockingReasons.push('work_product_root_specs_missing');
   if (!text(manifest.artifactRootPolicy?.governedNonStoryRoot)) {
     blockingReasons.push('artifact_root_policy_governed_non_story_root_missing');
   }
@@ -208,15 +210,24 @@ export function validateSddArtifactManifest(input: {
     const artifactPath = normalizePathForManifest(artifact.path);
     if (!artifactPath) blockingReasons.push(`${prefix}.path_missing`);
     if (!text(artifact.artifactClass)) blockingReasons.push(`${prefix}.artifact_class_missing`);
-    if (!SHA256_PATTERN.test(text(artifact.contentHash))) blockingReasons.push(`${prefix}.content_hash_invalid`);
-    if (!Array.isArray(artifact.boundIds) || artifact.boundIds.map(text).filter(Boolean).length === 0) {
+    if (!SHA256_PATTERN.test(text(artifact.contentHash)))
+      blockingReasons.push(`${prefix}.content_hash_invalid`);
+    if (
+      !Array.isArray(artifact.boundIds) ||
+      artifact.boundIds.map(text).filter(Boolean).length === 0
+    ) {
       blockingReasons.push(`${prefix}.bound_ids_missing`);
     }
-    if (!text(artifact.producerPacketId)) blockingReasons.push(`${prefix}.producer_packet_id_missing`);
+    if (!text(artifact.producerPacketId))
+      blockingReasons.push(`${prefix}.producer_packet_id_missing`);
     if (artifact.authoritativeFor !== 'review_evidence') {
       blockingReasons.push(`${prefix}.authoritative_for_not_review_evidence`);
     }
-    if (!isStoryFlow(manifest.flow) && artifactUnderWorkProductPlane(artifactPath) && !hasGovernedNonStoryRoot(artifactPath, governedRoot)) {
+    if (
+      !isStoryFlow(manifest.flow) &&
+      artifactUnderWorkProductPlane(artifactPath) &&
+      !hasGovernedNonStoryRoot(artifactPath, governedRoot)
+    ) {
       blockingReasons.push(`${prefix}.non_story_artifact_not_governed_orphan_root:${artifactPath}`);
     }
     if (isLooseLegacyOrphan(artifactPath, governedRoot)) {

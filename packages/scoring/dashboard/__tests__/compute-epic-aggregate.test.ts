@@ -87,7 +87,9 @@ describe('getEpicAggregateRecords (US-1.2, AC-2)', () => {
     const result = getEpicAggregateRecords(records, 9, 168);
     expect(result).toHaveLength(6);
     const runIds = new Set(result.map((r) => r.run_id));
-    expect(runIds.has('dev-e9-s1-spec-1') || result.some((r) => r.run_id.includes('-e9-s1-'))).toBe(true);
+    expect(runIds.has('dev-e9-s1-spec-1') || result.some((r) => r.run_id.includes('-e9-s1-'))).toBe(
+      true
+    );
     expect(result.every((r) => !r.run_id.includes('-e9-s3-'))).toBe(true);
   });
 });
@@ -143,9 +145,7 @@ describe('getEpicDimensionScores (US-1.4, AC-4)', () => {
     const records = [
       createRecord({
         run_id: 'dev-e9-s1-x',
-        dimension_scores: [
-          { dimension: '功能性', weight: 0.3, score: 85 },
-        ],
+        dimension_scores: [{ dimension: '功能性', weight: 0.3, score: 85 }],
       }),
     ];
     const dims = getEpicDimensionScores(records);

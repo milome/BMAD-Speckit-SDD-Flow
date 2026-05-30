@@ -45,9 +45,13 @@ function runNode(script: string, args: string[]) {
 
 function writeFixture() {
   const source = path.join(tempDir, 'source.md');
-  const record = path.join(tempDir, '_bmad-output/runtime/requirement-records/REQ-FIXTURE/requirement-record.json');
+  const record = path.join(
+    tempDir,
+    '_bmad-output/runtime/requirement-records/REQ-FIXTURE/requirement-record.json'
+  );
   const sourceHash = 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
-  const implementationHash = 'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+  const implementationHash =
+    'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
   const block = `implementationConfirmation:
   contractSchemaVersion: 1
   status: user_confirmed
@@ -97,8 +101,11 @@ function writeFixture() {
     '--json',
   ]);
   expect(render.status, `${render.stdout}\n${render.stderr}`).toBe(0);
-  const report = JSON.parse(fs.readFileSync(path.join(tempDir, 'confirmation-render-report.json'), 'utf8'));
-  const updatedSource = fs.readFileSync(source, 'utf8')
+  const report = JSON.parse(
+    fs.readFileSync(path.join(tempDir, 'confirmation-render-report.json'), 'utf8')
+  );
+  const updatedSource = fs
+    .readFileSync(source, 'utf8')
     .replace(sourceHash, report.sourceDocumentHash)
     .replace(implementationHash, report.implementationConfirmationHash);
   fs.writeFileSync(source, updatedSource, 'utf8');
@@ -122,11 +129,19 @@ function writeFixture() {
 }
 
 const targetPaths = JSON.stringify(['scripts/main-agent-implementation-readiness-gate.ts']);
-const consumerImpactScan = JSON.stringify([{ category: 'data_model', status: 'triggered', summary: 'fixture' }]);
-const governanceImpactScan = JSON.stringify([
-  { category: 'orchestration_hook_gate_ingest_rerun_closeout', status: 'triggered', summary: 'fixture' },
+const consumerImpactScan = JSON.stringify([
+  { category: 'data_model', status: 'triggered', summary: 'fixture' },
 ]);
-const triggerMatrix = JSON.stringify([{ trigger: 'shared_schema_or_contract_changed', decision: 'triggered', reason: 'fixture' }]);
+const governanceImpactScan = JSON.stringify([
+  {
+    category: 'orchestration_hook_gate_ingest_rerun_closeout',
+    status: 'triggered',
+    summary: 'fixture',
+  },
+]);
+const triggerMatrix = JSON.stringify([
+  { trigger: 'shared_schema_or_contract_changed', decision: 'triggered', reason: 'fixture' },
+]);
 
 describe('generate-architecture-confirmation-artifact', () => {
   it('generates a requirement-scoped architecture confirmation JSON without mutating the requirement record', () => {

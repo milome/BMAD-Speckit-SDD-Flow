@@ -1,7 +1,11 @@
 import type { CheckItem, JourneyContractSignals, RunScoreRecord } from '../writer/types';
 import { ParseError } from './audit-prd';
 import { llmStructuredExtract, mapLlmResultToCheckItems } from './llm-fallback';
-import { resolveEmptyItemId, resolveItemId, type AuditStage as MappingStage } from './audit-item-mapping';
+import {
+  resolveEmptyItemId,
+  resolveItemId,
+  type AuditStage as MappingStage,
+} from './audit-item-mapping';
 
 const GRADE_TO_SCORE: Record<string, number> = {
   A: 100,
@@ -12,7 +16,14 @@ const GRADE_TO_SCORE: Record<string, number> = {
 
 export type GenericAuditStage = Extract<
   MappingStage,
-  'prd' | 'spec' | 'plan' | 'gaps' | 'tasks' | 'implement' | 'post_impl' | 'implementation_readiness'
+  | 'prd'
+  | 'spec'
+  | 'plan'
+  | 'gaps'
+  | 'tasks'
+  | 'implement'
+  | 'post_impl'
+  | 'implementation_readiness'
 >;
 
 export interface StructuredDriftSignalEntry {
@@ -81,17 +92,9 @@ function findProblemSectionText(content: string): RegExpMatchArray | null {
 function normalizeStructuredSignalStatus(status: string): boolean {
   const normalized = status.trim().toLowerCase();
   if (
-    [
-      'pass',
-      'passed',
-      'ok',
-      'clean',
-      'resolved',
-      'true',
-      'no_drift',
-      'none',
-      'clear',
-    ].includes(normalized)
+    ['pass', 'passed', 'ok', 'clean', 'resolved', 'true', 'no_drift', 'none', 'clear'].includes(
+      normalized
+    )
   ) {
     return false;
   }
@@ -201,7 +204,10 @@ export function extractCheckItems(content: string, stage: GenericAuditStage): Ch
     return items;
   }
 
-  const lines = sectionText.split(/\n/).map((line) => line.trim()).filter(Boolean);
+  const lines = sectionText
+    .split(/\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
   let idx = 0;
   for (const line of lines) {
     const match = line.match(

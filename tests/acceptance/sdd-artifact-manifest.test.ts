@@ -88,7 +88,9 @@ describe('SDD artifact manifest contract', () => {
     const validation = validateSddArtifactManifest({ manifest });
     expect(validation.ok).toBe(false);
     expect(validation.blockingReasons.join('\n')).toContain('loose_legacy_orphan_blocks_closeout');
-    expect(validation.blockingReasons.join('\n')).toContain('non_story_artifact_not_governed_orphan_root');
+    expect(validation.blockingReasons.join('\n')).toContain(
+      'non_story_artifact_not_governed_orphan_root'
+    );
   });
 
   it('keeps artifact indexing separate from command proof and preview command authority', () => {

@@ -132,7 +132,8 @@ function hookPathFor(root: string, hostKind: MainAgentHostKind): string | null {
 
 function normalizeRecordId(value: string | undefined, fieldName: string): string {
   const trimmed = value?.trim();
-  if (!trimmed) throw new Error(`${fieldName} is required for requirement-scoped unified ingress output`);
+  if (!trimmed)
+    throw new Error(`${fieldName} is required for requirement-scoped unified ingress output`);
   if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/u.test(trimmed)) {
     throw new Error(`${fieldName} contains unsupported path characters`);
   }
@@ -176,7 +177,9 @@ function resolveEntry(input: {
   const hookPath = hookPathFor(input.projectRoot, input.hostKind);
   const registryHash =
     input.governanceEventTypeRegistryHash ??
-    (input.governanceEventTypeRegistry ? governanceEventTypeRegistryHash(input.governanceEventTypeRegistry) : undefined);
+    (input.governanceEventTypeRegistry
+      ? governanceEventTypeRegistryHash(input.governanceEventTypeRegistry)
+      : undefined);
   const registryPolicyHash =
     input.governanceEventTypeRegistryPolicyHash ??
     (input.governanceEventTypeRegistryPolicy
@@ -221,8 +224,10 @@ function resolveEntry(input: {
   }
   if (input.forceHostPartial) {
     return {
-      hostMode: input.hostKind === 'codex' ? 'no_hooks' : hookAvailable ? 'hooks_enabled' : 'no_hooks',
-      orchestrationEntry: input.hostKind === 'codex' || !hookAvailable ? 'cli_ingress' : 'hook_ingress',
+      hostMode:
+        input.hostKind === 'codex' ? 'no_hooks' : hookAvailable ? 'hooks_enabled' : 'no_hooks',
+      orchestrationEntry:
+        input.hostKind === 'codex' || !hookAvailable ? 'cli_ingress' : 'hook_ingress',
       hookAvailable,
       degradationLevel: 'host_partial',
       hookTrust: input.hostKind === 'codex' ? 'untrusted' : 'degraded',
@@ -234,7 +239,8 @@ function resolveEntry(input: {
         reason: 'host capability probe reported partial support',
         detected_at: detectedAt,
         failed_capability: 'host_capability',
-        fallback_entry: input.hostKind === 'codex' || !hookAvailable ? 'cli_ingress' : 'hook_ingress',
+        fallback_entry:
+          input.hostKind === 'codex' || !hookAvailable ? 'cli_ingress' : 'hook_ingress',
         expected_behavior_change:
           'Host remains on the main-agent control plane with partial capability recorded until parity evidence is restored.',
       },
@@ -335,27 +341,23 @@ function probeHostRecovery(input: {
   flow: RuntimeFlowId;
   stage: string;
   entry: Pick<UnifiedIngressReceipt, 'hostMode' | 'orchestrationEntry' | 'degradationLevel'>;
-  runLoop?: Pick<
-    MainAgentRunLoopResult,
-    'status' | 'dispatchInstruction' | 'finalSurface'
-  >;
+  runLoop?: Pick<MainAgentRunLoopResult, 'status' | 'dispatchInstruction' | 'finalSurface'>;
 }): MainAgentHostRecovery {
   const requiredProbeCount = 2;
   const toInspectSnapshot = (
-    runLoop: Pick<
-      MainAgentRunLoopResult,
-      'status' | 'dispatchInstruction' | 'finalSurface'
-    > | undefined
+    runLoop:
+      | Pick<MainAgentRunLoopResult, 'status' | 'dispatchInstruction' | 'finalSurface'>
+      | undefined
   ) =>
     runLoop
-    ? {
-        status: runLoop.status,
-        packetId: runLoop.dispatchInstruction?.packetId ?? null,
-        resolvedHost: runLoop.dispatchInstruction?.host ?? null,
-        finalNextAction: runLoop.finalSurface.mainAgentNextAction,
-        pendingPacketStatus: runLoop.finalSurface.pendingPacketStatus,
-      }
-    : null;
+      ? {
+          status: runLoop.status,
+          packetId: runLoop.dispatchInstruction?.packetId ?? null,
+          resolvedHost: runLoop.dispatchInstruction?.host ?? null,
+          finalNextAction: runLoop.finalSurface.mainAgentNextAction,
+          pendingPacketStatus: runLoop.finalSurface.pendingPacketStatus,
+        }
+      : null;
   const beforeInspectSnapshot = toInspectSnapshot(input.runLoop);
   const before = {
     hostMode: input.entry.hostMode,
@@ -416,7 +418,8 @@ function probeHostRecovery(input: {
     hookPath,
     ...runHookHealthProbe(),
   }));
-  const recovered = probes.length === requiredProbeCount && probes.every((probe) => probe.hookExecutable);
+  const recovered =
+    probes.length === requiredProbeCount && probes.every((probe) => probe.hookExecutable);
   const afterRunLoop = recovered
     ? runMainAgentAutomaticLoop({
         projectRoot: input.projectRoot,
@@ -451,7 +454,9 @@ function probeHostRecovery(input: {
   const after = {
     hostMode: backSwitchAllowed ? ('hooks_enabled' as MainAgentHostMode) : null,
     orchestrationEntry: backSwitchAllowed ? ('hook_ingress' as MainAgentOrchestrationEntry) : null,
-    degradationLevel: backSwitchAllowed ? ('none' as MainAgentDegradationLevel) : input.entry.degradationLevel,
+    degradationLevel: backSwitchAllowed
+      ? ('none' as MainAgentDegradationLevel)
+      : input.entry.degradationLevel,
     inspect: afterInspectSnapshot,
   };
   const recovery: MainAgentHostRecovery = {
@@ -464,7 +469,8 @@ function probeHostRecovery(input: {
     after_parity_snapshot: after,
     parity_diff: {
       hostModeChanged: backSwitchAllowed && before.hostMode !== after.hostMode,
-      orchestrationEntryChanged: backSwitchAllowed && before.orchestrationEntry !== after.orchestrationEntry,
+      orchestrationEntryChanged:
+        backSwitchAllowed && before.orchestrationEntry !== after.orchestrationEntry,
       degradationCleared: backSwitchAllowed && before.degradationLevel !== after.degradationLevel,
     },
     recovery_log_path: null,
@@ -512,10 +518,9 @@ async function probeHostRecoveryAsync(input: {
 }): Promise<MainAgentHostRecovery> {
   const requiredProbeCount = 2;
   const toInspectSnapshot = (
-    runLoop: Pick<
-      MainAgentRunLoopResult,
-      'status' | 'dispatchInstruction' | 'finalSurface'
-    > | undefined
+    runLoop:
+      | Pick<MainAgentRunLoopResult, 'status' | 'dispatchInstruction' | 'finalSurface'>
+      | undefined
   ) =>
     runLoop
       ? {
@@ -636,7 +641,8 @@ async function probeHostRecoveryAsync(input: {
     after_parity_snapshot: after,
     parity_diff: {
       hostModeChanged: backSwitchAllowed && before.hostMode !== after.hostMode,
-      orchestrationEntryChanged: backSwitchAllowed && before.orchestrationEntry !== after.orchestrationEntry,
+      orchestrationEntryChanged:
+        backSwitchAllowed && before.orchestrationEntry !== after.orchestrationEntry,
       degradationCleared: backSwitchAllowed && before.degradationLevel !== after.degradationLevel,
     },
     recovery_log_path: null,
@@ -693,7 +699,10 @@ export function runUnifiedIngress(input: {
 }): UnifiedIngressReceipt {
   const projectRoot = path.resolve(input.projectRoot);
   const recordId = normalizeRecordId(input.recordId, 'recordId');
-  const requirementSetId = normalizeRecordId(input.requirementSetId ?? input.recordId, 'requirementSetId');
+  const requirementSetId = normalizeRecordId(
+    input.requirementSetId ?? input.recordId,
+    'requirementSetId'
+  );
   const entry = resolveEntry({
     projectRoot,
     hostKind: input.hostKind,
@@ -750,23 +759,23 @@ export function runUnifiedIngress(input: {
       throw new Error('host recovery state write failed: forced failure');
     }
     updateOrchestrationState(projectRoot, runLoop.dispatchInstruction.sessionId, (current) => ({
-        ...current,
-        hostRecovery: {
-          degradation_level: entry.degradationLevel,
-          active_host_mode: entry.hostMode,
-          orchestration_entry: entry.orchestrationEntry,
-          recovered_host_mode: hostRecovery.recovered_host_mode,
-          recovered_orchestration_entry: hostRecovery.recovered_orchestration_entry,
-          recovery_log_path: hostRecovery.recovery_log_path,
-          updated_at: new Date().toISOString(),
-        },
-        longRun: current.longRun
-          ? {
-              ...current.longRun,
-              degradation_level: entry.degradationLevel,
-              active_host_mode: entry.hostMode,
-            }
-          : current.longRun,
+      ...current,
+      hostRecovery: {
+        degradation_level: entry.degradationLevel,
+        active_host_mode: entry.hostMode,
+        orchestration_entry: entry.orchestrationEntry,
+        recovered_host_mode: hostRecovery.recovered_host_mode,
+        recovered_orchestration_entry: hostRecovery.recovered_orchestration_entry,
+        recovery_log_path: hostRecovery.recovery_log_path,
+        updated_at: new Date().toISOString(),
+      },
+      longRun: current.longRun
+        ? {
+            ...current.longRun,
+            degradation_level: entry.degradationLevel,
+            active_host_mode: entry.hostMode,
+          }
+        : current.longRun,
     }));
   }
   return {
@@ -815,7 +824,10 @@ export async function runUnifiedIngressAsync(input: {
 }): Promise<UnifiedIngressReceipt> {
   const projectRoot = path.resolve(input.projectRoot);
   const recordId = normalizeRecordId(input.recordId, 'recordId');
-  const requirementSetId = normalizeRecordId(input.requirementSetId ?? input.recordId, 'requirementSetId');
+  const requirementSetId = normalizeRecordId(
+    input.requirementSetId ?? input.recordId,
+    'requirementSetId'
+  );
   const entry = resolveEntry({
     projectRoot,
     hostKind: input.hostKind,
@@ -872,23 +884,23 @@ export async function runUnifiedIngressAsync(input: {
       throw new Error('host recovery state write failed: forced failure');
     }
     updateOrchestrationState(projectRoot, runLoop.dispatchInstruction.sessionId, (current) => ({
-        ...current,
-        hostRecovery: {
-          degradation_level: entry.degradationLevel,
-          active_host_mode: entry.hostMode,
-          orchestration_entry: entry.orchestrationEntry,
-          recovered_host_mode: hostRecovery.recovered_host_mode,
-          recovered_orchestration_entry: hostRecovery.recovered_orchestration_entry,
-          recovery_log_path: hostRecovery.recovery_log_path,
-          updated_at: new Date().toISOString(),
-        },
-        longRun: current.longRun
-          ? {
-              ...current.longRun,
-              degradation_level: entry.degradationLevel,
-              active_host_mode: entry.hostMode,
-            }
-          : current.longRun,
+      ...current,
+      hostRecovery: {
+        degradation_level: entry.degradationLevel,
+        active_host_mode: entry.hostMode,
+        orchestration_entry: entry.orchestrationEntry,
+        recovered_host_mode: hostRecovery.recovered_host_mode,
+        recovered_orchestration_entry: hostRecovery.recovered_orchestration_entry,
+        recovery_log_path: hostRecovery.recovery_log_path,
+        updated_at: new Date().toISOString(),
+      },
+      longRun: current.longRun
+        ? {
+            ...current.longRun,
+            degradation_level: entry.degradationLevel,
+            active_host_mode: entry.hostMode,
+          }
+        : current.longRun,
     }));
   }
   return {
@@ -922,7 +934,10 @@ export function main(argv: string[]): number {
     args.hostKind === 'claude' || args.hostKind === 'codex' ? args.hostKind : 'cursor';
   const projectRoot = path.resolve(args.cwd ?? process.cwd());
   const recordId = normalizeRecordId(args.recordId, 'recordId');
-  const requirementSetId = normalizeRecordId(args.requirementSetId ?? args.recordId, 'requirementSetId');
+  const requirementSetId = normalizeRecordId(
+    args.requirementSetId ?? args.recordId,
+    'requirementSetId'
+  );
   const receipt = runUnifiedIngress({
     projectRoot,
     recordId,
@@ -931,13 +946,22 @@ export function main(argv: string[]): number {
     flow: (args.flow as RuntimeFlowId | undefined) ?? 'story',
     stage: args.stage ?? 'implement',
     codexHookTrustEnvelope: args.codexHookTrustEnvelopePath
-      ? (JSON.parse(fs.readFileSync(path.resolve(projectRoot, args.codexHookTrustEnvelopePath), 'utf8')) as GovernanceTransportEnvelope)
+      ? (JSON.parse(
+          fs.readFileSync(path.resolve(projectRoot, args.codexHookTrustEnvelopePath), 'utf8')
+        ) as GovernanceTransportEnvelope)
       : null,
     governanceEventTypeRegistry: args.governanceEventTypeRegistryPath
-      ? JSON.parse(fs.readFileSync(path.resolve(projectRoot, args.governanceEventTypeRegistryPath), 'utf8'))
+      ? JSON.parse(
+          fs.readFileSync(path.resolve(projectRoot, args.governanceEventTypeRegistryPath), 'utf8')
+        )
       : undefined,
     governanceEventTypeRegistryPolicy: args.governanceEventTypeRegistryPolicyPath
-      ? JSON.parse(fs.readFileSync(path.resolve(projectRoot, args.governanceEventTypeRegistryPolicyPath), 'utf8'))
+      ? JSON.parse(
+          fs.readFileSync(
+            path.resolve(projectRoot, args.governanceEventTypeRegistryPolicyPath),
+            'utf8'
+          )
+        )
       : undefined,
     governanceEventTypeRegistryPolicyHash: args.governanceEventTypeRegistryPolicyHash,
     governanceEventTypeRegistryHash: args.governanceEventTypeRegistryHash,
@@ -966,7 +990,10 @@ export async function mainAsync(argv: string[]): Promise<number> {
     args.hostKind === 'claude' || args.hostKind === 'codex' ? args.hostKind : 'cursor';
   const projectRoot = path.resolve(args.cwd ?? process.cwd());
   const recordId = normalizeRecordId(args.recordId, 'recordId');
-  const requirementSetId = normalizeRecordId(args.requirementSetId ?? args.recordId, 'requirementSetId');
+  const requirementSetId = normalizeRecordId(
+    args.requirementSetId ?? args.recordId,
+    'requirementSetId'
+  );
   const receipt = await runUnifiedIngressAsync({
     projectRoot,
     recordId,
@@ -975,13 +1002,22 @@ export async function mainAsync(argv: string[]): Promise<number> {
     flow: (args.flow as RuntimeFlowId | undefined) ?? 'story',
     stage: args.stage ?? 'implement',
     codexHookTrustEnvelope: args.codexHookTrustEnvelopePath
-      ? (JSON.parse(fs.readFileSync(path.resolve(projectRoot, args.codexHookTrustEnvelopePath), 'utf8')) as GovernanceTransportEnvelope)
+      ? (JSON.parse(
+          fs.readFileSync(path.resolve(projectRoot, args.codexHookTrustEnvelopePath), 'utf8')
+        ) as GovernanceTransportEnvelope)
       : null,
     governanceEventTypeRegistry: args.governanceEventTypeRegistryPath
-      ? JSON.parse(fs.readFileSync(path.resolve(projectRoot, args.governanceEventTypeRegistryPath), 'utf8'))
+      ? JSON.parse(
+          fs.readFileSync(path.resolve(projectRoot, args.governanceEventTypeRegistryPath), 'utf8')
+        )
       : undefined,
     governanceEventTypeRegistryPolicy: args.governanceEventTypeRegistryPolicyPath
-      ? JSON.parse(fs.readFileSync(path.resolve(projectRoot, args.governanceEventTypeRegistryPolicyPath), 'utf8'))
+      ? JSON.parse(
+          fs.readFileSync(
+            path.resolve(projectRoot, args.governanceEventTypeRegistryPolicyPath),
+            'utf8'
+          )
+        )
       : undefined,
     governanceEventTypeRegistryPolicyHash: args.governanceEventTypeRegistryPolicyHash,
     governanceEventTypeRegistryHash: args.governanceEventTypeRegistryHash,

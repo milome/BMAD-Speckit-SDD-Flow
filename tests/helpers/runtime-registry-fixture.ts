@@ -63,10 +63,7 @@ export function linkRepoNodeModulesIntoProject(projectRoot: string): void {
     fs.symlinkSync(src, dest, 'dir');
   }
 }
-import {
-  defaultRuntimeContextFile,
-  writeRuntimeContext,
-} from '../../scripts/runtime-context';
+import { defaultRuntimeContextFile, writeRuntimeContext } from '../../scripts/runtime-context';
 import {
   defaultRuntimeContextRegistry,
   writeRuntimeContextRegistry,
@@ -144,22 +141,22 @@ export function writeMinimalRequirementRecordContext(
       currentArchitectureConfirmationHash:
         'sha256:4444444444444444444444444444444444444444444444444444444444444444',
       currentArchitectureConfirmationPath: path
-        .relative(recordRoot, path.join(recordRoot, 'architecture', `architecture-confirmation-${runId}.json`))
+        .relative(
+          recordRoot,
+          path.join(recordRoot, 'architecture', `architecture-confirmation-${runId}.json`)
+        )
         .replace(/\\/g, '/'),
-      resolvedRecipeHash:
-        'sha256:5555555555555555555555555555555555555555555555555555555555555555',
+      resolvedRecipeHash: 'sha256:5555555555555555555555555555555555555555555555555555555555555555',
       lastEventType: 'architecture_confirmation_recorded',
       updatedAt: '2026-05-19T00:00:00.000Z',
     },
     artifactRoot: opts.artifactRoot,
     artifactPath: opts.artifactPath ?? opts.artifactRoot,
     sourcePath: opts.artifactPath ?? opts.artifactRoot ?? 'docs/requirements.md',
-    sourceDocumentHash:
-      'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+    sourceDocumentHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
     implementationConfirmationHash:
       'sha256:2222222222222222222222222222222222222222222222222222222222222222',
-    confirmationPageHash:
-      'sha256:3333333333333333333333333333333333333333333333333333333333333333',
+    confirmationPageHash: 'sha256:3333333333333333333333333333333333333333333333333333333333333333',
     implementationEntryGate: opts.implementationEntryGate ?? {
       gateName: 'implementation-readiness',
       requestedFlow: flow === 'bugfix' || flow === 'standalone_tasks' ? flow : 'story',
@@ -185,7 +182,9 @@ export function writeMinimalRequirementRecordContext(
         .replace(/\\/g, '/'),
     },
     recoveryContextRef: {
-      path: path.relative(root, path.join(recoveryRoot, 'recovery-context.json')).replace(/\\/g, '/'),
+      path: path
+        .relative(root, path.join(recoveryRoot, 'recovery-context.json'))
+        .replace(/\\/g, '/'),
     },
     ...(opts.latestReviewerCloseout ? { latestReviewerCloseout: opts.latestReviewerCloseout } : {}),
   };

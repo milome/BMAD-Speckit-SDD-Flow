@@ -75,14 +75,16 @@ const {
   extractImplementationConfirmation,
   sourceDocumentHashFor,
   implementationConfirmationHashFor,
-} = requireForReverseAudit(path.join(
-  ROOT,
-  '_bmad',
-  'skills',
-  'requirements-contract-authoring',
-  'scripts',
-  'pre_render_definition_drilldown_lib.js'
-));
+} = requireForReverseAudit(
+  path.join(
+    ROOT,
+    '_bmad',
+    'skills',
+    'requirements-contract-authoring',
+    'scripts',
+    'pre_render_definition_drilldown_lib.js'
+  )
+);
 
 let tempDir: string;
 
@@ -108,19 +110,32 @@ function fixedHash(char: string): string {
   return `sha256:${char.repeat(64)}`;
 }
 
-function writeValidDrilldownGateReport(source: string, reportPath = path.join(tempDir, 'pre-render-must-decomposition-gate-report.json'), overrides: Record<string, any> = {}) {
+function writeValidDrilldownGateReport(
+  source: string,
+  reportPath = path.join(tempDir, 'pre-render-must-decomposition-gate-report.json'),
+  overrides: Record<string, any> = {}
+) {
   const text = fs.readFileSync(source, 'utf8');
   const extracted = extractImplementationConfirmation(text);
-  const sourceDocumentHash = sourceDocumentHashFor(text, extracted.blockText, extracted.confirmation);
+  const sourceDocumentHash = sourceDocumentHashFor(
+    text,
+    extracted.blockText,
+    extracted.confirmation
+  );
   const implementationConfirmationHash = implementationConfirmationHashFor(extracted.confirmation);
   const report = {
     schemaVersion: 'pre-render-must-decomposition-gate-report/v1',
     verdict: overrides.verdict ?? 'PASS',
     confirmability: overrides.confirmability ?? 'confirmable',
     sourceDocumentHash: overrides.sourceDocumentHash ?? sourceDocumentHash,
-    implementationConfirmationHash: overrides.implementationConfirmationHash ?? implementationConfirmationHash,
+    implementationConfirmationHash:
+      overrides.implementationConfirmationHash ?? implementationConfirmationHash,
     semanticKernelRef: { path: path.join(tempDir, 'semantic-kernel.json'), hash: fixedHash('b') },
-    mustDecompositionPacketRef: { path: path.join(tempDir, 'must_decomposition_packet.json'), hash: fixedHash('a'), status: 'synchronized' },
+    mustDecompositionPacketRef: {
+      path: path.join(tempDir, 'must_decomposition_packet.json'),
+      hash: fixedHash('a'),
+      status: 'synchronized',
+    },
     criticalAuditor: {
       minimumRounds: 3,
       consecutiveNoNewGapRounds: overrides.consecutiveNoNewGapRounds ?? 3,
@@ -140,14 +155,29 @@ function writeValidDrilldownGateReport(source: string, reportPath = path.join(te
 
 function writeSource(overrides = ''): string {
   const file = path.join(tempDir, 'source.md');
-  const acceptanceTestPath = path.join(tempDir, 'tests', 'acceptance', 'reverse-audit.acceptance.test.ts');
+  const acceptanceTestPath = path.join(
+    tempDir,
+    'tests',
+    'acceptance',
+    'reverse-audit.acceptance.test.ts'
+  );
   const e2eTestPath = path.join(tempDir, 'tests', 'e2e', 'reverse-audit.e2e.test.ts');
   fs.mkdirSync(path.dirname(acceptanceTestPath), { recursive: true });
   fs.mkdirSync(path.dirname(e2eTestPath), { recursive: true });
-  fs.writeFileSync(acceptanceTestPath, 'import { it } from "vitest"; it("acceptance oracle", () => {});\n', 'utf8');
-  fs.writeFileSync(e2eTestPath, 'import { it } from "vitest"; it("e2e oracle", () => {});\n', 'utf8');
+  fs.writeFileSync(
+    acceptanceTestPath,
+    'import { it } from "vitest"; it("acceptance oracle", () => {});\n',
+    'utf8'
+  );
+  fs.writeFileSync(
+    e2eTestPath,
+    'import { it } from "vitest"; it("e2e oracle", () => {});\n',
+    'utf8'
+  );
   const missingViews = overrides.includes('MISSING_VIEWS');
-  const vague = overrides.includes('VAGUE_REQUIREMENT') ? ' and handle it efficiently as needed' : '';
+  const vague = overrides.includes('VAGUE_REQUIREMENT')
+    ? ' and handle it efficiently as needed'
+    : '';
   const sideEffect = overrides.includes('SIDE_EFFECT') ? ' and write a control file' : '';
   const conflict = overrides.includes('CONFLICT_OUT')
     ? 'Do not let the user confirm a scoped behavior.'
@@ -262,11 +292,15 @@ implementationConfirmation:
       requiredCommandRefs: ["${commandRef}"]
       artifactRefs: ["ART-EVD-001"]
       acceptanceType: acceptance_e2e
-  openQuestions:${overrides.includes('BLOCKING_QUESTION') ? `
+  openQuestions:${
+    overrides.includes('BLOCKING_QUESTION')
+      ? `
     - id: Q-001
       text: "User decision is still required."
       blocksImplementation: true
-` : ' []'}
+`
+      : ' []'
+  }
   failurePaths:
     - id: FAIL-001
       title: "Smoke-only result rejected"
@@ -400,30 +434,46 @@ implementationConfirmation:
       viewRefs: ["BOUNDARY-001"]
       diagramRefs: ["MERMAID-002"]
   sequenceViews:${missingViews ? ' []' : ''}
-${missingViews ? '' : `    - id: SEQ-001
+${
+  missingViews
+    ? ''
+    : `    - id: SEQ-001
       title: "Fixture happy and failure path"
       scope: business
       covers: ["MUST-001", "NEG-001", "EVD-001"]
-`}
+`
+}
   flowViews:${missingViews ? ' []' : ''}
-${missingViews ? '' : `    - id: FLOW-001
+${
+  missingViews
+    ? ''
+    : `    - id: FLOW-001
       title: "Fixture flow"
       scope: business
       covers: ["MUST-001", "NEG-001"]
-`}
+`
+}
   edgeCaseViews:${missingViews ? ' []' : ''}
-${missingViews ? '' : `    - id: EDGEVIEW-001
+${
+  missingViews
+    ? ''
+    : `    - id: EDGEVIEW-001
       title: "Smoke-only edge case"
       scope: business
       covers: ["NEG-001"]
       cases: ["EDGE-001"]
-`}
+`
+}
   boundaryViews:${missingViews ? ' []' : ''}
-${missingViews ? '' : `    - id: BOUNDARY-001
+${
+  missingViews
+    ? ''
+    : `    - id: BOUNDARY-001
       title: "Fixture boundary"
       scope: governance
       covers: ["OUT-001"]
-`}
+`
+}
   artifactAutomationPlan:
     - artifactId: ART-EVD-001
       path: "_bmad-output/runtime/fixture/evidence.json"
@@ -561,38 +611,52 @@ function runRenderer(source: string) {
   return { result, report, reportPath, out };
 }
 
-function patchConfirmationRender(source: string, render: { report: any; reportPath: string; out: string }) {
+function patchConfirmationRender(
+  source: string,
+  render: { report: any; reportPath: string; out: string }
+) {
   const original = fs.readFileSync(source, 'utf8');
   const patched = original
-    .replace('  sourceDocumentHash: null', `  sourceDocumentHash: "${render.report.sourceDocumentHash}"`)
+    .replace(
+      '  sourceDocumentHash: null',
+      `  sourceDocumentHash: "${render.report.sourceDocumentHash}"`
+    )
     .replace(
       '  implementationConfirmationHash: null',
       `  implementationConfirmationHash: "${render.report.implementationConfirmationHash}"`
     )
     .replace(
-    /  confirmationRender:\n    htmlPath: null\n    summaryPath: null\n    reportPath: null\n    htmlHash: null\n    confirmationPhrase: null/u,
-    `  confirmationRender:
+      / {2}confirmationRender:\n {4}htmlPath: null\n {4}summaryPath: null\n {4}reportPath: null\n {4}htmlHash: null\n {4}confirmationPhrase: null/u,
+      `  confirmationRender:
     htmlPath: "${render.out.replace(/\\/g, '/')}"
     summaryPath: "${path.join(tempDir, 'confirmation-summary.json').replace(/\\/g, '/')}"
     reportPath: "${render.reportPath.replace(/\\/g, '/')}"
     htmlHash: "${render.report.confirmationPageHash}"
     confirmationPhrase: ${JSON.stringify(render.report.confirmInstruction)}`
-  );
+    );
   fs.writeFileSync(source, patched, 'utf8');
 }
 
 function runReverseAudit(source: string, reportPath: string, extraArgs: string[] = []) {
-  const result = spawnSync(process.execPath, [REVERSE_AUDIT, source, '--render-report', reportPath, ...extraArgs, '--json'], {
-    cwd: ROOT,
-    encoding: 'utf8',
-  });
+  const result = spawnSync(
+    process.execPath,
+    [REVERSE_AUDIT, source, '--render-report', reportPath, ...extraArgs, '--json'],
+    {
+      cwd: ROOT,
+      encoding: 'utf8',
+    }
+  );
   return {
     result,
     report: JSON.parse(result.stdout),
   };
 }
 
-function writeRequirementRecordForReadiness(source: string, render: { report: any }, attemptId = 'attempt-current') {
+function writeRequirementRecordForReadiness(
+  source: string,
+  render: { report: any },
+  attemptId = 'attempt-current'
+) {
   const recordPath = path.join(tempDir, 'requirement-record.json');
   const artifactPath = path.join(tempDir, 'evidence', 'command-output.txt');
   fs.mkdirSync(path.dirname(artifactPath), { recursive: true });
@@ -641,7 +705,9 @@ function writeRequirementRecordForReadiness(source: string, render: { report: an
         runId: 'run-current',
         traceRows: ['TRACE-001'],
         evidenceRefs: ['EVD-001'],
-        commandRunRefs: [{ commandId: 'CMD-001', runId: 'run-current', closeoutAttemptId: attemptId, exitCode: 0 }],
+        commandRunRefs: [
+          { commandId: 'CMD-001', runId: 'run-current', closeoutAttemptId: attemptId, exitCode: 0 },
+        ],
       },
     ],
     requirementClosures: [
@@ -650,7 +716,9 @@ function writeRequirementRecordForReadiness(source: string, render: { report: an
         status: 'pass',
         traceRows: ['TRACE-001'],
         evidenceRefs: ['EVD-001'],
-        commandRunRefs: [{ commandId: 'CMD-001', runId: 'run-current', closeoutAttemptId: attemptId, exitCode: 0 }],
+        commandRunRefs: [
+          { commandId: 'CMD-001', runId: 'run-current', closeoutAttemptId: attemptId, exitCode: 0 },
+        ],
       },
     ],
     artifactIndex: [artifact],
@@ -660,10 +728,14 @@ function writeRequirementRecordForReadiness(source: string, render: { report: an
 }
 
 function runDefinitionAudit(source: string) {
-  const result = spawnSync(process.execPath, [REVERSE_AUDIT, source, '--definition-only', '--json'], {
-    cwd: ROOT,
-    encoding: 'utf8',
-  });
+  const result = spawnSync(
+    process.execPath,
+    [REVERSE_AUDIT, source, '--definition-only', '--json'],
+    {
+      cwd: ROOT,
+      encoding: 'utf8',
+    }
+  );
   return {
     result,
     report: JSON.parse(result.stdout),
@@ -671,21 +743,34 @@ function runDefinitionAudit(source: string) {
 }
 
 function runPreRenderDrilldown(source: string, extraArgs: string[] = []) {
-  const result = spawnSync(process.execPath, [PRE_RENDER_DRILLDOWN, source, ...extraArgs, '--json'], {
-    cwd: ROOT,
-    encoding: 'utf8',
-  });
+  const result = spawnSync(
+    process.execPath,
+    [PRE_RENDER_DRILLDOWN, source, ...extraArgs, '--json'],
+    {
+      cwd: ROOT,
+      encoding: 'utf8',
+    }
+  );
   return {
     result,
     report: JSON.parse(result.stdout),
   };
 }
 
-function runStageAudit(script: string, source: string, reportPath: string, extraArgs: string[] = []) {
-  const result = spawnSync(process.execPath, [script, source, '--render-report', reportPath, ...extraArgs, '--json'], {
-    cwd: ROOT,
-    encoding: 'utf8',
-  });
+function runStageAudit(
+  script: string,
+  source: string,
+  reportPath: string,
+  extraArgs: string[] = []
+) {
+  const result = spawnSync(
+    process.execPath,
+    [script, source, '--render-report', reportPath, ...extraArgs, '--json'],
+    {
+      cwd: ROOT,
+      encoding: 'utf8',
+    }
+  );
   return {
     result,
     report: JSON.parse(result.stdout),
@@ -701,10 +786,13 @@ describe('reverse_audit_contract', () => {
 
     const audit = runReverseAudit(source, render.reportPath);
 
-    expect(audit.result.status, JSON.stringify({
-      failedChecks: audit.report.failedChecks,
-      findings: audit.report.findings,
-    })).toBe(0);
+    expect(
+      audit.result.status,
+      JSON.stringify({
+        failedChecks: audit.report.failedChecks,
+        findings: audit.report.findings,
+      })
+    ).toBe(0);
     expect(audit.report.verdict).toBe('PASS');
     expect(audit.report.rendererAuthority.confirmability).toBe('confirmable');
     expect(audit.report.rendererAuthority.deliveryReadiness.ready).toBe(false);
@@ -750,45 +838,63 @@ describe('reverse_audit_contract', () => {
     const audit = runReverseAudit(source, missingReportPath);
 
     expect(audit.result.status).toBe(1);
-    expect(audit.report.failedChecks).toContain('missing_pre_confirmation_semantic_drilldown_gate_report');
+    expect(audit.report.failedChecks).toContain(
+      'missing_pre_confirmation_semantic_drilldown_gate_report'
+    );
     expect(
-      audit.report.findings.find((finding: any) => finding.code === 'missing_pre_confirmation_semantic_drilldown_gate_report')
+      audit.report.findings.find(
+        (finding: any) => finding.code === 'missing_pre_confirmation_semantic_drilldown_gate_report'
+      )
     ).toMatchObject({
       repairAction: 'run_authoring_repair_preserve_existing',
     });
     expect(
-      audit.report.findings.find((finding: any) => finding.code === 'missing_pre_confirmation_semantic_drilldown_gate_report')
-        ?.repairCommand
+      audit.report.findings.find(
+        (finding: any) => finding.code === 'missing_pre_confirmation_semantic_drilldown_gate_report'
+      )?.repairCommand
     ).toContain('main-agent-orchestration --action authoring-repair --mode preserve-existing');
   });
 
   it('fails contract confirmability when the drilldown gate report hash is stale', () => {
     const source = writeSource();
-    const staleGateReport = writeValidDrilldownGateReport(source, path.join(tempDir, 'stale-drilldown-report.json'), {
-      sourceDocumentHash: fixedHash('d'),
-    });
+    const staleGateReport = writeValidDrilldownGateReport(
+      source,
+      path.join(tempDir, 'stale-drilldown-report.json'),
+      {
+        sourceDocumentHash: fixedHash('d'),
+      }
+    );
     const render = runRenderer(source);
     render.report.preConfirmationSemanticDrilldown.reportPath = staleGateReport.replace(/\\/g, '/');
     fs.writeFileSync(render.reportPath, JSON.stringify(render.report, null, 2), 'utf8');
     patchConfirmationRender(source, render);
 
-    const audit = runReverseAudit(source, render.reportPath, ['--drilldown-gate-report', staleGateReport]);
+    const audit = runReverseAudit(source, render.reportPath, [
+      '--drilldown-gate-report',
+      staleGateReport,
+    ]);
 
     expect(audit.result.status).toBe(1);
-    expect(audit.report.failedChecks).toContain('pre_confirmation_semantic_drilldown_gate_source_hash_stale');
+    expect(audit.report.failedChecks).toContain(
+      'pre_confirmation_semantic_drilldown_gate_source_hash_stale'
+    );
   });
 
   it('fails contract confirmability when renderer omits the semantic drilldown section', () => {
     const source = writeSource();
     const render = runRenderer(source);
-    render.report.renderedSections = render.report.renderedSections.filter((section: string) => section !== 'pre-confirmation-semantic-drilldown');
+    render.report.renderedSections = render.report.renderedSections.filter(
+      (section: string) => section !== 'pre-confirmation-semantic-drilldown'
+    );
     fs.writeFileSync(render.reportPath, JSON.stringify(render.report, null, 2), 'utf8');
     patchConfirmationRender(source, render);
 
     const audit = runReverseAudit(source, render.reportPath);
 
     expect(audit.result.status).toBe(1);
-    expect(audit.report.failedChecks).toContain('renderer_missing_pre_confirmation_drilldown_sections');
+    expect(audit.report.failedChecks).toContain(
+      'renderer_missing_pre_confirmation_drilldown_sections'
+    );
   });
 
   it('fails when renderer blockingIssues are present', () => {
@@ -823,7 +929,10 @@ describe('reverse_audit_contract', () => {
     patchConfirmationRender(source, render);
     const patched = fs
       .readFileSync(source, 'utf8')
-      .replace(`sourceDocumentHash: "${render.report.sourceDocumentHash}"`, 'sourceDocumentHash: "sha256:stale"');
+      .replace(
+        `sourceDocumentHash: "${render.report.sourceDocumentHash}"`,
+        'sourceDocumentHash: "sha256:stale"'
+      );
     fs.writeFileSync(source, patched, 'utf8');
 
     const audit = runReverseAudit(source, render.reportPath);
@@ -860,13 +969,18 @@ describe('reverse_audit_contract', () => {
 
   it('reports missing reconfirmation request details when reconfirmation is required', () => {
     const source = writeSource('DRAFT');
-    const text = fs.readFileSync(source, 'utf8').replace('status: draft', 'status: reconfirm_required');
+    const text = fs
+      .readFileSync(source, 'utf8')
+      .replace('status: draft', 'status: reconfirm_required');
     fs.writeFileSync(source, text, 'utf8');
     const render = runRenderer(source);
     patchConfirmationRender(source, render);
     const drifted = fs
       .readFileSync(source, 'utf8')
-      .replace(`sourceDocumentHash: "${render.report.sourceDocumentHash}"`, 'sourceDocumentHash: "sha256:old-source"')
+      .replace(
+        `sourceDocumentHash: "${render.report.sourceDocumentHash}"`,
+        'sourceDocumentHash: "sha256:old-source"'
+      )
       .replace(
         `implementationConfirmationHash: "${render.report.implementationConfirmationHash}"`,
         'implementationConfirmationHash: "sha256:old-confirmation"'
@@ -890,8 +1004,14 @@ describe('reverse_audit_contract', () => {
     expect(audit.report.findings).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ code: 'trace_row_unknown_cover_ref', source: 'reverse_audit' }),
-        expect.objectContaining({ code: 'trace_row_unknown_evidence_ref', source: 'reverse_audit' }),
-        expect.objectContaining({ code: 'trace_row_unknown_task_contract_ref', source: 'reverse_audit' }),
+        expect.objectContaining({
+          code: 'trace_row_unknown_evidence_ref',
+          source: 'reverse_audit',
+        }),
+        expect.objectContaining({
+          code: 'trace_row_unknown_task_contract_ref',
+          source: 'reverse_audit',
+        }),
       ])
     );
   });
@@ -906,8 +1026,14 @@ describe('reverse_audit_contract', () => {
     expect(audit.result.status).toBe(1);
     expect(audit.report.findings).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ code: 'trace_row_unknown_acceptance_ref', source: 'reverse_audit' }),
-        expect.objectContaining({ code: 'acceptance_unknown_requirement_ref', source: 'reverse_audit' }),
+        expect.objectContaining({
+          code: 'trace_row_unknown_acceptance_ref',
+          source: 'reverse_audit',
+        }),
+        expect.objectContaining({
+          code: 'acceptance_unknown_requirement_ref',
+          source: 'reverse_audit',
+        }),
         expect.objectContaining({ code: 'acceptance_oracle_smoke_only', source: 'reverse_audit' }),
       ])
     );
@@ -969,10 +1095,12 @@ describe('reverse_audit_contract', () => {
 
   it('does not treat fail-closed error-case coverage wording as a contradiction', () => {
     const source = writeSource();
-    const text = fs.readFileSync(source, 'utf8').replace(
-      'expectedBehavior: "Block completion until independent evidence exists."',
-      'expectedBehavior: "Contract completeness blocks readiness and closeout until independent evidence exists."'
-    );
+    const text = fs
+      .readFileSync(source, 'utf8')
+      .replace(
+        'expectedBehavior: "Block completion until independent evidence exists."',
+        'expectedBehavior: "Contract completeness blocks readiness and closeout until independent evidence exists."'
+      );
     fs.writeFileSync(source, text, 'utf8');
 
     const audit = runPreRenderDrilldown(source);
@@ -1057,7 +1185,9 @@ describe('reverse_audit_contract', () => {
     expect(audit.report.convergence.newBlockingCount).toBeGreaterThan(1);
     expect(audit.report.convergence.emittedBlockingCount).toBe(1);
     expect(audit.report.convergence.truncatedBlockingCount).toBeGreaterThan(0);
-    expect(audit.report.findings.filter((item: any) => item.severity !== 'warning')).toHaveLength(1);
+    expect(audit.report.findings.filter((item: any) => item.severity !== 'warning')).toHaveLength(
+      1
+    );
   });
 
   it('emits a decision packet for remaining blocking definition clusters', () => {
@@ -1075,7 +1205,9 @@ describe('reverse_audit_contract', () => {
     expect(packet.stopReason).toBe('requires_user_decision');
     expect(packet.remainingBlockingClusters.length).toBeGreaterThan(0);
     expect(packet.recommendedActions).toEqual(
-      expect.arrayContaining([expect.stringMatching(/add_evidence_oracle|split_requirement|convert_to_open_question/)])
+      expect.arrayContaining([
+        expect.stringMatching(/add_evidence_oracle|split_requirement|convert_to_open_question/),
+      ])
     );
   });
 
@@ -1102,7 +1234,9 @@ describe('reverse_audit_contract', () => {
 
     expect(audit.status).toBe(1);
     expect(report.failedChecks).toContain('definition_glossary_conflict');
-    expect(report.contextRefs).toEqual(expect.arrayContaining([expect.stringContaining('domain/CONTEXT.md')]));
+    expect(report.contextRefs).toEqual(
+      expect.arrayContaining([expect.stringContaining('domain/CONTEXT.md')])
+    );
   });
 
   it('fails delivery readiness only in readiness mode', () => {

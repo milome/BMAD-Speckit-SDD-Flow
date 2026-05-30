@@ -38,7 +38,6 @@ export interface CreateRuntimeDashboardFixtureOptions {
 
 export { REAL_TOOL_TRACE_FIXTURE_MANIFEST as REAL_TOOL_TRACE_VARIANT_CONFIG };
 
-
 function initGitRepoWithCommittedDiff(root: string): string {
   const workFile = path.join(root, 'src', 'runtime-dashboard.ts');
   fs.mkdirSync(path.dirname(workFile), { recursive: true });
@@ -63,7 +62,7 @@ function initGitRepoWithCommittedDiff(root: string): string {
   fs.writeFileSync(
     workFile,
     [
-      "export const renderDashboard = () => ({",
+      'export const renderDashboard = () => ({',
       "  status: 'live',",
       "  panels: ['overview', 'runtime', 'timeline', 'score', 'sft'],",
       '});',
@@ -136,7 +135,8 @@ function buildCanonicalFixtureSample(
         { role: 'user', content: '请修复 runtime dashboard 的问题。' },
         {
           role: 'assistant',
-          content: 'export const renderDashboard = () => ({ panels: [\'overview\', \'runtime\', \'timeline\', \'score\', \'sft\'] });',
+          content:
+            "export const renderDashboard = () => ({ panels: ['overview', 'runtime', 'timeline', 'score', 'sft'] });",
           tool_calls: [
             {
               id: `call-clean-${runId}`,
@@ -274,8 +274,16 @@ function buildCanonicalFixtureSample(
       },
       export_compatibility: {
         openai_chat: { compatible: true, reasons: [], warnings: ['warning_redacted_noncritical'] },
-        hf_conversational: { compatible: true, reasons: [], warnings: ['warning_redacted_noncritical'] },
-        hf_tool_calling: { compatible: true, reasons: [], warnings: ['warning_redacted_noncritical'] },
+        hf_conversational: {
+          compatible: true,
+          reasons: [],
+          warnings: ['warning_redacted_noncritical'],
+        },
+        hf_tool_calling: {
+          compatible: true,
+          reasons: [],
+          warnings: ['warning_redacted_noncritical'],
+        },
       },
     };
   }
@@ -343,7 +351,6 @@ function writeBugfixDoc(root: string): string {
   return docPath;
 }
 
-
 function replayRealCursorToolTraceFixture(
   root: string,
   runId: string,
@@ -408,7 +415,8 @@ function replayRealCursorToolTraceFixture(
   const toolTracePath = path.join(artifactDir, `${config.stage}.json`);
   fs.writeFileSync(
     toolTracePath,
-    JSON.stringify(buildCanonicalFixtureSample(runId, config.stage, sourcePath, variant), null, 2) + '\n',
+    JSON.stringify(buildCanonicalFixtureSample(runId, config.stage, sourcePath, variant), null, 2) +
+      '\n',
     'utf-8'
   );
   if (config.stage !== 'implement') {
@@ -501,7 +509,6 @@ export async function createRuntimeDashboardFixture(
       });
       lastBundleId = bundle.manifest.bundle_id;
     }
-
   } else {
     await parseAndWriteScore({
       content: fs.readFileSync(getReportFixturePathForStage('implement'), 'utf-8'),

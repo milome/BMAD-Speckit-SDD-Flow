@@ -89,7 +89,11 @@ function readinessReportContent(record: JsonObject): string {
   ].join('\n');
 }
 
-function writeReadinessAuditReport(recordPath: string, auditRequestId: string, record: JsonObject): string {
+function writeReadinessAuditReport(
+  recordPath: string,
+  auditRequestId: string,
+  record: JsonObject
+): string {
   const out = path.join(recordRoot(recordPath), 'readiness-audit', `${auditRequestId}.md`);
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, readinessReportContent(record), 'utf8');
@@ -103,10 +107,7 @@ function sha256File(filePath: string): string | null {
   return sha256Text(fs.readFileSync(filePath, 'utf8'));
 }
 
-function writeReadinessAuditManifest(
-  recordPath: string,
-  manifest: JsonObject
-): string {
+function writeReadinessAuditManifest(recordPath: string, manifest: JsonObject): string {
   const out = path.join(recordRoot(recordPath), 'readiness-audit', 'manifest.json');
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
@@ -162,14 +163,17 @@ function resolveReadinessAuditContext(
   );
 }
 
-function appendEvent(recordPath: string, input: {
-  writerId: string;
-  eventType: string;
-  recordedAt: string;
-  payload: JsonObject;
-  appendField: 'readinessAuditRequests' | 'readinessAuditResults' | 'readinessScoringRecords';
-  lastEventType: string;
-}): void {
+function appendEvent(
+  recordPath: string,
+  input: {
+    writerId: string;
+    eventType: string;
+    recordedAt: string;
+    payload: JsonObject;
+    appendField: 'readinessAuditRequests' | 'readinessAuditResults' | 'readinessScoringRecords';
+    lastEventType: string;
+  }
+): void {
   appendControlEventAndReplay({
     recordPath,
     writerId: input.writerId,
@@ -205,7 +209,9 @@ export async function runControlledReadinessAuditBridge(input: {
   const activationId = readinessContext.activationId;
   const auditRequestId = `readiness-audit:${text(initialRecord.requirementSetId)}:${now}`;
   const baselineId = readinessContext.baselineId;
-  const scoringRunId = input.scoringRunId ?? `${text(initialRecord.requirementSetId)}-readiness-${now.replace(/[^0-9]/gu, '').slice(0, 14)}`;
+  const scoringRunId =
+    input.scoringRunId ??
+    `${text(initialRecord.requirementSetId)}-readiness-${now.replace(/[^0-9]/gu, '').slice(0, 14)}`;
   const dataPath = resolveRuntimeScoringDataPath({
     root,
     dataPath: input.dataPath,
@@ -213,7 +219,10 @@ export async function runControlledReadinessAuditBridge(input: {
   const sourceRequirementRecordHash = sha256Json(initialRecord);
   const traceDir = path.join(recordRoot(recordPath), 'readiness-audit');
   fs.mkdirSync(traceDir, { recursive: true });
-  const toolTracePath = path.join(traceDir, `${auditRequestId.replace(/[^a-zA-Z0-9._-]/gu, '_')}.tool-trace.json`);
+  const toolTracePath = path.join(
+    traceDir,
+    `${auditRequestId.replace(/[^a-zA-Z0-9._-]/gu, '_')}.tool-trace.json`
+  );
   const toolTrace = {
     auditRequestId,
     activationId,
@@ -244,7 +253,11 @@ export async function runControlledReadinessAuditBridge(input: {
   });
 
   const recordAfterRequest = readJson(recordPath);
-  const readinessAuditReportPath = writeReadinessAuditReport(recordPath, auditRequestId.replace(/[^a-zA-Z0-9._-]/gu, '_'), recordAfterRequest);
+  const readinessAuditReportPath = writeReadinessAuditReport(
+    recordPath,
+    auditRequestId.replace(/[^a-zA-Z0-9._-]/gu, '_'),
+    recordAfterRequest
+  );
   const readinessAuditReportHash = sha256Text(fs.readFileSync(readinessAuditReportPath, 'utf8'));
   const content = fs.readFileSync(readinessAuditReportPath, 'utf8');
 
@@ -370,7 +383,9 @@ export async function runControlledReadinessAuditBridge(input: {
     architectureConfirmationHash: currentArchitectureHash(initialRecord),
     score: scoreRecord.phase_score,
     rawScore: scoreRecord.raw_phase_score ?? scoreRecord.phase_score,
-    dimensions: Object.fromEntries(dimensionScores.map((dimension) => [dimension.dimension, dimension.score])),
+    dimensions: Object.fromEntries(
+      dimensionScores.map((dimension) => [dimension.dimension, dimension.score])
+    ),
     recordedAt: now,
   };
   appendControlEventAndReplay({

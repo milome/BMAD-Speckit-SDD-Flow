@@ -112,4 +112,3 @@ describe('e2e host matrix journey runner', () => {
     }
   }, 120000);
 });
-

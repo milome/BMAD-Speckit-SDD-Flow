@@ -21,7 +21,9 @@ function stableStringify(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map((item) => stableStringify(item)).join(',')}]`;
   return `{${Object.keys(value)
     .sort()
-    .map((key) => `${JSON.stringify(key)}:${stableStringify((value as Record<string, unknown>)[key])}`)
+    .map(
+      (key) => `${JSON.stringify(key)}:${stableStringify((value as Record<string, unknown>)[key])}`
+    )
     .join(',')}}`;
 }
 
@@ -39,7 +41,12 @@ describe('execution discipline profiles', () => {
       expect(profile.authority).toBe('discipline_profile_only');
       expect(profile.profileHash).toMatch(/^sha256:[a-f0-9]{64}$/u);
       expect(profile.requiredEvidence).toEqual(
-        expect.arrayContaining(['task_report', 'validation_commands', 'audit_report', 'score_receipt'])
+        expect.arrayContaining([
+          'task_report',
+          'validation_commands',
+          'audit_report',
+          'score_receipt',
+        ])
       );
       expect(profile.auditScoringConvergencePolicy).toMatchObject({
         auditPassRequired: true,
@@ -56,7 +63,9 @@ describe('execution discipline profiles', () => {
 
   it('keeps source authority fields out of every profile', () => {
     for (const profile of Object.values(EXECUTION_DISCIPLINE_PROFILES)) {
-      const profileAuthoritySurface = Object.keys(profile).filter((key) => key !== 'forbiddenOverrides');
+      const profileAuthoritySurface = Object.keys(profile).filter(
+        (key) => key !== 'forbiddenOverrides'
+      );
       for (const forbidden of FORBIDDEN_AUTHORITY_FIELDS) {
         expect(profileAuthoritySurface).not.toContain(forbidden);
       }
@@ -76,7 +85,9 @@ describe('execution discipline profiles', () => {
 
   it('uses the same canonical stable hash contract consumed by req-trace', () => {
     for (const profile of Object.values(EXECUTION_DISCIPLINE_PROFILES)) {
-      expect(profile.profileHash).toBe(canonicalProfileHash(profile as unknown as Record<string, unknown>));
+      expect(profile.profileHash).toBe(
+        canonicalProfileHash(profile as unknown as Record<string, unknown>)
+      );
     }
   });
 
@@ -97,7 +108,12 @@ describe('execution discipline profiles', () => {
       expect(profile.lintPolicy).toMatchObject({ required: true, blockOnWarnings: true });
       expect(profile.docCommentPolicy.publicApiRequired).toBe(true);
       expect(profile.subagentContinuityPolicy.returnAllowedOnlyOn).toEqual(
-        expect.arrayContaining(['scope_complete', 'real_blocker', 'audit_boundary', 'resume_checkpoint'])
+        expect.arrayContaining([
+          'scope_complete',
+          'real_blocker',
+          'audit_boundary',
+          'resume_checkpoint',
+        ])
       );
       expect(profile.auditReportContract).toMatchObject({
         parseableScoreBlockRequired: true,

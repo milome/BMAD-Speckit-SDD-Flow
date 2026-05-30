@@ -52,11 +52,14 @@ describe('runtime-governance matrix (U-1.2a)', () => {
     { flow: 'epic', stage: 'epic_complete', label: 'epic × epic_complete' },
   ];
 
-  it.each(cases)('$label: legacy-aligned policy fields match bmad-config helpers', ({ flow, stage }) => {
-    const policy = resolveRuntimePolicy({ flow, stage, config });
-    expectLegacyAlignedFields(policy, flow, stage, config);
-    expect(policy.reason).toContain('legacy:');
-  });
+  it.each(cases)(
+    '$label: legacy-aligned policy fields match bmad-config helpers',
+    ({ flow, stage }) => {
+      const policy = resolveRuntimePolicy({ flow, stage, config });
+      expectLegacyAlignedFields(policy, flow, stage, config);
+      expect(policy.reason).toContain('legacy:');
+    }
+  );
 });
 
 describe('U-1.7b mandatoryGate vs granularity-governed', () => {

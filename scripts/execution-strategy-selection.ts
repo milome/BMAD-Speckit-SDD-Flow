@@ -123,8 +123,10 @@ export function buildExecutionStrategyOptions(input: {
   const modelPacketHash = text(ref?.modelPacketHash);
   const sourceDocumentHash = text(ref?.sourceDocumentHash);
   const implementationConfirmationHash = text(ref?.implementationConfirmationHash);
-  if (!SHA256_PATTERN.test(modelPacketHash)) blockingReasons.push('model_packet_hash_missing_or_invalid');
-  if (!SHA256_PATTERN.test(sourceDocumentHash)) blockingReasons.push('source_document_hash_missing_or_invalid');
+  if (!SHA256_PATTERN.test(modelPacketHash))
+    blockingReasons.push('model_packet_hash_missing_or_invalid');
+  if (!SHA256_PATTERN.test(sourceDocumentHash))
+    blockingReasons.push('source_document_hash_missing_or_invalid');
   if (!SHA256_PATTERN.test(implementationConfirmationHash)) {
     blockingReasons.push('implementation_confirmation_hash_missing_or_invalid');
   }
@@ -207,12 +209,16 @@ export function selectExecutionStrategy(input: {
   policyDefaultAllowed?: boolean;
 }): ExecutionStrategySelection {
   if (input.optionsResult.status !== 'pass') {
-    throw new Error(`strategy options are not available: ${input.optionsResult.blockingReasons.join(',')}`);
+    throw new Error(
+      `strategy options are not available: ${input.optionsResult.blockingReasons.join(',')}`
+    );
   }
   const option = input.optionsResult.options.find((item) => item.strategyId === input.strategyId);
   if (!option) throw new Error(`unknown execution strategy: ${input.strategyId}`);
   if (option.availability !== 'available') {
-    throw new Error(`execution strategy is not available: ${input.strategyId}:${option.availability}`);
+    throw new Error(
+      `execution strategy is not available: ${input.strategyId}:${option.availability}`
+    );
   }
   if (input.selectedBy === 'user') {
     const expected = exactExecutionStrategySelectionPhrase({
@@ -242,14 +248,18 @@ export function selectExecutionStrategy(input: {
   };
 }
 
-export function validateExecutionStrategySelectionEvent(event: Partial<ExecutionStrategySelectionEvent>): string[] {
+export function validateExecutionStrategySelectionEvent(
+  event: Partial<ExecutionStrategySelectionEvent>
+): string[] {
   const issues: string[] = [];
-  if (event.eventType !== EXECUTION_STRATEGY_SELECTION_EVENT_TYPE) issues.push('event_type_invalid');
+  if (event.eventType !== EXECUTION_STRATEGY_SELECTION_EVENT_TYPE)
+    issues.push('event_type_invalid');
   if (!text(event.recordId)) issues.push('record_id_missing');
   if (!text(event.requirementSetId)) issues.push('requirement_set_id_missing');
   if (!text(event.strategyId)) issues.push('strategy_id_missing');
   if (event.availability !== 'available') issues.push('strategy_availability_not_available');
-  if (event.selectedBy !== 'user' && event.selectedBy !== 'policy') issues.push('selected_by_invalid');
+  if (event.selectedBy !== 'user' && event.selectedBy !== 'policy')
+    issues.push('selected_by_invalid');
   for (const field of [
     'strategyOptionsHash',
     'selectedOptionHash',
@@ -259,7 +269,8 @@ export function validateExecutionStrategySelectionEvent(event: Partial<Execution
   ] as const) {
     if (!SHA256_PATTERN.test(text(event[field]))) issues.push(`${field}_missing_or_invalid`);
   }
-  if (!Array.isArray(event.sourceRefs) || event.sourceRefs.length === 0) issues.push('source_refs_missing');
+  if (!Array.isArray(event.sourceRefs) || event.sourceRefs.length === 0)
+    issues.push('source_refs_missing');
   if (!text(event.recordedAt)) issues.push('recorded_at_missing');
   if (!text(event.recordedBy)) issues.push('recorded_by_missing');
   return issues;

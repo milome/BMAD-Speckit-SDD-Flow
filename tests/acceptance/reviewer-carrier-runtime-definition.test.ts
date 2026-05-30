@@ -21,9 +21,18 @@ describe('reviewer carrier runtime definition', () => {
       const receipts = ensureReviewerRuntimeDefinition(root);
       expect(receipts.map((entry) => entry.host)).toStrictEqual(['cursor', 'claude', 'codex']);
 
-      const cursorRuntime = readFileSync(path.join(root, '.cursor', 'agents', 'code-reviewer.md'), 'utf8');
-      const claudeRuntime = readFileSync(path.join(root, '.claude', 'agents', 'code-reviewer.md'), 'utf8');
-      const codexRuntime = readFileSync(path.join(root, '.codex', 'agents', 'code-reviewer.toml'), 'utf8');
+      const cursorRuntime = readFileSync(
+        path.join(root, '.cursor', 'agents', 'code-reviewer.md'),
+        'utf8'
+      );
+      const claudeRuntime = readFileSync(
+        path.join(root, '.claude', 'agents', 'code-reviewer.md'),
+        'utf8'
+      );
+      const codexRuntime = readFileSync(
+        path.join(root, '.codex', 'agents', 'code-reviewer.toml'),
+        'utf8'
+      );
 
       expect(cursorRuntime).toContain('RUNTIME-MATERIALIZED reviewer');
       expect(cursorRuntime).toContain('source=_bmad/cursor/agents/code-reviewer.md');

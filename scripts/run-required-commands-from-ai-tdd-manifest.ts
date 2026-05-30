@@ -76,7 +76,10 @@ function text(value: unknown): string {
 
 function objects(value: unknown): JsonObject[] {
   return Array.isArray(value)
-    ? value.filter((item): item is JsonObject => Boolean(item) && typeof item === 'object' && !Array.isArray(item))
+    ? value.filter(
+        (item): item is JsonObject =>
+          Boolean(item) && typeof item === 'object' && !Array.isArray(item)
+      )
     : [];
 }
 
@@ -130,7 +133,9 @@ function stableStringify(value: unknown): string {
 function sha256Directory(directory: string): string {
   const entries: string[] = [];
   const walk = (current: string): void => {
-    for (const entry of fs.readdirSync(current, { withFileTypes: true }).sort((left, right) => left.name.localeCompare(right.name))) {
+    for (const entry of fs
+      .readdirSync(current, { withFileTypes: true })
+      .sort((left, right) => left.name.localeCompare(right.name))) {
       const absolute = path.join(current, entry.name);
       const relative = normalizePath(path.relative(directory, absolute));
       if (entry.isDirectory()) {
@@ -227,10 +232,7 @@ function checkPreRunSections(manifest: JsonObject): string[] {
     const section = nested(manifest[sectionName]);
     if (section.ready === true) return [];
     const reasons = strings(section.blockingReasons);
-    return [
-      `${sectionName}_not_ready`,
-      ...reasons.map((reason) => `${sectionName}:${reason}`),
-    ];
+    return [`${sectionName}_not_ready`, ...reasons.map((reason) => `${sectionName}:${reason}`)];
   });
 }
 
@@ -257,12 +259,16 @@ function checkRequiredCommandDefinitions(manifest: JsonObject): string[] {
     if (matches.length > 1) continue;
     const command = matches[0];
     if (!text(command.command)) failures.push(`manifest.requiredCommand.command_missing:${id}`);
-    if (strings(command.files).length === 0) failures.push(`manifest.requiredCommand.files_missing:${id}`);
-    if (strings(command.traceRefs).length === 0) failures.push(`manifest.requiredCommand.traceRefs_missing:${id}`);
-    if (strings(command.evidenceRefs).length === 0) failures.push(`manifest.requiredCommand.evidenceRefs_missing:${id}`);
+    if (strings(command.files).length === 0)
+      failures.push(`manifest.requiredCommand.files_missing:${id}`);
+    if (strings(command.traceRefs).length === 0)
+      failures.push(`manifest.requiredCommand.traceRefs_missing:${id}`);
+    if (strings(command.evidenceRefs).length === 0)
+      failures.push(`manifest.requiredCommand.evidenceRefs_missing:${id}`);
     for (const file of strings(command.files)) {
       const absolute = path.isAbsolute(file) ? file : path.resolve(file);
-      if (!fs.existsSync(absolute)) failures.push(`manifest.requiredCommand.file_missing:${id}:${normalizePath(file)}`);
+      if (!fs.existsSync(absolute))
+        failures.push(`manifest.requiredCommand.file_missing:${id}:${normalizePath(file)}`);
     }
   }
   return failures;
@@ -271,7 +277,9 @@ function checkRequiredCommandDefinitions(manifest: JsonObject): string[] {
 function commandDefinitions(manifest: JsonObject): JsonObject[] {
   const ids = strings(nested(manifest.closeoutProof).requiredCommands);
   const commands = objects(manifest.requiredCommands);
-  return ids.map((id) => commands.find((command) => commandId(command) === id)).filter(Boolean) as JsonObject[];
+  return ids
+    .map((id) => commands.find((command) => commandId(command) === id))
+    .filter(Boolean) as JsonObject[];
 }
 
 function artifactRefForOutput(input: {
@@ -354,7 +362,11 @@ function latestAuditAttemptId(record: JsonObject): string {
   return fromIterations.at(-1) ?? '';
 }
 
-function replaceKnownTargetPlaceholders(value: string, record: JsonObject, closeoutAttemptId: string): string {
+function replaceKnownTargetPlaceholders(
+  value: string,
+  record: JsonObject,
+  closeoutAttemptId: string
+): string {
   const recordId = text(record.recordId);
   const requirementSetId = text(record.requirementSetId) || recordId;
   const auditAttemptId = latestAuditAttemptId(record);
@@ -372,14 +384,26 @@ function replaceKnownTargetPlaceholders(value: string, record: JsonObject, close
 }
 
 function recordFieldValue(record: JsonObject, pathOrField: string): unknown {
-  const fieldPath = pathOrField.replace(/^requirement-record(?:\.json)?\.?/u, '').replace(/\[\]/gu, '');
+  const fieldPath = pathOrField
+    .replace(/^requirement-record(?:\.json)?\.?/u, '')
+    .replace(/\[\]/gu, '');
   return fieldPath
     .split('.')
     .filter(Boolean)
-    .reduce<unknown>((current, key) => (current && typeof current === 'object' && !Array.isArray(current) ? (current as JsonObject)[key] : undefined), record);
+    .reduce<unknown>(
+      (current, key) =>
+        current && typeof current === 'object' && !Array.isArray(current)
+          ? (current as JsonObject)[key]
+          : undefined,
+      record
+    );
 }
 
-function targetConcretePath(target: JsonObject, record: JsonObject, closeoutAttemptId: string): string {
+function targetConcretePath(
+  target: JsonObject,
+  record: JsonObject,
+  closeoutAttemptId: string
+): string {
   const targetPath = filePathPrefix(text(target.pathOrField));
   if (!targetPath || /\s/u.test(targetPath)) return '';
   const replaced = replaceKnownTargetPlaceholders(targetPath, record, closeoutAttemptId);
@@ -397,7 +421,9 @@ function writeSemanticCoverageClosureReport(input: {
   const traceRows = objects(input.manifest.traceRows);
   const commands = objects(input.manifest.requiredCommands);
   const criticalMustRows = mustRows.filter((row) => text(row.riskLevel) === 'critical');
-  const commandById = new Map(commands.map((command) => [text(command.id) || text(command.commandId), command]));
+  const commandById = new Map(
+    commands.map((command) => [text(command.id) || text(command.commandId), command])
+  );
   const closures = criticalMustRows.map((must) => {
     const mustId = text(must.id);
     const relatedTraceRows = traceRows.filter((trace) => strings(trace.covers).includes(mustId));
@@ -452,22 +478,25 @@ function writeRuntimeModeSelection(input: {
 }): void {
   const goalExecutionPath = path.join(input.evidenceDir, 'goal_execution.md');
   const modelPacketPath = path.join(input.evidenceDir, 'model_packet.json');
-  writeJson(path.join(input.directory, input.closeoutAttemptId, 'execution-runtime-mode-selection.json'), {
-    schemaVersion: 'execution-runtime-mode-selection/v1',
-    recordId: text(input.record.recordId),
-    packetId: `${text(input.record.recordId)}:${input.closeoutAttemptId}`,
-    attemptId: input.closeoutAttemptId,
-    host: 'codex',
-    canonicalHost: 'codex',
-    executionRuntimeMode: 'native_goal',
-    sourceDocumentHash: text(input.record.sourceDocumentHash),
-    implementationConfirmationHash: text(input.record.implementationConfirmationHash),
-    modelPacketHash: fs.existsSync(modelPacketPath) ? sha256File(modelPacketPath) : null,
-    goalExecutionHash: fs.existsSync(goalExecutionPath) ? sha256File(goalExecutionPath) : null,
-    selectedAt: new Date().toISOString(),
-    selectionReason: 'codex supports host native /goal document-reference execution',
-    blocked: false,
-  });
+  writeJson(
+    path.join(input.directory, input.closeoutAttemptId, 'execution-runtime-mode-selection.json'),
+    {
+      schemaVersion: 'execution-runtime-mode-selection/v1',
+      recordId: text(input.record.recordId),
+      packetId: `${text(input.record.recordId)}:${input.closeoutAttemptId}`,
+      attemptId: input.closeoutAttemptId,
+      host: 'codex',
+      canonicalHost: 'codex',
+      executionRuntimeMode: 'native_goal',
+      sourceDocumentHash: text(input.record.sourceDocumentHash),
+      implementationConfirmationHash: text(input.record.implementationConfirmationHash),
+      modelPacketHash: fs.existsSync(modelPacketPath) ? sha256File(modelPacketPath) : null,
+      goalExecutionHash: fs.existsSync(goalExecutionPath) ? sha256File(goalExecutionPath) : null,
+      selectedAt: new Date().toISOString(),
+      selectionReason: 'codex supports host native /goal document-reference execution',
+      blocked: false,
+    }
+  );
 }
 
 function writeAuditConvergenceReceipt(filePath: string, closeoutAttemptId: string): void {
@@ -515,13 +544,20 @@ function materializeTargetArtifacts(input: {
         closeoutAttemptId: input.closeoutAttemptId,
         evidenceDir: input.evidenceDir,
       });
-    } else if (pathOrField.endsWith('/audit-scoring-convergence-receipt.json') && !fs.existsSync(concretePath)) {
+    } else if (
+      pathOrField.endsWith('/audit-scoring-convergence-receipt.json') &&
+      !fs.existsSync(concretePath)
+    ) {
       writeAuditConvergenceReceipt(concretePath, input.closeoutAttemptId);
     }
   }
 }
 
-function targetArtifactRefs(manifest: JsonObject, closeoutAttemptId: string, record: JsonObject): JsonObject[] {
+function targetArtifactRefs(
+  manifest: JsonObject,
+  closeoutAttemptId: string,
+  record: JsonObject
+): JsonObject[] {
   return objects(manifest.targetArtifacts).flatMap((target) => {
     const pathOrField = text(target.pathOrField);
     const expectedRole = normalizeArtifactRole(text(target.expectedSourceOfTruthRole));
@@ -560,7 +596,9 @@ function targetArtifactRefs(manifest: JsonObject, closeoutAttemptId: string, rec
         evidenceRefs: strings(target.evidenceRefs),
         closeoutAttemptId,
         sourceOfTruthRole: expectedRole,
-        aliases: [text(target.id), targetPath, replaced, ...strings(target.aliases)].filter(Boolean),
+        aliases: [text(target.id), targetPath, replaced, ...strings(target.aliases)].filter(
+          Boolean
+        ),
       }),
     ];
   });
@@ -636,7 +674,9 @@ function commandReportRefs(input: {
           producer: 'scripts/run-required-commands-from-ai-tdd-manifest.ts',
           purpose: `normalized current-attempt report for ${commandId}`,
           traceRows: unique(run.artifactRefs.flatMap((artifact) => strings(artifact.traceRows))),
-          evidenceRefs: unique(run.artifactRefs.flatMap((artifact) => strings(artifact.evidenceRefs))),
+          evidenceRefs: unique(
+            run.artifactRefs.flatMap((artifact) => strings(artifact.evidenceRefs))
+          ),
           closeoutAttemptId: input.closeoutAttemptId,
         })
       );
@@ -680,18 +720,17 @@ function runCommand(input: {
   fs.writeFileSync(stdoutPath, stdout, 'utf8');
   fs.writeFileSync(stderrPath, stderr, 'utf8');
   fs.writeFileSync(outputPath, `${stdout}\n${stderr}`, 'utf8');
-  const artifactRefs =
-    normalizedResult.passed
-      ? [
-          artifactRefForOutput({
-            commandId: commandIdValue,
-            outputPath,
-            traceRefs: strings(input.command.traceRefs),
-            evidenceRefs: strings(input.command.evidenceRefs),
-            closeoutAttemptId: input.closeoutAttemptId,
-          }),
-        ]
-      : [];
+  const artifactRefs = normalizedResult.passed
+    ? [
+        artifactRefForOutput({
+          commandId: commandIdValue,
+          outputPath,
+          traceRefs: strings(input.command.traceRefs),
+          evidenceRefs: strings(input.command.evidenceRefs),
+          closeoutAttemptId: input.closeoutAttemptId,
+        }),
+      ]
+    : [];
   return {
     commandId: commandIdValue,
     command: commandText,
@@ -759,14 +798,19 @@ function syntheticCommandRun(input: {
 
 function commandCoversRefs(run: CommandRun, traceRefs: string[], evidenceRefs: string[]): boolean {
   const runTraceRefs = new Set(run.artifactRefs.flatMap((artifact) => strings(artifact.traceRows)));
-  const runEvidenceRefs = new Set(run.artifactRefs.flatMap((artifact) => strings(artifact.evidenceRefs)));
+  const runEvidenceRefs = new Set(
+    run.artifactRefs.flatMap((artifact) => strings(artifact.evidenceRefs))
+  );
   return (
     traceRefs.some((ref) => runTraceRefs.has(ref)) ||
     evidenceRefs.some((ref) => runEvidenceRefs.has(ref))
   );
 }
 
-function failureCaseCoverageRefs(registry: JsonObject): { traceRefs: string[]; evidenceRefs: string[] } {
+function failureCaseCoverageRefs(registry: JsonObject): {
+  traceRefs: string[];
+  evidenceRefs: string[];
+} {
   const failureCases = objects(registry.failureCases);
   return {
     traceRefs: unique([
@@ -861,7 +905,9 @@ function buildFailureCaseCoverage(input: {
         exercisedBy: unique(commandRunRefs.map((run) => text(run.commandId))),
         traceRefs,
         evidenceRefs,
-        sourceRefs: [{ sourceType: 'functionalResumeFailureCaseRegistry.failureCases', id: caseId }],
+        sourceRefs: [
+          { sourceType: 'functionalResumeFailureCaseRegistry.failureCases', id: caseId },
+        ],
         commandRunRefs,
         artifactRefs,
         controlledEventRefs: [
@@ -947,11 +993,16 @@ function buildImplementationEvidencePacket(input: {
   evidenceArtifacts?: JsonObject[];
 }): JsonObject {
   const refs = manifestRefs(input.manifest);
-  const artifactRefs = [...(input.evidenceArtifacts ?? []), ...input.commandRuns.flatMap((run) => run.artifactRefs)];
+  const artifactRefs = [
+    ...(input.evidenceArtifacts ?? []),
+    ...input.commandRuns.flatMap((run) => run.artifactRefs),
+  ];
   const negativeAssertionArtifactRefs = artifactRefs.filter(
     (artifact) => text(artifact.sourceOfTruthRole) === 'evidence'
   );
-  const manifestCommandIds = new Set(commandDefinitions(input.manifest).map((command) => commandId(command)));
+  const manifestCommandIds = new Set(
+    commandDefinitions(input.manifest).map((command) => commandId(command))
+  );
   const deliveryCommandRuns = input.commandRuns.filter(
     (run) => run.deliveryEvidenceRequired !== false && manifestCommandIds.has(run.commandId)
   );
@@ -967,7 +1018,9 @@ function buildImplementationEvidencePacket(input: {
     implementationConfirmationHash: text(input.record.implementationConfirmationHash),
     architectureConfirmationHash:
       text(input.record.architectureConfirmationHash) ||
-      text(nested(input.record.architectureConfirmationState).currentArchitectureConfirmationHash) ||
+      text(
+        nested(input.record.architectureConfirmationState).currentArchitectureConfirmationHash
+      ) ||
       text(input.record.implementationConfirmationHash),
     traceRows: refs.traceRows,
     evidenceRefs: refs.evidenceRefs,
@@ -975,7 +1028,9 @@ function buildImplementationEvidencePacket(input: {
     filesChanged: strings(input.manifest.targetModificationPaths).filter(Boolean),
     diffSummary: 'AI TDD manifest required commands executed by dynamic runner.',
     implementationDelta: {
-      filesChanged: objects(input.manifest.targetModificationPaths).map((row) => text(row.path)).filter(Boolean),
+      filesChanged: objects(input.manifest.targetModificationPaths)
+        .map((row) => text(row.path))
+        .filter(Boolean),
       diffSummaryRef: 'command-evidence-bundle.json',
       negativeAssertionArtifactRefs,
       behaviorAffecting: true,
@@ -996,7 +1051,10 @@ function buildImplementationEvidencePacket(input: {
     ],
     deliveryEvidence: {
       requiredCommands: deliveryCommandRuns.map((run) => {
-        const command = objects(input.manifest.requiredCommands).find((row) => commandId(row) === run.commandId) ?? {};
+        const command =
+          objects(input.manifest.requiredCommands).find(
+            (row) => commandId(row) === run.commandId
+          ) ?? {};
         return {
           commandId: run.commandId,
           command: run.command,
@@ -1069,7 +1127,9 @@ function writeFailureAndReturn(input: {
     failedEvidencePath: normalizePath(failedPath),
     blockingReasons: input.blockingReasons,
   };
-  process.stdout.write(input.args.json ? `${JSON.stringify(output, null, 2)}\n` : `required_commands=blocked\n`);
+  process.stdout.write(
+    input.args.json ? `${JSON.stringify(output, null, 2)}\n` : `required_commands=blocked\n`
+  );
   return 1;
 }
 
@@ -1081,8 +1141,17 @@ export function mainRunRequiredCommandsFromAiTddManifest(argv: string[]): number
     );
     return 0;
   }
-  if (!args.source || !args.requirementRecord || !args.mode || !args.attemptId || !args.runId || !args.evidenceDir) {
-    throw new Error('missing required args: source, requirementRecord, mode, attemptId, runId, evidenceDir');
+  if (
+    !args.source ||
+    !args.requirementRecord ||
+    !args.mode ||
+    !args.attemptId ||
+    !args.runId ||
+    !args.evidenceDir
+  ) {
+    throw new Error(
+      'missing required args: source, requirementRecord, mode, attemptId, runId, evidenceDir'
+    );
   }
   if (args.mode !== 'closeout') throw new Error('only --mode closeout is supported');
 
@@ -1268,7 +1337,9 @@ export function mainRunRequiredCommandsFromAiTddManifest(argv: string[]): number
     preRunReportPath: normalizePath(preRunReportPath),
     closeoutReportPath: normalizePath(closeoutReportPath),
   };
-  process.stdout.write(args.json ? `${JSON.stringify(output, null, 2)}\n` : `required_commands=pass\n`);
+  process.stdout.write(
+    args.json ? `${JSON.stringify(output, null, 2)}\n` : `required_commands=pass\n`
+  );
   return 0;
 }
 
@@ -1276,7 +1347,13 @@ if (require.main === module) {
   try {
     process.exitCode = mainRunRequiredCommandsFromAiTddManifest(process.argv.slice(2));
   } catch (error) {
-    console.error(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : String(error) }, null, 2));
+    console.error(
+      JSON.stringify(
+        { ok: false, error: error instanceof Error ? error.message : String(error) },
+        null,
+        2
+      )
+    );
     process.exitCode = 2;
   }
 }

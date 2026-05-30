@@ -145,7 +145,9 @@ function runDynamicRunner(input: {
     evidenceDir: normalizePath(input.evidenceDir),
   };
   process.stdout.write(
-    input.args.json ? `${JSON.stringify(payload, null, 2)}\n` : `final_closeout_evidence=${ok ? 'pass' : 'blocked'}\n`
+    input.args.json
+      ? `${JSON.stringify(payload, null, 2)}\n`
+      : `final_closeout_evidence=${ok ? 'pass' : 'blocked'}\n`
   );
   return ok ? 0 : 1;
 }
@@ -159,16 +161,22 @@ export function mainFinalCloseoutEvidenceRunner(argv: string[]): number {
     return 0;
   }
   if (args.strictProofOnly || args.recordCloseoutReceipt) {
-    throw new Error('final-closeout-evidence-runner no longer executes local closeout paths; use the manifest dynamic runner');
+    throw new Error(
+      'final-closeout-evidence-runner no longer executes local closeout paths; use the manifest dynamic runner'
+    );
   }
   const recordPath = recordPathForArgs(args);
   const record = readJson(recordPath);
   const recordId = text(record.recordId) || 'REQ-AI-TDD-MANIFEST';
-  const timestamp = new Date().toISOString().replace(/[-:]/gu, '').replace(/\.\d{3}Z$/u, 'Z');
+  const timestamp = new Date()
+    .toISOString()
+    .replace(/[-:]/gu, '')
+    .replace(/\.\d{3}Z$/u, 'Z');
   const runId = args.runId ?? `run-AI-TDD-MANIFEST-${timestamp}`;
   const attemptId = args.attemptId ?? `closeout-attempt-${recordId}-${timestamp}`;
   const evidenceDir =
-    args.evidenceDir ?? `_bmad-output/runtime/requirement-records/${recordId}/evidence/AI-TDD-MANIFEST/${runId}`;
+    args.evidenceDir ??
+    `_bmad-output/runtime/requirement-records/${recordId}/evidence/AI-TDD-MANIFEST/${runId}`;
   return runDynamicRunner({
     args,
     recordPath,
@@ -183,7 +191,13 @@ if (require.main === module) {
   try {
     process.exitCode = mainFinalCloseoutEvidenceRunner(process.argv.slice(2));
   } catch (error) {
-    console.error(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : String(error) }, null, 2));
+    console.error(
+      JSON.stringify(
+        { ok: false, error: error instanceof Error ? error.message : String(error) },
+        null,
+        2
+      )
+    );
     process.exitCode = 2;
   }
 }

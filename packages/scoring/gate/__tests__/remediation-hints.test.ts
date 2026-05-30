@@ -56,7 +56,9 @@ describe('buildGateRemediationHints', () => {
       affected_stages: ['tasks'],
       epic_stories: ['E3.S2', 'E3.S3'],
     });
-    expect(hints[0]?.recommendation).toContain('Add at least one smoke task chain per Journey Slice');
+    expect(hints[0]?.recommendation).toContain(
+      'Add at least one smoke task chain per Journey Slice'
+    );
     expect(hints[2]).toMatchObject({
       signal: 'shared_path_reference',
       affected_stages: ['implement'],

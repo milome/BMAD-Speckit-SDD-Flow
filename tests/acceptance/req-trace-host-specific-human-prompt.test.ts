@@ -7,8 +7,20 @@ import yaml from 'js-yaml';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 const ROOT = process.cwd();
-const SCRIPT = path.join(ROOT, '_bmad', 'skills', 'req-trace-matrix-prompt-generator', 'scripts', 'generate_prompt.js');
-const SOURCE = path.join(ROOT, 'docs', 'requirements', '2026-05-25-ai-tdd-manifest-closeout-runner.md');
+const SCRIPT = path.join(
+  ROOT,
+  '_bmad',
+  'skills',
+  'req-trace-matrix-prompt-generator',
+  'scripts',
+  'generate_prompt.js'
+);
+const SOURCE = path.join(
+  ROOT,
+  'docs',
+  'requirements',
+  '2026-05-25-ai-tdd-manifest-closeout-runner.md'
+);
 const RECORD = path.join(
   ROOT,
   '_bmad-output',
@@ -54,7 +66,9 @@ function runHost(
   return {
     prompt: fs.readFileSync(path.join(outDir, 'human_prompt.txt'), 'utf8'),
     receipt: JSON.parse(fs.readFileSync(path.join(outDir, 'audit_receipt.json'), 'utf8')),
-    goalDocument: fs.existsSync(goalDocumentPath) ? fs.readFileSync(goalDocumentPath, 'utf8') : undefined,
+    goalDocument: fs.existsSync(goalDocumentPath)
+      ? fs.readFileSync(goalDocumentPath, 'utf8')
+      : undefined,
   };
 }
 
@@ -117,12 +131,17 @@ function writeLongGoalFixture(): { source: string; record: string } {
   const longObjective = `Execute long-goal fixture ${'with strict evidence and no truncation '.repeat(160)}until final pass or reconfirm_required.`;
   const original = fs.readFileSync(SOURCE, 'utf8');
   const originalBlockText = extractConfirmationBlock(original);
-  const parsedOriginal = yaml.load(originalBlockText) as { implementationConfirmation?: Record<string, any> };
+  const parsedOriginal = yaml.load(originalBlockText) as {
+    implementationConfirmation?: Record<string, any>;
+  };
   const confirmation = parsedOriginal.implementationConfirmation;
   if (!confirmation) throw new Error('missing parsed implementationConfirmation');
   confirmation.aiTddContractExecutionManifestProjection.hostExecutionHints.codexCapable.goalObjectiveTemplate =
     longObjective;
-  const replacementBlock = yaml.dump({ implementationConfirmation: confirmation }, { lineWidth: 120 });
+  const replacementBlock = yaml.dump(
+    { implementationConfirmation: confirmation },
+    { lineWidth: 120 }
+  );
   const sourceText = original.replace(originalBlockText, replacementBlock.trimEnd());
   const blockText = extractConfirmationBlock(sourceText);
   const parsed = yaml.load(blockText) as { implementationConfirmation?: Record<string, unknown> };
@@ -143,7 +162,8 @@ function writeLongGoalFixture(): { source: string; record: string } {
           {
             eventType: 'confirmation_recorded',
             ...hashes,
-            confirmationPageHash: 'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+            confirmationPageHash:
+              'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
           },
         ],
       },
@@ -155,7 +175,12 @@ function writeLongGoalFixture(): { source: string; record: string } {
   return { source, record };
 }
 
-function runLongGoal(extraArgs: string[] = []): { prompt: string; receipt: Record<string, any>; goalDocument: string; outDir: string } {
+function runLongGoal(extraArgs: string[] = []): {
+  prompt: string;
+  receipt: Record<string, any>;
+  goalDocument: string;
+  outDir: string;
+} {
   const fixture = writeLongGoalFixture();
   const outDir = path.join(tempDir, 'long-goal-out');
   execFileSync(
@@ -196,7 +221,9 @@ describe('req trace host-specific human prompt generation', () => {
 
     expect(goal.prompt).toContain('/goal ');
     expect(goal.prompt).toContain('goal_execution.md');
-    expect(goal.prompt).toContain('The /goal command is an entry pointer only, not the full task scope.');
+    expect(goal.prompt).toContain(
+      'The /goal command is an entry pointer only, not the full task scope.'
+    );
     expect(goal.prompt).toContain('Execution scope is goal_execution.md + model_packet.json.');
     expect(goal.prompt).not.toContain('\ncontinue nonstop\n');
     expect(goal.receipt.continuationDirective.nativeGoalCommandUsed).toBe(true);
@@ -206,7 +233,9 @@ describe('req trace host-specific human prompt generation', () => {
     });
     expect(goal.receipt.goalCommand.mode).not.toBe('native_goal_inline');
     expect(goal.receipt.outputs.goalDocument).toContain('goal_execution.md');
-    expect(goal.goalDocument).toContain('model_packet.json is the machine-readable execution authority');
+    expect(goal.goalDocument).toContain(
+      'model_packet.json is the machine-readable execution authority'
+    );
   });
 
   it('keeps Cursor IDE and Cursor CLI as separate surfaces', () => {
@@ -242,7 +271,9 @@ describe('req trace host-specific human prompt generation', () => {
 
     expect(goal.prompt).toContain('/goal ');
     expect(goal.prompt).toContain('goal_execution.md');
-    expect(goal.prompt).toContain('The /goal command is an entry pointer only, not the full task scope.');
+    expect(goal.prompt).toContain(
+      'The /goal command is an entry pointer only, not the full task scope.'
+    );
     expect(goal.prompt).toContain('claude -p --permission-mode auto --output-format stream-json');
     expect(goal.receipt.continuationDirective.nativeGoalCommandUsed).toBe(true);
     expect(goal.receipt.goalCommand.mode).toBe('native_goal_document_ref');
@@ -250,7 +281,9 @@ describe('req trace host-specific human prompt generation', () => {
   });
 
   it('fails closed for unsupported execution hosts', () => {
-    expect(() => runHost('cursor-headless')).toThrow(/Unsupported --execution-host: cursor-headless/);
+    expect(() => runHost('cursor-headless')).toThrow(
+      /Unsupported --execution-host: cursor-headless/
+    );
   });
 
   it('writes a goal execution document when native /goal payload exceeds safe length', () => {
@@ -267,12 +300,16 @@ describe('req trace host-specific human prompt generation', () => {
     expect(result.receipt.outputs.goalDocument).toContain('goal_execution.md');
     expect(result.receipt.goalDocumentRequiredFragmentsPassed).toBe(true);
     expect(result.receipt.goalDocumentMissingRequiredFragments).toEqual([]);
-    expect(result.prompt).toContain('/goal Execute REQ-AI-TDD-MANIFEST-CLOSEOUT-RUNNER by following');
+    expect(result.prompt).toContain(
+      '/goal Execute REQ-AI-TDD-MANIFEST-CLOSEOUT-RUNNER by following'
+    );
     expect(result.prompt).toContain('goal_execution.md');
     expect(result.prompt).not.toContain('with strict evidence and no truncation '.repeat(20));
     expect(result.goalDocument).toContain('$executing-plans $verification-before-completion');
     expect(result.goalDocument).toContain('goal_execution.md is not execution authority');
-    expect(result.goalDocument).toContain('model_packet.json is the machine-readable execution authority');
+    expect(result.goalDocument).toContain(
+      'model_packet.json is the machine-readable execution authority'
+    );
     expect(result.goalDocument).toContain('AI-TDD protocol:');
     expect(result.goalDocument).toContain('Runtime write policy:');
     expect(result.goalDocument).toContain('Strict final acceptance checklist:');

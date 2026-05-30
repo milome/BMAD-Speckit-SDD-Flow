@@ -36,7 +36,9 @@ function main(): void {
   const stageFilter = args.stage as 'story' | 'implement' | undefined;
 
   if (!epicRaw || !storyRaw) {
-    console.error('Usage: npx ts-node scripts/check-story-score-written.ts --epic N --story N [--dataPath path] [--stage story|implement]');
+    console.error(
+      'Usage: npx ts-node scripts/check-story-score-written.ts --epic N --story N [--dataPath path] [--stage story|implement]'
+    );
     process.exit(1);
   }
 
@@ -69,9 +71,7 @@ function main(): void {
     console.log('STORY_SCORE_WRITTEN:yes');
     console.log(`Found ${matching.length} record(s) for epic=${epicId} story=${storyId}`);
     const hasMissingDimensions = matching.some(
-      (r) =>
-        r.stage === 'implement' &&
-        (!r.dimension_scores || r.dimension_scores.length === 0)
+      (r) => r.stage === 'implement' && (!r.dimension_scores || r.dimension_scores.length === 0)
     );
     if (hasMissingDimensions) {
       console.log('DIMENSION_SCORES_MISSING:yes');

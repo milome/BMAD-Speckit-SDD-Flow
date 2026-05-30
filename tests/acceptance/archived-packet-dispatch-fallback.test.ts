@@ -1,9 +1,4 @@
-import {
-  mkdtempSync,
-  mkdirSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -21,7 +16,12 @@ function createWrapper(root: string, fileName: string, payload: string): string 
 }
 
 function createPacket(root: string, hostKind: 'cursor' | 'claude'): string {
-  const packetPath = path.join(root, '_bmad-output', 'planning-artifacts', `attempt-1.${hostKind}-packet.md`);
+  const packetPath = path.join(
+    root,
+    '_bmad-output',
+    'planning-artifacts',
+    `attempt-1.${hostKind}-packet.md`
+  );
   mkdirSync(path.dirname(packetPath), { recursive: true });
   writeFileSync(packetPath, `# ${hostKind} packet\n`, 'utf8');
   return packetPath;
@@ -77,8 +77,18 @@ describe.skip('legacy archived: packet dispatch fallback path', () => {
       expect(updated?.lastLaunch?.externalRunId).toBe('claude-fallback-run');
       expect(updated?.lastLaunch?.metadata?.dispatchedHost).toBe('claude');
       expect(updated?.lastLaunch?.metadata?.fallbackUsed).toBe(true);
-      expect(updated?.history.some((entry) => entry.kind === 'dispatch-rejected' && entry.note?.includes('cursor unavailable'))).toBe(true);
-      expect(updated?.history.some((entry) => entry.kind === 'dispatch-accepted' && entry.note?.includes('fallback claude accepted'))).toBe(true);
+      expect(
+        updated?.history.some(
+          (entry) =>
+            entry.kind === 'dispatch-rejected' && entry.note?.includes('cursor unavailable')
+        )
+      ).toBe(true);
+      expect(
+        updated?.history.some(
+          (entry) =>
+            entry.kind === 'dispatch-accepted' && entry.note?.includes('fallback claude accepted')
+        )
+      ).toBe(true);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -133,7 +143,9 @@ describe.skip('legacy archived: packet dispatch fallback path', () => {
       expect(updated?.dispatchAttemptCount).toBe(2);
       expect(updated?.lastDispatchError).toContain('claude transport failed');
       expect(updated?.history.some((entry) => entry.kind === 'escalated')).toBe(true);
-      expect(readGovernancePacketExecutionRecord(root, 'loop-fallback-escalate', 1)?.status).toBe('escalated');
+      expect(readGovernancePacketExecutionRecord(root, 'loop-fallback-escalate', 1)?.status).toBe(
+        'escalated'
+      );
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

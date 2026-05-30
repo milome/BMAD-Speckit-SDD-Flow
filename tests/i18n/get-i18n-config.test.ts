@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { getDefaultConfig, getI18nConfig, loadConfig, type RuntimeConfig } from '../../scripts/bmad-config';
+import {
+  getDefaultConfig,
+  getI18nConfig,
+  loadConfig,
+  type RuntimeConfig,
+} from '../../scripts/bmad-config';
 
 const REQUIRED_I18N_KEYS = [
   'default_language_mode',

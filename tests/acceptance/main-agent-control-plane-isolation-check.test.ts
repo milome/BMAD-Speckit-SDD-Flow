@@ -6,7 +6,10 @@ import { mainControlPlaneIsolationCheck } from '../../scripts/main-agent-control
 
 const HASH = 'sha256:1111111111111111111111111111111111111111111111111111111111111111';
 
-function writeRecord(root: string, record: Record<string, unknown>): { recordPath: string; reportPath: string } {
+function writeRecord(
+  root: string,
+  record: Record<string, unknown>
+): { recordPath: string; reportPath: string } {
   const base = path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'REQ-ISOLATION');
   mkdirSync(base, { recursive: true });
   const recordPath = path.join(base, 'requirement-record.json');
@@ -224,6 +227,8 @@ describe('main-agent control plane isolation check', () => {
     const { code, report } = run(record);
 
     expect(code).toBe(1);
-    expect(report.blockingReasons).toEqual(expect.arrayContaining(['rerun_result_forbidden', 'rerun_decision_forbidden']));
+    expect(report.blockingReasons).toEqual(
+      expect.arrayContaining(['rerun_result_forbidden', 'rerun_decision_forbidden'])
+    );
   });
 });

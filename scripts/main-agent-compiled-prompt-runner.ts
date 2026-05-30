@@ -9,7 +9,13 @@ import type {
 } from './orchestration-dispatch-contract';
 
 export type ConfirmedSourceResolution =
-  | { status: 'confirmed'; recordPath: string; sourcePath: string; sourceDocumentHash: string; implementationConfirmationHash: string }
+  | {
+      status: 'confirmed';
+      recordPath: string;
+      sourcePath: string;
+      sourceDocumentHash: string;
+      implementationConfirmationHash: string;
+    }
   | { status: 'no_confirmed_source'; reason: string }
   | { status: 'confirmed_source_unresolvable'; reason: string; blockingReasons: string[] };
 
@@ -51,7 +57,9 @@ function stableStringify(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map((item) => stableStringify(item)).join(',')}]`;
   return `{${Object.keys(value)
     .sort()
-    .map((key) => `${JSON.stringify(key)}:${stableStringify((value as Record<string, unknown>)[key])}`)
+    .map(
+      (key) => `${JSON.stringify(key)}:${stableStringify((value as Record<string, unknown>)[key])}`
+    )
     .join(',')}}`;
 }
 
@@ -62,7 +70,9 @@ function readJson(filePath: string): Record<string, unknown> {
 function hasForbiddenProfileField(value: unknown, pathPrefix = ''): string[] {
   if (!value || typeof value !== 'object') return [];
   if (Array.isArray(value)) {
-    return value.flatMap((item, index) => hasForbiddenProfileField(item, `${pathPrefix}[${index}]`));
+    return value.flatMap((item, index) =>
+      hasForbiddenProfileField(item, `${pathPrefix}[${index}]`)
+    );
   }
   return Object.entries(value as Record<string, unknown>).flatMap(([key, item]) => {
     const currentPath = pathPrefix ? `${pathPrefix}.${key}` : key;
@@ -102,7 +112,11 @@ export function resolveConfirmedSource(input: {
     text((record.implementationConfirmation as Record<string, unknown> | undefined)?.status) ===
     'user_confirmed';
   const isRuntimeRegistryBridge = Boolean(record.runtimeRegistryBridge);
-  if (isRuntimeRegistryBridge && !hasControlledConfirmation(record) && !hasInlineConfirmedImplementation) {
+  if (
+    isRuntimeRegistryBridge &&
+    !hasControlledConfirmation(record) &&
+    !hasInlineConfirmedImplementation
+  ) {
     return { status: 'no_confirmed_source', reason: 'runtime_registry_bridge_no_confirmed_source' };
   }
   if (
@@ -132,7 +146,8 @@ export function resolveConfirmedSource(input: {
   const sourceDocumentHash = text(record.sourceDocumentHash);
   const implementationConfirmationHash = text(record.implementationConfirmationHash);
   if (!sourceDocumentHash) blockingReasons.push('source_document_hash_missing');
-  if (!implementationConfirmationHash) blockingReasons.push('implementation_confirmation_hash_missing');
+  if (!implementationConfirmationHash)
+    blockingReasons.push('implementation_confirmation_hash_missing');
   if (blockingReasons.length > 0) {
     return {
       status: 'confirmed_source_unresolvable',
@@ -154,9 +169,16 @@ function resolveReqTraceSkillDir(projectRoot: string): string {
     path.join(projectRoot, '_bmad', 'skills', 'req-trace-matrix-prompt-generator'),
     path.join(projectRoot, '.codex', 'skills', 'req-trace-matrix-prompt-generator'),
     path.join(process.env.HOME || '', '.codex', 'skills', 'req-trace-matrix-prompt-generator'),
-    path.join(process.env.USERPROFILE || '', '.codex', 'skills', 'req-trace-matrix-prompt-generator'),
+    path.join(
+      process.env.USERPROFILE || '',
+      '.codex',
+      'skills',
+      'req-trace-matrix-prompt-generator'
+    ),
   ].filter(Boolean);
-  const found = candidates.find((candidate) => fs.existsSync(path.join(candidate, 'scripts', 'generate_prompt.js')));
+  const found = candidates.find((candidate) =>
+    fs.existsSync(path.join(candidate, 'scripts', 'generate_prompt.js'))
+  );
   if (!found) throw new Error('req-trace skill generate_prompt.js not found');
   return found;
 }
@@ -275,7 +297,9 @@ export function runMainAgentCompiledPrompt(input: {
   if (text(packet.sourceDocumentHash) !== confirmedSource.sourceDocumentHash) {
     blockingReasons.push('model_packet_source_hash_mismatch');
   }
-  if (text(packet.implementationConfirmationHash) !== confirmedSource.implementationConfirmationHash) {
+  if (
+    text(packet.implementationConfirmationHash) !== confirmedSource.implementationConfirmationHash
+  ) {
     blockingReasons.push('model_packet_confirmation_hash_mismatch');
   }
   if (expectedProfileHash) {
@@ -290,13 +314,17 @@ export function runMainAgentCompiledPrompt(input: {
     if (expectedProfileHash && declaredHash !== expectedProfileHash) {
       blockingReasons.push('execution_discipline_profile_hash_mismatch');
     }
-    const receiptProfile = receipt.executionDisciplineProfile as Record<string, unknown> | undefined;
+    const receiptProfile = receipt.executionDisciplineProfile as
+      | Record<string, unknown>
+      | undefined;
     if (receiptProfile && text(receiptProfile.profileHash) !== declaredHash) {
       blockingReasons.push('audit_receipt_profile_hash_mismatch');
     }
     const forbiddenFields = hasForbiddenProfileField(profile);
     if (forbiddenFields.length > 0) {
-      blockingReasons.push(`execution_discipline_profile_forbidden_fields:${forbiddenFields.join(',')}`);
+      blockingReasons.push(
+        `execution_discipline_profile_forbidden_fields:${forbiddenFields.join(',')}`
+      );
     }
     if (text(profile.flow) !== input.flow) {
       blockingReasons.push('execution_discipline_profile_flow_mismatch');
@@ -315,7 +343,9 @@ export function runMainAgentCompiledPrompt(input: {
   if (goalMode === 'native_goal_document_ref' && !fs.existsSync(goalExecutionPath)) {
     blockingReasons.push('goal_execution_missing');
   }
-  const receiptGoalHash = text((receipt.goalCommand as Record<string, unknown> | undefined)?.documentHash);
+  const receiptGoalHash = text(
+    (receipt.goalCommand as Record<string, unknown> | undefined)?.documentHash
+  );
   if (goalMode === 'native_goal_document_ref') {
     const actualGoalHash = fs.existsSync(goalExecutionPath) ? sha256File(goalExecutionPath) : '';
     if (receiptGoalHash && receiptGoalHash !== actualGoalHash) {

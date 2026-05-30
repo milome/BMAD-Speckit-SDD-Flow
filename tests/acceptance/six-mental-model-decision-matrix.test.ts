@@ -49,22 +49,26 @@ describe('Six mental model decision matrix', () => {
       expect(surface.sixModelRuntimeDecision?.nextAction).toBe('run_execution_closure_gate');
       expect(surface.sixModelRuntimeDecision?.allowedDispatchTaskType).toBeNull();
       expect(surface.splitBrainBlockerPath).toBeTruthy();
-      const blocker = readJson<{ blockerId: string; orchestrationStateNextAction: string; matrixNextAction: string }>(
-        surface.splitBrainBlockerPath!
-      );
+      const blocker = readJson<{
+        blockerId: string;
+        orchestrationStateNextAction: string;
+        matrixNextAction: string;
+      }>(surface.splitBrainBlockerPath!);
       expect(blocker).toMatchObject({
         blockerId: 'split_brain_orchestration_state_next_action',
         orchestrationStateNextAction: 'dispatch_review',
         matrixNextAction: 'run_execution_closure_gate',
       });
-      expect(buildMainAgentDispatchInstruction({
-        projectRoot: fixture.root,
-        recordId: fixture.recordId,
-        requirementSetId: fixture.requirementSetId,
-        runId: fixture.runId,
-        flow: 'standalone_tasks',
-        stage: 'implement',
-      })).toBeNull();
+      expect(
+        buildMainAgentDispatchInstruction({
+          projectRoot: fixture.root,
+          recordId: fixture.recordId,
+          requirementSetId: fixture.requirementSetId,
+          runId: fixture.runId,
+          flow: 'standalone_tasks',
+          stage: 'implement',
+        })
+      ).toBeNull();
 
       const state = ingestMainAgentTaskReport(fixture.root, fixture.requirementSetId, {
         packetId: 'implement-current',
@@ -106,11 +110,13 @@ describe('Six mental model decision matrix', () => {
       },
     });
     try {
-      const record = readJson<Record<string, unknown> & {
-        status: string;
-        currentMentalModel?: string;
-        currentStage?: string;
-      }>(fixture.recordPath);
+      const record = readJson<
+        Record<string, unknown> & {
+          status: string;
+          currentMentalModel?: string;
+          currentStage?: string;
+        }
+      >(fixture.recordPath);
       record.status = 'closed';
       record.currentMentalModel = 'delivery_confirmation';
       record.currentStage = 'delivery_confirmation';

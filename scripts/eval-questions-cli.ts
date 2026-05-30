@@ -18,8 +18,14 @@ import {
   generateQuestionTemplate,
   addQuestionToManifest,
 } from '../packages/scoring/eval-questions/template-generator';
-import { generateEvalRunId, validateQuestionVersionForEval } from '../packages/scoring/eval-questions/run-core';
-import { generateEvalAnswer, EvalAgentError } from '../packages/scoring/eval-questions/agent-answer';
+import {
+  generateEvalRunId,
+  validateQuestionVersionForEval,
+} from '../packages/scoring/eval-questions/run-core';
+import {
+  generateEvalAnswer,
+  EvalAgentError,
+} from '../packages/scoring/eval-questions/agent-answer';
 import { parseAndWriteScore } from '../packages/scoring/orchestrator';
 
 const EVAL_ROOT = path.resolve(process.cwd(), 'packages', 'scoring', 'eval-questions');
@@ -73,7 +79,9 @@ function cmdList(version: string): void {
 function cmdAdd(title: string, version: string): void {
   if (!title || !String(title).trim()) {
     console.error('Error: --title 必填');
-    console.error('Usage: npx ts-node scripts/eval-questions-cli.ts add --title "题目标题" [--version v1|v2]');
+    console.error(
+      'Usage: npx ts-node scripts/eval-questions-cli.ts add --title "题目标题" [--version v1|v2]'
+    );
     process.exit(1);
   }
 
@@ -216,7 +224,9 @@ function printRunUsage(): void {
   console.error(
     'Usage: npx ts-node scripts/eval-questions-cli.ts run --id <questionId> --version v1|v2 [--reportPath <path>] [--no-agent]'
   );
-  console.error('  --no-agent: 不调用 Agent，直接解析题目文件（默认：先 Agent 作答再 parseAndWriteScore）');
+  console.error(
+    '  --no-agent: 不调用 Agent，直接解析题目文件（默认：先 Agent 作答再 parseAndWriteScore）'
+  );
 }
 
 async function main(): Promise<void> {
@@ -227,8 +237,12 @@ async function main(): Promise<void> {
   if (!subcommand || (subcommand !== 'list' && subcommand !== 'add' && subcommand !== 'run')) {
     console.error('Usage:');
     console.error('  npx ts-node scripts/eval-questions-cli.ts list [--version v1|v2]');
-    console.error('  npx ts-node scripts/eval-questions-cli.ts add --title "xxx" [--version v1|v2]');
-    console.error('  npx ts-node scripts/eval-questions-cli.ts run --id <id> --version v1|v2 [--reportPath <path>] [--no-agent]');
+    console.error(
+      '  npx ts-node scripts/eval-questions-cli.ts add --title "xxx" [--version v1|v2]'
+    );
+    console.error(
+      '  npx ts-node scripts/eval-questions-cli.ts run --id <id> --version v1|v2 [--reportPath <path>] [--no-agent]'
+    );
     process.exit(1);
   }
 

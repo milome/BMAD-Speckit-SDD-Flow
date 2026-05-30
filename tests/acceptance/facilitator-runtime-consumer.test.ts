@@ -10,11 +10,7 @@ function run(cmd: string, cwd: string): string {
   return execSync(cmd, { cwd, encoding: 'utf8' });
 }
 
-function runResolveSessionHook(
-  hookPath: string,
-  projectRoot: string,
-  userMessage: string
-): string {
+function runResolveSessionHook(hookPath: string, projectRoot: string, userMessage: string): string {
   const result = spawnSync(process.execPath, [hookPath], {
     cwd: projectRoot,
     input: JSON.stringify({

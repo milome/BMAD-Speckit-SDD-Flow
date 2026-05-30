@@ -161,7 +161,9 @@ function currentStoryStatus(root: string, storyKey: string): string | null {
   if (!fs.existsSync(target)) return null;
   const match = fs
     .readFileSync(target, 'utf8')
-    .match(new RegExp(`^\\s*${storyKey.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}:\\s*(.+?)\\s*$`, 'm'));
+    .match(
+      new RegExp(`^\\s*${storyKey.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}:\\s*(.+?)\\s*$`, 'm')
+    );
   return match?.[1] ?? null;
 }
 

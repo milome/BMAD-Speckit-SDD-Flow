@@ -26,7 +26,10 @@ function makeRecord(overrides: Partial<RunScoreRecord>): RunScoreRecord {
   };
 }
 
-function makeBaseline(runId = 'run-readiness-1', timestamp = '2026-04-13T00:00:00.000Z'): RunScoreRecord {
+function makeBaseline(
+  runId = 'run-readiness-1',
+  timestamp = '2026-04-13T00:00:00.000Z'
+): RunScoreRecord {
   return makeRecord({
     run_id: runId,
     stage: 'implementation_readiness',

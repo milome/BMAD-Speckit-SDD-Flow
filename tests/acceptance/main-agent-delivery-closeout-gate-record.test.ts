@@ -53,7 +53,9 @@ function stableStringify(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map((item) => stableStringify(item)).join(',')}]`;
   return `{${Object.keys(value as Record<string, unknown>)
     .sort()
-    .map((key) => `${JSON.stringify(key)}:${stableStringify((value as Record<string, unknown>)[key])}`)
+    .map(
+      (key) => `${JSON.stringify(key)}:${stableStringify((value as Record<string, unknown>)[key])}`
+    )
     .join(',')}}`;
 }
 
@@ -115,7 +117,8 @@ function writeDeliveryTruthReport(root: string, overrides: Record<string, unknow
       {
         id: 'release-gate',
         passed: true,
-        summary: 'critical_failures=0, blocked_sprint_status_update=false, completion_intent=present',
+        summary:
+          'critical_failures=0, blocked_sprint_status_update=false, completion_intent=present',
       },
     ],
     ...overrides,
@@ -133,7 +136,9 @@ function recordText(record: Record<string, unknown>, key: string): string {
 
 function currentArchitectureHash(record: Record<string, unknown>): string {
   const state = record.architectureConfirmationState as Record<string, unknown> | undefined;
-  return typeof state?.currentArchitectureConfirmationHash === 'string' ? state.currentArchitectureConfirmationHash : HASH;
+  return typeof state?.currentArchitectureConfirmationHash === 'string'
+    ? state.currentArchitectureConfirmationHash
+    : HASH;
 }
 
 function modelResult(model: string, status = 'pass'): Record<string, unknown> {
@@ -295,7 +300,11 @@ function writeProductionArtifacts(
   const sourceDocumentHash = recordText(record, 'sourceDocumentHash');
   const implementationConfirmationHash = recordText(record, 'implementationConfirmationHash');
   const architectureConfirmationHash = currentArchitectureHash(record);
-  const extensionPath = path.join(base, 'extensions', 'production-loop-16-subsystems-extension.json');
+  const extensionPath = path.join(
+    base,
+    'extensions',
+    'production-loop-16-subsystems-extension.json'
+  );
   const productionSubsystemAcceptanceRegistry = {
     registryVersion: 'production-subsystem-acceptance/v1',
     sourceDocumentHash,
@@ -309,13 +318,20 @@ function writeProductionArtifacts(
     sourceDocumentHash,
     implementationConfirmationHash,
     architectureConfirmationHash,
-    canaryPlan: [{ stage: 'internal', rolloutPercent: 10, rollbackOn: 'production_loop_ready_blocked' }],
+    canaryPlan: [
+      { stage: 'internal', rolloutPercent: 10, rollbackOn: 'production_loop_ready_blocked' },
+    ],
     sloTargets: [{ name: 'delivery_closeout_gate_latency', target: '<= 5000ms' }],
     errorRateMetrics: [{ name: 'gate_failure_rate', threshold: '<= 1%' }],
     performanceMetrics: [{ name: 'production_loop_ready_eval_duration_ms', threshold: '<= 5000' }],
     businessMetrics: [{ name: 'requirement_reopen_rate', threshold: '<= 5%' }],
     alerts: [{ name: 'production_loop_blocked', owner: 'main-agent' }],
-    rollbackConditions: [{ condition: 'hash_mismatch_or_missing_subsystem_readiness', action: 'block_closeout_and_open_rca' }],
+    rollbackConditions: [
+      {
+        condition: 'hash_mismatch_or_missing_subsystem_readiness',
+        action: 'block_closeout_and_open_rca',
+      },
+    ],
     feedbackRouting: {
       failureRecordEventTypes: ['failure_recorded', 'gate_check_recorded'],
       rcaRecordEventTypes: ['rca_created', 'rca_action_recorded'],
@@ -328,7 +344,9 @@ function writeProductionArtifacts(
       architectureConfirmationHash,
     },
     productionSubsystemAcceptanceRegistry,
-    productionSubsystemAcceptanceRegistryHash: sha256Text(JSON.stringify(productionSubsystemAcceptanceRegistry)),
+    productionSubsystemAcceptanceRegistryHash: sha256Text(
+      JSON.stringify(productionSubsystemAcceptanceRegistry)
+    ),
     functionalParity: {
       userVisibleBehaviorPreserved: true,
       replacementScripts: [
@@ -419,7 +437,12 @@ function writeProductionArtifacts(
       { id: 'source-manifest-current', passed: true },
       { id: 'training-run-bound', passed: true },
       { id: 'post-training-eval-bound', passed: true },
-      { id: 'sixteen-subsystems-machine-readable', passed: true, expectedCount: 16, actualCount: 16 },
+      {
+        id: 'sixteen-subsystems-machine-readable',
+        passed: true,
+        expectedCount: 16,
+        actualCount: 16,
+      },
     ],
     manifestHash: sha256File(manifestPath),
   });
@@ -434,7 +457,15 @@ function writeProductionArtifacts(
     contentHash: sha256File(extensionPath),
     producer: 'main-agent-delivery-closeout-gate-record.test',
     purpose: 'prove current 16-subsystem production loop readiness extension',
-    relatedRequirementIds: ['MUST-017', 'MUST-039', 'MUST-040', 'MUST-043', 'EVD-039', 'EVD-040', 'EVD-043'],
+    relatedRequirementIds: [
+      'MUST-017',
+      'MUST-039',
+      'MUST-040',
+      'MUST-043',
+      'EVD-039',
+      'EVD-040',
+      'EVD-043',
+    ],
     status: 'active',
     inputVersion: 'source-v1',
     outputVersion: 'production-loop-16-subsystems-extension-v1',
@@ -449,7 +480,12 @@ function writeProductionArtifacts(
     blockingReasons: [],
     checks: [
       { id: 'governed-dataset-release-complete', passed: true },
-      { id: 'sixteen-subsystems-machine-readable', passed: true, expectedCount: 16, actualCount: 16 },
+      {
+        id: 'sixteen-subsystems-machine-readable',
+        passed: true,
+        expectedCount: 16,
+        actualCount: 16,
+      },
     ],
     extensionRef,
   });
@@ -466,7 +502,16 @@ function writeProductionArtifacts(
       contentHash: sha256File(productionReadyReportPath),
       producer: 'main-agent-delivery-closeout-gate-record.test',
       purpose: 'prove Production Loop Ready passes current 16-subsystem acceptance gate',
-      relatedRequirementIds: ['MUST-039', 'MUST-040', 'MUST-043', 'NEG-028', 'NEG-030', 'NEG-031', 'EVD-039', 'EVD-040'],
+      relatedRequirementIds: [
+        'MUST-039',
+        'MUST-040',
+        'MUST-043',
+        'NEG-028',
+        'NEG-030',
+        'NEG-031',
+        'EVD-039',
+        'EVD-040',
+      ],
       status: 'active',
       inputVersion: 'source-v1',
       outputVersion: 'production-subsystem-acceptance-report-v1',
@@ -478,7 +523,11 @@ function writeRecord(root: string, record: Record<string, unknown>): string {
   const base = path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'REQ-CLOSEOUT');
   mkdirSync(base, { recursive: true });
   writeDeliveryTruthReport(root);
-  if (typeof record.sourcePath === 'string' && record.sourcePath && !readMaybeExists(record.sourcePath)) {
+  if (
+    typeof record.sourcePath === 'string' &&
+    record.sourcePath &&
+    !readMaybeExists(record.sourcePath)
+  ) {
     writeText(
       record.sourcePath,
       [
@@ -521,7 +570,7 @@ function writeRecord(root: string, record: Record<string, unknown>): string {
       null,
       2
     )}\n`,
-      'utf8'
+    'utf8'
   );
   const production = writeProductionArtifacts(root, base, record);
   const recordWithCoverage = {
@@ -560,7 +609,9 @@ function readMaybeExists(filePath: string): string | null {
   }
 }
 
-function evidenceArtifactRef(pathValue = '_bmad-output/runtime/requirement-records/REQ-CLOSEOUT/execution/evidence.json') {
+function evidenceArtifactRef(
+  pathValue = '_bmad-output/runtime/requirement-records/REQ-CLOSEOUT/execution/evidence.json'
+) {
   return {
     artifactType: 'implementation_evidence',
     sourceOfTruthRole: 'evidence',
@@ -805,9 +856,7 @@ function baseRecord(): Record<string, unknown> {
         checkedBy: 'test-agent',
       },
     ],
-    artifactIndex: [
-      evidenceArtifactRef(),
-    ],
+    artifactIndex: [evidenceArtifactRef()],
     gateChecks: [
       {
         eventType: 'gate_check_recorded',
@@ -939,7 +988,9 @@ describe('requirement-scoped delivery closeout gate', () => {
       expect(record.closeout.decision).toBe('pass');
       expect(record.lastEventType).toBe('delivery_confirmation_user_acceptance_requested');
       expect(record.controlStore.eventLogPath).toContain('events/control-events.jsonl');
-      expect(record.lastAppliedEventId).toContain('delivery_confirmation_user_acceptance_requested');
+      expect(record.lastAppliedEventId).toContain(
+        'delivery_confirmation_user_acceptance_requested'
+      );
       expect(record.closeout.acceptanceRequest).toMatchObject({
         status: 'awaiting_user_acceptance',
         closeoutAttemptId: 'closeout-pass',
@@ -947,12 +998,16 @@ describe('requirement-scoped delivery closeout gate', () => {
       expect(record.closeout.acceptanceRequest.closeoutConfirmInstruction).toContain(
         '确认最终验收并关闭需求'
       );
-      expect(readMaybeExists(path.join(path.dirname(recordPath), record.closeout.acceptanceRequest.htmlPath))).toContain(
-        '确认最终验收并关闭需求'
-      );
-      expect(readMaybeExists(path.join(path.dirname(recordPath), record.closeout.acceptanceRequest.renderReportPath))).toContain(
-        'closeoutDeliveryVerdict'
-      );
+      expect(
+        readMaybeExists(
+          path.join(path.dirname(recordPath), record.closeout.acceptanceRequest.htmlPath)
+        )
+      ).toContain('确认最终验收并关闭需求');
+      expect(
+        readMaybeExists(
+          path.join(path.dirname(recordPath), record.closeout.acceptanceRequest.renderReportPath)
+        )
+      ).toContain('closeoutDeliveryVerdict');
       expect(record.closeout.attempts[0]).toMatchObject({
         closeoutAttemptId: 'closeout-pass',
         decision: 'pass',
@@ -965,7 +1020,10 @@ describe('requirement-scoped delivery closeout gate', () => {
   it('prefers canonical record source over stale synthetic closeout source when rendering acceptance request', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-source-'));
     try {
-      const sourcePath = writeAiTddSource(root, path.join(root, 'tests', 'acceptance', 'ai-tdd.test.ts'));
+      const sourcePath = writeAiTddSource(
+        root,
+        path.join(root, 'tests', 'acceptance', 'ai-tdd.test.ts')
+      );
       const sourceHashes = confirmationHashesForSource(sourcePath);
       const syntheticSourcePath = path.join(
         root,
@@ -1065,7 +1123,10 @@ describe('requirement-scoped delivery closeout gate', () => {
       const record = JSON.parse(readFileSync(recordPath, 'utf8'));
       const acceptanceRequest = record.closeout.acceptanceRequest;
       const report = JSON.parse(
-        readFileSync(path.join(path.dirname(recordPath), acceptanceRequest.renderReportPath), 'utf8')
+        readFileSync(
+          path.join(path.dirname(recordPath), acceptanceRequest.renderReportPath),
+          'utf8'
+        )
       );
 
       expect(path.resolve(report.sourcePath)).toBe(path.resolve(sourcePath));
@@ -1139,7 +1200,9 @@ describe('requirement-scoped delivery closeout gate', () => {
   it('fails closed when compiled model packet MUSTs lack per-MUST closure evidence', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-per-must-blocked-'));
     try {
-      const modelPacketPath = writeModelPacket(path.join(root, 'trace-execution', 'model_packet.json'));
+      const modelPacketPath = writeModelPacket(
+        path.join(root, 'trace-execution', 'model_packet.json')
+      );
       const recordPath = writeRecord(root, {
         ...baseRecord(),
         deliveryEvidence: {
@@ -1289,7 +1352,9 @@ describe('requirement-scoped delivery closeout gate', () => {
   it('passes compiled model packet closeout only after every MUST has command, artifact, test result, and pass closure', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-per-must-pass-'));
     try {
-      const modelPacketPath = writeModelPacket(path.join(root, 'trace-execution', 'model_packet.json'));
+      const modelPacketPath = writeModelPacket(
+        path.join(root, 'trace-execution', 'model_packet.json')
+      );
       const reportPath = path.join(root, 'closeout', 'delivery-closeout-report.json');
       const recordPath = writeRecord(root, {
         ...baseRecord(),
@@ -1451,7 +1516,10 @@ describe('requirement-scoped delivery closeout gate', () => {
       expect(nextRecord.status).toBe('awaiting_user_acceptance');
       expect(nextRecord.closeout.attempts[0].checks).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ id: 'production-subsystem-extension-current', required: false }),
+          expect.objectContaining({
+            id: 'production-subsystem-extension-current',
+            required: false,
+          }),
           expect.objectContaining({ id: 'production-loop-ready-report-current', required: false }),
           expect.objectContaining({ id: 'dataset-release-artifacts-current', required: false }),
           expect.objectContaining({ id: 'failure-case-coverage-complete', required: true }),
@@ -1515,9 +1583,7 @@ describe('requirement-scoped delivery closeout gate', () => {
       expect(record.closeout.attempts[0].blockingReasons).toContain(
         'ai_tdd_contract_gate_not_passed'
       );
-      expect(record.closeout.attempts[0].blockingReasons).toContain(
-        'acceptance_test_file_missing'
-      );
+      expect(record.closeout.attempts[0].blockingReasons).toContain('acceptance_test_file_missing');
     } finally {
       cleanupTempRoot(root);
     }
@@ -1817,9 +1883,7 @@ describe('requirement-scoped delivery closeout gate', () => {
               blockingIfMissing: true,
               negativeOrRegression: true,
               closeoutAttemptId: 'closeout-no-readiness',
-              artifactRefs: [
-                evidenceArtifactRef(),
-              ],
+              artifactRefs: [evidenceArtifactRef()],
             },
           ],
         },
@@ -2042,7 +2106,9 @@ describe('requirement-scoped delivery closeout gate', () => {
       const extensionRef = record.extensionRefs.at(-1);
       const extension = JSON.parse(readFileSync(extensionRef.path, 'utf8'));
       extension.productionSubsystemAcceptanceRegistry.subsystemAcceptance = [];
-      extension.productionSubsystemAcceptanceRegistryHash = sha256Text(JSON.stringify(extension.productionSubsystemAcceptanceRegistry));
+      extension.productionSubsystemAcceptanceRegistryHash = sha256Text(
+        JSON.stringify(extension.productionSubsystemAcceptanceRegistry)
+      );
       writeJson(extensionRef.path, extension);
       extensionRef.contentHash = sha256File(extensionRef.path);
       writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
@@ -2101,7 +2167,8 @@ describe('requirement-scoped delivery closeout gate', () => {
       const record = JSON.parse(readFileSync(recordPath, 'utf8'));
       const extensionRef = record.extensionRefs.at(-1);
       const extension = JSON.parse(readFileSync(extensionRef.path, 'utf8'));
-      extension.sourceDocumentHash = 'sha256:2222222222222222222222222222222222222222222222222222222222222222';
+      extension.sourceDocumentHash =
+        'sha256:2222222222222222222222222222222222222222222222222222222222222222';
       writeJson(extensionRef.path, extension);
 
       const code = mainDeliveryCloseoutGate([
@@ -2173,7 +2240,8 @@ describe('requirement-scoped delivery closeout gate', () => {
         'dataset-manifest.json'
       );
       const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
-      manifest.source.sourceDocumentHash = 'sha256:2222222222222222222222222222222222222222222222222222222222222222';
+      manifest.source.sourceDocumentHash =
+        'sha256:2222222222222222222222222222222222222222222222222222222222222222';
       writeJson(manifestPath, manifest);
 
       const code = mainDeliveryCloseoutGate([
@@ -2189,7 +2257,10 @@ describe('requirement-scoped delivery closeout gate', () => {
       expect(code).toBe(1);
       const nextRecord = JSON.parse(readFileSync(recordPath, 'utf8'));
       expect(nextRecord.closeout.attempts[0].blockingReasons).toEqual(
-        expect.arrayContaining(['dataset_manifest_source_document_hash_mismatch', 'dataset_release_manifest_hash_mismatch'])
+        expect.arrayContaining([
+          'dataset_manifest_source_document_hash_mismatch',
+          'dataset_release_manifest_hash_mismatch',
+        ])
       );
     } finally {
       cleanupTempRoot(root);
@@ -2783,7 +2854,9 @@ describe('requirement-scoped delivery closeout gate', () => {
   });
 
   it('still blocks when the current attempt has a non-closeout open failure', () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-current-attempt-other-failure-'));
+    const root = mkdtempSync(
+      path.join(os.tmpdir(), 'delivery-closeout-current-attempt-other-failure-')
+    );
     try {
       const recordPath = writeRecord(root, {
         ...baseRecord(),
@@ -2893,9 +2966,7 @@ describe('requirement-scoped delivery closeout gate', () => {
       expect(record.rerunLoops[0]).not.toHaveProperty('decision');
       expect(record.rerunLoops[0]).not.toHaveProperty('result');
       expect(record.failureRecords.at(-1).sourceRefs).toEqual(
-        expect.arrayContaining([
-          { sourceType: 'rerun_loop', id: 'rerun-001' },
-        ])
+        expect.arrayContaining([{ sourceType: 'rerun_loop', id: 'rerun-001' }])
       );
     } finally {
       cleanupTempRoot(root);

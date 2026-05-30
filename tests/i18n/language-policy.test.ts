@@ -27,7 +27,9 @@ describe('language-policy', () => {
 
   describe('classifyUserMessageLanguage', () => {
     it('classifies Chinese-dominant text as zh', () => {
-      expect(classifyUserMessageLanguage('请详细解释这个双语运行时设计方案以及迁移策略')).toBe('zh');
+      expect(classifyUserMessageLanguage('请详细解释这个双语运行时设计方案以及迁移策略')).toBe(
+        'zh'
+      );
     });
 
     it('classifies English-dominant text as en', () => {

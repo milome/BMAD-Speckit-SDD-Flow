@@ -7,8 +7,21 @@ import * as fs from 'fs';
 import { parseAuditReport } from '../../packages/scoring/parsers';
 import { writeScoreRecordSync } from '../../packages/scoring/writer';
 
-const FIXTURES = path.join(process.cwd(), 'packages', 'scoring', 'parsers', '__tests__', 'fixtures');
-const TEMP_OUT = path.join(process.cwd(), '_bmad-output', 'implementation-artifacts', '3-2-eval-layer1-3-parser', 'accept-e3-s2-out');
+const FIXTURES = path.join(
+  process.cwd(),
+  'packages',
+  'scoring',
+  'parsers',
+  '__tests__',
+  'fixtures'
+);
+const TEMP_OUT = path.join(
+  process.cwd(),
+  '_bmad-output',
+  'implementation-artifacts',
+  '3-2-eval-layer1-3-parser',
+  'accept-e3-s2-out'
+);
 
 async function main() {
   console.log('Accept E3-S2: parseAuditReport + writeScoreRecordSync');

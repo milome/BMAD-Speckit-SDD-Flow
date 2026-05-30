@@ -44,7 +44,8 @@ function parseArgs(argv: string[]): Record<string, string> {
 }
 
 const EMPTY_DATA_MESSAGE = 'No scoring data yet; complete at least one Dev Story run first.';
-const EMPTY_REAL_DEV_MESSAGE = 'No real_dev scoring data yet; complete at least one Dev Story run first.';
+const EMPTY_REAL_DEV_MESSAGE =
+  'No real_dev scoring data yet; complete at least one Dev Story run first.';
 const EMPTY_EVAL_QUESTION_MESSAGE = 'No eval_question scoring data.';
 const DEFAULT_LIMIT = 100;
 
@@ -65,11 +66,17 @@ async function main(): Promise<void> {
 
   const scenarioArg = (args.scenario ?? args['scenario'] ?? 'real_dev').toLowerCase();
   if (scenarioArg !== 'real_dev' && scenarioArg !== 'eval_question' && scenarioArg !== 'all') {
-    console.error(`Invalid --scenario value: ${scenarioArg}. Expected real_dev, eval_question, or all.`);
+    console.error(
+      `Invalid --scenario value: ${scenarioArg}. Expected real_dev, eval_question, or all.`
+    );
     process.exit(1);
   }
   const scenarioFilter: 'real_dev' | 'eval_question' | undefined =
-    scenarioArg === 'all' ? undefined : scenarioArg === 'eval_question' ? 'eval_question' : 'real_dev';
+    scenarioArg === 'all'
+      ? undefined
+      : scenarioArg === 'eval_question'
+        ? 'eval_question'
+        : 'real_dev';
 
   const epicArg = args.epic ?? args['epic'];
   const storyArg = args.story ?? args['story'];
@@ -94,12 +101,8 @@ async function main(): Promise<void> {
 
   if (epicArg != null || storyArg != null) {
     const epicId = epicArg != null ? parseInt(String(epicArg), 10) : undefined;
-    const storyId = storyArg != null
-      ? parseInt(String(storyArg).split('.')[1]!, 10)
-      : undefined;
-    const epicForStory = storyArg != null
-      ? parseInt(String(storyArg).split('.')[0]!, 10)
-      : epicId!;
+    const storyId = storyArg != null ? parseInt(String(storyArg).split('.')[1]!, 10) : undefined;
+    const epicForStory = storyArg != null ? parseInt(String(storyArg).split('.')[0]!, 10) : epicId!;
     const records =
       storyArg != null
         ? queryByStory(epicForStory, storyId!, dataPath)
@@ -129,9 +132,7 @@ async function main(): Promise<void> {
         latestRunId = r.run_id;
       }
     }
-    const allRecords = loadAndDedupeRecords(dataPath).filter(
-      (r) => r.run_id === latestRunId
-    );
+    const allRecords = loadAndDedupeRecords(dataPath).filter((r) => r.run_id === latestRunId);
     const result = await coachDiagnose(latestRunId, {
       dataPath,
       records: allRecords,
@@ -189,4 +190,3 @@ main().catch((err) => {
   console.error(err);
   process.exit(1);
 });
-

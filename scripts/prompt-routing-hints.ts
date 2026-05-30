@@ -24,11 +24,17 @@ function normalizeText(value: string): string {
   return value.toLowerCase().replace(/\s+/g, ' ').trim();
 }
 
-function resolveRulesPath(projectRoot: string, rulesPath = DEFAULT_PROMPT_ROUTING_RULES_PATH): string {
+function resolveRulesPath(
+  projectRoot: string,
+  rulesPath = DEFAULT_PROMPT_ROUTING_RULES_PATH
+): string {
   return path.isAbsolute(rulesPath) ? rulesPath : path.join(projectRoot, rulesPath);
 }
 
-function collectAliasHits(aliasMap: Record<string, string[]>, normalizedInput: string): AliasHitMap {
+function collectAliasHits(
+  aliasMap: Record<string, string[]>,
+  normalizedInput: string
+): AliasHitMap {
   const hits: AliasHitMap = {};
   for (const [key, aliases] of Object.entries(aliasMap)) {
     const matched = aliases.filter((alias) => normalizedInput.includes(normalizeText(alias)));

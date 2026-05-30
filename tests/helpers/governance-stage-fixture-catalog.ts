@@ -64,12 +64,7 @@ export const GOVERNANCE_STAGE_FIXTURE_CATALOG: Record<string, GovernanceStageFix
   ),
   'bmad-create-architecture/step-04-decisions': stageFixture(
     'architecture decision step keeps key path section empty so contract completeness fails before downstream details matter',
-    [
-      '## P0 Key Path Sequences',
-      '{{placeholder}}',
-      '',
-      'missing smoke E2E evidence traceability',
-    ]
+    ['## P0 Key Path Sequences', '{{placeholder}}', '', 'missing smoke E2E evidence traceability']
   ),
   'bmad-create-architecture/step-07-validation': stageFixture(
     'architecture validation step keeps journey coverage validation empty so readiness validation remains stably blocked',
@@ -152,5 +147,7 @@ export function resolveGovernanceStageFixture(key: string): GovernanceStageFixtu
 }
 
 export function listGovernanceStageFixtureKeys(): string[] {
-  return Object.keys(GOVERNANCE_STAGE_FIXTURE_CATALOG).sort((left, right) => left.localeCompare(right));
+  return Object.keys(GOVERNANCE_STAGE_FIXTURE_CATALOG).sort((left, right) =>
+    left.localeCompare(right)
+  );
 }

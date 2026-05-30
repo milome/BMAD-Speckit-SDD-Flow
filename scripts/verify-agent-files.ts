@@ -11,11 +11,30 @@ const REQUIRED_AGENTS: AgentCheck[] = [
   { name: 'bmad-master', path: '.claude/agents/bmad-master.md' },
   { name: 'bmad-story-create', path: '.claude/agents/bmad-story-create.md' },
   { name: 'bmad-story-audit', path: '.claude/agents/bmad-story-audit.md' },
-  { name: 'bmad-layer4-speckit-specify', path: '.claude/agents/layers/bmad-layer4-speckit-specify.md' },
-  { name: 'bmad-layer4-speckit-plan', path: '.claude/agents/layers/bmad-layer4-speckit-plan.md', expectedPrerequisite: 'specify_passed' },
-  { name: 'bmad-layer4-speckit-gaps', path: '.claude/agents/layers/bmad-layer4-speckit-gaps.md', expectedPrerequisite: 'plan_passed' },
-  { name: 'bmad-layer4-speckit-tasks', path: '.claude/agents/layers/bmad-layer4-speckit-tasks.md', expectedPrerequisite: 'gaps_passed' },
-  { name: 'bmad-layer4-speckit-implement', path: '.claude/agents/layers/bmad-layer4-speckit-implement.md', expectedPrerequisite: 'tasks_passed' },
+  {
+    name: 'bmad-layer4-speckit-specify',
+    path: '.claude/agents/layers/bmad-layer4-speckit-specify.md',
+  },
+  {
+    name: 'bmad-layer4-speckit-plan',
+    path: '.claude/agents/layers/bmad-layer4-speckit-plan.md',
+    expectedPrerequisite: 'specify_passed',
+  },
+  {
+    name: 'bmad-layer4-speckit-gaps',
+    path: '.claude/agents/layers/bmad-layer4-speckit-gaps.md',
+    expectedPrerequisite: 'plan_passed',
+  },
+  {
+    name: 'bmad-layer4-speckit-tasks',
+    path: '.claude/agents/layers/bmad-layer4-speckit-tasks.md',
+    expectedPrerequisite: 'gaps_passed',
+  },
+  {
+    name: 'bmad-layer4-speckit-implement',
+    path: '.claude/agents/layers/bmad-layer4-speckit-implement.md',
+    expectedPrerequisite: 'tasks_passed',
+  },
 ];
 
 const REQUIRED_SPECKIT_ALIASES: AgentCheck[] = [
@@ -41,7 +60,7 @@ function verifyAgentFiles(): void {
   console.log('=== Agent 文件完整性验证 ===\n');
 
   console.log('【检查 1】Layer 4 执行体:');
-  REQUIRED_AGENTS.forEach(agent => {
+  REQUIRED_AGENTS.forEach((agent) => {
     if (fs.existsSync(agent.path)) {
       console.log(`✅ ${agent.name}: ${agent.path}`);
 
@@ -61,7 +80,7 @@ function verifyAgentFiles(): void {
   });
 
   console.log('\n【检查 1.5】Speckit 顶层 alias:');
-  REQUIRED_SPECKIT_ALIASES.forEach(agent => {
+  REQUIRED_SPECKIT_ALIASES.forEach((agent) => {
     if (fs.existsSync(agent.path)) {
       console.log(`✅ ${agent.name}: ${agent.path}`);
     } else {
@@ -71,7 +90,7 @@ function verifyAgentFiles(): void {
   });
 
   console.log('\n【检查 2】Auditor 执行体:');
-  REQUIRED_AUDITORS.forEach(agent => {
+  REQUIRED_AUDITORS.forEach((agent) => {
     if (fs.existsSync(agent.path)) {
       console.log(`✅ ${agent.name}: ${agent.path}`);
     } else {

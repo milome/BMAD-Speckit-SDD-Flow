@@ -3,12 +3,23 @@ import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import yaml from 'js-yaml';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 const ROOT = process.cwd();
-const SCRIPT = path.join(ROOT, '_bmad', 'skills', 'req-trace-matrix-prompt-generator', 'scripts', 'generate_prompt.js');
-const SOURCE = path.join(ROOT, 'docs', 'requirements', '2026-05-25-ai-tdd-manifest-closeout-runner.md');
+const SCRIPT = path.join(
+  ROOT,
+  '_bmad',
+  'skills',
+  'req-trace-matrix-prompt-generator',
+  'scripts',
+  'generate_prompt.js'
+);
+const SOURCE = path.join(
+  ROOT,
+  'docs',
+  'requirements',
+  '2026-05-25-ai-tdd-manifest-closeout-runner.md'
+);
 const RECORD = path.join(
   ROOT,
   '_bmad-output',
@@ -97,7 +108,9 @@ describe('req-trace shared goal contract profile integration', () => {
     const result = runNativeGoal();
 
     expect(result.status).toBe(0);
-    const receipt = JSON.parse(fs.readFileSync(path.join(result.outDir, 'audit_receipt.json'), 'utf8'));
+    const receipt = JSON.parse(
+      fs.readFileSync(path.join(result.outDir, 'audit_receipt.json'), 'utf8')
+    );
     const goalDocument = fs.readFileSync(path.join(result.outDir, 'goal_execution.md'), 'utf8');
     expect(receipt.goalContractTemplate).toMatchObject({
       templatePath: '_bmad/shared/goal-contract/goal-execution-contract-template.md',
@@ -124,7 +137,9 @@ describe('req-trace shared goal contract profile integration', () => {
     try {
       const result = runNativeGoal();
       expect(result.status).toBe(3);
-      const receipt = JSON.parse(fs.readFileSync(path.join(result.outDir, 'audit_receipt.json'), 'utf8'));
+      const receipt = JSON.parse(
+        fs.readFileSync(path.join(result.outDir, 'audit_receipt.json'), 'utf8')
+      );
       expect(receipt.blockingReasons).toContain('GOAL_CONTRACT_PROFILE_MISSING');
       expect(fs.existsSync(path.join(result.outDir, 'goal_execution.md'))).toBe(false);
     } finally {
@@ -141,7 +156,9 @@ describe('req-trace shared goal contract profile integration', () => {
     const result = runNativeGoal();
 
     expect(result.status).toBe(3);
-    const receipt = JSON.parse(fs.readFileSync(path.join(result.outDir, 'audit_receipt.json'), 'utf8'));
+    const receipt = JSON.parse(
+      fs.readFileSync(path.join(result.outDir, 'audit_receipt.json'), 'utf8')
+    );
     expect(receipt.blockingReasons).toContain('GOAL_CONTRACT_PROFILE_HASH_MISMATCH');
     expect(fs.existsSync(path.join(result.outDir, 'goal_execution.md'))).toBe(false);
   });
@@ -155,7 +172,9 @@ describe('req-trace shared goal contract profile integration', () => {
     const result = runNativeGoal();
 
     expect(result.status).toBe(3);
-    const receipt = JSON.parse(fs.readFileSync(path.join(result.outDir, 'audit_receipt.json'), 'utf8'));
+    const receipt = JSON.parse(
+      fs.readFileSync(path.join(result.outDir, 'audit_receipt.json'), 'utf8')
+    );
     expect(receipt.blockingReasons).toContain('GOAL_CONTRACT_PROFILE_UNSUPPORTED');
     expect(fs.existsSync(path.join(result.outDir, 'goal_execution.md'))).toBe(false);
   });
@@ -168,7 +187,9 @@ describe('req-trace shared goal contract profile integration', () => {
     const result = runNativeGoal();
 
     expect(result.status).toBe(3);
-    const receipt = JSON.parse(fs.readFileSync(path.join(result.outDir, 'audit_receipt.json'), 'utf8'));
+    const receipt = JSON.parse(
+      fs.readFileSync(path.join(result.outDir, 'audit_receipt.json'), 'utf8')
+    );
     expect(receipt.blockingReasons).toContain('GOAL_CONTRACT_INCOMPLETE');
     expect(fs.existsSync(path.join(result.outDir, 'goal_execution.md'))).toBe(false);
   });
@@ -181,7 +202,9 @@ describe('req-trace shared goal contract profile integration', () => {
     const result = runNativeGoal();
 
     expect(result.status).toBe(0);
-    const receipt = JSON.parse(fs.readFileSync(path.join(result.outDir, 'audit_receipt.json'), 'utf8'));
+    const receipt = JSON.parse(
+      fs.readFileSync(path.join(result.outDir, 'audit_receipt.json'), 'utf8')
+    );
     expect(receipt.goalContractTemplate.compatibilityDecision).toBe('pass');
     expect(receipt.goalContractTemplate.requiredSlotsPassed).toBe(true);
   });
@@ -189,12 +212,17 @@ describe('req-trace shared goal contract profile integration', () => {
   it('blocks missing invariant fragments', () => {
     writeProfile((profile) => ({
       ...profile,
-      invariantFragments: [...profile.invariantFragments, 'future invariant that req-trace cannot render yet'],
+      invariantFragments: [
+        ...profile.invariantFragments,
+        'future invariant that req-trace cannot render yet',
+      ],
     }));
     const result = runNativeGoal();
 
     expect(result.status).toBe(3);
-    const receipt = JSON.parse(fs.readFileSync(path.join(result.outDir, 'audit_receipt.json'), 'utf8'));
+    const receipt = JSON.parse(
+      fs.readFileSync(path.join(result.outDir, 'audit_receipt.json'), 'utf8')
+    );
     expect(receipt.blockingReasons).toContain('GOAL_CONTRACT_INCOMPLETE');
     expect(fs.existsSync(path.join(result.outDir, 'goal_execution.md'))).toBe(false);
   });

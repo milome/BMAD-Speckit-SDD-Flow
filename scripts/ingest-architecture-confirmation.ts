@@ -5,7 +5,11 @@ import {
   architectureConfirmationHashFor,
   resolveArchitectureConfirmationHashRecipe,
 } from './architecture-confirmation-hash-recipe';
-import { appendControlEventAndReplay, type ControlCommitResult } from './requirement-record-control-store';
+import {
+  appendControlEventAndReplay,
+  type ControlCommitResult,
+} from './requirement-record-control-store';
+import { hasOpenReconfirmationRequest } from './reconfirmation-runtime';
 
 type JsonObject = Record<string, unknown>;
 
@@ -106,7 +110,10 @@ function readRenderEvidence(reportPath: string): JsonObject {
   }
   const candidates = path.isAbsolute(summaryPath)
     ? [summaryPath]
-    : [path.resolve(process.cwd(), summaryPath), path.resolve(path.dirname(reportPath), summaryPath)];
+    : [
+        path.resolve(process.cwd(), summaryPath),
+        path.resolve(path.dirname(reportPath), summaryPath),
+      ];
   const absoluteSummaryPath = candidates.find((candidate) => fs.existsSync(candidate));
   if (!absoluteSummaryPath) {
     return report;
@@ -184,7 +191,10 @@ function strings(value: unknown): string[] {
 
 function objects(value: unknown): JsonObject[] {
   return Array.isArray(value)
-    ? value.filter((item): item is JsonObject => Boolean(item) && typeof item === 'object' && !Array.isArray(item))
+    ? value.filter(
+        (item): item is JsonObject =>
+          Boolean(item) && typeof item === 'object' && !Array.isArray(item)
+      )
     : [];
 }
 
@@ -195,12 +205,16 @@ function hasSixModelRuntime(record: JsonObject): boolean {
   );
 }
 
-function sameArchitectureConfirmationAlreadyRecorded(record: JsonObject, event: JsonObject): boolean {
+function sameArchitectureConfirmationAlreadyRecorded(
+  record: JsonObject,
+  event: JsonObject
+): boolean {
   const state = object(record.architectureConfirmationState);
   return (
     text(state.status) === 'active' &&
     text(state.currentArchitectureConfirmationRunId) === text(event.runId) &&
-    text(state.currentArchitectureConfirmationHash) === text(event.architectureConfirmationArtifactHash)
+    text(state.currentArchitectureConfirmationHash) ===
+      text(event.architectureConfirmationArtifactHash)
   );
 }
 
@@ -214,7 +228,8 @@ function modelResultForArchitectureConfirmation(
     payloadKind: 'model_result',
     model: 'architecture_confirmation',
     recordId: text(event.recordId) || text(record.recordId),
-    requirementSetId: text(event.requirementSetId) || text(record.requirementSetId) || text(record.recordId),
+    requirementSetId:
+      text(event.requirementSetId) || text(record.requirementSetId) || text(record.recordId),
     sourceDocumentHash: text(event.sourceDocumentHash) || text(record.sourceDocumentHash),
     implementationConfirmationHash:
       text(event.implementationConfirmationHash) || text(record.implementationConfirmationHash),
@@ -241,12 +256,6 @@ function modelResultForArchitectureConfirmation(
   };
 }
 
-function hasOpenBlockingReconfirmation(record: JsonObject): boolean {
-  return objects(record.reconfirmationRequests).some((request) =>
-    ['blocking_open', 'open', 'in_progress'].includes(text(request.status))
-  );
-}
-
 function hasOpenRerun(record: JsonObject): boolean {
   return objects(record.rerunLoops).some((loop) =>
     ['open', 'in_progress', 'no_progress', 'blocked'].includes(text(loop.status))
@@ -255,7 +264,9 @@ function hasOpenRerun(record: JsonObject): boolean {
 
 function hasPendingBlockerIntake(record: JsonObject): boolean {
   if (objects(record.pendingBlockerIntake).length > 0) return true;
-  return objects(record.blockerIntakeRuns).some((run) => !['closed', 'resolved', 'pass'].includes(text(run.status)));
+  return objects(record.blockerIntakeRuns).some(
+    (run) => !['closed', 'resolved', 'pass'].includes(text(run.status))
+  );
 }
 
 function appendMentalModelTransition(input: {
@@ -294,7 +305,7 @@ function appendMentalModelTransition(input: {
       if (NEXT_MODEL[String(payload.fromModel)] !== payload.toModel) {
         throw new Error('mental_model_transition_order_violation');
       }
-      if (hasOpenBlockingReconfirmation(record)) {
+      if (hasOpenReconfirmationRequest(record)) {
         throw new Error('mental_model_transition_blocked_by_open_reconfirmation');
       }
       if (hasOpenRerun(record)) {
@@ -352,7 +363,7 @@ function appendArchitectureConfirmationResult(input: {
       eventType: 'six_model_results_recorded',
       ...result,
     },
-    reduce: (record, payload) => ({
+    reduce: (record) => ({
       ...record,
       sixModelResults: {
         ...object(record.sixModelResults),
@@ -427,7 +438,10 @@ function validate(input: {
   );
   const mismatches: string[] = [];
 
-  if (confirmation.architectureConfirmationHashRecipe && typeof confirmation.architectureConfirmationHashRecipe === 'object') {
+  if (
+    confirmation.architectureConfirmationHashRecipe &&
+    typeof confirmation.architectureConfirmationHashRecipe === 'object'
+  ) {
     const snapshot = confirmation.architectureConfirmationHashRecipe as JsonObject;
     if (snapshot.recipeVersion !== recipe.recipeVersion) {
       mismatches.push('architecture_confirmation_recipe_version_mismatch');
@@ -453,10 +467,7 @@ function validate(input: {
   if (provided.architectureConfirmationArtifactHash !== declaredArtifactHash) {
     mismatches.push('confirmation_text_architecture_confirmation_artifact_hash_mismatch');
   }
-  for (const field of [
-    'sourceDocumentHash',
-    'implementationConfirmationHash',
-  ]) {
+  for (const field of ['sourceDocumentHash', 'implementationConfirmationHash']) {
     if (record[field] !== confirmation[field]) {
       mismatches.push(`record_${field}_mismatch`);
     }
@@ -522,7 +533,12 @@ function validate(input: {
   };
 }
 
-function updateRecord(record: JsonObject, event: JsonObject, confirmedAt: string, confirmedBy: string): JsonObject {
+function updateRecord(
+  record: JsonObject,
+  event: JsonObject,
+  confirmedAt: string,
+  confirmedBy: string
+): JsonObject {
   const architectureConfirmations = Array.isArray(record.architectureConfirmations)
     ? [...record.architectureConfirmations]
     : [];
@@ -561,7 +577,11 @@ function stateHashMap(value: unknown): JsonObject {
   return object(value);
 }
 
-function architectureStateCheck(record: JsonObject, checkedAt: string, checkedBy: string): {
+function architectureStateCheck(
+  record: JsonObject,
+  checkedAt: string,
+  checkedBy: string
+): {
   nextRecord: JsonObject;
   event: JsonObject;
   mismatches: string[];
@@ -589,12 +609,20 @@ function architectureStateCheck(record: JsonObject, checkedAt: string, checkedBy
     resolvedRecipeHash: text(state.resolvedRecipeHash),
   };
   const mismatchFields = Object.keys(currentHashes).filter(
-    (field) => text(previousHashes[field as keyof typeof previousHashes]) !== text(currentHashes[field as keyof typeof currentHashes])
+    (field) =>
+      text(previousHashes[field as keyof typeof previousHashes]) !==
+      text(currentHashes[field as keyof typeof currentHashes])
   );
-  const missingState = !text(state.currentArchitectureConfirmationHash) || !text(state.currentArchitectureConfirmationRunId);
+  const missingState =
+    !text(state.currentArchitectureConfirmationHash) ||
+    !text(state.currentArchitectureConfirmationRunId);
   const fromStatus = text(state.status) || 'missing';
   const toStatus = missingState ? 'missing' : mismatchFields.length > 0 ? 'stale' : 'active';
-  const decision: 'pass' | 'fail' | 'blocked' = missingState ? 'blocked' : mismatchFields.length > 0 ? 'fail' : 'pass';
+  const decision: 'pass' | 'fail' | 'blocked' = missingState
+    ? 'blocked'
+    : mismatchFields.length > 0
+      ? 'fail'
+      : 'pass';
   const event = {
     eventType: 'architecture_confirmation_state_checked',
     recordId: text(record.recordId),
@@ -605,7 +633,11 @@ function architectureStateCheck(record: JsonObject, checkedAt: string, checkedBy
     stateTransition: {
       fromStatus,
       toStatus,
-      reasonCode: missingState ? 'current_confirmation_missing' : mismatchFields.length > 0 ? 'hash_mismatch' : 'hash_match',
+      reasonCode: missingState
+        ? 'current_confirmation_missing'
+        : mismatchFields.length > 0
+          ? 'hash_mismatch'
+          : 'hash_match',
       previousHashes,
       currentHashes,
       mismatchFields,
@@ -639,7 +671,12 @@ function architectureStateCheck(record: JsonObject, checkedAt: string, checkedBy
           checkId: event.checkId,
           gate: 'architecture_confirmation_state',
           decision,
-          sourceRefs: [{ sourceType: 'architecture_confirmation', id: text(state.currentArchitectureConfirmationRunId) }],
+          sourceRefs: [
+            {
+              sourceType: 'architecture_confirmation',
+              id: text(state.currentArchitectureConfirmationRunId),
+            },
+          ],
           recordedAt: checkedAt,
           recordedBy: checkedBy,
         },
@@ -687,7 +724,11 @@ export function mainIngestArchitectureConfirmation(argv: string[]): number {
       controlEventHash: commit?.event.eventHash ?? null,
       receiptPath: commit ? normalizePathForRecord(commit.receiptPath) : null,
     };
-    process.stdout.write(args.json ? `${JSON.stringify(output, null, 2)}\n` : `architecture_confirmation_state=${result.decision}\n`);
+    process.stdout.write(
+      args.json
+        ? `${JSON.stringify(output, null, 2)}\n`
+        : `architecture_confirmation_state=${result.decision}\n`
+    );
     return result.decision === 'pass' ? 0 : 1;
   }
   requireArgs(args);
@@ -735,7 +776,8 @@ export function mainIngestArchitectureConfirmation(argv: string[]): number {
           architecturePath: normalizePathForRecord(architecturePath),
           renderReportPath: normalizePathForRecord(reportPath),
         },
-        reduce: (currentRecord) => updateRecord(currentRecord, event, confirmedAt, args.confirmedBy!),
+        reduce: (currentRecord) =>
+          updateRecord(currentRecord, event, confirmedAt, args.confirmedBy!),
       });
   const progressionCommits = appendArchitectureConfirmationModelProgression({
     recordPath,
@@ -743,7 +785,9 @@ export function mainIngestArchitectureConfirmation(argv: string[]): number {
     recordedAt: confirmedAt,
     recordedBy: args.confirmedBy!,
   });
-  const artifactIndex = path.resolve(args.artifactIndex ?? path.join(baseDir, 'artifact-index.jsonl'));
+  const artifactIndex = path.resolve(
+    args.artifactIndex ?? path.join(baseDir, 'artifact-index.jsonl')
+  );
   if (!alreadyRecorded) {
     appendJsonl(artifactIndex, {
       artifactType: 'architecture_confirmation',

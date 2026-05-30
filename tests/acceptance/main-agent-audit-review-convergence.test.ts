@@ -79,7 +79,10 @@ describe('Main Agent audit review convergence', () => {
       });
       expect(unresolvedGap.ok).toBe(false);
       expect(unresolvedGap.blockingReasons).toEqual(
-        expect.arrayContaining(['round_3_validated_gap_unresolved', 'main_agent_repair_receipt_missing'])
+        expect.arrayContaining([
+          'round_3_validated_gap_unresolved',
+          'main_agent_repair_receipt_missing',
+        ])
       );
       const repairedButNotFedBack = evaluateAuditTriadConvergence({
         plan,

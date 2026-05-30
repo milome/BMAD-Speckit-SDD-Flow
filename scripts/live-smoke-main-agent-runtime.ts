@@ -1,11 +1,16 @@
-import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import {
-  defaultRuntimeContextFile,
-  writeRuntimeContext,
-} from './runtime-context';
+import { defaultRuntimeContextFile, writeRuntimeContext } from './runtime-context';
 import {
   defaultRuntimeContextRegistry,
   writeRuntimeContextRegistry,
@@ -38,7 +43,10 @@ function linkNodeModules(projectRoot: string): void {
   }
 }
 
-function createFixtureRoot(flow: 'story' | 'bugfix', cursorHost: boolean): {
+function createFixtureRoot(
+  flow: 'story' | 'bugfix',
+  cursorHost: boolean
+): {
   root: string;
   cleanup: () => void;
 } {
@@ -96,12 +104,16 @@ function createFixtureRoot(flow: 'story' | 'bugfix', cursorHost: boolean): {
   };
 }
 
-function commandResult(command: string, args: string[], options: {
-  cwd?: string;
-  env?: NodeJS.ProcessEnv;
-  input?: string;
-  timeoutMs?: number;
-} = {}) {
+function commandResult(
+  command: string,
+  args: string[],
+  options: {
+    cwd?: string;
+    env?: NodeJS.ProcessEnv;
+    input?: string;
+    timeoutMs?: number;
+  } = {}
+) {
   const result = spawnSync(command, args, {
     cwd: options.cwd,
     env: options.env,
@@ -129,7 +141,9 @@ function detectHostBinaries(): LiveSmokeResult[] {
     },
     {
       name: 'host-binary:cursor',
-      status: existsSync('D:\\Users\\milom\\AppData\\Local\\Programs\\cursor\\resources\\app\\resources\\app\\bin\\cursor.cmd')
+      status: existsSync(
+        'D:\\Users\\milom\\AppData\\Local\\Programs\\cursor\\resources\\app\\resources\\app\\bin\\cursor.cmd'
+      )
         ? 'pass'
         : 'fail',
       details: {
@@ -159,16 +173,13 @@ function runClaudeCliSmoke(): LiveSmokeResult {
 
 function runCursorCliSmoke(): LiveSmokeResult {
   const cursorCommand = process.platform === 'win32' ? 'cursor.cmd' : 'cursor';
-  const result = commandResult(cursorCommand, [
-    'agent',
-    '-p',
-    '--force',
-    '--output-format',
-    'json',
-    'Reply with exactly: CURSOR_SMOKE_OK',
-  ], {
-    timeoutMs: 15000,
-  });
+  const result = commandResult(
+    cursorCommand,
+    ['agent', '-p', '--force', '--output-format', 'json', 'Reply with exactly: CURSOR_SMOKE_OK'],
+    {
+      timeoutMs: 15000,
+    }
+  );
   const passed = result.status === 0 && result.stdout.includes('CURSOR_SMOKE_OK');
   return {
     name: 'live-smoke:cursor-terminal-agent',
@@ -188,33 +199,44 @@ function runHookSmoke(flow: 'story' | 'bugfix', cursorHost: boolean): LiveSmokeR
           tool_name: 'Task',
           tool_input: {
             executor: 'generalPurpose',
-            prompt: flow === 'story' ? 'Execute Story implementation now.' : 'Execute BUGFIX implementation now.',
+            prompt:
+              flow === 'story'
+                ? 'Execute Story implementation now.'
+                : 'Execute BUGFIX implementation now.',
           },
         })
       : JSON.stringify({
           tool_name: 'Agent',
           tool_input: {
             subagent_type: 'general-purpose',
-            prompt: flow === 'story' ? 'Execute Story implementation now.' : 'Execute BUGFIX implementation now.',
+            prompt:
+              flow === 'story'
+                ? 'Execute Story implementation now.'
+                : 'Execute BUGFIX implementation now.',
           },
         });
 
-    const result = commandResult(
-      process.execPath,
-      cursorHost ? [hook, '--cursor-host'] : [hook],
-      {
-        cwd: repoRoot(),
-        input,
-        env: {
-          ...process.env,
-          CURSOR_PROJECT_ROOT: fixture.root,
-          CLAUDE_PROJECT_DIR: fixture.root,
-        },
-      }
-    );
+    const result = commandResult(process.execPath, cursorHost ? [hook, '--cursor-host'] : [hook], {
+      cwd: repoRoot(),
+      input,
+      env: {
+        ...process.env,
+        CURSOR_PROJECT_ROOT: fixture.root,
+        CLAUDE_PROJECT_DIR: fixture.root,
+      },
+    });
 
-    const parsed = JSON.parse(result.stdout || '{}') as { continue?: boolean; systemMessage?: string };
-    const stateDir = path.join(fixture.root, '_bmad-output', 'runtime', 'governance', 'orchestration-state');
+    const parsed = JSON.parse(result.stdout || '{}') as {
+      continue?: boolean;
+      systemMessage?: string;
+    };
+    const stateDir = path.join(
+      fixture.root,
+      '_bmad-output',
+      'runtime',
+      'governance',
+      'orchestration-state'
+    );
     const packetDir = path.join(fixture.root, '_bmad-output', 'runtime', 'governance', 'packets');
     const passed =
       result.status === 0 &&
@@ -243,14 +265,35 @@ function runMainAgentScriptSmoke(): LiveSmokeResult {
   try {
     const inspect =
       process.platform === 'win32'
-        ? commandResult('cmd.exe', ['/d', '/s', '/c', `npm run main-agent-orchestration -- --cwd ${fixture.root} --action dispatch-plan`], {
-            cwd: repoRoot(),
-            timeoutMs: 120000,
-          })
-        : commandResult('npm', ['run', 'main-agent-orchestration', '--', '--cwd', fixture.root, '--action', 'dispatch-plan'], {
-            cwd: repoRoot(),
-            timeoutMs: 120000,
-          });
+        ? commandResult(
+            'cmd.exe',
+            [
+              '/d',
+              '/s',
+              '/c',
+              `npm run main-agent-orchestration -- --cwd ${fixture.root} --action dispatch-plan`,
+            ],
+            {
+              cwd: repoRoot(),
+              timeoutMs: 120000,
+            }
+          )
+        : commandResult(
+            'npm',
+            [
+              'run',
+              'main-agent-orchestration',
+              '--',
+              '--cwd',
+              fixture.root,
+              '--action',
+              'dispatch-plan',
+            ],
+            {
+              cwd: repoRoot(),
+              timeoutMs: 120000,
+            }
+          );
     const passed =
       inspect.status === 0 &&
       inspect.stdout.includes('dispatch_implement') &&

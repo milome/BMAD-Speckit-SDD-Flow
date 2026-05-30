@@ -95,13 +95,14 @@ function main(): void {
   const args = parseArgs();
   const strategy = (args.strategy ?? 'epic_story_window') as 'epic_story_window' | 'run_id';
   const dataPathArg = args.dataPath;
-  const dataPath = dataPathArg != null && dataPathArg !== ''
-    ? (path.isAbsolute(dataPathArg) ? dataPathArg : path.resolve(process.cwd(), dataPathArg))
-    : getScoringDataPath();
+  const dataPath =
+    dataPathArg != null && dataPathArg !== ''
+      ? path.isAbsolute(dataPathArg)
+        ? dataPathArg
+        : path.resolve(process.cwd(), dataPathArg)
+      : getScoringDataPath();
 
-  const records = loadAndDedupeRecords(dataPath).filter(
-    (r) => r.scenario !== 'eval_question'
-  );
+  const records = loadAndDedupeRecords(dataPath).filter((r) => r.scenario !== 'eval_question');
 
   const outputArg = args.output;
   const outputRel = outputArg != null && outputArg !== '' ? outputArg : OUTPUT_PATH;
@@ -168,13 +169,18 @@ function main(): void {
       : getLatestRunRecords(records);
 
   if (latestRecords.length === 0) {
-    const msg = isEpicOnly && epic != null ? EPIC_NO_COMPLETE_STORY_MESSAGE(epic) : INSUFFICIENT_RUN_MESSAGE;
+    const msg =
+      isEpicOnly && epic != null ? EPIC_NO_COMPLETE_STORY_MESSAGE(epic) : INSUFFICIENT_RUN_MESSAGE;
     writeArtifacts(msg);
     return;
   }
 
-  const healthScore = isEpicOnly ? computeEpicHealthScore(latestRecords) : computeHealthScore(latestRecords);
-  const dimensions = isEpicOnly ? getEpicDimensionScores(latestRecords) : getDimensionScores(latestRecords);
+  const healthScore = isEpicOnly
+    ? computeEpicHealthScore(latestRecords)
+    : computeHealthScore(latestRecords);
+  const dimensions = isEpicOnly
+    ? getEpicDimensionScores(latestRecords)
+    : getDimensionScores(latestRecords);
   const weakTop3 =
     strategy === 'epic_story_window'
       ? getWeakTop3EpicStory(latestRecords)
@@ -184,13 +190,18 @@ function main(): void {
   const vetoCount = countVetoTriggers(latestRecords);
   const trend = getTrend(records);
   const governanceRoutingSummary = getGovernanceRoutingSummary(analyticsRecords);
-  const governanceRoutingModeDistribution =
-    getGovernanceRoutingModeDistribution(analyticsRecords);
+  const governanceRoutingModeDistribution = getGovernanceRoutingModeDistribution(analyticsRecords);
   const governanceSignalHotspots = getGovernanceSignalHotspots(analyticsRecords);
-  const governanceGateFailureTrend =
-    getGovernanceRerunGateFailureTrend(analyticsRecords);
+  const governanceGateFailureTrend = getGovernanceRerunGateFailureTrend(analyticsRecords);
 
-  let formatOpts: { viewMode?: 'epic_aggregate'; epicId?: number; storyIds?: number[]; excludedStories?: string[] } | undefined;
+  let formatOpts:
+    | {
+        viewMode?: 'epic_aggregate';
+        epicId?: number;
+        storyIds?: number[];
+        excludedStories?: string[];
+      }
+    | undefined;
   if (isEpicOnly && epic != null) {
     const storyIdsSet = new Set<number>();
     for (const r of latestRecords) {

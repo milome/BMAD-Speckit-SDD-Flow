@@ -14,9 +14,7 @@ describe('runtime-emit package exports', () => {
     expect(pkg.exports['./dist/update-runtime-audit-index.cjs']).toBe(
       './dist/update-runtime-audit-index.cjs'
     );
-    expect(pkg.exports['./dist/auditor-post-actions.cjs']).toBe(
-      './dist/auditor-post-actions.cjs'
-    );
+    expect(pkg.exports['./dist/auditor-post-actions.cjs']).toBe('./dist/auditor-post-actions.cjs');
     expect(pkg.exports['./dist/run-auditor-host.cjs']).toBe('./dist/run-auditor-host.cjs');
 
     expect(readme).toContain('dist/update-runtime-audit-index.cjs');

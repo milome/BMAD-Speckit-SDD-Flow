@@ -1,7 +1,4 @@
-import type {
-  ExecutionIntentCandidate,
-  ExecutionPlanDecision,
-} from './execution-intent-schema';
+import type { ExecutionIntentCandidate, ExecutionPlanDecision } from './execution-intent-schema';
 
 export interface GovernancePresentation {
   structuredMetadataLines: string[];

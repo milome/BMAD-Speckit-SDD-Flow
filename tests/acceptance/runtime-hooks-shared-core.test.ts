@@ -10,7 +10,13 @@ describe('runtime hooks shared core', () => {
   it('provides shared emit/skip/error helpers and a reusable inject core', async () => {
     const corePath = path.join(root, '_bmad', 'runtime', 'hooks', 'runtime-policy-inject-core.cjs');
     const skipPath = path.join(root, '_bmad', 'runtime', 'hooks', 'should-skip-runtime-policy.cjs');
-    const errorPath = path.join(root, '_bmad', 'runtime', 'hooks', 'build-runtime-error-message.cjs');
+    const errorPath = path.join(
+      root,
+      '_bmad',
+      'runtime',
+      'hooks',
+      'build-runtime-error-message.cjs'
+    );
 
     expect(existsSync(corePath)).toBe(true);
     expect(existsSync(runEmitPath)).toBe(true);
@@ -29,8 +35,12 @@ describe('runtime hooks shared core', () => {
     expect(typeof emitCliPath).toBe('function');
     expect(typeof runEmitRuntimePolicy).toBe('function');
 
-    expect(shouldSkipRuntimePolicy({ cursorHost: true, root: path.join(root, '..', 'not-bmad') })).toBe(true);
-    expect(buildRuntimeErrorMessage({ stderr: 'x', stdout: '' })).toContain('[emit-runtime-policy FAILED]');
+    expect(
+      shouldSkipRuntimePolicy({ cursorHost: true, root: path.join(root, '..', 'not-bmad') })
+    ).toBe(true);
+    expect(buildRuntimeErrorMessage({ stderr: 'x', stdout: '' })).toContain(
+      '[emit-runtime-policy FAILED]'
+    );
   });
 
   it('prefers deployed hook-local emit launchers over canonical _bmad hook wrappers', () => {

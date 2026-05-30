@@ -3,14 +3,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
-import {
-  buildBmadHelpOutput,
-  renderBmadHelp,
-} from '../../scripts/bmad-help-renderer';
-import {
-  buildBmadsOutput,
-  renderBmads,
-} from '../../scripts/bmads-renderer';
+import { buildBmadHelpOutput, renderBmadHelp } from '../../scripts/bmad-help-renderer';
+import { buildBmadsOutput, renderBmads } from '../../scripts/bmads-renderer';
 
 function makeRoot(): string {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'bmad-help-boundary-'));
@@ -56,9 +50,11 @@ describe('bmad-help and BMADS runtime boundary', () => {
       'RG',
       'ST',
     ]);
-    expect(report.catalog.changed.every((item: { highRiskRoutingFields: string[] }) =>
-      item.highRiskRoutingFields.length === 0
-    )).toBe(true);
+    expect(
+      report.catalog.changed.every(
+        (item: { highRiskRoutingFields: string[] }) => item.highRiskRoutingFields.length === 0
+      )
+    ).toBe(true);
   });
 
   it('keeps BMADS main-agent routes out of the BMAD Method help catalog', () => {
@@ -143,7 +139,9 @@ describe('bmad-help and BMADS runtime boundary', () => {
       expect(text).toContain('bmad-speckit main-agent-orchestration --action inspect');
       expect(text).toContain('Run bmad-help for full BMAD Method workflow guidance');
       expect(JSON.stringify(output)).toContain('"artifacts"');
-      expect(JSON.stringify(output)).toContain('_bmad/_config/orchestration-governance.contract.yaml');
+      expect(JSON.stringify(output)).toContain(
+        '_bmad/_config/orchestration-governance.contract.yaml'
+      );
       expect(JSON.stringify(output)).toContain('scripts/orchestration-dispatch-contract.ts');
       expect(JSON.stringify(output)).toContain('_bmad/_config/stage-mapping.yaml');
     } finally {
@@ -152,7 +150,10 @@ describe('bmad-help and BMADS runtime boundary', () => {
   });
 
   it('exposes confirm-scope as a package-level command and keeps the main-agent alias', () => {
-    const cli = fs.readFileSync(path.resolve('packages', 'bmad-speckit', 'bin', 'bmad-speckit.js'), 'utf8');
+    const cli = fs.readFileSync(
+      path.resolve('packages', 'bmad-speckit', 'bin', 'bmad-speckit.js'),
+      'utf8'
+    );
 
     expect(cli).toContain(".command('confirm-scope')");
     expect(cli).toContain(".command('main-agent:confirm-scope')");
@@ -161,7 +162,10 @@ describe('bmad-help and BMADS runtime boundary', () => {
   });
 
   it('forwards governed command argv from the Commander command object', () => {
-    const cli = fs.readFileSync(path.resolve('packages', 'bmad-speckit', 'bin', 'bmad-speckit.js'), 'utf8');
+    const cli = fs.readFileSync(
+      path.resolve('packages', 'bmad-speckit', 'bin', 'bmad-speckit.js'),
+      'utf8'
+    );
 
     expect(cli).toContain('function forwardedArgsFromCommand(command)');
     expect(cli).toContain('command?.args');
@@ -202,7 +206,10 @@ describe('bmad-help and BMADS runtime boundary', () => {
         expect(skill).toContain('cannot claim completion');
       }
 
-      const rootSkill = fs.readFileSync(path.resolve('_bmad', 'skills', 'bmad-speckit', 'SKILL.md'), 'utf8');
+      const rootSkill = fs.readFileSync(
+        path.resolve('_bmad', 'skills', 'bmad-speckit', 'SKILL.md'),
+        'utf8'
+      );
       expect(rootSkill).toContain('Do not route through `bmads-auto`');
       expect(rootSkill).toContain('main-agent-orchestration --action inspect');
     }
@@ -276,7 +283,8 @@ describe('bmad-help and BMADS runtime boundary', () => {
         blockedWorkflows: [
           {
             workflow: 'bmad-story-assistant',
-            reason: 'implementation-readiness must be READY / ready_clean / repair_closed before story development.',
+            reason:
+              'implementation-readiness must be READY / ready_clean / repair_closed before story development.',
           },
         ],
         dispatch: null,
@@ -325,7 +333,11 @@ describe('bmad-help and BMADS runtime boundary', () => {
       const oldTime = new Date('2026-03-23T00:00:00Z');
       const newTime = new Date('2026-04-29T00:00:00Z');
       fs.utimesSync(reportPath, oldTime, oldTime);
-      fs.utimesSync(path.join(root, '_bmad-output', 'runtime', 'context', 'project.json'), newTime, newTime);
+      fs.utimesSync(
+        path.join(root, '_bmad-output', 'runtime', 'context', 'project.json'),
+        newTime,
+        newTime
+      );
 
       const output = buildBmadsOutput(root) as {
         readiness: { status: string; reason: string };
@@ -350,11 +362,10 @@ describe('bmad-help and BMADS runtime boundary', () => {
 
       expect(packageJson.scripts?.['bmad-help']).toBeUndefined();
 
-      const packageHelp = execFileSync(
-        process.execPath,
-        [packageCli, '--help'],
-        { cwd: path.resolve('.'), encoding: 'utf8' }
-      );
+      const packageHelp = execFileSync(process.execPath, [packageCli, '--help'], {
+        cwd: path.resolve('.'),
+        encoding: 'utf8',
+      });
 
       expect(packageHelp).not.toContain('  bmad-help ');
       expect(packageHelp).toContain('  bmads ');
@@ -367,11 +378,10 @@ describe('bmad-help and BMADS runtime boundary', () => {
       );
       expect(bmads).toContain('# BMADS Runtime Console');
 
-      const packageBmads = execFileSync(
-        process.execPath,
-        [packageCli, 'bmads', '--cwd', root],
-        { cwd: path.resolve('.'), encoding: 'utf8' }
-      );
+      const packageBmads = execFileSync(process.execPath, [packageCli, 'bmads', '--cwd', root], {
+        cwd: path.resolve('.'),
+        encoding: 'utf8',
+      });
       expect(packageBmads).toContain('# BMADS Runtime Console');
 
       const packageAlias = execFileSync(

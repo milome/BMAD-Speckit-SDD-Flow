@@ -7,7 +7,9 @@ import { resolveExecutionDisciplineProfile } from '../../scripts/execution-disci
 
 const policy = resolveExecutionDisciplineProfile('standalone_tasks').auditScoringConvergencePolicy;
 
-function validInput(overrides: Partial<AuditScoringConvergenceInput> = {}): AuditScoringConvergenceInput {
+function validInput(
+  overrides: Partial<AuditScoringConvergenceInput> = {}
+): AuditScoringConvergenceInput {
   return {
     policy,
     stage: 'tasks',

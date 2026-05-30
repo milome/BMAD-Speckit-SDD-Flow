@@ -370,20 +370,17 @@ describe.skip('legacy archived: post-tool-use detached background drain', () => 
       expect(hookResult?.backgroundTrigger?.stopReason).toBeNull();
       expect(hookResult?.backgroundTrigger).not.toHaveProperty('pendingJourneyContractHints');
 
-      await waitForWorkerSettled(
-        fixture.root,
-        () => {
-          if (!existsSync(secondOutput) || !existsSync(governanceCurrentRunPath(fixture.root))) {
-            return false;
-          }
-          const currentRun = readGovernanceCurrentRun<GovernanceExecutionResult>(fixture.root);
-          const latest = currentRun.at(-1);
-          return (
-            latest?.type === 'governance-remediation-rerun' &&
-            latest?.result?.artifactPath === secondOutput
-          );
+      await waitForWorkerSettled(fixture.root, () => {
+        if (!existsSync(secondOutput) || !existsSync(governanceCurrentRunPath(fixture.root))) {
+          return false;
         }
-      );
+        const currentRun = readGovernanceCurrentRun<GovernanceExecutionResult>(fixture.root);
+        const latest = currentRun.at(-1);
+        return (
+          latest?.type === 'governance-remediation-rerun' &&
+          latest?.result?.artifactPath === secondOutput
+        );
+      });
 
       const currentRun = readGovernanceCurrentRun<GovernanceExecutionResult>(fixture.root);
       const loopStateRaw = JSON.parse(
@@ -493,17 +490,14 @@ describe.skip('legacy archived: post-tool-use detached background drain', () => 
         expect.arrayContaining(['## Governance Latest Raw Event', '暂无 governance raw event 摘要'])
       );
 
-      await waitForWorkerSettled(
-        fixture.root,
-        () => {
-          if (!existsSync(governanceCurrentRunPath(fixture.root))) {
-            return false;
-          }
-          const currentRun = readGovernanceCurrentRun<GovernanceExecutionResult>(fixture.root);
-          const latest = currentRun.at(-1);
-          return latest?.result?.stopReason === 'await human review';
+      await waitForWorkerSettled(fixture.root, () => {
+        if (!existsSync(governanceCurrentRunPath(fixture.root))) {
+          return false;
         }
-      );
+        const currentRun = readGovernanceCurrentRun<GovernanceExecutionResult>(fixture.root);
+        const latest = currentRun.at(-1);
+        return latest?.result?.stopReason === 'await human review';
+      });
 
       const currentRun = readGovernanceCurrentRun<GovernanceExecutionResult>(fixture.root);
       const loopStateRaw = JSON.parse(

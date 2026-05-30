@@ -36,10 +36,7 @@ describe('prompt-routing reviewer route explainability', () => {
         },
       },
       availableSkills: ['speckit-workflow', 'code-reviewer'],
-      skillPaths: [
-        'D:/skills/speckit-workflow/SKILL.md',
-        'D:/skills/code-reviewer/SKILL.md',
-      ],
+      skillPaths: ['D:/skills/speckit-workflow/SKILL.md', 'D:/skills/code-reviewer/SKILL.md'],
     });
 
     expect(usage.executionIntentCandidate?.reviewerRouteExplainability).toEqual([

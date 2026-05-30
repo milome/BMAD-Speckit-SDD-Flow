@@ -78,13 +78,12 @@ describe('coach integration', () => {
 
     expect(
       coachCliSource.includes("from '../packages/scoring/coach'") ||
-      coachCliSource.includes('from "../packages/scoring/coach"')
+        coachCliSource.includes('from "../packages/scoring/coach"')
     ).toBe(true);
     expect(
       acceptSource.includes("from '../../packages/scoring/coach'") ||
-      acceptSource.includes('from "../../packages/scoring/coach"')
+        acceptSource.includes('from "../../packages/scoring/coach"')
     ).toBe(true);
     expect(acceptSource.includes('coachDiagnose')).toBe(true);
   });
 });
-

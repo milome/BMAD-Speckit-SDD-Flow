@@ -85,7 +85,7 @@ function buildLaunchInfo(
     externalRunId: 'externalRunId' in outcome ? (outcome.externalRunId ?? null) : null,
     note: 'reason' in outcome ? (outcome.reason ?? null) : null,
     metadata: {
-      ...(('metadata' in outcome && outcome.metadata && typeof outcome.metadata === 'object')
+      ...('metadata' in outcome && outcome.metadata && typeof outcome.metadata === 'object'
         ? outcome.metadata
         : {}),
       ...metadata,
@@ -205,7 +205,7 @@ export async function processPendingExecutionRecords(
           kind: 'dispatch-accepted',
           note:
             hostKind === leased.authoritativeHost
-              ? outcome.reason ?? `accepted by ${hostKind}`
+              ? (outcome.reason ?? `accepted by ${hostKind}`)
               : `fallback ${hostKind} accepted${outcome.reason ? `: ${outcome.reason}` : ''}`,
         });
         acceptedRecord = updateGovernancePacketExecutionRecord(
@@ -261,17 +261,15 @@ export async function processPendingExecutionRecords(
           lastLaunch,
           history: [
             ...history,
-            ...(
-              shouldEscalate
-                ? [
-                    {
-                      at: observedAt,
-                      kind: 'escalated' as const,
-                      note: `dispatch failures reached ${maxDispatchAttempts}`,
-                    },
-                  ]
-                : []
-            ),
+            ...(shouldEscalate
+              ? [
+                  {
+                    at: observedAt,
+                    kind: 'escalated' as const,
+                    note: `dispatch failures reached ${maxDispatchAttempts}`,
+                  },
+                ]
+              : []),
           ],
         })
       )
@@ -294,7 +292,9 @@ function main(): void {
       process.stdout.write(JSON.stringify(records, null, 2));
     })
     .catch((error) => {
-      process.stderr.write(`${error instanceof Error ? error.stack ?? error.message : String(error)}\n`);
+      process.stderr.write(
+        `${error instanceof Error ? (error.stack ?? error.message) : String(error)}\n`
+      );
       process.exitCode = 1;
     });
 }

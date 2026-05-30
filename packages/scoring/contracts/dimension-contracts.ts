@@ -51,9 +51,24 @@ const EXPECTED_DIMENSIONS_BY_MODE: Record<DimensionMode, string[]> = {
     'Evidence Proof Chain',
     'Cross-Document Traceability',
   ],
-  story: ['Story Scope Integrity', 'Story Acceptance Coverage', 'Story Evidence Traceability', 'Story Execution Readiness'],
-  tasks: ['Task Atomicity', 'Task Dependency Order', 'Task Evidence Binding', 'Task Execution Readiness'],
-  bugfix: ['Root Cause Accuracy', 'Fix Correctness', 'Regression Protection', 'Bugfix Evidence Closure'],
+  story: [
+    'Story Scope Integrity',
+    'Story Acceptance Coverage',
+    'Story Evidence Traceability',
+    'Story Execution Readiness',
+  ],
+  tasks: [
+    'Task Atomicity',
+    'Task Dependency Order',
+    'Task Evidence Binding',
+    'Task Execution Readiness',
+  ],
+  bugfix: [
+    'Root Cause Accuracy',
+    'Fix Correctness',
+    'Regression Protection',
+    'Bugfix Evidence Closure',
+  ],
   delivery: [
     'Delivery Evidence Closure',
     'Current Attempt Binding',
@@ -63,7 +78,9 @@ const EXPECTED_DIMENSIONS_BY_MODE: Record<DimensionMode, string[]> = {
 };
 
 function normalize(value: string | null | undefined): string {
-  return String(value ?? '').trim().toLowerCase();
+  return String(value ?? '')
+    .trim()
+    .toLowerCase();
 }
 
 function contractMode(contractId: string): DimensionMode | null {
@@ -124,7 +141,9 @@ export function resolveScoringDimensionContract(
       dimensionContractId: input.dimensionContractId ?? null,
       expectedDimensions: [],
       atomicItemSetId: input.atomicItemSetId ?? null,
-      blockingReasons: [stageKey ? 'dimension_contract_unresolved' : 'dimension_contract_ambiguous'],
+      blockingReasons: [
+        stageKey ? 'dimension_contract_unresolved' : 'dimension_contract_ambiguous',
+      ],
     };
   }
 

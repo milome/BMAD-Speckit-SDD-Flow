@@ -63,7 +63,9 @@ describe('controlled integration extension contract', () => {
 
     for (const field of REQUIRED_FIELDS) expect(artifact[field], field).toBeDefined();
 
-    expect(artifact.schemaVersion).toBe('controlled-clarification/execution-discipline-profile-ref/v1');
+    expect(artifact.schemaVersion).toBe(
+      'controlled-clarification/execution-discipline-profile-ref/v1'
+    );
     expect(artifact.recordId).toBe('REQ-REQ-TRACE-AI-TDD-PACKET-COMPILER');
     expect(artifact.relatedPlanPath).toBe(
       'docs/plans/2026-05-26-main-agent-compiled-prompt-dispatch-integration-plan.md'
@@ -84,13 +86,16 @@ describe('controlled integration extension contract', () => {
     delete withoutContentHash.contentHash;
     expect(artifact.contentHash).toBe(sha256(stableStringify(withoutContentHash)));
 
-    const contractCheckLinked = (Array.isArray(record.contractChecks) ? record.contractChecks : []).some(
+    const contractCheckLinked = (
+      Array.isArray(record.contractChecks) ? record.contractChecks : []
+    ).some(
       (check: Record<string, any>) =>
         check.eventType === 'contract_check_recorded' &&
         check.contract === 'controlled_integration_extension' &&
         (Array.isArray(check.sourceRefs) ? check.sourceRefs : []).some(
           (ref: Record<string, unknown>) =>
-            ref.sourceType === 'controlled_clarification_artifact' && ref.id === ARTIFACT_RELATIVE_PATH
+            ref.sourceType === 'controlled_clarification_artifact' &&
+            ref.id === ARTIFACT_RELATIVE_PATH
         )
     );
     const artifactIndexLinked = [

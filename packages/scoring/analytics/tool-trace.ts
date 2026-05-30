@@ -80,11 +80,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function isContentPart(value: unknown): value is { type: 'text'; text: string } {
-  return (
-    isRecord(value) &&
-    value.type === 'text' &&
-    typeof value.text === 'string'
-  );
+  return isRecord(value) && value.type === 'text' && typeof value.text === 'string';
 }
 
 function isMessageContent(value: unknown): value is CanonicalMessage['content'] {
@@ -119,7 +115,11 @@ function isCanonicalMessage(value: unknown): value is CanonicalMessage {
   }
 
   if (value.role === 'assistant') {
-    return Array.isArray(value.tool_calls) && value.tool_calls.length > 0 && value.tool_calls.every(isToolCall);
+    return (
+      Array.isArray(value.tool_calls) &&
+      value.tool_calls.length > 0 &&
+      value.tool_calls.every(isToolCall)
+    );
   }
 
   return typeof value.tool_call_id === 'string';
@@ -139,10 +139,7 @@ export function resolveToolTracePath(toolTracePath: string, cwd: string): string
   return path.isAbsolute(toolTracePath) ? toolTracePath : path.resolve(cwd, toolTracePath);
 }
 
-export function readToolTraceArtifact(
-  toolTracePath: string,
-  cwd: string
-): LoadedToolTrace | null {
+export function readToolTraceArtifact(toolTracePath: string, cwd: string): LoadedToolTrace | null {
   const resolved = resolveToolTracePath(toolTracePath, cwd);
   if (!fs.existsSync(resolved)) {
     return null;
@@ -155,10 +152,18 @@ export function readToolTraceArtifact(
       return null;
     }
 
-    if (!Array.isArray(parsed.tools) || parsed.tools.length === 0 || !parsed.tools.every(isCanonicalTool)) {
+    if (
+      !Array.isArray(parsed.tools) ||
+      parsed.tools.length === 0 ||
+      !parsed.tools.every(isCanonicalTool)
+    ) {
       return null;
     }
-    if (!Array.isArray(parsed.messages) || parsed.messages.length === 0 || !parsed.messages.every(isCanonicalMessage)) {
+    if (
+      !Array.isArray(parsed.messages) ||
+      parsed.messages.length === 0 ||
+      !parsed.messages.every(isCanonicalMessage)
+    ) {
       return null;
     }
 
@@ -182,9 +187,7 @@ export function readToolTraceArtifact(
   }
 }
 
-function isToolTraceArtifactEvent(
-  value: unknown
-): value is {
+function isToolTraceArtifactEvent(value: unknown): value is {
   timestamp?: string;
   stage?: string | null;
   payload: { kind: string; path: string };

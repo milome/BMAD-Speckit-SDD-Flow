@@ -88,7 +88,10 @@ function formatGovernanceHistorySummary(
     }
     return left.mode.localeCompare(right.mode);
   })[0];
-  const totalModeEvents = governanceRoutingModeDistribution.reduce((sum, item) => sum + item.count, 0);
+  const totalModeEvents = governanceRoutingModeDistribution.reduce(
+    (sum, item) => sum + item.count,
+    0
+  );
   if (dominantMode) {
     lines.push(
       `- Dominant Routing Mode: ${dominantMode.mode} (${dominantMode.count}/${totalModeEvents})`
@@ -215,9 +218,7 @@ export function formatDashboardMarkdown(
   } else {
     lines.push(`- Routing Mode: ${governanceRoutingSummary.routingMode}`);
     lines.push(`- Executor Route: ${governanceRoutingSummary.executorRoute}`);
-    lines.push(
-      `- Signals: ${governanceRoutingSummary.prioritizedSignals.join('、') || '(none)'}`
-    );
+    lines.push(`- Signals: ${governanceRoutingSummary.prioritizedSignals.join('、') || '(none)'}`);
     lines.push(`- Source: ${governanceRoutingSummary.source ?? '(unknown)'}`);
     lines.push(`- Event Count: ${governanceRoutingSummary.eventCount}`);
     lines.push(`- Latest Event: ${governanceRoutingSummary.latestTimestamp}`);
@@ -234,9 +235,7 @@ export function formatDashboardMarkdown(
   lines.push('');
 
   lines.push(
-    ...buildGovernanceLatestRawEventSectionLines(
-      governanceRoutingSummary?.runnerSummaryLines ?? []
-    )
+    ...buildGovernanceLatestRawEventSectionLines(governanceRoutingSummary?.runnerSummaryLines ?? [])
   );
 
   lines.push('## Governance Routing Mode Distribution');

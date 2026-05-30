@@ -41,9 +41,9 @@ describe('install to consumer ->CLI acceptance', () => {
       expect(
         existsSync(join(target, '.cursor', 'skills', 'encoding-integrity-guardian', 'SKILL.md'))
       ).toBe(true);
-      expect(existsSync(join(target, '.cursor', 'rules', 'bmad-bug-auto-party-mode-rule.mdc'))).toBe(
-        true
-      );
+      expect(
+        existsSync(join(target, '.cursor', 'rules', 'bmad-bug-auto-party-mode-rule.mdc'))
+      ).toBe(true);
       expect(existsSync(join(target, '.cursor', 'rules', 'bmad-bug-auto-party-mode.mdc'))).toBe(
         false
       );
@@ -91,11 +91,13 @@ describe('install to consumer ->CLI acceptance', () => {
       expect(existsSync(join(target, '.cursor', 'skills', 'bmad-speckit', 'SKILL.md'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'skills', 'bmads', 'SKILL.md'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'hooks', 'emit-runtime-policy.cjs'))).toBe(true);
-      expect(existsSync(join(target, '.cursor', 'hooks', 'runtime-dashboard-session-start.cjs'))).toBe(true);
+      expect(
+        existsSync(join(target, '.cursor', 'hooks', 'runtime-dashboard-session-start.cjs'))
+      ).toBe(true);
       expect(existsSync(join(target, '.cursor', 'i18n'))).toBe(true);
-      expect(existsSync(join(target, '.cursor', 'rules', 'bmad-bug-auto-party-mode-rule.mdc'))).toBe(
-        true
-      );
+      expect(
+        existsSync(join(target, '.cursor', 'rules', 'bmad-bug-auto-party-mode-rule.mdc'))
+      ).toBe(true);
       expect(existsSync(join(target, '.cursor', 'rules', 'bmad-bug-auto-party-mode.mdc'))).toBe(
         false
       );
@@ -144,7 +146,9 @@ describe('install to consumer ->CLI acceptance', () => {
       writeFileSync(mirroredTemplate, '# stale mirror\n', 'utf8');
       rmSync(mirroredScript, { force: true });
 
-      expect(readFileSync(mirroredTemplate, 'utf8')).not.toBe(readFileSync(canonicalTemplate, 'utf8'));
+      expect(readFileSync(mirroredTemplate, 'utf8')).not.toBe(
+        readFileSync(canonicalTemplate, 'utf8')
+      );
       expect(existsSync(mirroredScript)).toBe(false);
 
       run('npx bmad-speckit-init --agent claude-code', target);
@@ -178,7 +182,9 @@ describe('install to consumer ->CLI acceptance', () => {
       expect(
         existsSync(join(target, '.claude', 'skills', 'encoding-integrity-guardian', 'SKILL.md'))
       ).toBe(true);
-      expect(existsSync(join(target, '_bmad', 'runtime', 'hooks', 'runtime-dashboard-auto-start.cjs'))).toBe(true);
+      expect(
+        existsSync(join(target, '_bmad', 'runtime', 'hooks', 'runtime-dashboard-auto-start.cjs'))
+      ).toBe(true);
 
       const aliases = [
         'speckit-specify.md',
@@ -309,17 +315,27 @@ describe('install to consumer ->CLI acceptance', () => {
           )
         )
       ).toBe(true);
-      expect(existsSync(join(target, '.codex', 'skills', 'speckit-workflow', 'SKILL.md'))).toBe(true);
+      expect(existsSync(join(target, '.codex', 'skills', 'speckit-workflow', 'SKILL.md'))).toBe(
+        true
+      );
       expect(
-        readFileSync(join(target, '.codex', 'skills', 'speckit-workflow', 'SKILL.md'), 'utf8')
-          .startsWith('---')
+        readFileSync(
+          join(target, '.codex', 'skills', 'speckit-workflow', 'SKILL.md'),
+          'utf8'
+        ).startsWith('---')
       ).toBe(true);
-      expect(existsSync(join(target, '.codex', 'skills', 'bmad-story-assistant', 'SKILL.md'))).toBe(true);
-      expect(existsSync(join(target, '.codex', 'skills', 'bmad-standalone-tasks', 'SKILL.md'))).toBe(true);
+      expect(existsSync(join(target, '.codex', 'skills', 'bmad-story-assistant', 'SKILL.md'))).toBe(
+        true
+      );
+      expect(
+        existsSync(join(target, '.codex', 'skills', 'bmad-standalone-tasks', 'SKILL.md'))
+      ).toBe(true);
       expect(
         existsSync(join(target, '.codex', 'skills', 'bmad-standalone-tasks-doc-review', 'SKILL.md'))
       ).toBe(true);
-      expect(existsSync(join(target, '.codex', 'skills', 'bmad-rca-helper', 'SKILL.md'))).toBe(true);
+      expect(existsSync(join(target, '.codex', 'skills', 'bmad-rca-helper', 'SKILL.md'))).toBe(
+        true
+      );
       expect(
         existsSync(join(target, '.codex', 'skills', 'bmad-code-reviewer-lifecycle', 'SKILL.md'))
       ).toBe(true);
@@ -361,7 +377,10 @@ describe('install to consumer ->CLI acceptance', () => {
       rmSync(join(target, '.codex', 'protocols', 'audit-result-schema.md'), { force: true });
       expect(() => run('npx bmad-speckit check', target)).toThrow(/audit-result-schema\.md/);
       run('npx bmad-speckit-init --agent codex', target);
-      rmSync(join(target, '.codex', 'skills', 'speckit-workflow'), { recursive: true, force: true });
+      rmSync(join(target, '.codex', 'skills', 'speckit-workflow'), {
+        recursive: true,
+        force: true,
+      });
       expect(() => run('npx bmad-speckit check', target)).toThrow(/speckit-workflow/);
       run('npx bmad-speckit-init --agent codex', target);
       writeFileSync(
@@ -390,10 +409,16 @@ describe('install to consumer ->CLI acceptance', () => {
       const hooksJson = readFileSync(join(target, '.cursor', 'hooks.json'), 'utf8');
       expect(hooksJson).toContain('runtime-dashboard-session-start.cjs');
 
-      const hookScript = readFileSync(join(target, '.cursor', 'hooks', 'runtime-dashboard-session-start.cjs'), 'utf8');
+      const hookScript = readFileSync(
+        join(target, '.cursor', 'hooks', 'runtime-dashboard-session-start.cjs'),
+        'utf8'
+      );
       expect(hookScript).toContain('autoStartRuntimeDashboard');
 
-      const sharedHelper = readFileSync(join(target, '_bmad', 'runtime', 'hooks', 'runtime-dashboard-auto-start.cjs'), 'utf8');
+      const sharedHelper = readFileSync(
+        join(target, '_bmad', 'runtime', 'hooks', 'runtime-dashboard-auto-start.cjs'),
+        'utf8'
+      );
       expect(sharedHelper).toContain('ensureRuntimeDashboardServer');
     } finally {
       cleanupTempDir(target);

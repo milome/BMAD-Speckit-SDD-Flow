@@ -5,7 +5,8 @@ import { describe, expect, it } from 'vitest';
 import { mainTraceStatusPolicyCheck } from '../../scripts/main-agent-trace-status-policy-check';
 
 const SOURCE_HASH = 'sha256:1111111111111111111111111111111111111111111111111111111111111111';
-const IMPLEMENTATION_HASH = 'sha256:2222222222222222222222222222222222222222222222222222222222222222';
+const IMPLEMENTATION_HASH =
+  'sha256:2222222222222222222222222222222222222222222222222222222222222222';
 
 const TRACE_STATUS_POLICY = {
   schemaVersion: 'trace-status-policy/v1',
@@ -86,7 +87,13 @@ function writeSource(root: string, status = 'PENDING', extra = ''): string {
 }
 
 function writeRecord(root: string, overrides: Record<string, unknown> = {}): string {
-  const base = path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'REQ-TRACE-STATUS');
+  const base = path.join(
+    root,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    'REQ-TRACE-STATUS'
+  );
   const recordPath = path.join(base, 'requirement-record.json');
   writeJson(recordPath, {
     recordId: 'REQ-TRACE-STATUS',
@@ -168,7 +175,12 @@ describe('main-agent trace status policy check', () => {
     try {
       const sourcePath = writeSource(root, 'DEFERRED');
       const recordPath = writeRecord(root);
-      const code = mainTraceStatusPolicyCheck(['--requirement-record', recordPath, '--source', sourcePath]);
+      const code = mainTraceStatusPolicyCheck([
+        '--requirement-record',
+        recordPath,
+        '--source',
+        sourcePath,
+      ]);
 
       expect(code).toBe(1);
     } finally {
@@ -179,9 +191,18 @@ describe('main-agent trace status policy check', () => {
   it('blocks USER_APPROVED_DEFERRED without follow-up evidence', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'trace-status-user-deferred-'));
     try {
-      const sourcePath = writeSource(root, 'USER_APPROVED_DEFERRED', 'userApprovalRef: CHAT-001\napprovedAt: 2026-05-19T00:00:00.000Z\napprovedBy: user\nimpactSummary: scoped deferral');
+      const sourcePath = writeSource(
+        root,
+        'USER_APPROVED_DEFERRED',
+        'userApprovalRef: CHAT-001\napprovedAt: 2026-05-19T00:00:00.000Z\napprovedBy: user\nimpactSummary: scoped deferral'
+      );
       const recordPath = writeRecord(root);
-      const code = mainTraceStatusPolicyCheck(['--requirement-record', recordPath, '--source', sourcePath]);
+      const code = mainTraceStatusPolicyCheck([
+        '--requirement-record',
+        recordPath,
+        '--source',
+        sourcePath,
+      ]);
 
       expect(code).toBe(1);
     } finally {

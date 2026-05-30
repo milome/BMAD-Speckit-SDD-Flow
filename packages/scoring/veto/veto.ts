@@ -14,9 +14,7 @@ const REF_ITEM_ID_PATTERN = /^code-reviewer-config#([a-zA-Z0-9_]+)$/;
  * @returns {boolean} true if veto triggered
  */
 export function isVetoTriggered(checkItems: CheckItem[], vetoItemIds: Set<string>): boolean {
-  return checkItems.some(
-    (c) => vetoItemIds.has(c.item_id) && c.passed === false
-  );
+  return checkItems.some((c) => vetoItemIds.has(c.item_id) && c.passed === false);
 }
 
 function extractItemIdFromRef(ref: string): string | null {

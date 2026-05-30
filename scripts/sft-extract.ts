@@ -57,7 +57,9 @@ async function main(): Promise<void> {
 
   const dataPath = getScoringDataPath();
   const outputPath = output
-    ? (path.isAbsolute(output) ? output : path.resolve(process.cwd(), output))
+    ? path.isAbsolute(output)
+      ? output
+      : path.resolve(process.cwd(), output)
     : undefined;
 
   const { summary } = await extractSftDataset(dataPath, outputPath, { minScore });

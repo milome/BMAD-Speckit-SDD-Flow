@@ -35,7 +35,11 @@ function removeTempTree(root: string): void {
   }
 }
 
-function modelResult(model: string, status: string, blockingReasons: string[] = []): Record<string, unknown> {
+function modelResult(
+  model: string,
+  status: string,
+  blockingReasons: string[] = []
+): Record<string, unknown> {
   return {
     payloadKind: 'model_result',
     model,
@@ -85,11 +89,13 @@ function writeFixture(root: string): {
     targetPaths: ['scripts/main-agent-orchestration.ts'],
     targetPathsHash: 'sha256:4444444444444444444444444444444444444444444444444444444444444444',
     consumerImpactScan: [{ category: 'product_capability', status: 'triggered' }],
-    consumerImpactScanHash: 'sha256:5555555555555555555555555555555555555555555555555555555555555555',
+    consumerImpactScanHash:
+      'sha256:5555555555555555555555555555555555555555555555555555555555555555',
     governanceImpactScan: [
       { category: 'orchestration_hook_gate_ingest_rerun_closeout', status: 'triggered' },
     ],
-    governanceImpactScanHash: 'sha256:6666666666666666666666666666666666666666666666666666666666666666',
+    governanceImpactScanHash:
+      'sha256:6666666666666666666666666666666666666666666666666666666666666666',
   };
   const artifactHash = sha256(stableStringify(architecture));
   const confirmationText = [
@@ -188,7 +194,8 @@ function writeFixture(root: string): {
         sourceDocumentHash: architecture.sourceDocumentHash,
         implementationConfirmationHash: architecture.implementationConfirmationHash,
         resolvedRecipeHash: recipe.resolvedRecipeHash,
-        architectureConfirmationArtifactHash: architectureWithHash.architectureConfirmationArtifactHash,
+        architectureConfirmationArtifactHash:
+          architectureWithHash.architectureConfirmationArtifactHash,
         htmlRef: {
           artifactType: 'architecture_confirmation_view',
           sourceOfTruthRole: 'projection',
@@ -241,21 +248,24 @@ describe('architecture confirmation ingest', () => {
         payloadKind: 'model_result',
         model: 'architecture_confirmation',
         status: 'pass',
-        sourceDocumentHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+        sourceDocumentHash:
+          'sha256:1111111111111111111111111111111111111111111111111111111111111111',
         implementationConfirmationHash:
           'sha256:2222222222222222222222222222222222222222222222222222222222222222',
       });
       expect(record.currentMentalModel).toBe('implementation_readiness');
       expect(record.stage).toBe('implementation_readiness');
       expect(record.currentStage).toBe('implementation_readiness');
-      expect(record.mentalModelTransitions.map((transition: Record<string, unknown>) => transition.toModel)).toEqual([
-        'architecture_confirmation',
-        'implementation_readiness',
-      ]);
-      expect(record.mentalModelTransitions.map((transition: Record<string, unknown>) => transition.eventType)).toEqual([
-        'mental_model_transition_recorded',
-        'mental_model_transition_recorded',
-      ]);
+      expect(
+        record.mentalModelTransitions.map(
+          (transition: Record<string, unknown>) => transition.toModel
+        )
+      ).toEqual(['architecture_confirmation', 'implementation_readiness']);
+      expect(
+        record.mentalModelTransitions.map(
+          (transition: Record<string, unknown>) => transition.eventType
+        )
+      ).toEqual(['mental_model_transition_recorded', 'mental_model_transition_recorded']);
       expect(existsSync(path.join(path.dirname(fixture.recordPath), 'artifact-index.jsonl'))).toBe(
         true
       );
@@ -330,7 +340,8 @@ describe('architecture confirmation ingest', () => {
       expect(active.architectureConfirmationStateChecks ?? []).toHaveLength(0);
       expect(active.lastEventType).toBe('mental_model_transition_recorded');
 
-      active.sourceDocumentHash = 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+      active.sourceDocumentHash =
+        'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
       writeFileSync(fixture.recordPath, `${JSON.stringify(active, null, 2)}\n`, 'utf8');
       expect(
         mainIngestArchitectureConfirmation([

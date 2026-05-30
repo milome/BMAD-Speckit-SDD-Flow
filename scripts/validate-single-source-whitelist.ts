@@ -115,10 +115,16 @@ function validateContract(contract: JsonObject, failures: string[]): void {
   if (contract.sources_of_truth && typeof contract.sources_of_truth === 'object') {
     const sources = contract.sources_of_truth as JsonObject;
     if (sources.strategy_contract !== CONTRACT_PATH) {
-      fail(`${CONTRACT_PATH}: sources_of_truth.strategy_contract must point to ${CONTRACT_PATH}`, failures);
+      fail(
+        `${CONTRACT_PATH}: sources_of_truth.strategy_contract must point to ${CONTRACT_PATH}`,
+        failures
+      );
     }
     if (sources.runtime_index !== MAPPING_PATH) {
-      fail(`${CONTRACT_PATH}: sources_of_truth.runtime_index must point to ${MAPPING_PATH}`, failures);
+      fail(
+        `${CONTRACT_PATH}: sources_of_truth.runtime_index must point to ${MAPPING_PATH}`,
+        failures
+      );
     }
   } else {
     fail(`${CONTRACT_PATH}: missing sources_of_truth object`, failures);

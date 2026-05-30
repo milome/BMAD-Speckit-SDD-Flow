@@ -58,14 +58,16 @@ describe('Main Agent state matrix authority', () => {
           stage: 'implement',
         });
         expect(closeoutSurface.mainAgentNextAction).toBe('run_closeout');
-        expect(buildMainAgentDispatchInstruction({
-          projectRoot: closeoutFixture.root,
-          recordId: closeoutFixture.recordId,
-          requirementSetId: closeoutFixture.requirementSetId,
-          runId: closeoutFixture.runId,
-          flow: 'standalone_tasks',
-          stage: 'implement',
-        })).toBeNull();
+        expect(
+          buildMainAgentDispatchInstruction({
+            projectRoot: closeoutFixture.root,
+            recordId: closeoutFixture.recordId,
+            requirementSetId: closeoutFixture.requirementSetId,
+            runId: closeoutFixture.runId,
+            flow: 'standalone_tasks',
+            stage: 'implement',
+          })
+        ).toBeNull();
       } finally {
         cleanupRequirementWorkspace(closeoutFixture.root);
       }

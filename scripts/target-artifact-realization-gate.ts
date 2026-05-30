@@ -6,7 +6,6 @@ import { spawnSync } from 'node:child_process';
 import yaml from 'js-yaml';
 import { canonicalizeRequirementRecord } from './requirement-record-control-store';
 
-type Decision = 'pass' | 'blocked';
 type TargetKind =
   | 'file_artifact'
   | 'record_field'
@@ -114,7 +113,9 @@ function resolveSkillDir(skillName: string): string {
         ]
       : []),
   ];
-  return candidates.find((candidate) => fs.existsSync(path.join(candidate, 'SKILL.md'))) ?? candidates[0];
+  return (
+    candidates.find((candidate) => fs.existsSync(path.join(candidate, 'SKILL.md'))) ?? candidates[0]
+  );
 }
 
 function resolveSkillPlaceholders(value: string): string {
@@ -195,7 +196,9 @@ function sha256File(file: string): string {
 function sha256Directory(directory: string): string {
   const entries: string[] = [];
   const walk = (current: string): void => {
-    for (const entry of fs.readdirSync(current, { withFileTypes: true }).sort((left, right) => left.name.localeCompare(right.name))) {
+    for (const entry of fs
+      .readdirSync(current, { withFileTypes: true })
+      .sort((left, right) => left.name.localeCompare(right.name))) {
       const absolute = path.join(current, entry.name);
       const relative = normalizePath(path.relative(directory, absolute));
       if (entry.isDirectory()) {
@@ -318,7 +321,9 @@ function sentinelForRecordField(field: string): unknown {
   if (field === 'closeout') {
     return {
       currentAttemptId: 'sentinel-closeout-attempt',
-      attempts: [{ closeoutAttemptId: 'sentinel-closeout-attempt', decision: 'blocked', checkedAt: now }],
+      attempts: [
+        { closeoutAttemptId: 'sentinel-closeout-attempt', decision: 'blocked', checkedAt: now },
+      ],
     };
   }
   if (field === 'deliveryEvidence') {
@@ -342,7 +347,8 @@ function sentinelForRecordField(field: string): unknown {
               artifactType: 'command_output',
               sourceOfTruthRole: 'evidence',
               path: '_bmad-output/runtime/requirement-records/REQ-SENTINEL/evidence/run-sentinel/output.txt',
-              contentHash: 'sha256:0000000000000000000000000000000000000000000000000000000000000000',
+              contentHash:
+                'sha256:0000000000000000000000000000000000000000000000000000000000000000',
               producer: 'canonical-reducer-sentinel',
               purpose: 'schema reducer replay sentinel',
               relatedRequirementIds: ['TRACE-SENTINEL', 'EVD-SENTINEL'],
@@ -366,7 +372,9 @@ function sentinelForRecordField(field: string): unknown {
     };
   }
   if (field === 'requirementClosures') {
-    return [{ requirementId: 'TRACE-SENTINEL', status: 'pass', closureSource: 'schema_reducer_sentinel' }];
+    return [
+      { requirementId: 'TRACE-SENTINEL', status: 'pass', closureSource: 'schema_reducer_sentinel' },
+    ];
   }
   return [{ sentinel: field }];
 }
@@ -382,10 +390,7 @@ function filePathPrefix(value: string): string {
 }
 
 function recordFieldPath(value: string): string {
-  return value
-    .replace(/\[\]/gu, '')
-    .replace(/^\./u, '')
-    .trim();
+  return value.replace(/\[\]/gu, '').replace(/^\./u, '').trim();
 }
 
 function isRequirementRecordFieldRef(value: string): boolean {
@@ -456,10 +461,7 @@ function replaceKnownPlaceholders(value: string, record: JsonObject, attemptId: 
 function templateToRegExp(value: string, record: JsonObject, attemptId: string): RegExp {
   const replaced = replaceKnownPlaceholders(normalizePath(value), record, attemptId);
   let escaped = replaced.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&').replace(/<[^>]+>/gu, '[^/]+');
-  escaped = escaped.replace(
-    /\/evidence\/((?:[^/]+|\[\^\/\]\+))\//gu,
-    '/evidence/(?:[^/]+/)?$1/'
-  );
+  escaped = escaped.replace(/\/evidence\/((?:[^/]+|\[\^\/\]\+))\//gu, '/evidence/(?:[^/]+/)?$1/');
   return new RegExp(`(^|/)${escaped}$`, 'u');
 }
 
@@ -470,7 +472,9 @@ function resolveDeclaredPath(
 ): { displayPath: string; absolutePath?: string; pattern?: RegExp } {
   const pathValue = filePathPrefix(value);
   const replaced = replaceKnownPlaceholders(pathValue, record, attemptId);
-  const pattern = /<[^>]+>/u.test(pathValue) ? templateToRegExp(pathValue, record, attemptId) : undefined;
+  const pattern = /<[^>]+>/u.test(pathValue)
+    ? templateToRegExp(pathValue, record, attemptId)
+    : undefined;
   if (/<[^>]+>/u.test(replaced)) {
     return {
       displayPath: normalizePath(replaced),
@@ -484,7 +488,11 @@ function resolveDeclaredPath(
   };
 }
 
-function collectLinkedIds(row: JsonObject): { traceRefs: string[]; evidenceRefs: string[]; requirementRefs: string[] } {
+function collectLinkedIds(row: JsonObject): {
+  traceRefs: string[];
+  evidenceRefs: string[];
+  requirementRefs: string[];
+} {
   const raw = [
     ...strings(row.traceRows),
     ...strings(row.traceRefs),
@@ -507,18 +515,21 @@ function pushTarget(targets: TargetItem[], item: TargetItem): void {
   item.aliases = [...new Set([item.id, item.pathOrField, ...(item.aliases ?? [])].filter(Boolean))];
   const key = `${item.kind}:${item.pathOrField}:${item.completionProofPolicy ?? ''}`;
   const existing = targets.find(
-    (target) =>
-      `${target.kind}:${target.pathOrField}:${target.completionProofPolicy ?? ''}` === key
+    (target) => `${target.kind}:${target.pathOrField}:${target.completionProofPolicy ?? ''}` === key
   );
   if (!existing) {
     targets.push(item);
     return;
   }
-  existing.aliases = [...new Set([...(existing.aliases ?? []), ...(item.aliases ?? [])].filter(Boolean))];
+  existing.aliases = [
+    ...new Set([...(existing.aliases ?? []), ...(item.aliases ?? [])].filter(Boolean)),
+  ];
   existing.id = existing.id || item.id;
   existing.traceRefs = [...new Set([...existing.traceRefs, ...item.traceRefs])];
   existing.evidenceRefs = [...new Set([...existing.evidenceRefs, ...item.evidenceRefs])];
-  existing.requirementRefs = [...new Set([...(existing.requirementRefs ?? []), ...(item.requirementRefs ?? [])])];
+  existing.requirementRefs = [
+    ...new Set([...(existing.requirementRefs ?? []), ...(item.requirementRefs ?? [])]),
+  ];
   existing.contractBound = existing.contractBound === true || item.contractBound === true;
   existing.expectedProducer = existing.expectedProducer || item.expectedProducer;
   existing.expectedSourceOfTruthRole =
@@ -536,9 +547,11 @@ function contractBound(row: JsonObject, sourceSection: string): boolean {
   );
 }
 
-function requirementLinkResolver(
-  confirmation: JsonObject
-): (links: { traceRefs: string[]; evidenceRefs: string[]; requirementRefs: string[] }) => {
+function requirementLinkResolver(confirmation: JsonObject): (links: {
+  traceRefs: string[];
+  evidenceRefs: string[];
+  requirementRefs: string[];
+}) => {
   traceRefs: string[];
   evidenceRefs: string[];
   requirementRefs: string[];
@@ -550,14 +563,21 @@ function requirementLinkResolver(
     if (!key || values.length === 0) return;
     map.set(key, [...new Set([...(map.get(key) ?? []), ...values])]);
   };
-  for (const row of [...objects(confirmation.must), ...objects(confirmation.notDone), ...objects(confirmation.mustNot)]) {
+  for (const row of [
+    ...objects(confirmation.must),
+    ...objects(confirmation.notDone),
+    ...objects(confirmation.mustNot),
+  ]) {
     const id = text(row.id);
     add(traceRefsByRequirement, id, [
       ...strings(row.coveredByTraceRows),
       ...strings(row.traceRows),
       ...strings(row.traceRefs),
     ]);
-    add(evidenceRefsByRequirement, id, [...strings(row.evidenceRefs), ...strings(row.linkedEvidenceIds)]);
+    add(evidenceRefsByRequirement, id, [
+      ...strings(row.evidenceRefs),
+      ...strings(row.linkedEvidenceIds),
+    ]);
   }
   for (const trace of objects(confirmation.traceRows)) {
     const traceId = text(trace.id);
@@ -583,12 +603,20 @@ function requirementLinkResolver(
       ...strings(evidence.linkedRequirements),
       text(evidence.derivedFromMustRef),
     ].filter((id) => /^(?:MUST|NEG|OUT)-/u.test(id));
-    add(traceRefsByEvidence, evidenceId, requirementRefs.flatMap((id) => traceRefsByRequirement.get(id) ?? []));
+    add(
+      traceRefsByEvidence,
+      evidenceId,
+      requirementRefs.flatMap((id) => traceRefsByRequirement.get(id) ?? [])
+    );
   }
   return (links) => {
-    const derivedTraceRefs = links.requirementRefs.flatMap((id) => traceRefsByRequirement.get(id) ?? []);
+    const derivedTraceRefs = links.requirementRefs.flatMap(
+      (id) => traceRefsByRequirement.get(id) ?? []
+    );
     const evidenceTraceRefs = links.evidenceRefs.flatMap((id) => traceRefsByEvidence.get(id) ?? []);
-    const derivedEvidenceRefs = links.requirementRefs.flatMap((id) => evidenceRefsByRequirement.get(id) ?? []);
+    const derivedEvidenceRefs = links.requirementRefs.flatMap(
+      (id) => evidenceRefsByRequirement.get(id) ?? []
+    );
     return {
       traceRefs: [...new Set([...links.traceRefs, ...derivedTraceRefs, ...evidenceTraceRefs])],
       evidenceRefs: [...new Set([...links.evidenceRefs, ...derivedEvidenceRefs])],
@@ -619,7 +647,9 @@ function artifactPlanRowDefinesTargetSurface(row: JsonObject): boolean {
     role === 'historical_requirement_context' ||
     role === 'host_surface_projection' ||
     row.canAffectControlFlow === true ||
-    /^(?:code|script|hook|test|config|schema|control_record|requirement_source|skill_surface|execution_packet|prompt_projection|generator_receipt|gate|report|test_report|quality_report|render_report|evidence_bundle|failed_evidence_packet|implementation_evidence_packet|html_projection)$/iu.test(artifactType)
+    /^(?:code|script|hook|test|config|schema|control_record|requirement_source|skill_surface|execution_packet|prompt_projection|generator_receipt|gate|report|test_report|quality_report|render_report|evidence_bundle|failed_evidence_packet|implementation_evidence_packet|html_projection)$/iu.test(
+      artifactType
+    )
   );
 }
 
@@ -630,7 +660,8 @@ export function deriveTargetArtifactChecklist(confirmation: JsonObject): TargetI
   for (const row of objects(confirmation.artifactAutomationPlan)) {
     if (!artifactPlanRowDefinesTargetSurface(row)) continue;
     const sourceSection = 'artifactAutomationPlan';
-    const id = text(row.id) || text(row.artifactId) || `artifactAutomationPlan:${targets.length + 1}`;
+    const id =
+      text(row.id) || text(row.artifactId) || `artifactAutomationPlan:${targets.length + 1}`;
     const links = resolveLinks(collectLinkedIds(row));
     const rowPath = text(row.path);
     if (rowPath) {
@@ -804,7 +835,11 @@ function artifactSemanticMatches(item: JsonObject, target: TargetItem): boolean 
   if (text(item.sourceOfTruthRole) !== expectedRole) return false;
 
   const linked = artifactLinkedIds(item);
-  const targetLinks = [...target.traceRefs, ...target.evidenceRefs, ...(target.requirementRefs ?? [])].filter(Boolean);
+  const targetLinks = [
+    ...target.traceRefs,
+    ...target.evidenceRefs,
+    ...(target.requirementRefs ?? []),
+  ].filter(Boolean);
   if (targetLinks.length > 0) return targetLinks.some((id) => linked.includes(id));
 
   return Boolean(target.id && text(item.purpose).includes(target.id));
@@ -819,13 +854,16 @@ function artifactIndexEntry(
 ): JsonObject | undefined {
   const artifactIndex = objects(record.artifactIndex);
   const directMatches = artifactIndex.filter(
-    (item) => artifactPathMatches(item, declared) || (target ? artifactAliasMatches(item, target) : false)
+    (item) =>
+      artifactPathMatches(item, declared) || (target ? artifactAliasMatches(item, target) : false)
   );
   const matches =
     directMatches.length > 0 || !target
       ? directMatches
       : artifactIndex.filter((item) => artifactSemanticMatches(item, target));
-  const boundMatches = matches.filter((item) => artifactBoundToAttempt(record, item, attemptId, events));
+  const boundMatches = matches.filter((item) =>
+    artifactBoundToAttempt(record, item, attemptId, events)
+  );
   return boundMatches.at(-1) ?? matches.at(-1);
 }
 
@@ -836,7 +874,10 @@ function artifactIdentityMatches(
   refHash: string
 ): boolean {
   if (entryHash && refHash) return entryHash === refHash;
-  return Boolean(entryPath && refPath && entryPath === refPath) || Boolean(entryHash && refHash && entryHash === refHash);
+  return (
+    Boolean(entryPath && refPath && entryPath === refPath) ||
+    Boolean(entryHash && refHash && entryHash === refHash)
+  );
 }
 
 function artifactBoundToAttempt(
@@ -857,14 +898,13 @@ function artifactBoundToAttempt(
     return true;
   const commandRefs = commandRunsForAttempt(record, attemptId);
   if (
-    commandRefs.some(
-      (run) =>
-        artifactIdentityMatches(
-          artifactPath,
-          artifactHash,
-          normalizePath(text(run.artifactPath)),
-          text(run.artifactHash)
-        )
+    commandRefs.some((run) =>
+      artifactIdentityMatches(
+        artifactPath,
+        artifactHash,
+        normalizePath(text(run.artifactPath)),
+        text(run.artifactHash)
+      )
     )
   )
     return true;
@@ -876,14 +916,13 @@ function artifactBoundToAttempt(
     if (!selected) continue;
     const refs = [...objects(command.artifactRefs), ...objects(command.extensionRefs)];
     if (
-      refs.some(
-        (ref) =>
-          artifactIdentityMatches(
-            artifactPath,
-            artifactHash,
-            normalizePath(text(ref.path)),
-            text(ref.contentHash ?? ref.hash)
-          )
+      refs.some((ref) =>
+        artifactIdentityMatches(
+          artifactPath,
+          artifactHash,
+          normalizePath(text(ref.path)),
+          text(ref.contentHash ?? ref.hash)
+        )
       )
     )
       return true;
@@ -897,14 +936,13 @@ function artifactBoundToAttempt(
       ...objects(packet.extensionRefs),
       ...objects(nested(event.payload).artifactRefs),
     ];
-    return refs.some(
-      (ref) =>
-        artifactIdentityMatches(
-          artifactPath,
-          artifactHash,
-          normalizePath(text(ref.path)),
-          text(ref.contentHash ?? ref.hash)
-        )
+    return refs.some((ref) =>
+      artifactIdentityMatches(
+        artifactPath,
+        artifactHash,
+        normalizePath(text(ref.path)),
+        text(ref.contentHash ?? ref.hash)
+      )
     );
   });
 }
@@ -936,25 +974,32 @@ function postCloseoutReviewReportIssues(input: {
     report = JSON.parse(fs.readFileSync(filePath, 'utf8')) as JsonObject;
   } catch {
     return [
-      issue('post_closeout_review_report_invalid', `${input.target.pathOrField} is not parseable JSON`, [
-        input.target.id,
-      ]),
+      issue(
+        'post_closeout_review_report_invalid',
+        `${input.target.pathOrField} is not parseable JSON`,
+        [input.target.id]
+      ),
     ];
   }
   const finalAcceptance = nested(report.finalAcceptanceReview);
-  const reportAttemptId = text(finalAcceptance.currentAttemptId) || text(finalAcceptance.closeoutAttemptId);
+  const reportAttemptId =
+    text(finalAcceptance.currentAttemptId) || text(finalAcceptance.closeoutAttemptId);
   if (text(report.mode) !== 'closeout-review') {
     issues.push(
-      issue('post_closeout_review_report_mode_mismatch', `${input.target.pathOrField} is not closeout-review mode`, [
-        input.target.id,
-      ])
+      issue(
+        'post_closeout_review_report_mode_mismatch',
+        `${input.target.pathOrField} is not closeout-review mode`,
+        [input.target.id]
+      )
     );
   }
   if (finalAcceptance.ready !== true) {
     issues.push(
-      issue('post_closeout_review_not_ready', `${input.target.pathOrField} finalAcceptanceReview.ready is not true`, [
-        input.target.id,
-      ])
+      issue(
+        'post_closeout_review_not_ready',
+        `${input.target.pathOrField} finalAcceptanceReview.ready is not true`,
+        [input.target.id]
+      )
     );
   }
   if (reportAttemptId !== input.attemptId) {
@@ -968,18 +1013,22 @@ function postCloseoutReviewReportIssues(input: {
   }
   if (finalAcceptance.recordClosed !== true) {
     issues.push(
-      issue('post_closeout_review_record_closed_missing', `${input.target.pathOrField} does not prove record_closed`, [
-        input.target.id,
-      ])
+      issue(
+        'post_closeout_review_record_closed_missing',
+        `${input.target.pathOrField} does not prove record_closed`,
+        [input.target.id]
+      )
     );
   }
   const expectedSourceHash = text(input.record.sourceDocumentHash);
   const expectedImplementationHash = text(input.record.implementationConfirmationHash);
   if (expectedSourceHash && text(report.sourceDocumentHash) !== expectedSourceHash) {
     issues.push(
-      issue('post_closeout_review_source_hash_mismatch', `${input.target.pathOrField} source hash is stale`, [
-        input.target.id,
-      ])
+      issue(
+        'post_closeout_review_source_hash_mismatch',
+        `${input.target.pathOrField} source hash is stale`,
+        [input.target.id]
+      )
     );
   }
   if (
@@ -1006,7 +1055,10 @@ function validateFileTarget(input: {
 }): GateIssue[] {
   const issues: GateIssue[] = [];
   const events = input.events;
-  if (POST_CLOSEOUT_SURFACES.has(input.target.pathOrField) && !currentAttemptClosed(input.record, input.attemptId, events)) {
+  if (
+    POST_CLOSEOUT_SURFACES.has(input.target.pathOrField) &&
+    !currentAttemptClosed(input.record, input.attemptId, events)
+  ) {
     return [];
   }
   if (SUCCESS_PATH_OPTIONAL_SURFACES.has(input.target.pathOrField)) {
@@ -1018,11 +1070,9 @@ function validateFileTarget(input: {
   if (POST_CLOSEOUT_SURFACES.has(input.target.pathOrField)) {
     if (!exists) {
       issues.push(
-        issue(
-          'target_artifact_missing',
-          `${input.target.pathOrField} does not exist`,
-          [input.target.id]
-        )
+        issue('target_artifact_missing', `${input.target.pathOrField} does not exist`, [
+          input.target.id,
+        ])
       );
     }
     issues.push(
@@ -1036,7 +1086,13 @@ function validateFileTarget(input: {
     );
     return issues;
   }
-  const entry = artifactIndexEntry(input.record, declared, input.target, input.attemptId, input.events);
+  const entry = artifactIndexEntry(
+    input.record,
+    declared,
+    input.target,
+    input.attemptId,
+    input.events
+  );
   if (!exists && !entry) {
     issues.push(
       issue(
@@ -1196,8 +1252,15 @@ function validateRecordFieldTarget(
   return issues;
 }
 
-function currentAttemptClosed(record: JsonObject, attemptId: string, events: JsonObject[]): boolean {
-  if (text(record.lastEventType) === 'record_closed' && text(nested(record.closeout).currentAttemptId) === attemptId) {
+function currentAttemptClosed(
+  record: JsonObject,
+  attemptId: string,
+  events: JsonObject[]
+): boolean {
+  if (
+    text(record.lastEventType) === 'record_closed' &&
+    text(nested(record.closeout).currentAttemptId) === attemptId
+  ) {
     return true;
   }
   return events.some((event) => {
@@ -1217,7 +1280,10 @@ function validateLogicalSurfaceTarget(
   attemptId: string,
   events: JsonObject[]
 ): GateIssue[] {
-  if (POST_CLOSEOUT_SURFACES.has(target.pathOrField) && !currentAttemptClosed(record, attemptId, events)) {
+  if (
+    POST_CLOSEOUT_SURFACES.has(target.pathOrField) &&
+    !currentAttemptClosed(record, attemptId, events)
+  ) {
     return [];
   }
   const fieldPath = target.pathOrField.startsWith(RECORD_PREFIX)
@@ -1225,7 +1291,11 @@ function validateLogicalSurfaceTarget(
     : target.pathOrField;
   if (isRequirementRecordFieldRef(fieldPath)) {
     return validateRecordFieldTarget(
-      { ...target, kind: 'record_field', pathOrField: `${RECORD_PREFIX}${recordFieldPath(fieldPath)}` },
+      {
+        ...target,
+        kind: 'record_field',
+        pathOrField: `${RECORD_PREFIX}${recordFieldPath(fieldPath)}`,
+      },
       record,
       attemptId,
       events
@@ -1264,7 +1334,9 @@ function legacyUsedAsCompletionProof(
   const proofValues = [
     isCompletionProofEventType(lastEventType) ? lastEventType : '',
     ...events
-      .filter((event) => ['record_closed', 'requirement_closure_recorded'].includes(text(event.eventType)))
+      .filter((event) =>
+        ['record_closed', 'requirement_closure_recorded'].includes(text(event.eventType))
+      )
       .map((event) => text(event.eventType)),
     ...objects(record.requirementClosures).flatMap((closure) =>
       text(closure.status) === 'pass'
@@ -1492,7 +1564,9 @@ export function evaluateCanonicalSchemaReducerGate(input: {
     }
   }
   if (input.record && fields.length > 0) {
-    const sentinel = Object.fromEntries(fields.map((field) => [field, sentinelForRecordField(field)]));
+    const sentinel = Object.fromEntries(
+      fields.map((field) => [field, sentinelForRecordField(field)])
+    );
     const reduced = canonicalizeRequirementRecord({
       ...input.record,
       recordId: text(input.record.recordId) || 'REQ-FIXTURE',

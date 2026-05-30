@@ -197,7 +197,11 @@ function runtimeDirFromRecord(recordPath: string): string {
   return path.dirname(path.dirname(path.dirname(recordPath)));
 }
 
-function defaultDatasetReleaseArtifact(record: JsonObject, recordPath: string, artifactType: string): JsonObject | null {
+function defaultDatasetReleaseArtifact(
+  record: JsonObject,
+  recordPath: string,
+  artifactType: string
+): JsonObject | null {
   const fileName =
     artifactType === 'dataset_release_manifest'
       ? 'dataset-manifest.json'
@@ -205,7 +209,13 @@ function defaultDatasetReleaseArtifact(record: JsonObject, recordPath: string, a
         ? 'dataset-release-gate-report.json'
         : '';
   if (!fileName) return null;
-  const artifactPath = path.join(runtimeDirFromRecord(recordPath), 'datasets', defaultDatasetId(record), 'v1', fileName);
+  const artifactPath = path.join(
+    runtimeDirFromRecord(recordPath),
+    'datasets',
+    defaultDatasetId(record),
+    'v1',
+    fileName
+  );
   if (!fs.existsSync(artifactPath)) return null;
   return {
     artifactType,
@@ -221,7 +231,10 @@ function latestOrDefaultDatasetReleaseArtifact(
   recordPath: string,
   artifactType: string
 ): JsonObject | null {
-  return latestArtifact(record, artifactType) ?? defaultDatasetReleaseArtifact(record, recordPath, artifactType);
+  return (
+    latestArtifact(record, artifactType) ??
+    defaultDatasetReleaseArtifact(record, recordPath, artifactType)
+  );
 }
 
 function contractApplicability(sourcePath?: string): JsonObject {
@@ -373,30 +386,53 @@ function commandProof(runs: JsonObject[], commandId: string): JsonObject | null 
     : null;
 }
 
-function productionSubsystemProofApplies(input: { record: JsonObject; attemptRuns: JsonObject[]; applicability: JsonObject }): boolean {
+function productionSubsystemProofApplies(input: {
+  record: JsonObject;
+  attemptRuns: JsonObject[];
+  applicability: JsonObject;
+}): boolean {
   const explicit = boolAt(input.applicability, ['productionSubsystems', 'applies']);
   if (explicit !== null) return explicit;
   return Boolean(
     latestArtifact(input.record, 'observability_extension') ||
-      commandProof(input.attemptRuns, 'CMD-PRODUCTION-SUBSYSTEM-ACCEPTANCE')
+    commandProof(input.attemptRuns, 'CMD-PRODUCTION-SUBSYSTEM-ACCEPTANCE')
   );
 }
 
-function failureCaseProofApplies(input: { record: JsonObject; attemptRuns: JsonObject[]; applicability: JsonObject }): boolean {
-  const explicit = boolAt(input.applicability, ['runtimeRecovery', 'requiresFunctionalResumeFailureCaseRegistry']);
+function failureCaseProofApplies(input: {
+  record: JsonObject;
+  attemptRuns: JsonObject[];
+  applicability: JsonObject;
+}): boolean {
+  const explicit = boolAt(input.applicability, [
+    'runtimeRecovery',
+    'requiresFunctionalResumeFailureCaseRegistry',
+  ]);
   if (explicit !== null) return explicit;
   return Boolean(
     latestArtifact(input.record, 'failure_case_coverage') ||
-      commandProof(input.attemptRuns, 'CMD-FULL-FAILURE-CASE-COVERAGE')
+    commandProof(input.attemptRuns, 'CMD-FULL-FAILURE-CASE-COVERAGE')
   );
 }
 
-function sftProjectionProofApplies(input: { record: JsonObject; recordPath: string; applicability: JsonObject }): boolean {
+function sftProjectionProofApplies(input: {
+  record: JsonObject;
+  recordPath: string;
+  applicability: JsonObject;
+}): boolean {
   const explicit = boolAt(input.applicability, ['scoringDashboardSft', 'applies']);
   if (explicit !== null) return explicit;
   return Boolean(
-    latestOrDefaultDatasetReleaseArtifact(input.record, input.recordPath, 'dataset_release_manifest') ||
-      latestOrDefaultDatasetReleaseArtifact(input.record, input.recordPath, 'dataset_release_gate_report')
+    latestOrDefaultDatasetReleaseArtifact(
+      input.record,
+      input.recordPath,
+      'dataset_release_manifest'
+    ) ||
+    latestOrDefaultDatasetReleaseArtifact(
+      input.record,
+      input.recordPath,
+      'dataset_release_gate_report'
+    )
   );
 }
 
@@ -495,8 +531,16 @@ function proveFailureCases(input: {
 }
 
 function sftProjectionProof(record: JsonObject, recordPath: string): JsonObject {
-  const manifestRef = latestOrDefaultDatasetReleaseArtifact(record, recordPath, 'dataset_release_manifest');
-  const releaseRef = latestOrDefaultDatasetReleaseArtifact(record, recordPath, 'dataset_release_gate_report');
+  const manifestRef = latestOrDefaultDatasetReleaseArtifact(
+    record,
+    recordPath,
+    'dataset_release_manifest'
+  );
+  const releaseRef = latestOrDefaultDatasetReleaseArtifact(
+    record,
+    recordPath,
+    'dataset_release_gate_report'
+  );
   const reasons: string[] = [];
   if (!manifestRef) reasons.push('dataset_manifest_artifact_missing');
   if (!releaseRef) reasons.push('dataset_release_report_artifact_missing');

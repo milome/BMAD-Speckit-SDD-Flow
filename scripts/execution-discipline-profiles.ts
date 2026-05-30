@@ -1,5 +1,8 @@
 import { createHash } from 'node:crypto';
-import type { ExecutionDisciplineProfile, OrchestrationFlow } from './orchestration-dispatch-contract';
+import type {
+  ExecutionDisciplineProfile,
+  OrchestrationFlow,
+} from './orchestration-dispatch-contract';
 
 function sha256Json(value: unknown): string {
   return `sha256:${createHash('sha256').update(stableStringify(value), 'utf8').digest('hex')}`;
@@ -10,7 +13,9 @@ function stableStringify(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map((item) => stableStringify(item)).join(',')}]`;
   return `{${Object.keys(value)
     .sort()
-    .map((key) => `${JSON.stringify(key)}:${stableStringify((value as Record<string, unknown>)[key])}`)
+    .map(
+      (key) => `${JSON.stringify(key)}:${stableStringify((value as Record<string, unknown>)[key])}`
+    )
     .join(',')}}`;
 }
 
@@ -53,7 +58,12 @@ function baseProfile(flow: OrchestrationFlow): Omit<ExecutionDisciplineProfile, 
       languages: ['typescript', 'javascript', 'python'],
     },
     subagentContinuityPolicy: {
-      returnAllowedOnlyOn: ['scope_complete', 'real_blocker', 'audit_boundary', 'resume_checkpoint'],
+      returnAllowedOnlyOn: [
+        'scope_complete',
+        'real_blocker',
+        'audit_boundary',
+        'resume_checkpoint',
+      ],
     },
     auditReportContract: {
       parseableScoreBlockRequired: true,
@@ -115,19 +125,24 @@ function baseProfile(flow: OrchestrationFlow): Omit<ExecutionDisciplineProfile, 
   };
 }
 
-function withHash(profile: Omit<ExecutionDisciplineProfile, 'profileHash'>): ExecutionDisciplineProfile {
+function withHash(
+  profile: Omit<ExecutionDisciplineProfile, 'profileHash'>
+): ExecutionDisciplineProfile {
   return {
     ...profile,
     profileHash: sha256Json(profile),
   };
 }
 
-export const EXECUTION_DISCIPLINE_PROFILES: Record<OrchestrationFlow, ExecutionDisciplineProfile> = {
-  story: withHash(baseProfile('story')),
-  bugfix: withHash(baseProfile('bugfix')),
-  standalone_tasks: withHash(baseProfile('standalone_tasks')),
-};
+export const EXECUTION_DISCIPLINE_PROFILES: Record<OrchestrationFlow, ExecutionDisciplineProfile> =
+  {
+    story: withHash(baseProfile('story')),
+    bugfix: withHash(baseProfile('bugfix')),
+    standalone_tasks: withHash(baseProfile('standalone_tasks')),
+  };
 
-export function resolveExecutionDisciplineProfile(flow: OrchestrationFlow): ExecutionDisciplineProfile {
+export function resolveExecutionDisciplineProfile(
+  flow: OrchestrationFlow
+): ExecutionDisciplineProfile {
   return EXECUTION_DISCIPLINE_PROFILES[flow];
 }

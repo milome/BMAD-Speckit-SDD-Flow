@@ -63,7 +63,13 @@ export interface SixMentalModelDrillDownSlice {
 }
 
 export interface SixMentalModelBusinessObjectView {
-  viewName: 'epicStoryView' | 'taskView' | 'bugfixView' | 'scoreView' | 'reportView' | 'sftDatasetView';
+  viewName:
+    | 'epicStoryView'
+    | 'taskView'
+    | 'bugfixView'
+    | 'scoreView'
+    | 'reportView'
+    | 'sftDatasetView';
   role:
     | 'user_navigation_projection'
     | 'read_model_projection'
@@ -160,7 +166,10 @@ export const FORBIDDEN_DASHBOARD_DISPLAY_IDS: SixMentalModelForbiddenDisplayChec
   'dashboardGreenWithoutCurrentAttempt',
 ];
 
-const MODEL_COPY: Record<SixMentalModelId, Pick<SixMentalModelSection, 'displayName' | 'coreQuestion'>> = {
+const MODEL_COPY: Record<
+  SixMentalModelId,
+  Pick<SixMentalModelSection, 'displayName' | 'coreQuestion'>
+> = {
   requirement_confirmation: {
     displayName: '需求确认',
     coreQuestion: '用户确认了什么，哪些 ID 被允许进入实施？',
@@ -200,7 +209,10 @@ function modelStatus(input: {
 }): string {
   const latestStage = input.stageTimeline[0];
   if (input.model === 'requirement_confirmation') {
-    return firstPresent([input.runtimeContext.status, input.executionState.execution_status], 'unknown');
+    return firstPresent(
+      [input.runtimeContext.status, input.executionState.execution_status],
+      'unknown'
+    );
   }
   if (input.model === 'architecture_confirmation') {
     return input.runtimeContext.reviewer_contract ? 'projection_available' : 'not_projected';
@@ -214,7 +226,9 @@ function modelStatus(input: {
   if (input.model === 'audit_review') {
     return input.runtimeContext.latest_reviewer_closeout?.result_code ?? 'not_projected';
   }
-  return input.runtimeContext.latest_reviewer_closeout?.closeout_approved ? 'approved' : 'not_approved';
+  return input.runtimeContext.latest_reviewer_closeout?.closeout_approved
+    ? 'approved'
+    : 'not_approved';
 }
 
 function evidenceSignals(input: {
@@ -302,7 +316,9 @@ function latestCloseoutAttemptId(runtimeContext: DashboardRuntimeContextPanel): 
   return closeout.updated_at ? `reviewer-closeout:${closeout.updated_at}` : null;
 }
 
-function linkedRequirementsForSlice(slice: Pick<SixMentalModelDrillDownSlice, 'sliceId' | 'flow'>): string[] {
+function linkedRequirementsForSlice(
+  slice: Pick<SixMentalModelDrillDownSlice, 'sliceId' | 'flow'>
+): string[] {
   return [`dashboard:${slice.flow}:${slice.sliceId}`];
 }
 
@@ -310,7 +326,9 @@ function traceRowsForSlice(slice: Pick<SixMentalModelDrillDownSlice, 'sliceId'>)
   return [`trace:${slice.sliceId}`];
 }
 
-function blockingReasonsForSlice(slice: Pick<SixMentalModelDrillDownSlice, 'runtimeStatus' | 'boardStatus'>): string[] {
+function blockingReasonsForSlice(
+  slice: Pick<SixMentalModelDrillDownSlice, 'runtimeStatus' | 'boardStatus'>
+): string[] {
   const reasons: string[] = [];
   if (slice.runtimeStatus === 'failed' || slice.runtimeStatus === 'vetoed') {
     reasons.push(`runtime_status:${slice.runtimeStatus}`);
@@ -320,9 +338,13 @@ function blockingReasonsForSlice(slice: Pick<SixMentalModelDrillDownSlice, 'runt
   return reasons;
 }
 
-function statusForSlice(slice: Pick<SixMentalModelDrillDownSlice, 'runtimeStatus' | 'boardStatus'>): string {
-  if (slice.runtimeStatus === 'failed' || slice.runtimeStatus === 'vetoed') return 'blocked_in_audit_review';
-  if (slice.runtimeStatus === 'running' || slice.boardStatus === 'in_progress') return 'executing_or_missing_evidence';
+function statusForSlice(
+  slice: Pick<SixMentalModelDrillDownSlice, 'runtimeStatus' | 'boardStatus'>
+): string {
+  if (slice.runtimeStatus === 'failed' || slice.runtimeStatus === 'vetoed')
+    return 'blocked_in_audit_review';
+  if (slice.runtimeStatus === 'running' || slice.boardStatus === 'in_progress')
+    return 'executing_or_missing_evidence';
   if (slice.boardStatus === 'done') return 'closeout_pass_projected';
   return 'closeout_not_started';
 }
@@ -357,7 +379,8 @@ function epicToBusinessObject(
     objectId: slice.sliceId,
     objectType: 'epic',
     title: slice.label,
-    projectedStatus: slice.status === 'done' ? 'closeout_pass_projected' : 'executing_or_missing_evidence',
+    projectedStatus:
+      slice.status === 'done' ? 'closeout_pass_projected' : 'executing_or_missing_evidence',
     linkedRequirementIds: [`dashboard:epic:${slice.sliceId}`],
     traceRows: [`trace:${slice.sliceId}`],
     artifactRefs: [slice.sliceId],
@@ -401,7 +424,9 @@ function reportBusinessObjects(
           objectType: 'report' as const,
           title: runtimeContext.latest_reviewer_closeout.report_path,
           projectedStatus: 'audit_report_projected',
-          linkedRequirementIds: [`dashboard:report:${runtimeContext.latest_reviewer_closeout.report_path}`],
+          linkedRequirementIds: [
+            `dashboard:report:${runtimeContext.latest_reviewer_closeout.report_path}`,
+          ],
           traceRows: [`trace:report:${runtimeContext.latest_reviewer_closeout.report_path}`],
           artifactRefs: [runtimeContext.latest_reviewer_closeout.report_path],
           blockingReasons:
@@ -500,7 +525,9 @@ function buildBusinessObjectViews(input: {
           ),
         ...input.workboard.work_items
           .filter((item) => item.flow === 'story')
-          .map((item) => workSliceToBusinessObject(toWorkItemSlice(item), 'story', currentCloseoutAttemptId)),
+          .map((item) =>
+            workSliceToBusinessObject(toWorkItemSlice(item), 'story', currentCloseoutAttemptId)
+          ),
       ],
     }),
     taskView: businessView({
@@ -509,7 +536,9 @@ function buildBusinessObjectViews(input: {
       currentCloseoutAttemptId,
       items: input.workboard.work_items
         .filter((item) => item.flow === 'standalone_tasks')
-        .map((item) => workSliceToBusinessObject(toWorkItemSlice(item), 'task', currentCloseoutAttemptId)),
+        .map((item) =>
+          workSliceToBusinessObject(toWorkItemSlice(item), 'task', currentCloseoutAttemptId)
+        ),
     }),
     bugfixView: businessView({
       viewName: 'bugfixView',
@@ -517,7 +546,9 @@ function buildBusinessObjectViews(input: {
       currentCloseoutAttemptId,
       items: input.workboard.work_items
         .filter((item) => item.flow === 'bugfix')
-        .map((item) => workSliceToBusinessObject(toWorkItemSlice(item), 'bugfix', currentCloseoutAttemptId)),
+        .map((item) =>
+          workSliceToBusinessObject(toWorkItemSlice(item), 'bugfix', currentCloseoutAttemptId)
+        ),
     }),
     scoreView: businessView({
       viewName: 'scoreView',
@@ -529,7 +560,11 @@ function buildBusinessObjectViews(input: {
       viewName: 'reportView',
       role: 'evidence_navigation_projection',
       currentCloseoutAttemptId,
-      items: reportBusinessObjects(input.runtimeContext, input.scoreDetail, currentCloseoutAttemptId),
+      items: reportBusinessObjects(
+        input.runtimeContext,
+        input.scoreDetail,
+        currentCloseoutAttemptId
+      ),
     }),
     sftDatasetView: businessView({
       viewName: 'sftDatasetView',
@@ -542,12 +577,18 @@ function buildBusinessObjectViews(input: {
 
 function validateBusinessObjectItem(item: SixMentalModelBusinessObjectItem): string[] {
   const issues: string[] = [];
-  if (item.canAffectControlFlow !== false) issues.push(`business_object_can_affect_control:${item.objectId}`);
-  if (item.nextControlledSource !== 'requirement-record.json') issues.push(`business_object_control_source_invalid:${item.objectId}`);
-  if (item.linkedRequirementIds.length === 0) issues.push(`business_object_requirement_ids_missing:${item.objectId}`);
-  if (item.traceRows.length === 0) issues.push(`business_object_trace_rows_missing:${item.objectId}`);
-  if (item.artifactRefs.length === 0) issues.push(`business_object_artifact_refs_missing:${item.objectId}`);
-  if (item.currentCloseoutAttemptId == null) issues.push(`business_object_current_attempt_missing:${item.objectId}`);
+  if (item.canAffectControlFlow !== false)
+    issues.push(`business_object_can_affect_control:${item.objectId}`);
+  if (item.nextControlledSource !== 'requirement-record.json')
+    issues.push(`business_object_control_source_invalid:${item.objectId}`);
+  if (item.linkedRequirementIds.length === 0)
+    issues.push(`business_object_requirement_ids_missing:${item.objectId}`);
+  if (item.traceRows.length === 0)
+    issues.push(`business_object_trace_rows_missing:${item.objectId}`);
+  if (item.artifactRefs.length === 0)
+    issues.push(`business_object_artifact_refs_missing:${item.objectId}`);
+  if (item.currentCloseoutAttemptId == null)
+    issues.push(`business_object_current_attempt_missing:${item.objectId}`);
   return issues;
 }
 
@@ -563,7 +604,10 @@ function buildForbiddenDashboardDisplays(
 ): SixMentalModelForbiddenDisplayCheck[] {
   return FORBIDDEN_DASHBOARD_DISPLAY_IDS.map((id) => ({
     id,
-    decision: id === 'dashboardGreenWithoutCurrentAttempt' && !currentCloseoutAttemptId ? 'blocked' : 'pass',
+    decision:
+      id === 'dashboardGreenWithoutCurrentAttempt' && !currentCloseoutAttemptId
+        ? 'blocked'
+        : 'pass',
     reason:
       id === 'dashboardGreenWithoutCurrentAttempt' && !currentCloseoutAttemptId
         ? 'dashboard green cannot imply closeout without current closeout attempt'

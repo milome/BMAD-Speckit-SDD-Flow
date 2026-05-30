@@ -5,9 +5,7 @@ import {
   type PromptHintUsageRecord,
 } from './prompt-routing-governance';
 import * as deferredGapGovernance from './deferred-gap-governance.cjs';
-const {
-  readDeferredGapsFromReport,
-} = deferredGapGovernance as {
+const { readDeferredGapsFromReport } = deferredGapGovernance as {
   readDeferredGapsFromReport: (reportPath: string) => {
     gaps: Array<Record<string, string>>;
     explicit: boolean;
@@ -98,17 +96,13 @@ function buildPromptHintUsageLines(usage: PromptHintUsageRecord): string[] {
     `- Hint confidence: ${usage.hintConfidence}`,
     `- Consumed after: \`${usage.consumedAfter}\``,
     '- Hint applied to:',
-    ...(
-      usage.hintAppliedTo.length > 0
-        ? usage.hintAppliedTo.map((item) => `  - ${item}`)
-        : ['  - (none)']
-    ),
+    ...(usage.hintAppliedTo.length > 0
+      ? usage.hintAppliedTo.map((item) => `  - ${item}`)
+      : ['  - (none)']),
     '- Hint ignored because:',
-    ...(
-      usage.hintIgnoredBecause.length > 0
-        ? usage.hintIgnoredBecause.map((item) => `  - ${item}`)
-        : ['  - (none)']
-    ),
+    ...(usage.hintIgnoredBecause.length > 0
+      ? usage.hintIgnoredBecause.map((item) => `  - ${item}`)
+      : ['  - (none)']),
     '- Blocker ownership affected: no',
   ];
 }
@@ -118,17 +112,13 @@ function buildModelHintUsageLines(usage: PromptHintUsageRecord): string[] {
     '- Model hint present: ' + (usage.modelHintPresent ? 'yes' : 'no'),
     `- Model hint confidence: ${usage.modelHintConfidence}`,
     '- Model hint applied to:',
-    ...(
-      usage.modelHintAppliedTo.length > 0
-        ? usage.modelHintAppliedTo.map((item) => `  - ${item}`)
-        : ['  - (none)']
-    ),
+    ...(usage.modelHintAppliedTo.length > 0
+      ? usage.modelHintAppliedTo.map((item) => `  - ${item}`)
+      : ['  - (none)']),
     '- Model hint ignored because:',
-    ...(
-      usage.modelHintIgnoredBecause.length > 0
-        ? usage.modelHintIgnoredBecause.map((item) => `  - ${item}`)
-        : ['  - (none)']
-    ),
+    ...(usage.modelHintIgnoredBecause.length > 0
+      ? usage.modelHintIgnoredBecause.map((item) => `  - ${item}`)
+      : ['  - (none)']),
     '- Model hint debug:',
     ...(usage.modelHintDebug
       ? [
@@ -161,9 +151,7 @@ function formatSemanticSkillFeaturesCompact(
       feature.researchPolicyHints.length > 0
         ? `research=${feature.researchPolicyHints.join('|')}`
         : null,
-      feature.delegationHints.length > 0
-        ? `delegation=${feature.delegationHints.join('|')}`
-        : null,
+      feature.delegationHints.length > 0 ? `delegation=${feature.delegationHints.join('|')}` : null,
       feature.constraintHints.length > 0
         ? `constraints=${feature.constraintHints.join('|')}`
         : null,
@@ -177,9 +165,7 @@ function formatSemanticSkillFeaturesCompact(
   return [...new Set(renderedFeatures)].join(' || ');
 }
 
-function buildExecutionIntentCandidateLines(
-  candidate: ExecutionIntentCandidate | null
-): string[] {
+function buildExecutionIntentCandidateLines(candidate: ExecutionIntentCandidate | null): string[] {
   if (!candidate) {
     return ['- (none)'];
   }
@@ -207,7 +193,9 @@ function buildExecutionIntentCandidateLines(
     ['constraintHints', candidate.semanticFeatureTopN.constraintHints],
   ]
     .map(([label, items]) => {
-      const rendered = (items as Array<{ value: string; score: number; provenanceSkillIds: string[] }>)
+      const rendered = (
+        items as Array<{ value: string; score: number; provenanceSkillIds: string[] }>
+      )
         .map((item) => `${item.value}@${item.score}<-${item.provenanceSkillIds.join('|')}`)
         .join(', ');
       return rendered ? `  - ${label}: ${rendered}` : null;
@@ -234,53 +222,45 @@ function buildExecutionIntentCandidateLines(
     `- Provider Recommended Skill Chain: ${candidate.providerRecommendedSkillChain.join(', ') || '(none)'}`,
     `- Provider Recommended Subagent Roles: ${candidate.providerRecommendedSubagentRoles.join(', ') || '(none)'}`,
     '- Provider Recommendation Items (Skills):',
-    ...(
-      candidate.providerRecommendationItems.skills.length > 0
-        ? candidate.providerRecommendationItems.skills.map(
-            (item) =>
-              `  - ${item.value} [source=${item.source}; confidence=${item.confidence}; consumed=${item.consumed ? 'yes' : 'no'}; reason=${item.reason}; filteredBecause=${item.filteredBecause.join('|') || '(none)'}]`
-          )
-        : ['  - (none)']
-    ),
+    ...(candidate.providerRecommendationItems.skills.length > 0
+      ? candidate.providerRecommendationItems.skills.map(
+          (item) =>
+            `  - ${item.value} [source=${item.source}; confidence=${item.confidence}; consumed=${item.consumed ? 'yes' : 'no'}; reason=${item.reason}; filteredBecause=${item.filteredBecause.join('|') || '(none)'}]`
+        )
+      : ['  - (none)']),
     '- Provider Recommendation Items (Subagent Roles):',
-    ...(
-      candidate.providerRecommendationItems.subagentRoles.length > 0
-        ? candidate.providerRecommendationItems.subagentRoles.map(
-            (item) =>
-              `  - ${item.value} [source=${item.source}; confidence=${item.confidence}; consumed=${item.consumed ? 'yes' : 'no'}; reason=${item.reason}; filteredBecause=${item.filteredBecause.join('|') || '(none)'}]`
-          )
-        : ['  - (none)']
-    ),
+    ...(candidate.providerRecommendationItems.subagentRoles.length > 0
+      ? candidate.providerRecommendationItems.subagentRoles.map(
+          (item) =>
+            `  - ${item.value} [source=${item.source}; confidence=${item.confidence}; consumed=${item.consumed ? 'yes' : 'no'}; reason=${item.reason}; filteredBecause=${item.filteredBecause.join('|') || '(none)'}]`
+        )
+      : ['  - (none)']),
     `- Skill Chain: ${candidate.skillChain.join(', ') || '(none)'}`,
     `- Subagent Roles: ${candidate.subagentRoles.join(', ') || '(none)'}`,
     '- Reviewer Route Explainability:',
-    ...(
-      candidate.reviewerRouteExplainability && candidate.reviewerRouteExplainability.length > 0
-        ? candidate.reviewerRouteExplainability.flatMap((item) => [
-            `  - ${item.requestedSkillId} => identity=${item.reviewerIdentity}; registry=${item.registryVersion}; closeout=${item.closeoutRunner}; maturity=${item.isomorphismMaturity}`,
-            `    - shared core: ${item.sharedCore.rootPath} [${item.sharedCore.version}]`,
-            `    - cursor carrier: ${item.hosts.cursor.carrierSourcePath} -> ${item.hosts.cursor.runtimeTargetPath}`,
-            `      preferred=${item.hosts.cursor.preferredRoute.tool}/${item.hosts.cursor.preferredRoute.subtypeOrExecutor} | fallback=${item.hosts.cursor.fallbackRoute.tool}/${item.hosts.cursor.fallbackRoute.subtypeOrExecutor}`,
-            `      fallback reason: ${item.hosts.cursor.fallbackReason}`,
-            `    - claude carrier: ${item.hosts.claude.carrierSourcePath} -> ${item.hosts.claude.runtimeTargetPath}`,
-            `      preferred=${item.hosts.claude.preferredRoute.tool}/${item.hosts.claude.preferredRoute.subtypeOrExecutor} | fallback=${item.hosts.claude.fallbackRoute.tool}/${item.hosts.claude.fallbackRoute.subtypeOrExecutor}`,
-            `      fallback reason: ${item.hosts.claude.fallbackReason}`,
-            `    - route reason: ${item.routeReasonSummary}`,
-            `    - fallback status: ${item.fallbackStatus}`,
-            `    - complexity: ${item.complexitySource}`,
-            `    - blocker: ${item.remainingBlocker}`,
-            `    - rollout gate: ${item.rolloutGate.status} -> ${item.rolloutGate.summary}`,
-          ])
-        : ['  - (none)']
-    ),
+    ...(candidate.reviewerRouteExplainability && candidate.reviewerRouteExplainability.length > 0
+      ? candidate.reviewerRouteExplainability.flatMap((item) => [
+          `  - ${item.requestedSkillId} => identity=${item.reviewerIdentity}; registry=${item.registryVersion}; closeout=${item.closeoutRunner}; maturity=${item.isomorphismMaturity}`,
+          `    - shared core: ${item.sharedCore.rootPath} [${item.sharedCore.version}]`,
+          `    - cursor carrier: ${item.hosts.cursor.carrierSourcePath} -> ${item.hosts.cursor.runtimeTargetPath}`,
+          `      preferred=${item.hosts.cursor.preferredRoute.tool}/${item.hosts.cursor.preferredRoute.subtypeOrExecutor} | fallback=${item.hosts.cursor.fallbackRoute.tool}/${item.hosts.cursor.fallbackRoute.subtypeOrExecutor}`,
+          `      fallback reason: ${item.hosts.cursor.fallbackReason}`,
+          `    - claude carrier: ${item.hosts.claude.carrierSourcePath} -> ${item.hosts.claude.runtimeTargetPath}`,
+          `      preferred=${item.hosts.claude.preferredRoute.tool}/${item.hosts.claude.preferredRoute.subtypeOrExecutor} | fallback=${item.hosts.claude.fallbackRoute.tool}/${item.hosts.claude.fallbackRoute.subtypeOrExecutor}`,
+          `      fallback reason: ${item.hosts.claude.fallbackReason}`,
+          `    - route reason: ${item.routeReasonSummary}`,
+          `    - fallback status: ${item.fallbackStatus}`,
+          `    - complexity: ${item.complexitySource}`,
+          `    - blocker: ${item.remainingBlocker}`,
+          `    - rollout gate: ${item.rolloutGate.status} -> ${item.rolloutGate.summary}`,
+        ])
+      : ['  - (none)']),
     `- Constraints: ${candidate.constraints.join(', ') || '(none)'}`,
     `- Advisory Only: ${candidate.advisoryOnly ? 'yes' : 'no'}`,
   ];
 }
 
-function buildExecutionPlanDecisionLines(
-  decision: ExecutionPlanDecision | null
-): string[] {
+function buildExecutionPlanDecisionLines(decision: ExecutionPlanDecision | null): string[] {
   if (!decision) {
     return ['- (none)'];
   }
@@ -308,7 +288,9 @@ function buildExecutionPlanDecisionLines(
     ['constraintHints', decision.semanticFeatureTopN.constraintHints],
   ]
     .map(([label, items]) => {
-      const rendered = (items as Array<{ value: string; score: number; provenanceSkillIds: string[] }>)
+      const rendered = (
+        items as Array<{ value: string; score: number; provenanceSkillIds: string[] }>
+      )
         .map((item) => `${item.value}@${item.score}<-${item.provenanceSkillIds.join('|')}`)
         .join(', ');
       return rendered ? `  - ${label}: ${rendered}` : null;
@@ -335,45 +317,39 @@ function buildExecutionPlanDecisionLines(
     `- Provider Recommended Skill Chain: ${decision.providerRecommendedSkillChain.join(', ') || '(none)'}`,
     `- Provider Recommended Subagent Roles: ${decision.providerRecommendedSubagentRoles.join(', ') || '(none)'}`,
     '- Provider Recommendation Items (Skills):',
-    ...(
-      decision.providerRecommendationItems.skills.length > 0
-        ? decision.providerRecommendationItems.skills.map(
-            (item) =>
-              `  - ${item.value} [source=${item.source}; confidence=${item.confidence}; consumed=${item.consumed ? 'yes' : 'no'}; reason=${item.reason}; filteredBecause=${item.filteredBecause.join('|') || '(none)'}]`
-          )
-        : ['  - (none)']
-    ),
+    ...(decision.providerRecommendationItems.skills.length > 0
+      ? decision.providerRecommendationItems.skills.map(
+          (item) =>
+            `  - ${item.value} [source=${item.source}; confidence=${item.confidence}; consumed=${item.consumed ? 'yes' : 'no'}; reason=${item.reason}; filteredBecause=${item.filteredBecause.join('|') || '(none)'}]`
+        )
+      : ['  - (none)']),
     '- Provider Recommendation Items (Subagent Roles):',
-    ...(
-      decision.providerRecommendationItems.subagentRoles.length > 0
-        ? decision.providerRecommendationItems.subagentRoles.map(
-            (item) =>
-              `  - ${item.value} [source=${item.source}; confidence=${item.confidence}; consumed=${item.consumed ? 'yes' : 'no'}; reason=${item.reason}; filteredBecause=${item.filteredBecause.join('|') || '(none)'}]`
-          )
-        : ['  - (none)']
-    ),
+    ...(decision.providerRecommendationItems.subagentRoles.length > 0
+      ? decision.providerRecommendationItems.subagentRoles.map(
+          (item) =>
+            `  - ${item.value} [source=${item.source}; confidence=${item.confidence}; consumed=${item.consumed ? 'yes' : 'no'}; reason=${item.reason}; filteredBecause=${item.filteredBecause.join('|') || '(none)'}]`
+        )
+      : ['  - (none)']),
     `- Skill Chain: ${decision.skillChain.join(', ') || '(none)'}`,
     `- Subagent Roles: ${decision.subagentRoles.join(', ') || '(none)'}`,
     '- Reviewer Route Explainability:',
-    ...(
-      decision.reviewerRouteExplainability && decision.reviewerRouteExplainability.length > 0
-        ? decision.reviewerRouteExplainability.flatMap((item) => [
-            `  - ${item.requestedSkillId} => identity=${item.reviewerIdentity}; registry=${item.registryVersion}; closeout=${item.closeoutRunner}; maturity=${item.isomorphismMaturity}`,
-            `    - shared core: ${item.sharedCore.rootPath} [${item.sharedCore.version}]`,
-            `    - cursor carrier: ${item.hosts.cursor.carrierSourcePath} -> ${item.hosts.cursor.runtimeTargetPath}`,
-            `      preferred=${item.hosts.cursor.preferredRoute.tool}/${item.hosts.cursor.preferredRoute.subtypeOrExecutor} | fallback=${item.hosts.cursor.fallbackRoute.tool}/${item.hosts.cursor.fallbackRoute.subtypeOrExecutor}`,
-            `      fallback reason: ${item.hosts.cursor.fallbackReason}`,
-            `    - claude carrier: ${item.hosts.claude.carrierSourcePath} -> ${item.hosts.claude.runtimeTargetPath}`,
-            `      preferred=${item.hosts.claude.preferredRoute.tool}/${item.hosts.claude.preferredRoute.subtypeOrExecutor} | fallback=${item.hosts.claude.fallbackRoute.tool}/${item.hosts.claude.fallbackRoute.subtypeOrExecutor}`,
-            `      fallback reason: ${item.hosts.claude.fallbackReason}`,
-            `    - route reason: ${item.routeReasonSummary}`,
-            `    - fallback status: ${item.fallbackStatus}`,
-            `    - complexity: ${item.complexitySource}`,
-            `    - blocker: ${item.remainingBlocker}`,
-            `    - rollout gate: ${item.rolloutGate.status} -> ${item.rolloutGate.summary}`,
-          ])
-        : ['  - (none)']
-    ),
+    ...(decision.reviewerRouteExplainability && decision.reviewerRouteExplainability.length > 0
+      ? decision.reviewerRouteExplainability.flatMap((item) => [
+          `  - ${item.requestedSkillId} => identity=${item.reviewerIdentity}; registry=${item.registryVersion}; closeout=${item.closeoutRunner}; maturity=${item.isomorphismMaturity}`,
+          `    - shared core: ${item.sharedCore.rootPath} [${item.sharedCore.version}]`,
+          `    - cursor carrier: ${item.hosts.cursor.carrierSourcePath} -> ${item.hosts.cursor.runtimeTargetPath}`,
+          `      preferred=${item.hosts.cursor.preferredRoute.tool}/${item.hosts.cursor.preferredRoute.subtypeOrExecutor} | fallback=${item.hosts.cursor.fallbackRoute.tool}/${item.hosts.cursor.fallbackRoute.subtypeOrExecutor}`,
+          `      fallback reason: ${item.hosts.cursor.fallbackReason}`,
+          `    - claude carrier: ${item.hosts.claude.carrierSourcePath} -> ${item.hosts.claude.runtimeTargetPath}`,
+          `      preferred=${item.hosts.claude.preferredRoute.tool}/${item.hosts.claude.preferredRoute.subtypeOrExecutor} | fallback=${item.hosts.claude.fallbackRoute.tool}/${item.hosts.claude.fallbackRoute.subtypeOrExecutor}`,
+          `      fallback reason: ${item.hosts.claude.fallbackReason}`,
+          `    - route reason: ${item.routeReasonSummary}`,
+          `    - fallback status: ${item.fallbackStatus}`,
+          `    - complexity: ${item.complexitySource}`,
+          `    - blocker: ${item.remainingBlocker}`,
+          `    - rollout gate: ${item.rolloutGate.status} -> ${item.rolloutGate.summary}`,
+        ])
+      : ['  - (none)']),
     `- Governance Constraints: ${decision.governanceConstraints.join(', ') || '(none)'}`,
     `- Blocked By Governance: ${decision.blockedByGovernance.join(', ') || '(none)'}`,
     `- Advisory Only: ${decision.advisoryOnly ? 'yes' : 'no'}`,
@@ -480,7 +456,8 @@ function buildStructuredDeferredGapLines(input: {
     if (prodPathRefs.length > 0) lines.push(`    prod_path_refs: [${prodPathRefs.join(', ')}]`);
     if (smokeTestRefs.length > 0) lines.push(`    smoke_test_refs: [${smokeTestRefs.join(', ')}]`);
     if (fullE2ERefs.length > 0) lines.push(`    full_e2e_refs: [${fullE2ERefs.join(', ')}]`);
-    if (closureNoteRefs.length > 0) lines.push(`    closure_note_refs: [${closureNoteRefs.join(', ')}]`);
+    if (closureNoteRefs.length > 0)
+      lines.push(`    closure_note_refs: [${closureNoteRefs.join(', ')}]`);
   }
   lines.push('```');
   return lines;
@@ -719,7 +696,9 @@ function argValue(args: string[], flag: string): string | undefined {
 
 function main(): void {
   const argvTokens = process.argv.map((value) => path.basename(String(value)).toLowerCase());
-  const isDirectArtifactCli = argvTokens.some((value) => value.includes('governance-remediation-artifact'));
+  const isDirectArtifactCli = argvTokens.some((value) =>
+    value.includes('governance-remediation-artifact')
+  );
   if (process.env.BMAD_DISABLE_EMBEDDED_GOVERNANCE_CLIS === '1') {
     return;
   }
@@ -740,8 +719,14 @@ function main(): void {
     projectRoot,
     outputPath,
     promptText: argValue(args, '--promptText'),
-    stageContextKnown: parseBooleanFlag(argValue(args, '--stageContextKnown'), '--stageContextKnown'),
-    gateFailureExists: parseBooleanFlag(argValue(args, '--gateFailureExists'), '--gateFailureExists'),
+    stageContextKnown: parseBooleanFlag(
+      argValue(args, '--stageContextKnown'),
+      '--stageContextKnown'
+    ),
+    gateFailureExists: parseBooleanFlag(
+      argValue(args, '--gateFailureExists'),
+      '--gateFailureExists'
+    ),
     blockerOwnershipLocked: parseBooleanFlag(
       argValue(args, '--blockerOwnershipLocked'),
       '--blockerOwnershipLocked'

@@ -18,7 +18,9 @@ describe('reviewer shared core contract', () => {
     expect(REVIEWER_SHARED_CORE_VERSION).toBe('reviewer_shared_core_v1');
     expect(REVIEWER_SHARED_CORE_METADATA.identity).toBe('bmad_code_reviewer');
     expect(REVIEWER_SHARED_CORE_METADATA.hostAdapterProjectionOnly).toBe(true);
-    expect(REVIEWER_SHARED_CORE_METADATA.basePromptPath).toBe(REVIEWER_SHARED_CORE_BASE_PROMPT_PATH);
+    expect(REVIEWER_SHARED_CORE_METADATA.basePromptPath).toBe(
+      REVIEWER_SHARED_CORE_BASE_PROMPT_PATH
+    );
     expect(REVIEWER_SHARED_CORE_METADATA.profilePackPath).toBe(
       REVIEWER_SHARED_CORE_PROFILE_PACK_PATH
     );

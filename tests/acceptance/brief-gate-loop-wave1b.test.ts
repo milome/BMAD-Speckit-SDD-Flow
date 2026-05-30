@@ -20,7 +20,9 @@ describe('wave 1B brief gate loop wiring', () => {
     const draftAndReview = load(
       '_bmad/bmm/workflows/1-analysis/bmad-product-brief-preview/prompts/draft-and-review.md'
     );
-    const finalize = load('_bmad/bmm/workflows/1-analysis/bmad-product-brief-preview/prompts/finalize.md');
+    const finalize = load(
+      '_bmad/bmm/workflows/1-analysis/bmad-product-brief-preview/prompts/finalize.md'
+    );
 
     expect(skill).toContain('Known Unknowns');
     expect(skill).toContain('Contradiction Log');
@@ -75,7 +77,9 @@ describe('wave 1B brief gate loop wiring', () => {
   it('pm and party-mode define stage-aware gate ownership and exit criteria', () => {
     const pm = load('_bmad/bmm/agents/pm.md');
     const partyModeWorkflow = load('_bmad/core/workflows/party-mode/workflow.md');
-    const partyModeStep02 = load('_bmad/core/workflows/party-mode/steps/step-02-discussion-orchestration.md');
+    const partyModeStep02 = load(
+      '_bmad/core/workflows/party-mode/steps/step-02-discussion-orchestration.md'
+    );
 
     expect(pm).toContain('If a blocker gate fails');
     expect(pm).toContain('PM may not continue downstream');

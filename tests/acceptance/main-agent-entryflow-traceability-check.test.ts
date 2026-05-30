@@ -5,7 +5,8 @@ import { describe, expect, it } from 'vitest';
 import { mainEntryFlowTraceabilityCheck } from '../../scripts/main-agent-entryflow-traceability-check';
 
 const SOURCE_HASH = 'sha256:1111111111111111111111111111111111111111111111111111111111111111';
-const IMPLEMENTATION_HASH = 'sha256:2222222222222222222222222222222222222222222222222222222222222222';
+const IMPLEMENTATION_HASH =
+  'sha256:2222222222222222222222222222222222222222222222222222222222222222';
 
 const GLOBAL_TRACEABILITY_POLICY = {
   schemaVersion: 'global-contract-traceability-policy/v1',
@@ -114,22 +115,17 @@ function writeRecord(root: string, overrides: Record<string, unknown> = {}): str
         recordedBy: 'test',
       },
     ],
-    requirementClosures: [
-      'MUST-023',
-      'NEG-011',
-      'OUT-009',
-      'EVD-001',
-      'EVD-004',
-      'EVD-023',
-    ].map((requirementId) => ({
-      eventType: 'requirement_closure_recorded',
-      recordId: 'REQ-ENTRYFLOW',
-      requirementSetId: 'REQ-ENTRYFLOW',
-      requirementId,
-      status: 'pass',
-      recordedAt: '2026-05-19T00:00:00.000Z',
-      recordedBy: 'test',
-    })),
+    requirementClosures: ['MUST-023', 'NEG-011', 'OUT-009', 'EVD-001', 'EVD-004', 'EVD-023'].map(
+      (requirementId) => ({
+        eventType: 'requirement_closure_recorded',
+        recordId: 'REQ-ENTRYFLOW',
+        requirementSetId: 'REQ-ENTRYFLOW',
+        requirementId,
+        status: 'pass',
+        recordedAt: '2026-05-19T00:00:00.000Z',
+        recordedBy: 'test',
+      })
+    ),
     artifactIndex: [],
     ...overrides,
   });

@@ -38,7 +38,13 @@ const EXECUTION_STATUSES = new Set([
 ]);
 const CLOSURE_STATUSES = new Set(['open', 'pass', 'fail', 'blocked']);
 const GATE_DECISIONS = new Set(['pass', 'fail', 'blocked', 'not_applicable', 'skipped_by_policy']);
-const CONTRACT_DECISIONS = new Set(['pass', 'fail', 'blocked', 'not_applicable', 'skipped_by_policy']);
+const CONTRACT_DECISIONS = new Set([
+  'pass',
+  'fail',
+  'blocked',
+  'not_applicable',
+  'skipped_by_policy',
+]);
 const ENTRY_FLOWS = new Set(['story', 'bugfix', 'standalone_tasks']);
 const ENTRY_FLOW_CLASSES = new Set(['full_story_entry', 'corrective_entry', 'task_packet_entry']);
 const WORKFLOW_ADAPTERS = new Set(['bmad', 'speckit', 'direct', 'legacy']);
@@ -109,7 +115,10 @@ function text(value: unknown): string {
 
 function arrayOfObjects(value: unknown): JsonObject[] {
   return Array.isArray(value)
-    ? value.filter((item): item is JsonObject => Boolean(item) && typeof item === 'object' && !Array.isArray(item))
+    ? value.filter(
+        (item): item is JsonObject =>
+          Boolean(item) && typeof item === 'object' && !Array.isArray(item)
+      )
     : [];
 }
 
@@ -155,7 +164,9 @@ function sha256File(file: string): string {
 function sha256Directory(directory: string): string {
   const entries: string[] = [];
   const walk = (current: string): void => {
-    for (const entry of fs.readdirSync(current, { withFileTypes: true }).sort((left, right) => left.name.localeCompare(right.name))) {
+    for (const entry of fs
+      .readdirSync(current, { withFileTypes: true })
+      .sort((left, right) => left.name.localeCompare(right.name))) {
       const absolute = path.join(current, entry.name);
       const relative = normalizePathForRecord(path.relative(directory, absolute));
       if (entry.isDirectory()) {
@@ -184,7 +195,10 @@ function containsForbiddenField(value: unknown, field: string): boolean {
   if (!value || typeof value !== 'object') return false;
   if (Array.isArray(value)) return value.some((item) => containsForbiddenField(item, field));
   const obj = value as JsonObject;
-  return Object.prototype.hasOwnProperty.call(obj, field) || Object.values(obj).some((item) => containsForbiddenField(item, field));
+  return (
+    Object.prototype.hasOwnProperty.call(obj, field) ||
+    Object.values(obj).some((item) => containsForbiddenField(item, field))
+  );
 }
 
 function legacyResultToDecision(value: unknown): string {
@@ -225,7 +239,9 @@ function closureInputs(packet: JsonObject): JsonObject[] {
   const explicitClosures = arrayOfObjects(packet.requirementClosures);
   if (text(packet.status) !== 'done') return explicitClosures;
 
-  const explicitRequirementIds = new Set(explicitClosures.map((closure) => text(closure.requirementId)).filter(Boolean));
+  const explicitRequirementIds = new Set(
+    explicitClosures.map((closure) => text(closure.requirementId)).filter(Boolean)
+  );
   const traceClosures = arrayOfStrings(packet.traceRows)
     .filter((traceRow) => !explicitRequirementIds.has(traceRow))
     .map((traceRow) => ({
@@ -259,7 +275,9 @@ function requireHashMatch(packet: JsonObject, record: JsonObject): string[] {
     mismatches.push('architecture_confirmation_state_missing');
   } else if (text(state.status) !== 'active') {
     mismatches.push('architecture_confirmation_not_active');
-  } else if (text(packet.architectureConfirmationHash) !== text(state.currentArchitectureConfirmationHash)) {
+  } else if (
+    text(packet.architectureConfirmationHash) !== text(state.currentArchitectureConfirmationHash)
+  ) {
     mismatches.push('architecture_confirmation_hash_mismatch');
   }
   return mismatches;
@@ -281,7 +299,8 @@ function sourceRefs(packet: JsonObject): JsonObject[] {
   const refs: JsonObject[] = [];
   for (const id of arrayOfStrings(packet.traceRows)) refs.push({ sourceType: 'trace_row', id });
   for (const id of arrayOfStrings(packet.evidenceRefs)) refs.push({ sourceType: 'evidence', id });
-  for (const run of arrayOfObjects(packet.commandRuns)) refs.push({ sourceType: 'command_run', id: text(run.commandId) });
+  for (const run of arrayOfObjects(packet.commandRuns))
+    refs.push({ sourceType: 'command_run', id: text(run.commandId) });
   return refs.filter((ref) => text(ref.id));
 }
 
@@ -316,7 +335,8 @@ function validateArtifacts(packet: JsonObject): string[] {
     if (!hash) mismatches.push(`${prefix}_artifact_hash_missing`);
     if (!text(artifact.artifactType)) mismatches.push(`${prefix}_artifact_type_missing`);
     if (!role) mismatches.push(`${prefix}_artifact_source_of_truth_role_missing`);
-    if (passGradeOnly && role !== 'evidence') mismatches.push(`${prefix}_artifact_source_of_truth_role_not_evidence`);
+    if (passGradeOnly && role !== 'evidence')
+      mismatches.push(`${prefix}_artifact_source_of_truth_role_not_evidence`);
     if (!text(artifact.producer)) mismatches.push(`${prefix}_artifact_producer_missing`);
     if (!text(artifact.purpose)) mismatches.push(`${prefix}_artifact_purpose_missing`);
     if (arrayOfStrings(artifact.relatedRequirementIds).length === 0) {
@@ -328,7 +348,9 @@ function validateArtifacts(packet: JsonObject): string[] {
     if (LEGACY_WRITE_PATH_PREFIXES.some((prefix) => normalizedPath.startsWith(prefix))) {
       mismatches.push(`artifact_legacy_write_path_forbidden:${normalizedPath}`);
     }
-    const absolute = path.isAbsolute(artifactPath) ? artifactPath : path.resolve(process.cwd(), artifactPath);
+    const absolute = path.isAbsolute(artifactPath)
+      ? artifactPath
+      : path.resolve(process.cwd(), artifactPath);
     if (artifactPath && fs.existsSync(absolute) && hash && sha256ExistingPath(absolute) !== hash) {
       mismatches.push(`artifact_hash_mismatch:${artifactPath}`);
     }
@@ -359,12 +381,14 @@ function validateImplementationDelta(packet: JsonObject): string[] {
     mismatches.push('implementation_delta_missing');
     return mismatches;
   }
-  if (arrayOfStrings(delta.filesChanged).length === 0) mismatches.push('implementation_delta_files_changed_missing');
+  if (arrayOfStrings(delta.filesChanged).length === 0)
+    mismatches.push('implementation_delta_files_changed_missing');
   if (!text(delta.diffSummaryRef)) mismatches.push('implementation_delta_diff_summary_ref_missing');
   if (arrayOfObjects(delta.negativeAssertionArtifactRefs).length === 0) {
     mismatches.push('implementation_delta_negative_assertion_artifact_refs_missing');
   }
-  if (delta.behaviorAffecting !== true) mismatches.push('implementation_delta_not_behavior_affecting');
+  if (delta.behaviorAffecting !== true)
+    mismatches.push('implementation_delta_not_behavior_affecting');
   return mismatches;
 }
 
@@ -380,12 +404,18 @@ function validateEntryFlowState(packet: JsonObject): string[] {
   const entryFlowClass = text(entryFlowState.entryFlowClass);
   const workflowAdapter = text(entryFlowState.workflowAdapter);
   if (!ENTRY_FLOWS.has(entryFlow)) mismatches.push('entry_flow_state_entry_flow_invalid');
-  if (!ENTRY_FLOW_CLASSES.has(entryFlowClass)) mismatches.push('entry_flow_state_entry_flow_class_invalid');
-  if (!WORKFLOW_ADAPTERS.has(workflowAdapter)) mismatches.push('entry_flow_state_workflow_adapter_invalid');
+  if (!ENTRY_FLOW_CLASSES.has(entryFlowClass))
+    mismatches.push('entry_flow_state_entry_flow_class_invalid');
+  if (!WORKFLOW_ADAPTERS.has(workflowAdapter))
+    mismatches.push('entry_flow_state_workflow_adapter_invalid');
   if (entryFlowState.contractAuthoringRequired !== true) {
     mismatches.push('entry_flow_state_contract_authoring_required_not_true');
   }
-  if (['bmad-story-assistant', 'speckit_story', 'speckit_tasks', 'speckit_implement'].includes(entryFlow)) {
+  if (
+    ['bmad-story-assistant', 'speckit_story', 'speckit_tasks', 'speckit_implement'].includes(
+      entryFlow
+    )
+  ) {
     mismatches.push('entry_flow_state_forbidden_top_level_entry_flow');
   }
   if (entryFlow === 'story' && entryFlowClass !== 'full_story_entry') {
@@ -400,7 +430,10 @@ function validateEntryFlowState(packet: JsonObject): string[] {
   return mismatches;
 }
 
-function validateGlobalContractTraceabilityPolicy(policy: JsonObject | undefined, prefix: string): string[] {
+function validateGlobalContractTraceabilityPolicy(
+  policy: JsonObject | undefined,
+  prefix: string
+): string[] {
   const mismatches: string[] = [];
   if (!policy || typeof policy !== 'object' || Array.isArray(policy)) {
     return [`${prefix}_global_contract_traceability_policy_missing`];
@@ -410,15 +443,18 @@ function validateGlobalContractTraceabilityPolicy(policy: JsonObject | undefined
   }
   const flows = new Set(arrayOfStrings(policy.appliesToEntryFlows));
   for (const flow of ENTRY_FLOWS) {
-    if (!flows.has(flow)) mismatches.push(`${prefix}_traceability_policy_missing_entry_flow:${flow}`);
+    if (!flows.has(flow))
+      mismatches.push(`${prefix}_traceability_policy_missing_entry_flow:${flow}`);
   }
   if (policy.contractAuthoringRequired !== true) {
     mismatches.push(`${prefix}_traceability_policy_contract_authoring_not_required`);
   }
-  if (policy.taskBindingRequired !== true) mismatches.push(`${prefix}_traceability_policy_task_binding_not_required`);
+  if (policy.taskBindingRequired !== true)
+    mismatches.push(`${prefix}_traceability_policy_task_binding_not_required`);
   const dimensions = new Set(arrayOfStrings(policy.taskBindingDimensions));
   for (const dimension of TRACEABILITY_DIMENSIONS) {
-    if (!dimensions.has(dimension)) mismatches.push(`${prefix}_traceability_policy_missing_dimension:${dimension}`);
+    if (!dimensions.has(dimension))
+      mismatches.push(`${prefix}_traceability_policy_missing_dimension:${dimension}`);
   }
   if (text(policy.missingBindingBehavior) !== 'fail_closed') {
     mismatches.push(`${prefix}_traceability_policy_missing_binding_not_fail_closed`);
@@ -443,17 +479,27 @@ function validateTraceStatusPolicy(policy: JsonObject | undefined, prefix: strin
   if (!policy || typeof policy !== 'object' || Array.isArray(policy)) {
     return [`${prefix}_trace_status_policy_missing`];
   }
-  if (text(policy.schemaVersion) !== 'trace-status-policy/v1') mismatches.push(`${prefix}_trace_status_policy_schema_version_invalid`);
+  if (text(policy.schemaVersion) !== 'trace-status-policy/v1')
+    mismatches.push(`${prefix}_trace_status_policy_schema_version_invalid`);
   const allowed = new Set(arrayOfStrings(policy.allowedStatuses));
   for (const status of TRACE_ALLOWED_STATUSES) {
-    if (!allowed.has(status)) mismatches.push(`${prefix}_trace_status_policy_missing_allowed_status:${status}`);
+    if (!allowed.has(status))
+      mismatches.push(`${prefix}_trace_status_policy_missing_allowed_status:${status}`);
   }
   const terminal = new Set(arrayOfStrings(policy.terminalFullCloseoutStatuses));
   for (const status of ['PASS', 'FAIL', 'BLOCKED']) {
-    if (!terminal.has(status)) mismatches.push(`${prefix}_trace_status_policy_missing_terminal_status:${status}`);
+    if (!terminal.has(status))
+      mismatches.push(`${prefix}_trace_status_policy_missing_terminal_status:${status}`);
   }
-  for (const status of ['LINKED_DOWNSTREAM', 'USER_APPROVED_DEFERRED', 'USER_APPROVED_OUT_OF_SCOPE']) {
-    if (terminal.has(status)) mismatches.push(`${prefix}_trace_status_policy_user_scoped_status_can_full_closeout:${status}`);
+  for (const status of [
+    'LINKED_DOWNSTREAM',
+    'USER_APPROVED_DEFERRED',
+    'USER_APPROVED_OUT_OF_SCOPE',
+  ]) {
+    if (terminal.has(status))
+      mismatches.push(
+        `${prefix}_trace_status_policy_user_scoped_status_can_full_closeout:${status}`
+      );
   }
   if (arrayOfStrings(policy.linkedDownstreamRequiredFields).length < 7) {
     mismatches.push(`${prefix}_trace_status_policy_linked_downstream_fields_incomplete`);
@@ -464,8 +510,10 @@ function validateTraceStatusPolicy(policy: JsonObject | undefined, prefix: strin
   if (arrayOfStrings(policy.userApprovedOutOfScopeRequiredFields).length < 4) {
     mismatches.push(`${prefix}_trace_status_policy_user_out_of_scope_fields_incomplete`);
   }
-  if (policy.bareDeferredForbidden !== true) mismatches.push(`${prefix}_trace_status_policy_bare_deferred_not_forbidden`);
-  if (policy.bareOutOfScopeForbidden !== true) mismatches.push(`${prefix}_trace_status_policy_bare_out_of_scope_not_forbidden`);
+  if (policy.bareDeferredForbidden !== true)
+    mismatches.push(`${prefix}_trace_status_policy_bare_deferred_not_forbidden`);
+  if (policy.bareOutOfScopeForbidden !== true)
+    mismatches.push(`${prefix}_trace_status_policy_bare_out_of_scope_not_forbidden`);
   if (policy.fullCloseoutForUserScopedStatusesForbidden !== true) {
     mismatches.push(`${prefix}_trace_status_policy_user_scoped_full_closeout_not_forbidden`);
   }
@@ -492,15 +540,22 @@ function validateRuntimePolicySnapshotRef(packet: JsonObject): string[] {
   if (!['evidence', 'projection', 'read_model'].includes(role)) {
     mismatches.push('runtime_policy_snapshot_ref_source_of_truth_role_invalid');
   }
-  if (!text(runtimePolicySnapshotRef.producer)) mismatches.push('runtime_policy_snapshot_ref_producer_missing');
-  if (!text(runtimePolicySnapshotRef.purpose)) mismatches.push('runtime_policy_snapshot_ref_purpose_missing');
+  if (!text(runtimePolicySnapshotRef.producer))
+    mismatches.push('runtime_policy_snapshot_ref_producer_missing');
+  if (!text(runtimePolicySnapshotRef.purpose))
+    mismatches.push('runtime_policy_snapshot_ref_purpose_missing');
   if (arrayOfStrings(runtimePolicySnapshotRef.relatedRequirementIds).length === 0) {
     mismatches.push('runtime_policy_snapshot_ref_related_requirement_ids_missing');
   }
-  if (!text(runtimePolicySnapshotRef.status)) mismatches.push('runtime_policy_snapshot_ref_status_missing');
-  if (!text(runtimePolicySnapshotRef.inputVersion)) mismatches.push('runtime_policy_snapshot_ref_input_version_missing');
-  if (!text(runtimePolicySnapshotRef.outputVersion)) mismatches.push('runtime_policy_snapshot_ref_output_version_missing');
-  const absolute = path.isAbsolute(artifactPath) ? artifactPath : path.resolve(process.cwd(), artifactPath);
+  if (!text(runtimePolicySnapshotRef.status))
+    mismatches.push('runtime_policy_snapshot_ref_status_missing');
+  if (!text(runtimePolicySnapshotRef.inputVersion))
+    mismatches.push('runtime_policy_snapshot_ref_input_version_missing');
+  if (!text(runtimePolicySnapshotRef.outputVersion))
+    mismatches.push('runtime_policy_snapshot_ref_output_version_missing');
+  const absolute = path.isAbsolute(artifactPath)
+    ? artifactPath
+    : path.resolve(process.cwd(), artifactPath);
   if (artifactPath && fs.existsSync(absolute) && hash && sha256File(absolute) !== hash) {
     mismatches.push(`runtime_policy_snapshot_ref_hash_mismatch:${artifactPath}`);
   }
@@ -531,29 +586,39 @@ function validateHookReconciliation(packet: JsonObject): string[] {
   const hashMismatches = arrayOfObjects(hookReconciliation.hashMismatches);
   const noHookFallbackRefs = arrayOfObjects(hookReconciliation.noHookFallbackRefs);
 
-  if (schemaVersion !== 'hook-reconciliation/v1') mismatches.push('hook_reconciliation_schema_version_invalid');
-  if (!['codex', 'cursor', 'claude', 'unknown'].includes(hostKind)) mismatches.push('hook_reconciliation_host_kind_invalid');
-  if (!['hooks_enabled', 'no_hooks', 'unknown'].includes(hostMode)) mismatches.push('hook_reconciliation_host_mode_invalid');
-  if (!['trusted', 'degraded', 'untrusted', 'unknown'].includes(hookTrust)) mismatches.push('hook_reconciliation_hook_trust_invalid');
+  if (schemaVersion !== 'hook-reconciliation/v1')
+    mismatches.push('hook_reconciliation_schema_version_invalid');
+  if (!['codex', 'cursor', 'claude', 'unknown'].includes(hostKind))
+    mismatches.push('hook_reconciliation_host_kind_invalid');
+  if (!['hooks_enabled', 'no_hooks', 'unknown'].includes(hostMode))
+    mismatches.push('hook_reconciliation_host_mode_invalid');
+  if (!['trusted', 'degraded', 'untrusted', 'unknown'].includes(hookTrust))
+    mismatches.push('hook_reconciliation_hook_trust_invalid');
   if (!['none', 'no_hooks', 'bounded_replay', 'blocked'].includes(fallbackMode)) {
     mismatches.push('hook_reconciliation_fallback_mode_invalid');
   }
   if (!sequenceLedger) {
     mismatches.push('hook_reconciliation_sequence_ledger_missing');
-  } else if (!['clean', 'reconciled', 'gap', 'missing', 'stale', 'unknown'].includes(sequenceStatus)) {
+  } else if (
+    !['clean', 'reconciled', 'gap', 'missing', 'stale', 'unknown'].includes(sequenceStatus)
+  ) {
     mismatches.push('hook_reconciliation_sequence_status_invalid');
   }
   for (const receipt of missingReceipts) {
-    if (!text(receipt.receiptType)) mismatches.push('hook_reconciliation_missing_receipt_type_missing');
-    if (!text(receipt.expectedEventId)) mismatches.push('hook_reconciliation_missing_receipt_expected_event_id_missing');
+    if (!text(receipt.receiptType))
+      mismatches.push('hook_reconciliation_missing_receipt_type_missing');
+    if (!text(receipt.expectedEventId))
+      mismatches.push('hook_reconciliation_missing_receipt_expected_event_id_missing');
   }
   for (const mismatch of hashMismatches) {
     if (!text(mismatch.field)) mismatches.push('hook_reconciliation_hash_mismatch_field_missing');
-    if (!text(mismatch.expected)) mismatches.push('hook_reconciliation_hash_mismatch_expected_missing');
+    if (!text(mismatch.expected))
+      mismatches.push('hook_reconciliation_hash_mismatch_expected_missing');
     if (!text(mismatch.actual)) mismatches.push('hook_reconciliation_hash_mismatch_actual_missing');
   }
   for (const ref of noHookFallbackRefs) {
-    if (!text(ref.sourceType)) mismatches.push('hook_reconciliation_fallback_ref_source_type_missing');
+    if (!text(ref.sourceType))
+      mismatches.push('hook_reconciliation_fallback_ref_source_type_missing');
     if (!text(ref.id)) mismatches.push('hook_reconciliation_fallback_ref_id_missing');
   }
   if (
@@ -586,12 +651,17 @@ function validateFailureRecords(packet: JsonObject): string[] {
     }
     if (!text(failure.failureId)) mismatches.push('failure_record_id_missing');
     if (!text(failure.type)) mismatches.push('failure_record_type_missing');
-    if (!['open', 'in_progress', 'resolved', 'blocked', 'superseded'].includes(text(failure.status))) {
+    if (
+      !['open', 'in_progress', 'resolved', 'blocked', 'superseded'].includes(text(failure.status))
+    ) {
       mismatches.push('failure_record_status_invalid');
     }
-    if (arrayOfObjects(failure.sourceRefs).length === 0) mismatches.push('failure_record_source_refs_missing');
-    if (Object.prototype.hasOwnProperty.call(failure, 'result')) mismatches.push('failure_record_result_forbidden');
-    if (Object.prototype.hasOwnProperty.call(failure, 'decision')) mismatches.push('failure_record_decision_forbidden');
+    if (arrayOfObjects(failure.sourceRefs).length === 0)
+      mismatches.push('failure_record_source_refs_missing');
+    if (Object.prototype.hasOwnProperty.call(failure, 'result'))
+      mismatches.push('failure_record_result_forbidden');
+    if (Object.prototype.hasOwnProperty.call(failure, 'decision'))
+      mismatches.push('failure_record_decision_forbidden');
   }
   return mismatches;
 }
@@ -607,9 +677,12 @@ function validateRcaRecords(packet: JsonObject): string[] {
     if (!['open', 'in_progress', 'resolved', 'blocked'].includes(text(rca.status))) {
       mismatches.push('rca_record_status_invalid');
     }
-    if (arrayOfObjects(rca.sourceRefs).length === 0) mismatches.push('rca_record_source_refs_missing');
-    if (Object.prototype.hasOwnProperty.call(rca, 'result')) mismatches.push('rca_record_result_forbidden');
-    if (Object.prototype.hasOwnProperty.call(rca, 'decision')) mismatches.push('rca_record_decision_forbidden');
+    if (arrayOfObjects(rca.sourceRefs).length === 0)
+      mismatches.push('rca_record_source_refs_missing');
+    if (Object.prototype.hasOwnProperty.call(rca, 'result'))
+      mismatches.push('rca_record_result_forbidden');
+    if (Object.prototype.hasOwnProperty.call(rca, 'decision'))
+      mismatches.push('rca_record_decision_forbidden');
   }
   return mismatches;
 }
@@ -618,19 +691,32 @@ function validateRerunLoops(packet: JsonObject): string[] {
   const mismatches: string[] = [];
   for (const loop of arrayOfObjects(packet.rerunLoops)) {
     if (!text(loop.rerunLoopId)) mismatches.push('rerun_loop_id_missing');
-    if (!['open', 'in_progress', 'no_progress', 'resolved', 'blocked', 'abandoned_by_user_confirmation'].includes(text(loop.status))) {
+    if (
+      ![
+        'open',
+        'in_progress',
+        'no_progress',
+        'resolved',
+        'blocked',
+        'abandoned_by_user_confirmation',
+      ].includes(text(loop.status))
+    ) {
       mismatches.push('rerun_loop_status_invalid');
     }
     const rerunSourceRefs = arrayOfObjects(loop.sourceRefs);
     if (rerunSourceRefs.length === 0) mismatches.push('rerun_loop_source_refs_missing');
     for (const sourceRef of rerunSourceRefs) {
       if (!RERUN_AUTHORITY_SOURCE_TYPES.has(text(sourceRef.sourceType))) {
-        mismatches.push(`rerun_loop_source_ref_type_invalid:${text(sourceRef.sourceType) || '<missing>'}`);
+        mismatches.push(
+          `rerun_loop_source_ref_type_invalid:${text(sourceRef.sourceType) || '<missing>'}`
+        );
       }
       if (!text(sourceRef.id)) mismatches.push('rerun_loop_source_ref_id_missing');
     }
-    if (Object.prototype.hasOwnProperty.call(loop, 'result')) mismatches.push('rerun_loop_result_forbidden');
-    if (Object.prototype.hasOwnProperty.call(loop, 'decision')) mismatches.push('rerun_loop_decision_forbidden');
+    if (Object.prototype.hasOwnProperty.call(loop, 'result'))
+      mismatches.push('rerun_loop_result_forbidden');
+    if (Object.prototype.hasOwnProperty.call(loop, 'decision'))
+      mismatches.push('rerun_loop_decision_forbidden');
     if (Object.prototype.hasOwnProperty.call(loop, 'trigger') && rerunSourceRefs.length === 0) {
       mismatches.push('rerun_loop_trigger_without_source_refs');
     }
@@ -644,7 +730,10 @@ function validateSubagentEvidenceEnvelopePacket(packet: JsonObject, record: Json
   const validation = validateSubagentEvidenceEnvelope(envelope, {
     record,
     projectRoot: process.cwd(),
-    indexedArtifactRefs: [...arrayOfObjects(packet.artifactRefs), ...arrayOfObjects(packet.extensionRefs)],
+    indexedArtifactRefs: [
+      ...arrayOfObjects(packet.artifactRefs),
+      ...arrayOfObjects(packet.extensionRefs),
+    ],
     expectedParentCloseoutAttemptId: text(packet.closeoutAttemptId),
   });
   return validation.ok ? [] : validation.mismatches;
@@ -652,7 +741,9 @@ function validateSubagentEvidenceEnvelopePacket(packet: JsonObject, record: Json
 
 function validatePacket(packet: JsonObject, record: JsonObject): string[] {
   const entryFlowState =
-    packet.entryFlowState && typeof packet.entryFlowState === 'object' && !Array.isArray(packet.entryFlowState)
+    packet.entryFlowState &&
+    typeof packet.entryFlowState === 'object' &&
+    !Array.isArray(packet.entryFlowState)
       ? (packet.entryFlowState as JsonObject)
       : undefined;
   const effectiveTraceabilityPolicy =
@@ -687,7 +778,8 @@ function validatePacket(packet: JsonObject, record: JsonObject): string[] {
     gateChecks: normalizeGateChecks(packet),
     contractChecks: normalizeContractChecks(packet),
   };
-  if (containsForbiddenField(packetWithoutLegacyGateResults, 'result')) mismatches.push('forbidden_result_field');
+  if (containsForbiddenField(packetWithoutLegacyGateResults, 'result'))
+    mismatches.push('forbidden_result_field');
   if (containsForbiddenField(packet, 'fullDiff')) mismatches.push('forbidden_inline_full_diff');
   if (containsForbiddenField(packet, 'diffPatch')) mismatches.push('forbidden_inline_diff_patch');
   if (containsForbiddenField(packet, 'inlineDiff')) mismatches.push('forbidden_inline_diff');
@@ -707,14 +799,16 @@ function validatePacket(packet: JsonObject, record: JsonObject): string[] {
   }
   for (const contractCheck of normalizeContractChecks(packet)) {
     if (!text(contractCheck.contract)) mismatches.push('contract_check_contract_missing');
-    if (!CONTRACT_DECISIONS.has(text(contractCheck.decision))) mismatches.push('contract_check_decision_invalid');
+    if (!CONTRACT_DECISIONS.has(text(contractCheck.decision)))
+      mismatches.push('contract_check_decision_invalid');
   }
   const deliveryEvidence = packet.deliveryEvidence as JsonObject | undefined;
   for (const command of arrayOfObjects(deliveryEvidence?.requiredCommands)) {
     if (!text(command.commandId)) mismatches.push('required_command_id_missing');
     if (!text(command.command)) mismatches.push('required_command_missing');
     if (command.blockingIfMissing !== true) mismatches.push('required_command_not_blocking');
-    if (arrayOfObjects(command.artifactRefs).length === 0) mismatches.push('required_command_artifact_refs_missing');
+    if (arrayOfObjects(command.artifactRefs).length === 0)
+      mismatches.push('required_command_artifact_refs_missing');
   }
   return [...new Set(mismatches)];
 }
@@ -732,27 +826,38 @@ function commandRunRefs(packet: JsonObject): JsonObject[] {
   }));
 }
 
-function artifactEvents(packet: JsonObject, recordId: string, requirementSetId: string): JsonObject[] {
-  return [...arrayOfObjects(packet.artifactRefs), ...arrayOfObjects(packet.extensionRefs)].map((artifact) => ({
-    eventType: 'artifact_indexed',
-    artifactType: text(artifact.artifactType) || 'implementation_evidence',
-    sourceOfTruthRole: normalizeSourceOfTruthRole(artifact.sourceOfTruthRole),
-    recordId,
-    requirementSetId,
-    path: normalizePathForRecord(text(artifact.path)),
-    contentHash: text(artifact.hash ?? artifact.contentHash),
-    producer: text(artifact.producer) || 'ingest-implementation-evidence',
-    purpose: text(artifact.purpose),
-    relatedRequirementIds: arrayOfStrings(artifact.relatedRequirementIds),
-    status: text(artifact.status),
-    inputVersion: text(artifact.inputVersion),
-    outputVersion: text(artifact.outputVersion),
-    traceRows: arrayOfStrings(packet.traceRows),
-    evidenceRefs: arrayOfStrings(packet.evidenceRefs),
-  }));
+function artifactEvents(
+  packet: JsonObject,
+  recordId: string,
+  requirementSetId: string
+): JsonObject[] {
+  return [...arrayOfObjects(packet.artifactRefs), ...arrayOfObjects(packet.extensionRefs)].map(
+    (artifact) => ({
+      eventType: 'artifact_indexed',
+      artifactType: text(artifact.artifactType) || 'implementation_evidence',
+      sourceOfTruthRole: normalizeSourceOfTruthRole(artifact.sourceOfTruthRole),
+      recordId,
+      requirementSetId,
+      path: normalizePathForRecord(text(artifact.path)),
+      contentHash: text(artifact.hash ?? artifact.contentHash),
+      producer: text(artifact.producer) || 'ingest-implementation-evidence',
+      purpose: text(artifact.purpose),
+      relatedRequirementIds: arrayOfStrings(artifact.relatedRequirementIds),
+      status: text(artifact.status),
+      inputVersion: text(artifact.inputVersion),
+      outputVersion: text(artifact.outputVersion),
+      traceRows: arrayOfStrings(packet.traceRows),
+      evidenceRefs: arrayOfStrings(packet.evidenceRefs),
+    })
+  );
 }
 
-function evidencePacketArtifact(packet: JsonObject, evidencePath: string, recordId: string, requirementSetId: string): JsonObject {
+function evidencePacketArtifact(
+  packet: JsonObject,
+  evidencePath: string,
+  recordId: string,
+  requirementSetId: string
+): JsonObject {
   return {
     eventType: 'artifact_indexed',
     artifactType: 'implementation_evidence_packet',
@@ -784,9 +889,11 @@ function normalizeHistoricalArtifactRef(
   const pathValue = normalizePathForRecord(text(artifact.path));
   const relatedRequirementIds = arrayOfStrings(artifact.relatedRequirementIds).length
     ? arrayOfStrings(artifact.relatedRequirementIds)
-    : [...arrayOfStrings(artifact.evidenceRefs), ...arrayOfStrings(artifact.traceRows), ...fallbackRelatedRequirementIds].filter(
-        Boolean
-      );
+    : [
+        ...arrayOfStrings(artifact.evidenceRefs),
+        ...arrayOfStrings(artifact.traceRows),
+        ...fallbackRelatedRequirementIds,
+      ].filter(Boolean);
   return {
     ...artifact,
     eventType: text(artifact.eventType) || 'artifact_indexed',
@@ -797,7 +904,9 @@ function normalizeHistoricalArtifactRef(
     path: pathValue || '<missing-path>',
     contentHash: text(artifact.contentHash ?? artifact.hash) || undefined,
     producer: text(artifact.producer) || 'historical-controlled-ingest-normalization',
-    purpose: text(artifact.purpose) || 'retained historical artifact; not valid as current pass evidence until rerun with pass-grade metadata',
+    purpose:
+      text(artifact.purpose) ||
+      'retained historical artifact; not valid as current pass evidence until rerun with pass-grade metadata',
     relatedRequirementIds,
     status: text(artifact.status) || 'archived',
     inputVersion: text(artifact.inputVersion) || 'pre-artifact-metadata-enforcement',
@@ -807,23 +916,43 @@ function normalizeHistoricalArtifactRef(
   };
 }
 
-function normalizeHistoricalCommand(command: JsonObject, recordId: string, requirementSetId: string): JsonObject {
-  const fallbackRelatedRequirementIds = [...arrayOfStrings(command.evidenceRefs), ...arrayOfStrings(command.traceRows)];
+function normalizeHistoricalCommand(
+  command: JsonObject,
+  recordId: string,
+  requirementSetId: string
+): JsonObject {
+  const fallbackRelatedRequirementIds = [
+    ...arrayOfStrings(command.evidenceRefs),
+    ...arrayOfStrings(command.traceRows),
+  ];
   return {
     ...command,
     artifactRefs: arrayOfObjects(command.artifactRefs).map((artifact) =>
-      normalizeHistoricalArtifactRef(artifact, recordId, requirementSetId, fallbackRelatedRequirementIds)
+      normalizeHistoricalArtifactRef(
+        artifact,
+        recordId,
+        requirementSetId,
+        fallbackRelatedRequirementIds
+      )
     ),
   };
 }
 
-function updateRecord(record: JsonObject, packet: JsonObject, recordedAt: string, recordedBy: string, evidencePath = ''): JsonObject {
+function updateRecord(
+  record: JsonObject,
+  packet: JsonObject,
+  recordedAt: string,
+  recordedBy: string,
+  evidencePath = ''
+): JsonObject {
   const recordId = text(packet.recordId) || text(record.recordId);
   const requirementSetId = text(packet.requirementSetId) || text(record.requirementSetId);
   const refs = sourceRefs(packet);
   const commandRefs = commandRunRefs(packet);
   const artifactRefs = artifactEvents(packet, recordId, requirementSetId);
-  const packetArtifact = evidencePath ? evidencePacketArtifact(packet, evidencePath, recordId, requirementSetId) : undefined;
+  const packetArtifact = evidencePath
+    ? evidencePacketArtifact(packet, evidencePath, recordId, requirementSetId)
+    : undefined;
   const extensionRefs = artifactEvents(
     { ...packet, artifactRefs: arrayOfObjects(packet.extensionRefs), extensionRefs: [] },
     recordId,
@@ -851,17 +980,23 @@ function updateRecord(record: JsonObject, packet: JsonObject, recordedAt: string
     recordedBy,
   };
   const subagentEnvelope =
-    packet.subagentEvidenceEnvelope && typeof packet.subagentEvidenceEnvelope === 'object' && !Array.isArray(packet.subagentEvidenceEnvelope)
+    packet.subagentEvidenceEnvelope &&
+    typeof packet.subagentEvidenceEnvelope === 'object' &&
+    !Array.isArray(packet.subagentEvidenceEnvelope)
       ? (packet.subagentEvidenceEnvelope as JsonObject)
       : undefined;
-  const subagentEnvelopeValidation: SubagentEvidenceEnvelopeValidation | undefined = subagentEnvelope
-    ? validateSubagentEvidenceEnvelope(subagentEnvelope, {
-        record,
-        projectRoot: process.cwd(),
-        indexedArtifactRefs: [...arrayOfObjects(packet.artifactRefs), ...arrayOfObjects(packet.extensionRefs)],
-        expectedParentCloseoutAttemptId: text(packet.closeoutAttemptId),
-      })
-    : undefined;
+  const subagentEnvelopeValidation: SubagentEvidenceEnvelopeValidation | undefined =
+    subagentEnvelope
+      ? validateSubagentEvidenceEnvelope(subagentEnvelope, {
+          record,
+          projectRoot: process.cwd(),
+          indexedArtifactRefs: [
+            ...arrayOfObjects(packet.artifactRefs),
+            ...arrayOfObjects(packet.extensionRefs),
+          ],
+          expectedParentCloseoutAttemptId: text(packet.closeoutAttemptId),
+        })
+      : undefined;
   const subagentEnvelopeEvent = subagentEnvelope
     ? {
         eventType: 'subagent_evidence_envelope_recorded',
@@ -881,7 +1016,10 @@ function updateRecord(record: JsonObject, packet: JsonObject, recordedAt: string
         sourceRefs: subagentEnvelopeValidation?.sourceRefs ?? refs,
         sourceDocumentHash: text(subagentEnvelope.sourceDocumentHash),
         implementationConfirmationHash: text(subagentEnvelope.implementationConfirmationHash),
-        architectureConfirmationHash: resolvedArchitectureConfirmationHash(subagentEnvelope, record),
+        architectureConfirmationHash: resolvedArchitectureConfirmationHash(
+          subagentEnvelope,
+          record
+        ),
         recordedAt,
         recordedBy,
       }
@@ -916,7 +1054,9 @@ function updateRecord(record: JsonObject, packet: JsonObject, recordedAt: string
     eventType: 'contract_check_recorded',
     recordId,
     requirementSetId,
-    checkId: text(contractCheck.checkId) || `${text(packet.executionIterationId)}:${text(contractCheck.contract)}`,
+    checkId:
+      text(contractCheck.checkId) ||
+      `${text(packet.executionIterationId)}:${text(contractCheck.contract)}`,
     contract: text(contractCheck.contract),
     decision: text(contractCheck.decision),
     sourceRefs: refs,
@@ -943,15 +1083,19 @@ function updateRecord(record: JsonObject, packet: JsonObject, recordedAt: string
     recheckRefs: arrayOfObjects(loop.recheckRefs),
   }));
   const existingDeliveryEvidence =
-    record.deliveryEvidence && typeof record.deliveryEvidence === 'object' && !Array.isArray(record.deliveryEvidence)
+    record.deliveryEvidence &&
+    typeof record.deliveryEvidence === 'object' &&
+    !Array.isArray(record.deliveryEvidence)
       ? (record.deliveryEvidence as JsonObject)
       : {};
   const packetDeliveryEvidence =
-    packet.deliveryEvidence && typeof packet.deliveryEvidence === 'object' && !Array.isArray(packet.deliveryEvidence)
+    packet.deliveryEvidence &&
+    typeof packet.deliveryEvidence === 'object' &&
+    !Array.isArray(packet.deliveryEvidence)
       ? (packet.deliveryEvidence as JsonObject)
       : {};
-  const existingRequiredCommands = arrayOfObjects(existingDeliveryEvidence.requiredCommands).map((command) =>
-    normalizeHistoricalCommand(command, recordId, requirementSetId)
+  const existingRequiredCommands = arrayOfObjects(existingDeliveryEvidence.requiredCommands).map(
+    (command) => normalizeHistoricalCommand(command, recordId, requirementSetId)
   );
   const packetRequiredCommands = arrayOfObjects(packetDeliveryEvidence.requiredCommands);
   const packetRuntimePolicySnapshotRef =
@@ -967,18 +1111,24 @@ function updateRecord(record: JsonObject, packet: JsonObject, recordedAt: string
       ? (packet.hookReconciliation as JsonObject)
       : undefined;
   const requiredCommandsById = new Map<string, JsonObject>();
-  for (const command of existingRequiredCommands) requiredCommandsById.set(text(command.commandId), command);
-  for (const command of packetRequiredCommands) requiredCommandsById.set(text(command.commandId), command);
+  for (const command of existingRequiredCommands)
+    requiredCommandsById.set(text(command.commandId), command);
+  for (const command of packetRequiredCommands)
+    requiredCommandsById.set(text(command.commandId), command);
   return {
     ...record,
-    ...(packet.entryFlowState && typeof packet.entryFlowState === 'object' && !Array.isArray(packet.entryFlowState)
+    ...(packet.entryFlowState &&
+    typeof packet.entryFlowState === 'object' &&
+    !Array.isArray(packet.entryFlowState)
       ? {
           entryFlow: text((packet.entryFlowState as JsonObject).entryFlow),
           entryFlowClass: text((packet.entryFlowState as JsonObject).entryFlowClass),
           workflowAdapter: text((packet.entryFlowState as JsonObject).workflowAdapter),
-          contractAuthoringRequired: (packet.entryFlowState as JsonObject).contractAuthoringRequired === true,
+          contractAuthoringRequired:
+            (packet.entryFlowState as JsonObject).contractAuthoringRequired === true,
           ...((packet.entryFlowState as JsonObject).globalContractTraceabilityPolicy &&
-          typeof (packet.entryFlowState as JsonObject).globalContractTraceabilityPolicy === 'object' &&
+          typeof (packet.entryFlowState as JsonObject).globalContractTraceabilityPolicy ===
+            'object' &&
           !Array.isArray((packet.entryFlowState as JsonObject).globalContractTraceabilityPolicy)
             ? {
                 globalContractTraceabilityPolicy: (packet.entryFlowState as JsonObject)
@@ -999,7 +1149,9 @@ function updateRecord(record: JsonObject, packet: JsonObject, recordedAt: string
           runtimePolicySnapshotRef: {
             ...packetRuntimePolicySnapshotRef,
             path: normalizePathForRecord(text(packetRuntimePolicySnapshotRef.path)),
-            contentHash: text(packetRuntimePolicySnapshotRef.contentHash ?? packetRuntimePolicySnapshotRef.hash),
+            contentHash: text(
+              packetRuntimePolicySnapshotRef.contentHash ?? packetRuntimePolicySnapshotRef.hash
+            ),
           },
         }
       : {}),
@@ -1040,13 +1192,17 @@ function updateRecord(record: JsonObject, packet: JsonObject, recordedAt: string
     deliveryEvidence: {
       ...existingDeliveryEvidence,
       ...packetDeliveryEvidence,
-      requiredCommands: [...requiredCommandsById.values()].filter((command) => text(command.commandId)),
+      requiredCommands: [...requiredCommandsById.values()].filter((command) =>
+        text(command.commandId)
+      ),
       historicalRunRefs: [
         ...arrayOfObjects(existingDeliveryEvidence.historicalRunRefs),
         ...arrayOfObjects(packetDeliveryEvidence.historicalRunRefs),
       ],
     },
-    lastEventType: subagentEnvelopeEvent ? 'subagent_evidence_envelope_recorded' : 'execution_iteration_recorded',
+    lastEventType: subagentEnvelopeEvent
+      ? 'subagent_evidence_envelope_recorded'
+      : 'execution_iteration_recorded',
     updatedAt: recordedAt,
   };
 }
@@ -1054,7 +1210,9 @@ function updateRecord(record: JsonObject, packet: JsonObject, recordedAt: string
 export function mainIngestImplementationEvidence(argv: string[]): number {
   const args = parseArgs(argv);
   if (args.help) {
-    console.log('Usage: ingest-implementation-evidence --evidence <json> --requirement-record <json> [--json]');
+    console.log(
+      'Usage: ingest-implementation-evidence --evidence <json> --requirement-record <json> [--json]'
+    );
     return 0;
   }
   requireArgs(args);
@@ -1071,7 +1229,9 @@ export function mainIngestImplementationEvidence(argv: string[]): number {
   const recordedBy = args.recordedBy ?? 'agent';
   const baseDir = path.dirname(recordPath);
   const eventLog = path.resolve(args.eventLog ?? eventLogPathForRecord(recordPath));
-  const artifactIndex = path.resolve(args.artifactIndex ?? path.join(baseDir, 'artifact-index.jsonl'));
+  const artifactIndex = path.resolve(
+    args.artifactIndex ?? path.join(baseDir, 'artifact-index.jsonl')
+  );
   const globalArtifactIndex = path.resolve(
     args.globalArtifactIndex ?? path.join(path.dirname(baseDir), 'artifact-index.jsonl')
   );
@@ -1094,7 +1254,13 @@ export function mainIngestImplementationEvidence(argv: string[]): number {
       evidencePath: normalizePathForRecord(evidencePath),
     },
     reduce: (currentRecord) =>
-      updateRecord(currentRecord, packet, recordedAt, recordedBy, normalizePathForRecord(evidencePath)),
+      updateRecord(
+        currentRecord,
+        packet,
+        recordedAt,
+        recordedBy,
+        normalizePathForRecord(evidencePath)
+      ),
   });
   for (const artifact of [
     packetArtifact,
@@ -1117,7 +1283,11 @@ export function mainIngestImplementationEvidence(argv: string[]): number {
     artifactIndexPath: normalizePathForRecord(artifactIndex),
     globalArtifactIndexPath: normalizePathForRecord(globalArtifactIndex),
   };
-  process.stdout.write(args.json ? `${JSON.stringify(result, null, 2)}\n` : `execution_iteration_recorded=${text(packet.executionIterationId)}\n`);
+  process.stdout.write(
+    args.json
+      ? `${JSON.stringify(result, null, 2)}\n`
+      : `execution_iteration_recorded=${text(packet.executionIterationId)}\n`
+  );
   return 0;
 }
 
@@ -1125,7 +1295,13 @@ if (require.main === module && isDirectImplementationEvidenceIngestCli(process.a
   try {
     process.exitCode = mainIngestImplementationEvidence(process.argv.slice(2));
   } catch (error) {
-    console.error(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : String(error) }, null, 2));
+    console.error(
+      JSON.stringify(
+        { ok: false, error: error instanceof Error ? error.message : String(error) },
+        null,
+        2
+      )
+    );
     process.exitCode = 2;
   }
 }

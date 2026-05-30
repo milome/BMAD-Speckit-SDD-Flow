@@ -103,7 +103,10 @@ function text(value: unknown): string {
 
 function objects(value: unknown): JsonObject[] {
   return Array.isArray(value)
-    ? value.filter((item): item is JsonObject => Boolean(item) && typeof item === 'object' && !Array.isArray(item))
+    ? value.filter(
+        (item): item is JsonObject =>
+          Boolean(item) && typeof item === 'object' && !Array.isArray(item)
+      )
     : [];
 }
 
@@ -112,7 +115,9 @@ function strings(value: unknown): string[] {
 }
 
 function asObject(value: unknown): JsonObject | undefined {
-  return value && typeof value === 'object' && !Array.isArray(value) ? (value as JsonObject) : undefined;
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as JsonObject)
+    : undefined;
 }
 
 function hasOwn(value: unknown, key: string): boolean {
@@ -178,7 +183,11 @@ function extractImplementationConfirmation(sourceText: string): JsonObject | und
   return latest;
 }
 
-function readRegistryFromArgs(args: ParsedArgs): { confirmation?: JsonObject; registry?: JsonObject; sourcePath?: string } {
+function readRegistryFromArgs(args: ParsedArgs): {
+  confirmation?: JsonObject;
+  registry?: JsonObject;
+  sourcePath?: string;
+} {
   if (args.registry) {
     const parsed = yaml.load(readText(path.resolve(args.registry))) as unknown;
     const object = asObject(parsed);
@@ -225,7 +234,13 @@ function validatePayloadContract(
   const payloadKind = text(eventRow.payloadKind);
   const contract = asObject(eventRow.payloadContract);
   if (!contract) {
-    issues.push(blockingIssue('governance_event_type_missing_payload_contract', `${eventType} missing payloadContract`, [eventType]));
+    issues.push(
+      blockingIssue(
+        'governance_event_type_missing_payload_contract',
+        `${eventType} missing payloadContract`,
+        [eventType]
+      )
+    );
     return {
       requiredFields: [],
       forbiddenFields: [],
@@ -241,56 +256,109 @@ function validatePayloadContract(
   const eventPolicy = policy?.eventSpecificRequirements.get(eventType);
 
   if (!payloadKindPolicy) {
-    issues.push(blockingIssue('governance_event_type_invalid_payload_kind', `${eventType} has invalid payloadKind ${payloadKind}`, [eventType]));
+    issues.push(
+      blockingIssue(
+        'governance_event_type_invalid_payload_kind',
+        `${eventType} has invalid payloadKind ${payloadKind}`,
+        [eventType]
+      )
+    );
   } else {
     for (const field of payloadKindPolicy.requiredFields) {
       if (!requiredFields.includes(field)) {
         issues.push(
-          blockingIssue('governance_event_type_payload_contract_missing_required_field', `${eventType} payloadContract.requiredFields missing ${field}`, [
-            eventType,
-            field,
-          ])
+          blockingIssue(
+            'governance_event_type_payload_contract_missing_required_field',
+            `${eventType} payloadContract.requiredFields missing ${field}`,
+            [eventType, field]
+          )
         );
       }
     }
     for (const field of payloadKindPolicy.forbiddenFields) {
       if (!forbiddenFields.includes(field)) {
         issues.push(
-          blockingIssue('governance_event_type_payload_contract_missing_forbidden_field', `${eventType} payloadContract.forbiddenFields missing ${field}`, [
-            eventType,
-            field,
-          ])
+          blockingIssue(
+            'governance_event_type_payload_contract_missing_forbidden_field',
+            `${eventType} payloadContract.forbiddenFields missing ${field}`,
+            [eventType, field]
+          )
         );
       }
     }
     for (const field of payloadKindPolicy.requiredFields) {
       if (forbiddenFields.includes(field)) {
-        issues.push(blockingIssue('governance_event_type_payload_contract_forbids_payload_field', `${eventType} payloadContract forbids ${field}`, [eventType, field]));
+        issues.push(
+          blockingIssue(
+            'governance_event_type_payload_contract_forbids_payload_field',
+            `${eventType} payloadContract forbids ${field}`,
+            [eventType, field]
+          )
+        );
       }
     }
     if (!payloadKindPolicy.allowedControlWriteModes.includes(allowedControlWriteMode)) {
-      issues.push(blockingIssue('governance_event_type_invalid_control_write_mode', `${eventType} invalid allowedControlWriteMode ${allowedControlWriteMode}`, [eventType]));
+      issues.push(
+        blockingIssue(
+          'governance_event_type_invalid_control_write_mode',
+          `${eventType} invalid allowedControlWriteMode ${allowedControlWriteMode}`,
+          [eventType]
+        )
+      );
     }
   }
   if (eventPolicy) {
     if (eventPolicy.payloadKind && eventPolicy.payloadKind !== payloadKind) {
-      issues.push(blockingIssue('governance_event_type_policy_payload_kind_mismatch', `${eventType} must use payloadKind ${eventPolicy.payloadKind}`, [eventType]));
+      issues.push(
+        blockingIssue(
+          'governance_event_type_policy_payload_kind_mismatch',
+          `${eventType} must use payloadKind ${eventPolicy.payloadKind}`,
+          [eventType]
+        )
+      );
     }
     for (const field of eventPolicy.requiredFields) {
       if (!requiredFields.includes(field)) {
-        issues.push(blockingIssue('governance_event_type_policy_missing_required_field', `${eventType} policy requires ${field}`, [eventType, field]));
+        issues.push(
+          blockingIssue(
+            'governance_event_type_policy_missing_required_field',
+            `${eventType} policy requires ${field}`,
+            [eventType, field]
+          )
+        );
       }
     }
     for (const field of eventPolicy.forbiddenFields) {
       if (!forbiddenFields.includes(field)) {
-        issues.push(blockingIssue('governance_event_type_policy_missing_forbidden_field', `${eventType} policy forbids ${field}`, [eventType, field]));
+        issues.push(
+          blockingIssue(
+            'governance_event_type_policy_missing_forbidden_field',
+            `${eventType} policy forbids ${field}`,
+            [eventType, field]
+          )
+        );
       }
     }
     if (eventPolicy.requiredSourceRefs === true && requiredSourceRefs !== true) {
-      issues.push(blockingIssue('governance_event_type_payload_contract_missing_source_refs', `${eventType} must require sourceRefs`, [eventType]));
+      issues.push(
+        blockingIssue(
+          'governance_event_type_payload_contract_missing_source_refs',
+          `${eventType} must require sourceRefs`,
+          [eventType]
+        )
+      );
     }
-    if (eventPolicy.allowedControlWriteMode && eventPolicy.allowedControlWriteMode !== allowedControlWriteMode) {
-      issues.push(blockingIssue('governance_event_type_policy_wrong_write_mode', `${eventType} must use ${eventPolicy.allowedControlWriteMode}`, [eventType]));
+    if (
+      eventPolicy.allowedControlWriteMode &&
+      eventPolicy.allowedControlWriteMode !== allowedControlWriteMode
+    ) {
+      issues.push(
+        blockingIssue(
+          'governance_event_type_policy_wrong_write_mode',
+          `${eventType} must use ${eventPolicy.allowedControlWriteMode}`,
+          [eventType]
+        )
+      );
     }
   }
   return { requiredFields, forbiddenFields, requiredSourceRefs, allowedControlWriteMode };
@@ -306,13 +374,24 @@ function normalizeGovernanceEventTypeRegistryPolicy(
 ): GovernanceEventTypeRegistryPolicy | undefined {
   const raw = asObject(confirmation?.governanceEventTypeRegistryPolicy);
   if (!raw) {
-    issues.push(blockingIssue('governance_event_type_registry_policy_missing', 'governanceEventTypeRegistryPolicy is required'));
+    issues.push(
+      blockingIssue(
+        'governance_event_type_registry_policy_missing',
+        'governanceEventTypeRegistryPolicy is required'
+      )
+    );
     return undefined;
   }
   const controlFieldVocabulary = new Set<string>();
   for (const field of strings(raw.controlFieldVocabulary)) {
     if (controlFieldVocabulary.has(field)) {
-      issues.push(blockingIssue('governance_event_type_policy_control_field_vocabulary_duplicate', `${field} duplicated`, [field]));
+      issues.push(
+        blockingIssue(
+          'governance_event_type_policy_control_field_vocabulary_duplicate',
+          `${field} duplicated`,
+          [field]
+        )
+      );
     }
     controlFieldVocabulary.add(field);
   }
@@ -320,11 +399,22 @@ function normalizeGovernanceEventTypeRegistryPolicy(
   for (const [index, row] of objects(raw.payloadKindContracts).entries()) {
     const payloadKind = text(row.payloadKind);
     if (!payloadKind) {
-      issues.push(blockingIssue('governance_event_type_policy_payload_kind_missing', `payloadKindContracts[${index}] missing payloadKind`));
+      issues.push(
+        blockingIssue(
+          'governance_event_type_policy_payload_kind_missing',
+          `payloadKindContracts[${index}] missing payloadKind`
+        )
+      );
       continue;
     }
     if (payloadKindContracts.has(payloadKind)) {
-      issues.push(blockingIssue('governance_event_type_policy_payload_kind_duplicate', `${payloadKind} duplicated`, [payloadKind]));
+      issues.push(
+        blockingIssue(
+          'governance_event_type_policy_payload_kind_duplicate',
+          `${payloadKind} duplicated`,
+          [payloadKind]
+        )
+      );
     }
     payloadKindContracts.set(payloadKind, {
       requiredFields: normalizeStringListPolicy(row.requiredFields),
@@ -336,16 +426,31 @@ function normalizeGovernanceEventTypeRegistryPolicy(
   for (const [index, row] of objects(raw.controlWriteModePolicies).entries()) {
     const mode = text(row.allowedControlWriteMode ?? row.mode);
     if (!mode) {
-      issues.push(blockingIssue('governance_event_type_policy_write_mode_missing', `controlWriteModePolicies[${index}] missing allowedControlWriteMode`));
+      issues.push(
+        blockingIssue(
+          'governance_event_type_policy_write_mode_missing',
+          `controlWriteModePolicies[${index}] missing allowedControlWriteMode`
+        )
+      );
       continue;
     }
     if (controlWriteModePolicies.has(mode)) {
-      issues.push(blockingIssue('governance_event_type_policy_write_mode_duplicate', `${mode} duplicated`, [mode]));
+      issues.push(
+        blockingIssue('governance_event_type_policy_write_mode_duplicate', `${mode} duplicated`, [
+          mode,
+        ])
+      );
     }
     const allowedWritesControlFields = normalizeStringListPolicy(row.allowedWritesControlFields);
     for (const field of allowedWritesControlFields) {
       if (!controlFieldVocabulary.has(field)) {
-        issues.push(blockingIssue('governance_event_type_policy_control_field_vocabulary_unknown', `${mode} references unknown ${field}`, [mode, field]));
+        issues.push(
+          blockingIssue(
+            'governance_event_type_policy_control_field_vocabulary_unknown',
+            `${mode} references unknown ${field}`,
+            [mode, field]
+          )
+        );
       }
     }
     controlWriteModePolicies.set(mode, { allowedWritesControlFields });
@@ -354,11 +459,22 @@ function normalizeGovernanceEventTypeRegistryPolicy(
   for (const [index, row] of objects(raw.eventSpecificRequirements).entries()) {
     const eventType = text(row.eventType);
     if (!eventType) {
-      issues.push(blockingIssue('governance_event_type_policy_event_requirement_missing', `eventSpecificRequirements[${index}] missing eventType`));
+      issues.push(
+        blockingIssue(
+          'governance_event_type_policy_event_requirement_missing',
+          `eventSpecificRequirements[${index}] missing eventType`
+        )
+      );
       continue;
     }
     if (eventSpecificRequirements.has(eventType)) {
-      issues.push(blockingIssue('governance_event_type_policy_event_requirement_duplicate', `${eventType} duplicated`, [eventType]));
+      issues.push(
+        blockingIssue(
+          'governance_event_type_policy_event_requirement_duplicate',
+          `${eventType} duplicated`,
+          [eventType]
+        )
+      );
     }
     eventSpecificRequirements.set(eventType, {
       eventType,
@@ -370,37 +486,81 @@ function normalizeGovernanceEventTypeRegistryPolicy(
     });
   }
   if (!payloadKindContracts.size) {
-    issues.push(blockingIssue('governance_event_type_policy_payload_kind_contracts_missing', 'payloadKindContracts[] is required'));
+    issues.push(
+      blockingIssue(
+        'governance_event_type_policy_payload_kind_contracts_missing',
+        'payloadKindContracts[] is required'
+      )
+    );
   }
   if (!controlWriteModePolicies.size) {
-    issues.push(blockingIssue('governance_event_type_policy_control_write_modes_missing', 'controlWriteModePolicies[] is required'));
+    issues.push(
+      blockingIssue(
+        'governance_event_type_policy_control_write_modes_missing',
+        'controlWriteModePolicies[] is required'
+      )
+    );
   }
   if (!controlFieldVocabulary.size) {
-    issues.push(blockingIssue('governance_event_type_policy_control_field_vocabulary_missing', 'controlFieldVocabulary[] is required'));
+    issues.push(
+      blockingIssue(
+        'governance_event_type_policy_control_field_vocabulary_missing',
+        'controlFieldVocabulary[] is required'
+      )
+    );
   }
-  return { controlFieldVocabulary, payloadKindContracts, controlWriteModePolicies, eventSpecificRequirements };
+  return {
+    controlFieldVocabulary,
+    payloadKindContracts,
+    controlWriteModePolicies,
+    eventSpecificRequirements,
+  };
 }
 
-function normalizeGovernanceEventTypeRegistry(confirmation: JsonObject | undefined, issues: string[]): Map<string, JsonObject> {
+function normalizeGovernanceEventTypeRegistry(
+  confirmation: JsonObject | undefined,
+  issues: string[]
+): Map<string, JsonObject> {
   const policy = normalizeGovernanceEventTypeRegistryPolicy(confirmation, issues);
   const eventTypes = new Map<string, JsonObject>();
   for (const [index, row] of objects(confirmation?.governanceEventTypeRegistry).entries()) {
     const eventType = text(row.eventType);
     if (!eventType) {
-      issues.push(blockingIssue('governance_event_type_missing_id', `governanceEventTypeRegistry[${index}] missing eventType`));
+      issues.push(
+        blockingIssue(
+          'governance_event_type_missing_id',
+          `governanceEventTypeRegistry[${index}] missing eventType`
+        )
+      );
       continue;
     }
     if (eventTypes.has(eventType)) {
-      issues.push(blockingIssue('governance_event_type_duplicate_id', `${eventType} is duplicated`, [eventType]));
+      issues.push(
+        blockingIssue('governance_event_type_duplicate_id', `${eventType} is duplicated`, [
+          eventType,
+        ])
+      );
     }
     for (const field of ['ownerModel', 'payloadKind', 'canAffectControlFlow', 'payloadContract']) {
       if (row[field] === undefined || row[field] === null || row[field] === '') {
-        issues.push(blockingIssue('governance_event_type_missing_required_field', `${eventType} missing ${field}`, [eventType, field]));
+        issues.push(
+          blockingIssue(
+            'governance_event_type_missing_required_field',
+            `${eventType} missing ${field}`,
+            [eventType, field]
+          )
+        );
       }
     }
     const writesControlFields = strings(row.writesControlFields);
     const payloadContract = validatePayloadContract(eventType, row, policy, issues);
-    validateEventControlWriteMode(eventType, writesControlFields, payloadContract.allowedControlWriteMode, policy, issues);
+    validateEventControlWriteMode(
+      eventType,
+      writesControlFields,
+      payloadContract.allowedControlWriteMode,
+      policy,
+      issues
+    );
     eventTypes.set(eventType, {
       eventType,
       payloadKind: text(row.payloadKind),
@@ -421,15 +581,33 @@ function validateEventControlWriteMode(
 ): void {
   const modePolicy = policy?.controlWriteModePolicies.get(mode);
   if (!modePolicy) {
-    issues.push(blockingIssue('governance_event_type_unknown_control_write_mode_policy', `${eventType} missing policy for write mode ${mode}`, [eventType, mode]));
+    issues.push(
+      blockingIssue(
+        'governance_event_type_unknown_control_write_mode_policy',
+        `${eventType} missing policy for write mode ${mode}`,
+        [eventType, mode]
+      )
+    );
     return;
   }
   for (const field of writesControlFields) {
     if (!policy?.controlFieldVocabulary.has(field)) {
-      issues.push(blockingIssue('governance_event_type_control_field_not_in_vocabulary', `${eventType} writes unknown control field ${field}`, [eventType, field]));
+      issues.push(
+        blockingIssue(
+          'governance_event_type_control_field_not_in_vocabulary',
+          `${eventType} writes unknown control field ${field}`,
+          [eventType, field]
+        )
+      );
     }
     if (!modePolicy.allowedWritesControlFields.includes(field)) {
-      issues.push(blockingIssue('governance_event_type_control_mode_unknown_field', `${eventType} ${mode} writes unsupported ${field}`, [eventType, field]));
+      issues.push(
+        blockingIssue(
+          'governance_event_type_control_mode_unknown_field',
+          `${eventType} ${mode} writes unsupported ${field}`,
+          [eventType, field]
+        )
+      );
     }
   }
 }
@@ -454,18 +632,24 @@ function checkHashes(record: JsonObject, args: ParsedArgs): Check {
   return {
     id: 'resume-authority-hashes-current',
     decision: mismatches.length === 0 ? 'pass' : 'blocked',
-    summary: mismatches.length === 0 ? 'Resume authority hashes match current record' : 'Resume authority hash drift detected',
+    summary:
+      mismatches.length === 0
+        ? 'Resume authority hashes match current record'
+        : 'Resume authority hash drift detected',
     details: { expected, actual, mismatches },
   };
 }
 
 function checkArchitecture(record: JsonObject): Check {
   const state = record.architectureConfirmationState as JsonObject | undefined;
-  const active = text(state?.status) === 'active' && Boolean(text(state?.currentArchitectureConfirmationHash));
+  const active =
+    text(state?.status) === 'active' && Boolean(text(state?.currentArchitectureConfirmationHash));
   return {
     id: 'architecture-confirmation-active',
     decision: active ? 'pass' : 'blocked',
-    summary: active ? 'Architecture confirmation is active for resume' : 'Architecture confirmation is not active',
+    summary: active
+      ? 'Architecture confirmation is active for resume'
+      : 'Architecture confirmation is not active',
     details: {
       status: text(state?.status),
       currentArchitectureConfirmationHash: text(state?.currentArchitectureConfirmationHash),
@@ -485,22 +669,27 @@ function checkControlledSources(record: JsonObject): Check {
   return {
     id: 'controlled-record-sources-present',
     decision: missing.length === 0 ? 'pass' : 'blocked',
-    summary: missing.length === 0 ? 'Required controlled RequirementRecord arrays are present' : 'Required controlled source arrays are missing',
+    summary:
+      missing.length === 0
+        ? 'Required controlled RequirementRecord arrays are present'
+        : 'Required controlled source arrays are missing',
     details: { requiredArrays, missing },
   };
 }
 
 function checkBlockers(record: JsonObject): Check {
-  const openFailures = [...latestBy(objects(record.failureRecords), 'failureId').values()].filter((item) =>
-    OPEN_FAILURE_STATUSES.has(text(item.status))
+  const openFailures = [...latestBy(objects(record.failureRecords), 'failureId').values()].filter(
+    (item) => OPEN_FAILURE_STATUSES.has(text(item.status))
   );
-  const openReruns = [...latestBy(objects(record.rerunLoops), 'rerunLoopId').values()].filter((item) =>
-    OPEN_RERUN_STATUSES.has(text(item.status))
+  const openReruns = [...latestBy(objects(record.rerunLoops), 'rerunLoopId').values()].filter(
+    (item) => OPEN_RERUN_STATUSES.has(text(item.status))
   );
   const openRca = [...latestBy(objects(record.rcaRecords), 'rcaId').values()].filter((item) =>
     OPEN_RCA_STATUSES.has(text(item.status))
   );
-  const latestClosures = [...latestBy(objects(record.requirementClosures), 'requirementId').values()];
+  const latestClosures = [
+    ...latestBy(objects(record.requirementClosures), 'requirementId').values(),
+  ];
   const openClosures = latestClosures.filter((item) =>
     NON_TERMINAL_CLOSURE_STATUSES.has(text(item.status))
   );
@@ -508,12 +697,17 @@ function checkBlockers(record: JsonObject): Check {
     ...openFailures.map((item) => `open_failure:${text(item.failureId) || '<missing>'}`),
     ...openReruns.map((item) => `pending_rerun:${text(item.rerunLoopId) || '<missing>'}`),
     ...openRca.map((item) => `open_rca:${text(item.rcaId) || '<missing>'}`),
-    ...openClosures.map((item) => `non_terminal_closure:${text(item.requirementId) || '<missing>'}`),
+    ...openClosures.map(
+      (item) => `non_terminal_closure:${text(item.requirementId) || '<missing>'}`
+    ),
   ];
   return {
     id: 'resume-open-blockers-clear',
     decision: issues.length === 0 ? 'pass' : 'blocked',
-    summary: issues.length === 0 ? 'No open blocker prevents resume' : 'Open blocker requires fail-closed resume',
+    summary:
+      issues.length === 0
+        ? 'No open blocker prevents resume'
+        : 'Open blocker requires fail-closed resume',
     details: { issues },
   };
 }
@@ -539,7 +733,10 @@ function checkRequiredArtifacts(record: JsonObject): Check {
   return {
     id: 'resume-required-artifacts-indexed',
     decision: missing.length === 0 ? 'pass' : 'blocked',
-    summary: missing.length === 0 ? 'Required artifacts are indexed with matching hashes' : 'Required artifacts missing or hash mismatched',
+    summary:
+      missing.length === 0
+        ? 'Required artifacts are indexed with matching hashes'
+        : 'Required artifacts missing or hash mismatched',
     details: { checkedCommands: requiredCommands.length, missing },
   };
 }
@@ -552,7 +749,9 @@ function validateFunctionalResumeFailureCaseRegistry(input: {
   const issues: string[] = [];
   const registry = input.registry;
   if (!registry) {
-    issues.push('functional_resume_failure_case_registry_missing:functionalResumeFailureCaseRegistry is required');
+    issues.push(
+      'functional_resume_failure_case_registry_missing:functionalResumeFailureCaseRegistry is required'
+    );
     return {
       rawPresent: false,
       status: '',
@@ -591,52 +790,102 @@ function validateFunctionalResumeFailureCaseRegistry(input: {
   const actionDefs = new Map<string, JsonObject>();
 
   if (!groups.length && failureCases.length) {
-    issues.push('resume_failure_groups_missing:functionalResumeFailureCaseRegistry.groups[] is required');
+    issues.push(
+      'resume_failure_groups_missing:functionalResumeFailureCaseRegistry.groups[] is required'
+    );
   }
   for (const [index, group] of groups.entries()) {
     const groupId = text(group.groupId);
     if (!groupId) {
-      issues.push(blockingIssue('resume_failure_group_missing_id', `groups[${index}] missing groupId`));
+      issues.push(
+        blockingIssue('resume_failure_group_missing_id', `groups[${index}] missing groupId`)
+      );
       continue;
     }
-    if (groupDefs.has(groupId)) issues.push(blockingIssue('resume_failure_group_duplicate_id', `${groupId} is duplicated`, [groupId]));
-    if (!text(group.label ?? group.title)) issues.push(blockingIssue('resume_failure_group_missing_label', `${groupId} missing label`, [groupId]));
+    if (groupDefs.has(groupId))
+      issues.push(
+        blockingIssue('resume_failure_group_duplicate_id', `${groupId} is duplicated`, [groupId])
+      );
+    if (!text(group.label ?? group.title))
+      issues.push(
+        blockingIssue('resume_failure_group_missing_label', `${groupId} missing label`, [groupId])
+      );
     const caseRefs = strings(group.caseRefs);
-    if (!caseRefs.length) issues.push(blockingIssue('resume_failure_group_missing_case_refs', `${groupId} missing caseRefs[]`, [groupId]));
+    if (!caseRefs.length)
+      issues.push(
+        blockingIssue('resume_failure_group_missing_case_refs', `${groupId} missing caseRefs[]`, [
+          groupId,
+        ])
+      );
     groupDefs.set(groupId, { groupId, caseRefs });
     for (const caseId of caseRefs) {
       if (groupByCase.has(caseId) && groupByCase.get(caseId) !== groupId) {
-        issues.push(blockingIssue('resume_failure_case_group_conflict', `${caseId} assigned to multiple groups`, [caseId, groupByCase.get(caseId) ?? '', groupId]));
+        issues.push(
+          blockingIssue(
+            'resume_failure_case_group_conflict',
+            `${caseId} assigned to multiple groups`,
+            [caseId, groupByCase.get(caseId) ?? '', groupId]
+          )
+        );
       }
       groupByCase.set(caseId, groupId);
     }
   }
 
   if (!actions.length && failureCases.length) {
-    issues.push('resume_failure_recovery_action_definitions_missing:functionalResumeFailureCaseRegistry.recoveryActionDefinitions[] is required');
+    issues.push(
+      'resume_failure_recovery_action_definitions_missing:functionalResumeFailureCaseRegistry.recoveryActionDefinitions[] is required'
+    );
   }
   for (const [index, action] of actions.entries()) {
     const actionId = text(action.actionId);
     if (!actionId) {
-      issues.push(blockingIssue('resume_failure_recovery_action_missing_id', `recoveryActionDefinitions[${index}] missing actionId`));
+      issues.push(
+        blockingIssue(
+          'resume_failure_recovery_action_missing_id',
+          `recoveryActionDefinitions[${index}] missing actionId`
+        )
+      );
       continue;
     }
     if (actionDefs.has(actionId)) {
-      issues.push(blockingIssue('resume_failure_recovery_action_duplicate_id', `${actionId} is duplicated`, [actionId]));
+      issues.push(
+        blockingIssue('resume_failure_recovery_action_duplicate_id', `${actionId} is duplicated`, [
+          actionId,
+        ])
+      );
     }
     if (!text(action.label ?? action.description)) {
-      issues.push(blockingIssue('resume_failure_recovery_action_missing_required_field', `${actionId} missing label or description`, [actionId]));
+      issues.push(
+        blockingIssue(
+          'resume_failure_recovery_action_missing_required_field',
+          `${actionId} missing label or description`,
+          [actionId]
+        )
+      );
     }
     const writesControlFields = strings(action.writesControlFields);
     const recordEventTypes = strings(action.recordEventTypes);
     if (writesControlFields.length && !recordEventTypes.length) {
-      issues.push(blockingIssue('resume_failure_recovery_action_missing_record_event_types', `${actionId} writes control fields but missing recordEventTypes[]`, [actionId]));
+      issues.push(
+        blockingIssue(
+          'resume_failure_recovery_action_missing_record_event_types',
+          `${actionId} writes control fields but missing recordEventTypes[]`,
+          [actionId]
+        )
+      );
     }
     const coveredControlFields = new Set<string>();
     for (const eventType of recordEventTypes) {
       const eventDef = eventTypes.get(eventType);
       if (!eventDef) {
-        issues.push(blockingIssue('resume_failure_recovery_action_unknown_event_type', `${actionId} references unknown eventType ${eventType}`, [actionId, eventType]));
+        issues.push(
+          blockingIssue(
+            'resume_failure_recovery_action_unknown_event_type',
+            `${actionId} references unknown eventType ${eventType}`,
+            [actionId, eventType]
+          )
+        );
         continue;
       }
       strings(eventDef.writesControlFields).forEach((field) => coveredControlFields.add(field));
@@ -653,7 +902,13 @@ function validateFunctionalResumeFailureCaseRegistry(input: {
     }
     for (const field of writesControlFields) {
       if (!coveredControlFields.has(field)) {
-        issues.push(blockingIssue('resume_failure_recovery_action_uncovered_control_field', `${actionId} writes ${field} but eventTypes do not cover it`, [actionId, field]));
+        issues.push(
+          blockingIssue(
+            'resume_failure_recovery_action_uncovered_control_field',
+            `${actionId} writes ${field} but eventTypes do not cover it`,
+            [actionId, field]
+          )
+        );
       }
     }
     actionDefs.set(actionId, { actionId, writesControlFields, recordEventTypes });
@@ -663,42 +918,91 @@ function validateFunctionalResumeFailureCaseRegistry(input: {
   for (const [index, failureCase] of failureCases.entries()) {
     const caseId = text(failureCase.id);
     if (!caseId) {
-      issues.push(blockingIssue('resume_failure_case_missing_id', `failureCases[${index}] missing id`));
+      issues.push(
+        blockingIssue('resume_failure_case_missing_id', `failureCases[${index}] missing id`)
+      );
       continue;
     }
-    if (seenCases.has(caseId)) issues.push(blockingIssue('resume_failure_case_duplicate_id', `${caseId} is duplicated`, [caseId]));
+    if (seenCases.has(caseId))
+      issues.push(
+        blockingIssue('resume_failure_case_duplicate_id', `${caseId} is duplicated`, [caseId])
+      );
     seenCases.add(caseId);
     const explicitGroupId = text(failureCase.groupId);
     const mappedGroupId = groupByCase.get(caseId) ?? '';
     const groupId = explicitGroupId || mappedGroupId;
     if (!groupId) {
-      issues.push(blockingIssue('resume_failure_case_missing_group_ref', `${caseId} missing groupId and groups[].caseRefs`, [caseId]));
+      issues.push(
+        blockingIssue(
+          'resume_failure_case_missing_group_ref',
+          `${caseId} missing groupId and groups[].caseRefs`,
+          [caseId]
+        )
+      );
     } else if (!groupDefs.has(groupId)) {
-      issues.push(blockingIssue('resume_failure_case_unknown_group', `${caseId} references unknown group ${groupId}`, [caseId, groupId]));
+      issues.push(
+        blockingIssue(
+          'resume_failure_case_unknown_group',
+          `${caseId} references unknown group ${groupId}`,
+          [caseId, groupId]
+        )
+      );
     }
     if (explicitGroupId && mappedGroupId && explicitGroupId !== mappedGroupId) {
-      issues.push(blockingIssue('resume_failure_case_group_conflict', `${caseId} groupId conflicts with groups[].caseRefs`, [caseId, explicitGroupId, mappedGroupId]));
+      issues.push(
+        blockingIssue(
+          'resume_failure_case_group_conflict',
+          `${caseId} groupId conflicts with groups[].caseRefs`,
+          [caseId, explicitGroupId, mappedGroupId]
+        )
+      );
     }
     const expectedRecoveryActions = strings(failureCase.expectedRecoveryActions);
     if (!expectedRecoveryActions.length) {
-      issues.push(blockingIssue('resume_failure_case_missing_recovery_actions', `${caseId} missing expectedRecoveryActions[]`, [caseId]));
+      issues.push(
+        blockingIssue(
+          'resume_failure_case_missing_recovery_actions',
+          `${caseId} missing expectedRecoveryActions[]`,
+          [caseId]
+        )
+      );
     }
     for (const actionId of expectedRecoveryActions) {
       if (!actionDefs.has(actionId)) {
-        issues.push(blockingIssue('resume_failure_case_unknown_recovery_action', `${caseId} references unknown recovery action ${actionId}`, [caseId, actionId]));
+        issues.push(
+          blockingIssue(
+            'resume_failure_case_unknown_recovery_action',
+            `${caseId} references unknown recovery action ${actionId}`,
+            [caseId, actionId]
+          )
+        );
       }
     }
   }
   for (const [caseId, groupId] of groupByCase.entries()) {
     if (!seenCases.has(caseId)) {
-      issues.push(blockingIssue('resume_failure_group_case_ref_unknown', `${groupId} references missing failure case ${caseId}`, [groupId, caseId]));
+      issues.push(
+        blockingIssue(
+          'resume_failure_group_case_ref_unknown',
+          `${groupId} references missing failure case ${caseId}`,
+          [groupId, caseId]
+        )
+      );
     }
   }
 
-  const fullLinkRequiredFixtureCases = strings(registry.fullLinkRequiredFixtureCases ?? registry.p0RequiredFixtureCases);
+  const fullLinkRequiredFixtureCases = strings(
+    registry.fullLinkRequiredFixtureCases ?? registry.p0RequiredFixtureCases
+  );
   for (const required of ['resume_happy_path', 'sourceDocumentHash_changed']) {
     if (!fullLinkRequiredFixtureCases.includes(required)) {
-      issues.push(blockingIssue('resume_failure_full_link_fixture_missing', `fullLinkRequiredFixtureCases[] missing ${required}`, [required]));
+      issues.push(
+        blockingIssue(
+          'resume_failure_full_link_fixture_missing',
+          `fullLinkRequiredFixtureCases[] missing ${required}`,
+          [required]
+        )
+      );
     }
   }
   const phase4_5Coverage = strings(registry.phase4_5Coverage);
@@ -748,18 +1052,32 @@ function validateFunctionalResumeFailureCaseRegistry(input: {
           controlledEventRecordRequired,
           recoveryActionEvidenceRequired,
         },
-        sourceRefs: [{ sourceType: 'functionalResumeFailureCaseRegistry.failureCases', id: caseId }],
+        sourceRefs: [
+          { sourceType: 'functionalResumeFailureCaseRegistry.failureCases', id: caseId },
+        ],
       };
     })
     .filter((item) => text(item.caseId));
   for (const required of phase4_5Coverage) {
     if (!seenCases.has(required)) {
-      issues.push(blockingIssue('resume_failure_phase4_5_unknown_case', `phase4_5Coverage references missing failure case ${required}`, [required]));
+      issues.push(
+        blockingIssue(
+          'resume_failure_phase4_5_unknown_case',
+          `phase4_5Coverage references missing failure case ${required}`,
+          [required]
+        )
+      );
     }
   }
   for (const required of phase5HardeningCoverage) {
     if (!seenCases.has(required)) {
-      issues.push(blockingIssue('resume_failure_phase5_unknown_case', `phase5HardeningCoverage references missing failure case ${required}`, [required]));
+      issues.push(
+        blockingIssue(
+          'resume_failure_phase5_unknown_case',
+          `phase5HardeningCoverage references missing failure case ${required}`,
+          [required]
+        )
+      );
     }
   }
   const exercisedFixtureCases = failureCases
@@ -814,7 +1132,11 @@ function checkResumeFailureCaseRegistry(registryCoverage: RegistryValidationResu
   };
 }
 
-function traceCheckpoint(record: JsonObject, checkpointId: string, generatedAt: string): JsonObject {
+function traceCheckpoint(
+  record: JsonObject,
+  checkpointId: string,
+  generatedAt: string
+): JsonObject {
   const executions = objects(record.executionIterations);
   const closures = latestBy(objects(record.requirementClosures), 'requirementId');
   const gateChecks = objects(record.gateChecks);
@@ -937,7 +1259,9 @@ function buildProof(input: {
 export function mainFunctionalResumeCheck(argv: string[]): number {
   const args = parseArgs(argv);
   if (args.help) {
-    console.log('Usage: main-agent-functional-resume-check --requirement-record <json> [--source <contract.md>|--registry <registry.yaml|json>] [--out-dir <dir>] [--json]');
+    console.log(
+      'Usage: main-agent-functional-resume-check --requirement-record <json> [--source <contract.md>|--registry <registry.yaml|json>] [--out-dir <dir>] [--json]'
+    );
     return 0;
   }
   if (!args.requirementRecord) throw new Error('missing required args: requirementRecord');
@@ -986,7 +1310,9 @@ export function mainFunctionalResumeCheck(argv: string[]): number {
     blockingIssues: packet.blockingIssues,
     resumeFailureCaseRegistryCoverage: registryCoverage,
   };
-  process.stdout.write(args.json ? `${JSON.stringify(output, null, 2)}\n` : `functional_resume=${packet.decision}\n`);
+  process.stdout.write(
+    args.json ? `${JSON.stringify(output, null, 2)}\n` : `functional_resume=${packet.decision}\n`
+  );
   return packet.decision === 'pass' ? 0 : 1;
 }
 
@@ -994,7 +1320,13 @@ if (require.main === module) {
   try {
     process.exitCode = mainFunctionalResumeCheck(process.argv.slice(2));
   } catch (error) {
-    console.error(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : String(error) }, null, 2));
+    console.error(
+      JSON.stringify(
+        { ok: false, error: error instanceof Error ? error.message : String(error) },
+        null,
+        2
+      )
+    );
     process.exitCode = 2;
   }
 }

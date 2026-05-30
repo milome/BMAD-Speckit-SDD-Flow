@@ -38,9 +38,7 @@ export interface ReviewerCloseoutContinueInput {
   circuitOpen?: boolean;
 }
 
-export function canMainAgentContinueFromCloseout(
-  input: ReviewerCloseoutContinueInput
-): boolean {
+export function canMainAgentContinueFromCloseout(input: ReviewerCloseoutContinueInput): boolean {
   return canMainAgentContinue({
     latestGateDecision: input.latestGateDecision,
     fourSignalStatus: input.fourSignalStatus,

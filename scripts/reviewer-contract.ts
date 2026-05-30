@@ -68,11 +68,9 @@ export const FACILITATOR_PRODUCT_IDENTITY = 'party_mode_facilitator' as const;
 export const FACILITATOR_DISPLAY_NAME = 'party-mode-facilitator' as const;
 export const CURSOR_FACILITATOR_DEFINITION_SOURCE_PATH =
   '.cursor/agents/party-mode-facilitator.md' as const;
-export const CLAUDE_FACILITATOR_TARGET_PATH =
-  '.claude/agents/party-mode-facilitator.md' as const;
+export const CLAUDE_FACILITATOR_TARGET_PATH = '.claude/agents/party-mode-facilitator.md' as const;
 export const CLAUDE_FACILITATOR_AGENT_MENTION = '@"party-mode-facilitator (agent)"' as const;
-export const CODEX_FACILITATOR_TARGET_PATH =
-  '.codex/agents/party-mode-facilitator.toml' as const;
+export const CODEX_FACILITATOR_TARGET_PATH = '.codex/agents/party-mode-facilitator.toml' as const;
 
 export const IMPLEMENT_AUDIT_REQUIRED_DIMENSIONS = [
   'functional_correctness',
@@ -157,8 +155,7 @@ export const REVIEWER_STRICT_ALIGNMENT_EVIDENCE = [
   'rollback_proof',
 ] as const;
 
-export type ReviewerStrictAlignmentEvidenceId =
-  (typeof REVIEWER_STRICT_ALIGNMENT_EVIDENCE)[number];
+export type ReviewerStrictAlignmentEvidenceId = (typeof REVIEWER_STRICT_ALIGNMENT_EVIDENCE)[number];
 
 export interface ReviewerContractFreeze {
   readonly version: typeof REVIEWER_CONTRACT_FREEZE_VERSION;

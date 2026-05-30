@@ -1,7 +1,10 @@
 /**
  * Story 7.1: 仪表盘计算逻辑
  */
-import { summarizeJourneyContractSignals, type JourneyContractSignalSummary } from '../analytics/journey-contract-signals';
+import {
+  summarizeJourneyContractSignals,
+  type JourneyContractSignalSummary,
+} from '../analytics/journey-contract-signals';
 import {
   summarizeGovernanceRouting,
   type GovernanceRoutingSummary,
@@ -24,9 +27,7 @@ import type { RunScoreRecord } from '../writer/types';
  * @param {RunScoreRecord[]} records - RunScoreRecord 数组
  * @returns {Map<string, RunScoreRecord[]>} 按 run_id 分组的 Map
  */
-export function groupByRunId(
-  records: RunScoreRecord[]
-): Map<string, RunScoreRecord[]> {
+export function groupByRunId(records: RunScoreRecord[]): Map<string, RunScoreRecord[]> {
   const byRun = new Map<string, RunScoreRecord[]>();
   for (const r of records) {
     const arr = byRun.get(r.run_id) ?? [];
@@ -147,9 +148,7 @@ export function computeEpicHealthScore(epicRecords: RunScoreRecord[]): number {
  * @param {RunScoreRecord[]} epicRecords - Epic 评分记录数组
  * @returns {DimensionEntry[]} 维度分数列表
  */
-export function getEpicDimensionScores(
-  epicRecords: RunScoreRecord[]
-): DimensionEntry[] {
+export function getEpicDimensionScores(epicRecords: RunScoreRecord[]): DimensionEntry[] {
   if (epicRecords.length === 0) {
     return ['功能性', '代码质量', '测试覆盖', '安全性'].map((dim) => ({
       dimension: dim,
@@ -239,9 +238,7 @@ export interface GetLatestRunRecordsV2Options {
  * @param {RunScoreRecord[]} records - RunScoreRecord 数组
  * @returns {Map<string, RunScoreRecord[]>} 分组后的 Map
  */
-function groupByEpicStoryOrRunId(
-  records: RunScoreRecord[]
-): Map<string, RunScoreRecord[]> {
+function groupByEpicStoryOrRunId(records: RunScoreRecord[]): Map<string, RunScoreRecord[]> {
   const byKey = new Map<string, RunScoreRecord[]>();
   for (const r of records) {
     const parsed = parseEpicStoryFromRecord(r);
@@ -338,10 +335,7 @@ export function getLatestRunRecordsV2(
  * @param {number} n - 取最近的 n 个 run
  * @returns {RunScoreRecord[][]} 最近 n 个 run 的记录数组
  */
-export function getRecentRuns(
-  records: RunScoreRecord[],
-  n: number
-): RunScoreRecord[][] {
+export function getRecentRuns(records: RunScoreRecord[], n: number): RunScoreRecord[][] {
   if (records.length === 0 || n <= 0) return [];
   const groups = groupByRunId(records);
   const sorted = [...groups.entries()].sort(([, a], [, b]) => {
@@ -378,9 +372,7 @@ export interface DimensionEntry {
   score: number | '无数据';
 }
 
-export function getDimensionScores(
-  records: RunScoreRecord[]
-): DimensionEntry[] {
+export function getDimensionScores(records: RunScoreRecord[]): DimensionEntry[] {
   const byDim = new Map<string, number[]>();
   for (const r of records) {
     if (r.dimension_scores && r.dimension_scores.length > 0) {
@@ -437,11 +429,9 @@ export interface HighIterEntry {
 
 export type JourneyContractSummaryEntry = JourneyContractSignalSummary;
 export type GovernanceRoutingSummaryEntry = GovernanceRoutingSummary;
-export type GovernanceRoutingModeDistributionSummaryEntry =
-  GovernanceRoutingModeDistributionEntry;
+export type GovernanceRoutingModeDistributionSummaryEntry = GovernanceRoutingModeDistributionEntry;
 export type GovernanceSignalHotspotSummaryEntry = GovernanceSignalHotspotEntry;
-export type GovernanceRerunGateFailureTrendSummaryEntry =
-  GovernanceRerunGateFailureTrendEntry;
+export type GovernanceRerunGateFailureTrendSummaryEntry = GovernanceRerunGateFailureTrendEntry;
 
 /**
  * 获取高迭代次数的 Top 3
@@ -493,7 +483,10 @@ export function getWeakTop3(records: RunScoreRecord[]): WeakEntry[] {
  */
 export function getWeakTop3EpicStory(records: RunScoreRecord[]): WeakEntry[] {
   const realDev = records.filter((r) => r.scenario !== 'eval_question');
-  const byEpicStory = new Map<string, { minScore: number; stage: string; record: RunScoreRecord }>();
+  const byEpicStory = new Map<
+    string,
+    { minScore: number; stage: string; record: RunScoreRecord }
+  >();
 
   for (const r of realDev) {
     const parsed = parseEpicStoryFromRecord(r);

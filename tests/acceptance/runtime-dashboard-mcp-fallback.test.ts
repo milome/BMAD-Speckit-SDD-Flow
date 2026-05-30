@@ -27,11 +27,11 @@ describe('runtime dashboard fallback behavior', () => {
       });
 
       try {
-        const health = await (await fetch(`${server.url}/health`)).json() as {
+        const health = (await (await fetch(`${server.url}/health`)).json()) as {
           ok: boolean;
           dashboard_url: string;
         };
-        const overview = await (await fetch(`${server.url}/api/overview`)).json() as {
+        const overview = (await (await fetch(`${server.url}/api/overview`)).json()) as {
           status: string;
         };
 

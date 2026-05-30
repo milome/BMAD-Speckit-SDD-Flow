@@ -97,20 +97,25 @@ Create Story 审计报告
 
     it('正则失败 + 有 key + LLM 成功 → 返回 RunScoreRecord', async () => {
       process.env.SCORING_LLM_API_KEY = 'test-key';
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          choices: [{
-            message: {
-              content: JSON.stringify({
-                grade: 'B',
-                issues: [],
-                veto_items: [],
-              }),
-            },
-          }],
-        }),
-      }));
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            choices: [
+              {
+                message: {
+                  content: JSON.stringify({
+                    grade: 'B',
+                    issues: [],
+                    veto_items: [],
+                  }),
+                },
+              },
+            ],
+          }),
+        })
+      );
 
       const result = await parseStoryReport({
         content: contentWithoutGrade,

@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  renderFieldView,
-  type FieldMetaRegistry,
-} from '../../scripts/i18n/render-field-view';
+import { renderFieldView, type FieldMetaRegistry } from '../../scripts/i18n/render-field-view';
 import { loadConfig } from '../../scripts/bmad-config';
 import { resolveRuntimePolicy } from '../../scripts/runtime-governance';
 
@@ -189,7 +186,9 @@ describe('renderFieldView', () => {
     });
 
     expect(output).toContain('状态 / Status: 通过 / Pass');
-    expect(output).toContain('产物文档路径 / Artifact document path: `specs/epic-1/story-2/spec.md`');
+    expect(output).toContain(
+      '产物文档路径 / Artifact document path: `specs/epic-1/story-2/spec.md`'
+    );
   });
 
   it('preserves path and stage_key values byte-for-byte across languages', () => {

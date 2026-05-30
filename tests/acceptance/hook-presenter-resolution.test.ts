@@ -19,9 +19,13 @@ describe('hook presenter resolution', () => {
       const content = readFileSync(file, 'utf8');
       expect(content).toContain('function resolvePresenterModule()');
       expect(content).toContain("path.join(__dirname, 'governance-runner-summary-presenter.cjs')");
-      expect(content).toContain("path.join(__dirname, '..', '..', '_bmad', 'runtime', 'hooks', 'governance-runner-summary-presenter.cjs')");
+      expect(content).toContain(
+        "path.join(__dirname, '..', '..', '_bmad', 'runtime', 'hooks', 'governance-runner-summary-presenter.cjs')"
+      );
       expect(content).toContain('resolvePresenterModule()');
-      expect(content).not.toContain("require('../../runtime/hooks/governance-runner-summary-presenter.cjs')");
+      expect(content).not.toContain(
+        "require('../../runtime/hooks/governance-runner-summary-presenter.cjs')"
+      );
     }
   });
 });

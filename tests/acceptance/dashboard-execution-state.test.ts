@@ -84,8 +84,18 @@ describe('dashboard execution state', () => {
         'attempt-1.md'
       ),
       packetPaths: {
-        cursor: path.join(fixture.root, '_bmad-output', 'planning-artifacts', 'attempt-1.cursor-packet.md'),
-        claude: path.join(fixture.root, '_bmad-output', 'planning-artifacts', 'attempt-1.claude-packet.md'),
+        cursor: path.join(
+          fixture.root,
+          '_bmad-output',
+          'planning-artifacts',
+          'attempt-1.cursor-packet.md'
+        ),
+        claude: path.join(
+          fixture.root,
+          '_bmad-output',
+          'planning-artifacts',
+          'attempt-1.claude-packet.md'
+        ),
       },
       authoritativeHost: 'cursor',
       fallbackHosts: ['claude'],
@@ -119,7 +129,7 @@ describe('dashboard execution state', () => {
     });
 
     try {
-      const snapshot = await (await fetch(`${server.url}/api/snapshot`)).json() as {
+      const snapshot = (await (await fetch(`${server.url}/api/snapshot`)).json()) as {
         execution_state: {
           execution_status: string;
           configured_authoritative_host: string;
@@ -141,7 +151,13 @@ describe('dashboard execution state', () => {
       expect(appJs).toContain('Execution Host');
 
       ensureScoringBuild(process.cwd());
-      const binPath = path.join(process.cwd(), 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js');
+      const binPath = path.join(
+        process.cwd(),
+        'packages',
+        'bmad-speckit',
+        'bin',
+        'bmad-speckit.js'
+      );
       const proc = spawn('node', [binPath, 'runtime-mcp', '--dashboard-port', '0'], {
         cwd: fixture.root,
         stdio: ['pipe', 'pipe', 'pipe'],

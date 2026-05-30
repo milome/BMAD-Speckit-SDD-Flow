@@ -223,15 +223,25 @@ function fixtureInput(recordId: string): {
   };
 }
 
-function collectValidationIssues(projection: ReturnType<typeof buildSixMentalModelProjection>): string[] {
+function collectValidationIssues(
+  projection: ReturnType<typeof buildSixMentalModelProjection>
+): string[] {
   const issues: string[] = [];
-  if (projection.sourceOfTruthRole !== 'read_model') issues.push('projection_source_role_not_read_model');
+  if (projection.sourceOfTruthRole !== 'read_model')
+    issues.push('projection_source_role_not_read_model');
   if (projection.canAffectControlFlow !== false) issues.push('projection_can_affect_control');
   if (projection.controlAuthority.dashboardCanCloseRequirement !== false) {
     issues.push('dashboard_can_close_requirement');
   }
   const viewEntries = Object.entries(projection.businessObjectViews);
-  const expectedViews = ['epicStoryView', 'taskView', 'bugfixView', 'scoreView', 'reportView', 'sftDatasetView'];
+  const expectedViews = [
+    'epicStoryView',
+    'taskView',
+    'bugfixView',
+    'scoreView',
+    'reportView',
+    'sftDatasetView',
+  ];
   for (const viewName of expectedViews) {
     if (!projection.businessObjectViews[viewName as keyof typeof projection.businessObjectViews]) {
       issues.push(`view_missing:${viewName}`);
@@ -240,14 +250,18 @@ function collectValidationIssues(projection: ReturnType<typeof buildSixMentalMod
   for (const [viewName, view] of viewEntries) {
     if (view.canAffectControlFlow !== false) issues.push(`view_can_affect_control:${viewName}`);
     for (const item of view.items) {
-      if (item.canAffectControlFlow !== false) issues.push(`item_can_affect_control:${item.objectId}`);
+      if (item.canAffectControlFlow !== false)
+        issues.push(`item_can_affect_control:${item.objectId}`);
       if (item.nextControlledSource !== 'requirement-record.json') {
         issues.push(`item_control_source_invalid:${item.objectId}`);
       }
-      if (item.linkedRequirementIds.length === 0) issues.push(`item_requirement_ids_missing:${item.objectId}`);
+      if (item.linkedRequirementIds.length === 0)
+        issues.push(`item_requirement_ids_missing:${item.objectId}`);
       if (item.traceRows.length === 0) issues.push(`item_trace_rows_missing:${item.objectId}`);
-      if (item.artifactRefs.length === 0) issues.push(`item_artifact_refs_missing:${item.objectId}`);
-      if (!item.currentCloseoutAttemptId) issues.push(`item_current_attempt_missing:${item.objectId}`);
+      if (item.artifactRefs.length === 0)
+        issues.push(`item_artifact_refs_missing:${item.objectId}`);
+      if (!item.currentCloseoutAttemptId)
+        issues.push(`item_current_attempt_missing:${item.objectId}`);
     }
   }
   const forbiddenIds = projection.forbiddenDashboardDisplays.map((item) => item.id);
@@ -280,7 +294,9 @@ export function mainDashboardProjectionMapping(argv: string[]): number {
   if (!args.recordId) {
     throw new Error('dashboard-projection-mapping requires --record-id');
   }
-  const outDir = path.resolve(args.outDir ?? recordScopedPath(args.recordId, 'evidence/TRACE-032/dashboard'));
+  const outDir = path.resolve(
+    args.outDir ?? recordScopedPath(args.recordId, 'evidence/TRACE-032/dashboard')
+  );
   const input = fixtureInput(args.recordId);
   const projection = buildSixMentalModelProjection(input);
   const issues = collectValidationIssues(projection);
@@ -317,7 +333,9 @@ export function mainDashboardProjectionMapping(argv: string[]): number {
     projectionHash: report.projectionHash,
     issues,
   };
-  process.stdout.write(args.json ? `${JSON.stringify(output, null, 2)}\n` : `dashboard_projection=${report.decision}\n`);
+  process.stdout.write(
+    args.json ? `${JSON.stringify(output, null, 2)}\n` : `dashboard_projection=${report.decision}\n`
+  );
   return issues.length === 0 ? 0 : 1;
 }
 
@@ -325,7 +343,13 @@ if (require.main === module) {
   try {
     process.exitCode = mainDashboardProjectionMapping(process.argv.slice(2));
   } catch (error) {
-    console.error(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : String(error) }, null, 2));
+    console.error(
+      JSON.stringify(
+        { ok: false, error: error instanceof Error ? error.message : String(error) },
+        null,
+        2
+      )
+    );
     process.exitCode = 1;
   }
 }

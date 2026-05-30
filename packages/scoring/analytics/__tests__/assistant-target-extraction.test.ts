@@ -23,7 +23,9 @@ describe('assistant target extraction by real audit format', () => {
 **修复方式**: 修改 spec.md
 `;
 
-    expect(extractSpecAssistantTargets(content)).toContain('改为“域名格式验证”或明确列出支持的顶级域名');
+    expect(extractSpecAssistantTargets(content)).toContain(
+      '改为“域名格式验证”或明确列出支持的顶级域名'
+    );
     expect(extractAssistantTarget(content)).toContain('域名格式验证');
   });
 
@@ -50,7 +52,9 @@ describe('assistant target extraction by real audit format', () => {
 2. 补充 parseEpicStoryFromRecord 的 import 来源
 `;
 
-    expect(extractPlanAssistantTargets(content).some((item) => item.includes('fallback 路径未覆盖'))).toBe(true);
+    expect(
+      extractPlanAssistantTargets(content).some((item) => item.includes('fallback 路径未覆盖'))
+    ).toBe(true);
     expect(extractAssistantTarget(content)).toContain('fallback 路径未覆盖');
   });
 
@@ -62,7 +66,9 @@ describe('assistant target extraction by real audit format', () => {
 `;
 
     expect(extractTasksAssistantTargets(content)).toContain('T5 spec §3.4');
-    expect(extractTasksAssistantTargets(content)).toContain('T6.1 scoring/veto/ 下新增 veto-and-tier 模块');
+    expect(extractTasksAssistantTargets(content)).toContain(
+      'T6.1 scoring/veto/ 下新增 veto-and-tier 模块'
+    );
     expect(extractAssistantTarget(content)).toContain('veto-and-tier');
   });
 
@@ -74,7 +80,9 @@ describe('assistant target extraction by real audit format', () => {
 - [ ] T1.2 InitCommand 在流程开始时检测 TTY，非 TTY 且无 --ai/--yes 时设置 internalYes=true
 `;
 
-    expect(extractTasksAssistantTargets(content)).toContain('**T1**：TTY 检测与 utils/tty.js（AC: 3）');
+    expect(extractTasksAssistantTargets(content)).toContain(
+      '**T1**：TTY 检测与 utils/tty.js（AC: 3）'
+    );
     expect(extractAssistantTarget(content)).toContain('internalYes=true');
   });
 
@@ -101,7 +109,11 @@ describe('assistant target extraction by real audit format', () => {
 2. **模糊表述**：需补充分组语义
 `;
 
-    expect(extractSpecCoverageAssistantTargets(content).some((item) => item.includes('未覆盖 6.3 未完成路径'))).toBe(true);
+    expect(
+      extractSpecCoverageAssistantTargets(content).some((item) =>
+        item.includes('未覆盖 6.3 未完成路径')
+      )
+    ).toBe(true);
     expect(extractAssistantTarget(content)).toContain('fallback 路径未覆盖');
   });
 
@@ -136,7 +148,9 @@ describe('assistant target extraction by real audit format', () => {
 建议主 Agent 将本 Story 标记为完成，并进入后续收尾或 Epic 集成。
 `;
 
-    expect(extractStoryAssistantTargets(content)).toContain('将本 Story 标记为完成，并进入后续收尾或 Epic 集成。');
+    expect(extractStoryAssistantTargets(content)).toContain(
+      '将本 Story 标记为完成，并进入后续收尾或 Epic 集成。'
+    );
     expect(extractAssistantTarget(content)).toContain('后续收尾或 Epic 集成');
   });
 
@@ -178,7 +192,11 @@ describe('assistant target extraction by real audit format', () => {
 | npm run accept:e3-s3 | PASS (all 3 stages) | 已填写 |
 `;
 
-    expect(extractImplementAssistantTargets(content).some((item) => item.includes('AC-1 报告→scoring/data 记录'))).toBe(true);
+    expect(
+      extractImplementAssistantTargets(content).some((item) =>
+        item.includes('AC-1 报告→scoring/data 记录')
+      )
+    ).toBe(true);
     expect(extractAssistantTarget(content)).toContain('accept:e3-s3');
   });
 
@@ -192,7 +210,11 @@ describe('assistant target extraction by real audit format', () => {
 | AC-1 报告→scoring/data 记录 | parse-and-write.ts | parse-and-write.test.ts (5) |
 `;
 
-    expect(extractImplementAssistantTargets(content).some((item) => item.includes('add(a: number, b: number)'))).toBe(true);
+    expect(
+      extractImplementAssistantTargets(content).some((item) =>
+        item.includes('add(a: number, b: number)')
+      )
+    ).toBe(true);
     expect(extractAssistantTarget(content)).toContain('parse-and-write');
   });
 

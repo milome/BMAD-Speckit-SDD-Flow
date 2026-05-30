@@ -119,9 +119,7 @@ describe('coachDiagnose fallback', () => {
       stage: 'spec',
       phase_score: 70,
       phase_weight: 0.25,
-      check_items: [
-        { item_id: 'item_repeat', passed: false, score_delta: -10 },
-      ],
+      check_items: [{ item_id: 'item_repeat', passed: false, score_delta: -10 }],
       timestamp: new Date().toISOString(),
       iteration_count: 0,
       iteration_records: [],
@@ -130,9 +128,7 @@ describe('coachDiagnose fallback', () => {
     const rec2: RunScoreRecord = {
       ...rec1,
       stage: 'plan',
-      check_items: [
-        { item_id: 'item_repeat', passed: false, score_delta: -5 },
-      ],
+      check_items: [{ item_id: 'item_repeat', passed: false, score_delta: -5 }],
     };
     fs.writeFileSync(
       path.join(dataPath, `${runId}.json`),
@@ -176,9 +172,24 @@ describe('coachDiagnose fallback', () => {
         timestamp: new Date().toISOString(),
         iteration_count: 2,
         iteration_records: [
-          { timestamp: '2026-03-06T10:00:00Z', result: 'fail', severity: 'normal', overall_grade: 'C' },
-          { timestamp: '2026-03-06T11:00:00Z', result: 'fail', severity: 'minor', overall_grade: 'B' },
-          { timestamp: '2026-03-06T12:00:00Z', result: 'pass', severity: 'normal', overall_grade: 'A' },
+          {
+            timestamp: '2026-03-06T10:00:00Z',
+            result: 'fail',
+            severity: 'normal',
+            overall_grade: 'C',
+          },
+          {
+            timestamp: '2026-03-06T11:00:00Z',
+            result: 'fail',
+            severity: 'minor',
+            overall_grade: 'B',
+          },
+          {
+            timestamp: '2026-03-06T12:00:00Z',
+            result: 'pass',
+            severity: 'normal',
+            overall_grade: 'A',
+          },
         ],
         first_pass: false,
       },

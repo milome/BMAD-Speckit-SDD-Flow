@@ -104,7 +104,13 @@ function collectLayer1PrdInputs(projectRoot: string): {
       sourceType: 'root_prd',
     });
   }
-  const runtimeContextPath = path.join(projectRoot, '_bmad-output', 'runtime', 'context', 'project.json');
+  const runtimeContextPath = path.join(
+    projectRoot,
+    '_bmad-output',
+    'runtime',
+    'context',
+    'project.json'
+  );
   return {
     branch,
     planningRoot,
@@ -244,7 +250,13 @@ export function writeLayer1PrdCompletionMarker(input: {
       ].join('; ')
     );
   }
-  const markerPath = path.join(projectRoot, '_bmad-output', 'runtime', 'context', LAYER_1_PRD_MARKER_FILE);
+  const markerPath = path.join(
+    projectRoot,
+    '_bmad-output',
+    'runtime',
+    'context',
+    LAYER_1_PRD_MARKER_FILE
+  );
   fs.mkdirSync(path.dirname(markerPath), { recursive: true });
   fs.writeFileSync(markerPath, `${JSON.stringify(marker, null, 2)}\n`, 'utf8');
   return markerPath;

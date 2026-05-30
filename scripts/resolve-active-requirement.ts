@@ -136,7 +136,9 @@ function recordEntries(index: JsonObject): JsonObject[] {
   for (const key of ['records', 'requirements', 'requirementRecords']) {
     const value = index[key];
     if (Array.isArray(value)) {
-      out.push(...value.filter((item): item is JsonObject => Boolean(item) && typeof item === 'object'));
+      out.push(
+        ...value.filter((item): item is JsonObject => Boolean(item) && typeof item === 'object')
+      );
     } else if (value && typeof value === 'object') {
       for (const [id, entry] of Object.entries(value as JsonObject)) {
         if (typeof entry === 'string') {
@@ -191,12 +193,17 @@ function matches(entry: JsonObject, input: ResolveActiveRequirementInput): boole
   ) {
     return false;
   }
-  const hasRequirementIdentity = Boolean(input.recordId || input.requirementSetId || inputRecordPath);
+  const hasRequirementIdentity = Boolean(
+    input.recordId || input.requirementSetId || inputRecordPath
+  );
   if (input.runId && !hasRequirementIdentity && runId !== input.runId) return false;
   return Boolean(input.recordId || input.requirementSetId || input.runId || inputRecordPath);
 }
 
-function selectedFromIndex(index: JsonObject, input: ResolveActiveRequirementInput): JsonObject | null {
+function selectedFromIndex(
+  index: JsonObject,
+  input: ResolveActiveRequirementInput
+): JsonObject | null {
   const entries = recordEntries(index);
   const explicit = entries.find((entry) => matches(entry, input));
   if (explicit) return { ...explicit, resolutionSource: 'index_match' };
@@ -226,7 +233,11 @@ function readJsonIfExists(file: string): JsonObject | null {
   return readJson(file);
 }
 
-function resolveRecordPath(root: string, selected: JsonObject | null, requirementSetId: string): string {
+function resolveRecordPath(
+  root: string,
+  selected: JsonObject | null,
+  requirementSetId: string
+): string {
   const configured = firstText(selected?.recordPath, selected?.path, selected?.controlRecordPath);
   return configured ? abs(root, configured) : defaultRecordPath(root, requirementSetId);
 }
@@ -243,7 +254,10 @@ function requireStage(value: string): string {
 
 function objects(value: unknown): JsonObject[] {
   return Array.isArray(value)
-    ? value.filter((item): item is JsonObject => Boolean(item) && typeof item === 'object' && !Array.isArray(item))
+    ? value.filter(
+        (item): item is JsonObject =>
+          Boolean(item) && typeof item === 'object' && !Array.isArray(item)
+      )
     : [];
 }
 
@@ -274,7 +288,8 @@ function candidateTier(record: JsonObject): { order: number; label: string } {
   const status = text(record.status);
   const closeout = closeoutDecision(record);
   if (closeout === 'pass') return { order: 40, label: 'closeout_pass' };
-  if (closeout === 'blocked' || closeout === 'fail') return { order: 30, label: 'closeout_blocked' };
+  if (closeout === 'blocked' || closeout === 'fail')
+    return { order: 30, label: 'closeout_blocked' };
   if (hasOpenRepairSignal(record)) return { order: 20, label: 'repair_or_reroute' };
   if (['active', 'in_progress', 'user_confirmed'].includes(status)) {
     return { order: 10, label: 'active_non_closeout' };
@@ -282,7 +297,10 @@ function candidateTier(record: JsonObject): { order: number; label: string } {
   return { order: 50, label: 'latest_updated_fallback' };
 }
 
-function scanRequirementRecordCandidates(root: string, input: ResolveActiveRequirementInput): RequirementRecordCandidate[] {
+function scanRequirementRecordCandidates(
+  root: string,
+  input: ResolveActiveRequirementInput
+): RequirementRecordCandidate[] {
   const recordsRoot = requirementRecordsRoot(root);
   if (!fs.existsSync(recordsRoot)) return [];
   const candidates: RequirementRecordCandidate[] = [];
@@ -304,7 +322,12 @@ function scanRequirementRecordCandidates(root: string, input: ResolveActiveRequi
       };
       if (input.recordId && candidate.recordId !== input.recordId) continue;
       if (input.requirementSetId && candidate.requirementSetId !== input.requirementSetId) continue;
-      if (input.runId && !(input.recordId || input.requirementSetId) && firstText(record.runId) !== input.runId) continue;
+      if (
+        input.runId &&
+        !(input.recordId || input.requirementSetId) &&
+        firstText(record.runId) !== input.runId
+      )
+        continue;
       candidates.push(candidate);
     } catch {
       // Invalid candidate records are intentionally ignored during recovery scan.
@@ -331,9 +354,11 @@ function candidateSortKey(candidate: RequirementRecordCandidate): {
   };
 }
 
-function selectScannedCandidate(
-  candidates: RequirementRecordCandidate[]
-): { selected: RequirementRecordCandidate | null; rejected: RequirementRecordCandidate[]; reason: string } {
+function selectScannedCandidate(candidates: RequirementRecordCandidate[]): {
+  selected: RequirementRecordCandidate | null;
+  rejected: RequirementRecordCandidate[];
+  reason: string;
+} {
   if (candidates.length === 0) {
     return { selected: null, rejected: [], reason: 'blocked_missing_active_requirement' };
   }
@@ -387,7 +412,10 @@ export function emitRepairProjection(
 
 function failWithProjection(root: string, projection: RequirementIndexRepairProjection): never {
   const candidateList = projection.rejectedCandidates
-    .map((candidate) => `${candidate.requirementSetId}:${candidate.recordId}:${candidate.selectionTier}`)
+    .map(
+      (candidate) =>
+        `${candidate.requirementSetId}:${candidate.recordId}:${candidate.selectionTier}`
+    )
     .join(', ');
   throw new Error(
     `${projection.selectionReason}: ${candidateList || 'no controlled requirement-record candidates'}; projection=${projection.projectionPath}`
@@ -396,9 +424,18 @@ function failWithProjection(root: string, projection: RequirementIndexRepairProj
 
 function stageFromConfirmedImplementationEntry(record: JsonObject, flow: RuntimeFlowId): string {
   const status = firstText(record.status);
-  const entryFlow = firstText(record.entryFlow, nested(record, 'implementationConfirmation')?.entryFlow);
-  const entryFlowClass = firstText(record.entryFlowClass, nested(record, 'implementationConfirmation')?.entryFlowClass);
-  const workflowAdapter = firstText(record.workflowAdapter, nested(record, 'implementationConfirmation')?.workflowAdapter);
+  const entryFlow = firstText(
+    record.entryFlow,
+    nested(record, 'implementationConfirmation')?.entryFlow
+  );
+  const entryFlowClass = firstText(
+    record.entryFlowClass,
+    nested(record, 'implementationConfirmation')?.entryFlowClass
+  );
+  const workflowAdapter = firstText(
+    record.workflowAdapter,
+    nested(record, 'implementationConfirmation')?.workflowAdapter
+  );
   if (
     flow === 'standalone_tasks' &&
     entryFlow === 'standalone_tasks' &&
@@ -420,9 +457,15 @@ function maybeImplementationEntryGate(value: unknown): ImplementationEntryGate |
   return undefined;
 }
 
-function assertIdentity(record: JsonObject, input: ResolveActiveRequirementInput, recordPath: string): void {
+function assertIdentity(
+  record: JsonObject,
+  input: ResolveActiveRequirementInput,
+  recordPath: string
+): void {
   if (input.recordId && text(record.recordId) !== input.recordId) {
-    throw new Error(`recordId mismatch in ${recordPath}: expected ${input.recordId}, got ${text(record.recordId)}`);
+    throw new Error(
+      `recordId mismatch in ${recordPath}: expected ${input.recordId}, got ${text(record.recordId)}`
+    );
   }
   if (input.requirementSetId && text(record.requirementSetId) !== input.requirementSetId) {
     throw new Error(
@@ -431,7 +474,9 @@ function assertIdentity(record: JsonObject, input: ResolveActiveRequirementInput
   }
 }
 
-export function resolveActiveRequirement(input: ResolveActiveRequirementInput = {}): ResolvedRuntimeContext {
+export function resolveActiveRequirement(
+  input: ResolveActiveRequirementInput = {}
+): ResolvedRuntimeContext {
   const root = path.resolve(input.root ?? process.cwd());
   const indexPath = requirementRecordIndexPath(root);
   const hasIndex = fs.existsSync(indexPath);
@@ -475,13 +520,20 @@ export function resolveActiveRequirement(input: ResolveActiveRequirementInput = 
       requirementSetId: scanResult.selected.requirementSetId,
       recordPath: scanResult.selected.recordPath,
       resolutionSource:
-        input.recordId || input.requirementSetId || input.runId ? 'record_scan_match' : 'record_scan_recovered',
+        input.recordId || input.requirementSetId || input.runId
+          ? 'record_scan_match'
+          : 'record_scan_recovered',
     };
   }
 
   let requirementSetId =
     input.requirementSetId ??
-    firstText(selected?.requirementSetId, selected?.requirement_set_id, selected?.recordId, input.recordId);
+    firstText(
+      selected?.requirementSetId,
+      selected?.requirement_set_id,
+      selected?.recordId,
+      input.recordId
+    );
   if (!requirementSetId) {
     throw new Error('Unable to resolve requirementSetId from explicit args or requirement index');
   }
@@ -527,10 +579,17 @@ export function resolveActiveRequirement(input: ResolveActiveRequirementInput = 
   const base = path.dirname(recordPath);
   const runtimePolicySnapshotPath = abs(
     root,
-    refPath(record, path.join(base, 'recovery', 'runtime-policy-snapshot.json'), 'runtimePolicySnapshotRef', 'runtimePolicySnapshotPath')
+    refPath(
+      record,
+      path.join(base, 'recovery', 'runtime-policy-snapshot.json'),
+      'runtimePolicySnapshotRef',
+      'runtimePolicySnapshotPath'
+    )
   );
   const runtimePolicySnapshot = readJsonIfExists(runtimePolicySnapshotPath);
-  const runtimePolicySnapshotPolicy = runtimePolicySnapshot ? nested(runtimePolicySnapshot, 'policy') : null;
+  const runtimePolicySnapshotPolicy = runtimePolicySnapshot
+    ? nested(runtimePolicySnapshot, 'policy')
+    : null;
   const flow = requireFlow(
     firstText(
       record.flow,
@@ -552,7 +611,12 @@ export function resolveActiveRequirement(input: ResolveActiveRequirementInput = 
   );
   const recoveryContextPath = abs(
     root,
-    refPath(record, path.join(base, 'recovery', 'recovery-context.json'), 'recoveryContextRef', 'recoveryContextPath')
+    refPath(
+      record,
+      path.join(base, 'recovery', 'recovery-context.json'),
+      'recoveryContextRef',
+      'recoveryContextPath'
+    )
   );
 
   return {
@@ -560,27 +624,47 @@ export function resolveActiveRequirement(input: ResolveActiveRequirementInput = 
     kind: 'ResolvedRuntimeContext',
     recordId,
     requirementSetId: finalRequirementSetId,
-    ...(firstText(record.runId, selected?.runId, input.runId) ? { runId: firstText(record.runId, selected?.runId, input.runId) } : {}),
+    ...(firstText(record.runId, selected?.runId, input.runId)
+      ? { runId: firstText(record.runId, selected?.runId, input.runId) }
+      : {}),
     status: firstText(record.status) || 'unknown',
     flow,
     stage,
     ...(firstText(record.entryFlow) ? { entryFlow: firstText(record.entryFlow) } : {}),
-    ...(firstText(record.entryFlowClass) ? { entryFlowClass: firstText(record.entryFlowClass) } : {}),
-    ...(firstText(record.workflowAdapter) ? { workflowAdapter: firstText(record.workflowAdapter) } : {}),
-    ...(firstText(record.updatedAt, record.lastUpdatedAt, record.confirmedAt) ? { updatedAt: firstText(record.updatedAt, record.lastUpdatedAt, record.confirmedAt) } : {}),
+    ...(firstText(record.entryFlowClass)
+      ? { entryFlowClass: firstText(record.entryFlowClass) }
+      : {}),
+    ...(firstText(record.workflowAdapter)
+      ? { workflowAdapter: firstText(record.workflowAdapter) }
+      : {}),
+    ...(firstText(record.updatedAt, record.lastUpdatedAt, record.confirmedAt)
+      ? { updatedAt: firstText(record.updatedAt, record.lastUpdatedAt, record.confirmedAt) }
+      : {}),
     ...(firstText(record.sourceMode) ? { sourceMode: firstText(record.sourceMode) } : {}),
     ...(firstText(record.sourcePath) ? { sourcePath: firstText(record.sourcePath) } : {}),
-    ...(firstText(record.sourceDocumentHash) ? { sourceDocumentHash: firstText(record.sourceDocumentHash) } : {}),
-    ...(firstText(record.implementationConfirmationHash) ? { implementationConfirmationHash: firstText(record.implementationConfirmationHash) } : {}),
-    ...(firstText(record.confirmationPageHash) ? { confirmationPageHash: firstText(record.confirmationPageHash) } : {}),
+    ...(firstText(record.sourceDocumentHash)
+      ? { sourceDocumentHash: firstText(record.sourceDocumentHash) }
+      : {}),
+    ...(firstText(record.implementationConfirmationHash)
+      ? { implementationConfirmationHash: firstText(record.implementationConfirmationHash) }
+      : {}),
+    ...(firstText(record.confirmationPageHash)
+      ? { confirmationPageHash: firstText(record.confirmationPageHash) }
+      : {}),
     ...(firstText(record.templateId) ? { templateId: firstText(record.templateId) } : {}),
     ...(firstText(record.epicId) ? { epicId: firstText(record.epicId) } : {}),
     ...(firstText(record.storyId) ? { storyId: firstText(record.storyId) } : {}),
     ...(firstText(record.storySlug) ? { storySlug: firstText(record.storySlug) } : {}),
     ...(firstText(record.artifactRoot) ? { artifactRoot: firstText(record.artifactRoot) } : {}),
-    ...(firstText(record.artifactPath, record.sourcePath) ? { artifactPath: firstText(record.artifactPath, record.sourcePath) } : {}),
-    ...(record.latestReviewerCloseout ? { latestReviewerCloseout: record.latestReviewerCloseout } : {}),
-    ...(maybeImplementationEntryGate(record.implementationEntryGate) ? { implementationEntryGate: maybeImplementationEntryGate(record.implementationEntryGate) } : {}),
+    ...(firstText(record.artifactPath, record.sourcePath)
+      ? { artifactPath: firstText(record.artifactPath, record.sourcePath) }
+      : {}),
+    ...(record.latestReviewerCloseout
+      ? { latestReviewerCloseout: record.latestReviewerCloseout }
+      : {}),
+    ...(maybeImplementationEntryGate(record.implementationEntryGate)
+      ? { implementationEntryGate: maybeImplementationEntryGate(record.implementationEntryGate) }
+      : {}),
     indexPath: hasIndex ? indexPath : null,
     recordPath,
     runtimePolicySnapshotPath,
@@ -588,11 +672,15 @@ export function resolveActiveRequirement(input: ResolveActiveRequirementInput = 
     recoveryContextPath,
     recoveryContextExists: fs.existsSync(recoveryContextPath),
     ...(record.traceCheckpointRef ? { traceCheckpointRef: record.traceCheckpointRef } : {}),
-    ...(firstText(record.traceRowsCheckpointHash) ? { traceRowsCheckpointHash: firstText(record.traceRowsCheckpointHash) } : {}),
+    ...(firstText(record.traceRowsCheckpointHash)
+      ? { traceRowsCheckpointHash: firstText(record.traceRowsCheckpointHash) }
+      : {}),
     artifactIndexPath: path.join(requirementRecordsRoot(root), 'artifact-index.jsonl'),
     orchestrationStateDir: path.join(base, 'orchestration', 'orchestration-state'),
     promptPacketsDir: path.join(base, 'prompts', 'prompt-packets'),
-    resolutionSource: (selected?.resolutionSource as ResolvedRuntimeContext['resolutionSource']) ?? 'explicit_args_without_index',
+    resolutionSource:
+      (selected?.resolutionSource as ResolvedRuntimeContext['resolutionSource']) ??
+      'explicit_args_without_index',
     ...(repairProjection ? { repairProjection } : {}),
     resolvedAt: new Date().toISOString(),
   };
@@ -622,7 +710,8 @@ export function resolvedRuntimeContextToRuntimeContext(
     artifactRoot: resolved.artifactRoot,
     artifactPath: resolved.artifactPath,
     contextScope: resolved.runId ? 'run' : resolved.storyId ? 'story' : 'project',
-    latestReviewerCloseout: resolved.latestReviewerCloseout as RuntimeContextFile['latestReviewerCloseout'],
+    latestReviewerCloseout:
+      resolved.latestReviewerCloseout as RuntimeContextFile['latestReviewerCloseout'],
     updatedAt: resolved.updatedAt ?? resolved.resolvedAt,
     implementationEntryGate: resolved.implementationEntryGate,
     resolvedRuntimeContext: resolved,
@@ -650,7 +739,9 @@ export function mainResolveActiveRequirement(argv: string[]): number {
     process.stdout.write(`${JSON.stringify(resolved, null, 2)}\n`);
     return 0;
   } catch (error) {
-    console.error(`resolve-active-requirement: ${error instanceof Error ? error.message : String(error)}`);
+    console.error(
+      `resolve-active-requirement: ${error instanceof Error ? error.message : String(error)}`
+    );
     return 1;
   }
 }

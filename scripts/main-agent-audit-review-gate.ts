@@ -8,6 +8,7 @@ import {
   type AuditTriadRoundReceipt,
 } from './audit-triad-orchestrator';
 import { appendControlEventAndReplay } from './requirement-record-control-store';
+import { openReconfirmationRequests } from './reconfirmation-runtime';
 
 type JsonObject = Record<string, unknown>;
 type AuditReviewDecision = 'pass' | 'blocked';
@@ -34,9 +35,9 @@ function parseArgs(argv: string[]): ParsedArgs {
     if (arg === '--help' || arg === '-h') out.help = true;
     else if (arg === '--json') out.json = true;
     else if (arg.startsWith('--')) {
-      const key = arg.slice(2).replace(/-([a-z])/gu, (_, letter: string) =>
-        letter.toUpperCase()
-      ) as keyof ParsedArgs;
+      const key = arg
+        .slice(2)
+        .replace(/-([a-z])/gu, (_, letter: string) => letter.toUpperCase()) as keyof ParsedArgs;
       const value = argv[index + 1];
       if (!value || value.startsWith('--')) throw new Error(`Missing value for ${arg}`);
       if (key === 'round' || key === 'repairReceipt' || key === 'repairFeedbackDispatch') {
@@ -138,7 +139,11 @@ function currentModelPassIssues(record: JsonObject, model: string): string[] {
   return issues;
 }
 
-function currentHashes(record: JsonObject, reportHash: string, plan: AuditTriadExecutionPlan): JsonObject {
+function currentHashes(
+  record: JsonObject,
+  reportHash: string,
+  plan: AuditTriadExecutionPlan
+): JsonObject {
   return {
     sourceDocumentHash: text(record.sourceDocumentHash),
     implementationConfirmationHash: text(record.implementationConfirmationHash),
@@ -152,7 +157,11 @@ function currentHashes(record: JsonObject, reportHash: string, plan: AuditTriadE
   };
 }
 
-function readRounds(args: ParsedArgs, recordPath: string, attemptId: string): AuditTriadRoundReceipt[] {
+function readRounds(
+  args: ParsedArgs,
+  recordPath: string,
+  attemptId: string
+): AuditTriadRoundReceipt[] {
   const paths = [
     ...(args.round ?? []),
     ...(args.rounds ? [args.rounds] : []),
@@ -180,6 +189,15 @@ function evaluate(input: {
 } {
   const checks: JsonObject[] = [];
   const blockingReasons: string[] = [];
+  const openReconfirmations = openReconfirmationRequests(input.record);
+  checks.push({
+    id: 'no-open-reconfirmation-request',
+    passed: openReconfirmations.length === 0,
+    openRequestIds: openReconfirmations.map((request) => text(request.requestId)).filter(Boolean),
+  });
+  if (openReconfirmations.length > 0) {
+    blockingReasons.push('open_reconfirmation_request_exists');
+  }
   const executionIssues = currentModelPassIssues(input.record, 'execution_closure');
   checks.push({
     id: 'execution-closure-current-pass',
@@ -200,7 +218,9 @@ function evaluate(input: {
   });
 
   const planIssues = [
-    text(input.plan.recordId) === text(input.record.recordId) ? '' : 'audit_triad_plan_record_mismatch',
+    text(input.plan.recordId) === text(input.record.recordId)
+      ? ''
+      : 'audit_triad_plan_record_mismatch',
     text(input.plan.attemptId) === input.attemptId ? '' : 'audit_triad_plan_attempt_mismatch',
     text(input.plan.sourceDocumentHash) === text(input.record.sourceDocumentHash)
       ? ''

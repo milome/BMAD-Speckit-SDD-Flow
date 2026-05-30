@@ -1,6 +1,10 @@
 import { createHash } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import {
+  buildOpenReconfirmationBlockingReasonRefs,
+  hasOpenReconfirmationRequest,
+} from './reconfirmation-runtime';
 
 export type SixModelRuntimeNextAction =
   | 'enter_architecture_confirmation'
@@ -66,7 +70,11 @@ function safeSegment(value: string): string {
   return value.replace(/[^A-Za-z0-9._-]+/g, '-') || 'unknown';
 }
 
-export function decisionMatrixDir(projectRoot: string, recordId: string, attemptId: string): string {
+export function decisionMatrixDir(
+  projectRoot: string,
+  recordId: string,
+  attemptId: string
+): string {
   return path.join(
     projectRoot,
     '_bmad-output',
@@ -78,7 +86,10 @@ export function decisionMatrixDir(projectRoot: string, recordId: string, attempt
   );
 }
 
-function modelResult(record: Record<string, unknown>, model: string | null): Record<string, unknown> | null {
+function modelResult(
+  record: Record<string, unknown>,
+  model: string | null
+): Record<string, unknown> | null {
   const results = object(record.sixModelResults);
   return model ? object(results?.[model]) : null;
 }
@@ -111,7 +122,9 @@ function nextModelFor(action: SixModelRuntimeNextAction): string | null {
   }
 }
 
-function taskTypeFor(action: SixModelRuntimeNextAction): SixModelRuntimeDecision['allowedDispatchTaskType'] {
+function taskTypeFor(
+  action: SixModelRuntimeNextAction
+): SixModelRuntimeDecision['allowedDispatchTaskType'] {
   switch (action) {
     case 'dispatch_implement':
       return 'implement';
@@ -145,13 +158,21 @@ export function resolveSixModelRuntimeDecision(input: {
   const currentMentalModel = text(record.currentMentalModel) || null;
   const currentResult = modelResult(record, currentMentalModel);
   const currentModelStatus = text(currentResult?.status) || null;
-  const reasonRefs = blockingReasons(currentResult).map((id) => ({ sourceType: 'model_result', id }));
+  const reasonRefs = blockingReasons(currentResult).map((id) => ({
+    sourceType: 'model_result',
+    id,
+  }));
 
   let nextAction: SixModelRuntimeNextAction = 'await_user';
   let ready = false;
   let transitionMode: SixModelRuntimeDecision['transitionMode'] = 'requires_user_or_gate';
 
-  if (text(record.status) === 'closed') {
+  if (hasOpenReconfirmationRequest(record)) {
+    nextAction = 'run_pre_confirmation_drilldown';
+    ready = false;
+    transitionMode = 'blocked';
+    reasonRefs.push(...buildOpenReconfirmationBlockingReasonRefs(record));
+  } else if (text(record.status) === 'closed') {
     nextAction = 'record_closed';
     ready = true;
     transitionMode = 'auto_after_controlled_ingest';
@@ -180,10 +201,7 @@ export function resolveSixModelRuntimeDecision(input: {
     }
   } else if (currentMentalModel === 'implementation_readiness') {
     if (currentModelStatus === 'pass') {
-      if (
-        input.lastTaskReportStatus === 'done' &&
-        !hasCurrentPass(record, 'execution_closure')
-      ) {
+      if (input.lastTaskReportStatus === 'done' && !hasCurrentPass(record, 'execution_closure')) {
         nextAction = 'run_execution_closure_gate';
         ready = true;
         transitionMode = 'requires_user_or_gate';

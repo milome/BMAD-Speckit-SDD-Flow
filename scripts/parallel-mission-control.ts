@@ -123,7 +123,10 @@ function text(value: unknown): string {
 
 function objects(value: unknown): JsonObject[] {
   return Array.isArray(value)
-    ? value.filter((item): item is JsonObject => Boolean(item) && typeof item === 'object' && !Array.isArray(item))
+    ? value.filter(
+        (item): item is JsonObject =>
+          Boolean(item) && typeof item === 'object' && !Array.isArray(item)
+      )
     : [];
 }
 
@@ -144,8 +147,11 @@ function mergeOrderIssues(plan: ParallelMissionPlan): string[] {
   const nodes = nodeById(plan);
   const orderIndex = new Map(plan.merge_order.map((nodeId, index) => [nodeId, index]));
   for (const node of plan.nodes) {
-    const blocked = plan.conflicts.some((conflict) => conflict.resolution === 'block' && conflict.contenders.includes(node.node_id));
-    if (!blocked && !orderIndex.has(node.node_id)) issues.push(`merge_order_missing_node:${node.node_id}`);
+    const blocked = plan.conflicts.some(
+      (conflict) => conflict.resolution === 'block' && conflict.contenders.includes(node.node_id)
+    );
+    if (!blocked && !orderIndex.has(node.node_id))
+      issues.push(`merge_order_missing_node:${node.node_id}`);
     for (const dependency of node.depends_on) {
       if (!nodes.has(dependency)) {
         issues.push(`dependency_unknown:${node.node_id}:${dependency}`);
@@ -153,7 +159,11 @@ function mergeOrderIssues(plan: ParallelMissionPlan): string[] {
       }
       const dependencyIndex = orderIndex.get(dependency);
       const nodeIndex = orderIndex.get(node.node_id);
-      if (dependencyIndex === undefined || nodeIndex === undefined || dependencyIndex >= nodeIndex) {
+      if (
+        dependencyIndex === undefined ||
+        nodeIndex === undefined ||
+        dependencyIndex >= nodeIndex
+      ) {
         issues.push(`merge_order_dependency_not_before_node:${dependency}->${node.node_id}`);
       }
     }
@@ -171,8 +181,13 @@ function writeScopeIssues(plan: ParallelMissionPlan): string[] {
       const shared = intersects(left.write_scope, right.write_scope);
       for (const scope of shared) {
         const conflict = plan.conflicts.find(
-          (candidate) => candidate.scope === scope && left.node_id && right.node_id && left.node_id !== right.node_id &&
-            left.node_id && right.node_id &&
+          (candidate) =>
+            candidate.scope === scope &&
+            left.node_id &&
+            right.node_id &&
+            left.node_id !== right.node_id &&
+            left.node_id &&
+            right.node_id &&
             candidate.contenders.includes(left.node_id) &&
             candidate.contenders.includes(right.node_id)
         );
@@ -187,7 +202,9 @@ function writeScopeIssues(plan: ParallelMissionPlan): string[] {
           const leftOrder = orderIndex.get(left.node_id);
           const rightOrder = orderIndex.get(right.node_id);
           if (leftOrder === undefined || rightOrder === undefined || leftOrder === rightOrder) {
-            issues.push(`write_scope_conflict_serialization_order_missing:${scope}:${left.node_id},${right.node_id}`);
+            issues.push(
+              `write_scope_conflict_serialization_order_missing:${scope}:${left.node_id},${right.node_id}`
+            );
           }
         }
       }
@@ -207,7 +224,9 @@ function topologyIssues(plan: ParallelMissionPlan, topology: PrTopology): string
   for (const id of topologyIds) {
     if (!planIds.has(id)) issues.push(`pr_topology_unknown_node:${id}`);
   }
-  const open = topology.required_nodes.filter((node) => !['merged', 'closed_not_needed'].includes(node.state));
+  const open = topology.required_nodes.filter(
+    (node) => !['merged', 'closed_not_needed'].includes(node.state)
+  );
   if (topology.all_affected_stories_passed && open.length > 0) {
     issues.push(`pr_topology_green_with_open_nodes:${open.map((node) => node.node_id).join(',')}`);
   }
@@ -222,33 +241,46 @@ function integratedVerificationIssues(input: ParallelMissionEvidenceIntegrationI
     issues.push('integrated_verification_closeout_attempt_mismatch');
   }
   if (verification.workspaceRef?.kind !== 'main_workspace') {
-    issues.push(`integrated_verification_workspace_not_main:${verification.workspaceRef?.kind || '<missing>'}`);
+    issues.push(
+      `integrated_verification_workspace_not_main:${verification.workspaceRef?.kind || '<missing>'}`
+    );
   }
-  if (!text(verification.workspaceRef?.path)) issues.push('integrated_verification_workspace_path_missing');
+  if (!text(verification.workspaceRef?.path))
+    issues.push('integrated_verification_workspace_path_missing');
   const commandRuns = objects(verification.commandRuns);
   const artifactRefs = objects(verification.artifactRefs);
   if (commandRuns.length === 0) issues.push('integrated_verification_command_runs_missing');
   if (artifactRefs.length === 0) issues.push('integrated_verification_artifact_refs_missing');
   for (const [index, run] of commandRuns.entries()) {
     if (text(run.closeoutAttemptId) !== input.currentCloseoutAttemptId) {
-      issues.push(`integrated_verification_command_attempt_mismatch:${text(run.commandId) || index}`);
+      issues.push(
+        `integrated_verification_command_attempt_mismatch:${text(run.commandId) || index}`
+      );
     }
-    if (run.exitCode !== 0) issues.push(`integrated_verification_command_failed:${text(run.commandId) || index}`);
+    if (run.exitCode !== 0)
+      issues.push(`integrated_verification_command_failed:${text(run.commandId) || index}`);
     if (objects(run.artifactRefs).length === 0) {
-      issues.push(`integrated_verification_command_artifact_refs_missing:${text(run.commandId) || index}`);
+      issues.push(
+        `integrated_verification_command_artifact_refs_missing:${text(run.commandId) || index}`
+      );
     }
   }
   return issues;
 }
 
-function conflictProof(plan: ParallelMissionPlan): ParallelMissionEvidenceIntegrationReport['conflictProof'] {
+function conflictProof(
+  plan: ParallelMissionPlan
+): ParallelMissionEvidenceIntegrationReport['conflictProof'] {
   const orderIndex = new Map(plan.merge_order.map((nodeId, index) => [nodeId, index]));
   return plan.conflicts.map((conflict) => {
     const issues: string[] = [];
     if (conflict.resolution === 'block') issues.push(`conflict_resolution_block:${conflict.scope}`);
     if (conflict.resolution === 'serialize') {
       const positions = conflict.contenders.map((nodeId) => orderIndex.get(nodeId));
-      if (positions.some((item) => item === undefined) || new Set(positions).size !== positions.length) {
+      if (
+        positions.some((item) => item === undefined) ||
+        new Set(positions).size !== positions.length
+      ) {
         issues.push(`conflict_serialization_order_missing:${conflict.scope}`);
       }
     }
@@ -279,16 +311,21 @@ export function evaluateParallelMissionEvidenceIntegration(
         indexedArtifactRefs: objects(envelope.artifactRefs),
       });
       envelopeHash = validation.envelopeHash ?? sha256Object(envelope);
-      issues.push(...validation.mismatches.map((issue) => `node_envelope_invalid:${node.node_id}:${issue}`));
+      issues.push(
+        ...validation.mismatches.map((issue) => `node_envelope_invalid:${node.node_id}:${issue}`)
+      );
       if (!validation.ok) issues.push(`node_envelope_not_accepted:${node.node_id}`);
-      if (text(envelope.packetId) !== node.packet_id) issues.push(`node_packet_id_mismatch:${node.node_id}`);
-      if (!strings(envelope.traceRows).length) issues.push(`node_trace_rows_missing:${node.node_id}`);
+      if (text(envelope.packetId) !== node.packet_id)
+        issues.push(`node_packet_id_mismatch:${node.node_id}`);
+      if (!strings(envelope.traceRows).length)
+        issues.push(`node_trace_rows_missing:${node.node_id}`);
       if (!objects(envelope.commandRuns).some((run) => run.exitCode === 0)) {
         issues.push(`node_command_evidence_missing:${node.node_id}`);
       }
     }
     const state = prState(input.prTopology, node.node_id);
-    if (!['merged', 'closed_not_needed'].includes(state)) issues.push(`node_not_closed:${node.node_id}:${state}`);
+    if (!['merged', 'closed_not_needed'].includes(state))
+      issues.push(`node_not_closed:${node.node_id}:${state}`);
     return {
       node_id: node.node_id,
       packet_id: node.packet_id,
@@ -317,11 +354,23 @@ export function evaluateParallelMissionEvidenceIntegration(
   const verificationIssues = integratedVerificationIssues(input);
   const conflicts = conflictProof(input.plan);
   const checks = [
-    { id: 'node-envelopes-accepted', passed: nodeResults.every((node) => node.passed), issues: nodeResults.flatMap((node) => node.issues) },
-    { id: 'write-scope-proof', passed: scopeIssues.length === 0 && conflicts.every((conflict) => conflict.passed), issues: [...scopeIssues, ...conflicts.flatMap((conflict) => conflict.issues)] },
+    {
+      id: 'node-envelopes-accepted',
+      passed: nodeResults.every((node) => node.passed),
+      issues: nodeResults.flatMap((node) => node.issues),
+    },
+    {
+      id: 'write-scope-proof',
+      passed: scopeIssues.length === 0 && conflicts.every((conflict) => conflict.passed),
+      issues: [...scopeIssues, ...conflicts.flatMap((conflict) => conflict.issues)],
+    },
     { id: 'merge-order-proof', passed: mergeIssues.length === 0, issues: mergeIssues },
     { id: 'pr-topology-reconciliation', passed: prIssues.length === 0, issues: prIssues },
-    { id: 'main-workspace-integrated-verification', passed: verificationIssues.length === 0, issues: verificationIssues },
+    {
+      id: 'main-workspace-integrated-verification',
+      passed: verificationIssues.length === 0,
+      issues: verificationIssues,
+    },
   ];
   const blockingReasons = [...new Set(checks.flatMap((check) => check.issues))];
   return {
@@ -373,7 +422,11 @@ export function buildParallelMissionPlan(input: {
         conflicts.push({
           scope,
           contenders: [left.node_id, right.node_id],
-          resolution: protectedShared.includes(scope) ? 'block' : hasDependency ? 'serialize' : 'serialize',
+          resolution: protectedShared.includes(scope)
+            ? 'block'
+            : hasDependency
+              ? 'serialize'
+              : 'serialize',
         });
       }
     }

@@ -1,10 +1,7 @@
 /* eslint-disable no-console */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {
-  appendControlEventAndReplay,
-  sha256Text,
-} from './requirement-record-control-store';
+import { appendControlEventAndReplay, sha256Text } from './requirement-record-control-store';
 
 const MODELS = [
   'requirement_confirmation',
@@ -44,7 +41,12 @@ function object(value: unknown): JsonObject {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as JsonObject) : {};
 }
 
-function modelResult(record: JsonObject, model: MentalModel, status: string, recordedAt: string): JsonObject {
+function modelResult(
+  record: JsonObject,
+  model: MentalModel,
+  status: string,
+  recordedAt: string
+): JsonObject {
   return {
     payloadKind: 'model_result',
     model,
@@ -58,7 +60,8 @@ function modelResult(record: JsonObject, model: MentalModel, status: string, rec
     blockingReasons: status === 'pass' ? [] : [`${model}_not_established`],
     sourceRefs: [
       {
-        sourceType: model === 'requirement_confirmation' ? 'confirmation_event' : 'six_model_initialization',
+        sourceType:
+          model === 'requirement_confirmation' ? 'confirmation_event' : 'six_model_initialization',
         id:
           model === 'requirement_confirmation'
             ? 'confirmation_recorded'
@@ -87,7 +90,13 @@ function updateIndex(input: {
   record: JsonObject;
   recordedAt: string;
 }): string {
-  const indexPath = path.join(input.root, '_bmad-output', 'runtime', 'requirement-records', 'index.json');
+  const indexPath = path.join(
+    input.root,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    'index.json'
+  );
   let index: JsonObject = {
     version: 1,
     source: '_bmad-output/runtime/requirement-records/index.json',
@@ -140,8 +149,7 @@ function updateIndex(input: {
         updatedAt: input.recordedAt,
       },
       ...items.filter(
-        (item) =>
-          text(item.requirementId) !== requirementSetId && text(item.recordId) !== recordId
+        (item) => text(item.requirementId) !== requirementSetId && text(item.recordId) !== recordId
       ),
     ],
   };
@@ -230,7 +238,13 @@ if (require.main === module) {
   try {
     process.exitCode = main(process.argv.slice(2));
   } catch (error) {
-    console.error(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : String(error) }, null, 2));
+    console.error(
+      JSON.stringify(
+        { ok: false, error: error instanceof Error ? error.message : String(error) },
+        null,
+        2
+      )
+    );
     process.exitCode = 2;
   }
 }

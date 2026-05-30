@@ -17,7 +17,12 @@ const CASES = [
   { stage: 'spec', fixture: 'sample-spec-report.md', expectedScore: 80 },
   { stage: 'plan', fixture: 'sample-plan-report.md', expectedScore: 100 },
   { stage: 'tasks', fixture: 'sample-tasks-report.md', expectedScore: 60 },
-  { stage: 'implement', fixture: 'sample-implement-report.md', expectedScore: 80, phaseWeight: 0.25 },
+  {
+    stage: 'implement',
+    fixture: 'sample-implement-report.md',
+    expectedScore: 80,
+    phaseWeight: 0.25,
+  },
 ] as const;
 
 describe('audit-generic parser', () => {
@@ -32,7 +37,9 @@ describe('audit-generic parser', () => {
       });
 
       expect(result.stage).toBe(testCase.stage);
-      expect(result.phase_weight).toBe('phaseWeight' in testCase && testCase.phaseWeight != null ? testCase.phaseWeight : 0.2);
+      expect(result.phase_weight).toBe(
+        'phaseWeight' in testCase && testCase.phaseWeight != null ? testCase.phaseWeight : 0.2
+      );
       expect(result.phase_score).toBe(testCase.expectedScore);
       expect(result.check_items.length).toBeGreaterThan(0);
       validateRunScoreRecord(result);
@@ -80,20 +87,25 @@ Spec 审计报告
 
     it('正则失败 + 有 key + LLM 成功 → 返回 RunScoreRecord (spec stage)', async () => {
       process.env.SCORING_LLM_API_KEY = 'test-key';
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          choices: [{
-            message: {
-              content: JSON.stringify({
-                grade: 'C',
-                issues: [{ severity: '中', description: 'spec 问题' }],
-                veto_items: [],
-              }),
-            },
-          }],
-        }),
-      }));
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            choices: [
+              {
+                message: {
+                  content: JSON.stringify({
+                    grade: 'C',
+                    issues: [{ severity: '中', description: 'spec 问题' }],
+                    veto_items: [],
+                  }),
+                },
+              },
+            ],
+          }),
+        })
+      );
 
       const result = await parseAuditReport({
         content: contentWithoutGrade,

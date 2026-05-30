@@ -110,9 +110,11 @@ describe('Main Agent audit review dispatch profile contract', () => {
         'model_projection',
         'main_agent_execution',
       ]);
-      expect(triad.subagents.every((item) => item.writeScope.every((scope) => scope.includes('/reports/**')))).toBe(
-        true
-      );
+      expect(
+        triad.subagents.every((item) =>
+          item.writeScope.every((scope) => scope.includes('/reports/**'))
+        )
+      ).toBe(true);
       expect(packet.auditExecutionProfile?.currentAttemptBinding.currentEvidenceHash).toBe(
         triad.currentEvidenceHash
       );
@@ -189,7 +191,9 @@ describe('Main Agent audit review dispatch profile contract', () => {
               'sha256:1111111111111111111111111111111111111111111111111111111111111111',
           },
         })
-      ).toThrow('auditExecutionProfile currentEvidenceHash must match compiledPromptRef evidence hashes');
+      ).toThrow(
+        'auditExecutionProfile currentEvidenceHash must match compiledPromptRef evidence hashes'
+      );
       expect(() =>
         createExecutionPacket({
           ...packet,

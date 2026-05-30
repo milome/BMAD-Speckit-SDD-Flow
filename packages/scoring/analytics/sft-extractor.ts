@@ -168,7 +168,10 @@ function contentToString(content: CanonicalMessage['content']): string {
   return content.map((part) => part.text).join('\n');
 }
 
-function getFirstMessage(sample: CanonicalSftSample, role: CanonicalMessage['role']): CanonicalMessage | undefined {
+function getFirstMessage(
+  sample: CanonicalSftSample,
+  role: CanonicalMessage['role']
+): CanonicalMessage | undefined {
   return sample.messages.find((message) => message.role === role);
 }
 
@@ -215,11 +218,10 @@ function toLegacyEntry(sample: CanonicalSftSample): SftEntry {
   const userMessage = getFirstMessage(sample, 'user');
   const assistantMessage = getFirstMessage(sample, 'assistant');
   const legacy = extractLegacyInstructionAndInput(userMessage);
-  const output =
-    stripPatchLocationHeaders(
-      getMetadataString(assistantMessage, 'legacy_output') ??
-        (assistantMessage ? contentToString(assistantMessage.content).trim() : '')
-    );
+  const output = stripPatchLocationHeaders(
+    getMetadataString(assistantMessage, 'legacy_output') ??
+      (assistantMessage ? contentToString(assistantMessage.content).trim() : '')
+  );
 
   return {
     instruction: legacy.instruction,

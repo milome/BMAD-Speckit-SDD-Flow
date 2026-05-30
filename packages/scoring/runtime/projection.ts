@@ -87,22 +87,14 @@ function upsertStageProjection(
   });
 }
 
-function maybePushScoreRef(
-  scoreRefs: RuntimeScoreRef[],
-  event: RuntimeEvent
-): void {
+function maybePushScoreRef(scoreRefs: RuntimeScoreRef[], event: RuntimeEvent): void {
   if (!isRecord(event.payload)) {
     return;
   }
 
   const scoreRecordId =
-    typeof event.payload.score_record_id === 'string'
-      ? event.payload.score_record_id
-      : undefined;
-  const recordPath =
-    typeof event.payload.path === 'string'
-      ? event.payload.path
-      : undefined;
+    typeof event.payload.score_record_id === 'string' ? event.payload.score_record_id : undefined;
+  const recordPath = typeof event.payload.path === 'string' ? event.payload.path : undefined;
 
   if (!scoreRecordId && !recordPath) {
     return;
@@ -116,10 +108,7 @@ function maybePushScoreRef(
   });
 }
 
-function maybePushArtifactRef(
-  artifactRefs: RuntimeArtifactRef[],
-  event: RuntimeEvent
-): void {
+function maybePushArtifactRef(artifactRefs: RuntimeArtifactRef[], event: RuntimeEvent): void {
   if (!isRecord(event.payload) || typeof event.payload.path !== 'string') {
     return;
   }
@@ -128,9 +117,7 @@ function maybePushArtifactRef(
     kind: typeof event.payload.kind === 'string' ? event.payload.kind : undefined,
     path: event.payload.path,
     content_hash:
-      typeof event.payload.content_hash === 'string'
-        ? event.payload.content_hash
-        : undefined,
+      typeof event.payload.content_hash === 'string' ? event.payload.content_hash : undefined,
   });
 }
 
@@ -178,9 +165,7 @@ export function buildRunProjection(
   events: RuntimeEvent[],
   runId: string
 ): RuntimeRunProjection | null {
-  const relevantEvents = events
-    .filter((event) => event.run_id === runId)
-    .sort(compareEvents);
+  const relevantEvents = events.filter((event) => event.run_id === runId).sort(compareEvents);
 
   if (relevantEvents.length === 0) {
     return null;

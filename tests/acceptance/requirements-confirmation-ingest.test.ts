@@ -44,14 +44,16 @@ const {
   extractImplementationConfirmation,
   sourceDocumentHashFor,
   implementationConfirmationHashFor,
-} = requireForRenderer(path.join(
-  ROOT,
-  '_bmad',
-  'skills',
-  'requirements-contract-authoring',
-  'scripts',
-  'pre_render_definition_drilldown_lib.js'
-));
+} = requireForRenderer(
+  path.join(
+    ROOT,
+    '_bmad',
+    'skills',
+    'requirements-contract-authoring',
+    'scripts',
+    'pre_render_definition_drilldown_lib.js'
+  )
+);
 
 let tempDir: string;
 
@@ -504,7 +506,11 @@ function fixedHash(char: string): string {
 function writeValidDrilldownGateReport(source: string): string {
   const text = fs.readFileSync(source, 'utf8');
   const extracted = extractImplementationConfirmation(text);
-  const sourceDocumentHash = sourceDocumentHashFor(text, extracted.blockText, extracted.confirmation);
+  const sourceDocumentHash = sourceDocumentHashFor(
+    text,
+    extracted.blockText,
+    extracted.confirmation
+  );
   const implementationConfirmationHash = implementationConfirmationHashFor(extracted.confirmation);
   const reportPath = path.join(tempDir, 'pre-render-must-decomposition-gate-report.json');
   fs.writeFileSync(
@@ -547,7 +553,10 @@ function writeValidDrilldownGateReport(source: string): string {
 }
 
 function render(source: string) {
-  const out = path.join(tempDir, '_bmad-output/runtime/requirements/REQ-CONFIRM-INGEST/confirmation/confirmation.html');
+  const out = path.join(
+    tempDir,
+    '_bmad-output/runtime/requirements/REQ-CONFIRM-INGEST/confirmation/confirmation.html'
+  );
   const result = runNode(RENDERER, [
     '--source',
     source,
@@ -580,7 +589,10 @@ function writeCloseoutRenderReport(input: {
   const attemptId = input.attemptId ?? 'attempt-closeout-001';
   const closeoutConfirmationPageHash = input.closeoutConfirmationPageHash ?? fixedHash('c');
   const deliveryCloseoutReportHash = input.deliveryCloseoutReportHash ?? fixedHash('d');
-  const reportPath = path.join(path.dirname(input.recordPath), 'closeout-confirmation-current.render-report.json');
+  const reportPath = path.join(
+    path.dirname(input.recordPath),
+    'closeout-confirmation-current.render-report.json'
+  );
   const closeoutReport = {
     mode: 'closeout-review',
     recordId: 'REQ-CONFIRM-INGEST',
@@ -591,7 +603,9 @@ function writeCloseoutRenderReport(input: {
     deliveryCloseoutReportHash,
     closeoutDeliveryVerdict: { ready: true, currentAttemptId: attemptId },
     finalAcceptanceReview: { ready: true, currentAttemptId: attemptId },
-    artifactRef: { path: path.join(path.dirname(input.recordPath), 'closeout-confirmation-current.html') },
+    artifactRef: {
+      path: path.join(path.dirname(input.recordPath), 'closeout-confirmation-current.html'),
+    },
   };
   fs.writeFileSync(reportPath, `${JSON.stringify(closeoutReport, null, 2)}\n`, 'utf8');
   const confirmationText = [
@@ -611,26 +625,23 @@ describe('controlled confirmation ingest', () => {
     const { reportPath, report } = render(source);
     const confirmationTextFile = path.join(tempDir, 'confirmation.txt');
     fs.writeFileSync(confirmationTextFile, report.confirmInstruction, 'utf8');
-    const result = runNode(
-      path.join(ROOT, 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js'),
-      [
-        'main-agent:confirm-scope',
-        '--cwd',
-        ROOT,
-        '--source',
-        source,
-        '--render-report',
-        reportPath,
-        '--confirmation-text-file',
-        confirmationTextFile,
-        '--confirmed-by',
-        'test-user',
-        '--runtime-root',
-        path.join(tempDir, '_bmad-output/runtime/requirement-records'),
-        '--confirmed-at',
-        '2026-05-18T06:00:00.000Z',
-      ]
-    );
+    const result = runNode(path.join(ROOT, 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js'), [
+      'main-agent:confirm-scope',
+      '--cwd',
+      ROOT,
+      '--source',
+      source,
+      '--render-report',
+      reportPath,
+      '--confirmation-text-file',
+      confirmationTextFile,
+      '--confirmed-by',
+      'test-user',
+      '--runtime-root',
+      path.join(tempDir, '_bmad-output/runtime/requirement-records'),
+      '--confirmed-at',
+      '2026-05-18T06:00:00.000Z',
+    ]);
 
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
     const output = JSON.parse(result.stdout);
@@ -639,7 +650,10 @@ describe('controlled confirmation ingest', () => {
     expect(output.delegatedEntry).toContain('confirm-requirements-scope.js');
     const record = JSON.parse(
       fs.readFileSync(
-        path.join(tempDir, '_bmad-output/runtime/requirement-records/REQ-CONFIRM-INGEST/requirement-record.json'),
+        path.join(
+          tempDir,
+          '_bmad-output/runtime/requirement-records/REQ-CONFIRM-INGEST/requirement-record.json'
+        ),
         'utf8'
       )
     );
@@ -657,26 +671,23 @@ describe('controlled confirmation ingest', () => {
     const { reportPath, report } = render(source);
     const confirmationTextFile = path.join(tempDir, 'confirmation.txt');
     fs.writeFileSync(confirmationTextFile, report.confirmInstruction, 'utf8');
-    const result = runNode(
-      path.join(ROOT, 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js'),
-      [
-        'confirm-scope',
-        '--cwd',
-        ROOT,
-        '--source',
-        source,
-        '--render-report',
-        reportPath,
-        '--confirmation-text-file',
-        confirmationTextFile,
-        '--confirmed-by',
-        'test-user',
-        '--runtime-root',
-        path.join(tempDir, '_bmad-output/runtime/requirement-records'),
-        '--confirmed-at',
-        '2026-05-18T06:00:00.000Z',
-      ]
-    );
+    const result = runNode(path.join(ROOT, 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js'), [
+      'confirm-scope',
+      '--cwd',
+      ROOT,
+      '--source',
+      source,
+      '--render-report',
+      reportPath,
+      '--confirmation-text-file',
+      confirmationTextFile,
+      '--confirmed-by',
+      'test-user',
+      '--runtime-root',
+      path.join(tempDir, '_bmad-output/runtime/requirement-records'),
+      '--confirmed-at',
+      '2026-05-18T06:00:00.000Z',
+    ]);
 
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
     const output = JSON.parse(result.stdout);
@@ -684,7 +695,10 @@ describe('controlled confirmation ingest', () => {
     expect(output.ok).toBe(true);
     const record = JSON.parse(
       fs.readFileSync(
-        path.join(tempDir, '_bmad-output/runtime/requirement-records/REQ-CONFIRM-INGEST/requirement-record.json'),
+        path.join(
+          tempDir,
+          '_bmad-output/runtime/requirement-records/REQ-CONFIRM-INGEST/requirement-record.json'
+        ),
         'utf8'
       )
     );
@@ -741,10 +755,15 @@ describe('controlled confirmation ingest', () => {
     const blockedPrompt = runPython(REQ_TRACE_PROMPT, ['--source-document', source]);
     expect(blockedPrompt.status).toBe(3);
     expect(blockedPrompt.stdout).toContain('BLOCK: CONFIRMATION_REQUIRED');
-    expect(blockedPrompt.stdout).toContain('implementationConfirmation.status is not user_confirmed');
+    expect(blockedPrompt.stdout).toContain(
+      'implementationConfirmation.status is not user_confirmed'
+    );
 
     const { reportPath, report } = render(source);
-    const recordPath = path.join(tempDir, '_bmad-output/runtime/requirement-records/REQ-CONFIRM-INGEST/requirement-record.json');
+    const recordPath = path.join(
+      tempDir,
+      '_bmad-output/runtime/requirement-records/REQ-CONFIRM-INGEST/requirement-record.json'
+    );
     const ingest = runNode(INGEST, [
       '--source',
       source,
@@ -770,14 +789,13 @@ describe('controlled confirmation ingest', () => {
       '--requirement-record',
       recordPath,
     ]);
-    expect(
-      allowedPrompt.status,
-      `${allowedPrompt.stdout}\n${allowedPrompt.stderr}`
-    ).toBe(0);
+    expect(allowedPrompt.status, `${allowedPrompt.stdout}\n${allowedPrompt.stderr}`).toBe(0);
     expect(allowedPrompt.stdout).toContain('$executing-plans $verification-before-completion');
     expect(allowedPrompt.stdout).toContain('#implementationConfirmation');
     expect(allowedPrompt.stdout).toContain('TRACE-001');
-    expect(allowedPrompt.stdout).toContain('PASS requires evidence for covered must, notDone, and evidence IDs');
+    expect(allowedPrompt.stdout).toContain(
+      'PASS requires evidence for covered must, notDone, and evidence IDs'
+    );
 
     const record = JSON.parse(fs.readFileSync(recordPath, 'utf8'));
     expect(record.confirmationHistory.at(-1)).toMatchObject({
@@ -791,9 +809,18 @@ describe('controlled confirmation ingest', () => {
   it('writes confirmation history, source bookkeeping, event log, and artifact index after exact chat confirmation', () => {
     const source = writeSource();
     const { reportPath, report } = render(source);
-    const recordPath = path.join(tempDir, '_bmad-output/runtime/requirement-records/REQ-CONFIRM-INGEST/requirement-record.json');
-    const eventLogPath = path.join(tempDir, '_bmad-output/runtime/requirement-records/mentor-events.jsonl');
-    const artifactIndexPath = path.join(tempDir, '_bmad-output/runtime/requirement-records/artifact-index.jsonl');
+    const recordPath = path.join(
+      tempDir,
+      '_bmad-output/runtime/requirement-records/REQ-CONFIRM-INGEST/requirement-record.json'
+    );
+    const eventLogPath = path.join(
+      tempDir,
+      '_bmad-output/runtime/requirement-records/mentor-events.jsonl'
+    );
+    const artifactIndexPath = path.join(
+      tempDir,
+      '_bmad-output/runtime/requirement-records/artifact-index.jsonl'
+    );
     const result = runNode(INGEST, [
       '--source',
       source,
@@ -819,13 +846,23 @@ describe('controlled confirmation ingest', () => {
     expect(result.status).toBe(0);
     const updatedSource = fs.readFileSync(source, 'utf8');
     const record = JSON.parse(fs.readFileSync(recordPath, 'utf8'));
-    const events = fs.readFileSync(eventLogPath, 'utf8').trim().split('\n').map((line) => JSON.parse(line));
-    const indexRows = fs.readFileSync(artifactIndexPath, 'utf8').trim().split('\n').map((line) => JSON.parse(line));
+    const events = fs
+      .readFileSync(eventLogPath, 'utf8')
+      .trim()
+      .split('\n')
+      .map((line) => JSON.parse(line));
+    const indexRows = fs
+      .readFileSync(artifactIndexPath, 'utf8')
+      .trim()
+      .split('\n')
+      .map((line) => JSON.parse(line));
 
     expect(updatedSource).toContain('status: user_confirmed');
     expect(updatedSource).toContain('confirmedBy: test-user');
     expect(updatedSource).toContain(`sourceDocumentHash: ${report.sourceDocumentHash}`);
-    expect(updatedSource).toContain(`implementationConfirmationHash: ${report.implementationConfirmationHash}`);
+    expect(updatedSource).toContain(
+      `implementationConfirmationHash: ${report.implementationConfirmationHash}`
+    );
     expect(record.status).toBe('user_confirmed');
     expect(record.confirmationHistory).toHaveLength(1);
     expect(record.confirmationHistory[0]).toMatchObject({
@@ -846,8 +883,14 @@ describe('controlled confirmation ingest', () => {
   it('accepts semantic confirmation when only confirmation projection hash refreshed', () => {
     const source = writeSource();
     const { reportPath, report } = render(source);
-    const recordPath = path.join(tempDir, '_bmad-output/runtime/requirement-records/REQ-CONFIRM-INGEST/requirement-record.json');
-    const eventLogPath = path.join(tempDir, '_bmad-output/runtime/requirement-records/mentor-events.jsonl');
+    const recordPath = path.join(
+      tempDir,
+      '_bmad-output/runtime/requirement-records/REQ-CONFIRM-INGEST/requirement-record.json'
+    );
+    const eventLogPath = path.join(
+      tempDir,
+      '_bmad-output/runtime/requirement-records/mentor-events.jsonl'
+    );
     const firstIngest = runNode(INGEST, [
       '--source',
       source,
@@ -870,10 +913,14 @@ describe('controlled confirmation ingest', () => {
     expect(firstIngest.status, `${firstIngest.stdout}\n${firstIngest.stderr}`).toBe(0);
     const sourceAfterConfirmation = fs.readFileSync(source, 'utf8');
     const recordAfterConfirmation = JSON.parse(fs.readFileSync(recordPath, 'utf8'));
-    const changedReportPath = path.join(path.dirname(reportPath), 'confirmation-render-report-refreshed.json');
+    const changedReportPath = path.join(
+      path.dirname(reportPath),
+      'confirmation-render-report-refreshed.json'
+    );
     const changedReport = {
       ...report,
-      confirmationPageHash: 'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+      confirmationPageHash:
+        'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
       artifactRef: {
         ...report.artifactRef,
         hash: 'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
@@ -903,7 +950,11 @@ describe('controlled confirmation ingest', () => {
 
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
     const record = JSON.parse(fs.readFileSync(recordPath, 'utf8'));
-    const events = fs.readFileSync(eventLogPath, 'utf8').trim().split('\n').map((line) => JSON.parse(line));
+    const events = fs
+      .readFileSync(eventLogPath, 'utf8')
+      .trim()
+      .split('\n')
+      .map((line) => JSON.parse(line));
     expect(fs.readFileSync(source, 'utf8')).toBe(sourceAfterConfirmation);
     expect(record.confirmationHistory).toEqual(recordAfterConfirmation.confirmationHistory);
     expect(record.confirmationHistory.at(-1)).toMatchObject({
@@ -929,8 +980,14 @@ describe('controlled confirmation ingest', () => {
     const source = writeSource();
     const before = fs.readFileSync(source, 'utf8');
     const { reportPath, report } = render(source);
-    const recordPath = path.join(tempDir, '_bmad-output/runtime/requirement-records/REQ-CONFIRM-INGEST/requirement-record.json');
-    const badText = report.confirmInstruction.replace(/sourceDocumentHash=sha256:[a-f0-9]{64}/, 'sourceDocumentHash=sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
+    const recordPath = path.join(
+      tempDir,
+      '_bmad-output/runtime/requirement-records/REQ-CONFIRM-INGEST/requirement-record.json'
+    );
+    const badText = report.confirmInstruction.replace(
+      /sourceDocumentHash=sha256:[a-f0-9]{64}/,
+      'sourceDocumentHash=sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+    );
     const result = runNode(INGEST, [
       '--source',
       source,
@@ -955,9 +1012,18 @@ describe('controlled confirmation ingest', () => {
 
   it('records record_closed only after exact closeout phrase and awaiting user acceptance proof', () => {
     const source = writeSource();
-    const recordPath = path.join(tempDir, '_bmad-output/runtime/requirement-records/REQ-CONFIRM-INGEST/requirement-record.json');
-    const eventLogPath = path.join(tempDir, '_bmad-output/runtime/requirement-records/mentor-events.jsonl');
-    const artifactIndexPath = path.join(tempDir, '_bmad-output/runtime/requirement-records/artifact-index.jsonl');
+    const recordPath = path.join(
+      tempDir,
+      '_bmad-output/runtime/requirement-records/REQ-CONFIRM-INGEST/requirement-record.json'
+    );
+    const eventLogPath = path.join(
+      tempDir,
+      '_bmad-output/runtime/requirement-records/mentor-events.jsonl'
+    );
+    const artifactIndexPath = path.join(
+      tempDir,
+      '_bmad-output/runtime/requirement-records/artifact-index.jsonl'
+    );
     const closeoutReportPath = path.join(path.dirname(recordPath), 'delivery-closeout-report.json');
     fs.mkdirSync(path.dirname(recordPath), { recursive: true });
     const { report } = render(source);
@@ -973,7 +1039,8 @@ describe('controlled confirmation ingest', () => {
           sourceDocumentHash: report.sourceDocumentHash,
           implementationConfirmationHash: report.implementationConfirmationHash,
           lastEventType: 'delivery_confirmation_user_acceptance_requested',
-          lastAppliedEventId: 'delivery_confirmation_user_acceptance_requested:attempt-closeout-001',
+          lastAppliedEventId:
+            'delivery_confirmation_user_acceptance_requested:attempt-closeout-001',
           closeout: {
             currentAttemptId: 'attempt-closeout-001',
             decision: 'pass',
@@ -981,7 +1048,10 @@ describe('controlled confirmation ingest', () => {
               status: 'awaiting_user_acceptance',
               closeoutAttemptId: 'attempt-closeout-001',
               htmlPath: path.join(path.dirname(recordPath), 'closeout-confirmation-current.html'),
-              renderReportPath: path.join(path.dirname(recordPath), 'closeout-confirmation-current.render-report.json'),
+              renderReportPath: path.join(
+                path.dirname(recordPath),
+                'closeout-confirmation-current.render-report.json'
+              ),
               closeoutConfirmationPageHash: fixedHash('c'),
               deliveryCloseoutReportHash: fixedHash('d'),
             },
@@ -1001,7 +1071,10 @@ describe('controlled confirmation ingest', () => {
               {
                 commandId: 'CMD-CLOSEOUT-ACCEPTANCE',
                 closeoutAttemptId: 'attempt-closeout-001',
-                lastRunRef: { runId: 'run-closeout-acceptance', closeoutAttemptId: 'attempt-closeout-001' },
+                lastRunRef: {
+                  runId: 'run-closeout-acceptance',
+                  closeoutAttemptId: 'attempt-closeout-001',
+                },
                 traceRows: ['TRACE-001'],
                 evidenceRefs: ['EVD-001'],
                 artifactRefs: [{ path: 'evidence/closeout.txt', hash: 'sha256:closeout' }],
@@ -1015,7 +1088,13 @@ describe('controlled confirmation ingest', () => {
               evidenceRefs: ['EVD-001'],
               sourceDocumentHash: report.sourceDocumentHash,
               implementationConfirmationHash: report.implementationConfirmationHash,
-              commandRunRefs: [{ commandId: 'CMD-CLOSEOUT-ACCEPTANCE', runId: 'run-closeout-acceptance', closeoutAttemptId: 'attempt-closeout-001' }],
+              commandRunRefs: [
+                {
+                  commandId: 'CMD-CLOSEOUT-ACCEPTANCE',
+                  runId: 'run-closeout-acceptance',
+                  closeoutAttemptId: 'attempt-closeout-001',
+                },
+              ],
             },
           ],
         },
@@ -1030,7 +1109,9 @@ describe('controlled confirmation ingest', () => {
         {
           currentAttemptId: 'attempt-closeout-001',
           decision: 'pass',
-          checks: [{ id: 'delivery-truth-gate-current', passed: true, issueCount: 0, openCount: 0 }],
+          checks: [
+            { id: 'delivery-truth-gate-current', passed: true, issueCount: 0, openCount: 0 },
+          ],
         },
         null,
         2
@@ -1069,7 +1150,9 @@ describe('controlled confirmation ingest', () => {
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
     const output = JSON.parse(result.stdout);
     expect(output.action).toBe('confirm-closeout-acceptance');
-    expect(output.delegatedEntry).toBe('_bmad/skills/requirements-contract-authoring/scripts/ingest-confirmation-event.js');
+    expect(output.delegatedEntry).toBe(
+      '_bmad/skills/requirements-contract-authoring/scripts/ingest-confirmation-event.js'
+    );
     expect(output.ok).toBe(true);
     const record = JSON.parse(fs.readFileSync(recordPath, 'utf8'));
     expect(record.closeoutAcceptance).toMatchObject({
@@ -1096,7 +1179,10 @@ describe('controlled confirmation ingest', () => {
 
   it('rejects closeout acceptance when awaiting proof exists but the closeout phrase hash is stale', () => {
     const source = writeSource();
-    const recordPath = path.join(tempDir, '_bmad-output/runtime/requirement-records/REQ-CONFIRM-INGEST/requirement-record.json');
+    const recordPath = path.join(
+      tempDir,
+      '_bmad-output/runtime/requirement-records/REQ-CONFIRM-INGEST/requirement-record.json'
+    );
     const { report } = render(source);
     fs.mkdirSync(path.dirname(recordPath), { recursive: true });
     fs.writeFileSync(
@@ -1111,7 +1197,8 @@ describe('controlled confirmation ingest', () => {
           sourceDocumentHash: report.sourceDocumentHash,
           implementationConfirmationHash: report.implementationConfirmationHash,
           lastEventType: 'delivery_confirmation_user_acceptance_requested',
-          lastAppliedEventId: 'delivery_confirmation_user_acceptance_requested:attempt-closeout-001',
+          lastAppliedEventId:
+            'delivery_confirmation_user_acceptance_requested:attempt-closeout-001',
           closeout: {
             currentAttemptId: 'attempt-closeout-001',
             decision: 'pass',
@@ -1119,7 +1206,10 @@ describe('controlled confirmation ingest', () => {
               status: 'awaiting_user_acceptance',
               closeoutAttemptId: 'attempt-closeout-001',
               htmlPath: path.join(path.dirname(recordPath), 'closeout-confirmation-current.html'),
-              renderReportPath: path.join(path.dirname(recordPath), 'closeout-confirmation-current.render-report.json'),
+              renderReportPath: path.join(
+                path.dirname(recordPath),
+                'closeout-confirmation-current.render-report.json'
+              ),
               closeoutConfirmationPageHash: fixedHash('c'),
               deliveryCloseoutReportHash: fixedHash('d'),
             },

@@ -4,9 +4,7 @@ import {
   sha256Json,
   stableStringify,
 } from '../_bmad/shared/critical-auditor-profile/load-critical-auditor-profile';
-import {
-  validateCriticalAuditorProfileForStage as validateSharedCriticalAuditorProfileForStage,
-} from '../_bmad/shared/critical-auditor-profile/validate-critical-auditor-profile';
+import { validateCriticalAuditorProfileForStage as validateSharedCriticalAuditorProfileForStage } from '../_bmad/shared/critical-auditor-profile/validate-critical-auditor-profile';
 
 export type CriticalAuditorStageProfileId =
   | 'requirements_compiler'

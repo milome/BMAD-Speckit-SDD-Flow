@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync, cpSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { defaultRuntimeContextRegistry, writeRuntimeContextRegistry } from '../../scripts/runtime-context-registry';
+import {
+  defaultRuntimeContextRegistry,
+  writeRuntimeContextRegistry,
+} from '../../scripts/runtime-context-registry';
 import { projectContextPath, writeRuntimeContext } from '../../scripts/runtime-context';
 import { mainEmitRuntimePolicy } from '../../scripts/emit-runtime-policy';
 

@@ -272,7 +272,8 @@ function passImplementationEntryGateFromSurface(
     return null;
   }
   const flow =
-    surface.orchestrationState?.flow === 'bugfix' || surface.orchestrationState?.flow === 'standalone_tasks'
+    surface.orchestrationState?.flow === 'bugfix' ||
+    surface.orchestrationState?.flow === 'standalone_tasks'
       ? surface.orchestrationState.flow
       : 'story';
   return {
@@ -354,7 +355,9 @@ function alignPolicyWithCurrentDispatchSurface(
     mainAgentOrchestration: alignedSurface,
   };
   const helpRouting =
-    policy.helpRouting && typeof policy.helpRouting === 'object' && !Array.isArray(policy.helpRouting)
+    policy.helpRouting &&
+    typeof policy.helpRouting === 'object' &&
+    !Array.isArray(policy.helpRouting)
       ? (policy.helpRouting as Record<string, unknown>)
       : null;
   return helpRouting
@@ -414,7 +417,7 @@ function buildPrompt(input: {
       ? [
           '--- Entry Flow Discipline Profile ---',
           `flow: ${'flow' in input.packet ? input.packet.flow : 'unknown'}`,
-          `authorityMode: ${'authorityMode' in input.packet ? input.packet.authorityMode ?? 'legacy_generic_prompt' : 'legacy_generic_prompt'}`,
+          `authorityMode: ${'authorityMode' in input.packet ? (input.packet.authorityMode ?? 'legacy_generic_prompt') : 'legacy_generic_prompt'}`,
           input.compiledGoalExplanation ?? '',
           '--- End Entry Flow Discipline Profile ---',
           '--- Compiled Human Prompt ---',
@@ -498,8 +501,13 @@ function nested(value: unknown): Record<string, unknown> {
 
 function readCompiledPromptProjection(input: {
   packet: Packet;
-}): { status: 'pass'; content: string; goalExplanation: string | null } | { status: 'blocked'; driftFlags: string[]; evidence: string[] } {
-  if (!('authorityMode' in input.packet) || input.packet.authorityMode !== 'compiled_implementation_confirmation') {
+}):
+  | { status: 'pass'; content: string; goalExplanation: string | null }
+  | { status: 'blocked'; driftFlags: string[]; evidence: string[] } {
+  if (
+    !('authorityMode' in input.packet) ||
+    input.packet.authorityMode !== 'compiled_implementation_confirmation'
+  ) {
     return { status: 'pass', content: '', goalExplanation: null };
   }
   const ref = input.packet.compiledPromptRef;
@@ -561,7 +569,9 @@ function readCompiledPromptProjection(input: {
     return {
       status: 'blocked',
       driftFlags: ['compiled-native-goal-inline-rejected'],
-      evidence: ['native_goal_inline is forbidden; compiler must provide goal_execution.md document ref'],
+      evidence: [
+        'native_goal_inline is forbidden; compiler must provide goal_execution.md document ref',
+      ],
     };
   }
 
@@ -573,14 +583,22 @@ function readCompiledPromptProjection(input: {
     return {
       status: 'blocked',
       driftFlags: ['compiled-profile-id-mismatch'],
-      evidence: ['audit_receipt.json executionDisciplineProfile.profileId differs from dispatch packet'],
+      evidence: [
+        'audit_receipt.json executionDisciplineProfile.profileId differs from dispatch packet',
+      ],
     };
   }
-  if (profileHash && text(receiptProfile.profileHash) && text(receiptProfile.profileHash) !== profileHash) {
+  if (
+    profileHash &&
+    text(receiptProfile.profileHash) &&
+    text(receiptProfile.profileHash) !== profileHash
+  ) {
     return {
       status: 'blocked',
       driftFlags: ['compiled-profile-hash-mismatch'],
-      evidence: ['audit_receipt.json executionDisciplineProfile.profileHash differs from dispatch packet'],
+      evidence: [
+        'audit_receipt.json executionDisciplineProfile.profileHash differs from dispatch packet',
+      ],
     };
   }
   const content = fs.readFileSync(ref.humanPromptPath, 'utf8');
@@ -780,7 +798,10 @@ function writeTaskReport(taskReportPath: string, report: TaskReport): void {
   fs.writeFileSync(taskReportPath, JSON.stringify(report, null, 2) + '\n', 'utf8');
 }
 
-function readRequirementRecord(projectRoot: string, recordId?: string): Record<string, unknown> | null {
+function readRequirementRecord(
+  projectRoot: string,
+  recordId?: string
+): Record<string, unknown> | null {
   if (!recordId) return null;
   const recordPath = path.join(
     projectRoot,
@@ -831,7 +852,12 @@ function gitHead(projectRoot: string): string {
 function evidencePathFromTaskReportItem(item: string): string | null {
   const codexSmokePrefix = 'codex-smoke:';
   if (item.startsWith(codexSmokePrefix)) return item.slice(codexSmokePrefix.length);
-  if (/^[A-Za-z]:[\\/]/u.test(item) || item.startsWith('/') || item.includes('/') || item.includes('\\')) {
+  if (
+    /^[A-Za-z]:[\\/]/u.test(item) ||
+    item.startsWith('/') ||
+    item.includes('/') ||
+    item.includes('\\')
+  ) {
     return item;
   }
   return null;
@@ -914,11 +940,16 @@ export function runCodexWorkerAdapter(input: {
   const projectRoot = path.resolve(input.projectRoot);
   const packetPath = path.resolve(input.packetPath);
   const packet = readPacket(packetPath);
-  const requirementRecord = readRequirementRecord(projectRoot, input.requirementSetId ?? input.recordId);
-  const sourceDocumentHash = input.sourceDocumentHash ?? text(requirementRecord?.sourceDocumentHash);
+  const requirementRecord = readRequirementRecord(
+    projectRoot,
+    input.requirementSetId ?? input.recordId
+  );
+  const sourceDocumentHash =
+    input.sourceDocumentHash ?? text(requirementRecord?.sourceDocumentHash);
   const implementationConfirmationHash =
     input.implementationConfirmationHash ?? text(requirementRecord?.implementationConfirmationHash);
-  const architectureConfirmationHash = input.architectureConfirmationHash ?? recordArchitectureHash(requirementRecord);
+  const architectureConfirmationHash =
+    input.architectureConfirmationHash ?? recordArchitectureHash(requirementRecord);
   const parentCloseoutAttemptId =
     input.parentCloseoutAttemptId ||
     recordCloseoutAttemptId(requirementRecord) ||
@@ -1271,7 +1302,9 @@ export function runCodexWorkerAdapter(input: {
     governanceEventTypeRegistry: input.governanceEventTypeRegistry,
     registryHash:
       input.governanceEventTypeRegistryHash ??
-      (input.governanceEventTypeRegistry ? governanceEventTypeRegistryHash(input.governanceEventTypeRegistry) : undefined),
+      (input.governanceEventTypeRegistry
+        ? governanceEventTypeRegistryHash(input.governanceEventTypeRegistry)
+        : undefined),
     architectureConfirmationHash,
   });
   const traceRows = input.traceRows ?? [];
@@ -1320,7 +1353,9 @@ export function runCodexWorkerAdapter(input: {
           },
           commandRuns: [commandRun],
           artifactRefs: subagentArtifactRefs,
-          transportRefs: transportEnvelope ? [{ eventType: transportEnvelope.eventType, packetId: transportEnvelope.packetId }] : [],
+          transportRefs: transportEnvelope
+            ? [{ eventType: transportEnvelope.eventType, packetId: transportEnvelope.packetId }]
+            : [],
         })
       : null;
   const subagentEvidenceEnvelopeValidation = subagentEvidenceEnvelope
@@ -1388,16 +1423,31 @@ export function main(argv: string[]): number {
       ? JSON.parse(fs.readFileSync(path.resolve(args.governanceEventTypeRegistryPath), 'utf8'))
       : undefined,
     governanceEventTypeRegistryPolicy: args.governanceEventTypeRegistryPolicyPath
-      ? JSON.parse(fs.readFileSync(path.resolve(args.governanceEventTypeRegistryPolicyPath), 'utf8'))
+      ? JSON.parse(
+          fs.readFileSync(path.resolve(args.governanceEventTypeRegistryPolicyPath), 'utf8')
+        )
       : undefined,
     governanceEventTypeRegistryPolicyHash: args.governanceEventTypeRegistryPolicyHash,
     governanceEventTypeRegistryHash: args.governanceEventTypeRegistryHash,
     architectureConfirmationHash: args.architectureConfirmationHash,
-    traceRows: args.traceRows ? args.traceRows.split(',').map((item) => item.trim()).filter(Boolean) : undefined,
-    coveredRequirementIds: args.coveredRequirementIds
-      ? args.coveredRequirementIds.split(',').map((item) => item.trim()).filter(Boolean)
+    traceRows: args.traceRows
+      ? args.traceRows
+          .split(',')
+          .map((item) => item.trim())
+          .filter(Boolean)
       : undefined,
-    taskRefs: args.taskRefs ? args.taskRefs.split(',').map((item) => item.trim()).filter(Boolean) : undefined,
+    coveredRequirementIds: args.coveredRequirementIds
+      ? args.coveredRequirementIds
+          .split(',')
+          .map((item) => item.trim())
+          .filter(Boolean)
+      : undefined,
+    taskRefs: args.taskRefs
+      ? args.taskRefs
+          .split(',')
+          .map((item) => item.trim())
+          .filter(Boolean)
+      : undefined,
   });
   const reportPath = path.resolve(
     args.reportPath ??

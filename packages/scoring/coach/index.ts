@@ -13,4 +13,3 @@ export type {
   CoachDiagnoseResult,
 } from './types';
 export type { ForbiddenWords, ForbiddenValidationResult } from './forbidden';
-

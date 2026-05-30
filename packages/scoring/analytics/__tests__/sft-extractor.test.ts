@@ -118,10 +118,7 @@ describe('sft-extractor', () => {
       .mockImplementationOnce(() => 'a'.repeat(40)) // getGitHeadHashFull: rev-parse HEAD
       .mockImplementationOnce(() => '--- a/foo\n+++ b/foo\n-xx\n+yy'); // git diff
 
-    const { entries } = await extractSftDataset(
-      tempDir,
-      path.join(tempDir, 'out.jsonl')
-    );
+    const { entries } = await extractSftDataset(tempDir, path.join(tempDir, 'out.jsonl'));
     expect(entries.length).toBe(1);
     expect(entries[0].source_run_id).toBe('run-high');
     expect(entries[0].instruction).toContain('描述');
@@ -175,11 +172,7 @@ describe('sft-extractor', () => {
 
   it('T2-7: fallback to instruction-only when git diff fails (AC-3)', async () => {
     const bugfixPath = path.join(tempDir, 'bugfix.md');
-    fs.writeFileSync(
-      bugfixPath,
-      `## §1 问题\nx\n## §4 修复\ny`,
-      'utf-8'
-    );
+    fs.writeFileSync(bugfixPath, `## §1 问题\nx\n## §4 修复\ny`, 'utf-8');
     const record = {
       run_id: 'run-git-fail',
       scenario: 'real_dev' as const,
@@ -215,11 +208,7 @@ describe('sft-extractor', () => {
 
   it('T2-8: dedup by source_run_id+base_commit_hash+source_path (AC-5)', async () => {
     const bugfixPath = path.join(tempDir, 'bugfix.md');
-    fs.writeFileSync(
-      bugfixPath,
-      `## §1 问题\nx\n## §4 修复\ny`,
-      'utf-8'
-    );
+    fs.writeFileSync(bugfixPath, `## §1 问题\nx\n## §4 修复\ny`, 'utf-8');
     const record = {
       run_id: 'run-dup',
       scenario: 'real_dev' as const,
@@ -251,11 +240,7 @@ describe('sft-extractor', () => {
 
   it('T2-9: minScore option filters phase_score', async () => {
     const bugfixPath = path.join(tempDir, 'bugfix.md');
-    fs.writeFileSync(
-      bugfixPath,
-      `## §1 问题\nx\n## §4 修复\ny`,
-      'utf-8'
-    );
+    fs.writeFileSync(bugfixPath, `## §1 问题\nx\n## §4 修复\ny`, 'utf-8');
     const record60 = {
       run_id: 'run-60',
       scenario: 'real_dev' as const,
@@ -280,14 +265,22 @@ describe('sft-extractor', () => {
       return 'a'.repeat(40);
     });
 
-    const { entries: entries70 } = await extractSftDataset(tempDir, path.join(tempDir, 'out70.jsonl'), {
-      minScore: 70,
-    });
+    const { entries: entries70 } = await extractSftDataset(
+      tempDir,
+      path.join(tempDir, 'out70.jsonl'),
+      {
+        minScore: 70,
+      }
+    );
     expect(entries70.length).toBe(0);
 
-    const { entries: entries60 } = await extractSftDataset(tempDir, path.join(tempDir, 'out60.jsonl'), {
-      minScore: 60,
-    });
+    const { entries: entries60 } = await extractSftDataset(
+      tempDir,
+      path.join(tempDir, 'out60.jsonl'),
+      {
+        minScore: 60,
+      }
+    );
     expect(entries60.length).toBe(1);
   });
 
@@ -747,7 +740,10 @@ describe('sft-extractor', () => {
       return 'a'.repeat(40);
     });
 
-    const { entries, summary } = await extractSftDataset(tempDir, path.join(tempDir, 'out-veto.jsonl'));
+    const { entries, summary } = await extractSftDataset(
+      tempDir,
+      path.join(tempDir, 'out-veto.jsonl')
+    );
     expect(entries).toHaveLength(0);
     expect(summary.skipReasons.veto_triggered).toBe(1);
   });

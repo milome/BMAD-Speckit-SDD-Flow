@@ -210,10 +210,7 @@ export function applyCanonicalRedaction(sample: CanonicalSftSample): CanonicalSf
 
   const messages = sample.messages.map((message, index) => {
     const result = redactMessageContent(message, `messages[${index}].content`);
-    status = mergeRedactionResult(
-      { findings, redactedFields, appliedRules, status },
-      result
-    );
+    status = mergeRedactionResult({ findings, redactedFields, appliedRules, status }, result);
 
     if (!result.message.tool_calls || result.message.tool_calls.length === 0) {
       return result.message;
@@ -273,9 +270,7 @@ export function applyCanonicalRedaction(sample: CanonicalSftSample): CanonicalSf
       ...tool,
       function: {
         ...tool.function,
-        ...(tool.function.description != null
-          ? { description: descriptionResult.value }
-          : {}),
+        ...(tool.function.description != null ? { description: descriptionResult.value } : {}),
         parameters: parametersResult.value,
       },
     };

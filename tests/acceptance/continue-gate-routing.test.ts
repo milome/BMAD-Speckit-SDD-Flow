@@ -7,7 +7,9 @@ const ROOT = join(import.meta.dirname, '..', '..');
 
 describe('continue gate routing config', () => {
   it('maps workflows and steps to rerunGate across planning and implementation flows', () => {
-    const raw = yaml.load(readFileSync(join(ROOT, '_bmad', '_config', 'continue-gate-routing.yaml'), 'utf8')) as any;
+    const raw = yaml.load(
+      readFileSync(join(ROOT, '_bmad', '_config', 'continue-gate-routing.yaml'), 'utf8')
+    ) as any;
     expect(raw.schema).toBe('continue_gate_routing_v1');
 
     const workflows = raw.routes.map((route: any) => route.workflow);
@@ -21,8 +23,12 @@ describe('continue gate routing config', () => {
     expect(workflows).toContain('speckit-workflow');
 
     const prdRoute = raw.routes.find((route: any) => route.workflow === 'bmad-create-prd');
-    const archRoute = raw.routes.find((route: any) => route.workflow === 'bmad-create-architecture');
-    const epicsRoute = raw.routes.find((route: any) => route.workflow === 'bmad-create-epics-and-stories');
+    const archRoute = raw.routes.find(
+      (route: any) => route.workflow === 'bmad-create-architecture'
+    );
+    const epicsRoute = raw.routes.find(
+      (route: any) => route.workflow === 'bmad-create-epics-and-stories'
+    );
     const devStoryRoute = raw.routes.find((route: any) => route.workflow === 'bmad-dev-story');
 
     expect(prdRoute.steps['step-04-journeys']).toBe('prd-contract-gate');

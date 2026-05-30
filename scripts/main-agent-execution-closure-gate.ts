@@ -4,6 +4,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { buildPerMustClosureEvidenceIndex } from './per-must-closure-evidence-index';
 import { appendControlEventAndReplay, sha256Text } from './requirement-record-control-store';
+import { openReconfirmationRequests } from './reconfirmation-runtime';
 
 type JsonObject = Record<string, unknown>;
 type ExecutionClosureDecision = 'pass' | 'blocked';
@@ -28,9 +29,7 @@ function parseArgs(argv: string[]): ParsedArgs {
     if (arg === '--help' || arg === '-h') out.help = true;
     else if (arg === '--json') out.json = true;
     else if (arg.startsWith('--')) {
-      const key = arg.slice(2).replace(/-([a-z])/gu, (_, letter: string) =>
-        letter.toUpperCase()
-      );
+      const key = arg.slice(2).replace(/-([a-z])/gu, (_, letter: string) => letter.toUpperCase());
       const value = argv[index + 1];
       if (!value || value.startsWith('--')) throw new Error(`Missing value for ${arg}`);
       (out as Record<string, string | boolean | undefined>)[key] = value;
@@ -83,8 +82,7 @@ function readJsonArray(file: string): JsonObject[] {
   const parsed = JSON.parse(fs.readFileSync(file, 'utf8')) as unknown;
   if (!Array.isArray(parsed)) throw new Error(`JSON array expected: ${file}`);
   return parsed.filter(
-    (item): item is JsonObject =>
-      Boolean(item) && typeof item === 'object' && !Array.isArray(item)
+    (item): item is JsonObject => Boolean(item) && typeof item === 'object' && !Array.isArray(item)
   );
 }
 
@@ -109,7 +107,11 @@ function defaultImplementationEvidencePath(recordPath: string, attemptId: string
 }
 
 function defaultCommandSummaryPath(recordPath: string, attemptId: string): string {
-  return path.join(resolveTraceExecutionDir(recordPath, attemptId), 'command-results', 'summary.json');
+  return path.join(
+    resolveTraceExecutionDir(recordPath, attemptId),
+    'command-results',
+    'summary.json'
+  );
 }
 
 function defaultReportPath(recordPath: string, attemptId: string): string {
@@ -131,16 +133,21 @@ function resolveAttemptId(args: ParsedArgs, record: JsonObject): string {
 }
 
 function currentHashes(record: JsonObject): JsonObject {
-  return Object.fromEntries(Object.entries({
-    sourceDocumentHash: text(record.sourceDocumentHash),
-    implementationConfirmationHash: text(record.implementationConfirmationHash),
-    architectureConfirmationHash: text(
-      nested(record.architectureConfirmationState).currentArchitectureConfirmationHash
-    ),
-  }).filter(([, value]) => text(value)));
+  return Object.fromEntries(
+    Object.entries({
+      sourceDocumentHash: text(record.sourceDocumentHash),
+      implementationConfirmationHash: text(record.implementationConfirmationHash),
+      architectureConfirmationHash: text(
+        nested(record.architectureConfirmationState).currentArchitectureConfirmationHash
+      ),
+    }).filter(([, value]) => text(value))
+  );
 }
 
-function commandSummaryCheck(summaryPath: string, modelPacket: JsonObject): {
+function commandSummaryCheck(
+  summaryPath: string,
+  modelPacket: JsonObject
+): {
   check: JsonObject;
   blockingReasons: string[];
   commandRuns: JsonObject[];
@@ -188,11 +195,14 @@ function commandSummaryCheck(summaryPath: string, modelPacket: JsonObject): {
   };
 }
 
-function implementationEvidenceCheck(evidencePath: string, input: {
-  record: JsonObject;
-  attemptId: string;
-  commandCount: number;
-}): { check: JsonObject; blockingReasons: string[] } {
+function implementationEvidenceCheck(
+  evidencePath: string,
+  input: {
+    record: JsonObject;
+    attemptId: string;
+    commandCount: number;
+  }
+): { check: JsonObject; blockingReasons: string[] } {
   if (!fs.existsSync(evidencePath)) {
     return {
       check: {
@@ -221,7 +231,9 @@ function implementationEvidenceCheck(evidencePath: string, input: {
     text(input.record.implementationConfirmationHash)
       ? ''
       : 'implementation_evidence_confirmation_hash_mismatch',
-    evidenceCommands.length >= input.commandCount ? '' : 'implementation_evidence_command_runs_incomplete',
+    evidenceCommands.length >= input.commandCount
+      ? ''
+      : 'implementation_evidence_command_runs_incomplete',
     evidenceClosures.length > 0 ? '' : 'implementation_evidence_requirement_closures_missing',
     evidenceArtifacts.length > 0 ? '' : 'implementation_evidence_artifact_refs_missing',
   ]);
@@ -243,7 +255,10 @@ function implementationEvidenceCheck(evidencePath: string, input: {
   };
 }
 
-function executionEvidenceInRecordCheck(record: JsonObject, attemptId: string): {
+function executionEvidenceInRecordCheck(
+  record: JsonObject,
+  attemptId: string
+): {
   check: JsonObject;
   blockingReasons: string[];
 } {
@@ -292,6 +307,15 @@ function evaluate(input: {
 } {
   const checks: JsonObject[] = [];
   const blockingReasons: string[] = [];
+  const openReconfirmations = openReconfirmationRequests(input.record);
+  checks.push({
+    id: 'no-open-reconfirmation-request',
+    passed: openReconfirmations.length === 0,
+    openRequestIds: openReconfirmations.map((request) => text(request.requestId)).filter(Boolean),
+  });
+  if (openReconfirmations.length > 0) {
+    blockingReasons.push('open_reconfirmation_request_exists');
+  }
   const modelPacket = fs.existsSync(input.modelPacketPath) ? readJson(input.modelPacketPath) : null;
   if (!modelPacket) {
     checks.push({
@@ -405,7 +429,10 @@ function updateRecord(
     reportPath: normalizePathForRecord(input.reportPath),
     sourceRefs: [
       { sourceType: 'execution_iteration', id: input.attemptId },
-      { sourceType: 'per_must_closure_evidence_index', id: normalizePathForRecord(input.reportPath) },
+      {
+        sourceType: 'per_must_closure_evidence_index',
+        id: normalizePathForRecord(input.reportPath),
+      },
     ],
     recordedAt: input.evaluatedAt,
     recordedBy: input.evaluatedBy,
@@ -475,7 +502,9 @@ export function mainExecutionClosureGate(argv: string[]): number {
   const attemptId = resolveAttemptId(args, record);
   const evaluatedAt = args.evaluatedAt ?? new Date().toISOString();
   const evaluatedBy = args.evaluatedBy ?? 'agent';
-  const modelPacketPath = path.resolve(args.modelPacket ?? defaultModelPacketPath(recordPath, attemptId));
+  const modelPacketPath = path.resolve(
+    args.modelPacket ?? defaultModelPacketPath(recordPath, attemptId)
+  );
   const evidencePath = path.resolve(
     args.implementationEvidence ?? defaultImplementationEvidencePath(recordPath, attemptId)
   );

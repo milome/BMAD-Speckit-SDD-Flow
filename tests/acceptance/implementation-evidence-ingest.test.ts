@@ -9,7 +9,11 @@ function sha256(content: string): string {
   return `sha256:${crypto.createHash('sha256').update(content, 'utf8').digest('hex')}`;
 }
 
-function artifactRef(artifactPath: string, contentHash: string, overrides: Record<string, unknown> = {}) {
+function artifactRef(
+  artifactPath: string,
+  contentHash: string,
+  overrides: Record<string, unknown> = {}
+) {
   return {
     artifactType: 'implementation_evidence',
     sourceOfTruthRole: 'evidence',
@@ -83,8 +87,18 @@ const traceStatusPolicy = {
   fullCloseoutForUserScopedStatusesForbidden: true,
 };
 
-function writeFixture(root: string): { recordPath: string; evidencePath: string; artifactPath: string } {
-  const base = path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'REQ-EVIDENCE-INGEST');
+function writeFixture(root: string): {
+  recordPath: string;
+  evidencePath: string;
+  artifactPath: string;
+} {
+  const base = path.join(
+    root,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    'REQ-EVIDENCE-INGEST'
+  );
   const evidenceDir = path.join(base, 'execution');
   mkdirSync(evidenceDir, { recursive: true });
   const artifactPath = path.join(evidenceDir, 'implementation-evidence.json');
@@ -98,7 +112,8 @@ function writeFixture(root: string): { recordPath: string; evidencePath: string;
         recordId: 'REQ-EVIDENCE-INGEST',
         requirementSetId: 'REQ-EVIDENCE-INGEST',
         status: 'user_confirmed',
-        sourceDocumentHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+        sourceDocumentHash:
+          'sha256:1111111111111111111111111111111111111111111111111111111111111111',
         implementationConfirmationHash:
           'sha256:2222222222222222222222222222222222222222222222222222222222222222',
         architectureConfirmationState: {
@@ -125,7 +140,8 @@ function writeFixture(root: string): { recordPath: string; evidencePath: string;
         executionIterationId: 'exec-001',
         runId: 'run-001',
         status: 'done',
-        sourceDocumentHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+        sourceDocumentHash:
+          'sha256:1111111111111111111111111111111111111111111111111111111111111111',
         implementationConfirmationHash:
           'sha256:2222222222222222222222222222222222222222222222222222222222222222',
         architectureConfirmationHash:
@@ -146,8 +162,7 @@ function writeFixture(root: string): { recordPath: string; evidencePath: string;
         commandRuns: [
           {
             commandId: 'CMD-IMPLEMENTATION-EVIDENCE-INGEST-TEST',
-            command:
-              'npx vitest run tests/acceptance/implementation-evidence-ingest.test.ts',
+            command: 'npx vitest run tests/acceptance/implementation-evidence-ingest.test.ts',
             runId: 'run-001',
             closeoutAttemptId: 'closeout-001',
             exitCode: 0,
@@ -156,9 +171,7 @@ function writeFixture(root: string): { recordPath: string; evidencePath: string;
             outputSummary: '3 tests passed',
           },
         ],
-        artifactRefs: [
-          artifactRef(artifactPath, sha256(`${artifactContent}\n`)),
-        ],
+        artifactRefs: [artifactRef(artifactPath, sha256(`${artifactContent}\n`))],
         entryFlowState: {
           entryFlow: 'standalone_tasks',
           entryFlowClass: 'task_packet_entry',
@@ -171,15 +184,12 @@ function writeFixture(root: string): { recordPath: string; evidencePath: string;
           requiredCommands: [
             {
               commandId: 'CMD-IMPLEMENTATION-EVIDENCE-INGEST-TEST',
-              command:
-                'npx vitest run tests/acceptance/implementation-evidence-ingest.test.ts',
+              command: 'npx vitest run tests/acceptance/implementation-evidence-ingest.test.ts',
               commandType: 'delivery_evidence',
               blockingIfMissing: true,
               traceRows: ['TRACE-003'],
               evidenceRefs: ['EVD-006'],
-              artifactRefs: [
-                artifactRef(artifactPath, sha256(`${artifactContent}\n`)),
-              ],
+              artifactRefs: [artifactRef(artifactPath, sha256(`${artifactContent}\n`))],
             },
           ],
           historicalRunRefs: [
@@ -304,7 +314,9 @@ describe('implementation evidence ingest', () => {
         true
       );
       expect(
-        existsSync(path.join(path.dirname(path.dirname(fixture.recordPath)), 'artifact-index.jsonl'))
+        existsSync(
+          path.join(path.dirname(path.dirname(fixture.recordPath)), 'artifact-index.jsonl')
+        )
       ).toBe(true);
       expect(existsSync(fixture.artifactPath)).toBe(true);
     } finally {
@@ -316,7 +328,10 @@ describe('implementation evidence ingest', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'implementation-evidence-extension-'));
     try {
       const fixture = writeFixture(root);
-      const extensionPath = path.join(path.dirname(fixture.artifactPath), 'observability-extension.json');
+      const extensionPath = path.join(
+        path.dirname(fixture.artifactPath),
+        'observability-extension.json'
+      );
       const extensionContent = JSON.stringify({ observability: 'extension' }, null, 2);
       writeFileSync(extensionPath, `${extensionContent}\n`, 'utf8');
       const packet = JSON.parse(readFileSync(fixture.evidencePath, 'utf8'));
@@ -462,7 +477,14 @@ describe('implementation evidence ingest', () => {
       const prev = process.cwd();
       process.chdir(root);
       try {
-        expect(mainIngestImplementationEvidence(['--evidence', evidencePath, '--requirement-record', recordPath])).toBe(0);
+        expect(
+          mainIngestImplementationEvidence([
+            '--evidence',
+            evidencePath,
+            '--requirement-record',
+            recordPath,
+          ])
+        ).toBe(0);
       } finally {
         process.chdir(prev);
       }
@@ -489,7 +511,14 @@ describe('implementation evidence ingest', () => {
       const prev = process.cwd();
       process.chdir(root);
       try {
-        expect(mainIngestImplementationEvidence(['--evidence', evidencePath, '--requirement-record', recordPath])).toBe(0);
+        expect(
+          mainIngestImplementationEvidence([
+            '--evidence',
+            evidencePath,
+            '--requirement-record',
+            recordPath,
+          ])
+        ).toBe(0);
       } finally {
         process.chdir(prev);
       }
@@ -552,7 +581,14 @@ describe('implementation evidence ingest', () => {
       const prev = process.cwd();
       process.chdir(root);
       try {
-        expect(mainIngestImplementationEvidence(['--evidence', evidencePath, '--requirement-record', recordPath])).toBe(0);
+        expect(
+          mainIngestImplementationEvidence([
+            '--evidence',
+            evidencePath,
+            '--requirement-record',
+            recordPath,
+          ])
+        ).toBe(0);
       } finally {
         process.chdir(prev);
       }
@@ -597,7 +633,14 @@ describe('implementation evidence ingest', () => {
       const prev = process.cwd();
       process.chdir(root);
       try {
-        expect(mainIngestImplementationEvidence(['--evidence', evidencePath, '--requirement-record', recordPath])).toBe(0);
+        expect(
+          mainIngestImplementationEvidence([
+            '--evidence',
+            evidencePath,
+            '--requirement-record',
+            recordPath,
+          ])
+        ).toBe(0);
       } finally {
         process.chdir(prev);
       }
@@ -618,7 +661,9 @@ describe('implementation evidence ingest', () => {
   });
 
   it('records hook reconciliation state through controlled ingest', () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), 'implementation-evidence-hook-reconciliation-'));
+    const root = mkdtempSync(
+      path.join(os.tmpdir(), 'implementation-evidence-hook-reconciliation-')
+    );
     try {
       const { recordPath, evidencePath } = writeFixture(root);
       const packet = JSON.parse(readFileSync(evidencePath, 'utf8'));
@@ -645,7 +690,14 @@ describe('implementation evidence ingest', () => {
       const prev = process.cwd();
       process.chdir(root);
       try {
-        expect(mainIngestImplementationEvidence(['--evidence', evidencePath, '--requirement-record', recordPath])).toBe(0);
+        expect(
+          mainIngestImplementationEvidence([
+            '--evidence',
+            evidencePath,
+            '--requirement-record',
+            recordPath,
+          ])
+        ).toBe(0);
       } finally {
         process.chdir(prev);
       }
@@ -663,7 +715,9 @@ describe('implementation evidence ingest', () => {
   });
 
   it('rejects hook reconciliation that claims closeout without fallback evidence', () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), 'implementation-evidence-hook-reconciliation-invalid-'));
+    const root = mkdtempSync(
+      path.join(os.tmpdir(), 'implementation-evidence-hook-reconciliation-invalid-')
+    );
     try {
       const fixture = writeFixture(root);
       const before = readFileSync(fixture.recordPath, 'utf8');
@@ -746,7 +800,9 @@ describe('implementation evidence ingest', () => {
   });
 
   it('rejects missing or unsafe global contract traceability policy before mutating the requirement record', () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), 'implementation-evidence-traceability-policy-'));
+    const root = mkdtempSync(
+      path.join(os.tmpdir(), 'implementation-evidence-traceability-policy-')
+    );
     try {
       const fixture = writeFixture(root);
       const record = JSON.parse(readFileSync(fixture.recordPath, 'utf8'));
@@ -837,7 +893,9 @@ describe('implementation evidence ingest', () => {
   });
 
   it('normalizes historical artifact refs without making them current pass evidence', () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), 'implementation-evidence-historical-artifact-'));
+    const root = mkdtempSync(
+      path.join(os.tmpdir(), 'implementation-evidence-historical-artifact-')
+    );
     try {
       const fixture = writeFixture(root);
       const record = JSON.parse(readFileSync(fixture.recordPath, 'utf8'));

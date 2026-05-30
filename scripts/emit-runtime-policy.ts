@@ -20,10 +20,7 @@ import {
   runtimeContextRegistryPath,
   type RuntimeContextRegistry,
 } from './runtime-context-registry';
-import {
-  readRuntimeContext,
-  type RuntimeContextFile,
-} from './runtime-context';
+import { readRuntimeContext, type RuntimeContextFile } from './runtime-context';
 import {
   requirementRecordIndexPath,
   requirementRecordsRoot,
@@ -75,11 +72,14 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
  *   artifactRoot?: string;
  * }} Requirement-record-backed runtime policy context
  */
-export function loadPolicyContextFromRegistry(root: string, options?: {
-  recordId?: string;
-  requirementSetId?: string;
-  runId?: string;
-}): {
+export function loadPolicyContextFromRegistry(
+  root: string,
+  options?: {
+    recordId?: string;
+    requirementSetId?: string;
+    runId?: string;
+  }
+): {
   resolvedContextPath: string;
   runtimeContext: ReturnType<typeof resolvedRuntimeContextToRuntimeContext>;
   resolvedRuntimeContext: ResolvedRuntimeContext;
@@ -129,7 +129,9 @@ function hasNonBridgeRequirementRecordCandidate(root: string): boolean {
     const recordPath = path.join(recordsRoot, entry.name, 'requirement-record.json');
     if (!fs.existsSync(recordPath)) continue;
     try {
-      const parsed = JSON.parse(fs.readFileSync(recordPath, 'utf8')) as { runtimeRegistryBridge?: unknown };
+      const parsed = JSON.parse(fs.readFileSync(recordPath, 'utf8')) as {
+        runtimeRegistryBridge?: unknown;
+      };
       if (!parsed.runtimeRegistryBridge) {
         return true;
       }
@@ -182,7 +184,11 @@ function ensureRegistryBackedRequirementRecordBridge(
   root: string,
   options?: { recordId?: string; requirementSetId?: string; runId?: string }
 ): void {
-  if (options?.recordId || options?.requirementSetId || hasNonBridgeRequirementRecordCandidate(root)) {
+  if (
+    options?.recordId ||
+    options?.requirementSetId ||
+    hasNonBridgeRequirementRecordCandidate(root)
+  ) {
     return;
   }
   const registryPath = runtimeContextRegistryPath(root);
@@ -282,7 +288,9 @@ function ensureRegistryBackedRequirementRecordBridge(
     },
     runtimeRegistryBridge: bridgeProvenance,
     ...(context.latestReviewerCloseout || registry.latestReviewerCloseout
-      ? { latestReviewerCloseout: context.latestReviewerCloseout ?? registry.latestReviewerCloseout }
+      ? {
+          latestReviewerCloseout: context.latestReviewerCloseout ?? registry.latestReviewerCloseout,
+        }
       : {}),
     ...(gate ? { implementationEntryGate: gate } : {}),
   });
@@ -408,7 +416,10 @@ function maybeAutoRepairStandaloneImplementationEntry(input: {
   policy: ReturnType<typeof resolveBmadHelpRuntimePolicy>;
 }): boolean {
   const { loaded, policy } = input;
-  if (loaded.runtimeContext.flow !== 'standalone_tasks' || loaded.runtimeContext.stage !== 'implement') {
+  if (
+    loaded.runtimeContext.flow !== 'standalone_tasks' ||
+    loaded.runtimeContext.stage !== 'implement'
+  ) {
     return false;
   }
 

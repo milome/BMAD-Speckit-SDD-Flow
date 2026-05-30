@@ -149,7 +149,10 @@ export function requestReconfirmation(recordPath: string): void {
   });
 }
 
-export function rollbackToRequirementConfirmation(recordPath: string, fromModel: MentalModel): void {
+export function rollbackToRequirementConfirmation(
+  recordPath: string,
+  fromModel: MentalModel
+): void {
   appendControlEventAndReplay({
     recordPath,
     writerId: 'controlled-six-model-rollback-writer',
@@ -166,7 +169,8 @@ export function rollbackToRequirementConfirmation(recordPath: string, fromModel:
     },
     reduce: (record, payload) => {
       const openRequest = ((record.reconfirmationRequests as JsonObject[]) ?? []).some(
-        (request) => request.status === 'blocking_open' && request.targetModel === 'requirement_confirmation'
+        (request) =>
+          request.status === 'blocking_open' && request.targetModel === 'requirement_confirmation'
       );
       if (!openRequest) {
         throw new Error('mental_model_rollback_requires_open_blocking_reconfirmation');
@@ -196,7 +200,8 @@ export function ingestReconfirmation(
     payload: {
       requestId: 'reconfirm-six-model-routing-e2e',
       sourceDocumentHash: overrides.sourceDocumentHash ?? SOURCE_HASH,
-      implementationConfirmationHash: overrides.implementationConfirmationHash ?? IMPLEMENTATION_HASH,
+      implementationConfirmationHash:
+        overrides.implementationConfirmationHash ?? IMPLEMENTATION_HASH,
     },
     reduce: (record, payload) => {
       if (
