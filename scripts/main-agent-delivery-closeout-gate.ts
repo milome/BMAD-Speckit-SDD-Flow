@@ -189,13 +189,33 @@ function closeoutSummaryPathFor(htmlPath: string): string {
   return path.join(parsed.dir, `${parsed.name}.summary.json`);
 }
 
+function resolveRecordRelativePath(recordPath: string, candidate: string): string {
+  return path.isAbsolute(candidate) ? candidate : path.resolve(path.dirname(recordPath), candidate);
+}
+
+function isSyntheticCloseoutSource(sourcePath: string): boolean {
+  return normalizePathForRecord(sourcePath).endsWith('/confirmation/closeout-confirmation-source.md');
+}
+
 function resolveSourcePathForCloseout(record: JsonObject, recordPath: string, explicit?: string): string | null {
-  const candidate = explicit || text(record.sourcePath) || text(record.artifactPath);
-  if (!candidate) return null;
-  const resolved = path.isAbsolute(candidate)
-    ? candidate
-    : path.resolve(path.dirname(recordPath), candidate);
-  return fs.existsSync(resolved) ? resolved : null;
+  const candidates = [
+    { path: explicit, syntheticFallback: text(explicit) ? isSyntheticCloseoutSource(text(explicit)) : false },
+    { path: text(record.sourcePath), syntheticFallback: false },
+    { path: text(record.artifactPath), syntheticFallback: false },
+  ];
+  const fallbackCandidates: string[] = [];
+  for (const candidate of candidates) {
+    const candidatePath = text(candidate.path);
+    if (!candidatePath) continue;
+    const resolved = resolveRecordRelativePath(recordPath, candidatePath);
+    if (!fs.existsSync(resolved)) continue;
+    if (candidate.syntheticFallback) {
+      fallbackCandidates.push(resolved);
+      continue;
+    }
+    return resolved;
+  }
+  return fallbackCandidates[0] ?? null;
 }
 
 function writeSyntheticCloseoutSource(input: {
@@ -2389,7 +2409,15 @@ export function mainDeliveryCloseoutGate(argv: string[]): number {
   const reportPath = path.resolve(
     args.reportPath ?? path.join(path.dirname(recordPath), 'delivery-closeout-report.json')
   );
-  const evaluation = evaluate(record, recordPath, attemptId, args.source, args.modelPacket, reportPath);
+  const sourcePathForCloseout = resolveSourcePathForCloseout(record, recordPath, args.source) ?? args.source;
+  const evaluation = evaluate(
+    record,
+    recordPath,
+    attemptId,
+    sourcePathForCloseout,
+    args.modelPacket,
+    reportPath
+  );
   const report = {
     reportType: 'delivery_closeout_report',
     generatedAt: evaluatedAt,
@@ -2433,7 +2461,7 @@ export function mainDeliveryCloseoutGate(argv: string[]): number {
       const rendered = renderCloseoutConfirmation({
         record: projectedRecord,
         recordPath,
-        sourcePath: args.source,
+        sourcePath: sourcePathForCloseout,
         closeoutReportPath: reportPath,
         htmlPath,
         renderReportPath,

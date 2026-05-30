@@ -44,6 +44,19 @@ function writeText(filePath: string, value: string): void {
   writeFileSync(filePath, value, 'utf8');
 }
 
+function normalizeSlashes(value: string): string {
+  return value.replace(/\\/gu, '/');
+}
+
+function stableStringify(value: unknown): string {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map((item) => stableStringify(item)).join(',')}]`;
+  return `{${Object.keys(value as Record<string, unknown>)
+    .sort()
+    .map((key) => `${JSON.stringify(key)}:${stableStringify((value as Record<string, unknown>)[key])}`)
+    .join(',')}}`;
+}
+
 function writeModelPacket(filePath: string, input: Record<string, unknown> = {}): string {
   writeJson(filePath, {
     schemaVersion: 'model-packet-fixture/v1',
@@ -124,21 +137,30 @@ function currentArchitectureHash(record: Record<string, unknown>): string {
 }
 
 function modelResult(model: string, status = 'pass'): Record<string, unknown> {
+  return modelResultWithHashes(model, HASH, HASH, status);
+}
+
+function modelResultWithHashes(
+  model: string,
+  sourceDocumentHash: string,
+  implementationConfirmationHash: string,
+  status = 'pass'
+): Record<string, unknown> {
   return {
     payloadKind: 'model_result',
     model,
     recordId: 'REQ-CLOSEOUT',
     requirementSetId: 'REQ-CLOSEOUT',
-    sourceDocumentHash: HASH,
-    implementationConfirmationHash: HASH,
+    sourceDocumentHash,
+    implementationConfirmationHash,
     status,
     resultRecordedAt: '2026-05-19T00:00:00.000Z',
     resultRecordedBy: 'test-agent',
     blockingReasons: status === 'pass' ? [] : [`${model}_${status}`],
     sourceRefs: [{ sourceType: 'fixture', id: model }],
     currentHashes: {
-      sourceDocumentHash: HASH,
-      implementationConfirmationHash: HASH,
+      sourceDocumentHash,
+      implementationConfirmationHash,
     },
   };
 }
@@ -611,10 +633,117 @@ function writeAiTddSource(root: string, testPath: string): string {
       '    canonicalArtifacts: []',
       '    pathRegistry: []',
       '    existingArtifacts: []',
+      '  applicability:',
+      '    governanceEvents: { applies: false, reasonCode: not_applicable }',
+      '    runtimeRecovery: { applies: false, reasonCode: not_applicable }',
+      '    scoringDashboardSft: { applies: false, reasonCode: not_applicable }',
+      '    currentTargetMap: { applies: false, reasonCode: not_applicable }',
+      '    scriptsAndHooks: { applies: false, reasonCode: not_applicable }',
+      '    aiTddContractGate: { applies: false, reasonCode: not_applicable }',
       '',
     ].join('\n')
   );
   return sourcePath;
+}
+
+function confirmationHashesForSource(sourcePath: string): {
+  sourceDocumentHash: string;
+  implementationConfirmationHash: string;
+} {
+  const sourceText = readFileSync(sourcePath, 'utf8');
+  const blockText = sourceText;
+  const semanticConfirmation = {
+    acceptanceTests: [
+      {
+        commandRefs: ['CMD-AI-TDD'],
+        covers: ['MUST-001', 'NEG-001'],
+        evidenceRefs: ['EVD-001'],
+        expectedPreImplementationState: 'expected_red',
+        file: sourceText.match(/file: (.+)/u)?.[1] ?? '',
+        id: 'ACC-AI-TDD',
+        oracle: 'current-attempt command with artifact evidence',
+        traceRows: ['TRACE-001'],
+      },
+    ],
+    artifactAutomationPlan: [
+      {
+        artifactType: 'report',
+        evidenceRefs: ['EVD-001'],
+        id: 'ART-AI-TDD',
+        path: '_bmad-output/runtime/requirement-records/REQ-CLOSEOUT/evidence/ai-tdd.json',
+        producer: 'ai-tdd-fixture',
+        sourceOfTruthRole: 'evidence',
+        traceRows: ['TRACE-001'],
+      },
+    ],
+    applicability: {
+      aiTddContractGate: { applies: false, reasonCode: 'not_applicable' },
+      currentTargetMap: { applies: false, reasonCode: 'not_applicable' },
+      governanceEvents: { applies: false, reasonCode: 'not_applicable' },
+      runtimeRecovery: { applies: false, reasonCode: 'not_applicable' },
+      scoringDashboardSft: { applies: false, reasonCode: 'not_applicable' },
+      scriptsAndHooks: { applies: false, reasonCode: 'not_applicable' },
+    },
+    currentTargetMap: {
+      canonicalArtifacts: [],
+      existingArtifacts: [],
+      pathRegistry: [],
+    },
+    evidence: [
+      {
+        artifactRefs: ['ART-AI-TDD'],
+        id: 'EVD-001',
+        oracle: 'current-attempt command with artifact evidence',
+        requiredCommandRefs: ['CMD-AI-TDD'],
+        text: 'Current attempt acceptance evidence.',
+      },
+    ],
+    must: [
+      {
+        coveredByTraceRows: ['TRACE-001'],
+        evidenceRefs: ['EVD-001'],
+        id: 'MUST-001',
+        text: 'Must pass closeout acceptance.',
+      },
+    ],
+    mustNot: [
+      {
+        id: 'OUT-001',
+        text: 'Do not self-certify closeout.',
+      },
+    ],
+    notDone: [
+      {
+        coveredByTraceRows: ['TRACE-001'],
+        evidenceRefs: ['EVD-001'],
+        id: 'NEG-001',
+        oracle: 'negative control oracle',
+        text: 'Missing AI-TDD acceptance cannot close.',
+      },
+    ],
+    requiredCommands: [
+      {
+        command: sourceText.match(/command: (.+)/u)?.[1] ?? '',
+        id: 'CMD-AI-TDD',
+        oracle: 'current-attempt command with artifact evidence',
+      },
+    ],
+    traceRows: [
+      {
+        acceptanceRefs: ['ACC-AI-TDD'],
+        covers: ['MUST-001', 'NEG-001'],
+        deliveryEvidenceCommandRefs: ['CMD-AI-TDD'],
+        evidenceRefs: ['EVD-001'],
+        id: 'TRACE-001',
+      },
+    ],
+  };
+  const implementationConfirmationHash = sha256Text(stableStringify(semanticConfirmation));
+  const normalizedBlock = `implementationConfirmation:${stableStringify(semanticConfirmation)}`;
+  return {
+    sourceDocumentHash: sha256Text(sourceText.replace(blockText, normalizedBlock)),
+    implementationConfirmationHash,
+  };
 }
 
 function baseRecord(): Record<string, unknown> {
@@ -828,6 +957,123 @@ describe('requirement-scoped delivery closeout gate', () => {
         closeoutAttemptId: 'closeout-pass',
         decision: 'pass',
       });
+    } finally {
+      cleanupTempRoot(root);
+    }
+  });
+
+  it('prefers canonical record source over stale synthetic closeout source when rendering acceptance request', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-source-'));
+    try {
+      const sourcePath = writeAiTddSource(root, path.join(root, 'tests', 'acceptance', 'ai-tdd.test.ts'));
+      const sourceHashes = confirmationHashesForSource(sourcePath);
+      const syntheticSourcePath = path.join(
+        root,
+        '_bmad-output',
+        'runtime',
+        'requirement-records',
+        'REQ-CLOSEOUT',
+        'confirmation',
+        'closeout-confirmation-source.md'
+      );
+      writeText(
+        syntheticSourcePath,
+        [
+          'implementationConfirmation:',
+          '  status: user_confirmed',
+          '  must: []',
+          '  notDone: []',
+          '  mustNot: []',
+          '  evidence: []',
+          '  traceRows: []',
+          '',
+        ].join('\n')
+      );
+      const recordPath = writeRecord(root, {
+        ...baseRecord(),
+        aiTddContractGate: { enforcementMode: 'skipped_by_policy' },
+        sourcePath,
+        sourceDocumentHash: sourceHashes.sourceDocumentHash,
+        implementationConfirmationHash: sourceHashes.implementationConfirmationHash,
+        sixModelResults: {
+          ...((baseRecord().sixModelResults as Record<string, unknown>) ?? {}),
+          execution_closure: modelResultWithHashes(
+            'execution_closure',
+            sourceHashes.sourceDocumentHash,
+            sourceHashes.implementationConfirmationHash
+          ),
+          audit_review: modelResultWithHashes(
+            'audit_review',
+            sourceHashes.sourceDocumentHash,
+            sourceHashes.implementationConfirmationHash
+          ),
+        },
+        architectureConfirmationState: {
+          ...(baseRecord().architectureConfirmationState as Record<string, unknown>),
+          currentArchitectureConfirmationHash: HASH,
+        },
+        deliveryEvidence: {
+          requiredCommands: [
+            {
+              commandId: 'CMD-DELIVERY',
+              blockingIfMissing: true,
+              negativeOrRegression: true,
+              closeoutAttemptId: 'closeout-pass',
+              artifactRefs: [evidenceArtifactRef()],
+            },
+          ],
+        },
+        executionIterations: [
+          {
+            executionIterationId: 'exec-001',
+            commandRunRefs: [
+              {
+                commandId: 'CMD-DELIVERY',
+                closeoutAttemptId: 'closeout-pass',
+                exitCode: 0,
+                sourceDocumentHash: sourceHashes.sourceDocumentHash,
+                implementationConfirmationHash: sourceHashes.implementationConfirmationHash,
+                architectureConfirmationHash: HASH,
+              },
+            ],
+          },
+        ],
+        requirementClosures: [
+          {
+            requirementId: 'MUST-001',
+            status: 'pass',
+            traceRows: ['TRACE-001'],
+            evidenceRefs: ['EVD-001'],
+            sourceDocumentHash: sourceHashes.sourceDocumentHash,
+            implementationConfirmationHash: sourceHashes.implementationConfirmationHash,
+            architectureConfirmationHash: HASH,
+            closeoutAttemptId: 'closeout-pass',
+          },
+        ],
+      });
+      const code = mainDeliveryCloseoutGate([
+        '--requirement-record',
+        recordPath,
+        '--source',
+        syntheticSourcePath,
+        '--attempt-id',
+        'closeout-pass',
+        '--evaluated-at',
+        '2026-05-19T00:00:00.000Z',
+      ]);
+      expect(code).toBe(0);
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      const acceptanceRequest = record.closeout.acceptanceRequest;
+      const report = JSON.parse(
+        readFileSync(path.join(path.dirname(recordPath), acceptanceRequest.renderReportPath), 'utf8')
+      );
+
+      expect(path.resolve(report.sourcePath)).toBe(path.resolve(sourcePath));
+      expect(report.deliveryReadiness.currentPassTraceRows).toBe(1);
+      expect(report.deliveryReadiness.totalTraceRows).toBe(1);
+      expect(report.renderedSections).toContain('trace-matrix');
+      expect(acceptanceRequest.ingestCommand).toContain(normalizeSlashes(sourcePath));
+      expect(acceptanceRequest.ingestCommand).not.toContain('closeout-confirmation-source.md');
     } finally {
       cleanupTempRoot(root);
     }
