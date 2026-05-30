@@ -378,17 +378,23 @@ function latestCloseoutAttempt(record, currentAttemptId) {
   return attempts.at(-1) ?? null;
 }
 
-function hasTerminalRecordClosedProof(record, currentAttemptId, attempt) {
+function hasCloseoutUserAcceptanceRequestProof(record, currentAttemptId, attempt, report) {
   if (!record || !currentAttemptId) return false;
   const closeoutAttemptMatches = String(record?.closeout?.currentAttemptId ?? '') === currentAttemptId;
   const closeoutDecisionPass = String(record?.closeout?.decision ?? '').toLowerCase() === 'pass';
   const attemptDecisionPass = String(attempt?.decision ?? '').toLowerCase() === 'pass';
+  const acceptanceRequest = record?.closeout?.acceptanceRequest ?? {};
   return (
     closeoutAttemptMatches &&
     (closeoutDecisionPass || attemptDecisionPass) &&
-    (record.lastEventType === 'record_closed' ||
-      String(record.lastAppliedEventId ?? '').startsWith('record_closed:') ||
-      attempt?.eventType === 'record_closed')
+    record.status === 'awaiting_user_acceptance' &&
+    String(record.currentMentalModel ?? '') === 'delivery_confirmation' &&
+    String(record.currentStage ?? '') === 'delivery_confirmation' &&
+    String(record.lastEventType ?? '') === 'delivery_confirmation_user_acceptance_requested' &&
+    String(acceptanceRequest.status ?? '') === 'awaiting_user_acceptance' &&
+    String(acceptanceRequest.closeoutAttemptId ?? '') === currentAttemptId &&
+    String(acceptanceRequest.closeoutConfirmationPageHash ?? '') === String(report.closeoutConfirmationPageHash ?? '') &&
+    String(acceptanceRequest.deliveryCloseoutReportHash ?? '') === String(report.deliveryCloseoutReportHash ?? '')
   );
 }
 
@@ -437,8 +443,8 @@ function confirmCloseoutAcceptance(args) {
   if (provided.closeoutAttemptId !== currentAttemptId) mismatches.push('closeout_attempt_mismatch');
   if (report.closeoutDeliveryVerdict?.ready !== true) mismatches.push('closeout_delivery_verdict_not_ready');
   if (report.finalAcceptanceReview?.ready !== true) mismatches.push('final_acceptance_review_not_ready');
-  if (!hasTerminalRecordClosedProof(existingRecord, provided.closeoutAttemptId, attempt)) {
-    mismatches.push('record_closed_proof_missing');
+  if (!hasCloseoutUserAcceptanceRequestProof(existingRecord, provided.closeoutAttemptId, attempt, report)) {
+    mismatches.push('closeout_user_acceptance_request_proof_missing');
   }
   if (mismatches.length) {
     console.error(JSON.stringify({ ok: false, mismatches }, null, 2));
@@ -468,6 +474,47 @@ function confirmCloseoutAcceptance(args) {
     ...existingRecord,
     recordId: existingRecord.recordId ?? recordId,
     requirementSetId: existingRecord.requirementSetId ?? requirementSetId,
+    status: 'closed',
+    currentMentalModel: 'delivery_confirmation',
+    currentStage: 'delivery_confirmation',
+    sixModelResults: {
+      ...(existingRecord.sixModelResults && typeof existingRecord.sixModelResults === 'object'
+        ? existingRecord.sixModelResults
+        : {}),
+      delivery_confirmation: {
+        ...((existingRecord.sixModelResults?.delivery_confirmation &&
+        typeof existingRecord.sixModelResults.delivery_confirmation === 'object')
+          ? existingRecord.sixModelResults.delivery_confirmation
+          : {}),
+        payloadKind: 'model_result',
+        model: 'delivery_confirmation',
+        recordId,
+        requirementSetId,
+        sourceDocumentHash,
+        implementationConfirmationHash,
+        status: 'pass',
+        resultRecordedAt: confirmedAt,
+        resultRecordedBy: args.confirmedBy,
+        blockingReasons: [],
+      },
+    },
+    closeout: {
+      ...(existingRecord.closeout && typeof existingRecord.closeout === 'object' && !Array.isArray(existingRecord.closeout)
+        ? existingRecord.closeout
+        : {}),
+      currentAttemptId: provided.closeoutAttemptId,
+      decision: 'pass',
+      acceptanceRequest: {
+        ...(existingRecord.closeout?.acceptanceRequest &&
+        typeof existingRecord.closeout.acceptanceRequest === 'object'
+          ? existingRecord.closeout.acceptanceRequest
+          : {}),
+        status: 'user_accepted_closeout',
+        acceptedAt: confirmedAt,
+        acceptedBy: args.confirmedBy,
+      },
+      updatedAt: confirmedAt,
+    },
     closeoutAcceptance: {
       status: 'user_accepted_closeout',
       confirmedAt,
@@ -481,7 +528,8 @@ function confirmCloseoutAcceptance(args) {
       ...(Array.isArray(existingRecord.closeoutAcceptanceHistory) ? existingRecord.closeoutAcceptanceHistory : []),
       event,
     ],
-    lastEventType: 'closeout_acceptance_confirmed',
+    lastEventType: 'record_closed',
+    lastAppliedEventId: `record_closed:${provided.closeoutAttemptId}`,
     updatedAt: confirmedAt,
   };
   const afterHash = sha256(JSON.stringify(nextRecord));

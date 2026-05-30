@@ -953,7 +953,7 @@ describe('controlled confirmation ingest', () => {
     expect(fs.existsSync(recordPath)).toBe(false);
   });
 
-  it('records closeout_acceptance_confirmed only after exact closeout phrase and record_closed proof', () => {
+  it('records record_closed only after exact closeout phrase and awaiting user acceptance proof', () => {
     const source = writeSource();
     const recordPath = path.join(tempDir, '_bmad-output/runtime/requirement-records/REQ-CONFIRM-INGEST/requirement-record.json');
     const eventLogPath = path.join(tempDir, '_bmad-output/runtime/requirement-records/mentor-events.jsonl');
@@ -967,13 +967,24 @@ describe('controlled confirmation ingest', () => {
         {
           recordId: 'REQ-CONFIRM-INGEST',
           requirementSetId: 'REQSET-CONFIRM-INGEST',
+          status: 'awaiting_user_acceptance',
+          currentMentalModel: 'delivery_confirmation',
+          currentStage: 'delivery_confirmation',
           sourceDocumentHash: report.sourceDocumentHash,
           implementationConfirmationHash: report.implementationConfirmationHash,
-          lastEventType: 'confirmation_projection_refreshed',
-          lastAppliedEventId: 'record_closed:attempt-closeout-001',
+          lastEventType: 'delivery_confirmation_user_acceptance_requested',
+          lastAppliedEventId: 'delivery_confirmation_user_acceptance_requested:attempt-closeout-001',
           closeout: {
             currentAttemptId: 'attempt-closeout-001',
             decision: 'pass',
+            acceptanceRequest: {
+              status: 'awaiting_user_acceptance',
+              closeoutAttemptId: 'attempt-closeout-001',
+              htmlPath: path.join(path.dirname(recordPath), 'closeout-confirmation-current.html'),
+              renderReportPath: path.join(path.dirname(recordPath), 'closeout-confirmation-current.render-report.json'),
+              closeoutConfirmationPageHash: fixedHash('c'),
+              deliveryCloseoutReportHash: fixedHash('d'),
+            },
             attempts: [
               {
                 eventType: 'closeout_check_recorded',
@@ -1073,12 +1084,17 @@ describe('controlled confirmation ingest', () => {
       beforeRecordHash: expect.stringMatching(/^sha256:/),
       afterRecordHash: expect.stringMatching(/^sha256:/),
     });
+    expect(record.status).toBe('closed');
+    expect(record.currentMentalModel).toBe('delivery_confirmation');
+    expect(record.currentStage).toBe('delivery_confirmation');
+    expect(record.sixModelResults.delivery_confirmation.status).toBe('pass');
+    expect(record.lastEventType).toBe('record_closed');
     expect(record.confirmationHistory ?? []).toEqual([]);
     expect(fs.readFileSync(eventLogPath, 'utf8')).toContain('closeout_acceptance_confirmed');
     expect(fs.readFileSync(artifactIndexPath, 'utf8')).toContain('closeout_acceptance_confirmed');
   });
 
-  it('rejects closeout acceptance when only record_closed exists but the closeout phrase hash is stale', () => {
+  it('rejects closeout acceptance when awaiting proof exists but the closeout phrase hash is stale', () => {
     const source = writeSource();
     const recordPath = path.join(tempDir, '_bmad-output/runtime/requirement-records/REQ-CONFIRM-INGEST/requirement-record.json');
     const { report } = render(source);
@@ -1089,11 +1105,26 @@ describe('controlled confirmation ingest', () => {
         {
           recordId: 'REQ-CONFIRM-INGEST',
           requirementSetId: 'REQSET-CONFIRM-INGEST',
+          status: 'awaiting_user_acceptance',
+          currentMentalModel: 'delivery_confirmation',
+          currentStage: 'delivery_confirmation',
           sourceDocumentHash: report.sourceDocumentHash,
           implementationConfirmationHash: report.implementationConfirmationHash,
-          lastEventType: 'record_closed',
-          lastAppliedEventId: 'record_closed:attempt-closeout-001',
-          closeout: { currentAttemptId: 'attempt-closeout-001', decision: 'pass', attempts: [{ closeoutAttemptId: 'attempt-closeout-001', decision: 'pass' }] },
+          lastEventType: 'delivery_confirmation_user_acceptance_requested',
+          lastAppliedEventId: 'delivery_confirmation_user_acceptance_requested:attempt-closeout-001',
+          closeout: {
+            currentAttemptId: 'attempt-closeout-001',
+            decision: 'pass',
+            acceptanceRequest: {
+              status: 'awaiting_user_acceptance',
+              closeoutAttemptId: 'attempt-closeout-001',
+              htmlPath: path.join(path.dirname(recordPath), 'closeout-confirmation-current.html'),
+              renderReportPath: path.join(path.dirname(recordPath), 'closeout-confirmation-current.render-report.json'),
+              closeoutConfirmationPageHash: fixedHash('c'),
+              deliveryCloseoutReportHash: fixedHash('d'),
+            },
+            attempts: [{ closeoutAttemptId: 'attempt-closeout-001', decision: 'pass' }],
+          },
         },
         null,
         2

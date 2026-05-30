@@ -456,6 +456,21 @@ function writeRecord(root: string, record: Record<string, unknown>): string {
   const base = path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'REQ-CLOSEOUT');
   mkdirSync(base, { recursive: true });
   writeDeliveryTruthReport(root);
+  if (typeof record.sourcePath === 'string' && record.sourcePath && !readMaybeExists(record.sourcePath)) {
+    writeText(
+      record.sourcePath,
+      [
+        'implementationConfirmation:',
+        '  status: user_confirmed',
+        '  must: []',
+        '  notDone: []',
+        '  mustNot: []',
+        '  evidence: []',
+        '  traceRows: []',
+        '',
+      ].join('\n')
+    );
+  }
   const coveragePath = path.join(base, 'evidence', 'failure-case-coverage.json');
   mkdirSync(path.dirname(coveragePath), { recursive: true });
   writeFileSync(
@@ -513,6 +528,14 @@ function writeRecord(root: string, record: Record<string, unknown>): string {
   const recordPath = path.join(base, 'requirement-record.json');
   writeFileSync(recordPath, `${JSON.stringify(recordWithCoverage, null, 2)}\n`, 'utf8');
   return recordPath;
+}
+
+function readMaybeExists(filePath: string): string | null {
+  try {
+    return readFileSync(filePath, 'utf8');
+  } catch {
+    return null;
+  }
 }
 
 function evidenceArtifactRef(pathValue = '_bmad-output/runtime/requirement-records/REQ-CLOSEOUT/execution/evidence.json') {
@@ -778,15 +801,29 @@ describe('requirement-scoped delivery closeout gate', () => {
       ]);
       expect(code).toBe(0);
       const record = JSON.parse(readFileSync(recordPath, 'utf8'));
-      expect(record.status).toBe('closed');
+      expect(record.status).toBe('awaiting_user_acceptance');
       expect(record.currentMentalModel).toBe('delivery_confirmation');
       expect(record.currentStage).toBe('delivery_confirmation');
+      expect(record.sixModelResults.delivery_confirmation.status).toBe('awaiting_user_acceptance');
       expect(record.closeout.currentAttemptId).toBe('closeout-pass');
       expect(record.closeout).not.toHaveProperty('eventType');
       expect(record.closeout.decision).toBe('pass');
-      expect(record.lastEventType).toBe('record_closed');
+      expect(record.lastEventType).toBe('delivery_confirmation_user_acceptance_requested');
       expect(record.controlStore.eventLogPath).toContain('events/control-events.jsonl');
-      expect(record.lastAppliedEventId).toContain('record_closed');
+      expect(record.lastAppliedEventId).toContain('delivery_confirmation_user_acceptance_requested');
+      expect(record.closeout.acceptanceRequest).toMatchObject({
+        status: 'awaiting_user_acceptance',
+        closeoutAttemptId: 'closeout-pass',
+      });
+      expect(record.closeout.acceptanceRequest.closeoutConfirmInstruction).toContain(
+        '确认最终验收并关闭需求'
+      );
+      expect(readMaybeExists(path.join(path.dirname(recordPath), record.closeout.acceptanceRequest.htmlPath))).toContain(
+        '确认最终验收并关闭需求'
+      );
+      expect(readMaybeExists(path.join(path.dirname(recordPath), record.closeout.acceptanceRequest.renderReportPath))).toContain(
+        'closeoutDeliveryVerdict'
+      );
       expect(record.closeout.attempts[0]).toMatchObject({
         closeoutAttemptId: 'closeout-pass',
         decision: 'pass',
@@ -1164,7 +1201,8 @@ describe('requirement-scoped delivery closeout gate', () => {
       expect(code).toBe(0);
       const nextRecord = JSON.parse(readFileSync(recordPath, 'utf8'));
       expect(nextRecord.closeout.decision).toBe('pass');
-      expect(nextRecord.lastEventType).toBe('record_closed');
+      expect(nextRecord.lastEventType).toBe('delivery_confirmation_user_acceptance_requested');
+      expect(nextRecord.status).toBe('awaiting_user_acceptance');
       expect(nextRecord.closeout.attempts[0].checks).toEqual(
         expect.arrayContaining([
           expect.objectContaining({ id: 'production-subsystem-extension-current', required: false }),
@@ -2431,7 +2469,8 @@ describe('requirement-scoped delivery closeout gate', () => {
       expect(code).toBe(0);
       const record = JSON.parse(readFileSync(recordPath, 'utf8'));
       expect(record.closeout.decision).toBe('pass');
-      expect(record.lastEventType).toBe('record_closed');
+      expect(record.lastEventType).toBe('delivery_confirmation_user_acceptance_requested');
+      expect(record.status).toBe('awaiting_user_acceptance');
     } finally {
       cleanupTempRoot(root);
     }

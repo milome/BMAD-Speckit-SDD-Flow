@@ -588,6 +588,9 @@ function nextMentalModelFor(
   if (nextAction === 'run_closeout') {
     return 'delivery_confirmation';
   }
+  if (nextAction === 'await_user_acceptance') {
+    return 'delivery_confirmation';
+  }
   if (!currentMentalModel || !isSixMentalModel(currentMentalModel)) {
     return null;
   }
@@ -949,6 +952,7 @@ function taskTypeFromNextAction(
     case 'run_closeout':
     case 'record_closed':
     case 'run_pre_confirmation_drilldown':
+    case 'await_user_acceptance':
     case 'recompute_current_model_gate':
     case 'await_user':
       return null;

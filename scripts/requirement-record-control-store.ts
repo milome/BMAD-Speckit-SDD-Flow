@@ -511,9 +511,29 @@ function normalizeCloseout(closeoutValue: unknown): JsonObject | undefined {
     ...(text(attempt.evaluatedAt) ? { evaluatedAt: text(attempt.evaluatedAt) } : {}),
     ...(text(attempt.evaluatedBy) ? { evaluatedBy: text(attempt.evaluatedBy) } : {}),
   }));
+  const acceptanceRequest = nested(closeout.acceptanceRequest);
   return {
     currentAttemptId: text(closeout.currentAttemptId) || text(attempts.at(-1)?.closeoutAttemptId) || 'historical-closeout-attempt',
     ...(text(closeout.decision) ? { decision: text(closeout.decision) } : {}),
+    ...(Object.keys(acceptanceRequest).length
+      ? {
+          acceptanceRequest: {
+            ...acceptanceRequest,
+            status: ['awaiting_user_acceptance', 'user_accepted_closeout'].includes(text(acceptanceRequest.status))
+              ? text(acceptanceRequest.status)
+              : 'awaiting_user_acceptance',
+            closeoutAttemptId:
+              text(acceptanceRequest.closeoutAttemptId) || text(closeout.currentAttemptId) || text(attempts.at(-1)?.closeoutAttemptId),
+            ...(text(acceptanceRequest.htmlPath) ? { htmlPath: normalizePathForRecord(text(acceptanceRequest.htmlPath)) } : {}),
+            ...(text(acceptanceRequest.renderReportPath)
+              ? { renderReportPath: normalizePathForRecord(text(acceptanceRequest.renderReportPath)) }
+              : {}),
+            ...(text(acceptanceRequest.summaryPath)
+              ? { summaryPath: normalizePathForRecord(text(acceptanceRequest.summaryPath)) }
+              : {}),
+          },
+        }
+      : {}),
     ...(text(closeout.updatedAt) ? { updatedAt: text(closeout.updatedAt) } : {}),
     attempts,
   };
@@ -601,7 +621,7 @@ function normalizeModelResult(result: JsonObject, record: JsonObject, model: str
     requirementSetId: text(result.requirementSetId) || text(record.requirementSetId) || text(record.recordId),
     sourceDocumentHash: text(result.sourceDocumentHash) || text(record.sourceDocumentHash),
     implementationConfirmationHash: text(result.implementationConfirmationHash) || text(record.implementationConfirmationHash),
-    status: ['pass', 'blocked', 'fail', 'stale', 'not_established'].includes(status) ? status : 'blocked',
+    status: ['pass', 'blocked', 'fail', 'stale', 'not_established', 'awaiting_user_acceptance'].includes(status) ? status : 'blocked',
     resultRecordedAt: recordedAt,
     resultRecordedBy: text(result.resultRecordedBy) || text(result.recordedBy) || 'canonical-reducer',
     blockingReasons: strings(result.blockingReasons),
@@ -707,6 +727,8 @@ export function canonicalizeRequirementRecord(record: JsonObject): JsonObject {
     'rcaRecords',
     'rerunLoops',
     'closeout',
+    'closeoutAcceptance',
+    'closeoutAcceptanceHistory',
     'readinessBaselineActivation',
     'readinessBaselineActivationEventType',
     'readinessAuditRequests',

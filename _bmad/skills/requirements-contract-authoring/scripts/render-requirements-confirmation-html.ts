@@ -5347,28 +5347,44 @@ function closeoutReportDecision(closeoutReportState, attemptDecision) {
   return String(closeoutReportState?.report?.decision ?? closeoutReportState?.report?.closeoutReadyDecision ?? attemptDecision ?? '').toLowerCase();
 }
 
-function hasTerminalRecordClosedProof(record, currentAttemptId, attempt) {
+function closeoutUserAcceptanceRequestProof(record, currentAttemptId, attempt) {
   if (!record || !currentAttemptId) {
-    return { recordClosed: false, proofKind: 'missing_record_or_attempt', proofRefs: [] };
+    return { awaitingUserAcceptance: false, proofKind: 'missing_record_or_attempt', proofRefs: [] };
   }
   const refs = [];
   const closeoutAttemptMatches = firstString(record?.closeout?.currentAttemptId) === currentAttemptId;
   const closeoutDecisionPass = String(record?.closeout?.decision ?? '').toLowerCase() === 'pass';
   const attemptDecisionPass = String(attempt?.decision ?? '').toLowerCase() === 'pass';
-  if (record.lastEventType === 'record_closed') refs.push('record.lastEventType=record_closed');
-  if (String(record.lastAppliedEventId ?? '').startsWith('record_closed:')) {
+  const acceptanceRequest = record?.closeout?.acceptanceRequest ?? {};
+  const acceptanceRequestPresent =
+    acceptanceRequest && typeof acceptanceRequest === 'object' && Object.keys(acceptanceRequest).length > 0;
+  const requestMatches =
+    !acceptanceRequestPresent ||
+    (String(acceptanceRequest?.status ?? '') === 'awaiting_user_acceptance' &&
+      firstString(acceptanceRequest?.closeoutAttemptId) === currentAttemptId);
+  if (record.status === 'awaiting_user_acceptance') refs.push('record.status=awaiting_user_acceptance');
+  if (record.lastEventType === 'delivery_confirmation_user_acceptance_requested') {
+    refs.push('record.lastEventType=delivery_confirmation_user_acceptance_requested');
+  }
+  if (String(record.lastAppliedEventId ?? '').startsWith('delivery_confirmation_user_acceptance_requested:')) {
     refs.push(`record.lastAppliedEventId=${record.lastAppliedEventId}`);
   }
-  if (attempt?.eventType === 'record_closed') refs.push('closeout.attempt.eventType=record_closed');
-  const recordClosed =
+  if (acceptanceRequestPresent && requestMatches) {
+    refs.push('record.closeout.acceptanceRequest.status=awaiting_user_acceptance');
+  }
+  const awaitingUserAcceptance =
     closeoutAttemptMatches &&
     (closeoutDecisionPass || attemptDecisionPass) &&
-    (record.lastEventType === 'record_closed' ||
-      String(record.lastAppliedEventId ?? '').startsWith('record_closed:') ||
-      attempt?.eventType === 'record_closed');
+    record.status === 'awaiting_user_acceptance' &&
+    String(record.currentMentalModel ?? '') === 'delivery_confirmation' &&
+    String(record.currentStage ?? '') === 'delivery_confirmation' &&
+    String(record.lastEventType ?? '') === 'delivery_confirmation_user_acceptance_requested' &&
+    requestMatches;
   return {
-    recordClosed,
-    proofKind: recordClosed ? 'terminal_record_closed_proof' : 'record_closed_proof_missing',
+    awaitingUserAcceptance,
+    proofKind: awaitingUserAcceptance
+      ? 'closeout_user_acceptance_request_proof'
+      : 'closeout_user_acceptance_request_missing',
     proofRefs: refs,
   };
 }
@@ -5965,8 +5981,9 @@ function buildFinalAcceptanceReview(input) {
   const attempt = latestCloseoutAttempt(record, currentAttemptId);
   const attemptDecision = String(attempt?.decision ?? record?.closeout?.decision ?? '').toLowerCase();
   const attemptBlockingReasons = stringList(attempt?.blockingReasons);
-  const recordClosedProof = hasTerminalRecordClosedProof(record, currentAttemptId, attempt);
-  const recordClosed = requirementRecordState?.found === true && recordClosedProof.recordClosed;
+  const acceptanceRequestProof = closeoutUserAcceptanceRequestProof(record, currentAttemptId, attempt);
+  const awaitingUserAcceptance =
+    requirementRecordState?.found === true && acceptanceRequestProof.awaitingUserAcceptance;
   const allRequiredCommands = asArray(deliveryEvidenceObject(record).requiredCommands);
   const currentAttemptCommands = requiredCommandsForAttempt(record, currentAttemptId);
   const artifactBoundCommands = currentAttemptCommands.filter((command) =>
@@ -5986,7 +6003,7 @@ function buildFinalAcceptanceReview(input) {
     const originalConfirmationStatus = String(row.status ?? 'PENDING');
     const finalAcceptanceStatus = state.status === 'current_pass' ? 'accepted_success' : 'open_or_unaccepted';
     const transitionLegality =
-      recordClosed &&
+      awaitingUserAcceptance &&
       attemptDecision === 'pass' &&
       attemptBlockingReasons.length === 0 &&
       state.status === 'current_pass' &&
@@ -6017,7 +6034,7 @@ function buildFinalAcceptanceReview(input) {
       blockingReason:
         finalAcceptanceStatus === 'accepted_success' && transitionLegality === 'legal_transition'
           ? ''
-          : state.reason || 'trace_not_current_pass_after_record_closed',
+          : state.reason || 'trace_not_current_pass_after_user_acceptance_request',
     };
   }
 
@@ -6025,11 +6042,11 @@ function buildFinalAcceptanceReview(input) {
   if (applies && !requirementRecordState?.found) {
     blockingIssues.push(blocking('final_acceptance_requirement_record_missing', 'requirement-record.json is required for closeout review'));
   }
-  if (applies && !recordClosed) {
+  if (applies && !awaitingUserAcceptance) {
     blockingIssues.push(
       blocking(
-        'final_acceptance_record_closed_missing',
-        'closeout-review requires terminal record_closed proof for the current attempt'
+        'final_acceptance_user_acceptance_request_missing',
+        'closeout-review requires awaiting_user_acceptance proof for the current attempt before user closeout confirmation'
       )
     );
   }
@@ -6076,8 +6093,9 @@ function buildFinalAcceptanceReview(input) {
     applies,
     ready,
     status: ready ? 'final_acceptance_ready' : applies ? 'final_acceptance_ready=false' : 'not_applicable',
-    recordClosed,
-    recordClosedProof,
+    recordClosed: record?.status === 'closed',
+    awaitingUserAcceptance,
+    acceptanceRequestProof,
     lastEventType: record?.lastEventType ?? '',
     lastAppliedEventId: record?.lastAppliedEventId ?? '',
     currentAttemptId,
@@ -7067,7 +7085,7 @@ function renderFinalAcceptanceReview(finalAcceptanceReview) {
     <div class="metric-grid final-acceptance-metrics">
       <div class="metric status-metric ${finalAcceptanceReview.ready ? 'green' : 'danger'}"><strong class="status-${finalAcceptanceReview.ready ? 'confirmable' : 'blocked'}">${escapeHtml(finalAcceptanceReview.status)}</strong><span>finalAcceptanceReview.ready</span></div>
       <div class="metric"><strong>${escapeHtml(finalAcceptanceReview.currentAttemptId)}</strong><span>current closeout attempt</span></div>
-      <div class="metric"><strong>${escapeHtml(String(finalAcceptanceReview.recordClosed))}</strong><span>recordClosed</span></div>
+      <div class="metric"><strong>${escapeHtml(String(finalAcceptanceReview.awaitingUserAcceptance))}</strong><span>awaitingUserAcceptance</span></div>
       <div class="metric"><strong>${escapeHtml(finalAcceptanceReview.attemptDecision || '')}</strong><span>attemptDecision</span></div>
       <div class="metric"><strong>${escapeHtml(finalAcceptanceReview.requiredCommandEvidence.currentAttemptCount)}</strong><span>current-attempt commands</span></div>
       <div class="metric"><strong>${escapeHtml(finalAcceptanceReview.requiredCommandEvidence.artifactBoundCount)}</strong><span>artifact-bound commands</span></div>

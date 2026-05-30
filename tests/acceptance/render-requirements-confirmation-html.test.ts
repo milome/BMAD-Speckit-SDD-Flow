@@ -1311,7 +1311,7 @@ describe('render-requirements-confirmation-html', () => {
     expect(report.deliveryReadiness.currentPassTraceRows).toBe(1);
   });
 
-  it('renders closeout review as final acceptance only after record_closed and current trace proof', () => {
+  it('renders closeout review as final acceptance only after awaiting user acceptance request and current trace proof', () => {
     const source = writeSource('CLOSEOUT_REVIEW_POLICY_FIXTURE');
     const mermaidBundle = writeMockMermaidBundle();
     const recordPath = path.join(tempDir, 'requirement-record-closeout-review.json');
@@ -1353,6 +1353,9 @@ describe('render-requirements-confirmation-html', () => {
           sourceDocumentHash: firstReport.sourceDocumentHash,
           implementationConfirmationHash: firstReport.implementationConfirmationHash,
           confirmationPageHash: firstReport.confirmationPageHash,
+          status: 'awaiting_user_acceptance',
+          currentMentalModel: 'delivery_confirmation',
+          currentStage: 'delivery_confirmation',
           confirmationHistory: [
             {
               eventType: 'confirmation_recorded',
@@ -1361,8 +1364,8 @@ describe('render-requirements-confirmation-html', () => {
               confirmationPageHash: firstReport.confirmationPageHash,
             },
           ],
-          lastEventType: 'confirmation_projection_refreshed',
-          lastAppliedEventId: 'record_closed:fixture',
+          lastEventType: 'delivery_confirmation_user_acceptance_requested',
+          lastAppliedEventId: 'delivery_confirmation_user_acceptance_requested:fixture',
           closeout: {
             currentAttemptId: 'closeout-review-pass',
             decision: 'pass',
@@ -1396,6 +1399,10 @@ describe('render-requirements-confirmation-html', () => {
                 evaluatedAt: '2026-05-27T08:00:00.000Z',
               },
             ],
+            acceptanceRequest: {
+              status: 'awaiting_user_acceptance',
+              closeoutAttemptId: 'closeout-review-pass',
+            },
           },
           deliveryEvidence: {
             requiredCommands: [
@@ -1662,14 +1669,14 @@ describe('render-requirements-confirmation-html', () => {
       ready: true,
       status: 'final_acceptance_ready',
       currentAttemptId: 'closeout-review-pass',
-      recordClosed: true,
+      awaitingUserAcceptance: true,
       attemptDecision: 'pass',
     });
-    expect(report.finalAcceptanceReview.recordClosedProof).toMatchObject({
-      recordClosed: true,
-      proofKind: 'terminal_record_closed_proof',
+    expect(report.finalAcceptanceReview.acceptanceRequestProof).toMatchObject({
+      awaitingUserAcceptance: true,
+      proofKind: 'closeout_user_acceptance_request_proof',
     });
-    expect(report.finalAcceptanceReview.lastEventType).toBe('confirmation_projection_refreshed');
+    expect(report.finalAcceptanceReview.lastEventType).toBe('delivery_confirmation_user_acceptance_requested');
     expect(report.finalAcceptanceReview.rows['TRACE-001']).toMatchObject({
       originalConfirmationStatus: 'PENDING',
       preCloseoutRuntimeStatus: 'open_before_closeout',
@@ -1703,7 +1710,7 @@ describe('render-requirements-confirmation-html', () => {
     expect(summary.renderedSectionOrder).toContain('source-closeout-policy');
   });
 
-  it('fails closed in closeout-review mode without a terminal record_closed event', () => {
+  it('fails closed in closeout-review mode without an awaiting user acceptance request', () => {
     const source = writeSource();
     const mermaidBundle = writeMockMermaidBundle();
     const recordPath = path.join(tempDir, 'requirement-record-closeout-review-blocked.json');
@@ -1820,10 +1827,10 @@ describe('render-requirements-confirmation-html', () => {
       fs.readFileSync(path.join(path.dirname(out), 'closeout-review-blocked.render-report.json'), 'utf8')
     );
     expect(html).toContain('final_acceptance_ready=false');
-    expect(html).toContain('final_acceptance_record_closed_missing');
+    expect(html).toContain('final_acceptance_user_acceptance_request_missing');
     expect(report.finalAcceptanceReview.ready).toBe(false);
     expect(report.finalAcceptanceReview.blockingIssues.map((issue: any) => issue.code)).toContain(
-      'final_acceptance_record_closed_missing'
+      'final_acceptance_user_acceptance_request_missing'
     );
   });
 

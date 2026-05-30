@@ -18,7 +18,7 @@
     "requirementSetId": { "$ref": "#/$defs/nonEmptyString" },
     "sourcePath": { "$ref": "#/$defs/nonEmptyString" },
     "status": {
-      "enum": ["draft", "user_confirmed", "reconfirm_required", "in_progress", "blocked", "closed"]
+      "enum": ["draft", "user_confirmed", "awaiting_user_acceptance", "reconfirm_required", "in_progress", "blocked", "closed"]
     },
     "flow": { "enum": ["story", "bugfix", "standalone_tasks", "epic", "unknown"] },
     "stage": { "$ref": "#/$defs/nonEmptyString" },
@@ -234,6 +234,18 @@
       "items": { "$ref": "#/$defs/artifactRef" }
     },
     "deliveryEvidence": { "$ref": "#/$defs/deliveryEvidence" },
+    "closeout": { "$ref": "#/$defs/closeout" },
+    "closeoutAcceptance": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "closeoutAcceptanceHistory": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
     "implementationReadiness": { "$ref": "#/$defs/controlEventList" },
     "executionClosures": { "$ref": "#/$defs/controlEventList" },
     "auditReviews": { "$ref": "#/$defs/controlEventList" },
@@ -464,7 +476,7 @@
         "requirementSetId": { "$ref": "#/$defs/nonEmptyString" },
         "sourceDocumentHash": { "$ref": "#/$defs/sha256" },
         "implementationConfirmationHash": { "$ref": "#/$defs/sha256" },
-        "status": { "enum": ["pass", "blocked", "fail", "stale", "not_established"] },
+        "status": { "enum": ["pass", "awaiting_user_acceptance", "blocked", "fail", "stale", "not_established"] },
         "resultRecordedAt": { "type": "string", "format": "date-time" },
         "resultRecordedBy": { "$ref": "#/$defs/nonEmptyString" },
         "blockingReasons": {
@@ -481,6 +493,10 @@
         },
         "readinessReportRef": { "$ref": "#/$defs/reportRef" },
         "deliveryCloseoutReportRef": { "$ref": "#/$defs/reportRef" },
+        "closeoutAcceptanceRequestRef": {
+          "type": ["object", "null"],
+          "additionalProperties": true
+        },
         "readinessBaselineMetadata": { "$ref": "#/$defs/readinessBaselineMetadata" }
       }
     },
@@ -1314,6 +1330,27 @@
               "evaluatedAt": { "type": "string", "format": "date-time" },
               "evaluatedBy": { "$ref": "#/$defs/nonEmptyString" }
             }
+          }
+        },
+        "acceptanceRequest": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "closeoutAttemptId", "htmlPath", "renderReportPath", "closeoutConfirmationPageHash", "deliveryCloseoutReportHash"],
+          "properties": {
+            "status": { "enum": ["awaiting_user_acceptance", "user_accepted_closeout"] },
+            "closeoutAttemptId": { "$ref": "#/$defs/nonEmptyString" },
+            "requestedAt": { "type": "string", "format": "date-time" },
+            "requestedBy": { "$ref": "#/$defs/nonEmptyString" },
+            "acceptedAt": { "type": "string", "format": "date-time" },
+            "acceptedBy": { "$ref": "#/$defs/nonEmptyString" },
+            "htmlPath": { "$ref": "#/$defs/nonEmptyString" },
+            "renderReportPath": { "$ref": "#/$defs/nonEmptyString" },
+            "summaryPath": { "$ref": "#/$defs/nonEmptyString" },
+            "closeoutConfirmationPageHash": { "$ref": "#/$defs/sha256" },
+            "deliveryCloseoutReportHash": { "$ref": "#/$defs/sha256" },
+            "closeoutConfirmInstruction": { "$ref": "#/$defs/nonEmptyString" },
+            "userPrompt": { "$ref": "#/$defs/nonEmptyString" },
+            "ingestCommand": { "$ref": "#/$defs/nonEmptyString" }
           }
         }
       }

@@ -13,6 +13,7 @@ export type SixModelRuntimeNextAction =
   | 'dispatch_remediation'
   | 'run_closeout'
   | 'run_pre_confirmation_drilldown'
+  | 'await_user_acceptance'
   | 'await_user'
   | 'record_closed'
   | null;
@@ -154,6 +155,10 @@ export function resolveSixModelRuntimeDecision(input: {
     nextAction = 'record_closed';
     ready = true;
     transitionMode = 'auto_after_controlled_ingest';
+  } else if (text(record.status) === 'awaiting_user_acceptance') {
+    nextAction = 'await_user_acceptance';
+    ready = false;
+    transitionMode = 'requires_user_or_gate';
   } else if (text(record.status) !== 'user_confirmed') {
     nextAction = 'run_pre_confirmation_drilldown';
     reasonRefs.push({ sourceType: 'requirement_record', id: recordId });
@@ -227,7 +232,11 @@ export function resolveSixModelRuntimeDecision(input: {
       ready = true;
     }
   } else if (currentMentalModel === 'delivery_confirmation') {
-    if (currentModelStatus === 'pass' && hasCurrentPass(record, 'audit_review')) {
+    if (currentModelStatus === 'awaiting_user_acceptance') {
+      nextAction = 'await_user_acceptance';
+      ready = false;
+      transitionMode = 'requires_user_or_gate';
+    } else if (currentModelStatus === 'pass' && hasCurrentPass(record, 'audit_review')) {
       nextAction = 'record_closed';
       ready = true;
       transitionMode = 'auto_after_controlled_ingest';
@@ -253,7 +262,10 @@ export function resolveSixModelRuntimeDecision(input: {
     allowedDispatchTaskType: taskTypeFor(nextAction),
     transitionMode,
     blockingReasonRefs: reasonRefs,
-    userFacingStagePrompt: `当前六心智阶段: ${currentMentalModel ?? 'unknown'} (${currentModelStatus ?? 'unknown'}); 下一步: ${nextAction ?? 'none'}.`,
+    userFacingStagePrompt:
+      nextAction === 'await_user_acceptance'
+        ? '交付确认页已生成，等待用户打开 closeout-confirmation-current.html 核验，并执行 confirm-closeout-acceptance 后才写入 record_closed。'
+        : `当前六心智阶段: ${currentMentalModel ?? 'unknown'} (${currentModelStatus ?? 'unknown'}); 下一步: ${nextAction ?? 'none'}.`,
     recordHash,
   };
 }
