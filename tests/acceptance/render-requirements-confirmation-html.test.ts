@@ -1365,7 +1365,7 @@ describe('render-requirements-confirmation-html', () => {
             },
           ],
           lastEventType: 'delivery_confirmation_user_acceptance_requested',
-          lastAppliedEventId: 'delivery_confirmation_user_acceptance_requested:fixture',
+          lastAppliedEventId: 'record_closed:stale-previous-closeout',
           closeout: {
             currentAttemptId: 'closeout-review-pass',
             decision: 'pass',
@@ -1677,6 +1677,8 @@ describe('render-requirements-confirmation-html', () => {
       proofKind: 'closeout_user_acceptance_request_proof',
     });
     expect(report.finalAcceptanceReview.lastEventType).toBe('delivery_confirmation_user_acceptance_requested');
+    expect(report.finalAcceptanceReview.lastAppliedEventId).toBe('');
+    expect(html).not.toContain('record_closed:stale-previous-closeout');
     expect(report.finalAcceptanceReview.rows['TRACE-001']).toMatchObject({
       originalConfirmationStatus: 'PENDING',
       preCloseoutRuntimeStatus: 'open_before_closeout',

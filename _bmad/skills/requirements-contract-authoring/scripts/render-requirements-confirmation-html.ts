@@ -5366,9 +5366,6 @@ function closeoutUserAcceptanceRequestProof(record, currentAttemptId, attempt) {
   if (record.lastEventType === 'delivery_confirmation_user_acceptance_requested') {
     refs.push('record.lastEventType=delivery_confirmation_user_acceptance_requested');
   }
-  if (String(record.lastAppliedEventId ?? '').startsWith('delivery_confirmation_user_acceptance_requested:')) {
-    refs.push(`record.lastAppliedEventId=${record.lastAppliedEventId}`);
-  }
   if (acceptanceRequestPresent && requestMatches) {
     refs.push('record.closeout.acceptanceRequest.status=awaiting_user_acceptance');
   }
@@ -6097,7 +6094,7 @@ function buildFinalAcceptanceReview(input) {
     awaitingUserAcceptance,
     acceptanceRequestProof,
     lastEventType: record?.lastEventType ?? '',
-    lastAppliedEventId: record?.lastAppliedEventId ?? '',
+    lastAppliedEventId: '',
     currentAttemptId,
     attemptDecision,
     attemptBlockingReasons,
@@ -7092,7 +7089,6 @@ function renderFinalAcceptanceReview(finalAcceptanceReview) {
     </div>
     ${renderTable(['Field', 'Value'], [
       ['lastEventType', finalAcceptanceReview.lastEventType],
-      ['lastAppliedEventId', finalAcceptanceReview.lastAppliedEventId],
       ['attemptBlockingReasons', finalAcceptanceReview.attemptBlockingReasons.join(', ') || 'none'],
       ['requiredCommandIds', renderIdBadges(finalAcceptanceReview.requiredCommandEvidence.currentAttemptCommandIds)],
       ['artifactBoundCommandIds', renderIdBadges(finalAcceptanceReview.requiredCommandEvidence.artifactBoundCommandIds)],
