@@ -2095,7 +2095,9 @@ function updateRecord(
       ...previousSixModelResults,
       delivery_confirmation: deliveryConfirmationResult,
     },
-    currentMentalModel: text(record.currentMentalModel) || 'delivery_confirmation',
+    status: input.decision === 'pass' ? 'closed' : text(record.status) || 'user_confirmed',
+    currentMentalModel: input.decision === 'pass' ? 'delivery_confirmation' : text(record.currentMentalModel) || 'delivery_confirmation',
+    currentStage: input.decision === 'pass' ? 'delivery_confirmation' : text(record.currentStage) || text(record.stage) || 'delivery_confirmation',
     lastEventType: closeoutEventType,
     updatedAt: input.evaluatedAt,
   };

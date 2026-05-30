@@ -150,7 +150,11 @@ export function resolveSixModelRuntimeDecision(input: {
   let ready = false;
   let transitionMode: SixModelRuntimeDecision['transitionMode'] = 'requires_user_or_gate';
 
-  if (text(record.status) !== 'user_confirmed') {
+  if (text(record.status) === 'closed') {
+    nextAction = 'record_closed';
+    ready = true;
+    transitionMode = 'auto_after_controlled_ingest';
+  } else if (text(record.status) !== 'user_confirmed') {
     nextAction = 'run_pre_confirmation_drilldown';
     reasonRefs.push({ sourceType: 'requirement_record', id: recordId });
   } else if (currentMentalModel === 'requirement_confirmation') {
