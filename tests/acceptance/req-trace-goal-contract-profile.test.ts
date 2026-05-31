@@ -163,7 +163,7 @@ describe('req-trace shared goal contract profile integration', () => {
   it('blocks unsupported profile major versions', () => {
     writeProfile((profile) => ({
       ...profile,
-      profileVersion: '2.0.0',
+      profileVersion: '2.0.1',
       compatibility: { ...profile.compatibility, supportedMajorVersions: [1] },
     }));
     const result = runNativeGoal();

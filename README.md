@@ -174,7 +174,7 @@ The 1.x release line remains the delivery map that connects BMAD product discove
 | Layer 4: Speckit Workflow         | Run `specify -> plan -> GAPS -> tasks -> implement` for technical execution. | Specs, plans, gap analysis, tasks, code, and tests.          |
 | Layer 5: Closeout And Integration | Audit implementation, score evidence, and prepare reviewable delivery.       | Post-audit, scoring, PR, human review, and release evidence. |
 
-In the 2.0.0 release line, this five-layer architecture is not removed. It becomes the upstream delivery map that feeds the AI-TDD control plane: product and story artifacts become requirement-contract inputs, Speckit work becomes bounded execution packets, and delivery still closes only through controlled evidence gates.
+In the 2.0.1 release line, this five-layer architecture is not removed. It becomes the upstream delivery map that feeds the AI-TDD control plane: product and story artifacts become requirement-contract inputs, Speckit work becomes bounded execution packets, and delivery still closes only through controlled evidence gates.
 
 ---
 
@@ -307,7 +307,7 @@ Delivery evidence is different from the CLI command-surface screenshot. It is th
 
 The 1.x release line BMAD + Speckit assets remain part of the compatibility surface: Product Brief, PRD, Architecture, Epic/Story, Speckit specify/plan/GAPS/tasks, implementation, audit, scoring, dashboard, Coach, and SFT extraction remain useful.
 
-The 2.0.0 release line now presents the five-layer architecture as the 1.x delivery map before introducing AI-TDD. Its primary authority is still the AI-TDD toolchain ecosystem and this control plane. 1.x artifacts are inputs and projections inside that control plane, not a replacement for requirement-contract authority.
+The 2.0.1 release line now presents the five-layer architecture as the 1.x delivery map before introducing AI-TDD. Its primary authority is still the AI-TDD toolchain ecosystem and this control plane. 1.x artifacts are inputs and projections inside that control plane, not a replacement for requirement-contract authority.
 
 ---
 
