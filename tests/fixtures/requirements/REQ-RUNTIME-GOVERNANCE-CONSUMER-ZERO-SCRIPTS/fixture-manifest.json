@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "requirement-fixture-manifest/v1",
+  "fixtureId": "REQ-RUNTIME-GOVERNANCE-CONSUMER-ZERO-SCRIPTS",
+  "sourceFile": "source.requirement.md",
+  "trackedInputPolicy": {
+    "gitAuthorityPath": "tests/fixtures/requirements/REQ-RUNTIME-GOVERNANCE-CONSUMER-ZERO-SCRIPTS/source.requirement.md",
+    "docsRequirementsIsNotFixtureAuthority": true,
+    "runtimeOutputIsNotFixtureAuthority": true
+  }
+}

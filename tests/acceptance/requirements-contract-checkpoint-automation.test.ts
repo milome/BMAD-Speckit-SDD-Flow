@@ -40,14 +40,22 @@ const RETENTION_CLEANUP = path.join(
   'scripts',
   'finalize_requirements_contract_retention.js'
 );
-const CHECKPOINT_REQUIREMENT_DOC = path.join(
+const CHECKPOINT_REQUIREMENT_FIXTURE = path.join(
   ROOT,
+  'tests',
+  'fixtures',
+  'requirements',
+  'REQ-CHECKPOINT-AUTOMATION',
+  'source.requirement.md'
+);
+const CHECKPOINT_REQUIREMENT_RUNTIME_RELATIVE_PATH = path.join(
   'docs',
   'requirements',
   '2026-05-25-requirements-contract-checkpoint-automation.md'
 );
 
 let tempDir: string;
+let checkpointRequirementDoc: string | null;
 const requireForGate = createRequire(import.meta.url);
 const {
   extractImplementationConfirmation,
@@ -67,6 +75,7 @@ const { buildAuditInputHash } = requireForGate(PRE_RENDER_MUST_GATE);
 
 beforeEach(() => {
   tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'requirements-checkpoint-automation-'));
+  checkpointRequirementDoc = null;
 });
 
 afterEach(() => {
@@ -84,6 +93,18 @@ function runNode(script: string, args: string[], cwd = ROOT) {
   };
 }
 
+function materializeCheckpointRequirementDoc(root: string): string {
+  const target = path.join(root, CHECKPOINT_REQUIREMENT_RUNTIME_RELATIVE_PATH);
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.copyFileSync(CHECKPOINT_REQUIREMENT_FIXTURE, target);
+  return target;
+}
+
+function checkpointRequirementDocPath(): string {
+  checkpointRequirementDoc ??= materializeCheckpointRequirementDoc(tempDir);
+  return checkpointRequirementDoc;
+}
+
 function extractTargetModificationPaths() {
   const rows = asArray(readCheckpointImplementationConfirmation().targetModificationPaths);
   if (!rows.length) {
@@ -99,7 +120,7 @@ function extractTargetModificationPaths() {
 }
 
 function readCheckpointImplementationConfirmation(): Record<string, any> {
-  const source = fs.readFileSync(CHECKPOINT_REQUIREMENT_DOC, 'utf8');
+  const source = fs.readFileSync(checkpointRequirementDocPath(), 'utf8');
   const match = source.match(/\nimplementationConfirmation:\n[\s\S]*?(?=\n## |\n# |$)/u);
   if (!match) {
     throw new Error(

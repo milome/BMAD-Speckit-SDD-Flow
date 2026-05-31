@@ -1115,6 +1115,17 @@ function inferRuntimeRootFromDataPath(dataPath: string | undefined, fallbackRoot
   return fallbackRoot;
 }
 
+function resolveDashboardDataPath(root: string, dataPath: string | undefined): string | undefined {
+  if (dataPath != null && dataPath !== '') {
+    return dataPath;
+  }
+  const packageDataPath = path.join(root, 'packages', 'scoring', 'data');
+  if (fs.existsSync(packageDataPath)) {
+    return packageDataPath;
+  }
+  return dataPath;
+}
+
 function selectRuntimeProjection(projections: RuntimeRunProjection[]): RuntimeRunProjection | null {
   if (projections.length === 0) {
     return null;
@@ -1709,6 +1720,45 @@ function findLatestBundles(
   };
 }
 
+function numberFrom(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0;
+}
+
+export function hydrateSftSummaryFromLatestBundle(
+  summary: DashboardSftSummary
+): DashboardSftSummary {
+  const bundle = summary.last_bundle ?? summary.global_last_bundle;
+  if (!bundle || summary.total_candidates > 0) {
+    return summary;
+  }
+  const validation = bundle.validation_summary ?? {};
+  const totalCandidates = numberFrom(validation.completion_only_ready);
+  if (totalCandidates <= 0) {
+    return summary;
+  }
+
+  summary.total_candidates = totalCandidates;
+  summary.accepted = totalCandidates;
+  summary.rejected = 0;
+  summary.target_availability = createEmptyTargetAvailability();
+  const exportTarget = bundle.export_target as keyof DashboardSftSummary['target_availability'];
+  if (summary.target_availability[exportTarget]) {
+    summary.target_availability[exportTarget].compatible = totalCandidates;
+  }
+  summary.training_view_summary = {
+    ...summary.training_view_summary,
+    assistant_only_ready: numberFrom(validation.assistant_only_ready),
+    completion_only_ready: numberFrom(validation.completion_only_ready),
+    tool_calling_ready: numberFrom(validation.tool_calling_ready),
+    schema_target_counts: summary.training_view_summary?.schema_target_counts ?? {},
+  };
+  summary.training_ready_candidates =
+    typeof validation.training_ready_passed === 'boolean' && validation.training_ready_passed
+      ? totalCandidates
+      : 0;
+  return summary;
+}
+
 function buildSftSummary(
   records: RunScoreRecord[],
   root: string,
@@ -1770,7 +1820,7 @@ function buildSftSummary(
   };
 
   if (records.length === 0) {
-    return summary;
+    return hydrateSftSummaryFromLatestBundle(summary);
   }
 
   const { samples } = buildCanonicalCandidatesFromRecordsSync(records, {
@@ -1804,7 +1854,7 @@ function buildSftSummary(
     summary.by_split[sample.split.assignment] += 1;
   }
 
-  return summary;
+  return hydrateSftSummaryFromLatestBundle(summary);
 }
 
 export function buildRuntimeDashboardModel(input: {
@@ -1970,7 +2020,7 @@ export function queryRuntimeDashboard(
   const explicitRoot = options.root ?? process.cwd();
   const root = inferRuntimeRootFromDataPath(options.dataPath, explicitRoot);
   const events = readRuntimeEvents({ root });
-  const scoreRecords = loadAndDedupeRecords(options.dataPath);
+  const scoreRecords = loadAndDedupeRecords(resolveDashboardDataPath(root, options.dataPath));
   return buildRuntimeDashboardModel({
     root,
     events,

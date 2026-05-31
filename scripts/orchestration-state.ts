@@ -233,17 +233,21 @@ function requirementScopedStateCandidates(projectRoot: string, sessionId: string
 }
 
 function existingOrchestrationStatePath(projectRoot: string, sessionId: string): string | null {
+  const primaryPath = orchestrationStatePath(projectRoot, sessionId);
+  const legacyProjectionPath = path.join(
+    projectRoot,
+    '_bmad-output',
+    'runtime',
+    'governance',
+    'orchestration-state',
+    `${sessionId}.json`
+  );
+  const primaryIsLegacyProjection =
+    path.resolve(primaryPath) === path.resolve(legacyProjectionPath);
   const candidates = [
-    orchestrationStatePath(projectRoot, sessionId),
+    ...(primaryIsLegacyProjection ? [] : [primaryPath]),
     ...requirementScopedStateCandidates(projectRoot, sessionId),
-    path.join(
-      projectRoot,
-      '_bmad-output',
-      'runtime',
-      'governance',
-      'orchestration-state',
-      `${sessionId}.json`
-    ),
+    legacyProjectionPath,
   ];
   const seen = new Set<string>();
   for (const candidate of candidates) {

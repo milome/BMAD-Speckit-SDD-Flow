@@ -173,9 +173,7 @@ function resolveExistingBridgeSourcePath(input: {
 }): string {
   for (const candidate of [input.context.artifactPath, input.context.artifactRoot]) {
     if (!candidate) continue;
-    const absolute = path.isAbsolute(candidate)
-      ? candidate
-      : path.resolve(input.root, candidate);
+    const absolute = path.isAbsolute(candidate) ? candidate : path.resolve(input.root, candidate);
     if (fs.existsSync(absolute) && fs.statSync(absolute).isFile()) {
       return toRootRelative(input.root, absolute);
     }
@@ -232,7 +230,9 @@ function deriveBridgeSixModelProjection(input: {
       : '';
   const closeoutApproved = input.context.latestReviewerCloseout?.closeoutApproved === true;
   const implementationReady =
-    gateDecision === 'pass' || input.context.stage === 'implement' || input.context.stage === 'post_audit';
+    gateDecision === 'pass' ||
+    input.context.stage === 'implement' ||
+    input.context.stage === 'post_audit';
   const sixModelResults: Record<string, unknown> = {
     requirement_confirmation: modelResult({ ...base, model: 'requirement_confirmation' }),
     architecture_confirmation: modelResult({ ...base, model: 'architecture_confirmation' }),
@@ -258,7 +258,9 @@ function deriveBridgeSixModelProjection(input: {
     };
   }
   return {
-    currentMentalModel: implementationReady ? 'implementation_readiness' : 'architecture_confirmation',
+    currentMentalModel: implementationReady
+      ? 'implementation_readiness'
+      : 'architecture_confirmation',
     sixModelResults,
   };
 }
@@ -378,12 +380,9 @@ function ensureRegistryBackedRequirementRecordBridge(
     ].join('\n')
   );
   const architectureConfirmationHash = sha256Text(
-    [
-      'runtime-registry-bridge-architecture',
-      sourceDocumentHash,
-      context.flow,
-      context.stage,
-    ].join('\n')
+    ['runtime-registry-bridge-architecture', sourceDocumentHash, context.flow, context.stage].join(
+      '\n'
+    )
   );
   const sixModelProjection = deriveBridgeSixModelProjection({
     context,

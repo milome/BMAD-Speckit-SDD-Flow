@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "requirement-fixture-manifest/v1",
+  "fixtureId": "REQ-EPICS-BRANCH-SCOPED-CANONICAL-PATH",
+  "sourceFile": "source.requirement.md",
+  "trackedInputPolicy": {
+    "gitAuthorityPath": "tests/fixtures/requirements/REQ-EPICS-BRANCH-SCOPED-CANONICAL-PATH/source.requirement.md",
+    "docsRequirementsIsNotFixtureAuthority": true,
+    "runtimeOutputIsNotFixtureAuthority": true
+  }
+}

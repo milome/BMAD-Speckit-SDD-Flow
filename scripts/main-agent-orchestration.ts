@@ -993,9 +993,27 @@ function packetTaskType(
   return null;
 }
 
+function pendingPacketDispatchable(
+  packet: RecommendationPacket | ExecutionPacket | ResumePacket | null
+): boolean {
+  if (!packet || !('authorityMode' in packet)) {
+    return true;
+  }
+  if (packet.authorityMode !== 'compiled_implementation_confirmation') {
+    return true;
+  }
+  if (Array.isArray(packet.compilerBlock) && packet.compilerBlock.length > 0) {
+    return false;
+  }
+  return Boolean(packet.compiledPromptRef);
+}
+
 function pendingPacketMatchesNextAction(surface: MainAgentOrchestrationSurface): boolean {
   const expectedTaskType = taskTypeFromNextAction(surface.mainAgentNextAction);
   if (!expectedTaskType) {
+    return false;
+  }
+  if (!pendingPacketDispatchable(surface.pendingPacket)) {
     return false;
   }
   const actualTaskType = packetTaskType(surface.pendingPacket);
@@ -1013,6 +1031,9 @@ function pendingPacketMatchesAction(input: {
 }): boolean {
   const expectedTaskType = taskTypeFromNextAction(input.nextAction ?? null);
   if (!expectedTaskType) {
+    return false;
+  }
+  if (!pendingPacketDispatchable(input.pendingPacket)) {
     return false;
   }
   const actualTaskType = packetTaskType(input.pendingPacket);
@@ -7680,6 +7701,9 @@ export function buildMainAgentDispatchInstruction(
     return null;
   }
   if (!surface.pendingPacket || !surface.orchestrationState?.pendingPacket?.packetPath) {
+    return null;
+  }
+  if (!pendingPacketDispatchable(surface.pendingPacket)) {
     return null;
   }
 

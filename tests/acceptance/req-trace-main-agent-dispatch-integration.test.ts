@@ -132,13 +132,7 @@ function writeRequirementRecord(
 }
 
 function writeRuntimeRegistryBridgeRecord(root: string): string {
-  const recordDir = path.join(
-    root,
-    '_bmad-output',
-    'runtime',
-    'requirement-records',
-    'REQ-BRIDGE'
-  );
+  const recordDir = path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'REQ-BRIDGE');
   const recordPath = path.join(recordDir, 'requirement-record.json');
   const sourceDocumentHash = sha256Text('runtime bridge source');
   const implementationConfirmationHash = sha256Text('runtime bridge confirmation');

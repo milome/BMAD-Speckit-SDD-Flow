@@ -221,7 +221,7 @@ function writeFakeReqTraceSkill(projectRoot: string): void {
       "const fs = require('node:fs');",
       "const path = require('node:path');",
       "const crypto = require('node:crypto');",
-      "function arg(name) { const i = process.argv.indexOf(name); return i === -1 ? null : process.argv[i + 1]; }",
+      'function arg(name) { const i = process.argv.indexOf(name); return i === -1 ? null : process.argv[i + 1]; }',
       "function sha(value) { return 'sha256:' + crypto.createHash('sha256').update(value, 'utf8').digest('hex'); }",
       "const outDir = arg('--out-dir');",
       "const recordPath = arg('--requirement-record');",

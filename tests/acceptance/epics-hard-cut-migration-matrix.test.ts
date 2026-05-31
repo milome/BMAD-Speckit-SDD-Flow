@@ -1,10 +1,10 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const ROOT = process.cwd();
-const LOCAL_REQUIREMENT_PATH =
-  'docs/requirements/2026-04-27-epics-branch-scoped-canonical-path-requirement.md';
+const HARD_CUT_REQUIREMENT_FIXTURE_PATH =
+  'tests/fixtures/requirements/REQ-EPICS-BRANCH-SCOPED-CANONICAL-PATH/source.requirement.md';
 
 function readRepoFile(relativePath: string): string {
   return readFileSync(path.join(ROOT, relativePath), 'utf8');
@@ -49,18 +49,16 @@ const HARD_CUT_MATRIX = [
   },
 ] as const;
 
-const LOCAL_ONLY_HARD_CUT_MATRIX = [
+const FIXTURE_HARD_CUT_MATRIX = [
   {
     case: 'canonical requirement records hard-cut semantics',
-    file: LOCAL_REQUIREMENT_PATH,
+    file: HARD_CUT_REQUIREMENT_FIXTURE_PATH,
     mustContain: ['must not be read as fallback after the 2026-04-27 hard cut'],
     mustNotContain: ['may be read only as fallback during migration'],
   },
 ] as const;
 
-function expectHardCutRow(
-  row: (typeof HARD_CUT_MATRIX | typeof LOCAL_ONLY_HARD_CUT_MATRIX)[number]
-) {
+function expectHardCutRow(row: (typeof HARD_CUT_MATRIX | typeof FIXTURE_HARD_CUT_MATRIX)[number]) {
   const content = readRepoFile(row.file);
   for (const snippet of row.mustContain) {
     expect(content, `${row.file} must contain ${snippet}`).toContain(snippet);
@@ -77,8 +75,8 @@ describe('epics hard-cut migration matrix', () => {
     });
   }
 
-  for (const row of LOCAL_ONLY_HARD_CUT_MATRIX) {
-    it.skipIf(process.env.CI === 'true' || !existsSync(path.join(ROOT, row.file)))(row.case, () => {
+  for (const row of FIXTURE_HARD_CUT_MATRIX) {
+    it(row.case, () => {
       expectHardCutRow(row);
     });
   }

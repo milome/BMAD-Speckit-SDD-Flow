@@ -302,8 +302,8 @@ describe('auditor host runner wiring in higher-level entry surfaces', () => {
 
   it('cleans the last narrow scatter docs without reintroducing manual close-out wording', () => {
     const interviewGuidePath = 'docs/design/ai-native-agent-engineering-interview-guide.md';
-    const zeroScriptsPath =
-      'docs/requirements/2026-04-08-runtime-governance-consumer-zero-scripts.md';
+    const zeroScriptsFixture =
+      'tests/fixtures/requirements/REQ-RUNTIME-GOVERNANCE-CONSUMER-ZERO-SCRIPTS/source.requirement.md';
     const dashboardLauncher = readRepoFile('docs/how-to/runtime-dashboard-stable-launcher.md');
     const consumerInstallation = readRepoFile('docs/how-to/consumer-installation.md');
     const storyAssistantHowTo = readRepoFile('docs/how-to/bmad-story-assistant.md');
@@ -314,11 +314,9 @@ describe('auditor host runner wiring in higher-level entry surfaces', () => {
       expect(interviewGuide).toContain('post-audit close-out');
     }
 
-    if (existsSync(join(ROOT, zeroScriptsPath))) {
-      const zeroScripts = readRepoFile(zeroScriptsPath);
-      expect(zeroScripts).toContain('不代表当前产品路径需要人工串联 post-audit close-out');
-      expect(zeroScripts).toContain('手动触发或通过测试驱动验证 `post-tool-use`');
-    }
+    const zeroScripts = readRepoFile(zeroScriptsFixture);
+    expect(zeroScripts).toContain('不代表当前产品路径需要人工串联 post-audit close-out');
+    expect(zeroScripts).toContain('手动触发或通过测试驱动验证 `post-tool-use`');
 
     expect(dashboardLauncher).toContain('dashboard fallback');
     expect(dashboardLauncher).toContain('不代表治理或 post-audit 主路径需要人工触发');

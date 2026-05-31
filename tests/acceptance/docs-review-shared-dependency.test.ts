@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 
 const SCRIPT = join(
   process.cwd(),
-  '.codex',
+  '_bmad',
   'skills',
   'goal-execution-contract-generator',
   'scripts',

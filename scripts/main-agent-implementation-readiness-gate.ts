@@ -23,9 +23,7 @@ interface ParsedArgs {
 }
 
 function isDirectImplementationReadinessGateCli(entry: string | undefined): boolean {
-  return /(^|[\\/])main-agent-implementation-readiness-gate(\.[cm]?js|\.ts)?$/iu.test(
-    entry ?? ''
-  );
+  return /(^|[\\/])main-agent-implementation-readiness-gate(\.[cm]?js|\.ts)?$/iu.test(entry ?? '');
 }
 
 function parseArgs(argv: string[]): ParsedArgs {
