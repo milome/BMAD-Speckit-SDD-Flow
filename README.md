@@ -269,7 +269,7 @@ The public CLI exposes these auxiliary surfaces:
 
 ### Public CLI Surface
 
-The screenshot below shows the published npm CLI command surface. It is a quick reference for installation, lifecycle, runtime read models, scoring, Coach, and SFT tooling; it is not the daily Orchestrator Agent workflow.
+The screenshot below shows the published npm CLI help surface for the current release. It is a quick reference for installation, lifecycle, runtime read models, scoring, Coach, and SFT tooling; it is not the daily Orchestrator Agent workflow.
 
 <p align="center">
   <img src="docs/assets/bmad-speckit-cli.png" alt="bmad-speckit CLI help and runtime command surface" width="100%" />
