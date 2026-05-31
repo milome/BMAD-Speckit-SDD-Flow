@@ -7,7 +7,7 @@ development environment, follow project conventions, and submit changes.
 
 | Tool | Version |
 |------|---------|
-| Node.js | 18+ |
+| Node.js | 22+ |
 | npm | 9+ |
 | PowerShell | 7+ (Windows); bash works on macOS/Linux |
 | Git | 2.30+ |
