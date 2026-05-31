@@ -9,6 +9,7 @@ import {
   writeRuntimeContextRegistry,
 } from '../../scripts/runtime-context-registry';
 import { mainEmitRuntimePolicy } from '../../scripts/emit-runtime-policy';
+import { writeMinimalRequirementRecordContext } from '../helpers/runtime-registry-fixture';
 
 describe('runtime language english post-audit output', () => {
   it('keeps post-audit registry-first output english-oriented and machine-safe', () => {
@@ -80,6 +81,15 @@ describe('runtime language english post-audit output', () => {
         ) + '\n',
         'utf8'
       );
+      writeMinimalRequirementRecordContext(root, {
+        flow: 'story',
+        stage: 'post_audit',
+        epicId: 'epic-14',
+        storyId: '14-1-runtime-context-refactor',
+        storySlug: 'runtime-context-refactor',
+        runId: 'run-en-post-audit-003',
+        artifactRoot: '_bmad-output/implementation-artifacts/epic-14/14-1-runtime-context-refactor',
+      });
 
       const chunks: string[] = [];
       const originalWrite = process.stdout.write.bind(process.stdout);

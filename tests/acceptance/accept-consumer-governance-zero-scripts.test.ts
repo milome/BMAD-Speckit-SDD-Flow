@@ -1,9 +1,23 @@
 import { execSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { listUnexpectedLegacyConsumerHookFiles } from '../../packages/bmad-speckit/src/services/install-surface-manifest';
+import {
+  buildPassImplementationEntryGate,
+  buildSixModelResultsForImplementationReady,
+  linkRepoNodeModulesIntoProject,
+  writeMinimalRequirementRecordContext,
+} from '../helpers/runtime-registry-fixture';
+import { writeFakeReqTraceSkill } from '../helpers/requirement-fixture-runtime';
 
 const PKG_ROOT = join(import.meta.dirname, '..', '..');
 
@@ -129,6 +143,28 @@ describe('consumer governance zero-scripts install', () => {
 
       expect(writeContext.status).toBe(0);
       expect(writeContext.stdout).toContain('Wrote');
+      mkdirSync(join(consumer, 'docs', 'requirements'), { recursive: true });
+      writeFileSync(
+        join(consumer, 'docs', 'requirements', 'accept-consumer-zero-scripts.md'),
+        '# Accept Consumer Zero Scripts\n\nConfirmed implementation requirement fixture.\n',
+        'utf8'
+      );
+      linkRepoNodeModulesIntoProject(consumer);
+      writeMinimalRequirementRecordContext(consumer, {
+        flow: 'story',
+        stage: 'implement',
+        epicId: 'epic-20',
+        storyId: '20.1',
+        storySlug: 'accept-consumer-zero-scripts',
+        runId: 'accept-zero-scripts-run',
+        artifactRoot: '_bmad-output/implementation-artifacts/epic-20/story-20.1',
+        artifactPath: '_bmad-output/implementation-artifacts/epic-20/story-20.1/spec.md',
+        implementationEntryGate: buildPassImplementationEntryGate({ flow: 'story' }),
+        confirmedSource: true,
+        currentMentalModel: 'implementation_readiness',
+        sixModelResults: buildSixModelResultsForImplementationReady(),
+      });
+      writeFakeReqTraceSkill(consumer);
 
       const inject = spawnSync(
         process.execPath,

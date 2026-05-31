@@ -13,6 +13,7 @@ import {
 } from '../../scripts/runtime-context-registry';
 import {
   linkRepoNodeModulesIntoProject,
+  writeMinimalRequirementRecordContext,
   writeMinimalRegistryAndProjectContext,
 } from '../helpers/runtime-registry-fixture';
 
@@ -96,6 +97,14 @@ function makeStandaloneAutoRepairRoot(): string {
       updatedAt: new Date().toISOString(),
     })
   );
+  writeMinimalRequirementRecordContext(tempRoot, {
+    flow: 'standalone_tasks',
+    stage: 'implement',
+    sourceMode: 'standalone_story',
+    runId: 'standalone-auto-repair-run',
+    artifactPath,
+    artifactRoot: '_bmad-output/implementation-artifacts/_orphan',
+  });
   return tempRoot;
 }
 

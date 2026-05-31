@@ -8,6 +8,7 @@ import {
 } from '../../scripts/runtime-context-registry';
 import { projectContextPath, writeRuntimeContext } from '../../scripts/runtime-context';
 import { mainEmitRuntimePolicy } from '../../scripts/emit-runtime-policy';
+import { writeMinimalRequirementRecordContext } from '../helpers/runtime-registry-fixture';
 
 describe('runtime-policy registry run-first consumption', () => {
   it('prefers run scope over project scope when registry activeScope points to a run', () => {
@@ -76,6 +77,13 @@ describe('runtime-policy registry run-first consumption', () => {
         runId: 'run-001',
       };
       writeRuntimeContextRegistry(root, registry);
+      writeMinimalRequirementRecordContext(root, {
+        flow: 'story',
+        stage: 'post_audit',
+        epicId: 'epic-14',
+        storyId: '14-1-runtime-context-refactor',
+        runId: 'run-001',
+      });
 
       const chunks: string[] = [];
       const originalWrite = process.stdout.write.bind(process.stdout);

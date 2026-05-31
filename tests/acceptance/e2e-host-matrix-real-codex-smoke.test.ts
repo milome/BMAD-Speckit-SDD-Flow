@@ -9,6 +9,12 @@ import {
   defaultRuntimeContextRegistry,
   writeRuntimeContextRegistry,
 } from '../../scripts/runtime-context-registry';
+import {
+  buildPassImplementationEntryGate,
+  buildSixModelResultsForImplementationReady,
+  writeMinimalRequirementRecordContext,
+} from '../helpers/runtime-registry-fixture';
+import { writeFakeReqTraceSkill } from '../helpers/requirement-fixture-runtime';
 
 describe('host-matrix real codex smoke', () => {
   it('uses the codex worker adapter smoke in real mode instead of only checking codex --version', () => {
@@ -46,7 +52,25 @@ describe('host-matrix real codex smoke', () => {
           stage: 'implement',
           sourceMode: 'full_bmad',
           contextScope: 'project',
+          storyId: 'S1',
+          runId: 'host-matrix-real-codex-run',
         })
+      );
+      writeMinimalRequirementRecordContext(root, {
+        flow: 'story',
+        stage: 'implement',
+        storyId: 'S1',
+        runId: 'host-matrix-real-codex-run',
+        implementationEntryGate: buildPassImplementationEntryGate({ flow: 'story' }),
+        confirmedSource: true,
+        currentMentalModel: 'implementation_readiness',
+        sixModelResults: buildSixModelResultsForImplementationReady(),
+      });
+      writeFakeReqTraceSkill(root);
+      fs.cpSync(
+        path.join(process.cwd(), '_bmad', 'codex', 'agents'),
+        path.join(root, '.codex', 'agents'),
+        { recursive: true }
       );
 
       const reportPath = path.join(root, '_bmad-output', 'runtime', 'e2e', 'real-codex.json');
@@ -59,6 +83,12 @@ describe('host-matrix real codex smoke', () => {
         'codex',
         '--report-path',
         reportPath,
+        '--record-id',
+        'REQ-host-matrix-real-codex-run',
+        '--requirement-set-id',
+        'REQSET-host-matrix-real-codex-run',
+        '--runId',
+        'host-matrix-real-codex-run',
       ]);
 
       expect(exitCode).toBe(0);

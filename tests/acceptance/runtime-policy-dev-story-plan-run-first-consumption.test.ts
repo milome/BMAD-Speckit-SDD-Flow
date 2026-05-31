@@ -9,6 +9,7 @@ import {
   writeRuntimeContextRegistry,
 } from '../../scripts/runtime-context-registry';
 import { mainEmitRuntimePolicy } from '../../scripts/emit-runtime-policy';
+import { writeMinimalRequirementRecordContext } from '../helpers/runtime-registry-fixture';
 
 describe('runtime-policy dev-story plan run-first consumption', () => {
   it('resolves dev_story plan run through registry-first consumption with workflow-stage-specific trigger semantics', () => {
@@ -81,6 +82,15 @@ describe('runtime-policy dev-story plan run-first consumption', () => {
         ) + '\n',
         'utf8'
       );
+      writeMinimalRequirementRecordContext(root, {
+        flow: 'story',
+        stage: 'plan',
+        epicId: 'epic-14',
+        storyId: '14-1-runtime-context-refactor',
+        storySlug: 'runtime-context-refactor',
+        runId: 'run-dev-plan-001',
+        artifactRoot: '_bmad-output/implementation-artifacts/epic-14/14-1-runtime-context-refactor',
+      });
 
       const chunks: string[] = [];
       const originalWrite = process.stdout.write.bind(process.stdout);

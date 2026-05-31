@@ -12,6 +12,7 @@ import {
 } from '../../scripts/runtime-context-registry';
 import { writeRuntimeContextFromSprintStatus } from '../../scripts/runtime-context';
 import { mainEmitRuntimePolicy } from '../../scripts/emit-runtime-policy';
+import { writeMinimalRequirementRecordContext } from '../helpers/runtime-registry-fixture';
 
 describe('runtime-context milestone: full runtime chain', () => {
   it('builds project/epic/story/run registry data and resolves policy for story lifecycle stages in one integrated flow', () => {
@@ -125,6 +126,15 @@ describe('runtime-context milestone: full runtime chain', () => {
           ) + '\n',
           'utf8'
         );
+        writeMinimalRequirementRecordContext(root, {
+          flow: 'story',
+          stage: scenario.expectedStage,
+          epicId: 'epic-14',
+          storyId: '14-1-runtime-context-refactor',
+          storySlug: 'runtime-context-refactor',
+          runId: scenario.runId,
+          artifactRoot: '_bmad-output/implementation-artifacts/epic-14/14-1-runtime-context-refactor',
+        });
 
         const chunks: string[] = [];
         const originalWrite = process.stdout.write.bind(process.stdout);

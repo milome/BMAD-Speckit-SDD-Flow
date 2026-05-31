@@ -4,6 +4,13 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import {
+  buildPassImplementationEntryGate,
+  buildSixModelResultsForImplementationReady,
+  linkRepoNodeModulesIntoProject,
+  writeMinimalRequirementRecordContext,
+} from '../helpers/runtime-registry-fixture';
+import { writeFakeReqTraceSkill } from '../helpers/requirement-fixture-runtime';
 
 const ROOT = path.join(import.meta.dirname, '..', '..');
 
@@ -126,6 +133,25 @@ function writeFakeCodexBinary(root: string): string {
   return fakeCodexBin;
 }
 
+function materializeConfirmedImplementationRequirement(
+  root: string,
+  opts: { storyId: string; runId: string }
+): void {
+  linkRepoNodeModulesIntoProject(root);
+  writeMinimalRequirementRecordContext(root, {
+    flow: 'story',
+    stage: 'implement',
+    sourceMode: 'full_bmad',
+    storyId: opts.storyId,
+    runId: opts.runId,
+    implementationEntryGate: buildPassImplementationEntryGate({ flow: 'story' }),
+    confirmedSource: true,
+    currentMentalModel: 'implementation_readiness',
+    sixModelResults: buildSixModelResultsForImplementationReady(),
+  });
+  writeFakeReqTraceSkill(root);
+}
+
 describe('Codex consumer five-layer main-agent e2e', () => {
   it('runs installed Codex no-hooks main-agent loop through the public bmad-speckit CLI', () => {
     const target = fs.mkdtempSync(path.join(os.tmpdir(), 'codex-consumer-five-layer-'));
@@ -167,6 +193,10 @@ describe('Codex consumer five-layer main-agent e2e', () => {
         registry.activeScope?.resolvedContextPath
       );
       expect(fs.existsSync(registry.activeScope?.resolvedContextPath ?? '')).toBe(true);
+      materializeConfirmedImplementationRequirement(target, {
+        storyId: '16-1-codex-consumer',
+        runId: registry.activeScope?.runId ?? 'codex-consumer-run',
+      });
 
       const fakeCodexBin = writeFakeCodexBinary(target);
       const output = execSync(
@@ -286,6 +316,13 @@ describe('Codex consumer five-layer main-agent e2e', () => {
           'npx --no-install bmad-speckit ensure-run-runtime-context --story-key 16-3-codex-real-cli --lifecycle dev_story',
           target
         );
+        const registry = JSON.parse(
+          fs.readFileSync(path.join(target, '_bmad-output', 'runtime', 'registry.json'), 'utf8')
+        ) as { activeScope?: { runId?: string } };
+        materializeConfirmedImplementationRequirement(target, {
+          storyId: '16-3-codex-real-cli',
+          runId: registry.activeScope?.runId ?? 'codex-real-cli-run',
+        });
         let output = '';
         expect(() => {
           output = run(
@@ -377,6 +414,10 @@ describe('Codex consumer five-layer main-agent e2e', () => {
         registry.activeScope?.resolvedContextPath
       );
       expect(fs.existsSync(registry.activeScope?.resolvedContextPath ?? '')).toBe(true);
+      materializeConfirmedImplementationRequirement(target, {
+        storyId: '16-2-codex-packed',
+        runId: registry.activeScope?.runId ?? 'codex-packed-run',
+      });
       const fakeCodexBin = writeFakeCodexBinary(target);
       const runLoop = JSON.parse(
         execSync(

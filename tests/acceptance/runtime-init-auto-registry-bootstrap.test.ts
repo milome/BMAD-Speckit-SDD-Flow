@@ -5,7 +5,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 describe('runtime init auto registry bootstrap', () => {
-  it('bootstraps registry.json together with project context during init', () => {
+  it('bootstraps registry.json with bootstrap context but no active requirement record during init', () => {
     const target = mkdtempSync(path.join(os.tmpdir(), 'runtime-init-auto-'));
     try {
       const result = spawnSync(
@@ -17,14 +17,34 @@ describe('runtime init auto registry bootstrap', () => {
       expect(result.status).toBe(0);
 
       const registryPath = path.join(target, '_bmad-output', 'runtime', 'registry.json');
-      const contextPath = path.join(target, '_bmad-output', 'runtime', 'context', 'project.json');
+      const contextPath = path.join(target, '_bmad-output', 'runtime', 'context', 'bootstrap.json');
+      const requirementIndexPath = path.join(
+        target,
+        '_bmad-output',
+        'runtime',
+        'requirement-records',
+        'index.json'
+      );
+      const legacyDummyRecordPath = path.join(
+        target,
+        '_bmad-output',
+        'runtime',
+        'requirement-records',
+        'REQ-story_story_create',
+        'requirement-record.json'
+      );
 
       expect(existsSync(contextPath)).toBe(true);
       expect(existsSync(registryPath)).toBe(true);
+      expect(existsSync(requirementIndexPath)).toBe(false);
+      expect(existsSync(legacyDummyRecordPath)).toBe(false);
 
       const registryRaw = readFileSync(registryPath, 'utf8');
       expect(registryRaw).toContain('"scopeType": "project"');
-      expect(registryRaw).toContain('"projectContextPath"');
+      expect(registryRaw.replace(/\\\\/g, '/')).toContain(
+        '_bmad-output/runtime/context/bootstrap.json'
+      );
+      expect(registryRaw).toContain('bootstrap context only; no active requirement record');
     } finally {
       rmSync(target, { recursive: true, force: true });
     }

@@ -21,7 +21,7 @@ describe('runtime language english missing-context surface', () => {
       errors.push(args.map(String).join(' '));
     };
     try {
-      const code = mainEmitRuntimePolicy(['--cwd', root]);
+      const code = mainEmitRuntimePolicy(['--cwd', root, '--legacy-registry-bridge']);
       expect(code).toBe(1);
     } finally {
       console.error = originalError;
