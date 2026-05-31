@@ -1,4 +1,4 @@
-# BMAD-SpeCKit-SDD-Flow: Requirement-Contract Driven Agent Automation
+# BMAD-SpeCKit-SDD-Flow: Requirement-Contract-Driven Main Agent Orchestration
 
 English | [简体中文](README.zh-CN.md)
 
@@ -7,12 +7,12 @@ English | [简体中文](README.zh-CN.md)
 </p>
 
 <h3 align="center">
-  Governed Spec-Driven AI Delivery for Cursor, Claude Code, and Codex
+  Agent governance and AI-TDD control plane for BMAD + Spec-Kit delivery across Cursor, Claude Code, and Codex
 </h3>
 
 <p align="center">
   <strong>Built on <a href="https://github.com/bmad-code-org/BMAD-METHOD">BMAD-METHOD</a> and <a href="https://github.com/github/spec-kit">Spec-Kit</a>.</strong><br>
-  <em>The 1.x release line integrates BMAD + Speckit. The 2.0.0 release line turns that workflow into an AI-TDD control plane for governed Main Agent orchestration.</em>
+  <em>BMAD-SpeCKit-SDD-Flow keeps the end-to-end BMAD + Spec-Kit path from product discovery to technical implementation, then adds AI-TDD, agent governance, requirement contracts, readiness gates, delivery gates, trace evidence, and bounded execution on top.</em>
 </p>
 
 <p align="center">
@@ -43,15 +43,26 @@ English | [简体中文](README.zh-CN.md)
 
 ## What This Is
 
-BMAD-SpeCKit-SDD-Flow is not a prompt pack that asks AI to write more code. It is a Main Agent orchestration workflow that installs into consumer projects through the CLI, then runs inside Codex, Claude Code CLI, or Cursor through the `bmads` / `bmad-speckit` skills.
+BMAD-SpeCKit-SDD-Flow is a requirement-contract-driven orchestration layer for AI-assisted software delivery. It combines the product and delivery structure of BMAD-METHOD with the specification-driven development flow of Spec-Kit, then adds a governed Main Agent control plane for Cursor, Claude Code, and Codex.
 
-The goal is simple: make AI work inside requirement contracts, gates, evidence, and traceability. The 1.x release line connected BMAD and Speckit into a full delivery flow. The 2.0.0 release line makes that flow requirement-contract driven with AI-TDD, six mental models, and two delivery gates.
+The goal is not to replace BMAD or Spec-Kit. The goal is to make the complete path from product intent to implementation safer, more traceable, and easier to execute with AI agents. The workflow installs into consumer projects through the CLI, then runs inside Codex, Claude Code CLI, or Cursor through the `bmads` / `bmad-speckit` skills.
 
 <p align="center">
   <img src="docs/assets/toolchain-ecosystem-en.svg" alt="AI-TDD toolchain ecosystem for requirement-contract driven agent automation" width="100%" />
 </p>
 
 The CLI is the installation and external interface. It installs the workflow into a consumer project, validates the install surface, and exposes runtime read models such as dashboard, scoring, Coach, and SFT extraction. Daily delivery control belongs to the Main Agent after the user activates it in the AI host.
+
+The project provides:
+
+- Requirement-contract-driven Main Agent orchestration.
+- Agent governance across Cursor, Claude Code, and Codex.
+- AI-TDD workflow control.
+- Readiness gates before implementation.
+- Delivery gates before completion claims.
+- Trace evidence for requirements, implementation, and verification.
+- Bounded execution to reduce uncontrolled agent drift.
+- End-to-end BMAD + Spec-Kit delivery flow support.
 
 ---
 
@@ -74,13 +85,13 @@ This project is not the best fit when you only want:
 
 ## Prerequisites
 
-| Tool | Version | Why it matters |
-| --- | --- | --- |
-| Node.js | 22+ | Required for the published CLI and package install surface. |
-| npm | 9+ | Required for `npx --package`, local install, and workspace workflows. |
-| PowerShell | 7+ on Windows | Recommended for setup, verification, and runtime helper scripts. |
-| Git | 2.30+ | Required for worktrees, branch workflows, and contribution flow. |
-| AI host | Codex, Claude Code CLI, or Cursor | Required for the normal `bmads` / `bmad-speckit` runtime entry. |
+| Tool       | Version                           | Why it matters                                                        |
+| ---------- | --------------------------------- | --------------------------------------------------------------------- |
+| Node.js    | 22+                               | Required for the published CLI and package install surface.           |
+| npm        | 9+                                | Required for `npx --package`, local install, and workspace workflows. |
+| PowerShell | 7+ on Windows                     | Recommended for setup, verification, and runtime helper scripts.      |
+| Git        | 2.30+                             | Required for worktrees, branch workflows, and contribution flow.      |
+| AI host    | Codex, Claude Code CLI, or Cursor | Required for the normal `bmads` / `bmad-speckit` runtime entry.       |
 
 ---
 
@@ -131,13 +142,13 @@ After activation, the Main Agent takes root governed runtime authority for the c
 
 The Main Agent owns these decisions:
 
-| Decision | Main Agent responsibility |
-| --- | --- |
-| Active requirement | Resolve the current requirement from explicit IDs or runtime requirement records. |
+| Decision             | Main Agent responsibility                                                                             |
+| -------------------- | ----------------------------------------------------------------------------------------------------- |
+| Active requirement   | Resolve the current requirement from explicit IDs or runtime requirement records.                     |
 | Current mental model | Read `currentMentalModel` and continue from the governed stage instead of guessing from chat history. |
-| Progress | Show what is confirmed, blocked, missing, or ready for the active requirement. |
-| Next action | Recommend confirmation, architecture, readiness, dispatch, audit, rerun, or delivery closeout. |
-| Evidence | Surface missing Manifest, trace, command, artifact, audit, score, or closeout evidence. |
+| Progress             | Show what is confirmed, blocked, missing, or ready for the active requirement.                        |
+| Next action          | Recommend confirmation, architecture, readiness, dispatch, audit, rerun, or delivery closeout.        |
+| Evidence             | Surface missing Manifest, trace, command, artifact, audit, score, or closeout evidence.               |
 
 CLI commands are allowed for install validation, CI, debug, fallback hosts, and external read models. They are not the primary daily activation path when the host skill is available.
 
@@ -155,13 +166,13 @@ The 1.x release line remains the delivery map that connects BMAD product discove
   <img src="docs/assets/readme-architecture-overview.final.svg" alt="BMAD-Speckit 1.x five-layer architecture from product intent to audited delivery" width="100%" />
 </p>
 
-| Layer | Purpose | Primary output |
-| --- | --- | --- |
-| Layer 1: Product Brief | Define product intent, users, goals, and problem framing. | Product brief and discovery notes. |
-| Layer 2: PRD + Architecture | Turn intent into requirements, architecture boundaries, and risk decisions. | PRD and architecture documents. |
-| Layer 3: Epic / Story | Split product and architecture scope into executable story units. | Epics, stories, and story context. |
-| Layer 4: Speckit Workflow | Run `specify -> plan -> GAPS -> tasks -> implement` for technical execution. | Specs, plans, gap analysis, tasks, code, and tests. |
-| Layer 5: Closeout And Integration | Audit implementation, score evidence, and prepare reviewable delivery. | Post-audit, scoring, PR, human review, and release evidence. |
+| Layer                             | Purpose                                                                      | Primary output                                               |
+| --------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| Layer 1: Product Brief            | Define product intent, users, goals, and problem framing.                    | Product brief and discovery notes.                           |
+| Layer 2: PRD + Architecture       | Turn intent into requirements, architecture boundaries, and risk decisions.  | PRD and architecture documents.                              |
+| Layer 3: Epic / Story             | Split product and architecture scope into executable story units.            | Epics, stories, and story context.                           |
+| Layer 4: Speckit Workflow         | Run `specify -> plan -> GAPS -> tasks -> implement` for technical execution. | Specs, plans, gap analysis, tasks, code, and tests.          |
+| Layer 5: Closeout And Integration | Audit implementation, score evidence, and prepare reviewable delivery.       | Post-audit, scoring, PR, human review, and release evidence. |
 
 In the 2.0.0 release line, this five-layer architecture is not removed. It becomes the upstream delivery map that feeds the AI-TDD control plane: product and story artifacts become requirement-contract inputs, Speckit work becomes bounded execution packets, and delivery still closes only through controlled evidence gates.
 
@@ -173,10 +184,10 @@ AI-TDD in this project means Manifest-level, acceptance-driven development. The 
 
 The control plane exists to enforce two rules:
 
-| Rule | Gate |
-| --- | --- |
-| No complete Manifest, no execution. | Implementation Readiness Gate, expected status `AI-TDD-RED`. |
-| Unverified Manifest items, no delivery. | Delivery Closeout Gate, expected status `AI-TDD-GREEN`. |
+| Rule                                    | Gate                                                         |
+| --------------------------------------- | ------------------------------------------------------------ |
+| No complete Manifest, no execution.     | Implementation Readiness Gate, expected status `AI-TDD-RED`. |
+| Unverified Manifest items, no delivery. | Delivery Closeout Gate, expected status `AI-TDD-GREEN`.      |
 
 <p align="center">
   <img src="docs/assets/tdd-state-machine-en.svg" alt="AI-TDD state machine from Manifest draft to AI-TDD-RED, implementation, AI-TDD-GREEN, and closed delivery" width="100%" />
@@ -194,14 +205,14 @@ The Main Agent drives every requirement through six mental models. They are not 
   <img src="docs/assets/ai-tdd-flow-en.svg" alt="AI-TDD six mental models and two gate flow" width="100%" />
 </p>
 
-| Mental model | Governed question | Target outcome |
-| --- | --- | --- |
-| Requirement Confirmation | What is in scope, out of scope, and provable by evidence IDs? | Confirmed requirement contract. |
-| Architecture Confirmation | Does the implementation boundary still match the confirmed architecture and risk envelope? | Confirmed architecture boundary. |
-| Implementation Readiness | Is the Manifest complete enough and is the acceptance baseline registered? | Entry gate reaches `AI-TDD-RED`. |
-| Execution Closure | Did bounded agents implement only within the contract and produce traceable evidence? | Bounded execution closes against the Manifest. |
-| Audit Review | Do findings, reruns, RCA, scores, and review evidence have verifiable provenance? | Audit evidence is current and replayable. |
-| Delivery Confirmation | Are all acceptance items and delivery evidence verified for the current closeout attempt? | Delivery gate reaches `AI-TDD-GREEN`. |
+| Mental model              | Governed question                                                                          | Target outcome                                 |
+| ------------------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------- |
+| Requirement Confirmation  | What is in scope, out of scope, and provable by evidence IDs?                              | Confirmed requirement contract.                |
+| Architecture Confirmation | Does the implementation boundary still match the confirmed architecture and risk envelope? | Confirmed architecture boundary.               |
+| Implementation Readiness  | Is the Manifest complete enough and is the acceptance baseline registered?                 | Entry gate reaches `AI-TDD-RED`.               |
+| Execution Closure         | Did bounded agents implement only within the contract and produce traceable evidence?      | Bounded execution closes against the Manifest. |
+| Audit Review              | Do findings, reruns, RCA, scores, and review evidence have verifiable provenance?          | Audit evidence is current and replayable.      |
+| Delivery Confirmation     | Are all acceptance items and delivery evidence verified for the current closeout attempt?  | Delivery gate reaches `AI-TDD-GREEN`.          |
 
 Implementation agents do not choose the global route. They receive bounded packets only after readiness passes, then the Main Agent re-inspects state after each child result, audit result, rerun, or blocking event.
 
@@ -249,12 +260,12 @@ npx bmad-speckit check
 
 The public CLI exposes these auxiliary surfaces:
 
-| Surface | Commands |
-| --- | --- |
-| Install and lifecycle | `init`, `check`, `version`, `upgrade`, `uninstall`, `add-agent`. |
-| Runtime read models | `bmads`, `bmad-speckit`, `dashboard-start`, `dashboard-status`, `dashboard-stop`, `dashboard-live`, `runtime-mcp`. |
-| Evidence and scoring | `score`, `check-score`, `scores`, `dashboard`, `deferred-gap-audit`. |
-| Data and feedback | `coach`, `sft-extract`, `sft-preview`, `sft-validate`, `sft-bundle`, `feedback`. |
+| Surface               | Commands                                                                                                           |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Install and lifecycle | `init`, `check`, `version`, `upgrade`, `uninstall`, `add-agent`.                                                   |
+| Runtime read models   | `bmads`, `bmad-speckit`, `dashboard-start`, `dashboard-status`, `dashboard-stop`, `dashboard-live`, `runtime-mcp`. |
+| Evidence and scoring  | `score`, `check-score`, `scores`, `dashboard`, `deferred-gap-audit`.                                               |
+| Data and feedback     | `coach`, `sft-extract`, `sft-preview`, `sft-validate`, `sft-bundle`, `feedback`.                                   |
 
 ### Public CLI Surface
 
@@ -282,13 +293,13 @@ Use the CLI to install and inspect. Use the host skill to let the Main Agent con
 
 Delivery evidence is different from the CLI command-surface screenshot. It is the gate material used to decide whether the active requirement can close through the Delivery Closeout Gate.
 
-| Evidence type | Required proof |
-| --- | --- |
-| Requirement contract | Confirmed Manifest and requirement record. |
-| Readiness | Implementation Readiness Gate result at `AI-TDD-RED`. |
-| Execution | Bounded packet result, command evidence, artifact index, and trace closure. |
-| Audit | Findings, reruns, RCA, score records, and provenance. |
-| Delivery | Delivery Closeout Gate result at `AI-TDD-GREEN` for the current attempt. |
+| Evidence type        | Required proof                                                              |
+| -------------------- | --------------------------------------------------------------------------- |
+| Requirement contract | Confirmed Manifest and requirement record.                                  |
+| Readiness            | Implementation Readiness Gate result at `AI-TDD-RED`.                       |
+| Execution            | Bounded packet result, command evidence, artifact index, and trace closure. |
+| Audit                | Findings, reruns, RCA, score records, and provenance.                       |
+| Delivery             | Delivery Closeout Gate result at `AI-TDD-GREEN` for the current attempt.    |
 
 ---
 

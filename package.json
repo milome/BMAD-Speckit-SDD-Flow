@@ -1,7 +1,7 @@
 {
   "name": "bmad-speckit-sdd-flow",
   "version": "2.0.0",
-  "description": "BMAD + Speckit workflow and scoring skeleton; deploy _bmad to project root",
+  "description": "Agent governance and AI-TDD control plane for requirement-contract-driven Main Agent orchestration, built on BMAD + Spec-Kit",
   "scripts": {
     "lint": "eslint . --ext .ts,.js",
     "lint:fix": "eslint . --ext .ts,.js --fix",
@@ -132,10 +132,25 @@
     "packages/runtime-context/package.json"
   ],
   "keywords": [
+    "agent-governance",
+    "ai-governance",
+    "ai-tdd",
+    "main-agent",
+    "agent-orchestration",
+    "requirement-contract",
+    "spec-driven-development",
     "bmad",
     "speckit",
+    "spec-kit",
+    "end-to-end-delivery",
+    "governed-ai",
+    "bounded-execution",
+    "delivery-gates",
+    "traceability",
+    "evidence",
     "cursor",
-    "workflow"
+    "claude-code",
+    "codex"
   ],
   "workspaces": [
     "packages/*"
