@@ -898,7 +898,6 @@ function confirmedExecutionRefs(input: {
       strings(row.atomicTaskRefs)
     ),
     ...objects(confirmation.traceRows).flatMap((row) => strings(row.taskRefs)),
-    input.packet.packetId,
   ]);
   return { traceRows, coveredRequirementIds, taskRefs };
 }
