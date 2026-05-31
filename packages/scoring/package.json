@@ -1,6 +1,6 @@
 {
   "name": "@bmad-speckit/scoring",
-  "version": "1.0.3",
+  "version": "2.0.0",
   "description": "BMAD scoring system: audit parsing, score calculation, coach diagnosis, dashboard generation",
   "main": "dist/orchestrator/index.js",
   "types": "dist/orchestrator/index.d.ts",
