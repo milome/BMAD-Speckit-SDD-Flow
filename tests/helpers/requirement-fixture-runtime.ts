@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import yaml from 'js-yaml';
 import { resolveExecutionDisciplineProfile } from '../../scripts/execution-discipline-profiles';
 import type {
   CompiledPromptRef,
@@ -20,6 +21,7 @@ import {
 
 export const SIX_MODEL_HARDENING_FIXTURE_ID =
   'REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING';
+export const AI_TDD_MANIFEST_CLOSEOUT_RUNNER_FIXTURE_ID = 'REQ-AI-TDD-MANIFEST-CLOSEOUT-RUNNER';
 
 export interface MaterializedRequirementFixture {
   root: string;
@@ -32,6 +34,27 @@ export interface MaterializedRequirementFixture {
   requirementSetId: string;
   runId: string;
 }
+
+export interface MaterializedReqTraceFixture {
+  root: string;
+  fixtureId: string;
+  sourcePath: string;
+  sourceDocumentHash: string;
+  implementationConfirmationHash: string;
+  recordPath: string;
+  recordId: string;
+  requirementSetId: string;
+}
+
+const CONFIRMATION_BOOKKEEPING_FIELDS = new Set([
+  'status',
+  'confirmedAt',
+  'confirmedBy',
+  'sourceDocumentHash',
+  'implementationConfirmationHash',
+  'reconfirmationRequest',
+  'confirmationRender',
+]);
 
 function repoRoot(): string {
   return process.cwd();
@@ -79,6 +102,48 @@ function stableStringify(value: unknown): string {
       (key) => `${JSON.stringify(key)}:${stableStringify((value as Record<string, unknown>)[key])}`
     )
     .join(',')}}`;
+}
+
+function extractImplementationConfirmationBlock(sourceText: string): string {
+  const lines = sourceText.replace(/\r\n/gu, '\n').split('\n');
+  const start = lines.findIndex((line) => /^implementationConfirmation:\s*$/u.test(line));
+  if (start < 0) throw new Error('missing implementationConfirmation block');
+  let end = lines.length;
+  for (let index = start + 1; index < lines.length; index += 1) {
+    const line = lines[index];
+    if (line.trim() === '') continue;
+    if (/^\S/u.test(line)) {
+      end = index;
+      break;
+    }
+  }
+  return lines.slice(start, end).join('\n');
+}
+
+function semanticConfirmationForHash(
+  confirmation: Record<string, unknown>
+): Record<string, unknown> {
+  const semantic: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(confirmation)) {
+    if (!CONFIRMATION_BOOKKEEPING_FIELDS.has(key)) semantic[key] = value;
+  }
+  return semantic;
+}
+
+function confirmationHashes(sourceText: string): {
+  sourceDocumentHash: string;
+  implementationConfirmationHash: string;
+} {
+  const blockText = extractImplementationConfirmationBlock(sourceText);
+  const parsed = yaml.load(blockText) as { implementationConfirmation?: Record<string, unknown> };
+  const confirmation = parsed.implementationConfirmation;
+  if (!confirmation) throw new Error('missing parsed implementationConfirmation');
+  const semantic = semanticConfirmationForHash(confirmation);
+  const normalizedBlock = `implementationConfirmation:${stableStringify(semantic)}`;
+  return {
+    sourceDocumentHash: sha256Text(sourceText.replace(blockText, normalizedBlock)),
+    implementationConfirmationHash: sha256Text(stableStringify(semantic)),
+  };
 }
 
 function objectRecord(value: unknown): Record<string, unknown> {
@@ -371,6 +436,90 @@ export function materializeRequirementFixture(
     recordId,
     requirementSetId,
     runId,
+  };
+}
+
+export function materializeAiTddManifestCloseoutRunnerFixture(
+  input: { root?: string } = {}
+): MaterializedReqTraceFixture {
+  const fixtureId = AI_TDD_MANIFEST_CLOSEOUT_RUNNER_FIXTURE_ID;
+  const root = input.root ?? createTempRequirementWorkspace(`fixture-${safeSegment(fixtureId)}-`);
+  const fixtureRoot = path.join(repoRoot(), 'tests', 'fixtures', 'requirements', fixtureId);
+  const manifest = readJson(path.join(fixtureRoot, 'fixture-manifest.json'));
+  const recordId = String(manifest.recordId);
+  const requirementSetId = String(manifest.requirementSetId);
+  const sourceText = fs.readFileSync(path.join(fixtureRoot, String(manifest.sourceFile)), 'utf8');
+  const sourcePath = path.join(root, String(manifest.docsRequirementsPath));
+  fs.mkdirSync(path.dirname(sourcePath), { recursive: true });
+  fs.writeFileSync(sourcePath, sourceText, 'utf8');
+
+  const { sourceDocumentHash, implementationConfirmationHash } = confirmationHashes(sourceText);
+  const recordRoot = path.join(
+    root,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    requirementSetId
+  );
+  const recordPath = path.join(recordRoot, 'requirement-record.json');
+  const eventLogPath = path.join(recordRoot, 'events', 'control-events.jsonl');
+  writeJson(recordPath, {
+    schemaVersion: 'requirement-record/v1',
+    recordId,
+    requirementSetId,
+    runId: manifest.runId,
+    status: 'user_confirmed',
+    flow: manifest.flow,
+    stage: manifest.stage,
+    entryFlow: manifest.flow,
+    sourceMode: 'full_bmad',
+    sourcePath,
+    artifactPath: sourcePath,
+    sourceDocumentHash,
+    implementationConfirmationHash,
+    confirmationPageHash: 'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+    controlStore: {
+      eventLogPath,
+      controlEventsPath: eventLogPath,
+    },
+    confirmationHistory: [
+      {
+        eventType: 'confirmation_recorded',
+        recordId,
+        requirementSetId,
+        confirmedAt: '2026-05-26T17:21:58.718Z',
+        confirmedBy: 'fixture',
+        sourcePath: path.relative(root, sourcePath).replace(/\\/g, '/'),
+        sourceDocumentHash,
+        implementationConfirmationHash,
+        confirmationPageHash:
+          'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        confirmationText: 'fixture confirmation for req-trace prompt compiler tests',
+      },
+    ],
+  });
+  writeJson(path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'index.json'), {
+    version: 1,
+    active: { recordId, requirementSetId, runId: manifest.runId },
+    records: [
+      {
+        recordId,
+        requirementSetId,
+        runId: manifest.runId,
+        recordPath: path.relative(root, recordPath).replace(/\\/g, '/'),
+      },
+    ],
+  });
+
+  return {
+    root,
+    fixtureId,
+    sourcePath,
+    sourceDocumentHash,
+    implementationConfirmationHash,
+    recordPath,
+    recordId,
+    requirementSetId,
   };
 }
 

@@ -51,7 +51,11 @@ import {
 } from './orchestration-state';
 import { type RuntimeContextFile } from './runtime-context';
 import { loadPolicyContextFromRegistry } from './emit-runtime-policy';
-import type { ReviewerLatestCloseoutRecord } from './runtime-context-registry';
+import {
+  buildImplementationEntryIndexKey,
+  readRuntimeContextRegistry,
+  type ReviewerLatestCloseoutRecord,
+} from './runtime-context-registry';
 import { runAdaptiveIntakeGovernanceGate } from './adaptive-intake-governance-gate';
 import { runCodexWorkerAdapter } from './main-agent-codex-worker-adapter';
 import { applyLongRunPolicyToState } from './long-run-runtime-policy';
@@ -999,6 +1003,23 @@ function pendingPacketMatchesNextAction(surface: MainAgentOrchestrationSurface):
     return actualTaskType === expectedTaskType;
   }
   const packetKind = surface.orchestrationState?.pendingPacket?.packetKind;
+  return packetKind === 'resume' || packetKind === 'recommendation';
+}
+
+function pendingPacketMatchesAction(input: {
+  nextAction: string | null | undefined;
+  pendingPacket: RecommendationPacket | ExecutionPacket | ResumePacket | null;
+  state: OrchestrationState | null;
+}): boolean {
+  const expectedTaskType = taskTypeFromNextAction(input.nextAction ?? null);
+  if (!expectedTaskType) {
+    return false;
+  }
+  const actualTaskType = packetTaskType(input.pendingPacket);
+  if (actualTaskType) {
+    return actualTaskType === expectedTaskType;
+  }
+  const packetKind = input.state?.pendingPacket?.packetKind;
   return packetKind === 'resume' || packetKind === 'recommendation';
 }
 
@@ -6339,7 +6360,67 @@ function resolveImplementationEntryGateFromRegistry(
   const resolvedGate = (
     runtimeContext as { implementationEntryGate?: ImplementationEntryGate } | null
   )?.implementationEntryGate;
-  return resolvedGate ?? null;
+  if (resolvedGate) {
+    return resolvedGate;
+  }
+
+  let registry;
+  try {
+    registry = readRuntimeContextRegistry(projectRoot);
+  } catch {
+    return null;
+  }
+  const flowIndex = registry.implementationEntryIndex?.[flow] ?? {};
+  const candidates = new Set<string>();
+  const addCandidate = (value: string | null | undefined) => {
+    const normalized = normalizeText(value);
+    if (normalized) {
+      candidates.add(path.normalize(normalized).replace(/\\/g, '/'));
+    }
+  };
+  const artifactPath = normalizeText(runtimeContext?.artifactPath);
+  const artifactRoot = normalizeText(runtimeContext?.artifactRoot);
+  const runId = normalizeText(runtimeContext?.runId);
+  const storyId = normalizeText(runtimeContext?.storyId);
+  addCandidate(runId);
+  addCandidate(artifactPath);
+  addCandidate(artifactRoot);
+  addCandidate(storyId);
+  if (flow === 'story') {
+    try {
+      candidates.add(
+        buildImplementationEntryIndexKey({
+          flow,
+          runId,
+          artifactRoot,
+          storyId,
+        })
+      );
+    } catch {
+      // Candidate inputs are intentionally best-effort.
+    }
+  } else {
+    for (const artifactDocPath of [artifactPath, artifactRoot]) {
+      try {
+        candidates.add(
+          buildImplementationEntryIndexKey({
+            flow,
+            runId,
+            artifactDocPath,
+          })
+        );
+      } catch {
+        // Candidate inputs are intentionally best-effort.
+      }
+    }
+  }
+  for (const key of candidates) {
+    const gate = flowIndex[key];
+    if (gate) {
+      return gate;
+    }
+  }
+  return null;
 }
 
 function deriveContinueDecisionFromSurface(input: {
@@ -6978,6 +7059,7 @@ export function resolveMainAgentOrchestrationSurface(
         attemptId: matrixAttemptId,
         pendingPacketId: scopedState.state?.pendingPacket?.packetId ?? null,
         pendingPacketTaskType: packetTaskType(pendingPacket),
+        pendingPacketKind: scopedState.state?.pendingPacket?.packetKind ?? null,
         lastTaskReportPacketId: scopedState.state?.lastTaskReport?.packetId ?? null,
         lastTaskReportStatus: scopedState.state?.lastTaskReport?.status ?? null,
       })
@@ -6989,15 +7071,58 @@ export function resolveMainAgentOrchestrationSurface(
           decision: sixModelRuntimeDecision,
         })
       : null;
+  const implementationEntryDecision = implementationEntryGate?.decision ?? null;
+  const controlPlaneBlocksSixModelOverride =
+    continueState.continueDecision === 'blocked' ||
+    continueState.continueDecision === 'rerun' ||
+    implementationEntryDecision === 'block' ||
+    implementationEntryDecision === 'reroute';
+  const bridgePendingPacketRemainsAuthoritative =
+    runtimeRegistryBridgeRecord &&
+    pendingPacketStatus !== 'none' &&
+    pendingPacketStatus !== 'missing_packet_file' &&
+    pendingPacketStatus !== 'completed' &&
+    pendingPacketStatus !== 'invalidated' &&
+    pendingPacketMatchesAction({
+      nextAction: scopedState.state?.nextAction ?? null,
+      pendingPacket,
+      state: scopedState.state,
+    });
+  const bridgeImplementDispatchFallback =
+    bridgeRecordWithoutControlledGate &&
+    input.stage === 'implement' &&
+    action.nextAction === 'run_implementation_readiness_gate';
+  const bridgeCompletedRemediationReturnsToImplement =
+    runtimeRegistryBridgeRecord &&
+    pendingPacketStatus === 'completed' &&
+    packetTaskType(pendingPacket) === 'remediate' &&
+    scopedState.state?.lastTaskReport?.status === 'done';
   const sixModelRuntimeDecisionAuthoritative =
     Boolean(sixModelRuntimeDecision?.currentMentalModel) &&
-    sixModelRuntimeDecision?.nextAction !== 'record_closed';
+    sixModelRuntimeDecision?.nextAction !== 'record_closed' &&
+    !controlPlaneBlocksSixModelOverride &&
+    !bridgePendingPacketRemainsAuthoritative &&
+    !bridgeImplementDispatchFallback &&
+    !bridgeCompletedRemediationReturnsToImplement;
+  const fallbackActionNextAction = bridgeImplementDispatchFallback
+    ? 'dispatch_implement'
+    : bridgeCompletedRemediationReturnsToImplement
+      ? 'dispatch_implement'
+      : bridgePendingPacketRemainsAuthoritative
+        ? (scopedState.state?.nextAction ?? action.nextAction)
+        : action.nextAction;
+  const fallbackActionReady =
+    bridgeImplementDispatchFallback || bridgeCompletedRemediationReturnsToImplement
+      ? true
+      : bridgePendingPacketRemainsAuthoritative
+        ? pendingPacketStatus === 'ready_for_main_agent'
+        : action.ready;
   const actionNextAction = sixModelRuntimeDecisionAuthoritative
     ? sixModelRuntimeDecision?.nextAction
-    : action.nextAction;
+    : fallbackActionNextAction;
   const actionReady = sixModelRuntimeDecisionAuthoritative
     ? sixModelRuntimeDecision?.ready
-    : action.ready;
+    : fallbackActionReady;
   const splitBrainBlockerPath =
     input.projectRoot &&
     sixModelRuntimeDecision &&
@@ -7190,11 +7315,14 @@ export function ingestMainAgentTaskReport(
     attemptId: report.packetId,
     pendingPacketId: evidenceState.pendingPacket?.packetId ?? null,
     pendingPacketTaskType: packetTaskType(packet),
+    pendingPacketKind: evidenceState.pendingPacket?.packetKind ?? null,
     lastTaskReportPacketId: report.packetId,
     lastTaskReportStatus: report.status,
   });
   const matrixPath = writeSixModelRuntimeDecision({ projectRoot, decision: matrix });
-  if (legacyNextAction !== matrix.nextAction) {
+  const keepLegacyTransition =
+    isRuntimeRegistryBridgeRecord(requirementRecord) && taskType === 'remediate';
+  if (!keepLegacyTransition && legacyNextAction !== matrix.nextAction) {
     writeSplitBrainBlocker({
       projectRoot,
       decision: matrix,
@@ -7206,7 +7334,9 @@ export function ingestMainAgentTaskReport(
   }
   return updateOrchestrationState(projectRoot, sessionId, (current) => ({
     ...current,
-    nextAction: (matrix.nextAction ?? 'await_user') as OrchestrationNextAction,
+    nextAction: (keepLegacyTransition
+      ? legacyNextAction
+      : (matrix.nextAction ?? 'await_user')) as OrchestrationNextAction,
   }));
 }
 

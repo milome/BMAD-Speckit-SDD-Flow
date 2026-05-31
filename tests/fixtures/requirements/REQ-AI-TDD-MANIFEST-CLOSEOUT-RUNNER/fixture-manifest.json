@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "requirement-fixture-manifest/v1",
+  "fixtureId": "REQ-AI-TDD-MANIFEST-CLOSEOUT-RUNNER",
+  "sourceFile": "source.requirement.md",
+  "recordId": "REQ-AI-TDD-MANIFEST-CLOSEOUT-RUNNER",
+  "requirementSetId": "REQ-AI-TDD-MANIFEST-CLOSEOUT-RUNNER",
+  "flow": "standalone_tasks",
+  "stage": "implement",
+  "runId": "ai-tdd-manifest-closeout-runner-fixture",
+  "docsRequirementsPath": "docs/requirements/2026-05-25-ai-tdd-manifest-closeout-runner.md",
+  "trackedInputPolicy": {
+    "gitAuthorityPath": "tests/fixtures/requirements/REQ-AI-TDD-MANIFEST-CLOSEOUT-RUNNER/source.requirement.md",
+    "docsRequirementsIsNotFixtureAuthority": true,
+    "runtimeOutputIsNotFixtureAuthority": true
+  }
+}

@@ -114,12 +114,16 @@ function isTerminalCloseout(record: Record<string, unknown>): boolean {
 function isCurrentImplementationCompletion(input: {
   pendingPacketId?: string | null;
   pendingPacketTaskType?: string | null;
+  pendingPacketKind?: string | null;
   lastTaskReportPacketId?: string | null;
   lastTaskReportStatus?: string | null;
 }): boolean {
+  const pendingTaskType = text(input.pendingPacketTaskType);
+  const pendingPacketKind = text(input.pendingPacketKind);
   return (
     text(input.lastTaskReportStatus) === 'done' &&
-    text(input.pendingPacketTaskType) === 'implement' &&
+    (pendingTaskType === 'implement' ||
+      (pendingTaskType === '' && pendingPacketKind === 'execution')) &&
     text(input.pendingPacketId) !== '' &&
     text(input.pendingPacketId) === text(input.lastTaskReportPacketId)
   );
@@ -174,6 +178,7 @@ export function resolveSixModelRuntimeDecision(input: {
   attemptId: string;
   pendingPacketId?: string | null;
   pendingPacketTaskType?: string | null;
+  pendingPacketKind?: string | null;
   lastTaskReportPacketId?: string | null;
   lastTaskReportStatus?: string | null;
 }): SixModelRuntimeDecision {
@@ -226,7 +231,10 @@ export function resolveSixModelRuntimeDecision(input: {
     }
   } else if (currentMentalModel === 'implementation_readiness') {
     if (currentModelStatus === 'pass') {
-      if (isCurrentImplementationCompletion(input) && !hasCurrentPass(record, 'execution_closure')) {
+      if (
+        isCurrentImplementationCompletion(input) &&
+        !hasCurrentPass(record, 'execution_closure')
+      ) {
         nextAction = 'run_execution_closure_gate';
         ready = true;
         transitionMode = 'requires_user_or_gate';

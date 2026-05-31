@@ -4,6 +4,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { materializeAiTddManifestCloseoutRunnerFixture } from '../helpers/requirement-fixture-runtime';
 
 const ROOT = process.cwd();
 const SCRIPT = path.join(
@@ -14,32 +15,30 @@ const SCRIPT = path.join(
   'scripts',
   'generate_prompt.js'
 );
-const SOURCE = path.join(
+const CANONICAL_PROFILE = path.join(
   ROOT,
-  'docs',
-  'requirements',
-  '2026-05-25-ai-tdd-manifest-closeout-runner.md'
+  '_bmad',
+  'shared',
+  'goal-contract',
+  'goal-contract-profile.json'
 );
-const RECORD = path.join(
-  ROOT,
-  '_bmad-output',
-  'runtime',
-  'requirement-records',
-  'REQ-AI-TDD-MANIFEST-CLOSEOUT-RUNNER',
-  'requirement-record.json'
-);
-const PROFILE = path.join(ROOT, '_bmad', 'shared', 'goal-contract', 'goal-contract-profile.json');
 
 let tempDir: string;
-let originalProfile: string;
+let canonicalProfile: string;
+let tempProfile: string;
+let fixture: ReturnType<typeof materializeAiTddManifestCloseoutRunnerFixture>;
 
 beforeEach(() => {
   tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'req-trace-goal-profile-'));
-  originalProfile = fs.readFileSync(PROFILE, 'utf8');
+  fixture = materializeAiTddManifestCloseoutRunnerFixture({
+    root: path.join(tempDir, 'workspace'),
+  });
+  canonicalProfile = fs.readFileSync(CANONICAL_PROFILE, 'utf8');
+  tempProfile = path.join(tempDir, 'goal-contract-profile.json');
+  fs.writeFileSync(tempProfile, canonicalProfile, 'utf8');
 });
 
 afterEach(() => {
-  fs.writeFileSync(PROFILE, originalProfile, 'utf8');
   fs.rmSync(tempDir, { recursive: true, force: true });
 });
 
@@ -51,15 +50,17 @@ function runNativeGoal(): { status: number; stdout: string; stderr: string; outD
       [
         SCRIPT,
         '--source-document',
-        SOURCE,
+        fixture.sourcePath,
         '--requirement-record',
-        RECORD,
+        fixture.recordPath,
         '--out-dir',
         outDir,
         '--execution-host',
         'codex',
         '--goal-command-available',
         'true',
+        '--goal-contract-profile',
+        tempProfile,
         '--json',
       ],
       { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }
@@ -96,11 +97,11 @@ function profileHashFor(profile: Record<string, any>): string {
 }
 
 function writeProfile(mutator: (profile: Record<string, any>) => Record<string, any>) {
-  const profile = JSON.parse(originalProfile);
+  const profile = JSON.parse(canonicalProfile);
   const next = mutator(profile);
   if (next.__preserveProfileHash !== true) next.profileHash = profileHashFor(next);
   delete next.__preserveProfileHash;
-  fs.writeFileSync(PROFILE, `${JSON.stringify(next, null, 2)}\n`, 'utf8');
+  fs.writeFileSync(tempProfile, `${JSON.stringify(next, null, 2)}\n`, 'utf8');
 }
 
 describe('req-trace shared goal contract profile integration', () => {
@@ -133,18 +134,14 @@ describe('req-trace shared goal contract profile integration', () => {
   });
 
   it('blocks when the shared profile is missing', () => {
-    fs.renameSync(PROFILE, `${PROFILE}.bak-test`);
-    try {
-      const result = runNativeGoal();
-      expect(result.status).toBe(3);
-      const receipt = JSON.parse(
-        fs.readFileSync(path.join(result.outDir, 'audit_receipt.json'), 'utf8')
-      );
-      expect(receipt.blockingReasons).toContain('GOAL_CONTRACT_PROFILE_MISSING');
-      expect(fs.existsSync(path.join(result.outDir, 'goal_execution.md'))).toBe(false);
-    } finally {
-      fs.renameSync(`${PROFILE}.bak-test`, PROFILE);
-    }
+    fs.rmSync(tempProfile, { force: true });
+    const result = runNativeGoal();
+    expect(result.status).toBe(3);
+    const receipt = JSON.parse(
+      fs.readFileSync(path.join(result.outDir, 'audit_receipt.json'), 'utf8')
+    );
+    expect(receipt.blockingReasons).toContain('GOAL_CONTRACT_PROFILE_MISSING');
+    expect(fs.existsSync(path.join(result.outDir, 'goal_execution.md'))).toBe(false);
   });
 
   it('blocks profile hash mismatches', () => {

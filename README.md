@@ -1,4 +1,4 @@
-# BMAD-SpeCKit-SDD-Flow: Requirement-Contract-Driven Main Agent Orchestration
+# BMAD-Speckit-SDD-Flow: Requirement-Contract-Driven Orchestrator Agent Control Plane
 
 English | [简体中文](README.zh-CN.md)
 
@@ -12,7 +12,7 @@ English | [简体中文](README.zh-CN.md)
 
 <p align="center">
   <strong>Built on <a href="https://github.com/bmad-code-org/BMAD-METHOD">BMAD-METHOD</a> and <a href="https://github.com/github/spec-kit">Spec-Kit</a>.</strong><br>
-  <em>BMAD-SpeCKit-SDD-Flow keeps the end-to-end BMAD + Spec-Kit path from product discovery to technical implementation, then adds AI-TDD, agent governance, requirement contracts, readiness gates, delivery gates, trace evidence, and bounded execution on top.</em>
+  <em>BMAD-Speckit-SDD-Flow keeps the end-to-end BMAD + Spec-Kit path from product discovery to technical implementation, then adds AI-TDD, agent governance, requirement contracts, readiness gates, delivery gates, trace evidence, and bounded execution on top.</em>
 </p>
 
 <p align="center">
@@ -43,7 +43,7 @@ English | [简体中文](README.zh-CN.md)
 
 ## What This Is
 
-BMAD-SpeCKit-SDD-Flow is a requirement-contract-driven orchestration layer for AI-assisted software delivery. It combines the product and delivery structure of BMAD-METHOD with the specification-driven development flow of Spec-Kit, then adds a governed Main Agent control plane for Cursor, Claude Code, and Codex.
+BMAD-Speckit-SDD-Flow is a requirement-contract-driven orchestration layer for AI-assisted software delivery. It combines the product and delivery structure of BMAD-METHOD with the specification-driven development flow of Spec-Kit, then adds a governed Orchestrator Agent control plane, the top-level coordinator that routes work, enforces gates, and closes delivery, for Cursor, Claude Code, and Codex.
 
 The goal is not to replace BMAD or Spec-Kit. The goal is to make the complete path from product intent to implementation safer, more traceable, and easier to execute with AI agents. The workflow installs into consumer projects through the CLI, then runs inside Codex, Claude Code CLI, or Cursor through the `bmads` / `bmad-speckit` skills.
 
@@ -51,11 +51,11 @@ The goal is not to replace BMAD or Spec-Kit. The goal is to make the complete pa
   <img src="docs/assets/toolchain-ecosystem-en.svg" alt="AI-TDD toolchain ecosystem for requirement-contract driven agent automation" width="100%" />
 </p>
 
-The CLI is the installation and external interface. It installs the workflow into a consumer project, validates the install surface, and exposes runtime read models such as dashboard, scoring, Coach, and SFT extraction. Daily delivery control belongs to the Main Agent after the user activates it in the AI host.
+The CLI is the installation and external interface. It installs the workflow into a consumer project, validates the install surface, and exposes runtime read models such as dashboard, scoring, Coach, and SFT extraction. Daily delivery control belongs to the Orchestrator Agent after the user activates it in the AI host.
 
 The project provides:
 
-- Requirement-contract-driven Main Agent orchestration.
+- Requirement-contract-driven control plane.
 - Agent governance across Cursor, Claude Code, and Codex.
 - AI-TDD workflow control.
 - Readiness gates before implementation.
@@ -72,7 +72,7 @@ This project is a good fit when you need:
 
 - Governed AI delivery inside a consumer project, not just prompts.
 - Requirement contracts, readiness gates, delivery gates, and evidence trails.
-- A Main Agent that can inspect state, route work, enforce bounded execution, and block weak delivery claims.
+- A top-level coordinator that can inspect state, route work, enforce bounded execution, and block weak delivery claims.
 - External read models for dashboard, scoring, Coach, and SFT workflows.
 
 This project is not the best fit when you only want:
@@ -97,7 +97,7 @@ This project is not the best fit when you only want:
 
 ## Quick Start
 
-For most consumer projects, use the published package to install the workflow surface, then activate the Main Agent inside the AI host.
+For most consumer projects, use the published package to install the workflow surface, then activate the Orchestrator Agent inside the AI host.
 
 ```bash
 npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit version
@@ -107,7 +107,7 @@ npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit-init . --agent cod
 npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit check
 ```
 
-Then switch to the AI host session and activate the Main Agent:
+Then switch to the AI host session and activate the Orchestrator Agent:
 
 ```text
 $bmads
@@ -138,11 +138,11 @@ $bmad-speckit
 bmad-speckit
 ```
 
-After activation, the Main Agent takes root governed runtime authority for the current request. Its first responsibility is not implementation. It must inspect the active requirement, read the current requirement record, determine the current mental model, show progress, and recommend the next governed action.
+After activation, the Orchestrator Agent takes root governed runtime authority for the current request. Its first responsibility is not implementation. It must inspect the active requirement, read the current requirement record, determine the current mental model, show progress, and recommend the next governed action.
 
-The Main Agent owns these decisions:
+The Orchestrator Agent owns these decisions:
 
-| Decision             | Main Agent responsibility                                                                             |
+| Decision             | Orchestrator Agent responsibility                                                                     |
 | -------------------- | ----------------------------------------------------------------------------------------------------- |
 | Active requirement   | Resolve the current requirement from explicit IDs or runtime requirement records.                     |
 | Current mental model | Read `currentMentalModel` and continue from the governed stage instead of guessing from chat history. |
@@ -152,9 +152,9 @@ The Main Agent owns these decisions:
 
 CLI commands are allowed for install validation, CI, debug, fallback hosts, and external read models. They are not the primary daily activation path when the host skill is available.
 
-Daily operation should stay simple: activate the host skill, let the Main Agent inspect the active requirement, and follow the governed next action it returns. Do not bypass the Implementation Readiness Gate by sending an implementation agent directly into coding. Do not claim delivery from dashboard green, score green, task completion, or chat confidence alone. Delivery closes only through the Delivery Closeout Gate and the current evidence chain.
+Daily operation should stay simple: activate the host skill, let the Orchestrator Agent inspect the active requirement, and follow the governed next action it returns. Do not bypass the Implementation Readiness Gate by sending an implementation agent directly into coding. Do not claim delivery from dashboard green, score green, task completion, or chat confidence alone. Delivery closes only through the Delivery Closeout Gate and the current evidence chain.
 
-The accepted main-agent path is `inspect -> dispatch-plan -> closeout`: inspect resolves governed state, dispatch-plan emits bounded child work, and closeout verifies delivery evidence before completion language is allowed.
+The accepted path is `inspect -> dispatch-plan -> closeout`: inspect resolves governed state, dispatch-plan emits bounded child work, and closeout verifies delivery evidence before completion language is allowed.
 
 ---
 
@@ -199,7 +199,7 @@ The readiness gate does not mean "the feature is done." It means the requirement
 
 ## Six Mental Models
 
-The Main Agent drives every requirement through six mental models. They are not dashboard tabs. They are the questions that decide whether the next action is confirmation, architecture, readiness, execution, audit, or delivery closeout.
+The Orchestrator Agent drives every requirement through six mental models. They are not dashboard tabs. They are the questions that decide whether the next action is confirmation, architecture, readiness, execution, audit, or delivery closeout.
 
 <p align="center">
   <img src="docs/assets/ai-tdd-flow-en.svg" alt="AI-TDD six mental models and two gate flow" width="100%" />
@@ -214,7 +214,7 @@ The Main Agent drives every requirement through six mental models. They are not 
 | Audit Review              | Do findings, reruns, RCA, scores, and review evidence have verifiable provenance?          | Audit evidence is current and replayable.      |
 | Delivery Confirmation     | Are all acceptance items and delivery evidence verified for the current closeout attempt?  | Delivery gate reaches `AI-TDD-GREEN`.          |
 
-Implementation agents do not choose the global route. They receive bounded packets only after readiness passes, then the Main Agent re-inspects state after each child result, audit result, rerun, or blocking event.
+Implementation agents do not choose the global route. They receive bounded packets only after readiness passes, then the Orchestrator Agent re-inspects state after each child result, audit result, rerun, or blocking event.
 
 ---
 
@@ -232,7 +232,7 @@ Every meaningful delivery claim should be traceable across requirement, trace, e
   <img src="docs/assets/5d-trace-matrix-en.svg" alt="Five-dimensional AI-TDD trace matrix" width="100%" />
 </p>
 
-The Main Agent should block or reroute when Manifest completeness, trace coverage, command evidence, artifact evidence, audit provenance, or closeout evidence is missing.
+The Orchestrator Agent should block or reroute when Manifest completeness, trace coverage, command evidence, artifact evidence, audit provenance, or closeout evidence is missing.
 
 ---
 
@@ -269,7 +269,7 @@ The public CLI exposes these auxiliary surfaces:
 
 ### Public CLI Surface
 
-The screenshot below shows the published npm CLI command surface. It is a quick reference for installation, lifecycle, runtime read models, scoring, Coach, and SFT tooling; it is not the daily Main Agent workflow.
+The screenshot below shows the published npm CLI command surface. It is a quick reference for installation, lifecycle, runtime read models, scoring, Coach, and SFT tooling; it is not the daily Orchestrator Agent workflow.
 
 <p align="center">
   <img src="docs/assets/bmad-speckit-cli.png" alt="bmad-speckit CLI help and runtime command surface" width="100%" />
@@ -285,7 +285,7 @@ npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit check
 npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit dashboard-status
 ```
 
-Use the CLI to install and inspect. Use the host skill to let the Main Agent control the requirement flow.
+Use the CLI to install and inspect. Use the host skill to let the Orchestrator Agent control the requirement flow.
 
 ---
 
@@ -307,7 +307,7 @@ Delivery evidence is different from the CLI command-surface screenshot. It is th
 
 The 1.x release line BMAD + Speckit assets remain part of the compatibility surface: Product Brief, PRD, Architecture, Epic/Story, Speckit specify/plan/GAPS/tasks, implementation, audit, scoring, dashboard, Coach, and SFT extraction remain useful.
 
-The 2.0.0 release line now presents the five-layer architecture as the 1.x delivery map before introducing AI-TDD. Its primary authority is still the AI-TDD toolchain ecosystem and the Main Agent control plane. 1.x artifacts are inputs and projections inside that control plane, not a replacement for requirement-contract authority.
+The 2.0.0 release line now presents the five-layer architecture as the 1.x delivery map before introducing AI-TDD. Its primary authority is still the AI-TDD toolchain ecosystem and this control plane. 1.x artifacts are inputs and projections inside that control plane, not a replacement for requirement-contract authority.
 
 ---
 

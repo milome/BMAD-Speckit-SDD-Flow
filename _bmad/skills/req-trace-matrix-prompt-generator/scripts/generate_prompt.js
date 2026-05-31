@@ -667,12 +667,14 @@ function readGoalContractTemplate() {
   return readText(templatePath);
 }
 
-function readGoalContractProfile() {
-  const profilePath = repoPath(GOAL_CONTRACT_PROFILE_PATH);
+function readGoalContractProfile(args = {}) {
+  const profilePath = args.goalContractProfile
+    ? path.resolve(args.goalContractProfile)
+    : repoPath(GOAL_CONTRACT_PROFILE_PATH);
   if (!fs.existsSync(profilePath)) {
     throw new BlockedInput(
       'BLOCK: GOAL_CONTRACT_PROFILE_MISSING',
-      `${GOAL_CONTRACT_PROFILE_PATH} is required for native /goal document rendering.`
+      `${normalizePathSafe(profilePath)} is required for native /goal document rendering.`
     );
   }
   return readJson(profilePath);
@@ -1483,13 +1485,13 @@ function enforceNoOutDirGoalLength(args, confirmation) {
   );
 }
 
-function ensureGoalDocumentPrepared(promptMeta, packet, artifactPaths, outputs, outputHashes) {
+function ensureGoalDocumentPrepared(args, promptMeta, packet, artifactPaths, outputs, outputHashes) {
   if (promptMeta.hostDirective.goalCommand?.mode !== 'native_goal_document_ref') {
     promptMeta.goalDocumentAudit = { fragments: [], missing: [], passed: true };
     promptMeta.goalContractTemplate = null;
     return;
   }
-  const goalDocumentResult = renderGoalExecutionDocumentFromPacket(packet, artifactPaths);
+  const goalDocumentResult = renderGoalExecutionDocumentFromPacket(packet, artifactPaths, args);
   const goalDocument = goalDocumentResult.document;
   writeText(artifactPaths.goalDocumentDiskPath, goalDocument);
   const goalDocumentHash = sha256(readText(artifactPaths.goalDocumentDiskPath));
@@ -1967,9 +1969,9 @@ function buildGoalSlotData(packet, artifactPaths, profile) {
   };
 }
 
-function renderGoalExecutionDocumentFromPacket(packet, artifactPaths) {
+function renderGoalExecutionDocumentFromPacket(packet, artifactPaths, args = {}) {
   const templateText = readGoalContractTemplate();
-  const profile = readGoalContractProfile();
+  const profile = readGoalContractProfile(args);
   try {
     const { renderGoalContract } = loadGoalContractRenderer();
     return renderGoalContract({
@@ -2199,7 +2201,7 @@ function compileArtifacts(args) {
       auditReceipt: normalizePathSafe(receiptPath),
     };
     const outputHashes = { modelPacketHash, humanPromptHash };
-    ensureGoalDocumentPrepared(promptMeta, packet, context.artifactPaths, outputs, outputHashes);
+    ensureGoalDocumentPrepared(args, promptMeta, packet, context.artifactPaths, outputs, outputHashes);
     const receipt = buildPassReceipt(args, context, packet, outputHashes, outputs, promptMeta);
     writeJson(receiptPath, receipt);
     outputHashes.auditReceiptHash = sha256(readText(receiptPath));

@@ -3,6 +3,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { materializeAiTddManifestCloseoutRunnerFixture } from '../helpers/requirement-fixture-runtime';
 
 const ROOT = process.cwd();
 const SCRIPT = path.join(
@@ -13,25 +14,14 @@ const SCRIPT = path.join(
   'scripts',
   'generate_prompt.js'
 );
-const SOURCE = path.join(
-  ROOT,
-  'docs',
-  'requirements',
-  '2026-05-25-ai-tdd-manifest-closeout-runner.md'
-);
-const RECORD = path.join(
-  ROOT,
-  '_bmad-output',
-  'runtime',
-  'requirement-records',
-  'REQ-AI-TDD-MANIFEST-CLOSEOUT-RUNNER',
-  'requirement-record.json'
-);
-
 let tempDir: string;
+let fixture: ReturnType<typeof materializeAiTddManifestCloseoutRunnerFixture>;
 
 beforeEach(() => {
   tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'req-trace-fragments-'));
+  fixture = materializeAiTddManifestCloseoutRunnerFixture({
+    root: path.join(tempDir, 'workspace'),
+  });
 });
 
 afterEach(() => {
@@ -46,9 +36,9 @@ describe('req trace human prompt required fragment audit', () => {
       [
         SCRIPT,
         '--source-document',
-        SOURCE,
+        fixture.sourcePath,
         '--requirement-record',
-        RECORD,
+        fixture.recordPath,
         '--out-dir',
         outDir,
         '--execution-host',
@@ -139,9 +129,9 @@ describe('req trace human prompt required fragment audit', () => {
         [
           patchedScript,
           '--source-document',
-          SOURCE,
+          fixture.sourcePath,
           '--requirement-record',
-          RECORD,
+          fixture.recordPath,
           '--out-dir',
           outDir,
           '--execution-host',

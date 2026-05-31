@@ -1,12 +1,40 @@
 import * as fs from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import * as os from 'node:os';
+import * as path from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-const MODEL_PACKET_PATH =
+const ROOT = process.cwd();
+const MODEL_PACKET_RELATIVE_PATH =
   '_bmad-output/runtime/requirement-records/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json';
+const MODEL_PACKET_FIXTURE_PATH = path.join(
+  ROOT,
+  'tests',
+  'fixtures',
+  'requirements',
+  'REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING',
+  'trace-execution',
+  'implement-1780118139102',
+  'model_packet.json'
+);
+
+let tempDir: string;
+
+beforeEach(() => {
+  tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'must-command-coverage-'));
+  const runtimePacketPath = path.join(tempDir, MODEL_PACKET_RELATIVE_PATH);
+  fs.mkdirSync(path.dirname(runtimePacketPath), { recursive: true });
+  fs.copyFileSync(MODEL_PACKET_FIXTURE_PATH, runtimePacketPath);
+});
+
+afterEach(() => {
+  fs.rmSync(tempDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+});
 
 describe('MUST-to-command semantic coverage gate', () => {
   it('proves every high-risk MUST atom has command-backed trace and evidence coverage in the compiled packet', () => {
-    const packet = JSON.parse(fs.readFileSync(MODEL_PACKET_PATH, 'utf8')) as {
+    const packet = JSON.parse(
+      fs.readFileSync(path.join(tempDir, MODEL_PACKET_RELATIVE_PATH), 'utf8')
+    ) as {
       traceSlices: Array<{
         traceId: string;
         requirementRefs: string[];

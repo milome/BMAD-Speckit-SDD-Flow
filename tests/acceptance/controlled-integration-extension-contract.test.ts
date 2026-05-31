@@ -1,9 +1,18 @@
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 const ROOT = join(import.meta.dirname, '..', '..');
+const FIXTURE_PATH = join(
+  ROOT,
+  'tests',
+  'fixtures',
+  'requirements',
+  'REQ-REQ-TRACE-AI-TDD-PACKET-COMPILER',
+  'controlled-integration-extension.fixture.json'
+);
 const RECORD_RELATIVE_PATH =
   '_bmad-output/runtime/requirement-records/REQ-REQ-TRACE-AI-TDD-PACKET-COMPILER/requirement-record.json';
 const ARTIFACT_RELATIVE_PATH =
@@ -36,8 +45,10 @@ const REQUIRED_FORBIDDEN_EFFECTS = [
   'advance_mental_model',
 ] as const;
 
+let tempDir: string;
+
 function readJson<T>(relativePath: string): T {
-  return JSON.parse(readFileSync(join(ROOT, relativePath), 'utf8')) as T;
+  return JSON.parse(readFileSync(join(tempDir, relativePath), 'utf8')) as T;
 }
 
 function stableStringify(value: unknown): string {
@@ -54,9 +65,64 @@ function sha256(value: string): string {
   return `sha256:${createHash('sha256').update(value, 'utf8').digest('hex')}`;
 }
 
+function writeJson(filePath: string, value: unknown): void {
+  mkdirSync(dirname(filePath), { recursive: true });
+  writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+}
+
+function materializeFixtureRuntime(): void {
+  const fixture = JSON.parse(readFileSync(FIXTURE_PATH, 'utf8')) as {
+    recordId: string;
+    requirementSetId: string;
+    recordHashes: {
+      sourceDocumentHash: string;
+      implementationConfirmationHash: string;
+      confirmationPageHash: string;
+    };
+    artifact: Record<string, unknown>;
+  };
+  const record = {
+    schemaVersion: 'requirement-record/v1',
+    recordId: fixture.recordId,
+    requirementSetId: fixture.requirementSetId,
+    ...fixture.recordHashes,
+    artifactIndex: [] as Array<Record<string, unknown>>,
+    contractChecks: [
+      {
+        eventType: 'contract_check_recorded',
+        contract: 'controlled_integration_extension',
+        sourceRefs: [
+          {
+            sourceType: 'controlled_clarification_artifact',
+            id: ARTIFACT_RELATIVE_PATH,
+          },
+        ],
+      },
+    ],
+  };
+  const artifact = { ...fixture.artifact };
+  artifact.contentHash = sha256(stableStringify(artifact));
+  record.artifactIndex.push({
+    eventType: 'artifact_indexed',
+    path: ARTIFACT_RELATIVE_PATH,
+    contentHash: artifact.contentHash,
+  });
+  writeJson(join(tempDir, RECORD_RELATIVE_PATH), record);
+  writeJson(join(tempDir, ARTIFACT_RELATIVE_PATH), artifact);
+}
+
+beforeEach(() => {
+  tempDir = mkdtempSync(join(tmpdir(), 'controlled-integration-extension-'));
+  materializeFixtureRuntime();
+});
+
+afterEach(() => {
+  rmSync(tempDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+});
+
 describe('controlled integration extension contract', () => {
   it('records execution-discipline-profile-ref as a hash-bound controlled clarification', () => {
-    expect(existsSync(join(ROOT, ARTIFACT_RELATIVE_PATH))).toBe(true);
+    expect(existsSync(join(tempDir, ARTIFACT_RELATIVE_PATH))).toBe(true);
 
     const record = readJson<Record<string, any>>(RECORD_RELATIVE_PATH);
     const artifact = readJson<Record<string, any>>(ARTIFACT_RELATIVE_PATH);

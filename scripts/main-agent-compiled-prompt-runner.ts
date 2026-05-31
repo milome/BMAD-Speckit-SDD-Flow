@@ -161,9 +161,11 @@ export function resolveConfirmedSource(input: {
 }
 
 function resolveReqTraceSkillDir(projectRoot: string): string {
+  const packageRoot = path.resolve(__dirname, '..');
   const candidates = [
     path.join(projectRoot, '_bmad', 'skills', 'req-trace-matrix-prompt-generator'),
     path.join(projectRoot, '.codex', 'skills', 'req-trace-matrix-prompt-generator'),
+    path.join(packageRoot, '_bmad', 'skills', 'req-trace-matrix-prompt-generator'),
     path.join(process.env.HOME || '', '.codex', 'skills', 'req-trace-matrix-prompt-generator'),
     path.join(
       process.env.USERPROFILE || '',

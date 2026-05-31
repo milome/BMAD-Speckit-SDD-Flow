@@ -1,10 +1,11 @@
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import yaml from 'js-yaml';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { materializeAiTddManifestCloseoutRunnerFixture } from '../helpers/requirement-fixture-runtime';
 
 const ROOT = process.cwd();
 const SCRIPT = path.join(
@@ -15,25 +16,14 @@ const SCRIPT = path.join(
   'scripts',
   'generate_prompt.js'
 );
-const SOURCE = path.join(
-  ROOT,
-  'docs',
-  'requirements',
-  '2026-05-25-ai-tdd-manifest-closeout-runner.md'
-);
-const RECORD = path.join(
-  ROOT,
-  '_bmad-output',
-  'runtime',
-  'requirement-records',
-  'REQ-AI-TDD-MANIFEST-CLOSEOUT-RUNNER',
-  'requirement-record.json'
-);
-
 let tempDir: string;
+let fixture: ReturnType<typeof materializeAiTddManifestCloseoutRunnerFixture>;
 
 beforeEach(() => {
   tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'req-trace-host-'));
+  fixture = materializeAiTddManifestCloseoutRunnerFixture({
+    root: path.join(tempDir, 'workspace'),
+  });
 });
 
 afterEach(() => {
@@ -44,15 +34,17 @@ function runHost(
   host: string,
   extraArgs: string[] = []
 ): { prompt: string; receipt: Record<string, any>; goalDocument?: string } {
-  const outDir = path.join(tempDir, host.replace(/[^a-z0-9-]/gi, '-'));
-  execFileSync(
+  const argFingerprint =
+    extraArgs.length > 0 ? extraArgs.join('-').replace(/[^a-z0-9-]/gi, '-') : 'default';
+  const outDir = path.join(tempDir, `${host.replace(/[^a-z0-9-]/gi, '-')}-${argFingerprint}`);
+  const result = spawnSync(
     process.execPath,
     [
       SCRIPT,
       '--source-document',
-      SOURCE,
+      fixture.sourcePath,
       '--requirement-record',
-      RECORD,
+      fixture.recordPath,
       '--out-dir',
       outDir,
       '--execution-host',
@@ -62,6 +54,16 @@ function runHost(
     ],
     { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }
   );
+  if (result.status !== 0) {
+    throw new Error(
+      [
+        `generate_prompt.js failed for ${host}`,
+        `status=${result.status}`,
+        `stdout=${result.stdout}`,
+        `stderr=${result.stderr}`,
+      ].join('\n')
+    );
+  }
   const goalDocumentPath = path.join(outDir, 'goal_execution.md');
   return {
     prompt: fs.readFileSync(path.join(outDir, 'human_prompt.txt'), 'utf8'),
@@ -129,15 +131,18 @@ function semanticHashes(sourceText: string, confirmation: Record<string, unknown
 
 function writeLongGoalFixture(): { source: string; record: string } {
   const longObjective = `Execute long-goal fixture ${'with strict evidence and no truncation '.repeat(160)}until final pass or reconfirm_required.`;
-  const original = fs.readFileSync(SOURCE, 'utf8');
+  const original = fs.readFileSync(fixture.sourcePath, 'utf8');
   const originalBlockText = extractConfirmationBlock(original);
   const parsedOriginal = yaml.load(originalBlockText) as {
     implementationConfirmation?: Record<string, any>;
   };
   const confirmation = parsedOriginal.implementationConfirmation;
   if (!confirmation) throw new Error('missing parsed implementationConfirmation');
-  confirmation.aiTddContractExecutionManifestProjection.hostExecutionHints.codexCapable.goalObjectiveTemplate =
-    longObjective;
+  const hostExecutionHints =
+    confirmation.aiTddContractExecutionManifestProjection.hostExecutionHints;
+  hostExecutionHints.codexCapable.goalObjectiveTemplate = longObjective;
+  hostExecutionHints.codex.goalObjectiveTemplate = longObjective;
+  hostExecutionHints.claudeCode.goalObjectiveTemplate = longObjective;
   const replacementBlock = yaml.dump(
     { implementationConfirmation: confirmation },
     { lineWidth: 120 }
@@ -325,9 +330,9 @@ describe('req trace host-specific human prompt generation', () => {
         [
           SCRIPT,
           '--source-document',
-          SOURCE,
+          fixture.sourcePath,
           '--requirement-record',
-          RECORD,
+          fixture.recordPath,
           '--execution-host',
           'codex',
           '--goal-command-available',

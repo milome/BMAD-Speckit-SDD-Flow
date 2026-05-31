@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
@@ -27,6 +27,13 @@ const CANONICAL_SKILL_DIR = path.join(ROOT, '_bmad', 'skills', 'req-trace-matrix
 const HOST_SKILL_SURFACES = ['.codex', '.cursor', '.claude'] as const;
 
 let tempDir: string;
+
+function stripYamlFrontmatter(content: string): string {
+  const lines = content.split(/\r?\n/);
+  if (lines[0] !== '---') return content;
+  const closeIndex = lines.findIndex((line, index) => index > 0 && line === '---');
+  return closeIndex >= 0 ? lines.slice(closeIndex + 1).join('\n') : content;
+}
 
 beforeEach(() => {
   tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'req-trace-confirmation-'));
@@ -500,6 +507,8 @@ ${overrides}`;
 
 describe('req trace generator confirmation block gate', () => {
   it('keeps Codex, Cursor, and Claude skill surfaces script-complete and synced from the canonical skill', () => {
+    const installRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'req-trace-host-surfaces-'));
+    const initScript = path.join(ROOT, 'scripts', 'init-to-root.js');
     const requiredRelativeFiles = [
       'SKILL.md',
       path.join('scripts', 'generate_prompt.js'),
@@ -507,19 +516,46 @@ describe('req trace generator confirmation block gate', () => {
       path.join('scripts', 'load-js-yaml.js'),
     ];
 
-    for (const surface of HOST_SKILL_SURFACES) {
-      const hostSkillDir = path.join(ROOT, surface, 'skills', 'req-trace-matrix-prompt-generator');
-      for (const relativeFile of requiredRelativeFiles) {
-        const canonicalPath = path.join(CANONICAL_SKILL_DIR, relativeFile);
-        const hostPath = path.join(hostSkillDir, relativeFile);
-        expect(fs.existsSync(hostPath), `${surface} is missing ${relativeFile}`).toBe(true);
-        expect(fs.readFileSync(hostPath, 'utf8'), `${surface} has stale ${relativeFile}`).toBe(
-          fs.readFileSync(canonicalPath, 'utf8')
-        );
+    try {
+      for (const agent of ['codex', 'cursor', 'claude-code']) {
+        const result = spawnSync(process.execPath, [initScript, installRoot, '--agent', agent], {
+          cwd: ROOT,
+          encoding: 'utf8',
+          env: process.env,
+        });
+        expect(result.status, result.stderr || result.stdout).toBe(0);
       }
-      expect(fs.existsSync(path.join(hostSkillDir, 'scripts', '__pycache__'))).toBe(false);
+
+      for (const surface of HOST_SKILL_SURFACES) {
+        const hostSkillDir = path.join(
+          installRoot,
+          surface,
+          'skills',
+          'req-trace-matrix-prompt-generator'
+        );
+        for (const relativeFile of requiredRelativeFiles) {
+          const canonicalPath = path.join(CANONICAL_SKILL_DIR, relativeFile);
+          const hostPath = path.join(hostSkillDir, relativeFile);
+          expect(fs.existsSync(hostPath), `${surface} is missing ${relativeFile}`).toBe(true);
+          const hostContent = fs.readFileSync(hostPath, 'utf8');
+          const canonicalContent = fs.readFileSync(canonicalPath, 'utf8');
+          if (surface === '.codex' && relativeFile === 'SKILL.md') {
+            expect(hostContent, `${surface} SKILL.md missing YAML frontmatter`).toMatch(
+              /^---\nname:\s*["']?req-trace-matrix-prompt-generator["']?\ndescription:\s*.+\n---\n/s
+            );
+            expect(stripYamlFrontmatter(hostContent), `${surface} has stale ${relativeFile}`).toBe(
+              stripYamlFrontmatter(canonicalContent)
+            );
+          } else {
+            expect(hostContent, `${surface} has stale ${relativeFile}`).toBe(canonicalContent);
+          }
+        }
+        expect(fs.existsSync(path.join(hostSkillDir, 'scripts', '__pycache__'))).toBe(false);
+      }
+    } finally {
+      fs.rmSync(installRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
     }
-  });
+  }, 120_000);
 
   it('keeps skill docs and scripts free of fixed install roots while preserving portable refs', () => {
     const files = [

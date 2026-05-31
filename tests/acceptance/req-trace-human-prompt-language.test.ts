@@ -5,6 +5,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import yaml from 'js-yaml';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { materializeAiTddManifestCloseoutRunnerFixture } from '../helpers/requirement-fixture-runtime';
 
 const ROOT = process.cwd();
 const SCRIPT = path.join(
@@ -15,25 +16,14 @@ const SCRIPT = path.join(
   'scripts',
   'generate_prompt.js'
 );
-const SOURCE = path.join(
-  ROOT,
-  'docs',
-  'requirements',
-  '2026-05-25-ai-tdd-manifest-closeout-runner.md'
-);
-const RECORD = path.join(
-  ROOT,
-  '_bmad-output',
-  'runtime',
-  'requirement-records',
-  'REQ-AI-TDD-MANIFEST-CLOSEOUT-RUNNER',
-  'requirement-record.json'
-);
-
 let tempDir: string;
+let fixture: ReturnType<typeof materializeAiTddManifestCloseoutRunnerFixture>;
 
 beforeEach(() => {
   tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'req-trace-language-'));
+  fixture = materializeAiTddManifestCloseoutRunnerFixture({
+    root: path.join(tempDir, 'workspace'),
+  });
 });
 
 afterEach(() => {
@@ -50,9 +40,9 @@ function runPrompt(
     [
       SCRIPT,
       '--source-document',
-      SOURCE,
+      fixture.sourcePath,
       '--requirement-record',
-      RECORD,
+      fixture.recordPath,
       '--out-dir',
       outDir,
       '--execution-host',
@@ -127,7 +117,7 @@ function extractConfirmationBlock(sourceText: string): string {
 }
 
 function writePromptLanguagePriorityFixture(): { source: string; record: string } {
-  const original = fs.readFileSync(SOURCE, 'utf8');
+  const original = fs.readFileSync(fixture.sourcePath, 'utf8');
   const sourceText = original.replace(
     '  confirmationLanguage: zh-CN',
     '  confirmationLanguage: zh-CN\n  promptLanguage: en-US'
