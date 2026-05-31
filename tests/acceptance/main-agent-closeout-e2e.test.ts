@@ -4,29 +4,29 @@ import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { resolveMainAgentOrchestrationSurface } from '../../scripts/main-agent-orchestration';
 import { runAuditorHost } from '../../scripts/run-auditor-host';
-import { defaultRuntimeContextFile, writeRuntimeContext } from '../../scripts/runtime-context';
 import {
-  defaultRuntimeContextRegistry,
-  writeRuntimeContextRegistry,
-} from '../../scripts/runtime-context-registry';
+  buildPassImplementationEntryGate,
+  buildSixModelResultsForAuditReady,
+  writeMinimalRegistryAndProjectContext,
+} from '../helpers/runtime-registry-fixture';
 
 describe('main-agent closeout E2E', () => {
   it('routes post-audit success to run_closeout through the main-agent surface', async () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-closeout-e2e-'));
     try {
-      writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
-      writeRuntimeContext(
-        root,
-        defaultRuntimeContextFile({
+      writeMinimalRegistryAndProjectContext(root, {
+        flow: 'story',
+        stage: 'post_audit',
+        sourceMode: 'full_bmad',
+        storyId: '15.5',
+        runId: 'run-15-5',
+        implementationEntryGate: buildPassImplementationEntryGate({
           flow: 'story',
-          stage: 'post_audit',
-          sourceMode: 'full_bmad',
-          contextScope: 'story',
-          storyId: '15.5',
-          runId: 'run-15-5',
-          updatedAt: new Date().toISOString(),
-        })
-      );
+        }),
+        confirmedSource: true,
+        currentMentalModel: 'audit_review',
+        sixModelResults: buildSixModelResultsForAuditReady(),
+      });
 
       const artifactDocPath = path.join(root, 'specs', 'demo', 'post-audit.md');
       const reportPath = path.join(root, 'specs', 'demo', 'post-audit.audit.md');

@@ -6,30 +6,33 @@ import {
   buildMainAgentDispatchInstruction,
   ensureMainAgentDispatchPacket,
 } from '../../scripts/main-agent-orchestration';
-import { defaultRuntimeContextFile, writeRuntimeContext } from '../../scripts/runtime-context';
 import {
-  defaultRuntimeContextRegistry,
-  writeRuntimeContextRegistry,
-} from '../../scripts/runtime-context-registry';
+  buildPassImplementationEntryGate,
+  buildSixModelResultsForImplementationReady,
+  writeMinimalRegistryAndProjectContext,
+} from '../helpers/runtime-registry-fixture';
+import { writeFakeReqTraceSkill } from '../helpers/requirement-fixture-runtime';
 
 describe('main-agent host parity E2E', () => {
   it('keeps orchestration semantics identical while transport differs across cursor and claude', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-host-parity-'));
     try {
-      writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
-      writeRuntimeContext(
-        root,
-        defaultRuntimeContextFile({
+      writeMinimalRegistryAndProjectContext(root, {
+        flow: 'story',
+        stage: 'implement',
+        sourceMode: 'full_bmad',
+        storyId: '14.9',
+        runId: 'run-14-9',
+        artifactPath: '_bmad-output/implementation-artifacts/epic-14/story-14.9/story.md',
+        implementationEntryGate: buildPassImplementationEntryGate({
           flow: 'story',
-          stage: 'story_audit',
-          sourceMode: 'full_bmad',
-          contextScope: 'story',
-          storyId: '14.9',
-          runId: 'run-14-9',
           artifactPath: '_bmad-output/implementation-artifacts/epic-14/story-14.9/story.md',
-          updatedAt: new Date().toISOString(),
-        })
-      );
+        }),
+        confirmedSource: true,
+        currentMentalModel: 'implementation_readiness',
+        sixModelResults: buildSixModelResultsForImplementationReady(),
+      });
+      writeFakeReqTraceSkill(root);
 
       const hydrated = ensureMainAgentDispatchPacket({
         projectRoot: root,

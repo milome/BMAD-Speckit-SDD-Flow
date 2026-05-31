@@ -6,30 +6,33 @@ import {
   buildMainAgentDispatchInstruction,
   ensureMainAgentDispatchPacket,
 } from '../../scripts/main-agent-orchestration';
-import { defaultRuntimeContextFile, writeRuntimeContext } from '../../scripts/runtime-context';
 import {
-  defaultRuntimeContextRegistry,
-  writeRuntimeContextRegistry,
-} from '../../scripts/runtime-context-registry';
+  buildPassImplementationEntryGate,
+  buildSixModelResultsForImplementationReady,
+  writeMinimalRegistryAndProjectContext,
+} from '../helpers/runtime-registry-fixture';
+import { writeFakeReqTraceSkill } from '../helpers/requirement-fixture-runtime';
 
 describe('main-agent bugfix E2E orchestration', () => {
   it('builds a bugfix implementation dispatch plan through the same main-agent loop', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-e2e-bugfix-'));
     try {
-      writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
-      writeRuntimeContext(
-        root,
-        defaultRuntimeContextFile({
+      writeMinimalRegistryAndProjectContext(root, {
+        flow: 'bugfix',
+        stage: 'implement',
+        sourceMode: 'seeded_solutioning',
+        runId: 'run-bugfix-14-7',
+        artifactRoot: '_bmad-output/implementation-artifacts/_orphan',
+        artifactPath: '_bmad-output/implementation-artifacts/_orphan/BUGFIX_login_loop.md',
+        implementationEntryGate: buildPassImplementationEntryGate({
           flow: 'bugfix',
-          stage: 'implement',
-          sourceMode: 'seeded_solutioning',
-          contextScope: 'project',
-          runId: 'run-bugfix-14-7',
-          artifactRoot: '_bmad-output/implementation-artifacts/_orphan',
           artifactPath: '_bmad-output/implementation-artifacts/_orphan/BUGFIX_login_loop.md',
-          updatedAt: new Date().toISOString(),
-        })
-      );
+        }),
+        confirmedSource: true,
+        currentMentalModel: 'implementation_readiness',
+        sixModelResults: buildSixModelResultsForImplementationReady(),
+      });
+      writeFakeReqTraceSkill(root);
 
       const hydrated = ensureMainAgentDispatchPacket({
         projectRoot: root,

@@ -1,6 +1,7 @@
 /**
  * Test helpers: minimal registry + project context so `emit-runtime-policy` needs no env vars.
  */
+import { createHash } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
@@ -88,6 +89,219 @@ export interface MinimalRegistryOpts {
   implementationEntryGate?: ImplementationEntryGate;
   latestReviewerCloseout?: ReviewerLatestCloseoutRecord;
   preserveMissingRunId?: boolean;
+  confirmedSource?: boolean;
+  currentMentalModel?: string;
+  sixModelResults?: Record<string, unknown>;
+}
+
+function stableStringify(value: unknown): string {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map((item) => stableStringify(item)).join(',')}]`;
+  return `{${Object.keys(value)
+    .sort()
+    .map(
+      (key) =>
+        `${JSON.stringify(key)}:${stableStringify((value as Record<string, unknown>)[key])}`
+    )
+    .join(',')}}`;
+}
+
+function sha256Text(value: string): string {
+  return `sha256:${createHash('sha256').update(value, 'utf8').digest('hex')}`;
+}
+
+function sha256File(filePath: string): string {
+  return `sha256:${createHash('sha256').update(fs.readFileSync(filePath)).digest('hex')}`;
+}
+
+function extractImplementationConfirmationBlock(sourceText: string): string {
+  const lines = sourceText.replace(/\r\n/gu, '\n').split('\n');
+  const start = lines.findIndex((line) => /^implementationConfirmation:\s*$/u.test(line));
+  if (start < 0) throw new Error('Fixture source is missing implementationConfirmation block');
+
+  let end = lines.length;
+  for (let index = start + 1; index < lines.length; index += 1) {
+    const line = lines[index];
+    if (line.trim() === '') continue;
+    if (/^\S/u.test(line)) {
+      end = index;
+      break;
+    }
+  }
+  return lines.slice(start, end).join('\n');
+}
+
+export function buildSixModelResultsForImplementationReady(): Record<string, unknown> {
+  return {
+    requirement_confirmation: {
+      model: 'requirement_confirmation',
+      status: 'pass',
+      blockingReasons: [],
+    },
+    architecture_confirmation: {
+      model: 'architecture_confirmation',
+      status: 'pass',
+      blockingReasons: [],
+    },
+    implementation_readiness: {
+      model: 'implementation_readiness',
+      status: 'pass',
+      blockingReasons: [],
+    },
+    execution_closure: {
+      model: 'execution_closure',
+      status: 'not_established',
+      blockingReasons: ['execution_closure_not_established'],
+    },
+    audit_review: {
+      model: 'audit_review',
+      status: 'not_established',
+      blockingReasons: ['audit_review_not_established'],
+    },
+    delivery_confirmation: {
+      model: 'delivery_confirmation',
+      status: 'not_established',
+      blockingReasons: ['delivery_confirmation_not_established'],
+    },
+  };
+}
+
+export function buildSixModelResultsForAuditReady(): Record<string, unknown> {
+  return {
+    ...buildSixModelResultsForImplementationReady(),
+    execution_closure: {
+      model: 'execution_closure',
+      status: 'pass',
+      blockingReasons: [],
+    },
+    audit_review: {
+      model: 'audit_review',
+      status: 'pass',
+      blockingReasons: [],
+    },
+  };
+}
+
+function buildConfirmedSourceFixture(input: {
+  root: string;
+  recordRoot: string;
+  recordId: string;
+  requirementSetId: string;
+  flow: RuntimeFlowId;
+  stage: string;
+  sourcePathValue: string;
+}): {
+  sourceDocumentHash: string;
+  implementationConfirmationHash: string;
+  confirmationPageHash: string;
+  confirmationHistory: Record<string, unknown>[];
+} {
+  const sourcePath = path.resolve(input.root, input.sourcePathValue);
+  const semanticConfirmation = {
+    recordId: input.recordId,
+    requirementSetId: input.requirementSetId,
+    flow: input.flow,
+    stage: input.stage,
+    must: [{ id: 'MUST-001', statement: 'Exercise the main-agent dispatch path.' }],
+    evidence: [{ id: 'EVD-001', gate: 'npm test' }],
+    traceRows: [{ id: 'TRACE-001', covers: ['MUST-001'], evidenceRefs: ['EVD-001'] }],
+    requiredCommands: [{ id: 'CMD-001', command: 'npm test', traceRows: ['TRACE-001'] }],
+    closeoutReadinessPreview: { requiredCommands: ['CMD-001'] },
+  };
+  const implementationBlock = [
+    'implementationConfirmation:',
+    '  status: user_confirmed',
+    `  recordId: ${input.recordId}`,
+    `  requirementSetId: ${input.requirementSetId}`,
+    `  flow: ${input.flow}`,
+    `  stage: ${input.stage}`,
+    '  must:',
+    '    - id: MUST-001',
+    '      statement: Exercise the main-agent dispatch path.',
+    '  evidence:',
+    '    - id: EVD-001',
+    '      gate: npm test',
+    '  traceRows:',
+    '    - id: TRACE-001',
+    '      covers: [MUST-001]',
+    '      evidenceRefs: [EVD-001]',
+    '  requiredCommands:',
+    '    - id: CMD-001',
+    '      command: npm test',
+    '      traceRows: [TRACE-001]',
+    '  closeoutReadinessPreview:',
+    '    requiredCommands: [CMD-001]',
+  ].join('\n');
+  const sourceText = [
+    `# ${input.recordId}`,
+    '',
+    'Fixture source for main-agent execution path acceptance tests.',
+    '',
+    implementationBlock,
+    '',
+  ].join('\n');
+  fs.mkdirSync(path.dirname(sourcePath), { recursive: true });
+  fs.writeFileSync(sourcePath, sourceText, 'utf8');
+
+  const implementationConfirmationHash = sha256Text(stableStringify(semanticConfirmation));
+  const extractedImplementationBlock = extractImplementationConfirmationBlock(sourceText);
+  const sourceDocumentHash = sha256Text(
+    sourceText.replace(
+      extractedImplementationBlock,
+      `implementationConfirmation:${stableStringify(semanticConfirmation)}`
+    )
+  );
+  const confirmationPagePath = path.join(input.recordRoot, 'confirmation', 'confirmation.html');
+  const confirmationRenderReportPath = path.join(
+    input.recordRoot,
+    'confirmation',
+    'confirmation-render-report.json'
+  );
+  fs.mkdirSync(path.dirname(confirmationPagePath), { recursive: true });
+  fs.writeFileSync(
+    confirmationPagePath,
+    `<html><body>${input.recordId}:${sourceDocumentHash}:${implementationConfirmationHash}</body></html>\n`,
+    'utf8'
+  );
+  fs.writeFileSync(
+    confirmationRenderReportPath,
+    `${JSON.stringify(
+      {
+        schemaVersion: 'test-confirmation-render-report/v1',
+        recordId: input.recordId,
+        requirementSetId: input.requirementSetId,
+        sourceDocumentHash,
+        implementationConfirmationHash,
+      },
+      null,
+      2
+    )}\n`,
+    'utf8'
+  );
+  const confirmationPageHash = sha256File(confirmationPagePath);
+  return {
+    sourceDocumentHash,
+    implementationConfirmationHash,
+    confirmationPageHash,
+    confirmationHistory: [
+      {
+        eventType: 'confirmation_recorded',
+        recordId: input.recordId,
+        requirementSetId: input.requirementSetId,
+        confirmedAt: '2026-05-19T00:00:00.000Z',
+        confirmedBy: 'test-fixture',
+        sourcePath: path.relative(input.root, sourcePath).replace(/\\/g, '/'),
+        sourceDocumentHash,
+        implementationConfirmationHash,
+        confirmationPageHash,
+        confirmationText: 'confirmed fixture requirement source for main-agent lifecycle tests',
+        renderReportPath: path
+          .relative(input.root, confirmationRenderReportPath)
+          .replace(/\\/g, '/'),
+        htmlPath: path.relative(input.root, confirmationPagePath).replace(/\\/g, '/'),
+      },
+    ],
+  };
 }
 
 export function writeMinimalRequirementRecordContext(
@@ -109,17 +323,23 @@ export function writeMinimalRequirementRecordContext(
   );
   const recordPath = path.join(recordRoot, 'requirement-record.json');
   const recoveryRoot = path.join(recordRoot, 'recovery');
+  const runtimePolicySnapshotPath = path.join(recoveryRoot, 'runtime-policy-snapshot.json');
+  const recoveryContextPath = path.join(recoveryRoot, 'recovery-context.json');
   fs.mkdirSync(recoveryRoot, { recursive: true });
-  fs.writeFileSync(
-    path.join(recoveryRoot, 'runtime-policy-snapshot.json'),
-    '{"kind":"runtime-policy-snapshot"}\n',
-    'utf8'
-  );
-  fs.writeFileSync(
-    path.join(recoveryRoot, 'recovery-context.json'),
-    '{"kind":"recovery-context"}\n',
-    'utf8'
-  );
+  fs.writeFileSync(runtimePolicySnapshotPath, '{"kind":"runtime-policy-snapshot"}\n', 'utf8');
+  fs.writeFileSync(recoveryContextPath, '{"kind":"recovery-context"}\n', 'utf8');
+  const sourcePathValue = opts.artifactPath ?? opts.artifactRoot ?? 'docs/requirements.md';
+  const confirmedSource = opts.confirmedSource
+    ? buildConfirmedSourceFixture({
+        root,
+        recordRoot,
+        recordId,
+        requirementSetId,
+        flow,
+        stage,
+        sourcePathValue,
+      })
+    : null;
 
   const record = {
     recordId,
@@ -152,11 +372,19 @@ export function writeMinimalRequirementRecordContext(
     },
     artifactRoot: opts.artifactRoot,
     artifactPath: opts.artifactPath ?? opts.artifactRoot,
-    sourcePath: opts.artifactPath ?? opts.artifactRoot ?? 'docs/requirements.md',
-    sourceDocumentHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+    sourcePath: sourcePathValue,
+    sourceDocumentHash:
+      confirmedSource?.sourceDocumentHash ??
+      'sha256:1111111111111111111111111111111111111111111111111111111111111111',
     implementationConfirmationHash:
+      confirmedSource?.implementationConfirmationHash ??
       'sha256:2222222222222222222222222222222222222222222222222222222222222222',
-    confirmationPageHash: 'sha256:3333333333333333333333333333333333333333333333333333333333333333',
+    confirmationPageHash:
+      confirmedSource?.confirmationPageHash ??
+      'sha256:3333333333333333333333333333333333333333333333333333333333333333',
+    ...(confirmedSource ? { confirmationHistory: confirmedSource.confirmationHistory } : {}),
+    ...(opts.currentMentalModel ? { currentMentalModel: opts.currentMentalModel } : {}),
+    ...(opts.sixModelResults ? { sixModelResults: opts.sixModelResults } : {}),
     implementationEntryGate: opts.implementationEntryGate ?? {
       gateName: 'implementation-readiness',
       requestedFlow: flow === 'bugfix' || flow === 'standalone_tasks' ? flow : 'story',
@@ -177,14 +405,22 @@ export function writeMinimalRequirementRecordContext(
       evaluatedAt: '2026-05-19T00:00:00.000Z',
     },
     runtimePolicySnapshotRef: {
-      path: path
-        .relative(root, path.join(recoveryRoot, 'runtime-policy-snapshot.json'))
-        .replace(/\\/g, '/'),
+      path: path.relative(root, runtimePolicySnapshotPath).replace(/\\/g, '/'),
+      contentHash: sha256File(runtimePolicySnapshotPath),
+      artifactType: 'runtime_policy_snapshot',
+      sourceOfTruthRole: 'projection',
+      producer: 'tests/helpers/runtime-registry-fixture',
+      purpose: 'runtime policy snapshot for main-agent acceptance fixture',
+      relatedRequirementIds: [recordId],
+      status: 'active',
+      inputVersion: 'runtime-policy-snapshot/v1',
+      outputVersion: 'runtime-policy-snapshot/v1',
     },
     recoveryContextRef: {
-      path: path
-        .relative(root, path.join(recoveryRoot, 'recovery-context.json'))
-        .replace(/\\/g, '/'),
+      path: path.relative(root, recoveryContextPath).replace(/\\/g, '/'),
+    },
+    controlStore: {
+      executionIterations: [],
     },
     ...(opts.latestReviewerCloseout ? { latestReviewerCloseout: opts.latestReviewerCloseout } : {}),
   };
@@ -217,6 +453,32 @@ export function writeMinimalRequirementRecordContext(
     'utf8'
   );
   return recordPath;
+}
+
+export function buildPassImplementationEntryGate(
+  opts: Pick<MinimalRegistryOpts, 'flow' | 'artifactPath' | 'artifactRoot'> = {}
+): ImplementationEntryGate {
+  const flow = opts.flow === 'bugfix' || opts.flow === 'standalone_tasks' ? opts.flow : 'story';
+  const semanticFingerprint = opts.artifactPath ?? opts.artifactRoot ?? 'docs/requirements.md';
+  return {
+    gateName: 'implementation-readiness',
+    requestedFlow: flow,
+    recommendedFlow: flow,
+    decision: 'pass',
+    readinessStatus: 'ready_clean',
+    blockerCodes: [],
+    blockerSummary: [],
+    rerouteRequired: false,
+    rerouteReason: null,
+    evidenceSources: {
+      readinessReportPath: null,
+      remediationArtifactPath: null,
+      executionRecordPath: null,
+      authoritativeAuditReportPath: null,
+    },
+    semanticFingerprint,
+    evaluatedAt: '2026-05-19T00:00:00.000Z',
+  };
 }
 
 /** Write `_bmad-output/runtime/registry.json` + `context/project.json` under root. */

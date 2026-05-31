@@ -8,6 +8,7 @@ import {
   defaultRuntimeContextRegistry,
   writeRuntimeContextRegistry,
 } from '../../scripts/runtime-context-registry';
+import { writeMinimalRequirementRecordContext } from '../helpers/runtime-registry-fixture';
 
 describe('main-agent standalone E2E orchestration', () => {
   it('keeps standalone reroute decisions on the main-agent surface instead of silently auto-continuing', () => {
@@ -46,6 +47,14 @@ describe('main-agent standalone E2E orchestration', () => {
           updatedAt: new Date().toISOString(),
         })
       );
+      writeMinimalRequirementRecordContext(root, {
+        flow: 'standalone_tasks',
+        stage: 'implement',
+        sourceMode: 'standalone_story',
+        runId: 'tasks-14-8',
+        artifactPath: '_bmad-output/implementation-artifacts/_orphan/TASKS_checkout_hardening.md',
+        implementationEntryGate: registry.implementationEntryIndex.standalone_tasks['tasks-14-8'],
+      });
 
       const surface = resolveMainAgentOrchestrationSurface({
         projectRoot: root,
@@ -53,7 +62,7 @@ describe('main-agent standalone E2E orchestration', () => {
         stage: 'implement',
       });
 
-      expect(surface.source).toBe('implementation_entry_gate');
+      expect(surface.source).toBe('requirement_record');
       expect(surface.latestGate?.decision).toBe('reroute');
       expect(surface.mainAgentNextAction).toBe('await_user');
       expect(surface.mainAgentReady).toBe(false);

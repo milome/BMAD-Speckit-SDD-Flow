@@ -8510,17 +8510,65 @@ export async function runMainAgentControlledReadinessAudit(
 function resolveFlowAndStage(
   root: string,
   args: Record<string, string | undefined>
-): { flow: RuntimeFlowId; stage: string } {
-  const runtimeContext = loadPolicyContextFromRegistry(root, {
-    recordId: args.recordId,
-    requirementSetId: args.requirementSetId,
-    runId: args.runId,
-  }).runtimeContext;
-  const flow = normalizeText(args.flow) || runtimeContext.flow;
-  const stage = normalizeText(args.stage) || runtimeContext.stage;
+): { flow: RuntimeFlowId | null; stage: string | null; noActiveRequirement: boolean } {
+  const explicitFlow = normalizeText(args.flow);
+  const explicitStage = normalizeText(args.stage);
+  if (explicitFlow && explicitStage) {
+    return {
+      flow: explicitFlow as RuntimeFlowId,
+      stage: explicitStage,
+      noActiveRequirement: false,
+    };
+  }
+  try {
+    const runtimeContext = loadPolicyContextFromRegistry(root, {
+      recordId: args.recordId,
+      requirementSetId: args.requirementSetId,
+      runId: args.runId,
+    }).runtimeContext;
+    const flow = explicitFlow || runtimeContext.flow;
+    const stage = explicitStage || runtimeContext.stage;
+    return {
+      flow: flow as RuntimeFlowId,
+      stage,
+      noActiveRequirement: false,
+    };
+  } catch (error) {
+    if (!isNoActiveRequirementError(error)) {
+      throw error;
+    }
+    return {
+      flow: explicitFlow ? (explicitFlow as RuntimeFlowId) : null,
+      stage: explicitStage || null,
+      noActiveRequirement: true,
+    };
+  }
+}
+
+function buildNoActiveRequirementRunLoopResult(
+  root: string,
+  flow: RuntimeFlowId | null,
+  stage: string | null
+): MainAgentRunLoopResult {
+  const surface = resolveMainAgentOrchestrationSurface({
+    projectRoot: root,
+    flow: flow ?? ('story' as RuntimeFlowId),
+    stage: stage ?? 'requirement_confirmation',
+  });
   return {
-    flow: flow as RuntimeFlowId,
-    stage,
+    runId: `main-agent-run-loop-${Date.now()}`,
+    status: 'blocked',
+    steps: [
+      {
+        step: 'inspect.initial',
+        status: 'fail',
+        summary: 'NO_ACTIVE_REQUIREMENT: contract_authoring_required',
+      },
+    ],
+    dispatchInstruction: null,
+    taskReport: null,
+    finalSurface: surface,
+    mainAgentStageSummary: surface.mainAgentStageSummary,
   };
 }
 
@@ -10798,8 +10846,34 @@ export function mainMainAgentOrchestration(argv: string[]): number {
     }
   }
 
-  const { flow, stage } = resolveFlowAndStage(root, args);
+  const { flow, stage, noActiveRequirement } = resolveFlowAndStage(root, args);
   const host = parseOrchestrationHost(args.host);
+  if (noActiveRequirement || !flow || !stage) {
+    const surface = resolveMainAgentOrchestrationSurface({
+      projectRoot: root,
+      flow: flow ?? ('story' as RuntimeFlowId),
+      stage: stage ?? 'requirement_confirmation',
+    });
+    switch (action) {
+      case 'inspect': {
+        process.stdout.write(`${JSON.stringify(surface, null, 2)}\n`);
+        return 0;
+      }
+      case 'step':
+      case 'dispatch-plan': {
+        process.stdout.write(`${JSON.stringify(null, null, 2)}\n`);
+        return 1;
+      }
+      case 'run-loop': {
+        const result = buildNoActiveRequirementRunLoopResult(root, flow, stage);
+        process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+        return 1;
+      }
+      default:
+        process.stdout.write(`${JSON.stringify(surface, null, 2)}\n`);
+        return 1;
+    }
+  }
   const surface = resolveMainAgentOrchestrationSurface({
     projectRoot: root,
     recordId: args.recordId,
@@ -10901,7 +10975,12 @@ export async function mainMainAgentOrchestrationAsync(argv: string[]): Promise<n
   const root = pickRoot(args);
   const action = normalizeText(args.action) || 'inspect';
   if (action === 'run-loop') {
-    const { flow, stage } = resolveFlowAndStage(root, args);
+    const { flow, stage, noActiveRequirement } = resolveFlowAndStage(root, args);
+    if (noActiveRequirement || !flow || !stage) {
+      const result = buildNoActiveRequirementRunLoopResult(root, flow, stage);
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 1;
+    }
     const host = parseOrchestrationHost(args.host);
     const result = await runMainAgentAutomaticLoopAsync({
       projectRoot: root,

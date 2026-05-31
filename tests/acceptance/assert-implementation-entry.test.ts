@@ -4,11 +4,6 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { mainAssertImplementationEntry } from '../../scripts/assert-implementation-entry';
 import { runAuditorHost } from '../../scripts/run-auditor-host';
-import { defaultRuntimeContextFile, writeRuntimeContext } from '../../scripts/runtime-context';
-import {
-  defaultRuntimeContextRegistry,
-  writeRuntimeContextRegistry,
-} from '../../scripts/runtime-context-registry';
 import { writeMinimalRegistryAndProjectContext } from '../helpers/runtime-registry-fixture';
 
 const repoRoot = process.cwd();
@@ -46,21 +41,16 @@ describe('assert-implementation-entry', () => {
     }
   });
 
-  it('reuses emit-runtime-policy auto-repair path for standalone implementation-entry checks', async () => {
+  it('uses the active requirement record for standalone implementation-entry checks', async () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'bmad-assert-impl-entry-standalone-'));
     fs.cpSync(path.join(repoRoot, '_bmad'), path.join(root, '_bmad'), { recursive: true });
-    writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
-    writeRuntimeContext(
-      root,
-      defaultRuntimeContextFile({
-        flow: 'standalone_tasks',
-        stage: 'implement',
-        sourceMode: 'standalone_story',
-        contextScope: 'project',
-        artifactPath: '_bmad-output/implementation-artifacts/_orphan/TASKS_checkout_hardening.md',
-        updatedAt: new Date().toISOString(),
-      })
-    );
+    writeMinimalRegistryAndProjectContext(root, {
+      flow: 'standalone_tasks',
+      stage: 'implement',
+      sourceMode: 'standalone_story',
+      runId: 'tasks-checkout-hardening',
+      artifactPath: '_bmad-output/implementation-artifacts/_orphan/TASKS_checkout_hardening.md',
+    });
 
     const tasksPath = path.join(
       root,

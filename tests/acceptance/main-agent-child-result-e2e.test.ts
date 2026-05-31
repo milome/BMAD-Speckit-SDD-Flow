@@ -10,29 +10,31 @@ import {
   markMainAgentPacketDispatched,
   resolveMainAgentOrchestrationSurface,
 } from '../../scripts/main-agent-orchestration';
-import { defaultRuntimeContextFile, writeRuntimeContext } from '../../scripts/runtime-context';
 import {
-  defaultRuntimeContextRegistry,
-  writeRuntimeContextRegistry,
-} from '../../scripts/runtime-context-registry';
+  buildPassImplementationEntryGate,
+  buildSixModelResultsForImplementationReady,
+  writeMinimalRegistryAndProjectContext,
+} from '../helpers/runtime-registry-fixture';
+import { writeFakeReqTraceSkill } from '../helpers/requirement-fixture-runtime';
 
 describe('main-agent child result E2E', () => {
   it('ingests a completed child task report and advances the main flow to review', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-child-result-'));
     try {
-      writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
-      writeRuntimeContext(
-        root,
-        defaultRuntimeContextFile({
+      writeMinimalRegistryAndProjectContext(root, {
+        flow: 'story',
+        stage: 'implement',
+        sourceMode: 'full_bmad',
+        storyId: '15.4',
+        runId: 'run-15-4',
+        implementationEntryGate: buildPassImplementationEntryGate({
           flow: 'story',
-          stage: 'implement',
-          sourceMode: 'full_bmad',
-          contextScope: 'story',
-          storyId: '15.4',
-          runId: 'run-15-4',
-          updatedAt: new Date().toISOString(),
-        })
-      );
+        }),
+        confirmedSource: true,
+        currentMentalModel: 'implementation_readiness',
+        sixModelResults: buildSixModelResultsForImplementationReady(),
+      });
+      writeFakeReqTraceSkill(root);
 
       ensureMainAgentDispatchPacket({
         projectRoot: root,

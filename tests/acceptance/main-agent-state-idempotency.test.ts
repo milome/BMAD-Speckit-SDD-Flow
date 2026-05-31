@@ -9,27 +9,29 @@ import {
   markMainAgentPacketDispatched,
   resolveMainAgentOrchestrationSurface,
 } from '../../scripts/main-agent-orchestration';
-import { defaultRuntimeContextFile, writeRuntimeContext } from '../../scripts/runtime-context';
 import {
-  defaultRuntimeContextRegistry,
-  writeRuntimeContextRegistry,
-} from '../../scripts/runtime-context-registry';
+  buildPassImplementationEntryGate,
+  buildSixModelResultsForImplementationReady,
+  writeMinimalRegistryAndProjectContext,
+} from '../helpers/runtime-registry-fixture';
+import { writeFakeReqTraceSkill } from '../helpers/requirement-fixture-runtime';
 
 function makeRoot(): string {
   const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-idempotency-'));
-  writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
-  writeRuntimeContext(
-    root,
-    defaultRuntimeContextFile({
+  writeMinimalRegistryAndProjectContext(root, {
+    flow: 'story',
+    stage: 'implement',
+    sourceMode: 'full_bmad',
+    storyId: 'T1.2',
+    runId: 'run-T1-2',
+    implementationEntryGate: buildPassImplementationEntryGate({
       flow: 'story',
-      stage: 'implement',
-      sourceMode: 'full_bmad',
-      contextScope: 'story',
-      storyId: 'T1.2',
-      runId: 'run-T1-2',
-      updatedAt: '2026-04-27T00:00:00.000Z',
-    })
-  );
+    }),
+    confirmedSource: true,
+    currentMentalModel: 'implementation_readiness',
+    sixModelResults: buildSixModelResultsForImplementationReady(),
+  });
+  writeFakeReqTraceSkill(root);
   return root;
 }
 
