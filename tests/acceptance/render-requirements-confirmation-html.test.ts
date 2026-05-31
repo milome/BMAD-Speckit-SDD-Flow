@@ -2,6 +2,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { createRequire } from 'node:module';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 const ROOT = process.cwd();
@@ -13,6 +14,21 @@ const SCRIPT = path.join(
   'scripts',
   'render-requirements-confirmation-html.ts'
 );
+const requireForRenderer = createRequire(import.meta.url);
+const {
+  extractImplementationConfirmation,
+  sourceDocumentHashFor,
+  implementationConfirmationHashFor,
+} = requireForRenderer(
+  path.join(
+    ROOT,
+    '_bmad',
+    'skills',
+    'requirements-contract-authoring',
+    'scripts',
+    'pre_render_definition_drilldown_lib.js'
+  )
+);
 
 let tempDir: string;
 
@@ -21,17 +37,37 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  if (process.env.KEEP_REQ_CONFIRM_HTML_TEMP === '1') return;
   fs.rmSync(tempDir, { recursive: true, force: true });
 });
 
 function writeSource(overrides = ''): string {
+  const includeChineseConfirmationText = !overrides.includes('ENGLISH_ONLY_CONFIRMATION_TEXT');
+  const includeCloseoutReviewPolicy = overrides.includes('CLOSEOUT_REVIEW_POLICY_FIXTURE');
+  const acceptanceTestPath = path.join(tempDir, 'tests', 'acceptance', 'upload.acceptance.test.ts');
+  const e2eTestPath = path.join(tempDir, 'tests', 'e2e', 'upload-invalid.e2e.test.ts');
+  fs.mkdirSync(path.dirname(acceptanceTestPath), { recursive: true });
+  fs.mkdirSync(path.dirname(e2eTestPath), { recursive: true });
+  fs.writeFileSync(
+    acceptanceTestPath,
+    'import { it } from "vitest"; it("positive upload acceptance oracle", () => {});\n',
+    'utf8'
+  );
+  fs.writeFileSync(
+    e2eTestPath,
+    'import { it } from "vitest"; it("invalid upload e2e oracle", () => {});\n',
+    'utf8'
+  );
+  const currentTargetViewPackEnabled = !overrides.includes(
+    'CURRENT_TARGET_APPLIES_WITHOUT_VIEW_PACK'
+  );
+  const currentTargetApplies = true;
   const file = path.join(tempDir, 'prd.md');
-  const currentTargetMapBlock =
-    overrides.includes('GOVERNANCE_VIEW_PACKS') || overrides.includes('CURRENT_TARGET_VIEW_PACK')
-      ? `
+  const currentTargetMapBlock = currentTargetApplies
+    ? `
   currentTargetMap:
     schemaVersion: current-target-map/v1
-    displayProfile: closed_loop_current_target_map
+    ${overrides.includes('CURRENT_TARGET_APPLIES_MISSING_DISPLAY_PROFILE') ? '' : 'displayProfile: closed_loop_current_target_map'}
     introduction: "fixture-provided current target map"
     currentTitle: "Fixture current state"
     targetTitle: "Fixture target state"
@@ -48,10 +84,21 @@ function writeSource(overrides = ''): string {
       - title: "Target fixture record"
         detail: "Governed fixture record"
     diffRows:
-      - dimension: "Fixture diff"
+      - id: DIFF-001
+        dimension: "Fixture diff"
         currentState: "current fixture"
         targetState: "target fixture"
         action: "source-provided action"
+      - id: DIFF-002
+        dimension: "Fixture diff two"
+        currentState: "current fixture two"
+        targetState: "target fixture two"
+        action: "source-provided action two"
+      - id: DIFF-003
+        dimension: "Fixture diff three"
+        currentState: "current fixture three"
+        targetState: "target fixture three"
+        action: "source-provided action three"
     targetFlow:
       - stepTitle: "Fixture source output"
         description: "Only appears because the fixture source provides currentTargetMap."
@@ -84,20 +131,28 @@ function writeSource(overrides = ''): string {
       - targetPathOrField: "fixture://record"
         functionDescription: "Fixture canonical record"
         controlPlaneRole: "fixture-control"
+        traceRows: ["TRACE-001"]
+        evidenceRefs: ["EVD-001"]
     pathRegistry:
       - category: "Fixture Record"
         fixedPath: "fixture://runtime/record.json"
         sourceOfTruthRole: "control"
         description: "Fixture path only"
+        traceRows: ["TRACE-001"]
+        evidenceRefs: ["EVD-001"]
       - category: "Fixture Sample Route"
         fixedPath: "fixture://runtime/sample-routes.jsonl"
         sourceOfTruthRole: "derived"
         description: "Fixture sample routing path"
+        traceRows: ["TRACE-001"]
+        evidenceRefs: ["EVD-001"]
     existingArtifacts:
       - currentPath: "fixture://legacy-report.md"
         currentFunction: "Fixture legacy report"
         targetTreatment: "source-provided evidence"
-        completionProofPolicy: "否"
+        completionProofPolicy: "legacy_only"
+        traceRows: ["TRACE-001"]
+        evidenceRefs: ["EVD-002"]
     scriptConvergence:
       - scriptOrConfigPath: "fixture/scripts/render.ts"
         currentFunction: "Fixture render"
@@ -127,12 +182,15 @@ function writeSource(overrides = ''): string {
       - currentState: "fixture current fact"
         targetState: "fixture target fact"
     process:
-      - phase: "Fixture phase"
+      - id: PROCESS-001
+        phase: "Fixture phase"
         currentState: "fixture current phase"
         targetState: "fixture target phase"
     artifactPaths:
       - path: "fixture://artifact-path"
         targetRole: "fixture target role"
+        traceRows: ["TRACE-001"]
+        evidenceRefs: ["EVD-001"]
     architecture:
       - dimension: "Fixture layer"
         currentState: "fixture current architecture"
@@ -140,7 +198,7 @@ function writeSource(overrides = ''): string {
     artifactIndexClarification: "Fixture artifact index clarification."
     sampleRoutesClarification: "Fixture sampleRoutes clarification."
 `
-      : '';
+    : '';
   const body = `# PRD: Upload Contract
 
 implementationConfirmation:
@@ -155,16 +213,20 @@ implementationConfirmation:
   confirmedBy: null
   sourceDocumentHash: null
   confirmationProfile: implementation_confirmation
-  requiredViewPacks: []
+  requiredViewPacks: ${currentTargetViewPackEnabled ? '["currentTargetMap"]' : '[]'}
   optionalViewPacks: ${
     overrides.includes('GOVERNANCE_VIEW_PACKS')
-      ? '["currentTargetMap", "sixMentalModels", "doubleGates"]'
-      : overrides.includes('CURRENT_TARGET_VIEW_PACK')
-        ? '["currentTargetMap"]'
+      ? '["sixMentalModels", "doubleGates"]'
+      : overrides.includes('CURRENT_TARGET_APPLIES_WITHOUT_VIEW_PACK') ||
+          overrides.includes('CURRENT_TARGET_APPLIES_MISSING_DISPLAY_PROFILE')
+        ? '[]'
         : '[]'
   }
   applicability:${overrides.includes('MISSING_APPLICABILITY') ? ' null' : ''}
-${overrides.includes('MISSING_APPLICABILITY') ? '' : `    governanceEvents:
+${
+  overrides.includes('MISSING_APPLICABILITY')
+    ? ''
+    : `    governanceEvents:
       applies: true
       reasonCode: "fixture_uses_governance_event_registry"
     runtimeRecovery:
@@ -175,12 +237,16 @@ ${overrides.includes('MISSING_APPLICABILITY') ? '' : `    governanceEvents:
       applies: true
       reasonCode: "fixture_renders_scoring_dashboard_sft_read_model_boundaries"
     currentTargetMap:
-      applies: ${overrides.includes('GOVERNANCE_VIEW_PACKS') || overrides.includes('CURRENT_TARGET_VIEW_PACK') ? 'true' : 'false'}
-      reasonCode: "${overrides.includes('GOVERNANCE_VIEW_PACKS') || overrides.includes('CURRENT_TARGET_VIEW_PACK') ? 'fixture_current_target_pack_enabled' : 'fixture_current_target_pack_not_enabled'}"
+      applies: true
+      reasonCode: "requirements_contract_authoring_always_requires_current_target_map"
     scriptsAndHooks:
       applies: true
       reasonCode: "fixture_artifact_plan_contains_scripts_and_hooks"
-`}
+    aiTddContractGate:
+      applies: true
+      reasonCode: "requirements_contract_authoring_always_requires_ai_tdd_gate"
+`
+}
   governanceEventTypeRegistryPolicy:
     controlFieldVocabulary: ["artifactIndex", "closeout", "confirmationHistory", "contractChecks", "executionIterations", "failureRecords", "gateChecks", "recoveryContext", "runtimePolicySnapshotRef"]
     payloadKindContracts:
@@ -207,97 +273,277 @@ ${overrides.includes('MISSING_APPLICABILITY') ? '' : `    governanceEvents:
   must:
     - id: MUST-001
       text: "User uploads a valid file and sees it in the persisted file list."
-      evidenceRefs: ["EVD-001"]
+${includeChineseConfirmationText ? '      textZh: "用户上传有效文件后，可以在持久化文件列表中看到该文件。"\n' : ''}      evidenceRefs: ["EVD-001"]
       upstreamRequirementIds: ["PRD-001"]
       riskLevel: high
   notDone:
     - id: NEG-001
       text: "Empty upload must not show success and must not create persistent side effects."
-      evidenceRefs: ["EVD-002"]
+${includeChineseConfirmationText ? '      textZh: "空文件上传不得显示成功，也不得产生持久化副作用。"\n' : ''}      evidenceRefs: ["EVD-002"]
       whyItBlocksCompletion: "Without this, a smoke-only upload can be misreported as complete."
-      negativeAssertionRequired: true
+${includeChineseConfirmationText ? '      whyItBlocksCompletionZh: "如果缺少该约束，只有 smoke 级别的上传可能被误报为完成。"\n' : ''}      negativeAssertionRequired: true
   mustNot:
     - id: OUT-001
       text: "Batch upload is out of scope for this confirmation."
-      scopeBoundary: "single file only"
-      userApprovalRequiredIfChanged: true
+${includeChineseConfirmationText ? '      textZh: "批量上传不在本次确认范围内。"\n' : ''}      scopeBoundary: "single file only"
+${includeChineseConfirmationText ? '      scopeBoundaryZh: "仅限单文件。"\n' : ''}      userApprovalRequiredIfChanged: true
   evidence:
     - id: EVD-001
       text: "Run positive upload acceptance with persisted state oracle."
-      gate: "npm run test:e2e -- upload"
+${includeChineseConfirmationText ? '      textZh: "运行正向上传验收，并使用持久化状态作为判定 oracle。"\n' : ''}      gate: "npm run test:e2e -- upload"
       oracle: "Independent storage query shows persisted file and UI/API list includes it."
-      requiredCommandRefs: ["CMD-001"]
+${includeChineseConfirmationText ? '      oracleZh: "独立存储查询能看到持久化文件，且 UI/API 列表包含该文件。"\n' : ''}      requiredCommandRefs: ["CMD-001"]
       artifactRefs: ["ART-EVD-001"]
       acceptanceType: acceptance_e2e
     - id: EVD-002
       text: "Run invalid upload acceptance and assert no record was created."
-      gate: "npm run test:e2e -- upload-invalid"
+${includeChineseConfirmationText ? '      textZh: "运行无效上传验收，并断言没有创建任何记录。"\n' : ''}      gate: "npm run test:e2e -- upload-invalid"
       oracle: "Independent storage query shows no new file record."
-      requiredCommandRefs: ["CMD-002"]
+${includeChineseConfirmationText ? '      oracleZh: "独立存储查询显示没有新增文件记录。"\n' : ''}      requiredCommandRefs: ["CMD-002"]
       artifactRefs: ["ART-EVD-002"]
       acceptanceType: adversarial_e2e
+${
+  includeCloseoutReviewPolicy
+    ? `    - id: EVD-010
+      text: "Unbound source projection gap fixture that must not be treated as runtime closeout missing evidence."
+      textZh: "未绑定的源投影诊断证据，只能作为 source_projection_gap 展示，不能当作 closeout runtime 证据缺失。"
+      gate: "diagnostic only"
+      oracle: "Renderer labels this as source_projection_gap because no traceRows[].evidenceRefs row binds it."
+      oracleZh: "渲染器应将该项标记为 source_projection_gap，因为没有 traceRows[].evidenceRefs 绑定它。"
+      requiredCommandRefs: ["CMD-SUGGESTED-FULL-AI-TDD-CLOSEOUT"]
+      artifactRefs: ["ART-EVD-010"]
+      acceptanceType: diagnostic_projection
+`
+    : ''
+}
   openQuestions: []
   failurePaths:${overrides.includes('MISSING_FAILURE_PATHS') ? ' []' : ''}
-${overrides.includes('MISSING_FAILURE_PATHS') ? '' : `    - id: FAIL-001
+${
+  overrides.includes('MISSING_FAILURE_PATHS')
+    ? ''
+    : `    - id: FAIL-001
       title: "Empty upload rejected"
-      trigger: "User submits an empty file."
-      expectedBehavior: "Show validation error and persist nothing."
-      forbiddenBehavior: "Do not show success, create a record, enqueue work, or mark requirement complete."
-      blocksCompletionWhenViolated: true
+${includeChineseConfirmationText ? '      titleZh: "空文件上传被拒绝"\n' : ''}      trigger: "User submits an empty file."
+${includeChineseConfirmationText ? '      triggerZh: "用户提交空文件。"\n' : ''}      expectedBehavior: "Show validation error and persist nothing."
+${includeChineseConfirmationText ? '      expectedBehaviorZh: "显示校验错误，并且不持久化任何内容。"\n' : ''}      forbiddenBehavior: "Do not show success, create a record, enqueue work, or mark requirement complete."
+${includeChineseConfirmationText ? '      forbiddenBehaviorZh: "不得显示成功、创建记录、入队任务或标记需求完成。"\n' : ''}      blocksCompletionWhenViolated: true
       linkedNegIds: ["NEG-001"]
       linkedEvidenceIds: ["EVD-002"]
+      viewRefs: ["SEQ-002"]
       requiredAssertions:
         - "Empty file returns an actionable validation error."
         - "No file record is created."
-`}
+`
+}
   edgeCases:${overrides.includes('MISSING_EDGE_CASES') ? ' []' : ''}
-${overrides.includes('MISSING_EDGE_CASES') ? '' : `    - id: EDGE-001
+${
+  overrides.includes('MISSING_EDGE_CASES')
+    ? ''
+    : `    - id: EDGE-001
       category: invalid_input
       condition: "Empty upload, missing config, duplicate execution, interrupted run, hash mismatch, orphan artifact, or pending rerun is observed."
-      expectedBehavior: "Fail closed or require explicit recovery according to linked IDs."
-      forbiddenBehavior: "Do not silently continue or claim completion from a read model."
-      linkedFailurePathIds: ["FAIL-001"]
+${includeChineseConfirmationText ? '      conditionZh: "出现空文件上传、配置缺失、重复执行、运行中断、hash 不匹配、孤儿工件或待重跑状态。"\n' : ''}      expectedBehavior: "Fail closed or require explicit recovery according to linked IDs."
+${includeChineseConfirmationText ? '      expectedBehaviorZh: "按照关联 ID fail closed，或要求显式恢复决策。"\n' : ''}      forbiddenBehavior: "Do not silently continue or claim completion from a read model."
+${includeChineseConfirmationText ? '      forbiddenBehaviorZh: "不得静默继续，也不得用只读模型声称完成。"\n' : ''}      linkedFailurePathIds: ["FAIL-001"]
       linkedEvidenceIds: ["EVD-002"]
+      viewRefs: ["EDGEVIEW-001"]
       blocksImplementation: false
-`}
+`
+}
   traceRows:
     - id: TRACE-001
-      covers: ["MUST-001", "NEG-001", "OUT-001"]
+      covers: ["MUST-001", "NEG-001"]
       taskRefs: ["TASK-001"]
       evidenceRefs: ["EVD-001", "EVD-002"]
 ${overrides.includes('LEGACY_COMMAND_REFS_ONLY') ? '      commandRefs: ["CMD-001", "CMD-002"]' : '      contractValidationCommandRefs: ["CMD-001"]\n      deliveryEvidenceCommandRefs: ["CMD-002"]'}
+      acceptanceRefs: ["ACC-001", "E2E-001"]
       sequenceViewRefs: ["SEQ-001", "SEQ-002"]
+      boundaryViewRefs: ["BOUNDARY-001"]
       artifactRefs: ["ART-CODE-001", "ART-EVD-001", "ART-EVD-002"]
       status: PENDING
+  acceptanceTests:
+    - id: ACC-001
+      file: "${acceptanceTestPath.replace(/\\/gu, '/')}"
+      covers: ["MUST-001"]
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
+${overrides.includes('MISSING_AI_TDD_MANIFEST_PROJECTION') ? '' : '      failurePathRefs: ["FAIL-001"]\n      edgeCaseRefs: ["EDGE-001"]'}
+      commandRefs: ["CMD-001"]
+      positiveControl: true
+      expectedPreImplementationState: expected_red
+      oracle: "Independent storage query shows persisted file and UI/API list includes it."
+  e2eSuites:
+    - id: E2E-001
+      file: "${e2eTestPath.replace(/\\/gu, '/')}"
+      covers: ["NEG-001"]
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-002"]
+${overrides.includes('MISSING_AI_TDD_MANIFEST_PROJECTION') ? '' : '      failurePathRefs: ["FAIL-001"]\n      edgeCaseRefs: ["EDGE-001"]'}
+      commandRefs: ["CMD-002"]
+      negativeControls: ["NEG-001"]
+      expectedPreImplementationState: expected_red
+      oracle: "Independent storage query shows no new file record."
+  targetModificationPaths:${overrides.includes('MISSING_TARGET_MODIFICATION_PATHS') ? ' []' : ''}
+${
+  overrides.includes('MISSING_TARGET_MODIFICATION_PATHS')
+    ? ''
+    : `    - id: TARGET-MOD-001
+      path: "src/upload.ts"
+      coverageRole: modify
+      intent: "Implement confirmed upload behavior."
+      ownerModel: implementation
+      requirementRefs: ["MUST-001", "NEG-001"]
+      traceRefs: ["TRACE-001"]
+      evidenceRefs: ["EVD-001", "EVD-002"]
+      artifactRefs: ["ART-CODE-001"]
+      requiresReconfirmationOnChange: true
+    - id: TARGET-MOD-002
+      path: "${acceptanceTestPath.replace(/\\/gu, '/')}"
+      changeType: validation_only
+      intent: "Run positive upload acceptance oracle without treating the test file as implementation scope."
+      ownerModel: acceptance_tests
+      requirementRefs: ["MUST-001"]
+      traceRefs: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
+      artifactRefs: []
+      requiresReconfirmationOnChange: false
+    - id: TARGET-MOD-003
+      path: "${e2eTestPath.replace(/\\/gu, '/')}"
+      changeType: validation_only
+      intent: "Run negative upload E2E oracle without treating the test file as implementation scope."
+      ownerModel: e2e_tests
+      requirementRefs: ["NEG-001"]
+      traceRefs: ["TRACE-001"]
+      evidenceRefs: ["EVD-002"]
+      artifactRefs: []
+      requiresReconfirmationOnChange: false
+    - id: TARGET-MOD-004
+      path: "fixture/scripts/render.ts"
+      changeType: validation_only
+      intent: "Classify currentTargetMap script convergence path as a validation-only target."
+      ownerModel: current_target_map
+      requirementRefs: ["MUST-001"]
+      traceRefs: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
+      artifactRefs: []
+      requiresReconfirmationOnChange: false
+${
+  includeCloseoutReviewPolicy
+    ? `    - id: TARGET-MOD-005
+      path: "scripts/main-agent-delivery-closeout-gate.ts"
+      changeType: validation_only
+      intent: "Fixture target for suggested closeout command policy projection."
+      ownerModel: delivery_confirmation
+      requirementRefs: ["MUST-001"]
+      traceRefs: ["TRACE-001"]
+      evidenceRefs: ["EVD-010"]
+      artifactRefs: []
+      requiresReconfirmationOnChange: false
+`
+    : ''
+}
+`
+}
   sequenceViews:${overrides.includes('EMPTY_REQUIRED_VIEWS') ? ' []' : ''}
-${overrides.includes('EMPTY_REQUIRED_VIEWS') ? '' : `
+${
+  overrides.includes('EMPTY_REQUIRED_VIEWS')
+    ? ''
+    : `
     - id: SEQ-001
       title: "Happy path upload"
       covers: ["MUST-001", "EVD-001"]
     - id: SEQ-002
       title: "Failure path empty upload and scope boundary"
       covers: ["NEG-001", "OUT-001", "EVD-002"]
-`}
+`
+}
   flowViews:${overrides.includes('EMPTY_REQUIRED_VIEWS') ? ' []' : ''}
-${overrides.includes('EMPTY_REQUIRED_VIEWS') ? '' : `
+${
+  overrides.includes('EMPTY_REQUIRED_VIEWS')
+    ? ''
+    : `
     - id: FLOW-001
       title: "Upload state and closeout flow"
       covers: ["MUST-001", "NEG-001"]
-`}
+`
+}
   edgeCaseViews:${overrides.includes('EMPTY_REQUIRED_VIEWS') ? ' []' : ''}
-${overrides.includes('EMPTY_REQUIRED_VIEWS') ? '' : `
+${
+  overrides.includes('EMPTY_REQUIRED_VIEWS')
+    ? ''
+    : `
     - id: EDGE-001
       title: "Permission/config/empty/duplicate/recovery/hash/orphan/rerun cases"
       covers: ["NEG-001"]
+      cases: ["EDGE-001"]
+    - id: EDGEVIEW-001
+      title: "Explicit AI-TDD edge-case coverage"
+      covers: ["NEG-001"]
       cases: ["permission denied", "missing config", "empty data", "duplicate execution", "resume interruption", "hash mismatch", "orphan artifact", "pending rerun"]
-`}
+`
+}
   boundaryViews:${overrides.includes('EMPTY_REQUIRED_VIEWS') ? ' []' : ''}
-${overrides.includes('EMPTY_REQUIRED_VIEWS') ? '' : `
+${
+  overrides.includes('EMPTY_REQUIRED_VIEWS')
+    ? ''
+    : `
     - id: BOUNDARY-001
       title: "Single upload boundary"
       covers: ["OUT-001"]
-`}
-${currentTargetMapBlock}
+`
+}
+${
+  currentTargetMapBlock ||
+  `  currentTargetMap:
+    schemaVersion: current-target-map/v1
+    displayProfile: closed_loop_current_target_map
+    introduction: "Default fixture current/target map required by requirements-contract-authoring."
+    currentSummary:
+      - title: "Current upload path"
+        detail: "Upload behavior is not yet confirmed against target implementation evidence."
+    targetSummary:
+      - title: "Target upload path"
+        detail: "Upload behavior is implemented only when target code, evidence, and negative paths match this map."
+    diffRows:
+      - id: DIFF-001
+        dimension: "Positive upload"
+        currentState: "Unconfirmed behavior or smoke-only proof."
+        targetState: "Persisted file appears in the file list."
+        action: "Implement and verify MUST-001."
+      - id: DIFF-002
+        dimension: "Empty upload"
+        currentState: "May be falsely accepted by smoke-only proof."
+        targetState: "Validation error with no persistent side effect."
+        action: "Implement and verify NEG-001."
+      - id: DIFF-003
+        dimension: "Completion proof"
+        currentState: "Legacy report may exist as diagnostic context."
+        targetState: "Only current-attempt acceptance evidence can close traces."
+        action: "Reject legacy completion proof."
+    process:
+      - id: PROCESS-001
+        phase: "Confirm source"
+        currentState: "Draft source document."
+        targetState: "Confirmed source with visible current/target map."
+    artifactPaths:
+      - path: "src/upload.ts"
+        targetRole: "Target implementation surface"
+    canonicalArtifacts:
+      - id: CANONICAL-001
+        targetPathOrField: "src/upload.ts"
+        traceRows: ["TRACE-001"]
+        evidenceRefs: ["EVD-001"]
+    pathRegistry: []
+    existingArtifacts:
+      - id: LEGACY-001
+        currentPath: "legacy://upload-smoke-report"
+        currentFunction: "Legacy smoke-only upload report"
+        targetTreatment: "May remain as diagnostic context only."
+        completionProofPolicy: "legacy_only"
+        traceRows: ["TRACE-001"]
+        evidenceRefs: ["EVD-002"]
+`
+}
   governanceEventTypeRegistry:
     - eventType: confirmation_recorded
       ownerModel: requirements_contract
@@ -354,7 +600,7 @@ ${currentTargetMapBlock}
         allowedControlWriteMode: control
       canAffectControlFlow: true
     - eventType: closeout_recorded
-      ownerModel: delivery_closeout
+      ownerModel: delivery_confirmation
       payloadKind: decision
       writesControlFields: ["closeout"]
       allowedDecisionValues: ["pass", "fail", "blocked"]
@@ -438,7 +684,10 @@ ${currentTargetMapBlock}
       canAffectControlFlow: false
   controlledIngestWriterRegistry:
     - writerId: requirements-confirmation-ingest
-      scriptPath: "_bmad/skills/requirements-contract-authoring/scripts/ingest-confirmation-event.js"
+      scriptRef:
+        skill: requirements-contract-authoring
+        script: scripts/ingest-confirmation-event.js
+      scriptPath: "<skill-dir>/scripts/ingest-confirmation-event.js"
       scriptContentHash: "sha256:fixture-confirmation-writer"
       ownerModel: requirement_confirmation
       allowedWriteApis: ["appendControlEvent", "atomicWriteRequirementRecord", "appendArtifactIndex"]
@@ -523,7 +772,7 @@ ${currentTargetMapBlock}
       artifactType: confirmation_view
       sourceOfTruthRole: projection
       ownerModel: requirements
-      producer: _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts
+      producer: skill://requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts
       consumer: user
       inputArtifacts: ["prd.md"]
       outputArtifacts: ["confirmation-summary.json", "confirmation-render-report.json"]
@@ -550,6 +799,8 @@ ${currentTargetMapBlock}
       outputArtifacts: ["upload behavior"]
       recordEventTypes: ["implementation_delta"]
       canAffectControlFlow: true
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
       userApprovalRequired: true
       retention: long_lived
       cleanupPolicy: source_controlled
@@ -571,6 +822,8 @@ ${currentTargetMapBlock}
       outputArtifacts: ["hook receipt"]
       recordEventTypes: ["hook_receipt"]
       canAffectControlFlow: false
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
       userApprovalRequired: false
       retention: short_lived
       cleanupPolicy: keep_receipt_only
@@ -583,12 +836,87 @@ ${currentTargetMapBlock}
       linkedRequirements: ["EVD-001"]
   requiredCommands:
     - id: CMD-001
-      command: "npm run test:e2e -- upload"
+      command: "npx vitest run ${acceptanceTestPath.replace(/\\/gu, '/')}"
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
     - id: CMD-002
-      command: "npm run test:e2e -- upload-invalid"
+      command: "npx vitest run ${e2eTestPath.replace(/\\/gu, '/')}"
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-002"]
   suggestedCommands:
     - id: CMD-SUG-001
       command: "npm run lint"
+${
+  includeCloseoutReviewPolicy
+    ? `    - id: CMD-SUGGESTED-FULL-AI-TDD-CLOSEOUT
+      command: "node scripts/main-agent-delivery-closeout-gate.ts --record REQ-UPLOAD-001 --json"
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-010"]
+`
+    : ''
+}
+  closeoutReadinessPreview:
+${
+  includeCloseoutReviewPolicy
+    ? `    deliveryReady: false
+    readinessState: "diagnostic_until_closeout_record_passes"
+    requiredCommandAuthority: "deliveryEvidence.requiredCommands"
+    requiredCommandsMirrorPolicy: "suggestedCommands are advisory and must mirror controlled required commands before closeout."
+`
+    : ''
+}
+    requiredCommands: ["CMD-001", "CMD-002"]
+    orphanPolicy: "No orphan command, evidence, artifact, or report may satisfy closeout."
+    currentAttemptPolicy: "Only current-attempt evidence with current source and implementation hashes may close trace rows."
+    recordClosedPolicy: "record_closed may be written only after delivery verification is verified."
+${
+  includeCloseoutReviewPolicy
+    ? `    blockingConditions: ["missing_current_attempt_evidence", "unbound_source_projection_gap"]
+  postCloseoutConfirmationReview:
+    rendererMode: closeout-review
+    preservesOriginalConfirmationState: true
+    mustNotMutate: ["sourceDocument", "implementationConfirmation", "requirementRecord"]
+    requiredColumns: ["originalConfirmationStatus", "preCloseoutRuntimeStatus", "postCloseoutRuntimeStatus", "finalAcceptanceStatus", "transitionLegality"]
+    legalTransitionPolicy: "PENDING may become accepted_success only when current attempt is pass and record_closed proof exists."
+  mustDerivedProjectionMap:
+    - id: MDPM-AI-TDD-MANIFEST
+      mustRefs: ["MUST-001"]
+      projectionRefs: ["TRACE-001", "ACC-001", "E2E-001"]
+      policy: "fixture ai-tdd manifest projection is source-derived"
+    - id: MDPM-CURRENT-TARGET-MAP
+      mustRefs: ["MUST-001"]
+      projectionRefs: ["DIFF-001", "PROCESS-001"]
+      policy: "current target map rows preserve source projection IDs"
+    - id: MDPM-CLOSEOUT-PREVIEW
+      mustRefs: ["MUST-001"]
+      projectionRefs: ["CMD-SUGGESTED-FULL-AI-TDD-CLOSEOUT", "EVD-010"]
+      policy: "closeout preview exposes source projection gaps as diagnostics"
+  aiTddContractExecutionManifestProjection:
+    schemaVersion: ai-tdd-contract-execution-manifest/v1
+    applies: true
+    requiredSections: ["atomicImplementationTaskLineage", "finalGateMatrix", "executionLoopProtocol"]
+    atomicImplementationTaskLineage:
+      - taskId: TASK-001
+        mustRefs: ["MUST-001"]
+        traceRows: ["TRACE-001"]
+    finalGateMatrix:
+      - gateId: GATE-FINAL-001
+        required: true
+        commandRefs: ["CMD-001", "CMD-002"]
+    executionLoopProtocol:
+      maxIterations: 15
+      stopOnSemanticGap: true
+    semanticGapPolicy:
+      action: stop_and_require_reconfirmation
+    hostExecutionHints:
+      codex: "use /goal when available"
+      cursor: "use IDE prompt execution"
+    evidenceTrustStates:
+      current_pass: "trusted"
+      source_projection_gap: "diagnostic_only"
+`
+    : ''
+}
   architectureImpacts:
     - component: "upload module"
       currentState: "no confirmed contract"
@@ -640,7 +968,7 @@ functionalResumeFailureCaseRegistry:
       requiresUserConfirmation: false
     - actionId: block_closeout_until_resolved
       label: "阻断 closeout 直到解决"
-      ownerModel: delivery_closeout
+      ownerModel: delivery_confirmation
       automationLevel: automatic_block
       writesControlFields: ["gateChecks", "failureRecords", "closeout"]
       recordEventTypes: ["gate_check_recorded", "failure_recorded", "closeout_recorded"]
@@ -658,7 +986,7 @@ functionalResumeFailureCaseRegistry:
       requiresUserConfirmation: false
     - actionId: rerun_required_commands
       label: "重跑必要证据命令"
-      ownerModel: delivery_closeout
+      ownerModel: delivery_confirmation
       automationLevel: agent_assisted
       writesControlFields: ["executionIterations", "gateChecks"]
       recordEventTypes: ["execution_iteration_recorded", "gate_check_recorded"]
@@ -749,8 +1077,77 @@ stateDiagram-v2
   return file;
 }
 
-function runRenderer(args: string[]) {
-  return spawnSync(process.execPath, [SCRIPT, ...args], {
+function fixedHash(char: string): string {
+  return `sha256:${char.repeat(64)}`;
+}
+
+function sourceArg(args: string[]): string {
+  const index = args.indexOf('--source');
+  return index >= 0 ? args[index + 1] : '';
+}
+
+function writeValidDrilldownGateReport(
+  source: string,
+  reportPath = path.join(tempDir, 'pre-render-must-decomposition-gate-report.json')
+) {
+  const text = fs.readFileSync(source, 'utf8');
+  const extracted = extractImplementationConfirmation(text);
+  const sourceDocumentHash = sourceDocumentHashFor(
+    text,
+    extracted.blockText,
+    extracted.confirmation
+  );
+  const implementationConfirmationHash = implementationConfirmationHashFor(extracted.confirmation);
+  fs.writeFileSync(
+    reportPath,
+    JSON.stringify(
+      {
+        schemaVersion: 'pre-render-must-decomposition-gate-report/v1',
+        verdict: 'PASS',
+        confirmability: 'confirmable',
+        sourceDocumentHash,
+        implementationConfirmationHash,
+        semanticKernelRef: {
+          path: path.join(tempDir, 'semantic-kernel.json'),
+          hash: fixedHash('b'),
+        },
+        mustDecompositionPacketRef: {
+          path: path.join(tempDir, 'must_decomposition_packet.json'),
+          hash: fixedHash('a'),
+          status: 'synchronized',
+        },
+        criticalAuditor: {
+          minimumRounds: 3,
+          consecutiveNoNewGapRounds: 3,
+          latestReceiptHash: fixedHash('c'),
+          convergenceVerdict: 'bounded_no_new_gap',
+        },
+        packetSourceReconciliation: {
+          reportPath: path.join(tempDir, 'must_packet_source_reconciliation_report.json'),
+          verdict: 'pass',
+        },
+        failedChecks: [],
+        blockingIssues: [],
+      },
+      null,
+      2
+    ),
+    'utf8'
+  );
+  return reportPath;
+}
+
+function runRenderer(args: string[], options: { drilldown?: boolean } = {}) {
+  const finalArgs = [...args];
+  const source = sourceArg(finalArgs);
+  const hasExplicitDrilldown =
+    finalArgs.includes('--drilldown-gate-report') ||
+    finalArgs.includes('--must-decomposition-gate-report') ||
+    finalArgs.includes('--pre-render-must-decomposition-gate-report');
+  if (options.drilldown !== false && source && !hasExplicitDrilldown) {
+    finalArgs.push('--drilldown-gate-report', writeValidDrilldownGateReport(source));
+  }
+  return spawnSync(process.execPath, [SCRIPT, ...finalArgs], {
     cwd: ROOT,
     encoding: 'utf8',
   });
@@ -805,7 +1202,6 @@ describe('render-requirements-confirmation-html', () => {
     const firstReport = JSON.parse(
       fs.readFileSync(path.join(path.dirname(firstOut), 'confirmation-render-report.json'), 'utf8')
     );
-
     fs.writeFileSync(
       recordPath,
       JSON.stringify(
@@ -869,7 +1265,9 @@ describe('render-requirements-confirmation-html', () => {
 
     expect(result.status).toBe(0);
     const html = fs.readFileSync(out, 'utf8');
-    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
     expect(html).toContain('Controlled Execution Status');
     expect(html).toContain('Current Validity');
     expect(html).toContain('confirmed contract projection');
@@ -909,7 +1307,6 @@ describe('render-requirements-confirmation-html', () => {
     const firstReport = JSON.parse(
       fs.readFileSync(path.join(path.dirname(firstOut), 'confirmation-render-report.json'), 'utf8')
     );
-
     fs.writeFileSync(
       recordPath,
       JSON.stringify(
@@ -968,7 +1365,9 @@ describe('render-requirements-confirmation-html', () => {
     ]);
 
     expect(result.status).toBe(0);
-    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
     expect(report.traceExecutionState.rows['TRACE-001']).toMatchObject({
       status: 'current_pass',
       validity: 'current',
@@ -979,6 +1378,827 @@ describe('render-requirements-confirmation-html', () => {
     });
     expect(report.deliveryReadiness.ready).toBe(true);
     expect(report.deliveryReadiness.currentPassTraceRows).toBe(1);
+  });
+
+  it('renders closeout review as final acceptance only after awaiting user acceptance request and current trace proof', () => {
+    const source = writeSource('CLOSEOUT_REVIEW_POLICY_FIXTURE');
+    const mermaidBundle = writeMockMermaidBundle();
+    const recordPath = path.join(tempDir, 'requirement-record-closeout-review.json');
+    const firstOut = path.join(tempDir, 'confirmation-closeout-review-first.html');
+    const firstResult = runRenderer([
+      '--source',
+      source,
+      '--out',
+      firstOut,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+      '--requirement-record',
+      recordPath,
+      '--strict',
+      'false',
+      '--json',
+    ]);
+    expect(firstResult.status).toBe(0);
+    const firstReport = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(firstOut), 'confirmation-render-report.json'), 'utf8')
+    );
+    const originalConfirmationRenderReportText = fs.readFileSync(
+      path.join(path.dirname(firstOut), 'confirmation-render-report.json'),
+      'utf8'
+    );
+
+    fs.writeFileSync(
+      recordPath,
+      JSON.stringify(
+        {
+          recordId: 'REQ-UPLOAD-001',
+          requirementSetId: 'REQSET-UPLOAD',
+          sourceDocumentHash: firstReport.sourceDocumentHash,
+          implementationConfirmationHash: firstReport.implementationConfirmationHash,
+          confirmationPageHash: firstReport.confirmationPageHash,
+          status: 'awaiting_user_acceptance',
+          currentMentalModel: 'delivery_confirmation',
+          currentStage: 'delivery_confirmation',
+          confirmationHistory: [
+            {
+              eventType: 'confirmation_recorded',
+              sourceDocumentHash: firstReport.sourceDocumentHash,
+              implementationConfirmationHash: firstReport.implementationConfirmationHash,
+              confirmationPageHash: firstReport.confirmationPageHash,
+            },
+          ],
+          lastEventType: 'delivery_confirmation_user_acceptance_requested',
+          lastAppliedEventId: 'record_closed:stale-previous-closeout',
+          closeout: {
+            currentAttemptId: 'closeout-review-pass',
+            decision: 'pass',
+            attempts: [
+              {
+                eventType: 'closeout_check_recorded',
+                closeoutAttemptId: 'closeout-review-blocked-001',
+                decision: 'blocked',
+                blockingReasons: ['open_rca_action_exists'],
+                checks: [
+                  { id: 'delivery-truth-gate-current', passed: true },
+                  { id: 'rca-actions-closed', passed: false, openCount: 1 },
+                ],
+                reportPath: path.join(path.dirname(recordPath), 'delivery-closeout-report.json'),
+                evaluatedAt: '2026-05-27T07:00:00.000Z',
+              },
+              {
+                eventType: 'closeout_check_recorded',
+                closeoutAttemptId: 'closeout-review-pass',
+                decision: 'pass',
+                blockingReasons: [],
+                checks: [
+                  { id: 'delivery-truth-gate-current', passed: true, issueCount: 0 },
+                  { id: 'ai-tdd-contract-gate-closeout', passed: true, blockingReasons: [] },
+                  { id: 'required-command:CMD-CLOSEOUT-REVIEW', passed: true, openCount: 0 },
+                  { id: 'requirement-closures-terminal', passed: true, openCount: 0 },
+                  { id: 'failure-records-closed', passed: true, openCount: 0 },
+                  { id: 'rca-actions-closed', passed: true, openCount: 0 },
+                ],
+                reportPath: path.join(path.dirname(recordPath), 'delivery-closeout-report.json'),
+                evaluatedAt: '2026-05-27T08:00:00.000Z',
+              },
+            ],
+            acceptanceRequest: {
+              status: 'awaiting_user_acceptance',
+              closeoutAttemptId: 'closeout-review-pass',
+            },
+          },
+          deliveryEvidence: {
+            requiredCommands: [
+              {
+                commandId: 'CMD-CLOSEOUT-REVIEW',
+                command: 'verify closeout review',
+                blockingIfMissing: true,
+                negativeOrRegression: true,
+                closeoutAttemptId: 'closeout-review-pass',
+                lastRunRef: {
+                  commandId: 'CMD-CLOSEOUT-REVIEW',
+                  runId: 'run-closeout-review-pass',
+                  closeoutAttemptId: 'closeout-review-pass',
+                },
+                traceRows: ['TRACE-001'],
+                evidenceRefs: ['EVD-001', 'EVD-002'],
+                artifactRefs: [
+                  {
+                    artifactType: 'command_output',
+                    sourceOfTruthRole: 'evidence',
+                    path: 'evidence/closeout-review.txt',
+                    hash: 'sha256:closeout-review',
+                  },
+                ],
+              },
+            ],
+          },
+          requirementClosures: [
+            {
+              eventType: 'requirement_closure_recorded',
+              requirementId: 'MUST-001',
+              status: 'pass',
+              traceRows: ['TRACE-001'],
+              evidenceRefs: ['EVD-001', 'EVD-002'],
+              sourceDocumentHash: firstReport.sourceDocumentHash,
+              implementationConfirmationHash: firstReport.implementationConfirmationHash,
+              commandRunRefs: [
+                {
+                  commandId: 'CMD-CLOSEOUT-REVIEW',
+                  runId: 'run-closeout-review-pass',
+                  closeoutAttemptId: 'closeout-review-pass',
+                  exitCode: 0,
+                },
+              ],
+            },
+          ],
+          executionIterations: [{ status: 'closed', closeoutAttemptId: 'closeout-review-pass' }],
+          gateChecks: [{ status: 'pass', closeoutAttemptId: 'closeout-review-pass' }],
+          contractChecks: [{ status: 'pass', closeoutAttemptId: 'closeout-review-pass' }],
+          failureRecords: [{ status: 'closed', closeoutAttemptId: 'closeout-review-pass' }],
+          rcaRecords: [{ status: 'closed', closeoutAttemptId: 'closeout-review-pass' }],
+          rerunLoops: [{ status: 'closed', closeoutAttemptId: 'closeout-review-pass' }],
+          artifactIndex: [{ path: 'evidence/closeout-review.txt', hash: 'sha256:closeout-review' }],
+          readinessAuditRequests: [{ status: 'closed', auditId: 'readiness-request-001' }],
+          readinessAuditResults: [{ status: 'pass', auditId: 'readiness-result-001' }],
+          readinessScoringRecords: [{ status: 'pass', scoreId: 'readiness-score-001' }],
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+    fs.writeFileSync(
+      path.join(path.dirname(recordPath), 'delivery-closeout-report.json'),
+      JSON.stringify(
+        {
+          currentAttemptId: 'closeout-review-pass',
+          decision: 'pass',
+          generatedAt: '2026-05-27T08:00:00.000Z',
+          checks: [
+            { id: 'delivery-truth-gate-current', passed: true, issueCount: 0, openCount: 0 },
+            { id: 'ai-tdd-contract-gate-closeout', passed: true, blockingReasons: [] },
+            {
+              id: 'required-command:CMD-CLOSEOUT-REVIEW',
+              passed: true,
+              openCount: 0,
+              missingEvidenceCount: 0,
+            },
+            { id: 'requirement-closures-terminal', passed: true, openCount: 0 },
+            { id: 'failure-records-closed', passed: true, openCount: 0 },
+            { id: 'rca-actions-closed', passed: true, openCount: 0 },
+          ],
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+
+    const out = path.join(tempDir, 'closeout-review.html');
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+      '--requirement-record',
+      recordPath,
+      '--mode',
+      'closeout-review',
+      '--json',
+    ]);
+
+    expect(result.status).toBe(0);
+    const html = fs.readFileSync(out, 'utf8');
+    const reportPath = path.join(path.dirname(out), 'closeout-review.render-report.json');
+    const summaryPath = path.join(path.dirname(out), 'closeout-review.summary.json');
+    expect(fs.existsSync(reportPath)).toBe(true);
+    expect(fs.existsSync(summaryPath)).toBe(true);
+    expect(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    ).toBe(originalConfirmationRenderReportText);
+    const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+    expect(html).toContain('id="final-acceptance-review"');
+    expect(html).toContain('Original Confirmation Status');
+    expect(html).toContain('Pre-Closeout Runtime Status');
+    expect(html).toContain('Post-Closeout Runtime Status');
+    expect(html).toContain('Final Acceptance Status');
+    expect(html).toContain('Transition Legality');
+    expect(html).toContain('accepted_success');
+    expect(html).toContain('legal_transition');
+    expect(html).toContain('run-closeout-review-pass');
+    expect(html).toContain('Closeout Delivery Verdict');
+    expect(html).toContain('closeout-verdict-metrics');
+    expect(html).toContain('final_acceptance_ready');
+    expect(html).toContain('final-acceptance-metrics');
+    expect(html).toContain('Pre-Closeout Diagnostic');
+    expect(html).toContain('source_projection_gap');
+    expect(html).toContain('EVD-010');
+    expect(html).toContain(
+      'source evidence[] entry exists but no source traceRows[].evidenceRefs row binds it'
+    );
+    expect(html).toContain('Closeout Gate Result Matrix');
+    expect(html).toContain('delivery-truth-gate-current');
+    expect(html).toContain('ai-tdd-contract-gate-closeout');
+    expect(html).toContain('required-command:CMD-CLOSEOUT-REVIEW');
+    expect(html).toContain('Closeout Attempt History');
+    expect(html).toContain('closeout-review-blocked-001');
+    expect(html).toContain('open_rca_action_exists');
+    expect(html).toContain('Runtime Evidence Closure Summary');
+    expect(html).toContain('requirementClosures');
+    expect(html).toContain('readinessScoringRecords');
+    expect(html).toContain('Source Closeout Policy');
+    expect(html).toContain('rendererMode');
+    expect(html).toContain('preservesOriginalConfirmationState');
+    expect(html).toContain('requiredCommandsMirrorPolicy');
+    expect(html).toContain('CMD-SUGGESTED-FULL-AI-TDD-CLOSEOUT');
+    expect(html).toContain('MDPM-AI-TDD-MANIFEST');
+    expect(html).toContain('atomicImplementationTaskLineage');
+    expect(html).toContain('finalGateMatrix');
+    expect(html).toContain('hostExecutionHints');
+    expect(html).toContain('DIFF-001');
+    expect(html).toContain('PROCESS-001');
+    expect(html).toContain('class="tag green">accepted_success</span>');
+    expect(html).toContain('class="tag green">current_pass</span>');
+    expect(html).toContain('class="tag green">legal_transition</span>');
+    expect(html).toContain('closeout-trace-acceptance-table');
+    expect(html).toContain('确认最终验收并关闭需求');
+    expect(html).toContain('closeoutAttemptId=closeout-review-pass');
+    expect(html).toContain('closeoutConfirmationPageHash=sha256:');
+    expect(html).toContain('deliveryCloseoutReportHash=sha256:');
+    expect(html).toContain('目标态实现核实层');
+    expect(html).toContain('source_target');
+    expect(html).toContain('runtime_evidence');
+    expect(html).toContain('verification_status');
+    expect(html).toContain('evidence_refs');
+    expect(html).toContain('legal_transition');
+    expect(html).toContain('achieved');
+    expect(report.mode).toBe('closeout-review');
+    expect(report.confirmationPageHashScope).toBe(
+      'scope_confirmation_hash_compatibility_field_not_closeout_authority'
+    );
+    expect(report.closeoutConfirmationPageHash).toMatch(/^sha256:/);
+    expect(report.confirmationPageHash).toBe(firstReport.confirmationPageHash);
+    expect(report.closeoutConfirmationPageHash).not.toBe(report.confirmationPageHash);
+    expect(report.closeoutConfirmationHashScope).toBe(
+      'closeout_html_normalized_with_self_hash_placeholder_and_generated_at_excluded'
+    );
+    expect(report.closeoutConfirmInstruction).toContain('确认最终验收并关闭需求');
+    expect(report.closeoutConfirmInstruction).toContain('closeoutAttemptId=closeout-review-pass');
+    expect(report.closeoutConfirmInstruction).toContain(
+      `closeoutConfirmationPageHash=${report.closeoutConfirmationPageHash}`
+    );
+    expect(report.closeoutConfirmInstruction).toContain(
+      `deliveryCloseoutReportHash=${report.deliveryCloseoutReportHash}`
+    );
+    expect(report.deliveryCloseoutReportHash).toMatch(/^sha256:/);
+    expect(report.closeoutProjectionIdentity).toMatchObject({
+      closeoutAttemptId: 'closeout-review-pass',
+      currentAliasPath:
+        '_bmad-output/runtime/requirement-records/REQ-UPLOAD-001/confirmation/closeout-confirmation-current.html',
+      canonicalPath:
+        '_bmad-output/runtime/requirement-records/REQ-UPLOAD-001/confirmation/closeout-confirmation-closeout-review-pass.html',
+      preservesScopeConfirmation: true,
+    });
+    expect(report.renderedSectionOrder).toEqual(
+      expect.arrayContaining([
+        'closeout-gate-result-matrix',
+        'closeout-attempt-history',
+        'runtime-evidence-closure-summary',
+        'source-closeout-policy',
+      ])
+    );
+    expect(report.closeoutDeliveryVerdict).toMatchObject({
+      applies: true,
+      ready: true,
+      status: 'final_acceptance_ready',
+      label: 'final_acceptance_ready',
+      closeoutReportDecision: 'pass',
+      closeoutCheckCount: 6,
+      closeoutFailedCheckCount: 0,
+      sourceProjectionGapCount: 1,
+    });
+    expect(report.preCloseoutDiagnostic).toMatchObject({
+      ready: true,
+      missingEvidenceCount: 0,
+    });
+    expect(report.progressDelta.idStatuses['EVD-010']).toMatchObject({
+      proofState: 'source_projection_gap',
+      label: 'source_projection_gap',
+      tone: 'gold',
+    });
+    expect(report.progressDelta.missingEvidenceIds).not.toContain('EVD-010');
+    expect(report.sourceProjectionDiagnostics.unboundEvidence[0]).toMatchObject({
+      id: 'EVD-010',
+      diagnosticType: 'source_projection_gap',
+      proofState: 'source_evidence_unbound_to_trace',
+    });
+    expect(report.closeoutGateMatrix.rows.map((row: any) => row.id)).toEqual(
+      expect.arrayContaining([
+        'delivery-truth-gate-current',
+        'ai-tdd-contract-gate-closeout',
+        'required-command:CMD-CLOSEOUT-REVIEW',
+        'requirement-closures-terminal',
+        'failure-records-closed',
+        'rca-actions-closed',
+      ])
+    );
+    expect(report.closeoutAttemptHistory).toMatchObject({
+      totalCount: 2,
+      blockedCount: 1,
+      passedCount: 1,
+    });
+    expect(report.runtimeEvidenceClosureSummary.rows).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: 'requirementClosures', totalCount: 1, openCount: 0 }),
+        expect.objectContaining({ name: 'gateChecks', totalCount: 1, openCount: 0 }),
+        expect.objectContaining({ name: 'contractChecks', totalCount: 1, openCount: 0 }),
+        expect.objectContaining({ name: 'failureRecords', totalCount: 1, openCount: 0 }),
+        expect.objectContaining({ name: 'rcaRecords', totalCount: 1, openCount: 0 }),
+        expect.objectContaining({ name: 'rerunLoops', totalCount: 1, openCount: 0 }),
+        expect.objectContaining({ name: 'artifactIndex', totalCount: 1, openCount: 0 }),
+        expect.objectContaining({ name: 'readinessAuditRequests', totalCount: 1, openCount: 0 }),
+        expect.objectContaining({ name: 'readinessAuditResults', totalCount: 1, openCount: 0 }),
+        expect.objectContaining({ name: 'readinessScoringRecords', totalCount: 1, openCount: 0 }),
+      ])
+    );
+    expect(report.sourceCloseoutPolicyCoverage).toMatchObject({
+      suggestedCommandIds: expect.arrayContaining(['CMD-SUGGESTED-FULL-AI-TDD-CLOSEOUT']),
+      mustDerivedProjectionMapIds: expect.arrayContaining(['MDPM-AI-TDD-MANIFEST']),
+      aiTddContractExecutionManifestProjectionFields: expect.arrayContaining([
+        'atomicImplementationTaskLineage',
+        'finalGateMatrix',
+        'executionLoopProtocol',
+        'semanticGapPolicy',
+        'hostExecutionHints',
+        'evidenceTrustStates',
+      ]),
+    });
+    expect(report.finalAcceptanceReview).toMatchObject({
+      applies: true,
+      ready: true,
+      status: 'final_acceptance_ready',
+      currentAttemptId: 'closeout-review-pass',
+      awaitingUserAcceptance: true,
+      attemptDecision: 'pass',
+    });
+    expect(report.finalAcceptanceReview.acceptanceRequestProof).toMatchObject({
+      awaitingUserAcceptance: true,
+      proofKind: 'closeout_user_acceptance_request_proof',
+    });
+    expect(report.finalAcceptanceReview.lastEventType).toBe(
+      'delivery_confirmation_user_acceptance_requested'
+    );
+    expect(report.finalAcceptanceReview.lastAppliedEventId).toBe('');
+    expect(html).not.toContain('record_closed:stale-previous-closeout');
+    expect(report.finalAcceptanceReview.rows['TRACE-001']).toMatchObject({
+      originalConfirmationStatus: 'PENDING',
+      preCloseoutRuntimeStatus: 'open_before_closeout',
+      postCloseoutRuntimeStatus: 'current_pass',
+      finalAcceptanceStatus: 'accepted_success',
+      transitionLegality: 'legal_transition',
+      runId: 'run-closeout-review-pass',
+      closeoutAttemptId: 'closeout-review-pass',
+    });
+    expect(report.finalAcceptanceReview.requiredCommandEvidence).toMatchObject({
+      totalCount: 1,
+      currentAttemptCount: 1,
+      artifactBoundCount: 1,
+    });
+    expect(report.currentTargetRealization.summary).toMatchObject({
+      achieved: expect.any(Number),
+      not_achieved: 0,
+      not_evaluable: 0,
+    });
+    expect(report.currentTargetRealization.rows[0]).toMatchObject({
+      source_target: expect.any(String),
+      verification_status: 'achieved',
+      legal_transition: true,
+    });
+    const summary = JSON.parse(fs.readFileSync(summaryPath, 'utf8'));
+    expect(summary.closeoutDeliveryVerdict).toMatchObject({
+      ready: true,
+      status: 'final_acceptance_ready',
+    });
+    expect(summary.preCloseoutDiagnostic).toMatchObject({ ready: true, missingEvidenceCount: 0 });
+    expect(summary.closeoutConfirmationPageHash).toBe(report.closeoutConfirmationPageHash);
+    expect(summary.closeoutConfirmInstruction).toBe(report.closeoutConfirmInstruction);
+    expect(summary.currentTargetRealization.summary.achieved).toBeGreaterThan(0);
+    expect(summary.renderedSectionOrder).toContain('source-closeout-policy');
+  });
+
+  it('fails closed in closeout-review mode without an awaiting user acceptance request', () => {
+    const source = writeSource();
+    const mermaidBundle = writeMockMermaidBundle();
+    const recordPath = path.join(tempDir, 'requirement-record-closeout-review-blocked.json');
+    const firstOut = path.join(tempDir, 'confirmation-closeout-review-blocked-first.html');
+    const firstResult = runRenderer([
+      '--source',
+      source,
+      '--out',
+      firstOut,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+      '--requirement-record',
+      recordPath,
+      '--json',
+    ]);
+    expect(firstResult.status).toBe(0);
+    const firstReport = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(firstOut), 'confirmation-render-report.json'), 'utf8')
+    );
+
+    fs.writeFileSync(
+      recordPath,
+      JSON.stringify(
+        {
+          recordId: 'REQ-UPLOAD-001',
+          requirementSetId: 'REQSET-UPLOAD',
+          sourceDocumentHash: firstReport.sourceDocumentHash,
+          implementationConfirmationHash: firstReport.implementationConfirmationHash,
+          lastEventType: 'closeout_check_recorded',
+          closeout: {
+            currentAttemptId: 'closeout-review-not-closed',
+            decision: 'pass',
+            attempts: [
+              {
+                closeoutAttemptId: 'closeout-review-not-closed',
+                decision: 'pass',
+                blockingReasons: [],
+              },
+            ],
+          },
+          deliveryEvidence: {
+            requiredCommands: [
+              {
+                commandId: 'CMD-CLOSEOUT-REVIEW',
+                negativeOrRegression: true,
+                closeoutAttemptId: 'closeout-review-not-closed',
+                lastRunRef: {
+                  commandId: 'CMD-CLOSEOUT-REVIEW',
+                  runId: 'run-closeout-review-not-closed',
+                  closeoutAttemptId: 'closeout-review-not-closed',
+                },
+                traceRows: ['TRACE-001'],
+                evidenceRefs: ['EVD-001', 'EVD-002'],
+                artifactRefs: [
+                  { path: 'evidence/closeout-review.txt', hash: 'sha256:closeout-review' },
+                ],
+              },
+            ],
+          },
+          requirementClosures: [
+            {
+              eventType: 'requirement_closure_recorded',
+              requirementId: 'MUST-001',
+              status: 'pass',
+              traceRows: ['TRACE-001'],
+              evidenceRefs: ['EVD-001', 'EVD-002'],
+              sourceDocumentHash: firstReport.sourceDocumentHash,
+              implementationConfirmationHash: firstReport.implementationConfirmationHash,
+              commandRunRefs: [
+                {
+                  commandId: 'CMD-CLOSEOUT-REVIEW',
+                  runId: 'run-closeout-review-not-closed',
+                  closeoutAttemptId: 'closeout-review-not-closed',
+                  exitCode: 0,
+                },
+              ],
+            },
+          ],
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+
+    const out = path.join(tempDir, 'closeout-review-blocked.html');
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+      '--requirement-record',
+      recordPath,
+      '--mode',
+      'closeout-review',
+      '--json',
+    ]);
+
+    expect(result.status).toBe(3);
+    const html = fs.readFileSync(out, 'utf8');
+    const report = JSON.parse(
+      fs.readFileSync(
+        path.join(path.dirname(out), 'closeout-review-blocked.render-report.json'),
+        'utf8'
+      )
+    );
+    expect(html).toContain('final_acceptance_ready=false');
+    expect(html).toContain('final_acceptance_user_acceptance_request_missing');
+    expect(report.finalAcceptanceReview.ready).toBe(false);
+    expect(report.finalAcceptanceReview.blockingIssues.map((issue: any) => issue.code)).toContain(
+      'final_acceptance_user_acceptance_request_missing'
+    );
+  });
+
+  it('keeps real missing runtime evidence blocking even when source projection gaps exist', () => {
+    const source = writeSource('CLOSEOUT_REVIEW_POLICY_FIXTURE');
+    const mermaidBundle = writeMockMermaidBundle();
+    const recordPath = path.join(
+      tempDir,
+      'requirement-record-closeout-review-missing-runtime.json'
+    );
+    const firstOut = path.join(tempDir, 'confirmation-closeout-review-missing-runtime-first.html');
+    const firstResult = runRenderer([
+      '--source',
+      source,
+      '--out',
+      firstOut,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+      '--requirement-record',
+      recordPath,
+      '--strict',
+      'false',
+      '--json',
+    ]);
+    expect(firstResult.status).toBe(0);
+    const firstReport = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(firstOut), 'confirmation-render-report.json'), 'utf8')
+    );
+
+    fs.writeFileSync(
+      recordPath,
+      JSON.stringify(
+        {
+          recordId: 'REQ-UPLOAD-001',
+          requirementSetId: 'REQSET-UPLOAD',
+          sourceDocumentHash: firstReport.sourceDocumentHash,
+          implementationConfirmationHash: firstReport.implementationConfirmationHash,
+          lastEventType: 'record_closed',
+          lastAppliedEventId: 'record_closed:closeout-review-missing-runtime',
+          closeout: {
+            currentAttemptId: 'closeout-review-missing-runtime',
+            decision: 'pass',
+            attempts: [
+              {
+                eventType: 'record_closed',
+                closeoutAttemptId: 'closeout-review-missing-runtime',
+                decision: 'pass',
+                blockingReasons: [],
+              },
+            ],
+          },
+          deliveryEvidence: {
+            requiredCommands: [
+              {
+                commandId: 'CMD-CLOSEOUT-REVIEW',
+                closeoutAttemptId: 'closeout-review-missing-runtime',
+                lastRunRef: {
+                  commandId: 'CMD-CLOSEOUT-REVIEW',
+                  runId: 'run-closeout-review-missing-runtime',
+                  closeoutAttemptId: 'closeout-review-missing-runtime',
+                },
+                traceRows: ['TRACE-001'],
+                evidenceRefs: ['EVD-001'],
+                artifactRefs: [
+                  { path: 'evidence/closeout-review.txt', hash: 'sha256:closeout-review' },
+                ],
+              },
+            ],
+          },
+          requirementClosures: [],
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+    fs.writeFileSync(
+      path.join(path.dirname(recordPath), 'delivery-closeout-report.json'),
+      JSON.stringify(
+        {
+          currentAttemptId: 'closeout-review-missing-runtime',
+          decision: 'pass',
+          checks: [
+            { id: 'delivery-truth-gate-current', passed: true, issueCount: 0, openCount: 0 },
+          ],
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+
+    const out = path.join(tempDir, 'closeout-review-missing-runtime.html');
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+      '--requirement-record',
+      recordPath,
+      '--mode',
+      'closeout-review',
+      '--json',
+    ]);
+
+    expect(result.status).toBe(3);
+    const report = JSON.parse(
+      fs.readFileSync(
+        path.join(path.dirname(out), 'closeout-review-missing-runtime.render-report.json'),
+        'utf8'
+      )
+    );
+    expect(report.finalAcceptanceReview.ready).toBe(false);
+    expect(report.finalAcceptanceReview.blockingIssues.map((issue: any) => issue.code)).toContain(
+      'final_acceptance_trace_not_accepted'
+    );
+    expect(report.progressDelta.idStatuses['EVD-010']).toMatchObject({
+      proofState: 'missing_evidence',
+    });
+    expect(report.progressDelta.missingEvidenceIds).toContain('EVD-010');
+  });
+
+  it('does not claim target realization achieved from source prose without runtime acceptance evidence', () => {
+    const source = writeSource('CLOSEOUT_REVIEW_POLICY_FIXTURE');
+    const mermaidBundle = writeMockMermaidBundle();
+    const recordPath = path.join(
+      tempDir,
+      'requirement-record-closeout-review-target-not-achieved.json'
+    );
+    const firstOut = path.join(
+      tempDir,
+      'confirmation-closeout-review-target-not-achieved-first.html'
+    );
+    const firstResult = runRenderer([
+      '--source',
+      source,
+      '--out',
+      firstOut,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+      '--requirement-record',
+      recordPath,
+      '--strict',
+      'false',
+      '--json',
+    ]);
+    expect(firstResult.status).toBe(0);
+    const firstReport = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(firstOut), 'confirmation-render-report.json'), 'utf8')
+    );
+
+    fs.writeFileSync(
+      recordPath,
+      JSON.stringify(
+        {
+          recordId: 'REQ-UPLOAD-001',
+          requirementSetId: 'REQSET-UPLOAD',
+          sourceDocumentHash: firstReport.sourceDocumentHash,
+          implementationConfirmationHash: firstReport.implementationConfirmationHash,
+          lastEventType: 'record_closed',
+          lastAppliedEventId: 'record_closed:closeout-review-target-not-achieved',
+          closeout: {
+            currentAttemptId: 'closeout-review-target-not-achieved',
+            decision: 'pass',
+            attempts: [
+              {
+                eventType: 'record_closed',
+                closeoutAttemptId: 'closeout-review-target-not-achieved',
+                decision: 'pass',
+                blockingReasons: [],
+              },
+            ],
+          },
+          deliveryEvidence: {
+            requiredCommands: [
+              {
+                commandId: 'CMD-CLOSEOUT-REVIEW',
+                closeoutAttemptId: 'closeout-review-target-not-achieved',
+                lastRunRef: {
+                  commandId: 'CMD-CLOSEOUT-REVIEW',
+                  runId: 'run-closeout-review-target-not-achieved',
+                  closeoutAttemptId: 'closeout-review-target-not-achieved',
+                },
+                traceRows: ['TRACE-001'],
+                evidenceRefs: ['EVD-001'],
+                artifactRefs: [
+                  { path: 'evidence/closeout-review.txt', hash: 'sha256:closeout-review' },
+                ],
+              },
+            ],
+          },
+          requirementClosures: [
+            {
+              eventType: 'requirement_closure_recorded',
+              requirementId: 'MUST-001',
+              status: 'pass',
+              traceRows: ['TRACE-001'],
+              evidenceRefs: ['EVD-001'],
+              sourceDocumentHash: firstReport.sourceDocumentHash,
+              implementationConfirmationHash: 'sha256:stale',
+              commandRunRefs: [
+                {
+                  commandId: 'CMD-CLOSEOUT-REVIEW',
+                  runId: 'run-closeout-review-target-not-achieved',
+                  closeoutAttemptId: 'closeout-review-target-not-achieved',
+                  exitCode: 0,
+                },
+              ],
+            },
+          ],
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+
+    const out = path.join(tempDir, 'closeout-review-target-not-achieved.html');
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+      '--requirement-record',
+      recordPath,
+      '--mode',
+      'closeout-review',
+      '--json',
+    ]);
+
+    expect(result.status).toBe(3);
+    const report = JSON.parse(
+      fs.readFileSync(
+        path.join(path.dirname(out), 'closeout-review-target-not-achieved.render-report.json'),
+        'utf8'
+      )
+    );
+    expect(report.finalAcceptanceReview.ready).toBe(false);
+    expect(report.currentTargetRealization.summary.achieved).toBe(0);
+    expect(report.currentTargetRealization.summary.not_achieved).toBeGreaterThan(0);
+    expect(report.currentTargetRealization.rows[0]).toMatchObject({
+      verification_status: 'not_achieved',
+      legal_transition: false,
+    });
   });
 
   it('preserves id-badge mini as trusted HTML inside requirement boundary tables', () => {
@@ -1075,7 +2295,9 @@ describe('render-requirements-confirmation-html', () => {
 
     expect(result.status).toBe(0);
     const html = fs.readFileSync(out, 'utf8');
-    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
     expect(html).toContain('historical_stale_hash_mismatch');
     expect(html).toContain('stale');
     expect(report.traceExecutionState.rows['TRACE-001'].status).not.toBe('current_pass');
@@ -1089,15 +2311,29 @@ describe('render-requirements-confirmation-html', () => {
   it('allows hash drift when a managed reconfirmation request is ready for user confirmation', () => {
     const source = writeSource();
     const original = fs.readFileSync(source, 'utf8');
-    const drifted = original
-      .replace('status: draft', 'status: reconfirm_required')
-      .replace(
-        'sourceDocumentHash: null',
-        `sourceDocumentHash: sha256:old-source
+    const drifted = original.replace('status: draft', 'status: reconfirm_required').replace(
+      'sourceDocumentHash: null',
+      `sourceDocumentHash: sha256:old-source
   implementationConfirmationHash: sha256:old-confirmation
   reconfirmationRequest:
     required: true
+    reasonCode: source_hash_changed
     reason: sourceDocumentHash_changed
+    userFacingTitle: "需要重新确认本次需求"
+    userFacingSummary: "MUST-001 的证据命令说明发生语义变化，需要用户确认新边界。"
+    persuasiveRationale:
+      whyReconfirmNow: "当前语义 hash 已不同于上次确认，不能沿用历史确认。"
+      riskIfSkipped: "跳过会把未确认的 MUST-001 证据命令变化当作已确认范围执行。"
+      whyEvidenceIsSufficient: "差异摘要、MUST/EVD/TRACE 引用和命令引用共同指向同一变化。"
+    evidenceBundle:
+      sufficiencyVerdict: sufficient
+      items:
+        - id: RCEVD-001
+          kind: evidence
+          title: "MUST-001 evidence command clarification"
+          summary: "MUST-001 的证据命令被澄清并绑定到 EVD-001 与 TRACE-001。"
+          sourceRefs: ["MUST-001"]
+          proofRefs: ["EVD-001", "TRACE-001", "CMD-CONTRACT-001"]
     previousSourceDocumentHash: sha256:old-source
     currentSourceDocumentHash: sha256:pending-render
     previousImplementationConfirmationHash: sha256:old-confirmation
@@ -1117,10 +2353,13 @@ describe('render-requirements-confirmation-html', () => {
       - accept_partial_changes_create_followup
       - regenerate_confirmation_view
 `
-      );
+    );
     fs.writeFileSync(source, drifted, 'utf8');
     const mermaidBundle = writeMockMermaidBundle();
-    const out = path.join(tempDir, '_bmad-output/runtime/requirements/REQ-UPLOAD-001/confirmation/reconfirm.html');
+    const out = path.join(
+      tempDir,
+      '_bmad-output/runtime/requirements/REQ-UPLOAD-001/confirmation/reconfirm.html'
+    );
     const result = runRenderer([
       '--source',
       source,
@@ -1143,6 +2382,9 @@ describe('render-requirements-confirmation-html', () => {
       fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
     );
     expect(html).toContain('重新确认请求');
+    expect(html.indexOf('id="reconfirmation-request"')).toBeLessThan(
+      html.indexOf('id="core-design"')
+    );
     expect(html).toContain('id="progress-delta"');
     expect(html).toContain('class="review-flow"');
     expect(html).toContain('class="review-step"');
@@ -1151,8 +2393,11 @@ describe('render-requirements-confirmation-html', () => {
     expect(html).toContain('重点验收焦点');
     expect(html).toContain('新增 / 变更');
     expect(html).toContain('userStatus');
-    expect(html).toContain('检测到确认边界漂移');
+    expect(html).toContain('检测到确认边界语义漂移');
     expect(html).toContain('sourceDocumentHash_changed');
+    expect(html).toContain('MUST-001 evidence command clarification');
+    expect(html).toContain('当前语义 hash 已不同于上次确认');
+    expect(html).toContain('跳过会把未确认的 MUST-001');
     expect(html).toContain('confirm_current_version');
     expect(html).toContain('reject_current_changes_restore_last_confirmed');
     expect(html).toContain('accept_partial_changes_create_followup');
@@ -1167,6 +2412,15 @@ describe('render-requirements-confirmation-html', () => {
     expect(progressDeltaSection.match(/class="review-step"/g)?.length).toBeGreaterThanOrEqual(3);
     expect(progressDeltaSection).not.toContain('class="split"');
     expect(report.confirmability).toBe('confirmable');
+    expect(report.confirmationDriftClassification).toMatchObject({
+      kind: 'semantic_reconfirmation_required',
+      requiresUserReconfirmation: true,
+    });
+    expect(report.renderedSectionOrder.indexOf('reconfirmation-request')).toBeLessThan(
+      report.renderedSectionOrder.indexOf('core-design')
+    );
+    expect(report.reconfirmationBannerRendered).toBe(true);
+    expect(report.reconfirmationEvidenceVerdict).toBe('sufficient');
     expect(report.blockingIssues.map((issue: { code: string }) => issue.code)).not.toEqual(
       expect.arrayContaining([
         'sourceDocumentHash_changed',
@@ -1175,7 +2429,8 @@ describe('render-requirements-confirmation-html', () => {
     );
     expect(report.reconfirmationRequest).toMatchObject({
       required: true,
-      reason: 'sourceDocumentHash_changed',
+      reason: 'source_hash_changed',
+      reasonCode: 'source_hash_changed',
       previousSourceDocumentHash: 'sha256:old-source',
       previousImplementationConfirmationHash: 'sha256:old-confirmation',
       allowedUserActions: expect.arrayContaining([
@@ -1198,11 +2453,158 @@ describe('render-requirements-confirmation-html', () => {
     });
   });
 
+  it('fails closed when required reconfirmation omits diffSummary', () => {
+    const source = writeSource();
+    const original = fs.readFileSync(source, 'utf8');
+    const drifted = original.replace('status: draft', 'status: reconfirmation_required').replace(
+      'sourceDocumentHash: null',
+      `sourceDocumentHash: sha256:old-source
+  implementationConfirmationHash: sha256:old-confirmation
+  reconfirmationRequest:
+    required: true
+    reasonCode: controlled_amendment_modified_source_after_previous_confirmation
+    reason: sourceDocumentHash_changed
+    userFacingTitle: "需要重新确认本次需求"
+    userFacingSummary: "MUST-001 的证据命令说明发生语义变化，需要用户确认新边界。"
+    persuasiveRationale:
+      whyReconfirmNow: "当前语义 hash 已不同于上次确认，不能沿用历史确认。"
+      riskIfSkipped: "跳过会把未确认的 MUST-001 证据命令变化当作已确认范围执行。"
+      whyEvidenceIsSufficient: "MUST/EVD/TRACE 引用和命令引用共同指向同一变化。"
+    evidenceBundle:
+      sufficiencyVerdict: sufficient
+      items:
+        - id: RCEVD-001
+          kind: evidence
+          title: "MUST-001 evidence command clarification"
+          summary: "MUST-001 的证据命令被澄清并绑定到 EVD-001 与 TRACE-001。"
+          sourceRefs: ["MUST-001"]
+          proofRefs: ["EVD-001", "TRACE-001", "CMD-001"]
+    previousSourceDocumentHash: sha256:old-source
+    previousImplementationConfirmationHash: sha256:old-confirmation
+    impactedIds: ["MUST-001", "EVD-001", "TRACE-001"]
+    impactedTraceRows: ["TRACE-001"]
+    affectedRequirementIds: ["MUST-001", "EVD-001"]
+    affectedTraceRows: ["TRACE-001"]
+    allowedUserActions:
+      - confirm_current_version
+`
+    );
+    fs.writeFileSync(source, drifted, 'utf8');
+    const mermaidBundle = writeMockMermaidBundle();
+    const out = path.join(tempDir, 'reconfirm-missing-diff-summary.html');
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+    ]);
+
+    expect(result.status).toBe(3);
+    const html = fs.readFileSync(out, 'utf8');
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
+    expect(report.confirmability).toBe('blocked');
+    expect(report.blockingIssues.map((issue: { code: string }) => issue.code)).toContain(
+      'reconfirmation_missing_diff_summary'
+    );
+    expect(html).toContain('reconfirmation_missing_diff_summary');
+  });
+
+  it('recognizes expanded ID namespaces in Mermaid blocks and known source projections', () => {
+    const source = writeSource();
+    const original = fs.readFileSync(source, 'utf8');
+    fs.writeFileSync(
+      source,
+      original.replace(
+        '\n  sequenceViews:',
+        `
+  implementationTasks:
+    - taskId: TASK-001
+      mustRef: MUST-001
+      task: "Fixture implementation task for expanded namespace binding."
+      targetFiles: ["src/upload.ts"]
+      acceptanceRefs: ["ACC-001"]
+      traceRefs: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
+      projectionStatus: synchronized
+  sequenceViews:`
+      ),
+      'utf8'
+    );
+    fs.appendFileSync(
+      source,
+      `
+
+\`\`\`mermaid
+flowchart TD
+  A[Audit triad TASK-001] --> B[Failure FAIL-001]
+  B --> C[Edge EDGE-001]
+  C --> D[Artifact ART-CONFIRM-001]
+  D --> E[Command CMD-001]
+  E --> F[Sequence SEQ-001]
+  F --> G[Flow FLOW-001]
+  G --> H[Boundary BOUNDARY-001]
+\`\`\`
+`,
+      'utf8'
+    );
+    const mermaidBundle = writeMockMermaidBundle();
+    const out = path.join(tempDir, 'expanded-id-namespace.html');
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+    ]);
+
+    expect(result.status).toBe(0);
+    const html = fs.readFileSync(out, 'utf8');
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
+    expect(report.confirmability).toBe('confirmable');
+    expect(report.blockingIssues.map((issue: { code: string }) => issue.code)).not.toContain(
+      'diagram_unknown_id'
+    );
+    for (const id of [
+      'TASK-001',
+      'FAIL-001',
+      'EDGE-001',
+      'ART-CONFIRM-001',
+      'CMD-001',
+      'SEQ-001',
+      'FLOW-001',
+      'BOUNDARY-001',
+    ]) {
+      expect(html).toContain(id);
+    }
+  });
+
   it('renders the full instance confirmation HTML, summary, render report, hashes, and required views', () => {
     const source = writeSource();
     const original = fs.readFileSync(source, 'utf8');
     const mermaidBundle = writeMockMermaidBundle();
-    const out = path.join(tempDir, '_bmad-output/runtime/requirements/REQ-UPLOAD-001/confirmation/confirmation.html');
+    const out = path.join(
+      tempDir,
+      '_bmad-output/runtime/requirements/REQ-UPLOAD-001/confirmation/confirmation.html'
+    );
     const result = runRenderer([
       '--source',
       source,
@@ -1292,20 +2694,36 @@ describe('render-requirements-confirmation-html', () => {
     expect(html).toContain('data-filter-status');
     expect(html).toContain('data-artifact-group-section');
     expect(html).toContain('body[data-filter="new"] .artifact-plan-table tbody tr{display:none}');
-    expect(html).toContain('body[data-filter="new"] .artifact-plan-table tbody tr:has([data-new-artifact="true"])');
+    expect(html).toContain(
+      'body[data-filter="new"] .artifact-plan-table tbody tr:has([data-new-artifact="true"])'
+    );
     expect(html).toContain('data-nav-toggle');
     expect(html).toContain('data-nav-collapsed="false"');
     expect(html).toContain('收起侧栏');
     expect(html).toContain('grid-template-columns:280px minmax(0,1fr)');
     expect(html).toContain('--shadow:none');
-    expect(html).toContain('main{padding:44px min(6vw,88px) 86px;min-width:0;max-width:100%;background:linear-gradient');
+    expect(html).toContain(
+      'main{padding:44px min(6vw,88px) 86px;min-width:0;max-width:100%;background:linear-gradient'
+    );
     expect(html).toContain('counter-reset:doc-section');
-    expect(html).toContain('.card{background:transparent;border:0;border-top:1px solid var(--line);border-radius:0;padding:36px 0 42px;box-shadow:none;margin:0;min-width:0;max-width:100%}');
-    expect(html).toContain('.card>h2::before{counter-increment:doc-section;content:counter(doc-section,decimal-leading-zero)');
-    expect(html).toContain('.metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0;margin:22px 0;min-width:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}');
-    expect(html).toContain('.table-wrap{overflow-x:auto;overflow-y:auto;border:1px solid var(--line);border-radius:0;min-width:0;max-width:100%;scrollbar-gutter:stable;background:#fff}');
-    expect(html).toContain('.table-wrap table{width:max-content;min-width:100%;border-collapse:collapse;background:#fff;table-layout:auto}');
-    expect(html).toContain('.table-wrap th,.table-wrap td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left;min-width:140px;max-width:560px;overflow-wrap:break-word}');
+    expect(html).toContain(
+      '.card{background:transparent;border:0;border-top:1px solid var(--line);border-radius:0;padding:36px 0 42px;box-shadow:none;margin:0;min-width:0;max-width:100%}'
+    );
+    expect(html).toContain(
+      '.card>h2::before{counter-increment:doc-section;content:counter(doc-section,decimal-leading-zero)'
+    );
+    expect(html).toContain(
+      '.metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0;margin:22px 0;min-width:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}'
+    );
+    expect(html).toContain(
+      '.table-wrap{overflow-x:auto;overflow-y:auto;border:1px solid var(--line);border-radius:0;min-width:0;max-width:100%;scrollbar-gutter:stable;background:#fff}'
+    );
+    expect(html).toContain(
+      '.table-wrap table{width:max-content;min-width:100%;border-collapse:collapse;background:#fff;table-layout:auto}'
+    );
+    expect(html).toContain(
+      '.table-wrap th,.table-wrap td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left;min-width:140px;max-width:560px;overflow-wrap:break-word}'
+    );
     expect(html).toContain('.compact-map-table{min-width:1100px}');
     expect(html).toContain('核心设计摘要');
     expect(html).toContain('历史进度与本次差异');
@@ -1318,8 +2736,9 @@ describe('render-requirements-confirmation-html', () => {
     expect(progressDeltaSection).toContain('class="review-flow"');
     expect(progressDeltaSection.match(/class="review-step"/g)?.length).toBeGreaterThanOrEqual(3);
     expect(progressDeltaSection).not.toContain('class="split"');
-    expect(html).not.toContain('<section class="card current-target-map" id="current-target">');
-    expect(html).not.toContain('current-target-split');
+    expect(html).toContain('<section class="card current-target-map" id="current-target">');
+    expect(html).toContain('fixture-provided current target map');
+    expect(html).toContain('AI-TDD 契约执行清单');
     expect(html).not.toContain('六个心智模型');
     expect(html).not.toContain('双唯一门禁与 typed envelope');
     expect(html).toContain('diagram-viewer');
@@ -1419,11 +2838,15 @@ describe('render-requirements-confirmation-html', () => {
       expect.arrayContaining(['coreDesign', 'decisionSummary', 'businessVisuals', 'traceMatrix'])
     );
     expect(report.optionalViewPacks).toEqual([]);
-    expect(report.renderedSections).not.toContain('current-target');
-    expect(report.currentTargetCoverage.artifactPaths).toBe(0);
-    expect(report.currentTargetCoverage.pathRegistry).toBe(0);
-    expect(report.currentTargetSchemaVersion).toBe('');
-    expect(report.currentTargetDisplayProfile).toBe('');
+    expect(report.renderedSections).toContain('current-target');
+    expect(report.currentTargetCoverage.artifactPaths).toBeGreaterThan(0);
+    expect(report.currentTargetCoverage.canonicalArtifacts).toBeGreaterThan(0);
+    expect(report.currentTargetSchemaVersion).toBe('current-target-map/v1');
+    expect(report.currentTargetDisplayProfile).toBe('closed_loop_current_target_map');
+    expect(report.aiTddContractManifestCoverage.sections.currentTargetMap).toMatchObject({
+      ready: true,
+      decision: 'pass',
+    });
     expect(report.resumeFailureCaseCoverage).toMatchObject({
       status: 'frozen_in_P0',
       caseCount: 3,
@@ -1445,27 +2868,36 @@ describe('render-requirements-confirmation-html', () => {
       expect.arrayContaining([
         expect.objectContaining({
           writerId: 'requirements-confirmation-ingest',
-          allowedEventTypes: expect.arrayContaining(['confirmation_recorded', 'contract_check_recorded']),
+          allowedEventTypes: expect.arrayContaining([
+            'confirmation_recorded',
+            'contract_check_recorded',
+          ]),
           writesControlFields: expect.arrayContaining(['confirmationHistory', 'contractChecks']),
           beforeAfterHashRequired: true,
           canModifyWriterRegistry: false,
         }),
       ])
     );
-    expect(report.controlledIngestWriterCoverage.eventTypeToWriters.confirmation_recorded).toContain(
-      'requirements-confirmation-ingest'
-    );
+    expect(
+      report.controlledIngestWriterCoverage.eventTypeToWriters.confirmation_recorded
+    ).toContain('requirements-confirmation-ingest');
     expect(report.controlledIngestWriterCoverage.uncoveredEventTypes).toEqual([]);
     expect(report.controlledIngestWriterSchemaIssues).toEqual([]);
-    expect(report.resumeFailureCaseCoverage.governanceEventTypeRefs.gate_check_recorded).toMatchObject({
+    expect(
+      report.resumeFailureCaseCoverage.governanceEventTypeRefs.gate_check_recorded
+    ).toMatchObject({
       ownerModel: 'runtime_governance',
       writesControlFields: ['gateChecks'],
     });
-    expect(report.resumeFailureCaseCoverage.groupDefinitions.hash_and_trace_checkpoint).toMatchObject({
+    expect(
+      report.resumeFailureCaseCoverage.groupDefinitions.hash_and_trace_checkpoint
+    ).toMatchObject({
       label: 'Hash / trace checkpoint 一致性',
       ownerModel: 'runtime_recovery',
     });
-    expect(report.resumeFailureCaseCoverage.recoveryActionDefinitions.require_user_reconfirmation).toMatchObject({
+    expect(
+      report.resumeFailureCaseCoverage.recoveryActionDefinitions.require_user_reconfirmation
+    ).toMatchObject({
       ownerModel: 'requirements_contract',
       automationLevel: 'user_required',
       requiresUserConfirmation: true,
@@ -1475,7 +2907,10 @@ describe('render-requirements-confirmation-html', () => {
       'sourceDocumentHash_changed'
     );
     expect(report.resumeFailureCaseCoverage.phase4_5Coverage).toEqual(
-      expect.arrayContaining(['trace_checkpoint_missing', 'codexHookTrustReceipt_missing_or_invalid'])
+      expect.arrayContaining([
+        'trace_checkpoint_missing',
+        'codexHookTrustReceipt_missing_or_invalid',
+      ])
     );
     expect(report.resumeFailureCaseCoverage.groups.hash_and_trace_checkpoint).toEqual(
       expect.arrayContaining(['sourceDocumentHash_changed', 'trace_checkpoint_missing'])
@@ -1534,7 +2969,9 @@ functionalResumeFailureCaseRegistry:
     ]);
 
     expect(result.status).toBe(3);
-    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
     const codes = report.blockingIssues.map((issue: any) => issue.code);
     expect(codes).toContain('resume_failure_groups_missing');
     expect(codes).toContain('resume_failure_case_missing_group_ref');
@@ -1567,7 +3004,9 @@ functionalResumeFailureCaseRegistry:
     ]);
 
     expect(result.status).toBe(3);
-    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
     expect(report.blockingIssues.map((issue: any) => issue.code)).toContain(
       'resume_failure_case_missing_recovery_actions'
     );
@@ -1576,7 +3015,10 @@ functionalResumeFailureCaseRegistry:
   it('fails closed when an expected recovery action has no registry definition', () => {
     const source = writeSource();
     const original = fs.readFileSync(source, 'utf8');
-    const mutated = original.replace('        - rebuild_trace_checkpoint', '        - undefined_recovery_action');
+    const mutated = original.replace(
+      '        - rebuild_trace_checkpoint',
+      '        - undefined_recovery_action'
+    );
     fs.writeFileSync(source, mutated, 'utf8');
     const mermaidBundle = writeMockMermaidBundle();
     const out = path.join(tempDir, 'confirmation-resume-unknown-action.html');
@@ -1596,7 +3038,9 @@ functionalResumeFailureCaseRegistry:
     ]);
 
     expect(result.status).toBe(3);
-    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
     expect(report.blockingIssues.map((issue: any) => issue.code)).toContain(
       'resume_failure_case_unknown_recovery_action'
     );
@@ -1628,7 +3072,9 @@ functionalResumeFailureCaseRegistry:
     ]);
 
     expect(result.status).toBe(3);
-    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
     expect(report.blockingIssues.map((issue: any) => issue.code)).toContain(
       'resume_failure_recovery_action_missing_record_event_types'
     );
@@ -1660,7 +3106,9 @@ functionalResumeFailureCaseRegistry:
     ]);
 
     expect(result.status).toBe(3);
-    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
     const codes = report.blockingIssues.map((issue: any) => issue.code);
     expect(codes).toContain('resume_failure_recovery_action_unknown_event_type');
     expect(codes).toContain('resume_failure_recovery_action_uncovered_control_field');
@@ -1692,8 +3140,12 @@ functionalResumeFailureCaseRegistry:
     ]);
 
     expect(result.status).toBe(3);
-    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
-    expect(report.blockingIssues.map((issue: any) => issue.code)).toContain('artifact_plan_unknown_record_event_type');
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
+    expect(report.blockingIssues.map((issue: any) => issue.code)).toContain(
+      'artifact_plan_unknown_record_event_type'
+    );
   });
 
   it('fails closed when a governance event type is missing payloadContract', () => {
@@ -1722,8 +3174,12 @@ functionalResumeFailureCaseRegistry:
     ]);
 
     expect(result.status).toBe(3);
-    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
-    expect(report.blockingIssues.map((issue: any) => issue.code)).toContain('governance_event_type_missing_payload_contract');
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
+    expect(report.blockingIssues.map((issue: any) => issue.code)).toContain(
+      'governance_event_type_missing_payload_contract'
+    );
   });
 
   it('fails closed when payloadContract conflicts with payloadKind', () => {
@@ -1752,7 +3208,9 @@ functionalResumeFailureCaseRegistry:
     ]);
 
     expect(result.status).toBe(3);
-    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
     const codes = report.blockingIssues.map((issue: any) => issue.code);
     expect(codes).toContain('governance_event_type_payload_contract_missing_required_field');
     expect(codes).toContain('governance_event_type_payload_contract_forbids_payload_field');
@@ -1761,7 +3219,10 @@ functionalResumeFailureCaseRegistry:
   it('fails closed when controlledIngestWriterRegistry is missing while governance events apply', () => {
     const source = writeSource();
     const original = fs.readFileSync(source, 'utf8');
-    const mutated = original.replace(/\n {2}controlledIngestWriterRegistry:\n[\s\S]*?(?=\n {2}artifactAutomationPlan:\n)/u, '\n');
+    const mutated = original.replace(
+      /\n {2}controlledIngestWriterRegistry:\n[\s\S]*?(?=\n {2}artifactAutomationPlan:\n)/u,
+      '\n'
+    );
     fs.writeFileSync(source, mutated, 'utf8');
     const mermaidBundle = writeMockMermaidBundle();
     const out = path.join(tempDir, 'confirmation-missing-controlled-ingest-writers.html');
@@ -1781,8 +3242,12 @@ functionalResumeFailureCaseRegistry:
     ]);
 
     expect(result.status).toBe(3);
-    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
-    expect(report.blockingIssues.map((issue: any) => issue.code)).toContain('controlled_ingest_writer_registry_missing');
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
+    expect(report.blockingIssues.map((issue: any) => issue.code)).toContain(
+      'controlled_ingest_writer_registry_missing'
+    );
   });
 
   it('fails closed when a controlled ingest writer declares a broad allowedPath', () => {
@@ -1811,8 +3276,12 @@ functionalResumeFailureCaseRegistry:
     ]);
 
     expect(result.status).toBe(3);
-    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
-    expect(report.blockingIssues.map((issue: any) => issue.code)).toContain('controlled_ingest_writer_allowed_path_too_broad');
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
+    expect(report.blockingIssues.map((issue: any) => issue.code)).toContain(
+      'controlled_ingest_writer_allowed_path_too_broad'
+    );
   });
 
   it('fails closed when a controlled ingest writer references an unknown event type', () => {
@@ -1841,8 +3310,12 @@ functionalResumeFailureCaseRegistry:
     ]);
 
     expect(result.status).toBe(3);
-    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
-    expect(report.blockingIssues.map((issue: any) => issue.code)).toContain('controlled_ingest_writer_unknown_event_type');
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
+    expect(report.blockingIssues.map((issue: any) => issue.code)).toContain(
+      'controlled_ingest_writer_unknown_event_type'
+    );
   });
 
   it('fails closed when a writer declares control fields not covered by allowed event types', () => {
@@ -1871,7 +3344,9 @@ functionalResumeFailureCaseRegistry:
     ]);
 
     expect(result.status).toBe(3);
-    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
     expect(report.blockingIssues.map((issue: any) => issue.code)).toContain(
       'controlled_ingest_writer_control_field_not_covered'
     );
@@ -1880,7 +3355,10 @@ functionalResumeFailureCaseRegistry:
   it('fails closed when a writer can modify the writer registry', () => {
     const source = writeSource();
     const original = fs.readFileSync(source, 'utf8');
-    const mutated = original.replace('canModifyWriterRegistry: false', 'canModifyWriterRegistry: true');
+    const mutated = original.replace(
+      'canModifyWriterRegistry: false',
+      'canModifyWriterRegistry: true'
+    );
     fs.writeFileSync(source, mutated, 'utf8');
     const mermaidBundle = writeMockMermaidBundle();
     const out = path.join(tempDir, 'confirmation-writer-self-authorizing.html');
@@ -1900,7 +3378,9 @@ functionalResumeFailureCaseRegistry:
     ]);
 
     expect(result.status).toBe(3);
-    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
     expect(report.blockingIssues.map((issue: any) => issue.code)).toContain(
       'controlled_ingest_writer_can_modify_registry_not_false'
     );
@@ -1927,7 +3407,9 @@ functionalResumeFailureCaseRegistry:
 
     expect(result.status).toBe(0);
     const html = fs.readFileSync(out, 'utf8');
-    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
     expect(html).toContain('Instance Requirements Confirmation');
     expect(html).toContain('Core Design Summary');
     expect(html).toContain('Progress And Delta');
@@ -1944,10 +3426,46 @@ functionalResumeFailureCaseRegistry:
     expect(report.confirmInstruction).toContain('Confirm the above scope and enter the next stage');
   });
 
+  it('blocks zh-CN confirmation when core confirmation text is English-only', () => {
+    const source = writeSource('ENGLISH_ONLY_CONFIRMATION_TEXT');
+    const mermaidBundle = writeMockMermaidBundle();
+    const out = path.join(tempDir, 'english-only-confirmation.html');
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+    ]);
+
+    expect(result.status).toBe(3);
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
+    expect(report.confirmability).toBe('blocked');
+    expect(report.blockingIssues.map((issue: any) => issue.code)).toContain(
+      'confirmation_language_content_english_only'
+    );
+    expect(report.blockingIssues.some((issue: any) => issue.refs.includes('MUST-001'))).toBe(true);
+    const html = fs.readFileSync(out, 'utf8');
+    expect(html).toContain('confirmation_language_content_english_only');
+  });
+
   it('derives real Mermaid diagrams from structured views when the source has no fenced Mermaid blocks', () => {
     const source = writeSource();
     const original = fs.readFileSync(source, 'utf8');
-    fs.writeFileSync(source, original.replace(/```mermaid[\s\S]*?```\n\n```mermaid[\s\S]*?```\n?/u, ''), 'utf8');
+    fs.writeFileSync(
+      source,
+      original.replace(/```mermaid[\s\S]*?```\n\n```mermaid[\s\S]*?```\n?/u, ''),
+      'utf8'
+    );
     const mermaidBundle = writeMockMermaidBundle();
     const out = path.join(tempDir, 'derived-confirmation.html');
     const result = runRenderer([
@@ -2023,6 +3541,49 @@ flowchart TD
     expect(html).toContain('A[Start ingest [MUST-001][EVD-001]]');
   });
 
+  it('normalizes sequence message labels with semicolons for native Mermaid rendering only', () => {
+    const source = writeSource('MERMAID_SEQUENCE_SEMICOLON_RENDER_SOURCE');
+    fs.appendFileSync(
+      source,
+      `
+
+\`\`\`mermaid
+sequenceDiagram
+  participant Review
+  participant Source
+  Review-->>Source: Preserve traceRows.status; do not mutate confirmation state [NEG-001]
+\`\`\`
+`,
+      'utf8'
+    );
+    const mermaidBundle = writeMockMermaidBundle();
+    const out = path.join(tempDir, 'safe-sequence-render-source.html');
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+    ]);
+
+    expect(result.status).toBe(0);
+    const html = fs.readFileSync(out, 'utf8');
+    expect(html).toContain('data-mermaid-normalized="true"');
+    expect(html).toContain(
+      'Review--&gt;&gt;Source: Preserve traceRows.status and do not mutate confirmation state NEG-001'
+    );
+    expect(html).toContain(
+      'Review--&gt;&gt;Source: Preserve traceRows.status; do not mutate confirmation state [NEG-001]'
+    );
+  });
+
   it('fails strict mode when required views and bindings are missing, but still writes blocked artifacts', () => {
     const source = writeSource('EMPTY_REQUIRED_VIEWS');
     const mermaidBundle = writeMockMermaidBundle();
@@ -2044,7 +3605,9 @@ flowchart TD
 
     expect(result.status).toBe(3);
     expect(fs.existsSync(out)).toBe(true);
-    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
     expect(report.confirmability).toBe('blocked');
     expect(report.blockingIssues.map((issue: any) => issue.code)).toEqual(
       expect.arrayContaining([
@@ -2079,7 +3642,9 @@ flowchart TD
     ]);
 
     expect(result.status).toBe(3);
-    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
     expect(report.blockingIssues.map((issue: any) => issue.code)).toContain('missing_failurePaths');
   });
 
@@ -2103,7 +3668,9 @@ flowchart TD
     ]);
 
     expect(result.status).toBe(3);
-    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
     expect(report.blockingIssues.map((issue: any) => issue.code)).toContain('missing_edgeCases');
   });
 
@@ -2127,16 +3694,20 @@ flowchart TD
     ]);
 
     expect(result.status).toBe(3);
-    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
-    expect(report.blockingIssues.map((issue: any) => issue.code)).toContain('missing_applicability');
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
+    expect(report.blockingIssues.map((issue: any) => issue.code)).toContain(
+      'missing_applicability'
+    );
   });
 
   it('fails closed when applies=false lacks reasonCode', () => {
     const source = writeSource();
     const original = fs.readFileSync(source, 'utf8');
     const mutated = original.replace(
-      /\n {4}currentTargetMap:\n {6}applies: false\n {6}reasonCode: "fixture_current_target_pack_not_enabled"/u,
-      '\n    currentTargetMap:\n      applies: false'
+      /\n {4}scoringDashboardSft:\n {6}applies: true\n {6}reasonCode: "fixture_renders_scoring_dashboard_sft_read_model_boundaries"/u,
+      '\n    scoringDashboardSft:\n      applies: false'
     );
     fs.writeFileSync(source, mutated, 'utf8');
     const mermaidBundle = writeMockMermaidBundle();
@@ -2157,14 +3728,123 @@ flowchart TD
     ]);
 
     expect(result.status).toBe(3);
-    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
-    expect(report.blockingIssues.map((issue: any) => issue.code)).toContain('applicability_domain_missing_reason_code');
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
+    expect(report.blockingIssues.map((issue: any) => issue.code)).toContain(
+      'applicability_domain_missing_reason_code'
+    );
+  });
+
+  it('blocks confirmability when aiTddContractGate applies but manifest projection coverage is missing', () => {
+    const source = writeSource('MISSING_AI_TDD_MANIFEST_PROJECTION');
+    const mermaidBundle = writeMockMermaidBundle();
+    const out = path.join(tempDir, 'confirmation-missing-ai-tdd-manifest-projection.html');
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+    ]);
+
+    expect(result.status).toBe(3);
+    const html = fs.readFileSync(out, 'utf8');
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
+    const blockingCodes = report.blockingIssues.map((issue: any) => issue.code);
+    expect(report.confirmability).toBe('blocked');
+    expect(report.aiTddContractManifestCoverage.required).toBe(true);
+    expect(report.aiTddContractManifestCoverage.decision).toBe('blocked');
+    expect(report.aiTddContractManifestCoverage.sections.errorCaseCoverage.decision).toBe(
+      'blocked'
+    );
+    expect(blockingCodes).toEqual(
+      expect.arrayContaining([
+        'ai_tdd_manifest_failure_path_acceptance_coverage_missing',
+        'ai_tdd_manifest_edge_case_acceptance_coverage_missing',
+      ])
+    );
+    expect(html).toContain('AI-TDD 契约执行清单');
+    expect(html).toContain('failure_path_acceptance_coverage_missing');
+    expect(html).toContain('edge_case_acceptance_coverage_missing');
+  });
+
+  it('blocks confirmability when currentTargetMap applies but the required view pack is missing', () => {
+    const source = writeSource('CURRENT_TARGET_APPLIES_WITHOUT_VIEW_PACK');
+    const mermaidBundle = writeMockMermaidBundle();
+    const out = path.join(tempDir, 'confirmation-current-target-hidden.html');
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+    ]);
+
+    expect(result.status).toBe(3);
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
+    expect(report.confirmability).toBe('blocked');
+    expect(report.blockingIssues.map((issue: any) => issue.code)).toContain(
+      'current_target_required_view_pack_missing'
+    );
+    expect(report.currentTargetCoverage.diffRows).toBe(3);
+    expect(report.renderedSections).not.toContain('current-target');
+  });
+
+  it('blocks confirmability when currentTargetMap applies but displayProfile is missing', () => {
+    const source = writeSource('CURRENT_TARGET_APPLIES_MISSING_DISPLAY_PROFILE');
+    const mermaidBundle = writeMockMermaidBundle();
+    const out = path.join(tempDir, 'confirmation-current-target-missing-display-profile.html');
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+    ]);
+
+    expect(result.status).toBe(3);
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
+    const codes = report.blockingIssues.map((issue: any) => issue.code);
+    expect(report.confirmability).toBe('blocked');
+    expect(codes).toContain('current_target_required_display_profile_missing_or_invalid');
+    expect(report.renderedSections).toContain('current-target');
   });
 
   it('fails closed when runtimeRecovery applies but functional resume registry is missing', () => {
     const source = writeSource();
     const original = fs.readFileSync(source, 'utf8');
-    const mutated = original.replace(/```yaml\nfunctionalResumeFailureCaseRegistry:[\s\S]*?```\n\n```mermaid/u, '```mermaid');
+    const mutated = original.replace(
+      /```yaml\nfunctionalResumeFailureCaseRegistry:[\s\S]*?```\n\n```mermaid/u,
+      '```mermaid'
+    );
     fs.writeFileSync(source, mutated, 'utf8');
     const mermaidBundle = writeMockMermaidBundle();
     const out = path.join(tempDir, 'confirmation-missing-runtime-registry.html');
@@ -2184,7 +3864,9 @@ flowchart TD
     ]);
 
     expect(result.status).toBe(3);
-    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
     expect(report.blockingIssues.map((issue: any) => issue.code)).toContain(
       'functional_resume_failure_case_registry_missing'
     );
@@ -2210,10 +3892,119 @@ flowchart TD
     ]);
 
     expect(result.status).toBe(3);
-    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
     const codes = report.blockingIssues.map((issue: any) => issue.code);
     expect(codes).toContain('trace_missing_contract_validation_command');
     expect(codes).toContain('trace_legacy_command_refs_only');
+  });
+
+  it('renders target modification paths and blocks when the explicit list is missing for implementation changes', () => {
+    const source = writeSource();
+    const mermaidBundle = writeMockMermaidBundle();
+    const out = path.join(tempDir, 'confirmation-target-modification-paths.html');
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+    ]);
+
+    expect(result.status).toBe(0);
+    const html = fs.readFileSync(out, 'utf8');
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
+    expect(html).toContain('目标修改路径清单');
+    expect(html).toContain('src/upload.ts');
+    expect(report.renderedSections).toContain('target-modification-paths');
+    expect(report.targetModificationPaths).toHaveLength(4);
+    expect(report.targetModificationPathCoverage.counts.explicit).toBe(4);
+    expect(report.targetModificationPathCoverage.ready).toBe(true);
+    expect(report.targetModificationPathCoverage.counts.missingCoverage).toBe(0);
+    expect(report.targetModificationPathCoverage.counts.unclassifiedCoverage).toBe(0);
+    expect(
+      report.targetModificationPaths.find((row: any) => row.path === 'src/upload.ts')?.coverageRole
+    ).toBe('modify');
+
+    const missingSource = writeSource('MISSING_TARGET_MODIFICATION_PATHS');
+    const missingOut = path.join(tempDir, 'confirmation-missing-target-modification-paths.html');
+    const missingResult = runRenderer([
+      '--source',
+      missingSource,
+      '--out',
+      missingOut,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+    ]);
+    const missingReport = JSON.parse(
+      fs.readFileSync(
+        path.join(path.dirname(missingOut), 'confirmation-render-report.json'),
+        'utf8'
+      )
+    );
+    expect(missingResult.status).toBe(3);
+    expect(missingReport.confirmability).toBe('blocked');
+    expect(missingReport.blockingIssues.map((issue: any) => issue.code)).toContain(
+      'target_modification_paths_missing'
+    );
+  });
+
+  it('blocks confirmability when targetModificationPaths omit artifact, command, or current-target coverage', () => {
+    const source = writeSource('MISSING_TARGET_MODIFICATION_PATHS');
+    const mermaidBundle = writeMockMermaidBundle();
+    const out = path.join(tempDir, 'confirmation-target-modification-path-coverage-missing.html');
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+    ]);
+
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
+    const codes = report.blockingIssues.map((issue: any) => issue.code);
+    expect(result.status).toBe(3);
+    expect(report.confirmability).toBe('blocked');
+    expect(codes).toContain('target_modification_path_coverage_missing');
+    expect(report.targetModificationPathCoverage.ready).toBe(false);
+    expect(
+      report.targetModificationPathCoverage.missingCoverage.map((row: any) => row.path)
+    ).toEqual(expect.arrayContaining(['src/upload.ts']));
+    expect(
+      report.targetModificationPathCoverage.missingCoverage.some((row: any) =>
+        row.sources.includes('requiredCommands.targetFiles')
+      )
+    ).toBe(true);
+    expect(
+      report.targetModificationPathCoverage.missingCoverage.some((row: any) =>
+        row.sources.includes('currentTargetMap.scriptConvergence')
+      )
+    ).toBe(true);
   });
 
   it('supports external artifact plan input without mutating the source', () => {
@@ -2227,9 +4018,9 @@ flowchart TD
         artifactAutomationPlan: [
           {
             artifactId: 'ART-SCRIPT-001',
-            path: '_bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts',
+            path: 'skill://requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts',
             artifactType: 'script',
-            sourceOfTruthRole: 'projection',
+            sourceOfTruthRole: 'evidence',
             ownerModel: 'requirements',
             producer: 'renderer',
             consumer: 'user',
@@ -2237,6 +4028,8 @@ flowchart TD
             outputArtifacts: ['confirmation.html'],
             recordEventTypes: ['confirmation_view_rendered'],
             canAffectControlFlow: false,
+            traceRows: ['TRACE-001'],
+            evidenceRefs: ['EVD-001'],
             userApprovalRequired: false,
             retention: 'long_lived',
             cleanupPolicy: 'source_controlled',
@@ -2273,18 +4066,24 @@ flowchart TD
     expect(result.status).toBe(0);
     expect(fs.readFileSync(source, 'utf8')).toBe(original);
     const html = fs.readFileSync(out, 'utf8');
-    expect(html).toContain('_bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts');
-    expect(html).not.toContain('<section class="card current-target-map" id="current-target">');
-    const summary = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-summary.json'), 'utf8'));
-    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
+    expect(html).toContain(
+      'skill://requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts'
+    );
+    expect(html).toContain('<section class="card current-target-map" id="current-target">');
+    const summary = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-summary.json'), 'utf8')
+    );
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
     expect(summary.counts.artifactPlanItems).toBe(4);
-    expect(report.currentTargetSchemaVersion).toBe('');
-    expect(report.currentTargetDisplayProfile).toBe('');
-    expect(report.currentTargetCoverage.pathRegistry).toBe(0);
+    expect(report.currentTargetSchemaVersion).toBe('current-target-map/v1');
+    expect(report.currentTargetDisplayProfile).toBe('closed_loop_current_target_map');
+    expect(report.currentTargetCoverage.artifactPaths).toBeGreaterThan(0);
     expect(report.currentTargetSchemaIssues).toEqual([]);
   });
 
-  it('keeps current-target content out of the default instance when the source does not enable its pack', () => {
+  it('renders current-target content in the default instance because AI-TDD gate requires it', () => {
     const source = writeSource();
     const mermaidBundle = writeMockMermaidBundle();
     const out = path.join(tempDir, 'confirmation-no-current-target.html');
@@ -2305,12 +4104,14 @@ flowchart TD
 
     expect(result.status).toBe(0);
     const html = fs.readFileSync(out, 'utf8');
-    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
-    expect(html).not.toContain('<section class="card current-target-map" id="current-target">');
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
+    expect(html).toContain('<section class="card current-target-map" id="current-target">');
     expect(html).not.toContain('六个心智模型');
     expect(html).not.toContain('双唯一门禁与 typed envelope');
-    expect(report.currentTargetCoverage.pathRegistry).toBe(0);
-    expect(report.currentTargetCoverage.artifactPaths).toBe(0);
+    expect(report.currentTargetCoverage.artifactPaths).toBeGreaterThan(0);
+    expect(report.currentTargetCoverage.canonicalArtifacts).toBeGreaterThan(0);
     expect(report.currentTargetSchemaIssues).toEqual([]);
   });
 
@@ -2335,7 +4136,9 @@ flowchart TD
 
     expect(result.status).toBe(0);
     const html = fs.readFileSync(out, 'utf8');
-    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
     expect(html).toContain('现状 vs 目标态对比区');
     expect(html).toContain('<section class="card current-target-map" id="current-target">');
     expect(html).not.toContain('六个心智模型');
@@ -2368,7 +4171,9 @@ flowchart TD
 
     expect(result.status).toBe(0);
     const html = fs.readFileSync(out, 'utf8');
-    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
     expect(html).toContain('<section class="card current-target-map" id="current-target">');
     expect(html).toContain('六个心智模型');
     expect(html).toContain('六个心智模型时序图');
@@ -2382,7 +4187,10 @@ flowchart TD
   it('fails closed when governance view packs are enabled but the required content is missing', () => {
     const source = writeSource('GOVERNANCE_VIEW_PACKS');
     const original = fs.readFileSync(source, 'utf8');
-    const mutated = original.replace(/\n {2}currentTargetMap:\n[\s\S]*?(?=\n {2}governanceEventTypeRegistry:\n)/u, '\n');
+    const mutated = original.replace(
+      /\n {2}currentTargetMap:\n[\s\S]*?(?=\n {2}governanceEventTypeRegistry:\n)/u,
+      '\n'
+    );
     fs.writeFileSync(source, mutated, 'utf8');
     const mermaidBundle = writeMockMermaidBundle();
     const out = path.join(tempDir, 'confirmation-current-target-invalid.html');
@@ -2402,7 +4210,9 @@ flowchart TD
     ]);
 
     expect(result.status).toBe(3);
-    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
     const codes = report.blockingIssues.map((issue: any) => issue.code);
     expect(codes).toContain('required_view_pack_missing_data');
     expect(report.currentTargetSchemaIssues).toEqual([]);
@@ -2444,7 +4254,9 @@ flowchart TD
     ]);
 
     expect(result.status).toBe(0);
-    const summary = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-summary.json'), 'utf8'));
+    const summary = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-summary.json'), 'utf8')
+    );
     const html = fs.readFileSync(out, 'utf8');
     expect(summary.blockingIssues).toEqual([]);
     expect(summary.mermaidRuntime.available).toBe(true);
@@ -2501,10 +4313,14 @@ flowchart TD
 
     expect(result.status).toBe(3);
     const html = fs.readFileSync(out, 'utf8');
-    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
     expect(report.confirmability).toBe('blocked');
     expect(report.mermaidRuntime.available).toBe(false);
-    expect(report.mermaidRuntime.issues.map((issue: any) => issue.code)).toContain('invalid_mermaid_runtime_bundle');
+    expect(report.mermaidRuntime.issues.map((issue: any) => issue.code)).toContain(
+      'invalid_mermaid_runtime_bundle'
+    );
     expect(html).toContain('data-mermaid-runtime="missing"');
     expect(html).toContain('Fallback 结构图（非确认图）');
     expect(html).not.toContain('Mermaid runtime embedded: sha256:');
@@ -2530,13 +4346,19 @@ flowchart TD
     ]);
 
     expect(result.status).toBe(3);
-    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
     const html = fs.readFileSync(out, 'utf8');
     expect(report.confirmability).toBe('blocked');
     expect(report.mermaidRuntime.available).toBe(false);
     expect(report.mermaidRuntime.format).toBe('invalid');
-    expect(report.mermaidRuntime.issues.map((issue: any) => issue.code)).toContain('invalid_mermaid_runtime_bundle');
-    expect(report.blockingIssues.map((issue: any) => issue.code)).toContain('invalid_mermaid_runtime_bundle');
+    expect(report.mermaidRuntime.issues.map((issue: any) => issue.code)).toContain(
+      'invalid_mermaid_runtime_bundle'
+    );
+    expect(report.blockingIssues.map((issue: any) => issue.code)).toContain(
+      'invalid_mermaid_runtime_bundle'
+    );
     expect(html).toContain('data-mermaid-runtime="missing"');
     expect(html).not.toContain('data-mermaid-runtime="embedded"');
     expect(html).not.toContain('Mermaid runtime embedded: sha256:');
@@ -2562,19 +4384,73 @@ flowchart TD
 
     expect(result.status).toBe(0);
     const html = fs.readFileSync(out, 'utf8');
-    const report = JSON.parse(fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8'));
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
     expect(report.confirmability).toBe('confirmable');
     expect(report.mermaidRuntime.available).toBe(true);
     expect(html).toContain('<details class="fallback-diagram" open>');
     expect(html).toContain('Fallback 结构图（非确认图）');
   });
 
-  it('can be invoked through the documented node CLI and prints machine-readable summary with --json', () => {
+  it('blocks confirmability when the pre-confirmation semantic drilldown gate report is missing', () => {
     const source = writeSource();
     const mermaidBundle = writeMockMermaidBundle();
-    const out = path.join(tempDir, 'confirmation.html');
-    const stdout = execFileSync(process.execPath, [
-      SCRIPT,
+    const out = path.join(tempDir, 'confirmation-missing-drilldown.html');
+    const result = runRenderer(
+      [
+        '--source',
+        source,
+        '--out',
+        out,
+        '--mermaid-bundle',
+        mermaidBundle,
+        '--language',
+        'zh-CN',
+        '--record-id',
+        'REQ-UPLOAD-001',
+        '--entry-flow',
+        'story',
+        '--drilldown-gate-report',
+        path.join(tempDir, 'missing-drilldown-report.json'),
+      ],
+      { drilldown: false }
+    );
+
+    expect(result.status).toBe(3);
+    const html = fs.readFileSync(out, 'utf8');
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
+    expect(report.confirmability).toBe('blocked');
+    expect(report.renderedSections).toContain('pre-confirmation-semantic-drilldown');
+    expect(report.blockingIssues.map((issue: any) => issue.code)).toContain(
+      'pre_confirmation_authoring_repair_required'
+    );
+    expect(
+      report.blockingIssues.find(
+        (issue: any) => issue.code === 'pre_confirmation_authoring_repair_required'
+      )
+    ).toMatchObject({
+      repairAction: 'run_authoring_repair_preserve_existing',
+    });
+    expect(
+      report.blockingIssues.find(
+        (issue: any) => issue.code === 'pre_confirmation_authoring_repair_required'
+      )?.repairCommand
+    ).toContain('main-agent-orchestration --action authoring-repair --mode preserve-existing');
+    expect(html).toContain('Pre-Confirmation Semantic Drilldown');
+  });
+
+  it('renders pre-confirmation semantic drilldown sections from a synchronized PASS gate report', () => {
+    const source = writeSource();
+    const mermaidBundle = writeMockMermaidBundle();
+    const out = path.join(tempDir, 'confirmation-drilldown.html');
+    const gateReport = writeValidDrilldownGateReport(
+      source,
+      path.join(tempDir, 'valid-drilldown-report.json')
+    );
+    const result = runRenderer([
       '--source',
       source,
       '--out',
@@ -2587,13 +4463,68 @@ flowchart TD
       'REQ-UPLOAD-001',
       '--entry-flow',
       'story',
-      '--mode',
-      'confirmation',
-      '--json',
-    ], {
-      cwd: ROOT,
-      encoding: 'utf8',
-    });
+      '--drilldown-gate-report',
+      gateReport,
+    ]);
+
+    expect(result.status).toBe(0);
+    const html = fs.readFileSync(out, 'utf8');
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
+    expect(report.confirmability).toBe('confirmable');
+    expect(report.preConfirmationSemanticDrilldown.status).toBe('pass');
+    expect(report.renderedSections).toContain('pre-confirmation-semantic-drilldown');
+    for (const heading of [
+      'Pre-Confirmation Semantic Drilldown',
+      'Semantic Kernel Summary',
+      'MUST Decomposition Packet',
+      'Atomicity Drivers',
+      'Atomic Task Baseline',
+      'Projection Coverage',
+      'Critical Auditor Convergence',
+      'Gap History',
+      'Packet-To-Source Reconciliation',
+    ]) {
+      expect(html).toContain(heading);
+    }
+  });
+
+  it('can be invoked through the documented node CLI and prints machine-readable summary with --json', () => {
+    const source = writeSource();
+    const mermaidBundle = writeMockMermaidBundle();
+    const out = path.join(tempDir, 'confirmation.html');
+    const gateReport = writeValidDrilldownGateReport(
+      source,
+      path.join(tempDir, 'cli-drilldown-report.json')
+    );
+    const stdout = execFileSync(
+      process.execPath,
+      [
+        SCRIPT,
+        '--source',
+        source,
+        '--out',
+        out,
+        '--mermaid-bundle',
+        mermaidBundle,
+        '--language',
+        'zh-CN',
+        '--record-id',
+        'REQ-UPLOAD-001',
+        '--entry-flow',
+        'story',
+        '--mode',
+        'confirmation',
+        '--drilldown-gate-report',
+        gateReport,
+        '--json',
+      ],
+      {
+        cwd: ROOT,
+        encoding: 'utf8',
+      }
+    );
 
     const summary = JSON.parse(stdout);
     expect(summary.recordId).toBe('REQ-UPLOAD-001');

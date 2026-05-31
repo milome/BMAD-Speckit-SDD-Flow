@@ -19,7 +19,12 @@ describe('runtime language english post-audit output', () => {
       mkdirSync(path.dirname(configTarget), { recursive: true });
       cpSync(configSource, configTarget, { recursive: true });
 
-      const sprintStatusPath = path.join(root, '_bmad-output', 'implementation-artifacts', 'sprint-status.yaml');
+      const sprintStatusPath = path.join(
+        root,
+        '_bmad-output',
+        'implementation-artifacts',
+        'sprint-status.yaml'
+      );
       mkdirSync(path.dirname(sprintStatusPath), { recursive: true });
       writeFileSync(
         sprintStatusPath,
@@ -66,7 +71,8 @@ describe('runtime language english post-audit output', () => {
             storyId: '14-1-runtime-context-refactor',
             storySlug: 'runtime-context-refactor',
             runId: 'run-en-post-audit-003',
-            artifactRoot: '_bmad-output/implementation-artifacts/epic-14/14-1-runtime-context-refactor',
+            artifactRoot:
+              '_bmad-output/implementation-artifacts/epic-14/14-1-runtime-context-refactor',
             updatedAt: new Date().toISOString(),
           },
           null,

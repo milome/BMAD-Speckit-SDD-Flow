@@ -40,7 +40,8 @@ export function resetTriggerConfigCache(): void {
  * @throws 文件不存在或格式无效时抛错
  */
 export function loadTriggerConfig(configPath?: string): TriggerConfig {
-  const base = configPath ?? path.resolve(process.cwd(), '_bmad', '_config', 'scoring-trigger-modes.yaml');
+  const base =
+    configPath ?? path.resolve(process.cwd(), '_bmad', '_config', 'scoring-trigger-modes.yaml');
   const resolved = path.isAbsolute(base) ? base : path.resolve(process.cwd(), base);
   if (cachedConfig && cachedConfigPath === resolved) {
     return cachedConfig;
@@ -50,7 +51,12 @@ export function loadTriggerConfig(configPath?: string): TriggerConfig {
   }
   const content = fs.readFileSync(resolved, 'utf-8');
   const raw = yaml.load(content) as unknown;
-  if (!raw || typeof raw !== 'object' || !('scoring_write_control' in raw) || !('event_to_write_mode' in raw)) {
+  if (
+    !raw ||
+    typeof raw !== 'object' ||
+    !('scoring_write_control' in raw) ||
+    !('event_to_write_mode' in raw)
+  ) {
     throw new Error(`Invalid trigger config: missing scoring_write_control or event_to_write_mode`);
   }
   cachedConfig = raw as unknown as TriggerConfig;
@@ -80,7 +86,11 @@ export function shouldWriteScore(
   const entries = Object.values(call_mapping ?? {});
   const matched = entries.find((e) => e.event === event && e.stage === stage);
   if (!matched) {
-    return { write: false, writeMode: 'single_file', reason: 'stage not registered in call_mapping' };
+    return {
+      write: false,
+      writeMode: 'single_file',
+      reason: 'stage not registered in call_mapping',
+    };
   }
   const eventModes = config.event_to_write_mode?.[event];
   if (!eventModes) {

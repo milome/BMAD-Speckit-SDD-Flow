@@ -24,8 +24,14 @@ describe('main-agent fallback plane hard cut', () => {
   });
 
   it('removes legacy hook-local worker wrappers from the accepted repo surface', async () => {
-    expect(listUnexpectedLegacyConsumerHookFiles(path.join(process.cwd(), '_bmad', 'runtime', 'hooks'))).toHaveLength(0);
-    expect(listUnexpectedLegacyConsumerHookFiles(path.join(process.cwd(), '.claude', 'hooks'))).toHaveLength(0);
-    expect(listUnexpectedLegacyConsumerHookFiles(path.join(process.cwd(), '.cursor', 'hooks'))).toHaveLength(0);
+    expect(
+      listUnexpectedLegacyConsumerHookFiles(path.join(process.cwd(), '_bmad', 'runtime', 'hooks'))
+    ).toHaveLength(0);
+    expect(
+      listUnexpectedLegacyConsumerHookFiles(path.join(process.cwd(), '.claude', 'hooks'))
+    ).toHaveLength(0);
+    expect(
+      listUnexpectedLegacyConsumerHookFiles(path.join(process.cwd(), '.cursor', 'hooks'))
+    ).toHaveLength(0);
   });
 });

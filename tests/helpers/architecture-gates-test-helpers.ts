@@ -102,5 +102,7 @@ export function enumerateGovernedRoutingStages(): GovernedRoutingStage[] {
     }
   }
 
-  return stages.sort((left, right) => `${left.workflow}/${left.step}`.localeCompare(`${right.workflow}/${right.step}`));
+  return stages.sort((left, right) =>
+    `${left.workflow}/${left.step}`.localeCompare(`${right.workflow}/${right.step}`)
+  );
 }

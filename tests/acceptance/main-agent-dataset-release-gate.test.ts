@@ -6,7 +6,8 @@ import { describe, expect, it } from 'vitest';
 import { mainDatasetReleaseGate } from '../../scripts/main-agent-dataset-release-gate';
 
 const SOURCE_HASH = 'sha256:1111111111111111111111111111111111111111111111111111111111111111';
-const IMPLEMENTATION_HASH = 'sha256:2222222222222222222222222222222222222222222222222222222222222222';
+const IMPLEMENTATION_HASH =
+  'sha256:2222222222222222222222222222222222222222222222222222222222222222';
 const ARCHITECTURE_HASH = 'sha256:3333333333333333333333333333333333333333333333333333333333333333';
 const DATASET_ID = 'req-dataset-release-governed-sft';
 const DATASET_VERSION = 'v1';
@@ -45,7 +46,11 @@ function writeJson(filePath: string, value: unknown): void {
 
 function writeJsonl(filePath: string, rows: Record<string, unknown>[]): void {
   mkdirSync(path.dirname(filePath), { recursive: true });
-  writeFileSync(filePath, rows.length ? `${rows.map((row) => JSON.stringify(row)).join('\n')}\n` : '', 'utf8');
+  writeFileSync(
+    filePath,
+    rows.length ? `${rows.map((row) => JSON.stringify(row)).join('\n')}\n` : '',
+    'utf8'
+  );
 }
 
 function concreteArtifactRef(id: string): Record<string, unknown> {
@@ -128,13 +133,32 @@ function subsystem(subsystemId: string): Record<string, unknown> {
   };
 }
 
-function writeFixture(root: string, options: { missingTrainingRun?: boolean; incompleteSubsystems?: boolean } = {}) {
+function writeFixture(
+  root: string,
+  options: {
+    missingTrainingRun?: boolean;
+    incompleteSubsystems?: boolean;
+    governanceBindings?: boolean;
+    omitSubsystemExtension?: boolean;
+  } = {}
+) {
   const recordId = 'REQ-DATASET-RELEASE';
   const base = path.join(root, '_bmad-output', 'runtime', 'requirement-records', recordId);
   const dataDir = path.join(base, 'data');
   const governanceDir = path.join(dataDir, 'governance');
-  const releaseDir = path.join(root, '_bmad-output', 'runtime', 'datasets', DATASET_ID, DATASET_VERSION);
-  const extensionPath = path.join(base, 'extensions', 'production-loop-16-subsystems-extension.json');
+  const releaseDir = path.join(
+    root,
+    '_bmad-output',
+    'runtime',
+    'datasets',
+    DATASET_ID,
+    DATASET_VERSION
+  );
+  const extensionPath = path.join(
+    base,
+    'extensions',
+    'production-loop-16-subsystems-extension.json'
+  );
   const extension = {
     recordId,
     requirementSetId: recordId,
@@ -143,7 +167,8 @@ function writeFixture(root: string, options: { missingTrainingRun?: boolean; inc
     architectureConfirmationHash: ARCHITECTURE_HASH,
     subsystemReadiness: SUBSYSTEM_IDS.map(subsystem),
   };
-  if (options.incompleteSubsystems) extension.subsystemReadiness = extension.subsystemReadiness.slice(0, 15);
+  if (options.incompleteSubsystems)
+    extension.subsystemReadiness = extension.subsystemReadiness.slice(0, 15);
   writeJson(extensionPath, extension);
   const recordPath = path.join(base, 'requirement-record.json');
   const extensionRelativePath = path.relative(root, extensionPath).replace(/\\/gu, '/');
@@ -156,25 +181,39 @@ function writeFixture(root: string, options: { missingTrainingRun?: boolean; inc
       status: 'active',
       currentArchitectureConfirmationHash: ARCHITECTURE_HASH,
     },
-    extensionRefs: [
-      {
-        artifactType: 'observability_extension',
-        sourceOfTruthRole: 'evidence',
-        path: extensionRelativePath,
-        contentHash: sha256File(extensionPath),
-        producer: 'main-agent-dataset-release-gate.test',
-        purpose: 'prove all sixteen subsystems are machine readable',
-        relatedRequirementIds: ['MUST-017', 'EVD-010'],
-        status: 'active',
-        inputVersion: 'trace-007',
-        outputVersion: 'subsystems-v1',
-      },
-    ],
+    extensionRefs: options.omitSubsystemExtension
+      ? []
+      : [
+          {
+            artifactType: 'observability_extension',
+            sourceOfTruthRole: 'evidence',
+            path: extensionRelativePath,
+            contentHash: sha256File(extensionPath),
+            producer: 'main-agent-dataset-release-gate.test',
+            purpose: 'prove all sixteen subsystems are machine readable',
+            relatedRequirementIds: ['MUST-017', 'EVD-010'],
+            status: 'active',
+            inputVersion: 'trace-007',
+            outputVersion: 'subsystems-v1',
+          },
+        ],
   });
   const samples = [sample('sample-a'), sample('sample-b')];
   const routes = [
-    { sampleRouteId: 'route-a', mentorEventId: 'event-a', destination: 'sft_positive', sftEligible: true, reasons: [] },
-    { sampleRouteId: 'route-holdout', mentorEventId: 'event-holdout', destination: 'eval', sftEligible: false, reasons: ['requirement_not_closed:TRACE-X'] },
+    {
+      sampleRouteId: 'route-a',
+      mentorEventId: 'event-a',
+      destination: 'sft_positive',
+      sftEligible: true,
+      reasons: [],
+    },
+    {
+      sampleRouteId: 'route-holdout',
+      mentorEventId: 'event-holdout',
+      destination: 'eval',
+      sftEligible: false,
+      reasons: ['requirement_not_closed:TRACE-X'],
+    },
   ];
   writeJsonl(path.join(dataDir, 'canonical-samples.jsonl'), samples);
   writeJsonl(path.join(dataDir, 'sample-routes.jsonl'), routes);
@@ -207,7 +246,10 @@ function writeFixture(root: string, options: { missingTrainingRun?: boolean; inc
     'dedup-report.json': { decision: 'pass' },
     'contamination-report.json': { decision: 'pass', hitCount: 0 },
     'holdout-registry.json': { frozen: true, items: [routes[1]] },
-    'post-training-eval-report.json': { trainingRunId: null, releaseDecision: 'blocked_until_training_run_bound' },
+    'post-training-eval-report.json': {
+      trainingRunId: null,
+      releaseDecision: 'blocked_until_training_run_bound',
+    },
     'data-governance-gate-report.json': {
       decision: 'pass',
       checks: {
@@ -230,7 +272,7 @@ function writeFixture(root: string, options: { missingTrainingRun?: boolean; inc
       status: 'completed',
     });
   }
-  writeJson(evalReportPath, {
+  const evalReport = {
     evalReportId: 'eval-001',
     trainingRunId: 'train-001',
     decision: 'pass',
@@ -242,7 +284,19 @@ function writeFixture(root: string, options: { missingTrainingRun?: boolean; inc
       defect_escape_rate: { baseline: 0.1, current: 0.05, decision: 'pass' },
       similar_error_recurrence_rate: { baseline: 0.1, current: 0.02, decision: 'pass' },
     },
-  });
+  };
+  writeJson(evalReportPath, evalReport);
+  if (options.governanceBindings && !options.missingTrainingRun) {
+    writeJson(path.join(governanceDir, 'training-run.json'), {
+      trainingRunId: 'train-001',
+      datasetId: DATASET_ID,
+      datasetVersion: DATASET_VERSION,
+      status: 'completed',
+      trainingRunType: 'dataset_release_validation_lineage_binding',
+      modelTrainingPerformed: false,
+    });
+    writeJson(path.join(governanceDir, 'post-training-eval-report.json'), evalReport);
+  }
   return { recordPath, dataDir, governanceDir, releaseDir, trainingRunPath, evalReportPath };
 }
 
@@ -290,7 +344,9 @@ describe('main-agent dataset release gate', () => {
       ]) {
         expect(existsSync(path.join(fixture.releaseDir, file))).toBe(true);
       }
-      const manifest = JSON.parse(readFileSync(path.join(fixture.releaseDir, 'dataset-manifest.json'), 'utf8'));
+      const manifest = JSON.parse(
+        readFileSync(path.join(fixture.releaseDir, 'dataset-manifest.json'), 'utf8')
+      );
       expect(manifest.releaseDecision).toBe('pass');
       expect(manifest.source).toMatchObject({
         sourceDocumentHash: SOURCE_HASH,
@@ -298,10 +354,64 @@ describe('main-agent dataset release gate', () => {
         architectureConfirmationHash: ARCHITECTURE_HASH,
       });
       expect(manifest.training.trainingRun.hash).toMatch(/^sha256:[a-f0-9]{64}$/u);
-      const report = JSON.parse(readFileSync(path.join(fixture.releaseDir, 'dataset-release-gate-report.json'), 'utf8'));
+      expect(manifest.projections.openai.hash).toMatch(/^sha256:[a-f0-9]{64}$/u);
+      expect(manifest.projections.huggingface.hash).toMatch(/^sha256:[a-f0-9]{64}$/u);
+      const report = JSON.parse(
+        readFileSync(path.join(fixture.releaseDir, 'dataset-release-gate-report.json'), 'utf8')
+      );
       expect(report.checks).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ id: 'sixteen-subsystems-machine-readable', passed: true, expectedCount: 16, actualCount: 16 }),
+          expect.objectContaining({
+            id: 'sixteen-subsystems-machine-readable',
+            passed: true,
+            expectedCount: 16,
+            actualCount: 16,
+          }),
+        ])
+      );
+    } finally {
+      process.chdir(cwd);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('uses governance-dir training and eval bindings by default and skips production subsystem checks when not applicable', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'dataset-release-default-bindings-'));
+    const cwd = process.cwd();
+    try {
+      process.chdir(root);
+      const fixture = writeFixture(root, {
+        governanceBindings: true,
+        omitSubsystemExtension: true,
+      });
+      const code = mainDatasetReleaseGate([
+        '--requirement-record',
+        fixture.recordPath,
+        '--data-dir',
+        fixture.dataDir,
+        '--governance-dir',
+        fixture.governanceDir,
+        '--out-dir',
+        fixture.releaseDir,
+        '--dataset-id',
+        DATASET_ID,
+        '--dataset-version',
+        DATASET_VERSION,
+        '--json',
+      ]);
+
+      expect(code).toBe(0);
+      const report = JSON.parse(
+        readFileSync(path.join(fixture.releaseDir, 'dataset-release-gate-report.json'), 'utf8')
+      );
+      expect(report.checks).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: 'sixteen-subsystems-machine-readable',
+            passed: true,
+            skipped: true,
+            reason: 'production_subsystems_not_applicable',
+          }),
         ])
       );
     } finally {
@@ -334,7 +444,9 @@ describe('main-agent dataset release gate', () => {
       ]);
 
       expect(code).toBe(1);
-      const report = JSON.parse(readFileSync(path.join(fixture.releaseDir, 'dataset-release-gate-report.json'), 'utf8'));
+      const report = JSON.parse(
+        readFileSync(path.join(fixture.releaseDir, 'dataset-release-gate-report.json'), 'utf8')
+      );
       expect(report.decision).toBe('blocked');
       expect(report.blockingIssues).toContain('training_run_missing');
     } finally {
@@ -369,7 +481,9 @@ describe('main-agent dataset release gate', () => {
       ]);
 
       expect(code).toBe(1);
-      const report = JSON.parse(readFileSync(path.join(fixture.releaseDir, 'dataset-release-gate-report.json'), 'utf8'));
+      const report = JSON.parse(
+        readFileSync(path.join(fixture.releaseDir, 'dataset-release-gate-report.json'), 'utf8')
+      );
       expect(report.blockingIssues).toContain('subsystem_missing:prompt_packet_generation');
     } finally {
       process.chdir(cwd);
@@ -384,16 +498,27 @@ describe('main-agent dataset release gate', () => {
       process.chdir(root);
       const fixture = writeFixture(root);
       const record = JSON.parse(readFileSync(fixture.recordPath, 'utf8'));
-      const extensionPath = path.resolve(root, (record.extensionRefs[0].path as string).replace(/\//gu, path.sep));
+      const extensionPath = path.resolve(
+        root,
+        (record.extensionRefs[0].path as string).replace(/\//gu, path.sep)
+      );
       const extensionValue = JSON.parse(readFileSync(extensionPath, 'utf8'));
-      extensionValue.subsystemReadiness = extensionValue.subsystemReadiness.map((item: Record<string, unknown>) => {
-        const { commandRuns, artifactRefs, controlledEventRefs, recoveryActionEvidence, ...rest } = item;
-        void commandRuns;
-        void artifactRefs;
-        void controlledEventRefs;
-        void recoveryActionEvidence;
-        return rest;
-      });
+      extensionValue.subsystemReadiness = extensionValue.subsystemReadiness.map(
+        (item: Record<string, unknown>) => {
+          const {
+            commandRuns,
+            artifactRefs,
+            controlledEventRefs,
+            recoveryActionEvidence,
+            ...rest
+          } = item;
+          void commandRuns;
+          void artifactRefs;
+          void controlledEventRefs;
+          void recoveryActionEvidence;
+          return rest;
+        }
+      );
       writeJson(extensionPath, extensionValue);
       record.extensionRefs[0].contentHash = sha256File(extensionPath);
       writeFileSync(fixture.recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
@@ -418,7 +543,9 @@ describe('main-agent dataset release gate', () => {
       ]);
 
       expect(code).toBe(1);
-      const report = JSON.parse(readFileSync(path.join(fixture.releaseDir, 'dataset-release-gate-report.json'), 'utf8'));
+      const report = JSON.parse(
+        readFileSync(path.join(fixture.releaseDir, 'dataset-release-gate-report.json'), 'utf8')
+      );
       expect(report.blockingIssues).toEqual(
         expect.arrayContaining([
           'subsystem_command_evidence_missing:requirement_confirmation',

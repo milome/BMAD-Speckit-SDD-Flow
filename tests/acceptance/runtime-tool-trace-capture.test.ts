@@ -9,7 +9,12 @@ import {
 import { readRuntimeEvents } from '../../packages/scoring/runtime/event-store';
 
 const repoRoot = process.cwd();
-const cursorRealFixturePath = path.join(repoRoot, 'tests', 'fixtures', 'cursor-post-tool-use-real.stdin.json');
+const cursorRealFixturePath = path.join(
+  repoRoot,
+  'tests',
+  'fixtures',
+  'cursor-post-tool-use-real.stdin.json'
+);
 
 function writeActiveRunContext(root: string, runId: string, stage: string): string {
   const runContextRelativePath = path.join(
@@ -75,7 +80,9 @@ describe('runtime tool trace automatic capture', () => {
       fs.cpSync(path.join(repoRoot, '_bmad'), path.join(tempRoot, '_bmad'), { recursive: true });
       writeActiveRunContext(tempRoot, runId, 'implement');
 
-      const hookModule = require(path.join(repoRoot, '_bmad', 'runtime', 'hooks', 'post-tool-use-core.cjs')) as {
+      const hookModule = require(
+        path.join(repoRoot, '_bmad', 'runtime', 'hooks', 'post-tool-use-core.cjs')
+      ) as {
         captureToolTrace: (input: unknown) => unknown;
       };
       const firstPayload = JSON.stringify({
@@ -171,10 +178,15 @@ describe('runtime tool trace automatic capture', () => {
       fs.cpSync(path.join(repoRoot, '_bmad'), path.join(tempRoot, '_bmad'), { recursive: true });
       writeActiveRunContext(tempRoot, runId, 'implement');
 
-      const hookModule = require(path.join(repoRoot, '_bmad', 'runtime', 'hooks', 'post-tool-use-core.cjs')) as {
+      const hookModule = require(
+        path.join(repoRoot, '_bmad', 'runtime', 'hooks', 'post-tool-use-core.cjs')
+      ) as {
         captureToolTrace: (input: unknown) => unknown;
       };
-      const payload = JSON.parse(fs.readFileSync(cursorRealFixturePath, 'utf8')) as Record<string, unknown>;
+      const payload = JSON.parse(fs.readFileSync(cursorRealFixturePath, 'utf8')) as Record<
+        string,
+        unknown
+      >;
       const previousCursorProjectRoot = process.env.CURSOR_PROJECT_ROOT;
       const previousToolTraceStage = process.env.BMAD_TOOL_TRACE_STAGE;
       process.env.CURSOR_PROJECT_ROOT = tempRoot;
@@ -222,9 +234,13 @@ describe('runtime tool trace automatic capture', () => {
           },
         ],
       });
-      expect((trace.messages[0] as { tool_calls?: Array<{ function: { name: string; arguments: string } }> }).tool_calls?.[0]?.function.arguments).toContain(
-        'runtime-v6-sync-protected-paths.test.ts'
-      );
+      expect(
+        (
+          trace.messages[0] as {
+            tool_calls?: Array<{ function: { name: string; arguments: string } }>;
+          }
+        ).tool_calls?.[0]?.function.arguments
+      ).toContain('runtime-v6-sync-protected-paths.test.ts');
       expect(trace.messages[1]).toMatchObject({
         role: 'tool',
         tool_call_id: '00000000-1111-2222-3333-444444444444',

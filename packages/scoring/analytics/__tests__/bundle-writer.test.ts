@@ -100,7 +100,11 @@ function makeSample(
     export_compatibility: {
       openai_chat: { compatible: true, reasons: [], warnings: [] },
       hf_conversational: { compatible: true, reasons: [], warnings: [] },
-      hf_tool_calling: { compatible: false, reasons: ['target_incompatible_hf_tool_calling'], warnings: [] },
+      hf_tool_calling: {
+        compatible: false,
+        reasons: ['target_incompatible_hf_tool_calling'],
+        warnings: [],
+      },
       ...export_compatibility,
     },
     ...topLevelOverrides,
@@ -161,20 +165,23 @@ describe('bundle writer', () => {
       },
     });
 
-    const result = await writeDatasetBundle([trainSample, duplicateTrainSample, enrichedValidationSample, rejectedSample], {
-      exportTarget: 'openai_chat',
-      outputRoot: tempRoot,
-      exporterVersion: 'v1-test',
-      filterSettings: {
-        min_score: 90,
-      },
-      sourceScope: {
-        scope_type: 'story',
-        epic_id: 'epic-15',
-        story_key: '15-1-runtime-dashboard-sft',
-        board_group_id: 'epic:epic-15',
-      },
-    });
+    const result = await writeDatasetBundle(
+      [trainSample, duplicateTrainSample, enrichedValidationSample, rejectedSample],
+      {
+        exportTarget: 'openai_chat',
+        outputRoot: tempRoot,
+        exporterVersion: 'v1-test',
+        filterSettings: {
+          min_score: 90,
+        },
+        sourceScope: {
+          scope_type: 'story',
+          epic_id: 'epic-15',
+          story_key: '15-1-runtime-dashboard-sft',
+          board_group_id: 'epic:epic-15',
+        },
+      }
+    );
 
     expect(fs.existsSync(result.bundleDir)).toBe(true);
     expect(fs.existsSync(path.join(result.bundleDir, 'train.openai_chat.jsonl'))).toBe(true);
@@ -185,10 +192,20 @@ describe('bundle writer', () => {
     expect(fs.existsSync(path.join(result.bundleDir, 'validation-report.md'))).toBe(true);
     expect(fs.existsSync(path.join(result.bundleDir, 'rejection-report.json'))).toBe(true);
 
-    const trainRows = fs.readFileSync(path.join(result.bundleDir, 'train.openai_chat.jsonl'), 'utf-8').trim().split('\n');
-    const validationRows = fs.readFileSync(path.join(result.bundleDir, 'validation.openai_chat.jsonl'), 'utf-8').trim().split('\n');
-    const rejectionReport = JSON.parse(fs.readFileSync(path.join(result.bundleDir, 'rejection-report.json'), 'utf-8'));
-    const manifest = JSON.parse(fs.readFileSync(path.join(result.bundleDir, 'manifest.json'), 'utf-8'));
+    const trainRows = fs
+      .readFileSync(path.join(result.bundleDir, 'train.openai_chat.jsonl'), 'utf-8')
+      .trim()
+      .split('\n');
+    const validationRows = fs
+      .readFileSync(path.join(result.bundleDir, 'validation.openai_chat.jsonl'), 'utf-8')
+      .trim()
+      .split('\n');
+    const rejectionReport = JSON.parse(
+      fs.readFileSync(path.join(result.bundleDir, 'rejection-report.json'), 'utf-8')
+    );
+    const manifest = JSON.parse(
+      fs.readFileSync(path.join(result.bundleDir, 'manifest.json'), 'utf-8')
+    );
     const validationReport = JSON.parse(
       fs.readFileSync(path.join(result.bundleDir, 'validation-report.json'), 'utf-8')
     );

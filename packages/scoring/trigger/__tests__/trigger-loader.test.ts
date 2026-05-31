@@ -11,7 +11,12 @@ import {
 const TMP = path.join(process.cwd(), '_bmad', '_config', 'e5s1-tmp-trigger-test');
 
 describe('trigger-loader', () => {
-  const realConfigPath = path.resolve(process.cwd(), '_bmad', '_config', 'scoring-trigger-modes.yaml');
+  const realConfigPath = path.resolve(
+    process.cwd(),
+    '_bmad',
+    '_config',
+    'scoring-trigger-modes.yaml'
+  );
 
   beforeEach(() => {
     resetTriggerConfigCache();
@@ -50,7 +55,12 @@ event_to_write_mode:
   });
 
   it('stage 未注册 → write: false', () => {
-    const d = shouldWriteScore('stage_audit_complete', 'nonexistent_stage', 'real_dev', realConfigPath);
+    const d = shouldWriteScore(
+      'stage_audit_complete',
+      'nonexistent_stage',
+      'real_dev',
+      realConfigPath
+    );
     expect(d.write).toBe(false);
     expect(d.reason).toBe('stage not registered in call_mapping');
   });
@@ -60,14 +70,24 @@ event_to_write_mode:
     const s4 = scoringEnabledForTriggerStage('bmad_story_stage4', 'eval_question', realConfigPath);
     expect(s2.enabled).toBe(true);
     expect(s4.enabled).toBe(true);
-    expect(scoringEnabledForTriggerStage('nonexistent_trigger', 'real_dev', realConfigPath).enabled).toBe(
-      false
-    );
+    expect(
+      scoringEnabledForTriggerStage('nonexistent_trigger', 'real_dev', realConfigPath).enabled
+    ).toBe(false);
   });
 
   it('real_dev 和 eval_question 返回正确 writeMode（story_status_change eval_question=jsonl）', () => {
-    const dReal = shouldWriteScore('story_status_change', 'bmad_story_stage2', 'real_dev', realConfigPath);
-    const dEval = shouldWriteScore('story_status_change', 'bmad_story_stage2', 'eval_question', realConfigPath);
+    const dReal = shouldWriteScore(
+      'story_status_change',
+      'bmad_story_stage2',
+      'real_dev',
+      realConfigPath
+    );
+    const dEval = shouldWriteScore(
+      'story_status_change',
+      'bmad_story_stage2',
+      'eval_question',
+      realConfigPath
+    );
     expect(dReal.write).toBe(true);
     expect(dEval.write).toBe(true);
     expect(dReal.writeMode).toBe('single_file');
@@ -86,7 +106,13 @@ event_to_write_mode:
   });
 
   it('different config paths do not reuse the same cached config object', () => {
-    const tmpDir = path.join(process.cwd(), 'packages', 'scoring', 'data', 'e5s1-trigger-cache-paths');
+    const tmpDir = path.join(
+      process.cwd(),
+      'packages',
+      'scoring',
+      'data',
+      'e5s1-trigger-cache-paths'
+    );
     fs.mkdirSync(tmpDir, { recursive: true });
     const cfgA = path.join(tmpDir, 'a.yaml');
     const cfgB = path.join(tmpDir, 'b.yaml');

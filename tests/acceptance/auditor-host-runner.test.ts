@@ -301,7 +301,9 @@ describe('auditor host runner', () => {
       ).rejects.toThrow(/missing required fields/i);
 
       const registry = readRuntimeContextRegistry(root);
-      expect(registry.auditIndex.bugfix[path.normalize(artifactDocPath)]?.closeoutApproved).toBeUndefined();
+      expect(
+        registry.auditIndex.bugfix[path.normalize(artifactDocPath)]?.closeoutApproved
+      ).toBeUndefined();
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -343,7 +345,8 @@ describe('auditor host runner', () => {
       const scoreCommand = vi.fn().mockResolvedValue({
         parsedRecord: {
           effective_verdict: 'blocked',
-          blocking_reason: 'Critical readiness drift detected against the current implementation baseline.',
+          blocking_reason:
+            'Critical readiness drift detected against the current implementation baseline.',
           re_readiness_required: true,
           drift_severity: 'critical',
         },
@@ -383,7 +386,8 @@ describe('auditor host runner', () => {
         handoffPersisted: true,
         driftSeverity: 'critical',
         reReadinessRequired: true,
-        blockingReason: 'Critical readiness drift detected against the current implementation baseline.',
+        blockingReason:
+          'Critical readiness drift detected against the current implementation baseline.',
         effectiveVerdict: 'blocked',
         closeoutEnvelope: expect.objectContaining({
           resultCode: 'blocked',
@@ -400,7 +404,8 @@ describe('auditor host runner', () => {
         handoffPersisted: true,
         driftSeverity: 'critical',
         reReadinessRequired: true,
-        blockingReason: 'Critical readiness drift detected against the current implementation baseline.',
+        blockingReason:
+          'Critical readiness drift detected against the current implementation baseline.',
         effectiveVerdict: 'blocked',
         closeoutEnvelope: expect.objectContaining({
           resultCode: 'blocked',
@@ -616,7 +621,9 @@ describe('auditor host runner', () => {
         packetExecutionClosureStatus: 'retry_pending',
         scoringFailureMode: 'not_run',
       });
-      expect(result.closeoutEnvelope.requiredFixes[0]).toContain('Story→Spec source_hash lock blocked');
+      expect(result.closeoutEnvelope.requiredFixes[0]).toContain(
+        'Story→Spec source_hash lock blocked'
+      );
       expect(result.closeoutEnvelope.requiredFixes[0]).toContain('storyPath drift detected');
       const registry = readRuntimeContextRegistry(root);
       expect(registry.latestReviewerCloseout?.closeoutApproved).toBe(false);

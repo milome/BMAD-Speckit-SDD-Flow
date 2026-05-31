@@ -27,7 +27,11 @@ const ALLOWED_STATUSES = new Set([
   'USER_APPROVED_OUT_OF_SCOPE',
 ]);
 const FULL_CLOSEOUT_STATUSES = new Set(['PASS', 'FAIL', 'BLOCKED']);
-const USER_SCOPED_STATUSES = new Set(['LINKED_DOWNSTREAM', 'USER_APPROVED_DEFERRED', 'USER_APPROVED_OUT_OF_SCOPE']);
+const USER_SCOPED_STATUSES = new Set([
+  'LINKED_DOWNSTREAM',
+  'USER_APPROVED_DEFERRED',
+  'USER_APPROVED_OUT_OF_SCOPE',
+]);
 
 function parseArgs(argv: string[]): ParsedArgs {
   const out: ParsedArgs = {};
@@ -55,7 +59,10 @@ function text(value: unknown): string {
 
 function objects(value: unknown): JsonObject[] {
   return Array.isArray(value)
-    ? value.filter((item): item is JsonObject => Boolean(item) && typeof item === 'object' && !Array.isArray(item))
+    ? value.filter(
+        (item): item is JsonObject =>
+          Boolean(item) && typeof item === 'object' && !Array.isArray(item)
+      )
     : [];
 }
 
@@ -64,7 +71,9 @@ function strings(value: unknown): string[] {
 }
 
 function asObject(value: unknown): JsonObject | undefined {
-  return value && typeof value === 'object' && !Array.isArray(value) ? (value as JsonObject) : undefined;
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as JsonObject)
+    : undefined;
 }
 
 function normalizePathForRecord(value: string): string {
@@ -107,7 +116,8 @@ function requiredFieldsPresent(row: JsonObject, fields: string[]): string[] {
 function validatePolicy(policy: JsonObject | undefined): string[] {
   const issues: string[] = [];
   if (!policy) return ['traceStatusPolicy_missing'];
-  if (text(policy.schemaVersion) !== 'trace-status-policy/v1') issues.push('traceStatusPolicy_schemaVersion_invalid');
+  if (text(policy.schemaVersion) !== 'trace-status-policy/v1')
+    issues.push('traceStatusPolicy_schemaVersion_invalid');
   const allowed = new Set(strings(policy.allowedStatuses));
   for (const status of ALLOWED_STATUSES) {
     if (!allowed.has(status)) issues.push(`traceStatusPolicy_missing_allowed_status:${status}`);
@@ -117,10 +127,13 @@ function validatePolicy(policy: JsonObject | undefined): string[] {
     if (!terminal.has(status)) issues.push(`traceStatusPolicy_missing_terminal_status:${status}`);
   }
   for (const status of USER_SCOPED_STATUSES) {
-    if (terminal.has(status)) issues.push(`traceStatusPolicy_user_scoped_status_can_full_closeout:${status}`);
+    if (terminal.has(status))
+      issues.push(`traceStatusPolicy_user_scoped_status_can_full_closeout:${status}`);
   }
-  if (policy.bareDeferredForbidden !== true) issues.push('traceStatusPolicy_bareDeferredForbidden_must_be_true');
-  if (policy.bareOutOfScopeForbidden !== true) issues.push('traceStatusPolicy_bareOutOfScopeForbidden_must_be_true');
+  if (policy.bareDeferredForbidden !== true)
+    issues.push('traceStatusPolicy_bareDeferredForbidden_must_be_true');
+  if (policy.bareOutOfScopeForbidden !== true)
+    issues.push('traceStatusPolicy_bareOutOfScopeForbidden_must_be_true');
   if (policy.fullCloseoutForUserScopedStatusesForbidden !== true) {
     issues.push('traceStatusPolicy_fullCloseoutForUserScopedStatusesForbidden_must_be_true');
   }
@@ -133,8 +146,11 @@ function validateTraceRows(
   activeTraceIds: Set<string>,
   fullCloseout: boolean
 ): { issues: string[]; rows: JsonObject[] } {
-  if (!sourceConfirmation) return { issues: ['source_implementationConfirmation_missing'], rows: [] };
-  const rows = objects(sourceConfirmation.traceRows).filter((row) => activeTraceIds.has(text(row.id)));
+  if (!sourceConfirmation)
+    return { issues: ['source_implementationConfirmation_missing'], rows: [] };
+  const rows = objects(sourceConfirmation.traceRows).filter((row) =>
+    activeTraceIds.has(text(row.id))
+  );
   const issues: string[] = [];
   const linkedFields = strings(policy?.linkedDownstreamRequiredFields);
   const deferredFields = strings(policy?.userApprovedDeferredRequiredFields);
@@ -142,7 +158,8 @@ function validateTraceRows(
   for (const row of rows) {
     const id = text(row.id);
     const status = text(row.status);
-    if (!ALLOWED_STATUSES.has(status)) issues.push(`traceRow_status_invalid:${id}:${status || '<missing>'}`);
+    if (!ALLOWED_STATUSES.has(status))
+      issues.push(`traceRow_status_invalid:${id}:${status || '<missing>'}`);
     if (status === 'DEFERRED') issues.push(`traceRow_bare_deferred_forbidden:${id}`);
     if (status === 'OUT_OF_SCOPE') issues.push(`traceRow_bare_out_of_scope_forbidden:${id}`);
     if (fullCloseout && USER_SCOPED_STATUSES.has(status)) {
@@ -181,11 +198,20 @@ function buildReport(args: ParsedArgs): JsonObject {
   const recordPath = path.resolve(args.requirementRecord);
   const record = readJson(recordPath);
   const sourcePath = args.source ? path.resolve(args.source) : '';
-  const sourceConfirmation = sourcePath ? extractImplementationConfirmation(fs.readFileSync(sourcePath, 'utf8')) : undefined;
+  const sourceConfirmation = sourcePath
+    ? extractImplementationConfirmation(fs.readFileSync(sourcePath, 'utf8'))
+    : undefined;
   const policy = asObject(record.traceStatusPolicy);
-  const activeTraceIds = new Set(objects(record.executionIterations).flatMap((item) => strings(item.traceRows)));
+  const activeTraceIds = new Set(
+    objects(record.executionIterations).flatMap((item) => strings(item.traceRows))
+  );
   const policyIssues = validatePolicy(policy);
-  const rowCheck = validateTraceRows(sourceConfirmation, policy, activeTraceIds, args.fullCloseout === true);
+  const rowCheck = validateTraceRows(
+    sourceConfirmation,
+    policy,
+    activeTraceIds,
+    args.fullCloseout === true
+  );
   const blockingReasons = [...policyIssues, ...rowCheck.issues];
   const decision: Decision = blockingReasons.length ? 'blocked' : 'pass';
   return {
@@ -207,12 +233,18 @@ function buildReport(args: ParsedArgs): JsonObject {
 export function mainTraceStatusPolicyCheck(argv: string[]): number {
   const args = parseArgs(argv);
   if (args.help) {
-    console.log('Usage: main-agent-trace-status-policy-check --requirement-record <json> --source <contract.md> [--full-closeout] [--json]');
+    console.log(
+      'Usage: main-agent-trace-status-policy-check --requirement-record <json> --source <contract.md> [--full-closeout] [--json]'
+    );
     return 0;
   }
   const report = buildReport(args);
   const reportPath = path.resolve(
-    args.reportPath ?? path.join(path.dirname(path.resolve(args.requirementRecord!)), 'trace-status-policy-check.json')
+    args.reportPath ??
+      path.join(
+        path.dirname(path.resolve(args.requirementRecord!)),
+        'trace-status-policy-check.json'
+      )
   );
   fs.mkdirSync(path.dirname(reportPath), { recursive: true });
   fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
@@ -222,7 +254,9 @@ export function mainTraceStatusPolicyCheck(argv: string[]): number {
     decision: report.decision,
     blockingReasons: report.blockingReasons,
   };
-  process.stdout.write(args.json ? `${JSON.stringify(output, null, 2)}\n` : `trace_status_policy=${report.decision}\n`);
+  process.stdout.write(
+    args.json ? `${JSON.stringify(output, null, 2)}\n` : `trace_status_policy=${report.decision}\n`
+  );
   return report.decision === 'pass' ? 0 : 1;
 }
 
@@ -230,7 +264,13 @@ if (require.main === module) {
   try {
     process.exitCode = mainTraceStatusPolicyCheck(process.argv.slice(2));
   } catch (error) {
-    console.error(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : String(error) }, null, 2));
+    console.error(
+      JSON.stringify(
+        { ok: false, error: error instanceof Error ? error.message : String(error) },
+        null,
+        2
+      )
+    );
     process.exitCode = 2;
   }
 }

@@ -56,7 +56,9 @@ export class RefResolutionError extends Error {
     public readonly itemId: string,
     public readonly configPath?: string
   ) {
-    super(`Ref resolution failed: ${ref} (item_id=${itemId}) not found in config${configPath ? ` at ${configPath}` : ''}`);
+    super(
+      `Ref resolution failed: ${ref} (item_id=${itemId}) not found in config${configPath ? ` at ${configPath}` : ''}`
+    );
     this.name = 'RefResolutionError';
   }
 }

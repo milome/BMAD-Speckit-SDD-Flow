@@ -376,6 +376,11 @@
         },
         "mainAgentNextAction": { "type": ["string", "null"] },
         "mainAgentReady": { "type": ["boolean", "null"] },
+        "mainAgentStageSummary": { "type": ["object", "null"] },
+        "preConfirmationDrilldownLane": { "type": ["object", "null"] },
+        "sixModelRuntimeDecision": { "type": ["object", "null"] },
+        "sixModelRuntimeDecisionPath": { "type": ["string", "null"] },
+        "splitBrainBlockerPath": { "type": ["string", "null"] },
         "runtimeResumeProjection": { "$ref": "#/$defs/runtimeResumeProjection" }
       }
     },

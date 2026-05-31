@@ -81,7 +81,13 @@ function syncLatestReviewerCloseoutToRequirementRecord(
   closeout: LatestCloseoutPayload
 ): void {
   try {
-    const indexPath = path.join(projectRoot, '_bmad-output', 'runtime', 'requirement-records', 'index.json');
+    const indexPath = path.join(
+      projectRoot,
+      '_bmad-output',
+      'runtime',
+      'requirement-records',
+      'index.json'
+    );
     if (!fs.existsSync(indexPath)) return;
     const index = JSON.parse(fs.readFileSync(indexPath, 'utf8')) as {
       active?: { requirementSetId?: string };
@@ -209,7 +215,8 @@ function validateOrphanCloseoutReport(input: {
   }
 
   if (
-    normalizeComparablePath(input.parsedArtifactDocPath!) !== normalizeComparablePath(input.artifactPath)
+    normalizeComparablePath(input.parsedArtifactDocPath!) !==
+    normalizeComparablePath(input.artifactPath)
   ) {
     throw new Error(
       `orphan closeout artifactDocPath mismatch: expected ${input.artifactPath}, got ${input.parsedArtifactDocPath}`
@@ -235,15 +242,17 @@ export async function runAuditorHost(
       profile: consumer.profile,
       stage: consumer.closeoutStage,
       artifactPath: input.artifactPath,
-      reportPath:
-        input.reportPath ?? resolveDefaultReportPath(input.stage, input.artifactPath),
+      reportPath: input.reportPath ?? resolveDefaultReportPath(input.stage, input.artifactPath),
       ...(input.iterationCount !== undefined ? { iterationCount: input.iterationCount } : {}),
     })
   );
   const hostStage = input.stage;
   const resolvedReportPath = normalizedInput.reportPath!;
 
-  const auditorScript = path.resolve(normalizedInput.projectRoot, `scripts/${consumer.auditorScript}.ts`);
+  const auditorScript = path.resolve(
+    normalizedInput.projectRoot,
+    `scripts/${consumer.auditorScript}.ts`
+  );
 
   if (!fs.existsSync(resolvedReportPath)) {
     if (!auditorScript || !fs.existsSync(auditorScript)) {
@@ -295,7 +304,10 @@ export async function runAuditorHost(
     parsed.requiredFixes && parsed.requiredFixes.length > 0
       ? parsed.requiredFixes
       : parsed.requiredFixesCount && parsed.requiredFixesCount > 0
-        ? Array.from({ length: parsed.requiredFixesCount }, (_, index) => `Required fix #${index + 1}`)
+        ? Array.from(
+            { length: parsed.requiredFixesCount },
+            (_, index) => `Required fix #${index + 1}`
+          )
         : [];
 
   const scoreCommand = deps.scoreCommand ?? defaultScoreCommand;
@@ -309,9 +321,7 @@ export async function runAuditorHost(
 
   if (hostStage === 'spec' && isStoryFlowSpecArtifact(effectiveArtifactDocPath)) {
     if (!parsedStoryPath) {
-      throw new Error(
-        'story-flow spec closeout missing required fields: storyPath'
-      );
+      throw new Error('story-flow spec closeout missing required fields: storyPath');
     }
 
     const priorStoryRecord = loadLatestRecordForStage('story', undefined, parsedStoryPath);
@@ -375,8 +385,7 @@ export async function runAuditorHost(
     ...(scoreError ? { scoringFailureReason: `Score write failed: ${scoreError}` } : {}),
     requiredFixes: requiredFixesFromReport,
     scoreRecord:
-      scoreRecord &&
-      typeof scoreRecord.effective_verdict === 'string'
+      scoreRecord && typeof scoreRecord.effective_verdict === 'string'
         ? {
             effective_verdict: scoreRecord.effective_verdict as
               | 'approved'
@@ -385,7 +394,9 @@ export async function runAuditorHost(
               | 'blocked_pending_rereadiness'
               | 'unknown',
             blocking_reason:
-              typeof scoreRecord.blocking_reason === 'string' ? scoreRecord.blocking_reason : undefined,
+              typeof scoreRecord.blocking_reason === 'string'
+                ? scoreRecord.blocking_reason
+                : undefined,
             re_readiness_required:
               typeof scoreRecord.re_readiness_required === 'boolean'
                 ? scoreRecord.re_readiness_required
@@ -422,44 +433,44 @@ export async function runAuditorHost(
     auditStatus: status,
     closeoutApproved: isReviewCloseoutApproved(closeoutEnvelope),
     governanceClosure,
-      closeoutEnvelope,
-      scoreWriteResult:
-        scoringFailureMode === 'succeeded'
-          ? 'ok'
-          : scoringFailureMode === 'non_blocking_failure'
-            ? 'failed'
-            : null,
-      handoffPersisted: true,
-      ...(typeof scoreRecord?.readiness_baseline_run_id === 'string'
-        ? { readinessBaselineRunId: scoreRecord.readiness_baseline_run_id }
-        : {}),
-      ...(Array.isArray(scoreRecord?.drift_signals)
-        ? { driftSignals: scoreRecord.drift_signals as string[] }
-        : {}),
-      ...(Array.isArray(scoreRecord?.drifted_dimensions)
-        ? { driftedDimensions: scoreRecord.drifted_dimensions as string[] }
-        : {}),
-      ...(typeof scoreRecord?.drift_severity === 'string'
-        ? {
-            driftSeverity:
-              scoreRecord.drift_severity === 'major' ||
-              scoreRecord.drift_severity === 'critical' ||
-              scoreRecord.drift_severity === 'none'
-                ? scoreRecord.drift_severity
-                : null,
-          }
-        : {}),
-      ...(typeof scoreRecord?.re_readiness_required === 'boolean'
-        ? { reReadinessRequired: scoreRecord.re_readiness_required }
-        : {}),
-      ...(typeof scoreRecord?.blocking_reason === 'string'
-        ? { blockingReason: scoreRecord.blocking_reason }
-        : {}),
-      ...(typeof scoreRecord?.effective_verdict === 'string'
-        ? { effectiveVerdict: scoreRecord.effective_verdict }
-        : {}),
-      ...(scoreError ? { scoreError } : {}),
-    };
+    closeoutEnvelope,
+    scoreWriteResult:
+      scoringFailureMode === 'succeeded'
+        ? 'ok'
+        : scoringFailureMode === 'non_blocking_failure'
+          ? 'failed'
+          : null,
+    handoffPersisted: true,
+    ...(typeof scoreRecord?.readiness_baseline_run_id === 'string'
+      ? { readinessBaselineRunId: scoreRecord.readiness_baseline_run_id }
+      : {}),
+    ...(Array.isArray(scoreRecord?.drift_signals)
+      ? { driftSignals: scoreRecord.drift_signals as string[] }
+      : {}),
+    ...(Array.isArray(scoreRecord?.drifted_dimensions)
+      ? { driftedDimensions: scoreRecord.drifted_dimensions as string[] }
+      : {}),
+    ...(typeof scoreRecord?.drift_severity === 'string'
+      ? {
+          driftSeverity:
+            scoreRecord.drift_severity === 'major' ||
+            scoreRecord.drift_severity === 'critical' ||
+            scoreRecord.drift_severity === 'none'
+              ? scoreRecord.drift_severity
+              : null,
+        }
+      : {}),
+    ...(typeof scoreRecord?.re_readiness_required === 'boolean'
+      ? { reReadinessRequired: scoreRecord.re_readiness_required }
+      : {}),
+    ...(typeof scoreRecord?.blocking_reason === 'string'
+      ? { blockingReason: scoreRecord.blocking_reason }
+      : {}),
+    ...(typeof scoreRecord?.effective_verdict === 'string'
+      ? { effectiveVerdict: scoreRecord.effective_verdict }
+      : {}),
+    ...(scoreError ? { scoreError } : {}),
+  };
   recordLatestReviewerCloseout(normalizedInput.projectRoot, latestCloseout);
   syncLatestReviewerCloseoutToRequirementRecord(normalizedInput.projectRoot, latestCloseout);
 

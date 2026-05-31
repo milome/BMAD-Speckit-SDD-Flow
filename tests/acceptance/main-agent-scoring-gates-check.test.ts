@@ -10,7 +10,8 @@ import { mainIngestImplementationEvidence } from '../../scripts/ingest-implement
 import { mainScoringGatesCheck } from '../../scripts/main-agent-scoring-gates-check';
 
 const SOURCE_HASH = 'sha256:1111111111111111111111111111111111111111111111111111111111111111';
-const IMPLEMENTATION_HASH = 'sha256:2222222222222222222222222222222222222222222222222222222222222222';
+const IMPLEMENTATION_HASH =
+  'sha256:2222222222222222222222222222222222222222222222222222222222222222';
 const ARCHITECTURE_HASH = 'sha256:3333333333333333333333333333333333333333333333333333333333333333';
 
 const globalContractTraceabilityPolicy = {
@@ -54,7 +55,12 @@ const traceStatusPolicy = {
     'impactSummary',
     'followUpRecordId',
   ],
-  userApprovedOutOfScopeRequiredFields: ['userApprovalRef', 'approvedAt', 'approvedBy', 'impactSummary'],
+  userApprovedOutOfScopeRequiredFields: [
+    'userApprovalRef',
+    'approvedAt',
+    'approvedBy',
+    'impactSummary',
+  ],
   bareDeferredForbidden: true,
   bareOutOfScopeForbidden: true,
   fullCloseoutForUserScopedStatusesForbidden: true,
@@ -94,11 +100,21 @@ function writeFixture(root: string, overrides: Record<string, unknown> = {}) {
     path.join(process.cwd(), '_bmad', '_config', 'scoring-policy.contract.yaml'),
     path.join(root, '_bmad', '_config', 'scoring-policy.contract.yaml')
   );
-  fs.cpSync(path.join(process.cwd(), 'packages', 'scoring', 'rules'), path.join(root, 'packages', 'scoring', 'rules'), {
-    recursive: true,
-  });
+  fs.cpSync(
+    path.join(process.cwd(), 'packages', 'scoring', 'rules'),
+    path.join(root, 'packages', 'scoring', 'rules'),
+    {
+      recursive: true,
+    }
+  );
   const resolvedScoringPolicy = resolveScoringPolicy({ root });
-  const base = path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'REQ-SCORING-GATES');
+  const base = path.join(
+    root,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    'REQ-SCORING-GATES'
+  );
   const recoveryDir = path.join(base, 'recovery');
   const scoringDir = path.join(base, 'scoring');
   mkdirSync(recoveryDir, { recursive: true });
@@ -150,8 +166,18 @@ function writeFixture(root: string, overrides: Record<string, unknown> = {}) {
     ],
   });
   const scoreRef = artifactRef(root, scoreRecordPath, 'score_record', 'evidence');
-  const scoringGateReportRef = artifactRef(root, scoringGateReportPath, 'scoring_gate_report', 'evidence');
-  const runtimeRef = artifactRef(root, runtimePolicySnapshotPath, 'runtime_policy_snapshot', 'projection');
+  const scoringGateReportRef = artifactRef(
+    root,
+    scoringGateReportPath,
+    'scoring_gate_report',
+    'evidence'
+  );
+  const runtimeRef = artifactRef(
+    root,
+    runtimePolicySnapshotPath,
+    'runtime_policy_snapshot',
+    'projection'
+  );
   const recordPath = path.join(base, 'requirement-record.json');
   const record = {
     recordId: 'REQ-SCORING-GATES',
@@ -189,14 +215,25 @@ function writeFixture(root: string, overrides: Record<string, unknown> = {}) {
     traceStatusPolicy,
     artifactIndex: [runtimeRef, scoreRef, scoringGateReportRef],
     gateChecks: [
-      { eventType: 'gate_check_recorded', checkId: 'score-materialization:001', gate: 'score_materialization', decision: 'pass' },
-      { eventType: 'gate_check_recorded', checkId: 'score-evaluation:001', gate: 'score_evaluation', decision: 'pass' },
+      {
+        eventType: 'gate_check_recorded',
+        checkId: 'score-materialization:001',
+        gate: 'score_materialization',
+        decision: 'pass',
+      },
+      {
+        eventType: 'gate_check_recorded',
+        checkId: 'score-evaluation:001',
+        gate: 'score_evaluation',
+        decision: 'pass',
+      },
     ],
     deliveryEvidence: {
       requiredCommands: [
         {
           commandId: 'CMD-SCORING-GATES-CHECK',
-          command: 'npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-scoring-gates-check.ts',
+          command:
+            'npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-scoring-gates-check.ts',
           commandType: 'delivery_evidence',
           blockingIfMissing: true,
           negativeOrRegression: true,
@@ -217,7 +254,8 @@ function writeFixture(root: string, overrides: Record<string, unknown> = {}) {
         commandRunRefs: [
           {
             commandId: 'CMD-SCORING-GATES-CHECK',
-            command: 'npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-scoring-gates-check.ts',
+            command:
+              'npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-scoring-gates-check.ts',
             runId: 'run-scoring-001',
             closeoutAttemptId: 'closeout-scoring-001',
             exitCode: 0,
@@ -279,7 +317,9 @@ describe('main-agent scoring gates check', () => {
       } finally {
         process.chdir(prev);
       }
-      const report = JSON.parse(readFileSync(path.join(path.dirname(recordPath), 'scoring-gates-report.json'), 'utf8'));
+      const report = JSON.parse(
+        readFileSync(path.join(path.dirname(recordPath), 'scoring-gates-report.json'), 'utf8')
+      );
       expect(report.blockingReasons).toContain('score_materialization_gate_missing');
       expect(report.blockingReasons).toContain('score_evaluation_gate_missing');
     } finally {
@@ -306,7 +346,9 @@ describe('main-agent scoring gates check', () => {
       } finally {
         process.chdir(prev);
       }
-      const report = JSON.parse(readFileSync(path.join(path.dirname(recordPath), 'scoring-gates-report.json'), 'utf8'));
+      const report = JSON.parse(
+        readFileSync(path.join(path.dirname(recordPath), 'scoring-gates-report.json'), 'utf8')
+      );
       expect(report.blockingReasons).toContain('runtime_snapshot_resolved_scoring_policy_missing');
     } finally {
       rmSync(root, { recursive: true, force: true });
@@ -321,7 +363,9 @@ describe('main-agent scoring gates check', () => {
       score.scoringPolicyHash = SOURCE_HASH;
       writeJson(scoreRecordPath, score);
       const record = JSON.parse(readFileSync(recordPath, 'utf8'));
-      const scoreRef = record.artifactIndex.find((artifact: { artifactType: string }) => artifact.artifactType === 'score_record');
+      const scoreRef = record.artifactIndex.find(
+        (artifact: { artifactType: string }) => artifact.artifactType === 'score_record'
+      );
       scoreRef.contentHash = sha256File(scoreRecordPath);
       writeJson(recordPath, record);
       const prev = process.cwd();
@@ -331,7 +375,9 @@ describe('main-agent scoring gates check', () => {
       } finally {
         process.chdir(prev);
       }
-      const report = JSON.parse(readFileSync(path.join(path.dirname(recordPath), 'scoring-gates-report.json'), 'utf8'));
+      const report = JSON.parse(
+        readFileSync(path.join(path.dirname(recordPath), 'scoring-gates-report.json'), 'utf8')
+      );
       expect(report.blockingReasons).toContain('score_policy_hash_mismatch');
     } finally {
       rmSync(root, { recursive: true, force: true });
@@ -343,7 +389,12 @@ describe('main-agent scoring gates check', () => {
     try {
       const { recordPath } = writeFixture(root, {
         gateChecks: [
-          { eventType: 'gate_check_recorded', checkId: 'score-materialization:fail', gate: 'score_materialization', decision: 'fail' },
+          {
+            eventType: 'gate_check_recorded',
+            checkId: 'score-materialization:fail',
+            gate: 'score_materialization',
+            decision: 'fail',
+          },
         ],
       });
       const prev = process.cwd();
@@ -353,7 +404,9 @@ describe('main-agent scoring gates check', () => {
       } finally {
         process.chdir(prev);
       }
-      const report = JSON.parse(readFileSync(path.join(path.dirname(recordPath), 'scoring-gates-report.json'), 'utf8'));
+      const report = JSON.parse(
+        readFileSync(path.join(path.dirname(recordPath), 'scoring-gates-report.json'), 'utf8')
+      );
       expect(report.blockingReasons).toContain('score_write_failed_failure_record_missing');
     } finally {
       rmSync(root, { recursive: true, force: true });
@@ -365,8 +418,18 @@ describe('main-agent scoring gates check', () => {
     try {
       const { recordPath } = writeFixture(root, {
         gateChecks: [
-          { eventType: 'gate_check_recorded', checkId: 'score-materialization:pass', gate: 'score_materialization', decision: 'pass' },
-          { eventType: 'gate_check_recorded', checkId: 'score-evaluation:fail', gate: 'score_evaluation', decision: 'fail' },
+          {
+            eventType: 'gate_check_recorded',
+            checkId: 'score-materialization:pass',
+            gate: 'score_materialization',
+            decision: 'pass',
+          },
+          {
+            eventType: 'gate_check_recorded',
+            checkId: 'score-evaluation:fail',
+            gate: 'score_evaluation',
+            decision: 'fail',
+          },
         ],
         failureRecords: [
           {
@@ -394,7 +457,9 @@ describe('main-agent scoring gates check', () => {
       } finally {
         process.chdir(prev);
       }
-      const report = JSON.parse(readFileSync(path.join(path.dirname(recordPath), 'scoring-gates-report.json'), 'utf8'));
+      const report = JSON.parse(
+        readFileSync(path.join(path.dirname(recordPath), 'scoring-gates-report.json'), 'utf8')
+      );
       expect(report.blockingReasons).toContain('score_evaluation_gate_failed');
       expect(report.blockingReasons).toContain('open_score_failure_record_exists');
       expect(report.blockingReasons).not.toContain('score_evaluation_rerun_loop_missing');
@@ -406,7 +471,11 @@ describe('main-agent scoring gates check', () => {
   it('controlled ingest can record score gates, score failures, and rerun loop sourceRefs', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'scoring-gates-ingest-'));
     try {
-      const { recordPath, scoreRecordPath, scoreRef } = writeFixture(root, { gateChecks: [], failureRecords: [], rerunLoops: [] });
+      const { recordPath, scoreRecordPath, scoreRef } = writeFixture(root, {
+        gateChecks: [],
+        failureRecords: [],
+        rerunLoops: [],
+      });
       const packetPath = path.join(path.dirname(scoreRecordPath), 'packet.json');
       writeJson(packetPath, {
         eventType: 'execution_iteration_recorded',
@@ -421,9 +490,15 @@ describe('main-agent scoring gates check', () => {
         traceRows: ['TRACE-020'],
         taskRefs: ['TASK-SCORING-POLICY-GATES'],
         evidenceRefs: ['EVD-027'],
-        filesChanged: ['scripts/ingest-implementation-evidence.ts', 'scripts/main-agent-scoring-gates-check.ts'],
+        filesChanged: [
+          'scripts/ingest-implementation-evidence.ts',
+          'scripts/main-agent-scoring-gates-check.ts',
+        ],
         implementationDelta: {
-          filesChanged: ['scripts/ingest-implementation-evidence.ts', 'scripts/main-agent-scoring-gates-check.ts'],
+          filesChanged: [
+            'scripts/ingest-implementation-evidence.ts',
+            'scripts/main-agent-scoring-gates-check.ts',
+          ],
           diffSummaryRef: 'scoring/score-record.json',
           behaviorAffecting: true,
           negativeAssertionArtifactRefs: [scoreRef],
@@ -453,7 +528,11 @@ describe('main-agent scoring gates check', () => {
           ],
         },
         gateChecks: [
-          { gate: 'score_materialization', decision: 'pass', checkId: 'score-materialization:ingest' },
+          {
+            gate: 'score_materialization',
+            decision: 'pass',
+            checkId: 'score-materialization:ingest',
+          },
           { gate: 'score_evaluation', decision: 'fail', checkId: 'score-evaluation:ingest' },
         ],
         failureRecords: [
@@ -477,14 +556,30 @@ describe('main-agent scoring gates check', () => {
       const prev = process.cwd();
       process.chdir(root);
       try {
-        expect(mainIngestImplementationEvidence(['--evidence', packetPath, '--requirement-record', recordPath])).toBe(0);
+        expect(
+          mainIngestImplementationEvidence([
+            '--evidence',
+            packetPath,
+            '--requirement-record',
+            recordPath,
+          ])
+        ).toBe(0);
       } finally {
         process.chdir(prev);
       }
       const record = JSON.parse(readFileSync(recordPath, 'utf8'));
-      expect(record.gateChecks.at(-1)).toMatchObject({ gate: 'score_evaluation', decision: 'fail' });
-      expect(record.failureRecords.at(-1)).toMatchObject({ type: 'score_threshold_or_dimension_failed', status: 'open' });
-      expect(record.rerunLoops.at(-1)).toMatchObject({ rerunLoopId: 'rerun-score-evaluation-ingest', status: 'open' });
+      expect(record.gateChecks.at(-1)).toMatchObject({
+        gate: 'score_evaluation',
+        decision: 'fail',
+      });
+      expect(record.failureRecords.at(-1)).toMatchObject({
+        type: 'score_threshold_or_dimension_failed',
+        status: 'open',
+      });
+      expect(record.rerunLoops.at(-1)).toMatchObject({
+        rerunLoopId: 'rerun-score-evaluation-ingest',
+        status: 'open',
+      });
       expect(record.rerunLoops.at(-1)).not.toHaveProperty('result');
       expect(record.rerunLoops.at(-1)).not.toHaveProperty('decision');
     } finally {
@@ -497,9 +592,23 @@ describe('main-agent scoring gates check', () => {
     try {
       const { recordPath } = writeFixture(root, {
         gateChecks: [
-          { eventType: 'gate_check_recorded', gate: 'Implementation Readiness Gate', decision: 'pass' },
-          { eventType: 'gate_check_recorded', checkId: 'score-materialization:pass', gate: 'score_materialization', decision: 'pass' },
-          { eventType: 'gate_check_recorded', checkId: 'score-evaluation:fail', gate: 'score_evaluation', decision: 'fail' },
+          {
+            eventType: 'gate_check_recorded',
+            gate: 'Implementation Readiness Gate',
+            decision: 'pass',
+          },
+          {
+            eventType: 'gate_check_recorded',
+            checkId: 'score-materialization:pass',
+            gate: 'score_materialization',
+            decision: 'pass',
+          },
+          {
+            eventType: 'gate_check_recorded',
+            checkId: 'score-evaluation:fail',
+            gate: 'score_evaluation',
+            decision: 'fail',
+          },
         ],
         failureRecords: [
           {
@@ -529,7 +638,9 @@ describe('main-agent scoring gates check', () => {
         process.chdir(prev);
       }
       const record = JSON.parse(readFileSync(recordPath, 'utf8'));
-      expect(record.closeout.attempts.at(-1).blockingReasons).toContain('score_gate_failure_unresolved');
+      expect(record.closeout.attempts.at(-1).blockingReasons).toContain(
+        'score_gate_failure_unresolved'
+      );
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

@@ -1,4 +1,3 @@
-import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { loadAndDedupeRecords } from '../query/loader';
 import { parseEpicStoryFromRecord } from '../query/parse-epic-story';
@@ -89,14 +88,7 @@ function resolveScoringDataPath(projectRoot: string): string {
   if (envPath && envPath.trim() !== '') {
     return path.isAbsolute(envPath) ? envPath : path.resolve(projectRoot, envPath);
   }
-
-  const candidates = [
-    path.join(projectRoot, 'packages', 'scoring', 'data'),
-    path.join(projectRoot, 'scoring', 'data'),
-    path.join(projectRoot, '_bmad-output', 'scoring'),
-  ];
-
-  return candidates.find((candidate) => fs.existsSync(candidate)) ?? candidates[0]!;
+  return path.resolve(projectRoot, '_bmad-output', 'scoring');
 }
 
 function parseEpicStoryFromRuntimeContext(
@@ -192,7 +184,9 @@ function findTargetRecord(input: {
   stage: string;
   runGroupId?: string;
 }): RunScoreRecord | undefined {
-  const records = loadAndDedupeRecords(input.dataPath).filter((record) => record.scenario === 'real_dev');
+  const records = loadAndDedupeRecords(input.dataPath).filter(
+    (record) => record.scenario === 'real_dev'
+  );
 
   const candidates = records.filter((record) => {
     if (effectiveStage(record) !== input.stage) {
@@ -222,10 +216,7 @@ export function writeGovernanceRerunHistory(
 ): RunScoreRecord {
   const dataPath = resolveScoringDataPath(input.projectRoot);
   const epicStory = parseEpicStoryFromRuntimeContext(input.runtimeContext);
-  const stage = normalizeGovernanceHistoryStage(
-    input.runtimeContext?.stage,
-    input.runtimeContext
-  );
+  const stage = normalizeGovernanceHistoryStage(input.runtimeContext?.stage, input.runtimeContext);
   const runGroupId = input.runtimeContext?.runId;
   const target = findTargetRecord({
     dataPath,
@@ -276,9 +267,7 @@ export function writeGovernanceRerunHistory(
       first_pass: true,
     }),
     ...(runGroupId != null ? { run_group_id: target?.run_group_id ?? runGroupId } : {}),
-    ...(input.hostKind != null && target?.host_kind == null
-      ? { host_kind: input.hostKind }
-      : {}),
+    ...(input.hostKind != null && target?.host_kind == null ? { host_kind: input.hostKind } : {}),
     ...(input.runtimePolicy?.triggerStage != null && target?.trigger_stage == null
       ? { trigger_stage: input.runtimePolicy.triggerStage }
       : {}),

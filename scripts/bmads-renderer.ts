@@ -134,9 +134,13 @@ function collectUpstreamArtifacts(projectRoot: string): UpstreamArtifacts {
       .map((filePath) => artifactRecord(projectRoot, filePath))
       .sort((left, right) => left.path.localeCompare(right.path));
   return {
-    productBriefs: byName((name) => /^product-brief.*\.md$/.test(name) || /^brief.*\.md$/.test(name)),
+    productBriefs: byName(
+      (name) => /^product-brief.*\.md$/.test(name) || /^brief.*\.md$/.test(name)
+    ),
     prds: byName((name) => name === 'prd.md' || /^prd[._-].*\.md$/.test(name)),
-    architectures: byName((name) => name === 'architecture.md' || /^arch(?:itecture)?[._-].*\.md$/.test(name)),
+    architectures: byName(
+      (name) => name === 'architecture.md' || /^arch(?:itecture)?[._-].*\.md$/.test(name)
+    ),
     epics: byName((name) => name === 'epics.md' || /^epics[._-].*\.md$/.test(name)),
   };
 }
@@ -181,10 +185,17 @@ function resolveReadinessStatus(projectRoot: string): ReadinessStatus {
     return {
       status: 'missing',
       reportPath: toProjectRelative(projectRoot, reportPath),
-      reason: 'Latest implementation-readiness report does not state READY / ready_clean / repair_closed.',
+      reason:
+        'Latest implementation-readiness report does not state READY / ready_clean / repair_closed.',
     };
   }
-  const runtimeContextPath = path.join(projectRoot, '_bmad-output', 'runtime', 'context', 'project.json');
+  const runtimeContextPath = path.join(
+    projectRoot,
+    '_bmad-output',
+    'runtime',
+    'context',
+    'project.json'
+  );
   if (
     fs.existsSync(runtimeContextPath) &&
     fs.statSync(reportPath).mtimeMs < fs.statSync(runtimeContextPath).mtimeMs
@@ -229,7 +240,9 @@ export function buildBmadsOutput(projectRootInput = process.cwd()): Record<strin
   const artifacts = collectUpstreamArtifacts(projectRoot);
   const currentRoute = runtime.layers
     .flatMap((layer) => layer.stages.map((stage) => ({ layer, stage })))
-    .find((item) => item.layer.id === progress.currentLayer && item.stage.id === progress.currentStage);
+    .find(
+      (item) => item.layer.id === progress.currentLayer && item.stage.id === progress.currentStage
+    );
   const contractStatus = {
     governance: existsRelative(projectRoot, runtime.contracts.governance),
     dispatch: existsRelative(projectRoot, runtime.contracts.dispatch),
@@ -261,7 +274,8 @@ export function buildBmadsOutput(projectRootInput = process.cwd()): Record<strin
               ? [
                   {
                     workflow: 'bmad-story-assistant',
-                    reason: 'implementation-readiness must be READY / ready_clean / repair_closed before story development.',
+                    reason:
+                      'implementation-readiness must be READY / ready_clean / repair_closed before story development.',
                   },
                 ]
               : [],
@@ -356,12 +370,15 @@ export function renderBmads(output: Record<string, unknown>): string {
     lines.push(`Layer name: ${route.layerName}`);
     lines.push(`Governance stage: ${route.governanceStage}`);
     lines.push(`Governance source: ${route.requiredGovernanceSignalsFrom}`);
-    lines.push(`Recommended workflows: ${route.recommendedWorkflows.length > 0 ? route.recommendedWorkflows.join(', ') : 'none'}`);
+    lines.push(
+      `Recommended workflows: ${route.recommendedWorkflows.length > 0 ? route.recommendedWorkflows.join(', ') : 'none'}`
+    );
     if (route.blockedWorkflows && route.blockedWorkflows.length > 0) {
       lines.push('Blocked workflows:');
       for (const item of route.blockedWorkflows) lines.push(`- ${item.workflow}: ${item.reason}`);
     }
-    if (route.dispatch) lines.push(`Dispatch: ${route.dispatch.taskType} via ${route.dispatch.hosts.join(', ')}`);
+    if (route.dispatch)
+      lines.push(`Dispatch: ${route.dispatch.taskType} via ${route.dispatch.hosts.join(', ')}`);
     if (route.gates) lines.push(`Required gates: ${route.gates.required.join(', ')}`);
     if (route.next) lines.push(`Next: ${route.next.layer} / ${route.next.stage}`);
   } else {
@@ -378,11 +395,16 @@ export function renderBmads(output: Record<string, unknown>): string {
     '',
     '## Contract Status',
     '',
-    ...Object.entries(contractStatus).map(([name, exists]) => `- ${name}: ${exists ? 'present' : 'missing'}`),
+    ...Object.entries(contractStatus).map(
+      ([name, exists]) => `- ${name}: ${exists ? 'present' : 'missing'}`
+    ),
     '',
     '## Stage Evidence',
     '',
-    ...progress.stageStatuses.map((item) => `- ${item.layer}/${item.stage}: ${item.completed ? 'complete' : 'missing'} (${item.evidenceKind}) ${item.evidencePath}`),
+    ...progress.stageStatuses.map(
+      (item) =>
+        `- ${item.layer}/${item.stage}: ${item.completed ? 'complete' : 'missing'} (${item.evidenceKind}) ${item.evidencePath}`
+    ),
     '',
     '## Command Hints',
     '',
@@ -390,7 +412,7 @@ export function renderBmads(output: Record<string, unknown>): string {
     '',
     '## BMAD Method Advisory',
     '',
-    `${advisory.message} Command: \`${advisory.bmadHelpCommand}\`.`,
+    `${advisory.message} Command: \`${advisory.bmadHelpCommand}\`.`
   );
   return `${lines.join('\n')}\n`;
 }

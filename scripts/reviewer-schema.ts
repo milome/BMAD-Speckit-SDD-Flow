@@ -23,12 +23,7 @@ export type ReviewStrictness = (typeof REVIEW_STRICTNESS_LEVELS)[number];
 export const REVIEW_RESULT_VALUES = ['PASS', 'FAIL', 'UNKNOWN'] as const;
 export type ReviewResult = (typeof REVIEW_RESULT_VALUES)[number];
 
-export const REVIEW_RESULT_CODES = [
-  'approved',
-  'required_fixes',
-  'blocked',
-  'unknown',
-] as const;
+export const REVIEW_RESULT_CODES = ['approved', 'required_fixes', 'blocked', 'unknown'] as const;
 export type ReviewResultCode = (typeof REVIEW_RESULT_CODES)[number];
 
 export const REVIEW_RERUN_DECISION_VALUES = [
@@ -312,7 +307,10 @@ export const REVIEW_HOST_CLOSEOUT_V1_SCHEMA = {
     artifactPath: { type: 'string', minLength: 1 },
     reportPath: { type: 'string', minLength: 1 },
     iterationCount: {
-      anyOf: [{ type: 'integer', minimum: 0 }, { type: 'string', minLength: 1 }],
+      anyOf: [
+        { type: 'integer', minimum: 0 },
+        { type: 'string', minLength: 1 },
+      ],
     },
     governanceClosure: REVIEW_GOVERNANCE_CLOSURE_V1_SCHEMA,
     closeoutEnvelope: REVIEW_CLOSEOUT_ENVELOPE_V1_SCHEMA,
@@ -398,7 +396,9 @@ function normalizeRequiredFixes(
   effectiveVerdict: ReadinessEffectiveVerdict | undefined,
   blockingReason: string | null
 ): { requiredFixes: string[]; requiredFixesDetail: ReviewRequiredFixDetailV1[] } {
-  const requiredFixes = [...new Set((input.requiredFixes ?? []).map((item) => item.trim()).filter(Boolean))];
+  const requiredFixes = [
+    ...new Set((input.requiredFixes ?? []).map((item) => item.trim()).filter(Boolean)),
+  ];
 
   if (
     input.scoringFailureMode === 'non_blocking_failure' &&
@@ -527,5 +527,7 @@ export function deriveReviewCloseoutEnvelopeV1(
 export function isReviewCloseoutApproved(
   envelope: Pick<ReviewCloseoutEnvelopeV1, 'resultCode' | 'packetExecutionClosureStatus'>
 ): boolean {
-  return envelope.resultCode === 'approved' && envelope.packetExecutionClosureStatus === 'gate_passed';
+  return (
+    envelope.resultCode === 'approved' && envelope.packetExecutionClosureStatus === 'gate_passed'
+  );
 }

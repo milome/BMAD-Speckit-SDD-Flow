@@ -16,8 +16,7 @@ import { loadAndDedupeRecords } from '../packages/scoring/query/loader';
 import { formatScoresToTable } from '../packages/scoring/scores/format-table';
 
 const EMPTY_DATA_MESSAGE = '暂无评分数据，请先完成至少一轮 Dev Story';
-const NO_PARSABLE_MESSAGE =
-  '当前评分记录无可解析 Epic/Story，请确认 run_id 约定';
+const NO_PARSABLE_MESSAGE = '当前评分记录无可解析 Epic/Story，请确认 run_id 约定';
 const NO_MATCH_MESSAGE = '无可筛选数据';
 const DEFAULT_LIMIT = 100;
 

@@ -66,7 +66,10 @@ function readJsonl(file: string): JsonObject[] {
   return content
     .split(/\r?\n/u)
     .map((line) => JSON.parse(line) as unknown)
-    .filter((item): item is JsonObject => Boolean(item) && typeof item === 'object' && !Array.isArray(item));
+    .filter(
+      (item): item is JsonObject =>
+        Boolean(item) && typeof item === 'object' && !Array.isArray(item)
+    );
 }
 
 function normalizePathForRecord(value: string): string {
@@ -104,8 +107,14 @@ function sampleRoutes(dataDir: string): JsonObject[] {
 }
 
 function groupKey(sample: JsonObject): string {
-  const split = sample.split && typeof sample.split === 'object' && !Array.isArray(sample.split) ? (sample.split as JsonObject) : {};
-  const source = sample.source && typeof sample.source === 'object' && !Array.isArray(sample.source) ? (sample.source as JsonObject) : {};
+  const split =
+    sample.split && typeof sample.split === 'object' && !Array.isArray(sample.split)
+      ? (sample.split as JsonObject)
+      : {};
+  const source =
+    sample.source && typeof sample.source === 'object' && !Array.isArray(sample.source)
+      ? (sample.source as JsonObject)
+      : {};
   const provenance =
     sample.provenance && typeof sample.provenance === 'object' && !Array.isArray(sample.provenance)
       ? (sample.provenance as JsonObject)
@@ -121,11 +130,18 @@ function groupKey(sample: JsonObject): string {
 }
 
 function splitAssignment(sample: JsonObject): string {
-  const split = sample.split && typeof sample.split === 'object' && !Array.isArray(sample.split) ? (sample.split as JsonObject) : {};
+  const split =
+    sample.split && typeof sample.split === 'object' && !Array.isArray(sample.split)
+      ? (sample.split as JsonObject)
+      : {};
   return text(split.assignment) || 'unknown';
 }
 
-function buildSplitReport(samples: JsonObject[], routes: JsonObject[], generatedAt: string): JsonObject {
+function buildSplitReport(
+  samples: JsonObject[],
+  routes: JsonObject[],
+  generatedAt: string
+): JsonObject {
   const byGroup = new Map<string, Set<string>>();
   for (const sample of samples) {
     const key = groupKey(sample);
@@ -135,7 +151,9 @@ function buildSplitReport(samples: JsonObject[], routes: JsonObject[], generated
   const leakingGroups = [...byGroup.entries()]
     .filter(([, splits]) => splits.size > 1)
     .map(([key, splits]) => ({ groupKey: key, splits: [...splits].sort() }));
-  const holdoutRoutes = routes.filter((route) => text(route.destination) === 'eval' || text(route.destination) === 'quarantine');
+  const holdoutRoutes = routes.filter(
+    (route) => text(route.destination) === 'eval' || text(route.destination) === 'quarantine'
+  );
   return {
     reportType: 'split_report',
     generatedAt,
@@ -143,7 +161,16 @@ function buildSplitReport(samples: JsonObject[], routes: JsonObject[], generated
       evalFirst: true,
       holdoutFrozenBeforeSftExport: true,
       splitStrategy: 'requirement_record_group_hash_v1',
-      groupDimensions: ['repo', 'issue', 'story', 'pr', 'bug_family', 'api', 'file_cluster', 'lineage'],
+      groupDimensions: [
+        'repo',
+        'issue',
+        'story',
+        'pr',
+        'bug_family',
+        'api',
+        'file_cluster',
+        'lineage',
+      ],
     },
     groupCount: byGroup.size,
     leakingGroups,
@@ -172,7 +199,11 @@ function buildDedupeReport(samples: JsonObject[], generatedAt: string): JsonObje
   }
   const duplicates = [...clusters.entries()]
     .filter(([, ids]) => ids.length > 1)
-    .map(([clusterId, sampleIds]) => ({ clusterId, sampleIds, action: 'quarantine_duplicate_cluster' }));
+    .map(([clusterId, sampleIds]) => ({
+      clusterId,
+      sampleIds,
+      action: 'quarantine_duplicate_cluster',
+    }));
   return {
     reportType: 'dedup_report',
     generatedAt,
@@ -188,9 +219,17 @@ function buildDedupeReport(samples: JsonObject[], generatedAt: string): JsonObje
   };
 }
 
-function buildContaminationReport(routes: JsonObject[], samples: JsonObject[], generatedAt: string): JsonObject {
-  const routeHits = routes.filter((route) => strings(route.reasons).includes('contamination_detected'));
-  const sampleHits = samples.filter((sample) => sampleText(sample).includes('contaminated_holdout_marker'));
+function buildContaminationReport(
+  routes: JsonObject[],
+  samples: JsonObject[],
+  generatedAt: string
+): JsonObject {
+  const routeHits = routes.filter((route) =>
+    strings(route.reasons).includes('contamination_detected')
+  );
+  const sampleHits = samples.filter((sample) =>
+    sampleText(sample).includes('contaminated_holdout_marker')
+  );
   const hits = [
     ...routeHits.map((route) => ({
       source: 'sample_route',
@@ -213,7 +252,10 @@ function buildContaminationReport(routes: JsonObject[], samples: JsonObject[], g
     },
     hitCount: hits.length,
     hits,
-    decision: sampleHits.length === 0 && hits.every((hit) => hit.action === 'quarantined') ? 'pass' : 'blocked',
+    decision:
+      sampleHits.length === 0 && hits.every((hit) => hit.action === 'quarantined')
+        ? 'pass'
+        : 'blocked',
   };
 }
 
@@ -264,7 +306,12 @@ function policyYaml(name: string, body: Record<string, unknown>): string {
   return `${lines.join('\n')}\n`;
 }
 
-function buildAll(record: JsonObject, dataDir: string, outDir: string, generatedAt: string): JsonObject {
+function buildAll(
+  record: JsonObject,
+  dataDir: string,
+  outDir: string,
+  generatedAt: string
+): JsonObject {
   const samples = canonicalSamples(dataDir);
   const routes = sampleRoutes(dataDir);
   const splitReport = buildSplitReport(samples, routes, generatedAt);
@@ -279,7 +326,10 @@ function buildAll(record: JsonObject, dataDir: string, outDir: string, generated
     requirementSetId: text(record.requirementSetId),
     sourceDocumentHash: text(record.sourceDocumentHash),
     implementationConfirmationHash: text(record.implementationConfirmationHash),
-    architectureConfirmationHash: text((record.architectureConfirmationState as JsonObject | undefined)?.currentArchitectureConfirmationHash),
+    architectureConfirmationHash: text(
+      (record.architectureConfirmationState as JsonObject | undefined)
+        ?.currentArchitectureConfirmationHash
+    ),
     checks: {
       split: splitReport,
       dedup: dedupReport,
@@ -294,8 +344,14 @@ function buildAll(record: JsonObject, dataDir: string, outDir: string, generated
         ? 'pass'
         : 'blocked',
   };
-  writeText(path.join(outDir, 'split-policy.yaml'), policyYaml('split-policy', splitReport.policy as Record<string, unknown>));
-  writeText(path.join(outDir, 'dedup-policy.yaml'), policyYaml('dedup-policy', dedupReport.policy as Record<string, unknown>));
+  writeText(
+    path.join(outDir, 'split-policy.yaml'),
+    policyYaml('split-policy', splitReport.policy as Record<string, unknown>)
+  );
+  writeText(
+    path.join(outDir, 'dedup-policy.yaml'),
+    policyYaml('dedup-policy', dedupReport.policy as Record<string, unknown>)
+  );
   writeText(
     path.join(outDir, 'contamination-policy.yaml'),
     policyYaml('contamination-policy', contaminationReport.policy as Record<string, unknown>)
@@ -320,7 +376,9 @@ function buildAll(record: JsonObject, dataDir: string, outDir: string, generated
 export function mainDataGovernanceGate(argv: string[]): number {
   const args = parseArgs(argv);
   if (args.help) {
-    console.log('Usage: main-agent-data-governance-gate --requirement-record <json> [--data-dir <dir>] [--out-dir <dir>] [--json]');
+    console.log(
+      'Usage: main-agent-data-governance-gate --requirement-record <json> [--data-dir <dir>] [--out-dir <dir>] [--json]'
+    );
     return 0;
   }
   if (!args.requirementRecord) throw new Error('missing required args: requirementRecord');
@@ -337,7 +395,9 @@ export function mainDataGovernanceGate(argv: string[]): number {
     reportHash: sha256File(path.join(outDir, 'data-governance-gate-report.json')),
     decision: report.decision as GovernanceDecision,
   };
-  process.stdout.write(args.json ? `${JSON.stringify(result, null, 2)}\n` : `data_governance_gate=${result.decision}\n`);
+  process.stdout.write(
+    args.json ? `${JSON.stringify(result, null, 2)}\n` : `data_governance_gate=${result.decision}\n`
+  );
   return result.decision === 'pass' ? 0 : 1;
 }
 
@@ -345,7 +405,13 @@ if (require.main === module) {
   try {
     process.exitCode = mainDataGovernanceGate(process.argv.slice(2));
   } catch (error) {
-    console.error(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : String(error) }, null, 2));
+    console.error(
+      JSON.stringify(
+        { ok: false, error: error instanceof Error ? error.message : String(error) },
+        null,
+        2
+      )
+    );
     process.exitCode = 2;
   }
 }

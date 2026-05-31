@@ -18,7 +18,8 @@ type SubagentCurrentAttemptRevalidationReport = ReturnType<
 };
 
 const SOURCE_HASH = 'sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570';
-const IMPLEMENTATION_HASH = 'sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a';
+const IMPLEMENTATION_HASH =
+  'sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a';
 const ARCHITECTURE_HASH = 'sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da';
 
 function sha256File(filePath: string): string {
@@ -30,7 +31,11 @@ function writeJson(filePath: string, value: unknown): void {
   writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
 }
 
-function artifactRef(root: string, artifactPath: string, relatedRequirementIds: string[] = ['MUST-047', 'NEG-036', 'EVD-046']) {
+function artifactRef(
+  root: string,
+  artifactPath: string,
+  relatedRequirementIds: string[] = ['MUST-047', 'NEG-036', 'EVD-046']
+) {
   return {
     artifactType: 'subagent_revalidation_evidence',
     sourceOfTruthRole: 'evidence',
@@ -73,7 +78,8 @@ function record(root: string, artifactRefs: Record<string, unknown>[] = []) {
     architectureConfirmationStateChecks: [
       {
         decision: 'pass',
-        resolvedRecipeHash: 'sha256:da10b7ad044a705fb04be14c32a0062e9dc5e91012e5d267a435b83c3ba86b75',
+        resolvedRecipeHash:
+          'sha256:da10b7ad044a705fb04be14c32a0062e9dc5e91012e5d267a435b83c3ba86b75',
         stateTransition: { toStatus: 'active' },
       },
     ],
@@ -94,7 +100,9 @@ function record(root: string, artifactRefs: Record<string, unknown>[] = []) {
     executionIterations: [
       {
         executionIterationId: 'exec-delivery',
-        commandRunRefs: [{ commandId: 'CMD-DELIVERY', closeoutAttemptId: 'closeout-current', exitCode: 0 }],
+        commandRunRefs: [
+          { commandId: 'CMD-DELIVERY', closeoutAttemptId: 'closeout-current', exitCode: 0 },
+        ],
       },
     ],
   };
@@ -148,7 +156,10 @@ function envelope(root: string, artifactRefs: Record<string, unknown>[]) {
   };
 }
 
-function currentAttemptCommandRuns(artifactRefs: Record<string, unknown>[], attemptId = 'closeout-current') {
+function currentAttemptCommandRuns(
+  artifactRefs: Record<string, unknown>[],
+  attemptId = 'closeout-current'
+) {
   return [
     {
       commandId: 'CMD-SUBAGENT-CURRENT-ATTEMPT-REVALIDATION',
@@ -221,16 +232,26 @@ describe('subagent current-attempt revalidation', () => {
   });
 
   it('treats stale historical envelope hashes as provenance when fresh current-attempt evidence binds the trace row', () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), 'subagent-current-attempt-stale-envelope-hash-'));
+    const root = mkdtempSync(
+      path.join(os.tmpdir(), 'subagent-current-attempt-stale-envelope-hash-')
+    );
     try {
       const evidencePath = path.join(root, 'evidence.json');
       writeJson(evidencePath, { ok: true });
-      const artifact = artifactRef(root, 'evidence.json', ['TRACE-036', 'MUST-047', 'NEG-036', 'EVD-046']);
+      const artifact = artifactRef(root, 'evidence.json', [
+        'TRACE-036',
+        'MUST-047',
+        'NEG-036',
+        'EVD-046',
+      ]);
       const historicalEnvelope = envelope(root, [artifact]);
       historicalEnvelope.parentCloseoutAttemptId = 'previous-attempt';
-      historicalEnvelope.sourceDocumentHash = 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
-      historicalEnvelope.implementationConfirmationHash = 'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
-      historicalEnvelope.architectureConfirmationHash = 'sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+      historicalEnvelope.sourceDocumentHash =
+        'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+      historicalEnvelope.implementationConfirmationHash =
+        'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+      historicalEnvelope.architectureConfirmationHash =
+        'sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
       for (const run of historicalEnvelope.commandRuns) run.closeoutAttemptId = 'previous-attempt';
       const report = evaluateSubagentCurrentAttemptRevalidation({
         envelope: historicalEnvelope,
@@ -283,7 +304,12 @@ describe('subagent current-attempt revalidation', () => {
       const artifact = artifactRef(root, 'evidence.json');
       const badEnvelope = envelope(root, [artifact]);
       badEnvelope.parentCloseoutAttemptId = 'old-attempt';
-      badEnvelope.workspaceRef = { kind: 'worktree', path: path.join(root, 'wt'), commitBefore: 'before', commitAfter: 'after' };
+      badEnvelope.workspaceRef = {
+        kind: 'worktree',
+        path: path.join(root, 'wt'),
+        commitBefore: 'before',
+        commitAfter: 'after',
+      };
       badEnvelope.commandRuns[0].closeoutAttemptId = 'old-attempt';
       badEnvelope.commandRuns[0].exitCode = 1;
       const report = evaluateSubagentCurrentAttemptRevalidation({
@@ -300,7 +326,10 @@ describe('subagent current-attempt revalidation', () => {
           'subagent_revalidation_command_failed:CMD-SUBAGENT-CURRENT-ATTEMPT-REVALIDATION',
         ])
       );
-      expect(report.failureRecords[0]).toMatchObject({ type: 'subagent_revalidation_failed', status: 'open' });
+      expect(report.failureRecords[0]).toMatchObject({
+        type: 'subagent_revalidation_failed',
+        status: 'open',
+      });
       expect(report.rerunLoops[0]).toMatchObject({ status: 'open' });
     } finally {
       rmSync(root, { recursive: true, force: true });
@@ -324,7 +353,9 @@ describe('subagent current-attempt revalidation', () => {
       for (const run of previousEnvelope.commandRuns) run.closeoutAttemptId = 'previous-attempt';
       writeJson(recordPath, currentRecord);
       writeJson(envelopePath, previousEnvelope);
-      writeJson(commandEvidencePath, { commandRuns: currentAttemptCommandRuns([artifact], 'new-attempt') });
+      writeJson(commandEvidencePath, {
+        commandRuns: currentAttemptCommandRuns([artifact], 'new-attempt'),
+      });
       const code = runSubagentCurrentAttemptRevalidation([
         '--envelope',
         envelopePath,
@@ -378,11 +409,20 @@ describe('subagent current-attempt revalidation', () => {
           },
           {
             executionIterationId: 'exec-delivery',
-            commandRunRefs: [{ commandId: 'CMD-DELIVERY', closeoutAttemptId: 'closeout-current', exitCode: 0 }],
+            commandRunRefs: [
+              { commandId: 'CMD-DELIVERY', closeoutAttemptId: 'closeout-current', exitCode: 0 },
+            ],
           },
         ],
       };
-      const recordPath = path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'REQ-CLOSEOUT', 'requirement-record.json');
+      const recordPath = path.join(
+        root,
+        '_bmad-output',
+        'runtime',
+        'requirement-records',
+        'REQ-CLOSEOUT',
+        'requirement-record.json'
+      );
       writeJson(recordPath, currentRecord);
       process.chdir(root);
       try {

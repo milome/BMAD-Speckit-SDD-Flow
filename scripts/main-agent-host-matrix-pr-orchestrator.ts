@@ -14,7 +14,11 @@ import { runHostMatrixJourneyRunner } from './e2e-host-matrix-journey-runner';
 
 type ProviderMode = 'mock' | 'real';
 type CommandChecker = (command: string, args?: string[]) => boolean;
-type CommandRunner = (command: string, args: string[], cwd: string) => {
+type CommandRunner = (
+  command: string,
+  args: string[],
+  cwd: string
+) => {
   id?: string;
   exitCode: number;
   detail: string;
@@ -232,7 +236,9 @@ function runGithubPrApiOrchestration(input: {
     return {
       attempted: true,
       passed: false,
-      steps: [{ id: 'precondition', exitCode: 1, detail: 'provider or journey precondition failed' }],
+      steps: [
+        { id: 'precondition', exitCode: 1, detail: 'provider or journey precondition failed' },
+      ],
       prUrl: null,
     };
   }
@@ -255,33 +261,66 @@ function runGithubPrApiOrchestration(input: {
   const baseBranch = currentGitBranch(input.projectRoot);
   const steps = [
     runGhStep('auth-status', ['auth', 'status'], input.projectRoot, input.runCommand),
-    runGhStep('checkout-branch', ['repo', 'set-default', '--view'], input.projectRoot, input.runCommand),
+    runGhStep(
+      'checkout-branch',
+      ['repo', 'set-default', '--view'],
+      input.projectRoot,
+      input.runCommand
+    ),
   ];
   steps.push(
-    runCommandStep('git-checkout-branch', 'git', ['checkout', '-b', branchName], input.projectRoot, input.runCommand)
+    runCommandStep(
+      'git-checkout-branch',
+      'git',
+      ['checkout', '-b', branchName],
+      input.projectRoot,
+      input.runCommand
+    )
   );
-  steps.push(runCommandStep('git-add-proof', 'git', ['add', proofPath], input.projectRoot, input.runCommand));
   steps.push(
-    runCommandStep('git-commit-proof', 'git', ['commit', '-m', 'test: codex pr api smoke'], input.projectRoot, input.runCommand)
+    runCommandStep('git-add-proof', 'git', ['add', proofPath], input.projectRoot, input.runCommand)
   );
   steps.push(
-    runCommandStep('git-push-proof', 'git', ['push', '-u', 'origin', branchName], input.projectRoot, input.runCommand)
+    runCommandStep(
+      'git-commit-proof',
+      'git',
+      ['commit', '-m', 'test: codex pr api smoke'],
+      input.projectRoot,
+      input.runCommand
+    )
   );
-  const push = runGhStep('pr-create', [
-    'pr',
-    'create',
-    '--draft',
-    '--base',
-    baseBranch,
-    '--head',
-    branchName,
-    '--title',
-    'Codex PR API smoke',
-    '--body',
-    'Automated fail-close smoke for Codex branch orchestration.',
-  ], input.projectRoot, input.runCommand);
+  steps.push(
+    runCommandStep(
+      'git-push-proof',
+      'git',
+      ['push', '-u', 'origin', branchName],
+      input.projectRoot,
+      input.runCommand
+    )
+  );
+  const push = runGhStep(
+    'pr-create',
+    [
+      'pr',
+      'create',
+      '--draft',
+      '--base',
+      baseBranch,
+      '--head',
+      branchName,
+      '--title',
+      'Codex PR API smoke',
+      '--body',
+      'Automated fail-close smoke for Codex branch orchestration.',
+    ],
+    input.projectRoot,
+    input.runCommand
+  );
   steps.push(push);
-  const prUrl = push.exitCode === 0 ? push.detail.split(/\r?\n/).find((line) => line.includes('http')) ?? null : null;
+  const prUrl =
+    push.exitCode === 0
+      ? (push.detail.split(/\r?\n/).find((line) => line.includes('http')) ?? null)
+      : null;
   if (prUrl) {
     steps.push(runGhStep('pr-close', ['pr', 'close', prUrl], input.projectRoot, input.runCommand));
     steps.push(
@@ -294,7 +333,15 @@ function runGithubPrApiOrchestration(input: {
       )
     );
   }
-  steps.push(runCommandStep('git-checkout-back', 'git', ['checkout', baseBranch], input.projectRoot, input.runCommand));
+  steps.push(
+    runCommandStep(
+      'git-checkout-back',
+      'git',
+      ['checkout', baseBranch],
+      input.projectRoot,
+      input.runCommand
+    )
+  );
   if (!prUrl && steps.find((step) => step.id === 'git-push-proof')?.exitCode === 0) {
     steps.push(
       runCommandStep(

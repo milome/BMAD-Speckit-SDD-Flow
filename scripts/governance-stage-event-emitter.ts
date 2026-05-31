@@ -49,7 +49,9 @@ export function buildGovernanceStageRerunResultEvent(input: {
   };
 }
 
-export function persistGovernanceStageRerunResultEvent(event: GovernanceStageRerunResultEvent): string {
+export function persistGovernanceStageRerunResultEvent(
+  event: GovernanceStageRerunResultEvent
+): string {
   const projectRoot = event.payload.projectRoot;
   const dir = pendingEventDir(projectRoot);
   fs.mkdirSync(dir, { recursive: true });

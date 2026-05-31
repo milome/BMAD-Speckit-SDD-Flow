@@ -5,12 +5,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import yaml from 'js-yaml';
-import type {
-  PhaseScoringYaml,
-  GapsScoringYaml,
-  IterationTierYaml,
-  ResolvedItem,
-} from './types';
+import type { PhaseScoringYaml, GapsScoringYaml, IterationTierYaml, ResolvedItem } from './types';
 import { RefResolutionError } from './types';
 import { resolveRulesDir } from '../constants/path';
 
@@ -38,7 +33,9 @@ function loadCodeReviewerConfig(configPath: string): {
   const config = yaml.load(content) as Record<string, unknown>;
   return {
     items: config.items as Record<string, { name?: string; description?: string }> | undefined,
-    veto_items: config.veto_items as Record<string, { name?: string; consequence?: string }> | undefined,
+    veto_items: config.veto_items as
+      | Record<string, { name?: string; consequence?: string }>
+      | undefined,
   };
 }
 
@@ -167,7 +164,9 @@ export function loadIterationTierYaml(options?: { rulesDir?: string }): Iteratio
  */
 function validatePhaseScoringYaml(y: PhaseScoringYaml, configPath?: string): void {
   if (!y.version || !y.stage || !y.link_stage || !y.weights || !y.items) {
-    throw new Error('Invalid phase scoring YAML: missing version, stage, link_stage, weights, or items');
+    throw new Error(
+      'Invalid phase scoring YAML: missing version, stage, link_stage, weights, or items'
+    );
   }
   for (const item of y.items) {
     if (!item.id || !item.ref || typeof item.deduct !== 'number') {
@@ -188,4 +187,3 @@ function validatePhaseScoringYaml(y: PhaseScoringYaml, configPath?: string): voi
     resolveRef(v.ref, configPath);
   }
 }
-

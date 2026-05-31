@@ -21,7 +21,11 @@ describe('wave 1B brief -> prd -> arch gate/rerun e2e wiring', () => {
     expect(matrix).toContain('architecture-contract-gap');
     expect(matrix).toContain('party-mode architecture-contract-gate round');
 
-    const orderedProfiles = ['## brief-gate', '## prd-contract-gate', '## architecture-contract-gate'];
+    const orderedProfiles = [
+      '## brief-gate',
+      '## prd-contract-gate',
+      '## architecture-contract-gate',
+    ];
     const orderedExits = ['## brief-gate', '## prd-contract-gate', '## architecture-contract-gate'];
 
     expect(

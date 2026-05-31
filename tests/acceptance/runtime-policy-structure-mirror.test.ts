@@ -45,9 +45,7 @@ describe('runtime-policy structure mirror', () => {
     expect(policy.implementationEntryRecommended).toBe(
       policy.helpRouting.implementationEntryRecommended
     );
-    expect(policy.implementationEntryDecision).toBe(
-      policy.helpRouting.implementationEntryDecision
-    );
+    expect(policy.implementationEntryDecision).toBe(policy.helpRouting.implementationEntryDecision);
     expect(policy.implementationEntryGate.decision).toBe(policy.implementationEntryDecision);
   });
 });

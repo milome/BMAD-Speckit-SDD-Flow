@@ -12,6 +12,7 @@ import {
 import type { RuntimeFlowId } from './runtime-governance';
 import { loadAndDedupeRecords } from '../packages/scoring/query/loader';
 import { buildReadinessDriftProjection } from '../packages/scoring/governance/readiness-drift';
+import { resolveRuntimeScoringDataPath } from './runtime-scoring-data-path';
 
 interface BmadProgress {
   version?: string;
@@ -96,7 +97,7 @@ export function collectReviewerProjectionDiagnosis(root: string): ReviewerProjec
 
 export function collectReadinessProjectionDiagnosis(root: string): ReadinessProjectionDiagnosis {
   try {
-    const records = loadAndDedupeRecords(path.join(root, 'packages', 'scoring', 'data'));
+    const records = loadAndDedupeRecords(resolveRuntimeScoringDataPath({ root }));
     const projection = buildReadinessDriftProjection({ allRecords: records });
 
     return {
@@ -143,10 +144,14 @@ export function diagnoseBmadState(root: string = process.cwd()): number {
     console.log('   修复: 在 bmad-progress.yaml 中添加 current_context 节点');
   } else if (!state.current_context.epic || !state.current_context.story) {
     console.error('❌ current_context.epic 或 current_context.story 为空');
-    console.log(`   当前值: epic=${state.current_context.epic}, story=${state.current_context.story}`);
+    console.log(
+      `   当前值: epic=${state.current_context.epic}, story=${state.current_context.story}`
+    );
     console.log('   修复: 设置有效的 epic 和 story 值');
   } else {
-    console.log(`✅ current_context 正常: epic=${state.current_context.epic}, story=${state.current_context.story}`);
+    console.log(
+      `✅ current_context 正常: epic=${state.current_context.epic}, story=${state.current_context.story}`
+    );
   }
 
   console.log('\n【诊断项 2】active_stories 列表:');
@@ -157,10 +162,18 @@ export function diagnoseBmadState(root: string = process.cwd()): number {
     console.log(`   发现 ${state.active_stories.length} 个活动 Story:\n`);
     state.active_stories.forEach((story, index) => {
       const stageValid = [
-        'new', 'story_created', 'story_audit_passed',
-        'specify_passed', 'plan_passed', 'gaps_passed',
-        'tasks_passed', 'implement_passed', 'document_audit_passed',
-        'commit_gate_passed', 'commit_ready', 'completed'
+        'new',
+        'story_created',
+        'story_audit_passed',
+        'specify_passed',
+        'plan_passed',
+        'gaps_passed',
+        'tasks_passed',
+        'implement_passed',
+        'document_audit_passed',
+        'commit_gate_passed',
+        'commit_ready',
+        'completed',
       ].includes(story.stage);
 
       const status = stageValid ? '✅' : '❌';

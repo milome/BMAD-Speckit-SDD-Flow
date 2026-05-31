@@ -82,7 +82,10 @@ function text(value: unknown): string {
 
 function objects(value: unknown): JsonObject[] {
   return Array.isArray(value)
-    ? value.filter((item): item is JsonObject => Boolean(item) && typeof item === 'object' && !Array.isArray(item))
+    ? value.filter(
+        (item): item is JsonObject =>
+          Boolean(item) && typeof item === 'object' && !Array.isArray(item)
+      )
     : [];
 }
 
@@ -113,7 +116,10 @@ function readJsonl(file: string): JsonObject[] {
   return content
     .split(/\r?\n/u)
     .map((line) => JSON.parse(line) as unknown)
-    .filter((item): item is JsonObject => Boolean(item) && typeof item === 'object' && !Array.isArray(item));
+    .filter(
+      (item): item is JsonObject =>
+        Boolean(item) && typeof item === 'object' && !Array.isArray(item)
+    );
 }
 
 function normalizePathForRecord(value: string): string {
@@ -172,6 +178,15 @@ function latestActiveSubsystemExtension(record: JsonObject, recordPath: string):
   return readJson(resolved);
 }
 
+function productionSubsystemCoverageRequired(record: JsonObject): boolean {
+  const explicit = nested(nested(record.applicability).productionSubsystems).applies;
+  if (typeof explicit === 'boolean') return explicit;
+  return objects(record.extensionRefs).some((ref) => {
+    const relatedIds = strings(ref.relatedRequirementIds);
+    return text(ref.status) === 'active' && relatedIds.includes('MUST-017');
+  });
+}
+
 function isSha256(value: string): boolean {
   return /^sha256:[a-f0-9]{64}$/u.test(value);
 }
@@ -187,7 +202,8 @@ function artifactCompletenessIssues(ref: JsonObject): string[] {
   if (!text(ref.producer)) issues.push('producer_missing');
   if (!text(ref.purpose)) issues.push('purpose_missing');
   if (text(ref.sourceOfTruthRole) !== 'evidence') issues.push('source_of_truth_role_not_evidence');
-  if (strings(ref.relatedRequirementIds).length === 0) issues.push('related_requirement_ids_missing');
+  if (strings(ref.relatedRequirementIds).length === 0)
+    issues.push('related_requirement_ids_missing');
   if (!text(ref.inputVersion)) issues.push('input_version_missing');
   if (!text(ref.outputVersion)) issues.push('output_version_missing');
   if (text(ref.status) !== 'active') issues.push('status_not_active');
@@ -199,7 +215,8 @@ function concreteEvidenceIssues(item: JsonObject, prefix: string, itemId: string
   const commandEvidence = [...objects(item.commandRuns), ...objects(item.commandRunRefs)];
   if (commandEvidence.length === 0) issues.push(`${prefix}_command_evidence_missing:${itemId}`);
   for (const command of commandEvidence) {
-    if (!text(command.commandId) && !text(command.command)) issues.push(`${prefix}_command_identity_missing:${itemId}`);
+    if (!text(command.commandId) && !text(command.command))
+      issues.push(`${prefix}_command_identity_missing:${itemId}`);
     if (Number.isInteger(command.exitCode) && command.exitCode !== 0) {
       issues.push(`${prefix}_command_failed:${itemId}:${text(command.commandId) || '<missing>'}`);
     }
@@ -213,15 +230,22 @@ function concreteEvidenceIssues(item: JsonObject, prefix: string, itemId: string
     }
   }
 
-  const controlledEventRefs = [...objects(item.controlledEventRefs), ...objects(item.controlEventRefs)];
-  if (controlledEventRefs.length === 0) issues.push(`${prefix}_controlled_event_evidence_missing:${itemId}`);
+  const controlledEventRefs = [
+    ...objects(item.controlledEventRefs),
+    ...objects(item.controlEventRefs),
+  ];
+  if (controlledEventRefs.length === 0)
+    issues.push(`${prefix}_controlled_event_evidence_missing:${itemId}`);
   for (const eventRef of controlledEventRefs) {
     if (!text(eventRef.eventId) && !text(eventRef.eventType)) {
       issues.push(`${prefix}_controlled_event_identity_missing:${itemId}`);
     }
   }
 
-  const recoveryEvidence = [...objects(item.recoveryActionEvidence), ...objects(item.recoveryActionRefs)];
+  const recoveryEvidence = [
+    ...objects(item.recoveryActionEvidence),
+    ...objects(item.recoveryActionRefs),
+  ];
   if (recoveryEvidence.length === 0) issues.push(`${prefix}_recovery_evidence_missing:${itemId}`);
   for (const recovery of recoveryEvidence) {
     if (!text(recovery.action) && !text(recovery.recoveryAction)) {
@@ -231,9 +255,12 @@ function concreteEvidenceIssues(item: JsonObject, prefix: string, itemId: string
   return issues;
 }
 
-function subsystemCoverageIssues(extension: JsonObject | null): string[] {
+function subsystemCoverageIssues(extension: JsonObject | null, required = true): string[] {
+  if (!required) return [];
   if (!extension) return ['subsystem_extension_missing'];
-  const byId = new Map(objects(extension.subsystemReadiness).map((item) => [text(item.subsystemId), item]));
+  const byId = new Map(
+    objects(extension.subsystemReadiness).map((item) => [text(item.subsystemId), item])
+  );
   const issues: string[] = [];
   for (const id of REQUIRED_SUBSYSTEM_IDS) {
     const item = byId.get(id);
@@ -244,13 +271,17 @@ function subsystemCoverageIssues(extension: JsonObject | null): string[] {
     if (strings(item.inputRefs).length === 0) issues.push(`subsystem_input_refs_missing:${id}`);
     if (strings(item.outputRefs).length === 0) issues.push(`subsystem_output_refs_missing:${id}`);
     if (!text(item.status)) issues.push(`subsystem_status_missing:${id}`);
-    if (strings(item.evidenceRefs).length === 0) issues.push(`subsystem_evidence_refs_missing:${id}`);
+    if (strings(item.evidenceRefs).length === 0)
+      issues.push(`subsystem_evidence_refs_missing:${id}`);
     if (!isSha256(text(item.hash))) issues.push(`subsystem_hash_missing:${id}`);
     issues.push(...concreteEvidenceIssues(item, 'subsystem', id));
     const failureHandling = nested(item.failureHandling);
-    if (strings(failureHandling.failureModes).length === 0) issues.push(`subsystem_failure_modes_missing:${id}`);
-    if (strings(failureHandling.recordEventTypes).length === 0) issues.push(`subsystem_failure_event_types_missing:${id}`);
-    if (strings(failureHandling.recoveryActions).length === 0) issues.push(`subsystem_recovery_actions_missing:${id}`);
+    if (strings(failureHandling.failureModes).length === 0)
+      issues.push(`subsystem_failure_modes_missing:${id}`);
+    if (strings(failureHandling.recordEventTypes).length === 0)
+      issues.push(`subsystem_failure_event_types_missing:${id}`);
+    if (strings(failureHandling.recoveryActions).length === 0)
+      issues.push(`subsystem_recovery_actions_missing:${id}`);
   }
   return issues;
 }
@@ -262,16 +293,26 @@ function sourceSnapshotIssues(record: JsonObject, sourceManifest: JsonObject): s
     ['recordId', text(record.recordId), text(snapshot.recordId)],
     ['requirementSetId', text(record.requirementSetId), text(snapshot.requirementSetId)],
     ['sourceDocumentHash', text(record.sourceDocumentHash), text(snapshot.sourceDocumentHash)],
-    ['implementationConfirmationHash', text(record.implementationConfirmationHash), text(snapshot.implementationConfirmationHash)],
-    ['architectureConfirmationHash', text(archState.currentArchitectureConfirmationHash), text(snapshot.architectureConfirmationHash)],
+    [
+      'implementationConfirmationHash',
+      text(record.implementationConfirmationHash),
+      text(snapshot.implementationConfirmationHash),
+    ],
+    [
+      'architectureConfirmationHash',
+      text(archState.currentArchitectureConfirmationHash),
+      text(snapshot.architectureConfirmationHash),
+    ],
   ];
-  return pairs.filter(([, expected, actual]) => expected !== actual).map(([field]) => `source_manifest_${field}_mismatch`);
+  return pairs
+    .filter(([, expected, actual]) => expected !== actual)
+    .map(([field]) => `source_manifest_${field}_mismatch`);
 }
 
 function governanceIssues(governanceDir: string, governanceReport: JsonObject | null): string[] {
-  const issues = REQUIRED_GOVERNANCE_FILES.filter((file) => !fs.existsSync(path.join(governanceDir, file))).map(
-    (file) => `governance_file_missing:${file}`
-  );
+  const issues = REQUIRED_GOVERNANCE_FILES.filter(
+    (file) => !fs.existsSync(path.join(governanceDir, file))
+  ).map((file) => `governance_file_missing:${file}`);
   if (!governanceReport) return [...issues, 'governance_report_missing'];
   if (text(governanceReport.decision) !== 'pass') issues.push('governance_decision_not_pass');
   const checks = nested(governanceReport.checks);
@@ -279,7 +320,8 @@ function governanceIssues(governanceDir: string, governanceReport: JsonObject | 
     if (text(nested(checks[key]).decision) !== 'pass') issues.push(`${key}_decision_not_pass`);
   }
   const postTraining = nested(checks.postTrainingRegression);
-  if (text(postTraining.trainingRunId)) issues.push('post_training_baseline_should_not_be_release_artifact');
+  if (text(postTraining.trainingRunId))
+    issues.push('post_training_baseline_should_not_be_release_artifact');
   return issues;
 }
 
@@ -293,16 +335,23 @@ function validationSummaryIssues(sourceManifest: JsonObject): string[] {
     'contaminationScanRequired',
     'withdrawalGovernanceRequired',
   ];
-  return required.filter((key) => summary[key] !== true).map((key) => `manifest_validation_${key}_missing`);
+  return required
+    .filter((key) => summary[key] !== true)
+    .map((key) => `manifest_validation_${key}_missing`);
 }
 
-function trainingRunIssues(trainingRun: JsonObject | null, datasetId: string, datasetVersion: string): string[] {
+function trainingRunIssues(
+  trainingRun: JsonObject | null,
+  datasetId: string,
+  datasetVersion: string
+): string[] {
   if (!trainingRun) return ['training_run_missing'];
   const issues: string[] = [];
   if (!text(trainingRun.trainingRunId)) issues.push('training_run_id_missing');
   if (text(trainingRun.status) !== 'completed') issues.push('training_run_not_completed');
   if (text(trainingRun.datasetId) !== datasetId) issues.push('training_run_dataset_id_mismatch');
-  if (text(trainingRun.datasetVersion) !== datasetVersion) issues.push('training_run_dataset_version_mismatch');
+  if (text(trainingRun.datasetVersion) !== datasetVersion)
+    issues.push('training_run_dataset_version_mismatch');
   return issues;
 }
 
@@ -310,12 +359,14 @@ function evalReportIssues(evalReport: JsonObject | null, trainingRun: JsonObject
   if (!evalReport) return ['eval_report_missing'];
   const issues: string[] = [];
   if (!text(evalReport.evalReportId)) issues.push('eval_report_id_missing');
-  if (text(evalReport.trainingRunId) !== text(trainingRun?.trainingRunId)) issues.push('eval_report_training_run_mismatch');
+  if (text(evalReport.trainingRunId) !== text(trainingRun?.trainingRunId))
+    issues.push('eval_report_training_run_mismatch');
   if (text(evalReport.decision) !== 'pass') issues.push('eval_report_decision_not_pass');
   if (evalReport.trainingLossOnly === true) issues.push('training_loss_only_eval_forbidden');
   const metrics = nested(evalReport.metrics);
   for (const metric of REQUIRED_REGRESSION_METRICS) {
-    if (!metrics[metric] || typeof metrics[metric] !== 'object') issues.push(`eval_metric_missing:${metric}`);
+    if (!metrics[metric] || typeof metrics[metric] !== 'object')
+      issues.push(`eval_metric_missing:${metric}`);
   }
   return issues;
 }
@@ -355,13 +406,21 @@ function releaseCard(input: {
   ].join('\n');
 }
 
-function qualityReport(sourceManifest: JsonObject, samples: JsonObject[], routes: JsonObject[], generatedAt: string): JsonObject {
+function qualityReport(
+  sourceManifest: JsonObject,
+  samples: JsonObject[],
+  routes: JsonObject[],
+  generatedAt: string
+): JsonObject {
   const counts = nested(sourceManifest.counts);
   const rejected = routes.filter((route) => route.sftEligible !== true).length;
   return {
     reportType: 'dataset_quality_report',
     generatedAt,
-    decision: samples.length > 0 && Number(counts.accepted ?? samples.length) === samples.length ? 'pass' : 'blocked',
+    decision:
+      samples.length > 0 && Number(counts.accepted ?? samples.length) === samples.length
+        ? 'pass'
+        : 'blocked',
     sampleCount: samples.length,
     rejectedRouteCount: rejected,
     checks: {
@@ -373,7 +432,11 @@ function qualityReport(sourceManifest: JsonObject, samples: JsonObject[], routes
   };
 }
 
-function redactionReport(sourceManifest: JsonObject, samples: JsonObject[], generatedAt: string): JsonObject {
+function redactionReport(
+  sourceManifest: JsonObject,
+  samples: JsonObject[],
+  generatedAt: string
+): JsonObject {
   const summary = nested(sourceManifest.redaction_summary);
   const blocked = Number(summary.blocked ?? 0);
   return {
@@ -391,7 +454,11 @@ function redactionReport(sourceManifest: JsonObject, samples: JsonObject[], gene
 
 function revokedSamples(routes: JsonObject[], generatedAt: string): JsonObject {
   const items = routes
-    .filter((route) => strings(route.reasons).some((reason) => reason.includes('withdrawal') || reason.includes('revoked')))
+    .filter((route) =>
+      strings(route.reasons).some(
+        (reason) => reason.includes('withdrawal') || reason.includes('revoked')
+      )
+    )
     .map((route) => ({
       sampleRouteId: text(route.sampleRouteId),
       mentorEventId: text(route.mentorEventId),
@@ -415,6 +482,17 @@ function artifactSummary(file: string, artifactType: string): JsonObject {
   };
 }
 
+function defaultJsonBinding(file: string): JsonObject | null {
+  return fs.existsSync(file) ? readJson(file) : null;
+}
+
+function defaultEvalReport(governanceDir: string): JsonObject | null {
+  const primary = path.join(governanceDir, 'post-training-eval-report.json');
+  const fallback = path.join(governanceDir, 'eval-report.json');
+  if (fs.existsSync(primary)) return readJson(primary);
+  return defaultJsonBinding(fallback);
+}
+
 function buildRelease(input: {
   record: JsonObject;
   recordPath: string;
@@ -432,20 +510,26 @@ function buildRelease(input: {
   const sourceManifest = fs.existsSync(sourceManifestPath) ? readJson(sourceManifestPath) : {};
   const samples = readJsonl(path.join(input.dataDir, 'canonical-samples.jsonl'));
   const routes = readJsonl(path.join(input.dataDir, 'sample-routes.jsonl'));
-  const governanceReport = readJsonIfExists(path.join(input.governanceDir, 'data-governance-gate-report.json'));
-  const contamination = readJsonIfExists(path.join(input.governanceDir, 'contamination-report.json')) ?? {};
+  const governanceReport = readJsonIfExists(
+    path.join(input.governanceDir, 'data-governance-gate-report.json')
+  );
+  const contamination =
+    readJsonIfExists(path.join(input.governanceDir, 'contamination-report.json')) ?? {};
   const split = readJsonIfExists(path.join(input.governanceDir, 'split-report.json')) ?? {};
   const dedup = readJsonIfExists(path.join(input.governanceDir, 'dedup-report.json')) ?? {};
   const holdout = readJsonIfExists(path.join(input.governanceDir, 'holdout-registry.json')) ?? {};
   const subsystemExtension = latestActiveSubsystemExtension(input.record, input.recordPath);
+  const subsystemCoverageRequired = productionSubsystemCoverageRequired(input.record);
 
   const blockingIssues = [
-    ...(!fs.existsSync(sourceManifestPath) ? ['source_dataset_manifest_missing'] : sourceSnapshotIssues(input.record, sourceManifest)),
+    ...(!fs.existsSync(sourceManifestPath)
+      ? ['source_dataset_manifest_missing']
+      : sourceSnapshotIssues(input.record, sourceManifest)),
     ...validationSummaryIssues(sourceManifest),
     ...governanceIssues(input.governanceDir, governanceReport),
     ...trainingRunIssues(input.trainingRun, input.datasetId, input.datasetVersion),
     ...evalReportIssues(input.evalReport, input.trainingRun),
-    ...subsystemCoverageIssues(subsystemExtension),
+    ...subsystemCoverageIssues(subsystemExtension, subsystemCoverageRequired),
   ];
   const releaseDecision: ReleaseDecision = blockingIssues.length === 0 ? 'pass' : 'blocked';
 
@@ -453,11 +537,39 @@ function buildRelease(input: {
   const trainPath = path.join(exportsDir, 'train.jsonl');
   const validationPath = path.join(exportsDir, 'validation.jsonl');
   const testPath = path.join(exportsDir, 'test.jsonl');
+  const openaiProjectionPath = path.join(exportsDir, 'canonical-samples.openai.jsonl');
+  const huggingfaceProjectionPath = path.join(exportsDir, 'canonical-samples.hf.jsonl');
   copyFile(path.join(input.dataDir, 'canonical-samples.jsonl'), trainPath);
-  if (fs.existsSync(path.join(input.dataDir, 'validation.jsonl'))) copyFile(path.join(input.dataDir, 'validation.jsonl'), validationPath);
+  if (fs.existsSync(path.join(input.dataDir, 'validation.jsonl')))
+    copyFile(path.join(input.dataDir, 'validation.jsonl'), validationPath);
   else writeText(validationPath, '');
-  if (fs.existsSync(path.join(input.dataDir, 'test.jsonl'))) copyFile(path.join(input.dataDir, 'test.jsonl'), testPath);
+  if (fs.existsSync(path.join(input.dataDir, 'test.jsonl')))
+    copyFile(path.join(input.dataDir, 'test.jsonl'), testPath);
   else writeText(testPath, '');
+  writeText(
+    openaiProjectionPath,
+    samples
+      .map((sample, index) =>
+        JSON.stringify({
+          custom_id: text(sample.sample_id) || `sample-${index + 1}`,
+          messages: objects(sample.messages),
+          metadata: nested(sample.metadata),
+        })
+      )
+      .join('\n') + (samples.length > 0 ? '\n' : '')
+  );
+  writeText(
+    huggingfaceProjectionPath,
+    samples
+      .map((sample, index) =>
+        JSON.stringify({
+          sample_id: text(sample.sample_id) || `sample-${index + 1}`,
+          conversations: objects(sample.messages),
+          metadata: nested(sample.metadata),
+        })
+      )
+      .join('\n') + (samples.length > 0 ? '\n' : '')
+  );
 
   const quality = qualityReport(sourceManifest, samples, routes, input.generatedAt);
   const redaction = redactionReport(sourceManifest, samples, input.generatedAt);
@@ -466,7 +578,9 @@ function buildRelease(input: {
     ...(input.trainingRun ?? {}),
     datasetId: input.datasetId,
     datasetVersion: input.datasetVersion,
-    sourceDatasetManifestHash: fs.existsSync(sourceManifestPath) ? sha256File(sourceManifestPath) : null,
+    sourceDatasetManifestHash: fs.existsSync(sourceManifestPath)
+      ? sha256File(sourceManifestPath)
+      : null,
     exportArtifactHash: sha256File(trainPath),
   };
   const normalizedEvalReport = {
@@ -521,8 +635,12 @@ function buildRelease(input: {
     sourceRequirementRecordHash: sha256File(input.recordPath),
     sourceDocumentHash: text(input.record.sourceDocumentHash),
     implementationConfirmationHash: text(input.record.implementationConfirmationHash),
-    architectureConfirmationHash: text(nested(input.record.architectureConfirmationState).currentArchitectureConfirmationHash),
-    sourceDatasetManifestHash: fs.existsSync(sourceManifestPath) ? sha256File(sourceManifestPath) : null,
+    architectureConfirmationHash: text(
+      nested(input.record.architectureConfirmationState).currentArchitectureConfirmationHash
+    ),
+    sourceDatasetManifestHash: fs.existsSync(sourceManifestPath)
+      ? sha256File(sourceManifestPath)
+      : null,
     exportArtifactHash: sha256File(trainPath),
     trainingRunId: text(input.trainingRun?.trainingRunId),
     evalReportId: text(input.evalReport?.evalReportId),
@@ -542,8 +660,12 @@ function buildRelease(input: {
       sourceRequirementRecordHash: sha256File(input.recordPath),
       sourceDocumentHash: text(input.record.sourceDocumentHash),
       implementationConfirmationHash: text(input.record.implementationConfirmationHash),
-      architectureConfirmationHash: text(nested(input.record.architectureConfirmationState).currentArchitectureConfirmationHash),
-      sourceDatasetManifestHash: fs.existsSync(sourceManifestPath) ? sha256File(sourceManifestPath) : null,
+      architectureConfirmationHash: text(
+        nested(input.record.architectureConfirmationState).currentArchitectureConfirmationHash
+      ),
+      sourceDatasetManifestHash: fs.existsSync(sourceManifestPath)
+        ? sha256File(sourceManifestPath)
+        : null,
       sourceExportHash: text(sourceManifest.export_hash),
     },
     exports: {
@@ -555,14 +677,27 @@ function buildRelease(input: {
       datasetCard: artifactSummary(paths.datasetCard, 'dataset_card'),
       qualityReport: artifactSummary(paths.qualityReport, 'dataset_quality_report'),
       redactionReport: artifactSummary(paths.redactionReport, 'dataset_redaction_report'),
-      contaminationReport: artifactSummary(paths.contaminationReport, 'dataset_contamination_report'),
+      contaminationReport: artifactSummary(
+        paths.contaminationReport,
+        'dataset_contamination_report'
+      ),
       revokedSamples: artifactSummary(paths.revokedSamples, 'revoked_sample_list'),
       lineageReport: artifactSummary(paths.lineageReport, 'dataset_lineage_report'),
-      postTrainingEvalReport: artifactSummary(paths.postTrainingEvalReport, 'post_training_eval_report'),
+      postTrainingEvalReport: artifactSummary(
+        paths.postTrainingEvalReport,
+        'post_training_eval_report'
+      ),
     },
     training: {
       trainingRun: artifactSummary(paths.trainingRun, 'training_run_metadata'),
       evalReport: artifactSummary(paths.postTrainingEvalReport, 'post_training_eval_report'),
+    },
+    projections: {
+      openai: artifactSummary(openaiProjectionPath, 'openai_chat_projection'),
+      huggingface: artifactSummary(
+        huggingfaceProjectionPath,
+        'huggingface_conversational_projection'
+      ),
     },
     counts: {
       canonicalSamples: samples.length,
@@ -583,18 +718,43 @@ function buildRelease(input: {
     decision: releaseDecision,
     blockingIssues: [...new Set(blockingIssues)],
     checks: [
-      { id: 'source-manifest-current', passed: sourceSnapshotIssues(input.record, sourceManifest).length === 0 },
-      { id: 'release-artifact-set-complete', passed: true, artifactCount: Object.keys(paths).length + 3 },
-      { id: 'training-run-bound', passed: trainingRunIssues(input.trainingRun, input.datasetId, input.datasetVersion).length === 0 },
-      { id: 'post-training-eval-bound', passed: evalReportIssues(input.evalReport, input.trainingRun).length === 0 },
+      {
+        id: 'source-manifest-current',
+        passed: sourceSnapshotIssues(input.record, sourceManifest).length === 0,
+      },
+      {
+        id: 'release-artifact-set-complete',
+        passed: true,
+        artifactCount: Object.keys(paths).length + 5,
+      },
+      {
+        id: 'training-run-bound',
+        passed:
+          trainingRunIssues(input.trainingRun, input.datasetId, input.datasetVersion).length === 0,
+      },
+      {
+        id: 'post-training-eval-bound',
+        passed: evalReportIssues(input.evalReport, input.trainingRun).length === 0,
+      },
       {
         id: 'sixteen-subsystems-machine-readable',
-        passed: subsystemCoverageIssues(subsystemExtension).length === 0,
+        passed: subsystemCoverageIssues(subsystemExtension, subsystemCoverageRequired).length === 0,
+        skipped: !subsystemCoverageRequired,
+        reason: subsystemCoverageRequired ? undefined : 'production_subsystems_not_applicable',
         expectedCount: REQUIRED_SUBSYSTEM_IDS.length,
         actualCount: objects(subsystemExtension?.subsystemReadiness).length,
       },
     ],
-    artifactPaths: Object.fromEntries(Object.entries({ ...paths, trainPath, validationPath, testPath }).map(([key, value]) => [key, normalizePathForRecord(value)])),
+    artifactPaths: Object.fromEntries(
+      Object.entries({
+        ...paths,
+        trainPath,
+        validationPath,
+        testPath,
+        openaiProjectionPath,
+        huggingfaceProjectionPath,
+      }).map(([key, value]) => [key, normalizePathForRecord(value)])
+    ),
     manifestHash: sha256File(paths.datasetManifest),
   };
   writeJson(paths.releaseGateReport, report);
@@ -604,7 +764,9 @@ function buildRelease(input: {
 export function mainDatasetReleaseGate(argv: string[]): number {
   const args = parseArgs(argv);
   if (args.help) {
-    console.log('Usage: main-agent-dataset-release-gate --requirement-record <json> [--training-run <json>] [--eval-report <json>] [--json]');
+    console.log(
+      'Usage: main-agent-dataset-release-gate --requirement-record <json> [--training-run <json>] [--eval-report <json>] [--json]'
+    );
     return 0;
   }
   if (!args.requirementRecord) throw new Error('missing required args: requirementRecord');
@@ -614,7 +776,10 @@ export function mainDatasetReleaseGate(argv: string[]): number {
   const governanceDir = path.resolve(args.governanceDir ?? path.join(dataDir, 'governance'));
   const datasetId = args.datasetId ?? defaultDatasetId(record);
   const datasetVersion = args.datasetVersion ?? 'v1';
-  const outDir = path.resolve(args.outDir ?? path.join(runtimeDirFromRecord(recordPath), 'datasets', datasetId, datasetVersion));
+  const outDir = path.resolve(
+    args.outDir ??
+      path.join(runtimeDirFromRecord(recordPath), 'datasets', datasetId, datasetVersion)
+  );
   const generatedAt = args.generatedAt ?? new Date().toISOString();
   const generatedBy = args.generatedBy ?? 'agent';
   const report = buildRelease({
@@ -625,8 +790,12 @@ export function mainDatasetReleaseGate(argv: string[]): number {
     outDir,
     datasetId,
     datasetVersion,
-    trainingRun: args.trainingRun ? readJson(path.resolve(args.trainingRun)) : null,
-    evalReport: args.evalReport ? readJson(path.resolve(args.evalReport)) : null,
+    trainingRun: args.trainingRun
+      ? readJson(path.resolve(args.trainingRun))
+      : defaultJsonBinding(path.join(governanceDir, 'training-run.json')),
+    evalReport: args.evalReport
+      ? readJson(path.resolve(args.evalReport))
+      : defaultEvalReport(governanceDir),
     generatedAt,
     generatedBy,
   });
@@ -638,7 +807,11 @@ export function mainDatasetReleaseGate(argv: string[]): number {
     decision: report.decision,
     blockingIssues: report.blockingIssues,
   };
-  process.stdout.write(args.json ? `${JSON.stringify(output, null, 2)}\n` : `dataset_release_gate=${text(report.decision)}\n`);
+  process.stdout.write(
+    args.json
+      ? `${JSON.stringify(output, null, 2)}\n`
+      : `dataset_release_gate=${text(report.decision)}\n`
+  );
   return text(report.decision) === 'pass' ? 0 : 1;
 }
 
@@ -646,7 +819,13 @@ if (require.main === module) {
   try {
     process.exitCode = mainDatasetReleaseGate(process.argv.slice(2));
   } catch (error) {
-    console.error(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : String(error) }, null, 2));
+    console.error(
+      JSON.stringify(
+        { ok: false, error: error instanceof Error ? error.message : String(error) },
+        null,
+        2
+      )
+    );
     process.exitCode = 2;
   }
 }

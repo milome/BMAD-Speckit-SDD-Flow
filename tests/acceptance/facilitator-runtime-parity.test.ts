@@ -52,7 +52,9 @@ describe('facilitator runtime parity', () => {
 
     const receipts = ensureFacilitatorRuntimeDefinition(root);
     expect(receipts).toHaveLength(2);
-    expect(receipts.map((receipt) => path.relative(root, receipt.targetPath).replace(/\\/g, '/'))).toEqual([
+    expect(
+      receipts.map((receipt) => path.relative(root, receipt.targetPath).replace(/\\/g, '/'))
+    ).toEqual([
       '.cursor/agents/party-mode-facilitator.md',
       '.claude/agents/party-mode-facilitator.md',
     ]);

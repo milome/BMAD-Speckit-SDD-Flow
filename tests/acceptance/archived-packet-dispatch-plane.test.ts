@@ -15,7 +15,12 @@ describe.skip('legacy archived: packet dispatch plane', () => {
   it('leases and launches pending execution records in the archived dispatch plane', async () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'gov-dispatch-worker-'));
     try {
-      const packetPath = path.join(root, '_bmad-output', 'planning-artifacts', 'attempt-1.cursor-packet.md');
+      const packetPath = path.join(
+        root,
+        '_bmad-output',
+        'planning-artifacts',
+        'attempt-1.cursor-packet.md'
+      );
       mkdirSync(path.dirname(packetPath), { recursive: true });
       writeFileSync(packetPath, '# packet\n', 'utf8');
 

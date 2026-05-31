@@ -1,5 +1,9 @@
 import { startLiveDashboardServer, type LiveDashboardServerHandle } from './live-server';
-import { queryRuntimeDashboard, type RuntimeDashboardQueryOptions } from './runtime-query';
+import {
+  hydrateSftSummaryFromLatestBundle,
+  queryRuntimeDashboard,
+  type RuntimeDashboardQueryOptions,
+} from './runtime-query';
 
 export interface RuntimeMcpServerOptions extends RuntimeDashboardQueryOptions {
   host?: string;
@@ -23,7 +27,7 @@ interface ToolDefinition {
 
 const SERVER_INFO = {
   name: 'bmad-runtime-dashboard',
-  version: '1.0.3',
+  version: '2.0.0',
 };
 
 function writeMessage(payload: Record<string, unknown>): void {
@@ -91,9 +95,12 @@ export async function invokeRuntimeMcpTool(
   toolName: string,
   toolArgs: Record<string, unknown> | undefined,
   dashboardUrl: string | null,
-  options: RuntimeMcpServerOptions & { dashboardSource?: 'state_reused' | 'mcp_owned' | 'external_url' }
+  options: RuntimeMcpServerOptions & {
+    dashboardSource?: 'state_reused' | 'mcp_owned' | 'external_url';
+  }
 ): Promise<Record<string, unknown>> {
   const snapshot = queryRuntimeDashboard(options);
+  const sftSummary = hydrateSftSummaryFromLatestBundle(snapshot.sft_summary);
 
   switch (toolName) {
     case 'get_current_run_summary':
@@ -130,36 +137,31 @@ export async function invokeRuntimeMcpTool(
       );
     case 'preview_sft':
       return buildToolResult(
-        `accepted=${snapshot.sft_summary.accepted} rejected=${snapshot.sft_summary.rejected} redacted=${snapshot.sft_summary.redaction_status_counts.redacted} blocked=${snapshot.sft_summary.redaction_status_counts.blocked}`,
-        snapshot.sft_summary as unknown as Record<string, unknown>
+        `accepted=${sftSummary.accepted} rejected=${sftSummary.rejected} redacted=${sftSummary.redaction_status_counts.redacted} blocked=${sftSummary.redaction_status_counts.blocked}`,
+        sftSummary as unknown as Record<string, unknown>
       );
-    case 'export_sft':
-      {
-        const target =
-          toolArgs && typeof toolArgs.target === 'string'
-            ? toolArgs.target
-            : 'openai_chat';
-        const availability =
-          snapshot.sft_summary.target_availability[
-            target as keyof typeof snapshot.sft_summary.target_availability
-          ];
-        return buildToolResult(
-          `target=${target} compatible=${availability?.compatible ?? 0} incompatible=${availability?.incompatible ?? 0}`,
-          {
-            target,
-            compatible_samples: availability?.compatible ?? 0,
-            incompatible_samples: availability?.incompatible ?? 0,
-            last_bundle_id: snapshot.sft_summary.last_bundle?.bundle_id ?? null,
-            last_bundle: snapshot.sft_summary.last_bundle,
-            global_last_bundle: snapshot.sft_summary.global_last_bundle,
-            rejection_reasons: snapshot.sft_summary.rejection_reasons,
-            redaction_status_counts: snapshot.sft_summary.redaction_status_counts,
-            redaction_applied_rules: snapshot.sft_summary.redaction_applied_rules,
-            redaction_finding_kinds: snapshot.sft_summary.redaction_finding_kinds,
-            redaction_preview: snapshot.sft_summary.redaction_preview,
-          }
-        );
-      }
+    case 'export_sft': {
+      const target =
+        toolArgs && typeof toolArgs.target === 'string' ? toolArgs.target : 'openai_chat';
+      const availability =
+        sftSummary.target_availability[target as keyof typeof sftSummary.target_availability];
+      return buildToolResult(
+        `target=${target} compatible=${availability?.compatible ?? 0} incompatible=${availability?.incompatible ?? 0}`,
+        {
+          target,
+          compatible_samples: availability?.compatible ?? 0,
+          incompatible_samples: availability?.incompatible ?? 0,
+          last_bundle_id: sftSummary.last_bundle?.bundle_id ?? null,
+          last_bundle: sftSummary.last_bundle,
+          global_last_bundle: sftSummary.global_last_bundle,
+          rejection_reasons: sftSummary.rejection_reasons,
+          redaction_status_counts: sftSummary.redaction_status_counts,
+          redaction_applied_rules: sftSummary.redaction_applied_rules,
+          redaction_finding_kinds: sftSummary.redaction_finding_kinds,
+          redaction_preview: sftSummary.redaction_preview,
+        }
+      );
+    }
     case 'open_dashboard':
       return buildToolResult(`dashboard_url=${dashboardUrl ?? 'N/A'}`, {
         dashboard_url: dashboardUrl,
@@ -168,15 +170,15 @@ export async function invokeRuntimeMcpTool(
       return buildToolResult(
         `shared core healthy reviewer=${snapshot.runtime_context.reviewer_contract?.reviewerIdentity ?? 'N/A'}`,
         {
-        mcp: 'up',
-        shared_core: 'up',
-        dashboard_url: dashboardUrl,
-        dashboard_source: options.dashboardSource ?? 'mcp_owned',
-        reviewer_registry_version:
-          snapshot.runtime_context.reviewer_contract?.registryVersion ?? null,
-        reviewer_identity:
-          snapshot.runtime_context.reviewer_contract?.reviewerIdentity ?? null,
-      });
+          mcp: 'up',
+          shared_core: 'up',
+          dashboard_url: dashboardUrl,
+          dashboard_source: options.dashboardSource ?? 'mcp_owned',
+          reviewer_registry_version:
+            snapshot.runtime_context.reviewer_contract?.registryVersion ?? null,
+          reviewer_identity: snapshot.runtime_context.reviewer_contract?.reviewerIdentity ?? null,
+        }
+      );
     default:
       return buildToolResult(`unknown tool: ${toolName}`, {
         error: 'unknown_tool',
@@ -211,12 +213,11 @@ function tryParseMessage(buffer: string): {
   };
 }
 
-export async function runRuntimeMcpServer(
-  options: RuntimeMcpServerOptions = {}
-): Promise<void> {
+export async function runRuntimeMcpServer(options: RuntimeMcpServerOptions = {}): Promise<void> {
   let liveServer: LiveDashboardServerHandle | null = null;
   let dashboardUrl = options.dashboardUrl ?? null;
-  let dashboardSource: 'state_reused' | 'mcp_owned' | 'external_url' = options.dashboardSource ?? (options.dashboardUrl ? 'external_url' : 'mcp_owned');
+  let dashboardSource: 'state_reused' | 'mcp_owned' | 'external_url' =
+    options.dashboardSource ?? (options.dashboardUrl ? 'external_url' : 'mcp_owned');
 
   if (!dashboardUrl) {
     liveServer = await startLiveDashboardServer({

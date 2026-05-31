@@ -3,7 +3,10 @@ import { describe, expect, it } from 'vitest';
 
 describe('layer4 agents', () => {
   describe('bmad-layer4-speckit-specify.md', () => {
-    const content = readFileSync('_bmad/claude/agents/layers/bmad-layer4-speckit-specify.md', 'utf8');
+    const content = readFileSync(
+      '_bmad/claude/agents/layers/bmad-layer4-speckit-specify.md',
+      'utf8'
+    );
 
     it('outputs to specs/ (Cursor speckit format)', () => {
       expect(content).toContain('specs/');
@@ -94,7 +97,10 @@ describe('layer4 agents', () => {
   });
 
   describe('bmad-layer4-speckit-implement.md', () => {
-    const content = readFileSync('_bmad/claude/agents/layers/bmad-layer4-speckit-implement.md', 'utf8');
+    const content = readFileSync(
+      '_bmad/claude/agents/layers/bmad-layer4-speckit-implement.md',
+      'utf8'
+    );
 
     it('reads tasks.md from specs/ (Cursor speckit format)', () => {
       expect(content).toContain('specs/');

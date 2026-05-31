@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main, master]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -24,6 +28,9 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+
+      - name: Install ripgrep
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
 
       - name: Install dependencies
         run: npm ci
@@ -86,8 +93,61 @@ jobs:
             echo "No tests/e2e/smoke suite present; skipping real smoke E2E run."
           fi
 
-      - name: Run tests
-        run: npm run test:ci
+      - name: Init Claude surface
+        run: npm run init:claude
+
+      - name: SpeCKit mirror sync test
+        run: npm run test:speckit-mirror-sync
+
+      - name: Vitest suite
+        id: vitest
+        continue-on-error: true
+        run: npx vitest run
+
+      - name: BMAD SpeCKit tests
+        id: bmad_speckit
+        continue-on-error: true
+        run: npm run test:bmad-speckit
+
+      - name: Main Agent release gate
+        id: release_gate
+        continue-on-error: true
+        run: npm run main-agent:release-gate:ci
+
+      - name: Main Agent quality gate
+        id: quality_gate
+        continue-on-error: true
+        run: npm run main-agent:quality-gate
+
+      - name: Main Agent chaos tests
+        id: chaos
+        continue-on-error: true
+        run: npm run test:main-agent-chaos
+
+      - name: Fail if any test segment failed
+        if: always()
+        run: |
+          failed=0
+
+          check_step() {
+            name="$1"
+            outcome="$2"
+
+            if [ "$outcome" = "failure" ]; then
+              echo "::error::$name failed"
+              failed=1
+            else
+              echo "$name: $outcome"
+            fi
+          }
+
+          check_step "Vitest suite" "${{ steps.vitest.outcome }}"
+          check_step "BMAD SpeCKit tests" "${{ steps.bmad_speckit.outcome }}"
+          check_step "Main Agent release gate" "${{ steps.release_gate.outcome }}"
+          check_step "Main Agent quality gate" "${{ steps.quality_gate.outcome }}"
+          check_step "Main Agent chaos tests" "${{ steps.chaos.outcome }}"
+
+          exit "$failed"
 
   package:
     runs-on: ubuntu-latest

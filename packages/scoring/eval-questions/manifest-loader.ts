@@ -59,10 +59,14 @@ export function loadManifest(versionDir: string): EvalQuestionManifest {
       throw new Error(`Invalid manifest: questions[${i}] missing required 'id' at ${manifestPath}`);
     }
     if (typeof obj.title !== 'string' || !obj.title.trim()) {
-      throw new Error(`Invalid manifest: questions[${i}] missing required 'title' at ${manifestPath}`);
+      throw new Error(
+        `Invalid manifest: questions[${i}] missing required 'title' at ${manifestPath}`
+      );
     }
     if (typeof obj.path !== 'string' || !obj.path.trim()) {
-      throw new Error(`Invalid manifest: questions[${i}] missing required 'path' at ${manifestPath}`);
+      throw new Error(
+        `Invalid manifest: questions[${i}] missing required 'path' at ${manifestPath}`
+      );
     }
 
     if (ids.has(obj.id)) {

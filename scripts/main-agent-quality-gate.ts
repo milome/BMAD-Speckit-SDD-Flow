@@ -66,7 +66,9 @@ function runtimePathExists(relativePath: string): boolean {
 function requirementRecordPathId(relativePath: string): string | undefined | null {
   const match = relativePath
     .replace(/\\/g, '/')
-    .match(/(?:^|\/)_bmad-output\/runtime\/requirement-records\/([^/]+)\/requirement-record\.json$/u);
+    .match(
+      /(?:^|\/)_bmad-output\/runtime\/requirement-records\/([^/]+)\/requirement-record\.json$/u
+    );
   if (!match) return null;
   const recordId = match[1];
   return recordId?.startsWith('<') ? undefined : recordId;
@@ -85,7 +87,9 @@ function activeRequirementRecordExists(requestedRequirementSetId?: string): bool
     const activeRecordId = normalizeText(active?.recordId);
     const requestedId = normalizeText(requestedRequirementSetId);
     const activeRecordPath = normalizeText(active?.recordPath);
-    const activePathRecordId = normalizeText(requirementRecordPathId(activeRecordPath) ?? undefined);
+    const activePathRecordId = normalizeText(
+      requirementRecordPathId(activeRecordPath) ?? undefined
+    );
     if (
       requestedId &&
       [activeRequirementSetId, activeRecordId, activePathRecordId].some(Boolean) &&
@@ -219,7 +223,9 @@ function buildRunScopedCodexProofCheck(args: QualityGateCliOptions): Check | nul
 function buildChecks(thresholds: Thresholds, args: QualityGateCliOptions): Check[] {
   const missingKeyPaths = thresholds.requiredKeyPaths.filter((item) => !exists(item));
   const missingAcceptanceTests = thresholds.requiredAcceptanceTests.filter((item) => !exists(item));
-  const missingCodexProofs = (thresholds.requiredCodexProofPaths ?? []).filter((item) => !exists(item));
+  const missingCodexProofs = (thresholds.requiredCodexProofPaths ?? []).filter(
+    (item) => !exists(item)
+  );
   const gateSource = readIfExists('scripts/main-agent-quality-gate.ts');
   const forbiddenMarkers = thresholds.forbiddenTodoMarkers.filter((marker) =>
     gateSource.includes(marker)
@@ -228,7 +234,8 @@ function buildChecks(thresholds: Thresholds, args: QualityGateCliOptions): Check
   const checks: Check[] = [
     {
       id: 'threshold-version',
-      passed: thresholds.version === EXPECTED_VERSION && thresholds.gateId === 'main-agent-quality-gate',
+      passed:
+        thresholds.version === EXPECTED_VERSION && thresholds.gateId === 'main-agent-quality-gate',
       summary: `threshold version=${thresholds.version}, gateId=${thresholds.gateId}`,
     },
     {

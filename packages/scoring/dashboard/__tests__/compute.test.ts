@@ -143,9 +143,24 @@ describe('getHighIterationTop3', () => {
         stage: 'spec',
         iteration_count: 2,
         iteration_records: [
-          { timestamp: '2026-03-06T10:00:00Z', result: 'fail' as const, severity: 'normal' as const, overall_grade: 'C' },
-          { timestamp: '2026-03-06T11:00:00Z', result: 'fail' as const, severity: 'minor' as const, overall_grade: 'B' },
-          { timestamp: '2026-03-06T12:00:00Z', result: 'pass' as const, severity: 'normal' as const, overall_grade: 'A' },
+          {
+            timestamp: '2026-03-06T10:00:00Z',
+            result: 'fail' as const,
+            severity: 'normal' as const,
+            overall_grade: 'C',
+          },
+          {
+            timestamp: '2026-03-06T11:00:00Z',
+            result: 'fail' as const,
+            severity: 'minor' as const,
+            overall_grade: 'B',
+          },
+          {
+            timestamp: '2026-03-06T12:00:00Z',
+            result: 'pass' as const,
+            severity: 'normal' as const,
+            overall_grade: 'A',
+          },
         ],
       }),
     ];
@@ -186,8 +201,18 @@ describe('getWeakTop3', () => {
         stage: 'spec',
         phase_score: 60,
         iteration_records: [
-          { timestamp: '2026-03-06T10:00:00Z', result: 'fail' as const, severity: 'normal' as const, overall_grade: 'C' },
-          { timestamp: '2026-03-06T11:00:00Z', result: 'pass' as const, severity: 'normal' as const, overall_grade: 'B' },
+          {
+            timestamp: '2026-03-06T10:00:00Z',
+            result: 'fail' as const,
+            severity: 'normal' as const,
+            overall_grade: 'C',
+          },
+          {
+            timestamp: '2026-03-06T11:00:00Z',
+            result: 'pass' as const,
+            severity: 'normal' as const,
+            overall_grade: 'B',
+          },
         ],
       }),
     ];
@@ -261,9 +286,21 @@ describe('getLatestRunRecordsV2 (E9-S1 T9)', () => {
   it('strategy epic_story_window accepts stage=implement as complete run (Story 9.2)', () => {
     const base = Date.now() - 2 * 60 * 60 * 1000;
     const records = [
-      createRecord({ run_id: 'dev-e9-s2-spec-1', stage: 'spec', timestamp: new Date(base).toISOString() }),
-      createRecord({ run_id: 'dev-e9-s2-plan-2', stage: 'plan', timestamp: new Date(base + 30 * 60 * 1000).toISOString() }),
-      createRecord({ run_id: 'dev-e9-s2-implement-3', stage: 'implement', timestamp: new Date(base + 60 * 60 * 1000).toISOString() }),
+      createRecord({
+        run_id: 'dev-e9-s2-spec-1',
+        stage: 'spec',
+        timestamp: new Date(base).toISOString(),
+      }),
+      createRecord({
+        run_id: 'dev-e9-s2-plan-2',
+        stage: 'plan',
+        timestamp: new Date(base + 30 * 60 * 1000).toISOString(),
+      }),
+      createRecord({
+        run_id: 'dev-e9-s2-implement-3',
+        stage: 'implement',
+        timestamp: new Date(base + 60 * 60 * 1000).toISOString(),
+      }),
     ];
     const result = getLatestRunRecordsV2(records, {
       strategy: 'epic_story_window',
@@ -279,9 +316,21 @@ describe('getLatestRunRecordsV2 (E9-S1 T9)', () => {
   it('strategy epic_story_window treats different run_ids per stage as one run (Epic 9 pattern)', () => {
     const base = Date.now() - 2 * 60 * 60 * 1000;
     const records = [
-      createRecord({ run_id: 'dev-e9-s1-spec-1772797518938', stage: 'spec', timestamp: new Date(base).toISOString() }),
-      createRecord({ run_id: 'dev-e9-s1-plan-1772798018940', stage: 'plan', timestamp: new Date(base + 30 * 60 * 1000).toISOString() }),
-      createRecord({ run_id: 'dev-e9-s1-tasks-1772798984398', stage: 'tasks', timestamp: new Date(base + 60 * 60 * 1000).toISOString() }),
+      createRecord({
+        run_id: 'dev-e9-s1-spec-1772797518938',
+        stage: 'spec',
+        timestamp: new Date(base).toISOString(),
+      }),
+      createRecord({
+        run_id: 'dev-e9-s1-plan-1772798018940',
+        stage: 'plan',
+        timestamp: new Date(base + 30 * 60 * 1000).toISOString(),
+      }),
+      createRecord({
+        run_id: 'dev-e9-s1-tasks-1772798984398',
+        stage: 'tasks',
+        timestamp: new Date(base + 60 * 60 * 1000).toISOString(),
+      }),
     ];
     const result = getLatestRunRecordsV2(records, {
       strategy: 'epic_story_window',
@@ -296,8 +345,16 @@ describe('getLatestRunRecordsV2 (E9-S1 T9)', () => {
   it('strategy epic_story_window treats stage=tasks+trigger_stage=speckit_5_2 as implement (Story 9.2 backward compat)', () => {
     const base = Date.now() - 2 * 60 * 60 * 1000;
     const records = [
-      createRecord({ run_id: 'dev-e9-s2-spec-1', stage: 'spec', timestamp: new Date(base).toISOString() }),
-      createRecord({ run_id: 'dev-e9-s2-plan-2', stage: 'plan', timestamp: new Date(base + 30 * 60 * 1000).toISOString() }),
+      createRecord({
+        run_id: 'dev-e9-s2-spec-1',
+        stage: 'spec',
+        timestamp: new Date(base).toISOString(),
+      }),
+      createRecord({
+        run_id: 'dev-e9-s2-plan-2',
+        stage: 'plan',
+        timestamp: new Date(base + 30 * 60 * 1000).toISOString(),
+      }),
       createRecord({
         run_id: 'dev-e9-s2-tasks-3',
         stage: 'tasks',
@@ -592,24 +649,42 @@ describe('governance history dashboard metrics', () => {
 
 describe('getTrend', () => {
   it('returns 持平 for single run', () => {
-    const records = [
-      createRecord({ run_id: 'run-1', timestamp: '2026-03-06T12:00:00Z' }),
-    ];
+    const records = [createRecord({ run_id: 'run-1', timestamp: '2026-03-06T12:00:00Z' })];
     expect(getTrend(records)).toBe('持平');
   });
 
   it('returns 升 when latest > previous', () => {
     const records = [
-      createRecord({ run_id: 'run-new', timestamp: '2026-03-06T12:00:00Z', phase_score: 90, phase_weight: 20 }),
-      createRecord({ run_id: 'run-old', timestamp: '2026-03-05T10:00:00Z', phase_score: 60, phase_weight: 20 }),
+      createRecord({
+        run_id: 'run-new',
+        timestamp: '2026-03-06T12:00:00Z',
+        phase_score: 90,
+        phase_weight: 20,
+      }),
+      createRecord({
+        run_id: 'run-old',
+        timestamp: '2026-03-05T10:00:00Z',
+        phase_score: 60,
+        phase_weight: 20,
+      }),
     ];
     expect(getTrend(records)).toBe('升');
   });
 
   it('returns 降 when latest < previous', () => {
     const records = [
-      createRecord({ run_id: 'run-new', timestamp: '2026-03-06T12:00:00Z', phase_score: 50, phase_weight: 20 }),
-      createRecord({ run_id: 'run-old', timestamp: '2026-03-05T10:00:00Z', phase_score: 80, phase_weight: 20 }),
+      createRecord({
+        run_id: 'run-new',
+        timestamp: '2026-03-06T12:00:00Z',
+        phase_score: 50,
+        phase_weight: 20,
+      }),
+      createRecord({
+        run_id: 'run-old',
+        timestamp: '2026-03-05T10:00:00Z',
+        phase_score: 80,
+        phase_weight: 20,
+      }),
     ];
     expect(getTrend(records)).toBe('降');
   });

@@ -96,7 +96,9 @@ describe('deferred gap speckit stage gates', () => {
       const result = runPreContinue(project, 'speckit-specify', 'workflow', specPath);
       expect(result.ok).toBe(false);
       expect(result.failures).toEqual(
-        expect.arrayContaining(['deferred_gap_register_missing: missing deferred-gap-register.yaml'])
+        expect.arrayContaining([
+          'deferred_gap_register_missing: missing deferred-gap-register.yaml',
+        ])
       );
       expect(result.deferredGapStageAudit?.stage).toBe('specify');
     } finally {
@@ -303,7 +305,11 @@ describe('deferred gap speckit stage gates', () => {
         ].join('\n')
       );
       writeFile(project, `${storyRoot}/invariant-ledger.md`, '# Invariant Ledger\n');
-      writeFile(project, `${storyRoot}/trace-map.json`, JSON.stringify({ journeys: ['J04'] }, null, 2));
+      writeFile(
+        project,
+        `${storyRoot}/trace-map.json`,
+        JSON.stringify({ journeys: ['J04'] }, null, 2)
+      );
       writeFile(project, `${storyRoot}/closure-notes/J04.md`, '# Closure Note\n');
 
       writeRegister(

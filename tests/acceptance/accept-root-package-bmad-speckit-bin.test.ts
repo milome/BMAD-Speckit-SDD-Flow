@@ -6,7 +6,9 @@ import { describe, expect, it } from 'vitest';
 
 const PKG_ROOT = join(import.meta.dirname, '..', '..');
 const NPM_CACHE_DIR = mkdtempSync(join(tmpdir(), 'accept-root-bin-npm-cache-'));
-const ROOT_PACKAGE_VERSION = JSON.parse(readFileSync(join(PKG_ROOT, 'package.json'), 'utf8')).version;
+const ROOT_PACKAGE_VERSION = JSON.parse(
+  readFileSync(join(PKG_ROOT, 'package.json'), 'utf8')
+).version;
 
 function run(cmd: string, cwd: string): string {
   return execSync(cmd, {

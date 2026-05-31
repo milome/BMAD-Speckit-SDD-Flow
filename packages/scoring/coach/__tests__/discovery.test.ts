@@ -87,7 +87,11 @@ describe('discoverLatestRunId', () => {
       const day = String(i + 1).padStart(2, '0');
       records.push(makeRecord(`run-${i}`, 'spec', `2026-01-${day}T00:00:00.000Z`));
     }
-    fs.writeFileSync(path.join(dataPath, 'scores.jsonl'), records.map((r) => JSON.stringify(r)).join('\n') + '\n', 'utf-8');
+    fs.writeFileSync(
+      path.join(dataPath, 'scores.jsonl'),
+      records.map((r) => JSON.stringify(r)).join('\n') + '\n',
+      'utf-8'
+    );
 
     const result = discoverLatestRunId(dataPath, 5);
     expect(result).not.toBeNull();
@@ -106,11 +110,7 @@ describe('discoverLatestRunId', () => {
       JSON.stringify(makeRecord(runId, 'implement'), null, 2),
       'utf-8'
     );
-    fs.writeFileSync(
-      path.join(dataPath, 'sft-dataset.jsonl'),
-      '{"invalid": "line"}\n',
-      'utf-8'
-    );
+    fs.writeFileSync(path.join(dataPath, 'sft-dataset.jsonl'), '{"invalid": "line"}\n', 'utf-8');
 
     const result = discoverLatestRunId(dataPath);
     expect(result).not.toBeNull();
@@ -122,11 +122,7 @@ describe('discoverLatestRunId', () => {
   it('skips non-scoring schema json', () => {
     const dataPath = path.join(os.tmpdir(), `discovery-nonscore-${Date.now()}`);
     fs.mkdirSync(dataPath, { recursive: true });
-    fs.writeFileSync(
-      path.join(dataPath, 'other.json'),
-      JSON.stringify({ foo: 'bar' }),
-      'utf-8'
-    );
+    fs.writeFileSync(path.join(dataPath, 'other.json'), JSON.stringify({ foo: 'bar' }), 'utf-8');
 
     const result = discoverLatestRunId(dataPath);
     expect(result).toBeNull();

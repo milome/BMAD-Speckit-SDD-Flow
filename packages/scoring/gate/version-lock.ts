@@ -6,6 +6,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { computeContentHash } from '../utils/hash';
 import type { RunScoreRecord } from '../writer/types';
+import { getScoringDataPath } from '../constants/path';
 
 export interface VersionLockResult {
   passed: boolean;
@@ -109,10 +110,10 @@ export function checkPreconditionHash(
 }
 
 /**
- * 从 scoring/data/ 目录中查找指定 stage 的最新记录。
+ * 从运行时 scoring 数据目录中查找指定 stage 的最新记录。
  * 扫描 *.json 文件（排除 scores.jsonl），按 timestamp 降序取最新。
  * @param {string} stage - 阶段名称
- * @param {string} [dataPath] - 数据目录路径，默认为 scoring/data
+ * @param {string} [dataPath] - 数据目录路径，默认为 getScoringDataPath()
  * @param {string} [sourcePath] - 可选 source_path 过滤条件
  * @returns {RunScoreRecord | null} 最新的运行评分记录，若无则返回 null
  */
@@ -121,7 +122,7 @@ export function loadLatestRecordByStage(
   dataPath?: string,
   sourcePath?: string
 ): RunScoreRecord | null {
-  const base = dataPath ?? path.resolve(process.cwd(), 'packages', 'scoring', 'data');
+  const base = dataPath ?? getScoringDataPath();
   let dir: string[];
   try {
     dir = fs.readdirSync(base);

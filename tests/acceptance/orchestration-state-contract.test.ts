@@ -66,7 +66,13 @@ describe('orchestration state contract', () => {
         JSON.stringify({
           version: 1,
           active: { recordId: 'REQ-ORCH', requirementSetId: 'REQSET-ORCH' },
-          records: [{ recordId: 'REQ-ORCH', requirementSetId: 'REQSET-ORCH', recordPath: path.relative(root, recordPath).replace(/\\/g, '/') }],
+          records: [
+            {
+              recordId: 'REQ-ORCH',
+              requirementSetId: 'REQSET-ORCH',
+              recordPath: path.relative(root, recordPath).replace(/\\/g, '/'),
+            },
+          ],
         }) + '\n',
         'utf8'
       );

@@ -120,7 +120,9 @@ export function generateRuleSuggestions(
     const keywords = cluster.keywords ?? [];
     const keywordMatch = keywords.some((kw) => {
       const lower = kw.toLowerCase();
-      return [...existingIds].some((id) => id.toLowerCase().includes(lower) || lower.includes(id.toLowerCase()));
+      return [...existingIds].some(
+        (id) => id.toLowerCase().includes(lower) || lower.includes(id.toLowerCase())
+      );
     });
     if (keywords.length > 0 && !keywordMatch) {
       suggestions.push({

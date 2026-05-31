@@ -42,9 +42,7 @@ function parseArgs(argv: string[]): Record<string, string> {
 
 function getOutputDir(version: string, outputDirArg?: string): string {
   if (outputDirArg) {
-    return path.isAbsolute(outputDirArg)
-      ? outputDirArg
-      : path.resolve(process.cwd(), outputDirArg);
+    return path.isAbsolute(outputDirArg) ? outputDirArg : path.resolve(process.cwd(), outputDirArg);
   }
   return path.join(EVAL_ROOT, version);
 }
@@ -55,11 +53,7 @@ function ensureManifestExists(dir: string): void {
     fs.mkdirSync(dir, { recursive: true });
   }
   if (!fs.existsSync(manifestPath)) {
-    fs.writeFileSync(
-      manifestPath,
-      'questions: []\n',
-      'utf-8'
-    );
+    fs.writeFileSync(manifestPath, 'questions: []\n', 'utf-8');
   }
 }
 
@@ -118,7 +112,9 @@ async function main(): Promise<void> {
   const outputDirArg = args.outputDir ?? args['output-dir'];
 
   if (!runId && !inputPath) {
-    console.error('Usage: npx ts-node scripts/eval-question-generate.ts --run-id <id> | --input <path> [--version v1|v2] [--outputDir <dir>]');
+    console.error(
+      'Usage: npx ts-node scripts/eval-question-generate.ts --run-id <id> | --input <path> [--version v1|v2] [--outputDir <dir>]'
+    );
     process.exit(1);
   }
 

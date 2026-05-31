@@ -2,14 +2,26 @@ import { describe, expect, it } from 'vitest';
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { buildProjectRegistryFromSprintStatus, writeRuntimeContextRegistry, runtimeContextRegistryPath } from '../../scripts/runtime-context-registry';
-import { writeRuntimeContextFromSprintStatus, projectContextPath } from '../../scripts/runtime-context';
+import {
+  buildProjectRegistryFromSprintStatus,
+  writeRuntimeContextRegistry,
+  runtimeContextRegistryPath,
+} from '../../scripts/runtime-context-registry';
+import {
+  writeRuntimeContextFromSprintStatus,
+  projectContextPath,
+} from '../../scripts/runtime-context';
 
 describe('runtime-context integration wiring', () => {
   it('produces both registry and project context from sprint-status in a real output tree', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'runtime-wire-'));
     try {
-      const sprintStatusPath = path.join(root, '_bmad-output', 'implementation-artifacts', 'sprint-status.yaml');
+      const sprintStatusPath = path.join(
+        root,
+        '_bmad-output',
+        'implementation-artifacts',
+        'sprint-status.yaml'
+      );
       mkdirSync(path.dirname(sprintStatusPath), { recursive: true });
       writeFileSync(
         sprintStatusPath,

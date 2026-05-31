@@ -197,7 +197,10 @@ describe('speckit-cli implement Ralph integration', () => {
   it('records TDD-RED/TDD-GREEN/TDD-REFACTOR incrementally and only closes the story on the final phase', async () => {
     const speckitCli = await import('../../scripts/speckit-cli');
     const root = makeTempRoot();
-    const tasksPath = writeSingleProductionTaskFile(root, path.join('specs', 'story-1', 'tasks.md'));
+    const tasksPath = writeSingleProductionTaskFile(
+      root,
+      path.join('specs', 'story-1', 'tasks.md')
+    );
 
     const prepared = speckitCli.prepareImplementRalphTracking(
       { tasksPath, mode: 'standalone' },
@@ -224,7 +227,9 @@ describe('speckit-cli implement Ralph integration', () => {
     expect(progress).toContain('[TDD-RED] T001 vitest tests/runtime.test.ts => 1 failed');
     expect(progress).toContain('[TDD-GREEN] _pending_');
     expect(progress).toContain('[TDD-REFACTOR] _pending_');
-    expect(progress).not.toContain('US-001: T001 Implement runtime flow in scripts/runtime-context.ts - PASSED');
+    expect(progress).not.toContain(
+      'US-001: T001 Implement runtime flow in scripts/runtime-context.ts - PASSED'
+    );
     expect(progress).toContain('Status: PENDING');
     expect(progress).toContain('Completed: 0');
     expect(prd.userStories[0]!.passes).toBe(false);
@@ -247,7 +252,9 @@ describe('speckit-cli implement Ralph integration', () => {
       userStories: Array<{ passes: boolean }>;
     };
     expect(progress).toContain('[TDD-GREEN] T001 vitest tests/runtime.test.ts => 1 passed');
-    expect(progress).not.toContain('US-001: T001 Implement runtime flow in scripts/runtime-context.ts - PASSED');
+    expect(progress).not.toContain(
+      'US-001: T001 Implement runtime flow in scripts/runtime-context.ts - PASSED'
+    );
     expect(progress).toContain('Status: PENDING');
     expect(progress).toContain('Completed: 0');
     expect(prd.userStories[0]!.passes).toBe(false);
@@ -270,7 +277,9 @@ describe('speckit-cli implement Ralph integration', () => {
       userStories: Array<{ passes: boolean }>;
     };
     expect(progress).toContain('[TDD-REFACTOR] T001 no refactor needed');
-    expect(progress).toContain('US-001: T001 Implement runtime flow in scripts/runtime-context.ts - PASSED');
+    expect(progress).toContain(
+      'US-001: T001 Implement runtime flow in scripts/runtime-context.ts - PASSED'
+    );
     expect(progress).toContain('Status: PASSED');
     expect(progress).toContain('Completed: 1');
     expect(prd.userStories[0]!.passes).toBe(true);
@@ -279,7 +288,10 @@ describe('speckit-cli implement Ralph integration', () => {
   it('injects script-enforced phase hook commands into the implement agent command', async () => {
     const speckitCli = await import('../../scripts/speckit-cli');
     const root = makeTempRoot();
-    const tasksPath = writeSingleProductionTaskFile(root, path.join('specs', 'story-2', 'tasks.md'));
+    const tasksPath = writeSingleProductionTaskFile(
+      root,
+      path.join('specs', 'story-2', 'tasks.md')
+    );
     const prepared = speckitCli.prepareImplementRalphTracking(
       { tasksPath, mode: 'standalone' },
       { projectRoot: root }

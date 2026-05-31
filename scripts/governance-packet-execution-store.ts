@@ -1,6 +1,9 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import type { GovernanceHostKind, GovernanceRerunGateResult } from './governance-remediation-runner';
+import type {
+  GovernanceHostKind,
+  GovernanceRerunGateResult,
+} from './governance-remediation-runner';
 
 export type GovernancePacketExecutionStatus =
   | 'pending_dispatch'

@@ -1,4 +1,12 @@
-import { cpSync, existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  cpSync,
+  existsSync,
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -56,20 +64,50 @@ function buildReadinessReport(lines: string[]): string {
 
 describe('deferred gap governance', () => {
   it('locks sprint planning, gate config, and weekly audit workflow contracts', () => {
-    const gateConfig = readFileSync(join(ROOT, '_bmad', '_config', 'architecture-gates.yaml'), 'utf8');
+    const gateConfig = readFileSync(
+      join(ROOT, '_bmad', '_config', 'architecture-gates.yaml'),
+      'utf8'
+    );
     const sprintInstructions = readFileSync(
-      join(ROOT, '_bmad', 'bmm', 'workflows', '4-implementation', 'sprint-planning', 'instructions.md'),
+      join(
+        ROOT,
+        '_bmad',
+        'bmm',
+        'workflows',
+        '4-implementation',
+        'sprint-planning',
+        'instructions.md'
+      ),
       'utf8'
     );
     const sprintTemplate = readFileSync(
-      join(ROOT, '_bmad', 'bmm', 'workflows', '4-implementation', 'sprint-planning', 'sprint-status-template.yaml'),
+      join(
+        ROOT,
+        '_bmad',
+        'bmm',
+        'workflows',
+        '4-implementation',
+        'sprint-planning',
+        'sprint-status-template.yaml'
+      ),
       'utf8'
     );
     const sprintChecklist = readFileSync(
-      join(ROOT, '_bmad', 'bmm', 'workflows', '4-implementation', 'sprint-planning', 'checklist.md'),
+      join(
+        ROOT,
+        '_bmad',
+        'bmm',
+        'workflows',
+        '4-implementation',
+        'sprint-planning',
+        'checklist.md'
+      ),
       'utf8'
     );
-    const workflow = readFileSync(join(ROOT, '.github', 'workflows', 'deferred-gap-audit.yml'), 'utf8');
+    const workflow = readFileSync(
+      join(ROOT, '.github', 'workflows', 'deferred-gap-audit.yml'),
+      'utf8'
+    );
 
     expect(gateConfig).toContain('- Deferred Gaps Tracking');
     expect(sprintInstructions).toContain('If the latest readiness report contains deferred gaps');

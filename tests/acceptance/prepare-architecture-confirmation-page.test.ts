@@ -33,9 +33,13 @@ function runNode(script: string, args: string[]) {
 
 function writeConfirmedFixture() {
   const source = path.join(tempDir, 'source.md');
-  const record = path.join(tempDir, '_bmad-output/runtime/requirement-records/REQ-PREPARE/requirement-record.json');
+  const record = path.join(
+    tempDir,
+    '_bmad-output/runtime/requirement-records/REQ-PREPARE/requirement-record.json'
+  );
   const sourceHash = 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
-  const implementationHash = 'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+  const implementationHash =
+    'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
   const block = `implementationConfirmation:
   contractSchemaVersion: 1
   status: user_confirmed
@@ -84,10 +88,13 @@ function writeConfirmedFixture() {
     '--json',
   ]);
   expect(render.status, `${render.stdout}\n${render.stderr}`).toBe(0);
-  const report = JSON.parse(fs.readFileSync(path.join(tempDir, 'confirmation-render-report.json'), 'utf8'));
+  const report = JSON.parse(
+    fs.readFileSync(path.join(tempDir, 'confirmation-render-report.json'), 'utf8')
+  );
   fs.writeFileSync(
     source,
-    fs.readFileSync(source, 'utf8')
+    fs
+      .readFileSync(source, 'utf8')
       .replace(sourceHash, report.sourceDocumentHash)
       .replace(implementationHash, report.implementationConfirmationHash),
     'utf8'
@@ -105,14 +112,20 @@ function writeConfirmedFixture() {
         architectureConfirmationState: {
           status: 'active',
           currentArchitectureConfirmationRunId: 'old-arch',
-          currentArchitectureConfirmationHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
-          resolvedRecipeHash: 'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+          currentArchitectureConfirmationHash:
+            'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+          resolvedRecipeHash:
+            'sha256:2222222222222222222222222222222222222222222222222222222222222222',
           staleInputs: {
-            sourceDocumentHash: 'sha256:9999999999999999999999999999999999999999999999999999999999999999',
+            sourceDocumentHash:
+              'sha256:9999999999999999999999999999999999999999999999999999999999999999',
             implementationConfirmationHash: report.implementationConfirmationHash,
-            targetPathsHash: 'sha256:3333333333333333333333333333333333333333333333333333333333333333',
-            consumerImpactScanHash: 'sha256:4444444444444444444444444444444444444444444444444444444444444444',
-            governanceImpactScanHash: 'sha256:5555555555555555555555555555555555555555555555555555555555555555',
+            targetPathsHash:
+              'sha256:3333333333333333333333333333333333333333333333333333333333333333',
+            consumerImpactScanHash:
+              'sha256:4444444444444444444444444444444444444444444444444444444444444444',
+            governanceImpactScanHash:
+              'sha256:5555555555555555555555555555555555555555555555555555555555555555',
           },
         },
       },
@@ -125,16 +138,27 @@ function writeConfirmedFixture() {
 }
 
 const targetPaths = JSON.stringify(['scripts/main-agent-implementation-readiness-gate.ts']);
-const consumerImpactScan = JSON.stringify([{ category: 'data_model', status: 'triggered', summary: 'fixture' }]);
-const governanceImpactScan = JSON.stringify([
-  { category: 'orchestration_hook_gate_ingest_rerun_closeout', status: 'triggered', summary: 'fixture' },
+const consumerImpactScan = JSON.stringify([
+  { category: 'data_model', status: 'triggered', summary: 'fixture' },
 ]);
-const triggerMatrix = JSON.stringify([{ trigger: 'shared_schema_or_contract_changed', decision: 'triggered', reason: 'fixture' }]);
+const governanceImpactScan = JSON.stringify([
+  {
+    category: 'orchestration_hook_gate_ingest_rerun_closeout',
+    status: 'triggered',
+    summary: 'fixture',
+  },
+]);
+const triggerMatrix = JSON.stringify([
+  { trigger: 'shared_schema_or_contract_changed', decision: 'triggered', reason: 'fixture' },
+]);
 
 describe('prepare-architecture-confirmation-page', () => {
   it('automatically checks stale state, generates the architecture artifact, and renders user-facing HTML', () => {
     const fixture = writeConfirmedFixture();
-    const out = path.join(tempDir, '_bmad-output/runtime/requirement-records/REQ-PREPARE/architecture/architecture-confirmation-run-001.html');
+    const out = path.join(
+      tempDir,
+      '_bmad-output/runtime/requirement-records/REQ-PREPARE/architecture/architecture-confirmation-run-001.html'
+    );
     const result = runNode(PREPARE, [
       '--source',
       fixture.source,
@@ -157,7 +181,9 @@ describe('prepare-architecture-confirmation-page', () => {
 
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
     const output = JSON.parse(result.stdout);
-    expect(output.userFacingNextStep).toBe('open_architecture_confirmation_html_and_confirm_hashes');
+    expect(output.userFacingNextStep).toBe(
+      'open_architecture_confirmation_html_and_confirm_hashes'
+    );
     expect(output.internalSteps.map((step: { label: string }) => step.label)).toEqual([
       'architecture_confirmation_state_checked',
       'generate_architecture_confirmation_artifact',
@@ -174,13 +200,13 @@ describe('prepare-architecture-confirmation-page', () => {
     });
     expect(['pass', 'fail', 'blocked']).toContain(output.internalSteps[0].decision);
     const prepareReport = JSON.parse(fs.readFileSync(output.prepareReportPath, 'utf8'));
-    expect(prepareReport.userFacingNextStep).toBe('open_architecture_confirmation_html_and_confirm_hashes');
+    expect(prepareReport.userFacingNextStep).toBe(
+      'open_architecture_confirmation_html_and_confirm_hashes'
+    );
     expect(prepareReport.internalSteps[0].label).toBe('architecture_confirmation_state_checked');
 
     const record = JSON.parse(fs.readFileSync(fixture.record, 'utf8'));
-    expect(record.architectureConfirmationStateChecks.at(-1)).toMatchObject({
-      eventType: 'architecture_confirmation_state_checked',
-    });
+    expect(record.architectureConfirmationStateChecks ?? []).toHaveLength(0);
     expect(record.architectureConfirmations ?? []).toHaveLength(0);
   });
 

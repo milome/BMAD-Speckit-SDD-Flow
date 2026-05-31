@@ -157,7 +157,13 @@ describe('emit-runtime-policy vs bmad-help runtime policy facade (stable JSON)',
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'bmad-rp-sp-'));
     fs.cpSync(path.join(repoRoot, '_bmad'), path.join(root, '_bmad'), { recursive: true });
     writeMinimalRegistryAndProjectContext(root, { flow: 'story', stage: 'specify' });
-    const indexPath = path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'index.json');
+    const indexPath = path.join(
+      root,
+      '_bmad-output',
+      'runtime',
+      'requirement-records',
+      'index.json'
+    );
     const index = JSON.parse(fs.readFileSync(indexPath, 'utf8'));
     const ctxPath = path.resolve(root, index.records[0].recordPath);
     const raw = JSON.parse(fs.readFileSync(ctxPath, 'utf8'));

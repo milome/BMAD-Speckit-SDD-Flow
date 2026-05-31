@@ -117,8 +117,12 @@ describe('ralph-method write-tracking-files', () => {
       ],
     });
 
-    expect(progressAfterTrace).toContain('[TDD-RED] T1 pytest tests/runtime.test.ts -v => 1 failed');
-    expect(progressAfterTrace).toContain('[TDD-GREEN] T1 pytest tests/runtime.test.ts -v => 1 passed');
+    expect(progressAfterTrace).toContain(
+      '[TDD-RED] T1 pytest tests/runtime.test.ts -v => 1 failed'
+    );
+    expect(progressAfterTrace).toContain(
+      '[TDD-GREEN] T1 pytest tests/runtime.test.ts -v => 1 passed'
+    );
     expect(progressAfterTrace).toContain('[TDD-REFACTOR] T1 No refactor needed ✓');
     expect(progressAfterTrace).toContain('Status: PASSED');
     expect(progressAfterTrace).toContain('Completed: 1');

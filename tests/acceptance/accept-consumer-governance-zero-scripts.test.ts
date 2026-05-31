@@ -1,11 +1,5 @@
 import { execSync, spawnSync } from 'node:child_process';
-import {
-  existsSync,
-  mkdtempSync,
-  readdirSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -62,7 +56,9 @@ describe('consumer governance zero-scripts install', () => {
       run('npx bmad-speckit-init --agent cursor', consumer);
 
       expect(existsSync(join(consumer, 'scripts', 'governance-remediation-runner.ts'))).toBe(false);
-      expect(listUnexpectedLegacyConsumerHookFiles(join(consumer, '.cursor', 'hooks'))).toHaveLength(0);
+      expect(
+        listUnexpectedLegacyConsumerHookFiles(join(consumer, '.cursor', 'hooks'))
+      ).toHaveLength(0);
 
       run('npx bmad-speckit-init --agent claude-code', consumer);
 
@@ -86,9 +82,13 @@ describe('consumer governance zero-scripts install', () => {
         'utf8'
       );
 
-      expect(listUnexpectedLegacyConsumerHookFiles(join(consumer, '.claude', 'hooks'))).toHaveLength(0);
+      expect(
+        listUnexpectedLegacyConsumerHookFiles(join(consumer, '.claude', 'hooks'))
+      ).toHaveLength(0);
       expect(existsSync(join(consumer, '.claude', 'hooks', 'post-tool-use.cjs'))).toBe(true);
-      expect(existsSync(join(consumer, '.claude', 'hooks', 'deferred-gap-governance.cjs'))).toBe(true);
+      expect(existsSync(join(consumer, '.claude', 'hooks', 'deferred-gap-governance.cjs'))).toBe(
+        true
+      );
       expect(existsSync(join(consumer, '.claude', 'hooks', 'runtime-policy-inject.cjs'))).toBe(
         true
       );
@@ -176,8 +176,7 @@ describe('consumer governance zero-scripts install', () => {
         expect(effectiveContinue).toBe(false);
       }
       const mainAgentSurfaceShown =
-        effectiveText.includes('mainAgentNextAction') &&
-        effectiveText.includes('mainAgentReady');
+        effectiveText.includes('mainAgentNextAction') && effectiveText.includes('mainAgentReady');
       const blockedFlowShown =
         effectiveText.includes('Implementation Entry Gate') &&
         effectiveText.includes('Main Agent') &&

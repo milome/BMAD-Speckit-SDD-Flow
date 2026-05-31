@@ -70,7 +70,9 @@ function buildCountMap(values: string[]): Record<string, number> {
     const key = value && value.trim() !== '' ? value : 'unknown';
     counts.set(key, (counts.get(key) ?? 0) + 1);
   }
-  return Object.fromEntries([...counts.entries()].sort((left, right) => left[0].localeCompare(right[0])));
+  return Object.fromEntries(
+    [...counts.entries()].sort((left, right) => left[0].localeCompare(right[0]))
+  );
 }
 
 function dominantShare(counts: Record<string, number>, total: number): number {
@@ -95,15 +97,23 @@ function hasAssistantTarget(sample: CanonicalSftSample): boolean {
 }
 
 function usesTooling(sample: CanonicalSftSample): boolean {
-  return Boolean(sample.tools?.length) || sample.messages.some((message) => message.role === 'tool');
+  return (
+    Boolean(sample.tools?.length) || sample.messages.some((message) => message.role === 'tool')
+  );
 }
 
 function normalizePath(value?: string | null): string {
-  return String(value ?? '').replace(/\\/g, '/').toLowerCase();
+  return String(value ?? '')
+    .replace(/\\/g, '/')
+    .toLowerCase();
 }
 
-function resolveSourceScope(sample: CanonicalSftSample): 'story_scoped' | 'orphan_scoped' | 'unknown' {
-  const flow = String(sample.source.flow ?? '').trim().toLowerCase();
+function resolveSourceScope(
+  sample: CanonicalSftSample
+): 'story_scoped' | 'orphan_scoped' | 'unknown' {
+  const flow = String(sample.source.flow ?? '')
+    .trim()
+    .toLowerCase();
   if (flow === 'story' || flow === 'epic') {
     return 'story_scoped';
   }
@@ -160,7 +170,9 @@ export function assignDedupeClusters(samples: CanonicalSftSample[]): CanonicalSf
   });
 }
 
-export function buildDatasetDuplicateSummary(samples: CanonicalSftSample[]): DatasetDuplicateSummary {
+export function buildDatasetDuplicateSummary(
+  samples: CanonicalSftSample[]
+): DatasetDuplicateSummary {
   const clusterCounts = new Map<string, number>();
   for (const sample of samples) {
     const clusterId = sample.quality.dedupe_cluster_id;
@@ -185,11 +197,17 @@ export function buildDatasetDuplicateSummary(samples: CanonicalSftSample[]): Dat
 
 export function buildDatasetBalanceSummary(samples: CanonicalSftSample[]): DatasetBalanceSummary {
   const total = samples.length;
-  const by_host_kind = buildCountMap(samples.map((sample) => sample.metadata.host_kind ?? 'unknown'));
-  const by_provider_id = buildCountMap(samples.map((sample) => sample.source.provider_id ?? 'unknown'));
+  const by_host_kind = buildCountMap(
+    samples.map((sample) => sample.metadata.host_kind ?? 'unknown')
+  );
+  const by_provider_id = buildCountMap(
+    samples.map((sample) => sample.source.provider_id ?? 'unknown')
+  );
   const by_stage = buildCountMap(samples.map((sample) => sample.source.stage));
   const by_source_scope = buildCountMap(samples.map((sample) => resolveSourceScope(sample)));
-  const by_sample_kind = buildCountMap(samples.map((sample) => sample.metadata.sample_kind ?? 'unknown'));
+  const by_sample_kind = buildCountMap(
+    samples.map((sample) => sample.metadata.sample_kind ?? 'unknown')
+  );
   const by_split = buildCountMap(samples.map((sample) => sample.split.assignment));
   const by_target = buildCountMap(samples.flatMap((sample) => sample.metadata.schema_targets));
 
@@ -209,9 +227,12 @@ export function buildDatasetBalanceSummary(samples: CanonicalSftSample[]): Datas
   };
 }
 
-export function buildDatasetTrainingViewSummary(samples: CanonicalSftSample[]): DatasetTrainingViewSummary {
+export function buildDatasetTrainingViewSummary(
+  samples: CanonicalSftSample[]
+): DatasetTrainingViewSummary {
   const readySamples = samples.filter(
-    (sample) => sample.quality.acceptance_decision === 'accepted' && sample.quality.training_ready === true
+    (sample) =>
+      sample.quality.acceptance_decision === 'accepted' && sample.quality.training_ready === true
   );
 
   return {
@@ -220,6 +241,8 @@ export function buildDatasetTrainingViewSummary(samples: CanonicalSftSample[]): 
       (sample) => hasAssistantTarget(sample) && !usesTooling(sample)
     ).length,
     tool_calling_ready: readySamples.filter((sample) => usesTooling(sample)).length,
-    schema_target_counts: buildCountMap(samples.flatMap((sample) => sample.metadata.schema_targets)),
+    schema_target_counts: buildCountMap(
+      samples.flatMap((sample) => sample.metadata.schema_targets)
+    ),
   };
 }

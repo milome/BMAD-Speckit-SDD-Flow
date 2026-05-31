@@ -8,7 +8,12 @@ describe('runtime-context story sync', () => {
   it('derives story contexts from sprint-status and binds artifact/spec roots', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'story-sync-'));
     try {
-      const sprintStatusPath = path.join(root, '_bmad-output', 'implementation-artifacts', 'sprint-status.yaml');
+      const sprintStatusPath = path.join(
+        root,
+        '_bmad-output',
+        'implementation-artifacts',
+        'sprint-status.yaml'
+      );
       mkdirSync(path.dirname(sprintStatusPath), { recursive: true });
       writeFileSync(
         sprintStatusPath,

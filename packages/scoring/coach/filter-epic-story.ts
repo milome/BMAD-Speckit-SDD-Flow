@@ -93,7 +93,9 @@ function parseEpicStoryFromRunId(runId: string): { epicId: number; storyId: numb
 const SOURCE_PATH_EPIC_STORY_RE = /epic-(\d+)-[^/]*\/story-(\d+)-/;
 const SOURCE_PATH_STORY_EPIC_STORY_RE = /story-(\d+)-(\d+)-/;
 
-function parseEpicStoryFromSourcePath(sourcePath: string): { epicId: number; storyId: number } | null {
+function parseEpicStoryFromSourcePath(
+  sourcePath: string
+): { epicId: number; storyId: number } | null {
   if (!sourcePath) return null;
   let m = sourcePath.match(SOURCE_PATH_EPIC_STORY_RE);
   if (m) {

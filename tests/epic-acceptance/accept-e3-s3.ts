@@ -6,8 +6,21 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { parseAndWriteScore } from '../../packages/scoring/orchestrator';
 
-const FIXTURES = path.join(process.cwd(), 'packages', 'scoring', 'parsers', '__tests__', 'fixtures');
-const TEMP_OUT = path.join(process.cwd(), '_bmad-output', 'implementation-artifacts', '3-3-eval-skill-scoring-write', 'accept-e3-s3-out');
+const FIXTURES = path.join(
+  process.cwd(),
+  'packages',
+  'scoring',
+  'parsers',
+  '__tests__',
+  'fixtures'
+);
+const TEMP_OUT = path.join(
+  process.cwd(),
+  '_bmad-output',
+  'implementation-artifacts',
+  '3-3-eval-skill-scoring-write',
+  'accept-e3-s3-out'
+);
 
 async function main() {
   console.log('Accept E3-S3: parseAndWriteScore (prd/arch/story)');
@@ -68,7 +81,9 @@ async function main() {
       console.log('  [PASS] iteration_count overlay (tier_coefficient=0.8)');
       passed++;
     } else {
-      console.error(`  [FAIL] iteration_count overlay - iteration_count=${writtenIter.iteration_count}, tier_coefficient=${writtenIter.tier_coefficient}`);
+      console.error(
+        `  [FAIL] iteration_count overlay - iteration_count=${writtenIter.iteration_count}, tier_coefficient=${writtenIter.tier_coefficient}`
+      );
     }
   } else {
     console.error('  [FAIL] iteration_count overlay - file not written');

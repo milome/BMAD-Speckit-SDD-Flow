@@ -13,7 +13,16 @@ export interface DimensionScore {
   score: number;
 }
 
-export type DimensionMode = 'code' | 'prd' | 'arch' | 'pr' | 'readiness';
+export type DimensionMode =
+  | 'code'
+  | 'prd'
+  | 'arch'
+  | 'pr'
+  | 'readiness'
+  | 'story'
+  | 'tasks'
+  | 'bugfix'
+  | 'delivery';
 
 const DIMENSION_SCORE_PATTERN = /^(?:[-*]\s*|\d+\.\s*)?(.+?)\s*[：:]\s*(\d+)\s*[/／]\s*100\s*$/;
 
@@ -62,11 +71,15 @@ export function stageToMode(stage: string): DimensionMode {
     case 'spec':
     case 'plan':
     case 'gaps':
-    case 'tasks':
       return 'prd';
     case 'arch':
       return 'arch';
     case 'story':
+      return 'story';
+    case 'tasks':
+      return 'tasks';
+    case 'bugfix':
+      return 'bugfix';
     case 'implement':
     case 'post_impl':
       return 'code';
@@ -74,6 +87,8 @@ export function stageToMode(stage: string): DimensionMode {
       return 'pr';
     case 'implementation_readiness':
       return 'readiness';
+    case 'delivery_confirmation':
+      return 'delivery';
     default:
       return 'code';
   }

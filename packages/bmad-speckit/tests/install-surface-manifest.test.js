@@ -5,6 +5,8 @@ const path = require('path');
 const os = require('os');
 
 const {
+  collectManagedGlobalSkillSpecs,
+  collectManagedSurfaceSpecs,
   createInstallStateTracker,
   getInstallManifestPath,
   getInstallStateRoot,
@@ -16,6 +18,12 @@ const ROOT_PACKAGE_VERSION = require('../../../package.json').version;
 function writeJson(filePath, payload) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, JSON.stringify(payload, null, 2) + '\n', 'utf8');
+}
+
+function writeSkill(root, relativeRoot, name) {
+  const skillDir = path.join(root, relativeRoot, name);
+  fs.mkdirSync(skillDir, { recursive: true });
+  fs.writeFileSync(path.join(skillDir, 'SKILL.md'), `${name}\n`, 'utf8');
 }
 
 describe('install-surface-manifest helper', () => {
@@ -155,6 +163,76 @@ describe('install-surface-manifest helper', () => {
       assert.deepStrictEqual(manifest.installed_tools, ['claude-code', 'cursor']);
       const paths = manifest.managed_surface.map((entry) => entry.path).sort();
       assert.deepStrictEqual(paths, ['.claude/rules/rule.md', '.cursor/commands/demo.md']);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('collects default cursor, claude, and codex skills as project managed surfaces', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'manifest-project-skills-'));
+    try {
+      const bmadRoot = path.join(root, '_bmad');
+      writeSkill(bmadRoot, 'skills', 'shared-skill');
+      writeSkill(bmadRoot, path.join('cursor', 'skills'), 'cursor-skill');
+      writeSkill(bmadRoot, path.join('claude', 'skills'), 'claude-skill');
+      writeSkill(bmadRoot, path.join('codex', 'skills'), 'codex-skill');
+
+      const specs = collectManagedSurfaceSpecs(root, bmadRoot, ['cursor', 'claude-code', 'codex']);
+      const paths = specs.map((entry) => entry.logicalPath).sort();
+
+      assert.ok(paths.includes('.cursor/skills/shared-skill'));
+      assert.ok(paths.includes('.cursor/skills/cursor-skill'));
+      assert.ok(paths.includes('.claude/skills/shared-skill'));
+      assert.ok(paths.includes('.claude/skills/claude-skill'));
+      assert.ok(paths.includes('.codex/skills/shared-skill'));
+      assert.ok(paths.includes('.codex/skills/codex-skill'));
+      assert.ok(specs.every((entry) => entry.scope === 'project'));
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('does not collect managed global skill paths for default built-ins', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'manifest-no-default-global-'));
+    try {
+      const bmadRoot = path.join(root, '_bmad');
+      writeSkill(bmadRoot, 'skills', 'shared-skill');
+
+      const specs = collectManagedGlobalSkillSpecs(root, bmadRoot, ['cursor', 'claude-code', 'codex']);
+      assert.deepStrictEqual(specs, []);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('collects user-global manifest entries only for explicit user-global registry scope', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'manifest-explicit-global-'));
+    try {
+      const bmadRoot = path.join(root, '_bmad');
+      writeSkill(bmadRoot, 'skills', 'shared-skill');
+      writeJson(path.join(root, '_bmad-output', 'config', 'ai-registry.json'), {
+        ais: [
+          {
+            id: 'cursor-agent',
+            name: 'Cursor Agent',
+            configTemplate: {
+              commandsDir: '.cursor/commands',
+              rulesDir: '.cursor/rules',
+              skillsDir: '~/.cursor/skills',
+              skillScope: 'user-global',
+              subagentSupport: 'native',
+            },
+          },
+        ],
+      });
+
+      const specs = collectManagedGlobalSkillSpecs(root, bmadRoot, ['cursor']);
+      assert.strictEqual(specs.length, 1);
+      assert.strictEqual(specs[0].scope, 'global');
+      assert.strictEqual(specs[0].kind, 'global_skill_dir');
+      assert.deepStrictEqual(specs[0].ownerAgents, ['cursor']);
+      assert.strictEqual(specs[0].deletePolicy, 'delete_entry_only');
+      assert.ok(specs[0].logicalPath.replace(/\\/g, '/').endsWith('/.cursor/skills/shared-skill'));
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }

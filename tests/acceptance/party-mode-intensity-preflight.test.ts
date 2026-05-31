@@ -27,8 +27,7 @@ describe('party-mode intensity preflight', () => {
         cwd: ROOT,
         input: JSON.stringify({
           cwd: tempRoot,
-          task:
-            'Run party-mode-facilitator with 100 rounds (final_solution_task_list_100) for BUGFIX final solution and §7 task list',
+          task: 'Run party-mode-facilitator with 100 rounds (final_solution_task_list_100) for BUGFIX final solution and §7 task list',
         }),
         encoding: 'utf8',
         env: {
@@ -46,9 +45,7 @@ describe('party-mode intensity preflight', () => {
       expect(result.stderr).toContain('decision_root_cause_50');
       expect(result.stderr).toContain('final_solution_task_list_100');
       expect(result.stderr).toContain('推荐档位：`final_solution_task_list_100`');
-      expect(result.stderr).toContain(
-        '必须等待用户明确回复 `20` / `50` / `100` 后再继续'
-      );
+      expect(result.stderr).toContain('必须等待用户明确回复 `20` / `50` / `100` 后再继续');
       expect(result.stderr).toContain('## 用户选择');
       expect(result.stderr).toContain('强度: 50 (decision_root_cause_50)');
       expect(result.stderr).toContain('只有这种专用“用户选择”确认块才算授权');
@@ -98,8 +95,7 @@ describe('party-mode intensity preflight', () => {
         cwd: ROOT,
         input: JSON.stringify({
           cwd: tempRoot,
-          task:
-            '## 用户选择\n强度: 50 (decision_root_cause)\n\nRun party-mode-facilitator for RCA comparison',
+          task: '## 用户选择\n强度: 50 (decision_root_cause)\n\nRun party-mode-facilitator for RCA comparison',
         }),
         encoding: 'utf8',
         env: {
@@ -128,8 +124,7 @@ describe('party-mode intensity preflight', () => {
         cwd: ROOT,
         input: JSON.stringify({
           cwd: tempRoot,
-          task:
-            '用户选择\n\n强度: 20 (quick_probe_20)\n\nRun party-mode-facilitator for quick probe',
+          task: '用户选择\n\n强度: 20 (quick_probe_20)\n\nRun party-mode-facilitator for quick probe',
         }),
         encoding: 'utf8',
         env: {
@@ -158,8 +153,7 @@ describe('party-mode intensity preflight', () => {
         cwd: ROOT,
         input: JSON.stringify({
           cwd: tempRoot,
-          task:
-            '确认，用户选择 20 (quick_probe_20)。请立即按该档位正式启动 party-mode-facilitator。',
+          task: '确认，用户选择 20 (quick_probe_20)。请立即按该档位正式启动 party-mode-facilitator。',
         }),
         encoding: 'utf8',
         env: {
@@ -169,9 +163,7 @@ describe('party-mode intensity preflight', () => {
       });
 
       expect(result.status).toBe(1);
-      expect(result.stderr).toContain(
-        'a user-selected intensity was detected in free text'
-      );
+      expect(result.stderr).toContain('a user-selected intensity was detected in free text');
       expect(result.stderr).toContain('不要再次询问用户 20 / 50 / 100');
       expect(result.stderr).toContain('强度: 20 (quick_probe_20)');
       expect(result.stderr).toContain('然后立刻重新调用 `@"party-mode-facilitator (agent)"`');

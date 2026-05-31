@@ -52,8 +52,11 @@ describe('runtime dashboard snapshot markdown', () => {
           rerun_decision: 'rerun_required',
           packet_execution_closure_status: 'retry_pending',
           scoring_failure_mode: 'succeeded',
-          blocking_reason: 'Critical readiness drift detected against the current implementation baseline.',
-          required_fixes: ['Critical readiness drift detected against the current implementation baseline.'],
+          blocking_reason:
+            'Critical readiness drift detected against the current implementation baseline.',
+          required_fixes: [
+            'Critical readiness drift detected against the current implementation baseline.',
+          ],
           score_error: null,
         },
       },
@@ -90,7 +93,8 @@ describe('runtime dashboard snapshot markdown', () => {
         drifted_dimensions: ['Smoke E2E Readiness', 'P0 Journey Coverage'],
         drift_severity: 'critical',
         re_readiness_required: true,
-        blocking_reason: 'Critical readiness drift detected against the current implementation baseline.',
+        blocking_reason:
+          'Critical readiness drift detected against the current implementation baseline.',
         effective_verdict: 'blocked',
         readiness_dimensions: {
           'P0 Journey Coverage': 88,
@@ -175,8 +179,12 @@ describe('runtime dashboard snapshot markdown', () => {
     expect(markdown).toContain('## Reviewer Projection');
     expect(markdown).toContain('- Reviewer Identity: bmad_code_reviewer');
     expect(markdown).toContain('- Reviewer Registry: reviewer_registry_v1');
-    expect(markdown).toContain('- Shared Core: _bmad/core/agents/code-reviewer [reviewer_shared_core_v1]');
-    expect(markdown).toContain('- Current Carrier: claude -> _bmad/claude/agents/code-reviewer.md -> .claude/agents/code-reviewer.md');
+    expect(markdown).toContain(
+      '- Shared Core: _bmad/core/agents/code-reviewer [reviewer_shared_core_v1]'
+    );
+    expect(markdown).toContain(
+      '- Current Carrier: claude -> _bmad/claude/agents/code-reviewer.md -> .claude/agents/code-reviewer.md'
+    );
     expect(markdown).toContain('- Active Reviewer Consumer: implement -> implement_audit');
     expect(markdown).toContain('- Reviewer Closeout: runAuditorHost');
     expect(markdown).toContain('- Cursor Route: cursor-task/code-reviewer');

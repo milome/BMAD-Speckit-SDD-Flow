@@ -23,7 +23,12 @@ describe('governance packet execution store', () => {
         rerunGate: 'implementation-readiness',
         artifactPath: path.join(root, '_bmad-output', 'planning-artifacts', 'attempt-1.md'),
         packetPaths: {
-          cursor: path.join(root, '_bmad-output', 'planning-artifacts', 'attempt-1.cursor-packet.md'),
+          cursor: path.join(
+            root,
+            '_bmad-output',
+            'planning-artifacts',
+            'attempt-1.cursor-packet.md'
+          ),
         },
         authoritativeHost: 'cursor',
         fallbackHosts: ['claude'],
@@ -36,7 +41,12 @@ describe('governance packet execution store', () => {
         rerunGate: 'implementation-readiness',
         artifactPath: path.join(root, '_bmad-output', 'planning-artifacts', 'attempt-1.md'),
         packetPaths: {
-          cursor: path.join(root, '_bmad-output', 'planning-artifacts', 'attempt-1.cursor-packet.md'),
+          cursor: path.join(
+            root,
+            '_bmad-output',
+            'planning-artifacts',
+            'attempt-1.cursor-packet.md'
+          ),
         },
         authoritativeHost: 'cursor',
       });
@@ -50,9 +60,8 @@ describe('governance packet execution store', () => {
       expect(persisted?.executionId).toBe(first.executionId);
       expect(listGovernancePacketExecutionRecords(root)).toHaveLength(1);
       expect(
-        JSON.parse(
-          readFileSync(governanceExecutionRecordPath(root, 'loop-alpha', 1), 'utf8')
-        ).status
+        JSON.parse(readFileSync(governanceExecutionRecordPath(root, 'loop-alpha', 1), 'utf8'))
+          .status
       ).toBe('pending_dispatch');
     } finally {
       rmSync(root, { recursive: true, force: true });

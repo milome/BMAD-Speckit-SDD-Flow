@@ -87,11 +87,7 @@ export function resolveFacilitatorRuntimeBindings(
     step01: resolveCanonicalPartyModeAsset(projectRoot, 'step-01-agent-loading', resolvedMode),
     step02:
       host === 'cursor'
-        ? resolveCursorPartyModeAsset(
-            projectRoot,
-            'step-02-discussion-orchestration',
-            resolvedMode
-          )
+        ? resolveCursorPartyModeAsset(projectRoot, 'step-02-discussion-orchestration', resolvedMode)
         : resolveCanonicalPartyModeAsset(
             projectRoot,
             'step-02-discussion-orchestration',

@@ -4,8 +4,14 @@ import { listUnexpectedLegacyConsumerHookFiles } from '../../packages/bmad-speck
 
 describe('legacy detached runner surface', () => {
   it('removes the legacy detached-runner helper from the repo surface', () => {
-    expect(listUnexpectedLegacyConsumerHookFiles(path.join(process.cwd(), '_bmad', 'runtime', 'hooks'))).toHaveLength(0);
-    expect(listUnexpectedLegacyConsumerHookFiles(path.join(process.cwd(), '.claude', 'hooks'))).toHaveLength(0);
-    expect(listUnexpectedLegacyConsumerHookFiles(path.join(process.cwd(), '.cursor', 'hooks'))).toHaveLength(0);
+    expect(
+      listUnexpectedLegacyConsumerHookFiles(path.join(process.cwd(), '_bmad', 'runtime', 'hooks'))
+    ).toHaveLength(0);
+    expect(
+      listUnexpectedLegacyConsumerHookFiles(path.join(process.cwd(), '.claude', 'hooks'))
+    ).toHaveLength(0);
+    expect(
+      listUnexpectedLegacyConsumerHookFiles(path.join(process.cwd(), '.cursor', 'hooks'))
+    ).toHaveLength(0);
   });
 });

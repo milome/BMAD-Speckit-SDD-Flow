@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "requirement-fixture-manifest/v1",
+  "fixtureId": "REQ-CHECKPOINT-AUTOMATION",
+  "sourceFile": "source.requirement.md",
+  "recordId": "REQ-CHECKPOINT-AUTOMATION",
+  "requirementSetId": "REQ-CHECKPOINT-AUTOMATION",
+  "docsRequirementsPath": "docs/requirements/2026-05-25-requirements-contract-checkpoint-automation.md",
+  "trackedInputPolicy": {
+    "gitAuthorityPath": "tests/fixtures/requirements/REQ-CHECKPOINT-AUTOMATION/source.requirement.md",
+    "docsRequirementsIsNotFixtureAuthority": true,
+    "runtimeOutputIsNotFixtureAuthority": true
+  }
+}

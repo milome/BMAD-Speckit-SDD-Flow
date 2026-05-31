@@ -50,7 +50,8 @@ function parseArgs(argv: string[]): ParsedArgs {
 
 function readJson(file: string): JsonObject {
   const parsed = JSON.parse(fs.readFileSync(file, 'utf8')) as unknown;
-  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error(`JSON object expected: ${file}`);
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed))
+    throw new Error(`JSON object expected: ${file}`);
   return parsed as JsonObject;
 }
 
@@ -64,7 +65,11 @@ function normalizePath(value: string): string {
 
 function timestampToken(value: string): string {
   const match = value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/u);
-  if (!match) return new Date().toISOString().replace(/[-:]/gu, '').replace(/\.\d+Z$/u, 'Z');
+  if (!match)
+    return new Date()
+      .toISOString()
+      .replace(/[-:]/gu, '')
+      .replace(/\.\d+Z$/u, 'Z');
   return `${match[1]}${match[2]}${match[3]}T${match[4]}${match[5]}${match[6]}Z`;
 }
 
@@ -83,7 +88,10 @@ function deepReplace(value: unknown, replacements: Array<[string, string]>): unk
   );
 }
 
-function updateArtifact(ref: JsonObject, input: { reportPath: string; outputPath: string; inputVersion: string }): void {
+function updateArtifact(
+  ref: JsonObject,
+  input: { reportPath: string; outputPath: string; inputVersion: string }
+): void {
   const artifactType = String(ref.artifactType ?? '');
   if (artifactType === 'strict_closeout_proof_report') {
     ref.path = normalizePath(input.reportPath);
@@ -100,16 +108,24 @@ function updateArtifact(ref: JsonObject, input: { reportPath: string; outputPath
 }
 
 function objectArray(value: unknown): JsonObject[] {
-  return Array.isArray(value) ? value.filter((item): item is JsonObject => Boolean(item) && typeof item === 'object') : [];
+  return Array.isArray(value)
+    ? value.filter((item): item is JsonObject => Boolean(item) && typeof item === 'object')
+    : [];
 }
 
-function updateAllArtifacts(packet: JsonObject, input: { reportPath: string; outputPath: string; inputVersion: string }): void {
+function updateAllArtifacts(
+  packet: JsonObject,
+  input: { reportPath: string; outputPath: string; inputVersion: string }
+): void {
   objectArray(packet.artifactRefs).forEach((ref) => updateArtifact(ref, input));
-  objectArray((packet.implementationDelta as JsonObject | undefined)?.negativeAssertionArtifactRefs).forEach((ref) =>
-    updateArtifact(ref, input)
-  );
-  for (const run of objectArray(packet.commandRuns)) objectArray(run.artifactRefs).forEach((ref) => updateArtifact(ref, input));
-  for (const command of objectArray((packet.deliveryEvidence as JsonObject | undefined)?.requiredCommands)) {
+  objectArray(
+    (packet.implementationDelta as JsonObject | undefined)?.negativeAssertionArtifactRefs
+  ).forEach((ref) => updateArtifact(ref, input));
+  for (const run of objectArray(packet.commandRuns))
+    objectArray(run.artifactRefs).forEach((ref) => updateArtifact(ref, input));
+  for (const command of objectArray(
+    (packet.deliveryEvidence as JsonObject | undefined)?.requiredCommands
+  )) {
     objectArray(command.artifactRefs).forEach((ref) => updateArtifact(ref, input));
   }
 }
@@ -128,7 +144,9 @@ function updatePacket(args: ParsedArgs): JsonObject {
   if (exitCode !== 0) throw new Error(`strict closeout proof command did not pass: ${exitCode}`);
   const command = extractLine(output, 'COMMAND');
   const record = readJson(path.resolve(args.requirementRecord!));
-  const architectureHash = String((record.architectureConfirmationState as JsonObject).currentArchitectureConfirmationHash);
+  const architectureHash = String(
+    (record.architectureConfirmationState as JsonObject).currentArchitectureConfirmationHash
+  );
   const token = timestampToken(startedAt);
   const runId = `run-TRACE-040-CLOSEOUT-PROOF-${token}`;
   const oldPacket = readJson(templatePath);
@@ -169,7 +187,14 @@ function updatePacket(args: ParsedArgs): JsonObject {
   for (const commandRef of objectArray((packet.deliveryEvidence as JsonObject).requiredCommands)) {
     commandRef.command = command;
     commandRef.closeoutAttemptId = args.attemptId;
-    commandRef.lastRunRef = { commandId: 'CMD-STRICT-CLOSEOUT-PROOF-GATE', runId, closeoutAttemptId: args.attemptId, exitCode, startedAt, completedAt };
+    commandRef.lastRunRef = {
+      commandId: 'CMD-STRICT-CLOSEOUT-PROOF-GATE',
+      runId,
+      closeoutAttemptId: args.attemptId,
+      exitCode,
+      startedAt,
+      completedAt,
+    };
   }
   updateAllArtifacts(packet, { reportPath, outputPath, inputVersion });
   return packet;
@@ -178,7 +203,9 @@ function updatePacket(args: ParsedArgs): JsonObject {
 export function mainTrace040EvidencePacketGenerator(argv: string[]): number {
   const args = parseArgs(argv);
   if (args.help) {
-    console.log('Usage: trace-040-evidence-packet-generator --template <json> --requirement-record <json> --run-dir <dir> --attempt-id <id> --out <json> [--json]');
+    console.log(
+      'Usage: trace-040-evidence-packet-generator --template <json> --requirement-record <json> --run-dir <dir> --attempt-id <id> --out <json> [--json]'
+    );
     return 0;
   }
   for (const key of ['template', 'requirementRecord', 'runDir', 'attemptId', 'out'] as const) {
@@ -187,10 +214,23 @@ export function mainTrace040EvidencePacketGenerator(argv: string[]): number {
   const packet = updatePacket(args);
   const outPath = path.resolve(args.out!);
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
-  fs.writeFileSync(String((packet.implementationDelta as JsonObject).diffSummaryRef), `${packet.diffSummary}\n`, 'utf8');
+  fs.writeFileSync(
+    String((packet.implementationDelta as JsonObject).diffSummaryRef),
+    `${packet.diffSummary}\n`,
+    'utf8'
+  );
   fs.writeFileSync(outPath, `${JSON.stringify(packet, null, 2)}\n`, 'utf8');
   process.stdout.write(
-    JSON.stringify({ ok: true, out: normalizePath(outPath), runId: packet.runId, attemptId: packet.closeoutAttemptId }, null, 2)
+    JSON.stringify(
+      {
+        ok: true,
+        out: normalizePath(outPath),
+        runId: packet.runId,
+        attemptId: packet.closeoutAttemptId,
+      },
+      null,
+      2
+    )
   );
   return 0;
 }
@@ -199,7 +239,13 @@ if (require.main === module) {
   try {
     process.exitCode = mainTrace040EvidencePacketGenerator(process.argv.slice(2));
   } catch (error) {
-    console.error(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : String(error) }, null, 2));
+    console.error(
+      JSON.stringify(
+        { ok: false, error: error instanceof Error ? error.message : String(error) },
+        null,
+        2
+      )
+    );
     process.exitCode = 2;
   }
 }

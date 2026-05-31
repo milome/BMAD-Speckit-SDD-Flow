@@ -1,7 +1,7 @@
 interface:
   display_name: "Requirements Contract Authoring"
-  short_description: "Create confirmed source-document requirement blocks and HTML review views"
-  default_prompt: "Use $requirements-contract-authoring to create or update the implementation source document with an inline implementationConfirmation block, mandatory HTML confirmation view, ID-referenced diagrams/steps, artifact automation plan, traceRows, evidence expectations, and a Reverse Audit Report. Do not create a separate authoritative requirements contract and do not use Markdown/chat fallback for confirmation."
+  short_description: "Create confirmation-ready source requirement blocks"
+  default_prompt: "Use $requirements-contract-authoring to create or update a confirmation-ready implementation source document with an inline implementationConfirmation block, ID-bound views, artifact plan, traceRows, evidence, failure paths, and pre-render completeness checks. Do not create a separate authoritative requirements contract."
 
 policy:
   allow_implicit_invocation: true

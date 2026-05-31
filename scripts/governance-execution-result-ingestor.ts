@@ -34,13 +34,13 @@ type GovernanceRerunGateResultIngestPayload = GovernanceRerunGateResultIngestInp
 
 export type GovernanceExecutionResultEnvelope = GovernanceTransportEnvelope & {
   eventType: 'execution_iteration_recorded';
-    payloadKind: 'status';
-    payload: {
-      loopStateId: string;
-      attemptNumber: number;
-      execution: GovernanceExecutionResultProjection;
-    };
+  payloadKind: 'status';
+  payload: {
+    loopStateId: string;
+    attemptNumber: number;
+    execution: GovernanceExecutionResultProjection;
   };
+};
 
 export type GovernanceRerunGateResultEnvelope = GovernanceTransportEnvelope & {
   eventType: 'gate_check_recorded';
@@ -73,11 +73,11 @@ export function ingestGovernanceExecutionResult(
   maybeInput?: GovernanceExecutionResultIngestInput
 ): GovernancePacketExecutionRecord {
   const projectRoot =
-    typeof projectRootOrInput === 'string'
-      ? projectRootOrInput
-      : projectRootOrInput.projectRoot;
+    typeof projectRootOrInput === 'string' ? projectRootOrInput : projectRootOrInput.projectRoot;
   const input =
-    typeof projectRootOrInput === 'string' ? (maybeInput as GovernanceExecutionResultIngestInput) : projectRootOrInput;
+    typeof projectRootOrInput === 'string'
+      ? (maybeInput as GovernanceExecutionResultIngestInput)
+      : projectRootOrInput;
   const config = readGovernanceRemediationConfig(projectRoot);
   const maxFailures = config.execution?.escalation.afterExecutionFailures ?? 2;
 
@@ -98,10 +98,10 @@ export function ingestGovernanceExecutionResult(
         status: completesWithoutRerunGate
           ? 'gate_passed'
           : isSuccess
-          ? 'awaiting_rerun_gate'
-          : failureCount >= maxFailures
-            ? 'escalated'
-            : 'retry_pending',
+            ? 'awaiting_rerun_gate'
+            : failureCount >= maxFailures
+              ? 'escalated'
+              : 'retry_pending',
         leaseOwner: null,
         leaseAcquiredAt: null,
         leaseExpiresAt: null,
@@ -115,15 +115,15 @@ export function ingestGovernanceExecutionResult(
               note: 'implementation resume completed without an additional rerun gate',
             }
           : isSuccess
-          ? {
-              status: config.execution?.rerunGate.autoSchedule ? 'scheduled' : 'pending',
-              scheduledAt: config.execution?.rerunGate.autoSchedule ? nowIso() : null,
-              observedAt: null,
-              note: config.execution?.rerunGate.autoSchedule
-                ? 'rerun gate scheduled after successful execution result ingestion'
-                : 'rerun gate awaiting external scheduling',
-            }
-          : record.rerunGateSchedule,
+            ? {
+                status: config.execution?.rerunGate.autoSchedule ? 'scheduled' : 'pending',
+                scheduledAt: config.execution?.rerunGate.autoSchedule ? nowIso() : null,
+                observedAt: null,
+                note: config.execution?.rerunGate.autoSchedule
+                  ? 'rerun gate scheduled after successful execution result ingestion'
+                  : 'rerun gate awaiting external scheduling',
+              }
+            : record.rerunGateSchedule,
         history: [
           ...record.history,
           {
@@ -153,7 +153,9 @@ export function ingestGovernanceTransportEnvelope(
 ): GovernancePacketExecutionRecord | null {
   assertGovernanceTransportEnvelope(envelope, validationOptions);
   if (!SUPPORTED_INGEST_ENVELOPE_EVENT_TYPES.has(envelope.eventType)) {
-    throw new Error(`unsupported governance-execution-result-ingestor eventType: ${envelope.eventType}`);
+    throw new Error(
+      `unsupported governance-execution-result-ingestor eventType: ${envelope.eventType}`
+    );
   }
   if (envelope.eventType === 'execution_iteration_recorded') {
     const payload = envelope.payload;
@@ -178,11 +180,11 @@ export function ingestGovernanceRerunGateResult(
   maybeInput?: GovernanceRerunGateResultIngestInput
 ): GovernancePacketExecutionRecord | null {
   const projectRoot =
-    typeof projectRootOrInput === 'string'
-      ? projectRootOrInput
-      : projectRootOrInput.projectRoot;
+    typeof projectRootOrInput === 'string' ? projectRootOrInput : projectRootOrInput.projectRoot;
   const input =
-    typeof projectRootOrInput === 'string' ? (maybeInput as GovernanceRerunGateResultIngestInput) : projectRootOrInput;
+    typeof projectRootOrInput === 'string'
+      ? (maybeInput as GovernanceRerunGateResultIngestInput)
+      : projectRootOrInput;
   const config = readGovernanceRemediationConfig(projectRoot);
   const target =
     typeof input.attemptNumber === 'number'
@@ -193,7 +195,9 @@ export function ingestGovernanceRerunGateResult(
   }
 
   const attemptNumber =
-    'attemptNumber' in target ? target.attemptNumber : (target as GovernancePacketExecutionRecord).attemptNumber;
+    'attemptNumber' in target
+      ? target.attemptNumber
+      : (target as GovernancePacketExecutionRecord).attemptNumber;
   const maxGateFailures = config.execution?.escalation.afterGateFailures ?? 2;
 
   return updateGovernancePacketExecutionRecord(
@@ -201,17 +205,24 @@ export function ingestGovernanceRerunGateResult(
     input.loopStateId,
     attemptNumber,
     (record) => {
-      if (!['awaiting_rerun_gate', 'retry_pending', 'pending_dispatch', 'running'].includes(record.status)) {
+      if (
+        !['awaiting_rerun_gate', 'retry_pending', 'pending_dispatch', 'running'].includes(
+          record.status
+        )
+      ) {
         return record;
       }
 
       const isPass = input.rerunGateResult.status === 'pass';
-      const failureCount =
-        countHistoryEntries(record, 'rerun-gate-result') + (isPass ? 0 : 1);
+      const failureCount = countHistoryEntries(record, 'rerun-gate-result') + (isPass ? 0 : 1);
 
       return {
         ...record,
-        status: isPass ? 'gate_passed' : failureCount >= maxGateFailures ? 'escalated' : 'retry_pending',
+        status: isPass
+          ? 'gate_passed'
+          : failureCount >= maxGateFailures
+            ? 'escalated'
+            : 'retry_pending',
         leaseOwner: null,
         leaseAcquiredAt: null,
         leaseExpiresAt: null,
@@ -258,16 +269,18 @@ function main(): void {
   }
   const payloadArg = process.argv[2];
   if (!payloadArg) {
-    process.stderr.write(
-      'Usage: node governance-execution-result-ingestor.cjs <json-payload>\n'
-    );
+    process.stderr.write('Usage: node governance-execution-result-ingestor.cjs <json-payload>\n');
     process.exit(1);
   }
 
   const payload = JSON.parse(payloadArg) as
     | ({ kind: 'execution'; projectRoot: string } & GovernanceExecutionResultIngestInput)
     | ({ kind: 'rerunGate'; projectRoot: string } & GovernanceRerunGateResultIngestInput)
-    | ({ kind: 'envelope'; projectRoot: string; envelope: GovernanceExecutionResultEnvelope | GovernanceRerunGateResultEnvelope });
+    | {
+        kind: 'envelope';
+        projectRoot: string;
+        envelope: GovernanceExecutionResultEnvelope | GovernanceRerunGateResultEnvelope;
+      };
 
   const result =
     payload.kind === 'envelope'

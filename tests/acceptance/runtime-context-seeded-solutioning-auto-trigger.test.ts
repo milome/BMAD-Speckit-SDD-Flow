@@ -2,8 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { ensureProjectRuntimeContext, ensureStoryRuntimeContext } from '../../scripts/runtime-context';
-import { readRuntimeContextRegistry, runtimeContextRegistryPath } from '../../scripts/runtime-context-registry';
+import {
+  ensureProjectRuntimeContext,
+  ensureStoryRuntimeContext,
+} from '../../scripts/runtime-context';
+import {
+  readRuntimeContextRegistry,
+  runtimeContextRegistryPath,
+} from '../../scripts/runtime-context-registry';
 
 const REPO_ROOT = path.join(import.meta.dirname, '..', '..');
 const STEP04 = path.join(
@@ -31,7 +37,9 @@ describe('runtime-context seeded_solutioning auto trigger', () => {
         'utf8'
       );
 
-      const projectContext = ensureProjectRuntimeContext(root, { sourceMode: 'seeded_solutioning' });
+      const projectContext = ensureProjectRuntimeContext(root, {
+        sourceMode: 'seeded_solutioning',
+      });
       const storyContext = ensureStoryRuntimeContext(root, {
         sourceMode: 'seeded_solutioning',
         epicId: 'epic-20',

@@ -196,9 +196,9 @@ describe('main-agent host-matrix PR orchestration', () => {
     expect(report.githubPrApi.passed).toBe(true);
     expect(report.githubPrApi.prUrl).toBe('https://example.invalid/pull/42');
     expect(steps.some((step) => step.startsWith('git push -u origin'))).toBe(true);
-    expect(steps.some((step) => step.startsWith('gh pr close https://example.invalid/pull/42'))).toBe(
-      true
-    );
+    expect(
+      steps.some((step) => step.startsWith('gh pr close https://example.invalid/pull/42'))
+    ).toBe(true);
     expect(report.prTopology.all_affected_stories_passed).toBe(true);
     expect(report.finalPassed).toBe(true);
   });
@@ -277,4 +277,3 @@ describe('main-agent host-matrix PR orchestration', () => {
     }
   });
 });
-

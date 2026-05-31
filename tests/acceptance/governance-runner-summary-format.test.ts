@@ -43,7 +43,10 @@ describe('governance runner summary shared formatter', () => {
     ]);
 
     expect(
-      appendRunnerSummaryToArtifactMarkdown('# Remediation Attempt\n\n## Existing Section\n', runnerSummaryLines)
+      appendRunnerSummaryToArtifactMarkdown(
+        '# Remediation Attempt\n\n## Existing Section\n',
+        runnerSummaryLines
+      )
     ).toBe(
       [
         '# Remediation Attempt',

@@ -59,7 +59,9 @@ describe('facilitator runtime definition', () => {
 
     const zhReceipt = materializeFacilitatorDefinition(root, 'claude', 'zh');
     const zhRuntime = fs.readFileSync(zhReceipt.targetPath, 'utf8');
-    expect(zhReceipt.targetPath.replace(/\\/g, '/')).toContain('/.claude/agents/party-mode-facilitator.md');
+    expect(zhReceipt.targetPath.replace(/\\/g, '/')).toContain(
+      '/.claude/agents/party-mode-facilitator.md'
+    );
     expect(zhRuntime).toContain('resolvedMode=zh');
     expect(zhRuntime).toContain('_bmad/claude/agents/party-mode-facilitator.zh.md');
 

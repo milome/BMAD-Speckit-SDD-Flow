@@ -182,9 +182,7 @@ export function implementationReadinessPassed(status: ImplementationReadinessSta
   return status === 'ready_clean' || status === 'repair_closed';
 }
 
-function defaultReadinessBlockerCode(
-  status: ImplementationReadinessStatus
-): string {
+function defaultReadinessBlockerCode(status: ImplementationReadinessStatus): string {
   switch (status) {
     case 'missing':
       return 'missing_readiness_evidence';
@@ -199,9 +197,7 @@ function defaultReadinessBlockerCode(
   }
 }
 
-function defaultReadinessBlockerSummary(
-  status: ImplementationReadinessStatus
-): string {
+function defaultReadinessBlockerSummary(status: ImplementationReadinessStatus): string {
   switch (status) {
     case 'missing':
       return '缺少 implementation-readiness 所需证据';
@@ -255,9 +251,7 @@ export function resolveImplementationEntryGate(
         'standalone_tasks 在 high complexity 下不得直接实现，必须升轨到 story'
       )
     ) {
-      blockerSummary.push(
-        'standalone_tasks 在 high complexity 下不得直接实现，必须升轨到 story'
-      );
+      blockerSummary.push('standalone_tasks 在 high complexity 下不得直接实现，必须升轨到 story');
     }
     return {
       gateName: 'implementation-readiness',

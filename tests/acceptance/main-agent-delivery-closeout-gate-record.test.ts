@@ -44,6 +44,58 @@ function writeText(filePath: string, value: string): void {
   writeFileSync(filePath, value, 'utf8');
 }
 
+function normalizeSlashes(value: string): string {
+  return value.replace(/\\/gu, '/');
+}
+
+function stableStringify(value: unknown): string {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map((item) => stableStringify(item)).join(',')}]`;
+  return `{${Object.keys(value as Record<string, unknown>)
+    .sort()
+    .map(
+      (key) => `${JSON.stringify(key)}:${stableStringify((value as Record<string, unknown>)[key])}`
+    )
+    .join(',')}}`;
+}
+
+function writeModelPacket(filePath: string, input: Record<string, unknown> = {}): string {
+  writeJson(filePath, {
+    schemaVersion: 'model-packet-fixture/v1',
+    sourceDocumentHash: HASH,
+    implementationConfirmationHash: HASH,
+    requirements: {
+      must: [
+        {
+          id: 'MUST-001',
+          text: 'MUST-001 requires current attempt command, artifact, test result, and closure.',
+          riskLevel: 'critical',
+          evidenceRefs: ['EVD-001'],
+          coveredByTraceRows: ['TRACE-001'],
+        },
+      ],
+    },
+    traceSlices: [
+      {
+        traceId: 'TRACE-001',
+        requirementRefs: ['MUST-001'],
+        evidenceRefs: ['EVD-001'],
+        commandRefs: ['CMD-DELIVERY'],
+      },
+    ],
+    requiredCommands: [
+      {
+        id: 'CMD-DELIVERY',
+        command: 'node verify-delivery.js',
+        traceRows: ['TRACE-001'],
+        evidenceRefs: ['EVD-001'],
+      },
+    ],
+    ...input,
+  });
+  return filePath;
+}
+
 function writeDeliveryTruthReport(root: string, overrides: Record<string, unknown> = {}): string {
   const reportPath = path.join(
     root,
@@ -65,7 +117,8 @@ function writeDeliveryTruthReport(root: string, overrides: Record<string, unknow
       {
         id: 'release-gate',
         passed: true,
-        summary: 'critical_failures=0, blocked_sprint_status_update=false, completion_intent=present',
+        summary:
+          'critical_failures=0, blocked_sprint_status_update=false, completion_intent=present',
       },
     ],
     ...overrides,
@@ -83,7 +136,38 @@ function recordText(record: Record<string, unknown>, key: string): string {
 
 function currentArchitectureHash(record: Record<string, unknown>): string {
   const state = record.architectureConfirmationState as Record<string, unknown> | undefined;
-  return typeof state?.currentArchitectureConfirmationHash === 'string' ? state.currentArchitectureConfirmationHash : HASH;
+  return typeof state?.currentArchitectureConfirmationHash === 'string'
+    ? state.currentArchitectureConfirmationHash
+    : HASH;
+}
+
+function modelResult(model: string, status = 'pass'): Record<string, unknown> {
+  return modelResultWithHashes(model, HASH, HASH, status);
+}
+
+function modelResultWithHashes(
+  model: string,
+  sourceDocumentHash: string,
+  implementationConfirmationHash: string,
+  status = 'pass'
+): Record<string, unknown> {
+  return {
+    payloadKind: 'model_result',
+    model,
+    recordId: 'REQ-CLOSEOUT',
+    requirementSetId: 'REQ-CLOSEOUT',
+    sourceDocumentHash,
+    implementationConfirmationHash,
+    status,
+    resultRecordedAt: '2026-05-19T00:00:00.000Z',
+    resultRecordedBy: 'test-agent',
+    blockingReasons: status === 'pass' ? [] : [`${model}_${status}`],
+    sourceRefs: [{ sourceType: 'fixture', id: model }],
+    currentHashes: {
+      sourceDocumentHash,
+      implementationConfirmationHash,
+    },
+  };
 }
 
 function artifact(filePath: string, artifactType: string): Record<string, unknown> {
@@ -216,7 +300,11 @@ function writeProductionArtifacts(
   const sourceDocumentHash = recordText(record, 'sourceDocumentHash');
   const implementationConfirmationHash = recordText(record, 'implementationConfirmationHash');
   const architectureConfirmationHash = currentArchitectureHash(record);
-  const extensionPath = path.join(base, 'extensions', 'production-loop-16-subsystems-extension.json');
+  const extensionPath = path.join(
+    base,
+    'extensions',
+    'production-loop-16-subsystems-extension.json'
+  );
   const productionSubsystemAcceptanceRegistry = {
     registryVersion: 'production-subsystem-acceptance/v1',
     sourceDocumentHash,
@@ -230,13 +318,20 @@ function writeProductionArtifacts(
     sourceDocumentHash,
     implementationConfirmationHash,
     architectureConfirmationHash,
-    canaryPlan: [{ stage: 'internal', rolloutPercent: 10, rollbackOn: 'production_loop_ready_blocked' }],
+    canaryPlan: [
+      { stage: 'internal', rolloutPercent: 10, rollbackOn: 'production_loop_ready_blocked' },
+    ],
     sloTargets: [{ name: 'delivery_closeout_gate_latency', target: '<= 5000ms' }],
     errorRateMetrics: [{ name: 'gate_failure_rate', threshold: '<= 1%' }],
     performanceMetrics: [{ name: 'production_loop_ready_eval_duration_ms', threshold: '<= 5000' }],
     businessMetrics: [{ name: 'requirement_reopen_rate', threshold: '<= 5%' }],
     alerts: [{ name: 'production_loop_blocked', owner: 'main-agent' }],
-    rollbackConditions: [{ condition: 'hash_mismatch_or_missing_subsystem_readiness', action: 'block_closeout_and_open_rca' }],
+    rollbackConditions: [
+      {
+        condition: 'hash_mismatch_or_missing_subsystem_readiness',
+        action: 'block_closeout_and_open_rca',
+      },
+    ],
     feedbackRouting: {
       failureRecordEventTypes: ['failure_recorded', 'gate_check_recorded'],
       rcaRecordEventTypes: ['rca_created', 'rca_action_recorded'],
@@ -249,7 +344,9 @@ function writeProductionArtifacts(
       architectureConfirmationHash,
     },
     productionSubsystemAcceptanceRegistry,
-    productionSubsystemAcceptanceRegistryHash: sha256Text(JSON.stringify(productionSubsystemAcceptanceRegistry)),
+    productionSubsystemAcceptanceRegistryHash: sha256Text(
+      JSON.stringify(productionSubsystemAcceptanceRegistry)
+    ),
     functionalParity: {
       userVisibleBehaviorPreserved: true,
       replacementScripts: [
@@ -340,7 +437,12 @@ function writeProductionArtifacts(
       { id: 'source-manifest-current', passed: true },
       { id: 'training-run-bound', passed: true },
       { id: 'post-training-eval-bound', passed: true },
-      { id: 'sixteen-subsystems-machine-readable', passed: true, expectedCount: 16, actualCount: 16 },
+      {
+        id: 'sixteen-subsystems-machine-readable',
+        passed: true,
+        expectedCount: 16,
+        actualCount: 16,
+      },
     ],
     manifestHash: sha256File(manifestPath),
   });
@@ -355,7 +457,15 @@ function writeProductionArtifacts(
     contentHash: sha256File(extensionPath),
     producer: 'main-agent-delivery-closeout-gate-record.test',
     purpose: 'prove current 16-subsystem production loop readiness extension',
-    relatedRequirementIds: ['MUST-017', 'MUST-039', 'MUST-040', 'MUST-043', 'EVD-039', 'EVD-040', 'EVD-043'],
+    relatedRequirementIds: [
+      'MUST-017',
+      'MUST-039',
+      'MUST-040',
+      'MUST-043',
+      'EVD-039',
+      'EVD-040',
+      'EVD-043',
+    ],
     status: 'active',
     inputVersion: 'source-v1',
     outputVersion: 'production-loop-16-subsystems-extension-v1',
@@ -370,7 +480,12 @@ function writeProductionArtifacts(
     blockingReasons: [],
     checks: [
       { id: 'governed-dataset-release-complete', passed: true },
-      { id: 'sixteen-subsystems-machine-readable', passed: true, expectedCount: 16, actualCount: 16 },
+      {
+        id: 'sixteen-subsystems-machine-readable',
+        passed: true,
+        expectedCount: 16,
+        actualCount: 16,
+      },
     ],
     extensionRef,
   });
@@ -387,7 +502,16 @@ function writeProductionArtifacts(
       contentHash: sha256File(productionReadyReportPath),
       producer: 'main-agent-delivery-closeout-gate-record.test',
       purpose: 'prove Production Loop Ready passes current 16-subsystem acceptance gate',
-      relatedRequirementIds: ['MUST-039', 'MUST-040', 'MUST-043', 'NEG-028', 'NEG-030', 'NEG-031', 'EVD-039', 'EVD-040'],
+      relatedRequirementIds: [
+        'MUST-039',
+        'MUST-040',
+        'MUST-043',
+        'NEG-028',
+        'NEG-030',
+        'NEG-031',
+        'EVD-039',
+        'EVD-040',
+      ],
       status: 'active',
       inputVersion: 'source-v1',
       outputVersion: 'production-subsystem-acceptance-report-v1',
@@ -399,6 +523,25 @@ function writeRecord(root: string, record: Record<string, unknown>): string {
   const base = path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'REQ-CLOSEOUT');
   mkdirSync(base, { recursive: true });
   writeDeliveryTruthReport(root);
+  if (
+    typeof record.sourcePath === 'string' &&
+    record.sourcePath &&
+    !readMaybeExists(record.sourcePath)
+  ) {
+    writeText(
+      record.sourcePath,
+      [
+        'implementationConfirmation:',
+        '  status: user_confirmed',
+        '  must: []',
+        '  notDone: []',
+        '  mustNot: []',
+        '  evidence: []',
+        '  traceRows: []',
+        '',
+      ].join('\n')
+    );
+  }
   const coveragePath = path.join(base, 'evidence', 'failure-case-coverage.json');
   mkdirSync(path.dirname(coveragePath), { recursive: true });
   writeFileSync(
@@ -427,7 +570,7 @@ function writeRecord(root: string, record: Record<string, unknown>): string {
       null,
       2
     )}\n`,
-      'utf8'
+    'utf8'
   );
   const production = writeProductionArtifacts(root, base, record);
   const recordWithCoverage = {
@@ -458,7 +601,17 @@ function writeRecord(root: string, record: Record<string, unknown>): string {
   return recordPath;
 }
 
-function evidenceArtifactRef(pathValue = '_bmad-output/runtime/requirement-records/REQ-CLOSEOUT/execution/evidence.json') {
+function readMaybeExists(filePath: string): string | null {
+  try {
+    return readFileSync(filePath, 'utf8');
+  } catch {
+    return null;
+  }
+}
+
+function evidenceArtifactRef(
+  pathValue = '_bmad-output/runtime/requirement-records/REQ-CLOSEOUT/execution/evidence.json'
+) {
   return {
     artifactType: 'implementation_evidence',
     sourceOfTruthRole: 'evidence',
@@ -473,6 +626,177 @@ function evidenceArtifactRef(pathValue = '_bmad-output/runtime/requirement-recor
   };
 }
 
+function writeAiTddSource(root: string, testPath: string): string {
+  const sourcePath = path.join(root, 'ai-tdd-source.md');
+  writeText(
+    sourcePath,
+    [
+      'implementationConfirmation:',
+      '  status: user_confirmed',
+      '  must:',
+      '    - id: MUST-001',
+      '      text: Must pass closeout acceptance.',
+      '      evidenceRefs: [EVD-001]',
+      '      coveredByTraceRows: [TRACE-001]',
+      '  notDone:',
+      '    - id: NEG-001',
+      '      text: Missing AI-TDD acceptance cannot close.',
+      '      evidenceRefs: [EVD-001]',
+      '      oracle: negative control oracle',
+      '      coveredByTraceRows: [TRACE-001]',
+      '  mustNot:',
+      '    - id: OUT-001',
+      '      text: Do not self-certify closeout.',
+      '  evidence:',
+      '    - id: EVD-001',
+      '      text: Current attempt acceptance evidence.',
+      '      oracle: current-attempt command with artifact evidence',
+      '      requiredCommandRefs: [CMD-AI-TDD]',
+      '      artifactRefs: [ART-AI-TDD]',
+      '  traceRows:',
+      '    - id: TRACE-001',
+      '      covers: [MUST-001, NEG-001]',
+      '      evidenceRefs: [EVD-001]',
+      '      deliveryEvidenceCommandRefs: [CMD-AI-TDD]',
+      '      acceptanceRefs: [ACC-AI-TDD]',
+      '  requiredCommands:',
+      '    - id: CMD-AI-TDD',
+      `      command: npx vitest run ${testPath.replace(/\\/gu, '/')}`,
+      '      oracle: current-attempt command with artifact evidence',
+      '  acceptanceTests:',
+      '    - id: ACC-AI-TDD',
+      `      file: ${testPath.replace(/\\/gu, '/')}`,
+      '      covers: [MUST-001, NEG-001]',
+      '      traceRows: [TRACE-001]',
+      '      evidenceRefs: [EVD-001]',
+      '      commandRefs: [CMD-AI-TDD]',
+      '      expectedPreImplementationState: expected_red',
+      '      oracle: current-attempt command with artifact evidence',
+      '  artifactAutomationPlan:',
+      '    - id: ART-AI-TDD',
+      '      artifactType: report',
+      '      path: _bmad-output/runtime/requirement-records/REQ-CLOSEOUT/evidence/ai-tdd.json',
+      '      producer: ai-tdd-fixture',
+      '      sourceOfTruthRole: evidence',
+      '      traceRows: [TRACE-001]',
+      '      evidenceRefs: [EVD-001]',
+      '  currentTargetMap:',
+      '    canonicalArtifacts: []',
+      '    pathRegistry: []',
+      '    existingArtifacts: []',
+      '  applicability:',
+      '    governanceEvents: { applies: false, reasonCode: not_applicable }',
+      '    runtimeRecovery: { applies: false, reasonCode: not_applicable }',
+      '    scoringDashboardSft: { applies: false, reasonCode: not_applicable }',
+      '    currentTargetMap: { applies: false, reasonCode: not_applicable }',
+      '    scriptsAndHooks: { applies: false, reasonCode: not_applicable }',
+      '    aiTddContractGate: { applies: false, reasonCode: not_applicable }',
+      '',
+    ].join('\n')
+  );
+  return sourcePath;
+}
+
+function confirmationHashesForSource(sourcePath: string): {
+  sourceDocumentHash: string;
+  implementationConfirmationHash: string;
+} {
+  const sourceText = readFileSync(sourcePath, 'utf8');
+  const blockText = sourceText;
+  const semanticConfirmation = {
+    acceptanceTests: [
+      {
+        commandRefs: ['CMD-AI-TDD'],
+        covers: ['MUST-001', 'NEG-001'],
+        evidenceRefs: ['EVD-001'],
+        expectedPreImplementationState: 'expected_red',
+        file: sourceText.match(/file: (.+)/u)?.[1] ?? '',
+        id: 'ACC-AI-TDD',
+        oracle: 'current-attempt command with artifact evidence',
+        traceRows: ['TRACE-001'],
+      },
+    ],
+    artifactAutomationPlan: [
+      {
+        artifactType: 'report',
+        evidenceRefs: ['EVD-001'],
+        id: 'ART-AI-TDD',
+        path: '_bmad-output/runtime/requirement-records/REQ-CLOSEOUT/evidence/ai-tdd.json',
+        producer: 'ai-tdd-fixture',
+        sourceOfTruthRole: 'evidence',
+        traceRows: ['TRACE-001'],
+      },
+    ],
+    applicability: {
+      aiTddContractGate: { applies: false, reasonCode: 'not_applicable' },
+      currentTargetMap: { applies: false, reasonCode: 'not_applicable' },
+      governanceEvents: { applies: false, reasonCode: 'not_applicable' },
+      runtimeRecovery: { applies: false, reasonCode: 'not_applicable' },
+      scoringDashboardSft: { applies: false, reasonCode: 'not_applicable' },
+      scriptsAndHooks: { applies: false, reasonCode: 'not_applicable' },
+    },
+    currentTargetMap: {
+      canonicalArtifacts: [],
+      existingArtifacts: [],
+      pathRegistry: [],
+    },
+    evidence: [
+      {
+        artifactRefs: ['ART-AI-TDD'],
+        id: 'EVD-001',
+        oracle: 'current-attempt command with artifact evidence',
+        requiredCommandRefs: ['CMD-AI-TDD'],
+        text: 'Current attempt acceptance evidence.',
+      },
+    ],
+    must: [
+      {
+        coveredByTraceRows: ['TRACE-001'],
+        evidenceRefs: ['EVD-001'],
+        id: 'MUST-001',
+        text: 'Must pass closeout acceptance.',
+      },
+    ],
+    mustNot: [
+      {
+        id: 'OUT-001',
+        text: 'Do not self-certify closeout.',
+      },
+    ],
+    notDone: [
+      {
+        coveredByTraceRows: ['TRACE-001'],
+        evidenceRefs: ['EVD-001'],
+        id: 'NEG-001',
+        oracle: 'negative control oracle',
+        text: 'Missing AI-TDD acceptance cannot close.',
+      },
+    ],
+    requiredCommands: [
+      {
+        command: sourceText.match(/command: (.+)/u)?.[1] ?? '',
+        id: 'CMD-AI-TDD',
+        oracle: 'current-attempt command with artifact evidence',
+      },
+    ],
+    traceRows: [
+      {
+        acceptanceRefs: ['ACC-AI-TDD'],
+        covers: ['MUST-001', 'NEG-001'],
+        deliveryEvidenceCommandRefs: ['CMD-AI-TDD'],
+        evidenceRefs: ['EVD-001'],
+        id: 'TRACE-001',
+      },
+    ],
+  };
+  const implementationConfirmationHash = sha256Text(stableStringify(semanticConfirmation));
+  const normalizedBlock = `implementationConfirmation:${stableStringify(semanticConfirmation)}`;
+  return {
+    sourceDocumentHash: sha256Text(sourceText.replace(blockText, normalizedBlock)),
+    implementationConfirmationHash,
+  };
+}
+
 function baseRecord(): Record<string, unknown> {
   const recipe = resolveArchitectureConfirmationHashRecipe();
   return {
@@ -481,6 +805,14 @@ function baseRecord(): Record<string, unknown> {
     status: 'user_confirmed',
     sourceDocumentHash: HASH,
     implementationConfirmationHash: HASH,
+    currentMentalModel: 'audit_review',
+    sixModelResults: {
+      requirement_confirmation: modelResult('requirement_confirmation'),
+      architecture_confirmation: modelResult('architecture_confirmation'),
+      implementation_readiness: modelResult('implementation_readiness'),
+      execution_closure: modelResult('execution_closure'),
+      audit_review: modelResult('audit_review'),
+    },
     architectureConfirmationState: {
       status: 'active',
       currentArchitectureConfirmationRunId: 'arch-run-001',
@@ -495,7 +827,7 @@ function baseRecord(): Record<string, unknown> {
     },
     architectureConfirmationStateChecks: [
       {
-        eventType: 'architecture_confirmation_state_checked',
+        eventType: 'architecture_confirmation_recorded',
         recordId: 'REQ-CLOSEOUT',
         requirementSetId: 'REQ-CLOSEOUT',
         checkId: 'architecture-state:2026-05-19T00:00:00.000Z',
@@ -524,9 +856,7 @@ function baseRecord(): Record<string, unknown> {
         checkedBy: 'test-agent',
       },
     ],
-    artifactIndex: [
-      evidenceArtifactRef(),
-    ],
+    artifactIndex: [evidenceArtifactRef()],
     gateChecks: [
       {
         eventType: 'gate_check_recorded',
@@ -587,6 +917,19 @@ describe('requirement-scoped delivery closeout gate', () => {
           { sourceType: 'closeout_attempt', id: 'closeout-001' },
         ])
       );
+      expect(record.lastEventType).toBe('delivery_confirmation_result_recorded');
+      expect(record.lastAppliedEventId).toContain('delivery_confirmation_result_recorded');
+      expect(record.sixModelResults.delivery_confirmation).toMatchObject({
+        payloadKind: 'model_result',
+        model: 'delivery_confirmation',
+        recordId: 'REQ-CLOSEOUT',
+        requirementSetId: 'REQ-CLOSEOUT',
+        status: 'blocked',
+        blockingReasons: expect.arrayContaining([
+          'deliveryEvidence.requiredCommands_missing',
+          'negative_or_regression_command_missing',
+        ]),
+      });
     } finally {
       cleanupTempRoot(root);
     }
@@ -636,16 +979,611 @@ describe('requirement-scoped delivery closeout gate', () => {
       ]);
       expect(code).toBe(0);
       const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(record.status).toBe('awaiting_user_acceptance');
+      expect(record.currentMentalModel).toBe('delivery_confirmation');
+      expect(record.currentStage).toBe('delivery_confirmation');
+      expect(record.sixModelResults.delivery_confirmation.status).toBe('awaiting_user_acceptance');
       expect(record.closeout.currentAttemptId).toBe('closeout-pass');
       expect(record.closeout).not.toHaveProperty('eventType');
       expect(record.closeout.decision).toBe('pass');
-      expect(record.lastEventType).toBe('record_closed');
+      expect(record.lastEventType).toBe('delivery_confirmation_user_acceptance_requested');
       expect(record.controlStore.eventLogPath).toContain('events/control-events.jsonl');
-      expect(record.lastAppliedEventId).toContain('record_closed');
+      expect(record.lastAppliedEventId).toContain(
+        'delivery_confirmation_user_acceptance_requested'
+      );
+      expect(record.closeout.acceptanceRequest).toMatchObject({
+        status: 'awaiting_user_acceptance',
+        closeoutAttemptId: 'closeout-pass',
+      });
+      expect(record.closeout.acceptanceRequest.closeoutConfirmInstruction).toContain(
+        '确认最终验收并关闭需求'
+      );
+      expect(
+        readMaybeExists(
+          path.join(path.dirname(recordPath), record.closeout.acceptanceRequest.htmlPath)
+        )
+      ).toContain('确认最终验收并关闭需求');
+      expect(
+        readMaybeExists(
+          path.join(path.dirname(recordPath), record.closeout.acceptanceRequest.renderReportPath)
+        )
+      ).toContain('closeoutDeliveryVerdict');
       expect(record.closeout.attempts[0]).toMatchObject({
         closeoutAttemptId: 'closeout-pass',
         decision: 'pass',
       });
+    } finally {
+      cleanupTempRoot(root);
+    }
+  });
+
+  it('prefers canonical record source over stale synthetic closeout source when rendering acceptance request', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-source-'));
+    try {
+      const sourcePath = writeAiTddSource(
+        root,
+        path.join(root, 'tests', 'acceptance', 'ai-tdd.test.ts')
+      );
+      const sourceHashes = confirmationHashesForSource(sourcePath);
+      const syntheticSourcePath = path.join(
+        root,
+        '_bmad-output',
+        'runtime',
+        'requirement-records',
+        'REQ-CLOSEOUT',
+        'confirmation',
+        'closeout-confirmation-source.md'
+      );
+      writeText(
+        syntheticSourcePath,
+        [
+          'implementationConfirmation:',
+          '  status: user_confirmed',
+          '  must: []',
+          '  notDone: []',
+          '  mustNot: []',
+          '  evidence: []',
+          '  traceRows: []',
+          '',
+        ].join('\n')
+      );
+      const recordPath = writeRecord(root, {
+        ...baseRecord(),
+        aiTddContractGate: { enforcementMode: 'skipped_by_policy' },
+        sourcePath,
+        sourceDocumentHash: sourceHashes.sourceDocumentHash,
+        implementationConfirmationHash: sourceHashes.implementationConfirmationHash,
+        sixModelResults: {
+          ...((baseRecord().sixModelResults as Record<string, unknown>) ?? {}),
+          execution_closure: modelResultWithHashes(
+            'execution_closure',
+            sourceHashes.sourceDocumentHash,
+            sourceHashes.implementationConfirmationHash
+          ),
+          audit_review: modelResultWithHashes(
+            'audit_review',
+            sourceHashes.sourceDocumentHash,
+            sourceHashes.implementationConfirmationHash
+          ),
+        },
+        architectureConfirmationState: {
+          ...(baseRecord().architectureConfirmationState as Record<string, unknown>),
+          currentArchitectureConfirmationHash: HASH,
+        },
+        deliveryEvidence: {
+          requiredCommands: [
+            {
+              commandId: 'CMD-DELIVERY',
+              blockingIfMissing: true,
+              negativeOrRegression: true,
+              closeoutAttemptId: 'closeout-pass',
+              artifactRefs: [evidenceArtifactRef()],
+            },
+          ],
+        },
+        executionIterations: [
+          {
+            executionIterationId: 'exec-001',
+            commandRunRefs: [
+              {
+                commandId: 'CMD-DELIVERY',
+                closeoutAttemptId: 'closeout-pass',
+                exitCode: 0,
+                sourceDocumentHash: sourceHashes.sourceDocumentHash,
+                implementationConfirmationHash: sourceHashes.implementationConfirmationHash,
+                architectureConfirmationHash: HASH,
+              },
+            ],
+          },
+        ],
+        requirementClosures: [
+          {
+            requirementId: 'MUST-001',
+            status: 'pass',
+            traceRows: ['TRACE-001'],
+            evidenceRefs: ['EVD-001'],
+            sourceDocumentHash: sourceHashes.sourceDocumentHash,
+            implementationConfirmationHash: sourceHashes.implementationConfirmationHash,
+            architectureConfirmationHash: HASH,
+            closeoutAttemptId: 'closeout-pass',
+          },
+        ],
+      });
+      const code = mainDeliveryCloseoutGate([
+        '--requirement-record',
+        recordPath,
+        '--source',
+        syntheticSourcePath,
+        '--attempt-id',
+        'closeout-pass',
+        '--evaluated-at',
+        '2026-05-19T00:00:00.000Z',
+      ]);
+      expect(code).toBe(0);
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      const acceptanceRequest = record.closeout.acceptanceRequest;
+      const report = JSON.parse(
+        readFileSync(
+          path.join(path.dirname(recordPath), acceptanceRequest.renderReportPath),
+          'utf8'
+        )
+      );
+
+      expect(path.resolve(report.sourcePath)).toBe(path.resolve(sourcePath));
+      expect(report.deliveryReadiness.currentPassTraceRows).toBe(1);
+      expect(report.deliveryReadiness.totalTraceRows).toBe(1);
+      expect(report.renderedSections).toContain('trace-matrix');
+      expect(acceptanceRequest.ingestCommand).toContain(normalizeSlashes(sourcePath));
+      expect(acceptanceRequest.ingestCommand).not.toContain('closeout-confirmation-source.md');
+    } finally {
+      cleanupTempRoot(root);
+    }
+  });
+
+  it('blocks closeout when audit_review is not current pass', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-audit-prereq-'));
+    try {
+      const base = baseRecord();
+      const recordPath = writeRecord(root, {
+        ...base,
+        sixModelResults: {
+          ...(base.sixModelResults as Record<string, unknown>),
+          audit_review: modelResult('audit_review', 'not_established'),
+        },
+        deliveryEvidence: {
+          requiredCommands: [
+            {
+              commandId: 'CMD-DELIVERY',
+              blockingIfMissing: true,
+              negativeOrRegression: true,
+              closeoutAttemptId: 'closeout-audit-prereq',
+              artifactRefs: [evidenceArtifactRef()],
+            },
+          ],
+        },
+        executionIterations: [
+          {
+            executionIterationId: 'exec-001',
+            commandRunRefs: [
+              {
+                commandId: 'CMD-DELIVERY',
+                closeoutAttemptId: 'closeout-audit-prereq',
+                exitCode: 0,
+              },
+            ],
+          },
+        ],
+        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+      });
+      const code = mainDeliveryCloseoutGate([
+        '--requirement-record',
+        recordPath,
+        '--attempt-id',
+        'closeout-audit-prereq',
+        '--evaluated-at',
+        '2026-05-19T00:00:00.000Z',
+        '--json',
+      ]);
+      expect(code).toBe(1);
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(record.closeout.decision).toBe('blocked');
+      expect(record.closeout.attempts[0].blockingReasons).toEqual(
+        expect.arrayContaining(['audit_review_not_passed:not_established'])
+      );
+      expect(record.lastEventType).toBe('delivery_confirmation_result_recorded');
+      expect(record.sixModelResults.delivery_confirmation.status).toBe('blocked');
+    } finally {
+      cleanupTempRoot(root);
+    }
+  });
+
+  it('fails closed when compiled model packet MUSTs lack per-MUST closure evidence', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-per-must-blocked-'));
+    try {
+      const modelPacketPath = writeModelPacket(
+        path.join(root, 'trace-execution', 'model_packet.json')
+      );
+      const recordPath = writeRecord(root, {
+        ...baseRecord(),
+        deliveryEvidence: {
+          requiredCommands: [
+            {
+              commandId: 'CMD-DELIVERY',
+              command: 'node verify-delivery.js',
+              blockingIfMissing: true,
+              negativeOrRegression: true,
+              closeoutAttemptId: 'closeout-per-must-blocked',
+              artifactRefs: [evidenceArtifactRef()],
+            },
+          ],
+        },
+        executionIterations: [
+          {
+            executionIterationId: 'exec-001',
+            commandRunRefs: [
+              {
+                commandId: 'CMD-DELIVERY',
+                closeoutAttemptId: 'closeout-per-must-blocked',
+                exitCode: 0,
+              },
+            ],
+          },
+        ],
+        requirementClosures: [],
+      });
+      const reportPath = path.join(root, 'closeout', 'delivery-closeout-report.json');
+
+      const code = mainDeliveryCloseoutGate([
+        '--requirement-record',
+        recordPath,
+        '--model-packet',
+        modelPacketPath,
+        '--attempt-id',
+        'closeout-per-must-blocked',
+        '--report-path',
+        reportPath,
+        '--evaluated-at',
+        '2026-05-19T00:00:00.000Z',
+      ]);
+
+      expect(code).toBe(1);
+      const report = JSON.parse(readFileSync(reportPath, 'utf8'));
+      expect(report.blockingReasons).toEqual(
+        expect.arrayContaining([
+          'per_must_closure_evidence_index_not_passed',
+          'closure_missing:MUST-001',
+        ])
+      );
+      expect(report.checks).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: 'per-must-closure-evidence-index',
+            passed: false,
+          }),
+        ])
+      );
+      const indexPath = path.join(root, 'closeout', 'per-must-closure-evidence-index.json');
+      const index = JSON.parse(readFileSync(indexPath, 'utf8'));
+      expect(index.rows[0]).toMatchObject({
+        mustId: 'MUST-001',
+        status: 'blocked',
+        closureStatus: 'missing',
+      });
+    } finally {
+      cleanupTempRoot(root);
+    }
+  });
+
+  it('fails closed when compiled execution strategy exists but no model packet can be resolved', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-per-must-missing-packet-'));
+    try {
+      const recordPath = writeRecord(root, {
+        ...baseRecord(),
+        executionStrategySelections: [
+          {
+            eventType: 'execution_strategy_selected',
+            strategyId: 'compiled_trace_direct',
+            availability: 'available',
+            selectedBy: 'policy',
+            strategyOptionsHash: HASH,
+            selectedOptionHash: HASH,
+            modelPacketHash: HASH,
+            sourceDocumentHash: HASH,
+            implementationConfirmationHash: HASH,
+            sourceRefs: [{ sourceType: 'model_packet', id: HASH }],
+            recordedAt: '2026-05-19T00:00:00.000Z',
+            recordedBy: 'test-agent',
+          },
+        ],
+        deliveryEvidence: {
+          requiredCommands: [
+            {
+              commandId: 'CMD-DELIVERY',
+              command: 'node verify-delivery.js',
+              blockingIfMissing: true,
+              negativeOrRegression: true,
+              closeoutAttemptId: 'closeout-missing-model-packet',
+              artifactRefs: [evidenceArtifactRef()],
+            },
+          ],
+        },
+        executionIterations: [
+          {
+            executionIterationId: 'exec-001',
+            commandRunRefs: [
+              {
+                commandId: 'CMD-DELIVERY',
+                closeoutAttemptId: 'closeout-missing-model-packet',
+                exitCode: 0,
+              },
+            ],
+          },
+        ],
+        requirementClosures: [
+          {
+            requirementId: 'MUST-001',
+            status: 'pass',
+          },
+        ],
+      });
+
+      const code = mainDeliveryCloseoutGate([
+        '--requirement-record',
+        recordPath,
+        '--attempt-id',
+        'closeout-missing-model-packet',
+        '--evaluated-at',
+        '2026-05-19T00:00:00.000Z',
+      ]);
+
+      expect(code).toBe(1);
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(record.closeout.attempts[0].blockingReasons).toEqual(
+        expect.arrayContaining([
+          'per_must_closure_evidence_index_not_passed',
+          'model_packet_not_available',
+        ])
+      );
+    } finally {
+      cleanupTempRoot(root);
+    }
+  });
+
+  it('passes compiled model packet closeout only after every MUST has command, artifact, test result, and pass closure', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-per-must-pass-'));
+    try {
+      const modelPacketPath = writeModelPacket(
+        path.join(root, 'trace-execution', 'model_packet.json')
+      );
+      const reportPath = path.join(root, 'closeout', 'delivery-closeout-report.json');
+      const recordPath = writeRecord(root, {
+        ...baseRecord(),
+        deliveryEvidence: {
+          requiredCommands: [
+            {
+              commandId: 'CMD-DELIVERY',
+              command: 'node verify-delivery.js',
+              blockingIfMissing: true,
+              negativeOrRegression: true,
+              closeoutAttemptId: 'closeout-per-must-pass',
+              artifactRefs: [evidenceArtifactRef()],
+            },
+          ],
+        },
+        executionIterations: [
+          {
+            executionIterationId: 'exec-001',
+            commandRunRefs: [
+              {
+                commandId: 'CMD-DELIVERY',
+                command: 'node verify-delivery.js',
+                runId: 'run-delivery',
+                closeoutAttemptId: 'closeout-per-must-pass',
+                exitCode: 0,
+                startedAt: '2026-05-19T00:00:00.000Z',
+                completedAt: '2026-05-19T00:00:01.000Z',
+                outputSummary: 'delivery command passed',
+              },
+            ],
+            evidenceArtifactRefs: [evidenceArtifactRef()],
+          },
+        ],
+        requirementClosures: [
+          {
+            requirementId: 'MUST-001',
+            status: 'pass',
+            recordedAt: '2026-05-19T00:00:01.000Z',
+          },
+        ],
+      });
+
+      const code = mainDeliveryCloseoutGate([
+        '--requirement-record',
+        recordPath,
+        '--model-packet',
+        modelPacketPath,
+        '--attempt-id',
+        'closeout-per-must-pass',
+        '--report-path',
+        reportPath,
+        '--evaluated-at',
+        '2026-05-19T00:00:00.000Z',
+      ]);
+
+      expect(code).toBe(0);
+      const report = JSON.parse(readFileSync(reportPath, 'utf8'));
+      expect(report.checks).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: 'per-must-closure-evidence-index',
+            passed: true,
+            counts: { total: 1, pass: 1, blocked: 0 },
+          }),
+        ])
+      );
+      const index = JSON.parse(
+        readFileSync(path.join(root, 'closeout', 'per-must-closure-evidence-index.json'), 'utf8')
+      );
+      expect(index.decision).toBe('pass');
+      expect(index.rows[0].closureStatus).toBe('pass');
+    } finally {
+      cleanupTempRoot(root);
+    }
+  });
+
+  it('does not require production subsystem or SFT artifacts when source applicability excludes them', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-scoped-applicability-'));
+    try {
+      const sourcePath = path.join(root, 'source.md');
+      writeText(
+        sourcePath,
+        [
+          'implementationConfirmation:',
+          '  status: user_confirmed',
+          '  applicability:',
+          '    runtimeRecovery:',
+          '      requiresFunctionalResumeFailureCaseRegistry: true',
+          '    productionSubsystems:',
+          '      applies: false',
+          '    scoringDashboardSft:',
+          '      applies: false',
+          '',
+        ].join('\n')
+      );
+      const recordPath = writeRecord(root, {
+        ...baseRecord(),
+        aiTddContractGate: { enforcementMode: 'skipped_by_policy' },
+        sourcePath,
+        deliveryEvidence: {
+          requiredCommands: [
+            {
+              commandId: 'CMD-DELIVERY',
+              blockingIfMissing: true,
+              negativeOrRegression: true,
+              closeoutAttemptId: 'closeout-scoped',
+              artifactRefs: [
+                evidenceArtifactRef(
+                  '_bmad-output\\runtime\\requirement-records\\REQ-CLOSEOUT\\execution\\evidence.json'
+                ),
+              ],
+            },
+          ],
+        },
+        executionIterations: [
+          {
+            executionIterationId: 'exec-001',
+            commandRunRefs: [
+              {
+                commandId: 'CMD-DELIVERY',
+                closeoutAttemptId: 'closeout-scoped',
+                exitCode: 0,
+              },
+            ],
+          },
+        ],
+        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+      });
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      record.extensionRefs = [];
+      record.artifactIndex = record.artifactIndex.filter(
+        (artifact: Record<string, unknown>) =>
+          ![
+            'observability_extension',
+            'production_subsystem_acceptance_report',
+            'production_loop_ready_report',
+            'dataset_release_manifest',
+            'dataset_manifest',
+            'dataset_release_gate_report',
+          ].includes(String(artifact.artifactType))
+      );
+      writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
+
+      const code = mainDeliveryCloseoutGate([
+        '--requirement-record',
+        recordPath,
+        '--source',
+        sourcePath,
+        '--attempt-id',
+        'closeout-scoped',
+        '--evaluated-at',
+        '2026-05-19T00:00:00.000Z',
+        '--json',
+      ]);
+      expect(code).toBe(0);
+      const nextRecord = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(nextRecord.closeout.decision).toBe('pass');
+      expect(nextRecord.lastEventType).toBe('delivery_confirmation_user_acceptance_requested');
+      expect(nextRecord.status).toBe('awaiting_user_acceptance');
+      expect(nextRecord.closeout.attempts[0].checks).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: 'production-subsystem-extension-current',
+            required: false,
+          }),
+          expect.objectContaining({ id: 'production-loop-ready-report-current', required: false }),
+          expect.objectContaining({ id: 'dataset-release-artifacts-current', required: false }),
+          expect.objectContaining({ id: 'failure-case-coverage-complete', required: true }),
+        ])
+      );
+    } finally {
+      cleanupTempRoot(root);
+    }
+  });
+
+  it('blocks closeout by default for confirmed AI-TDD source with missing acceptance evidence', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-ai-tdd-'));
+    try {
+      const missingTestPath = path.join(root, 'tests', 'acceptance', 'missing-ai-tdd.test.ts');
+      const sourcePath = writeAiTddSource(root, missingTestPath);
+      const recordPath = writeRecord(root, {
+        ...baseRecord(),
+        sourcePath,
+        deliveryEvidence: {
+          requiredCommands: [
+            {
+              commandId: 'CMD-DELIVERY',
+              blockingIfMissing: true,
+              negativeOrRegression: true,
+              closeoutAttemptId: 'closeout-ai-tdd',
+              artifactRefs: [
+                evidenceArtifactRef(
+                  '_bmad-output\\runtime\\requirement-records\\REQ-CLOSEOUT\\execution\\evidence.json'
+                ),
+              ],
+            },
+          ],
+        },
+        executionIterations: [
+          {
+            executionIterationId: 'exec-001',
+            commandRunRefs: [
+              {
+                commandId: 'CMD-DELIVERY',
+                closeoutAttemptId: 'closeout-ai-tdd',
+                exitCode: 0,
+              },
+            ],
+          },
+        ],
+        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+      });
+      const code = mainDeliveryCloseoutGate([
+        '--requirement-record',
+        recordPath,
+        '--source',
+        sourcePath,
+        '--attempt-id',
+        'closeout-ai-tdd',
+        '--evaluated-at',
+        '2026-05-19T00:00:00.000Z',
+      ]);
+      expect(code).toBe(1);
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(record.closeout.decision).toBe('blocked');
+      expect(record.closeout.attempts[0].blockingReasons).toContain(
+        'ai_tdd_contract_gate_not_passed'
+      );
+      expect(record.closeout.attempts[0].blockingReasons).toContain('acceptance_test_file_missing');
     } finally {
       cleanupTempRoot(root);
     }
@@ -656,6 +1594,8 @@ describe('requirement-scoped delivery closeout gate', () => {
     try {
       const recordPath = writeRecord(root, {
         ...baseRecord(),
+        aiTddContractGate: { enforcementMode: 'skipped_by_policy' },
+        sourcePath: path.join(root, 'failure-case-required-source.md'),
         deliveryEvidence: {
           requiredCommands: [
             {
@@ -943,9 +1883,7 @@ describe('requirement-scoped delivery closeout gate', () => {
               blockingIfMissing: true,
               negativeOrRegression: true,
               closeoutAttemptId: 'closeout-no-readiness',
-              artifactRefs: [
-                evidenceArtifactRef(),
-              ],
+              artifactRefs: [evidenceArtifactRef()],
             },
           ],
         },
@@ -988,6 +1926,8 @@ describe('requirement-scoped delivery closeout gate', () => {
       const recordPath = writeRecord(root, {
         ...baseRecord(),
         artifactIndex: [],
+        aiTddContractGate: { enforcementMode: 'skipped_by_policy' },
+        sourcePath: path.join(root, 'failure-case-required-source.md'),
         deliveryEvidence: {
           requiredCommands: [
             {
@@ -1014,6 +1954,17 @@ describe('requirement-scoped delivery closeout gate', () => {
         ],
         requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
       });
+      writeText(
+        path.join(root, 'failure-case-required-source.md'),
+        [
+          'implementationConfirmation:',
+          '  status: user_confirmed',
+          '  applicability:',
+          '    runtimeRecovery:',
+          '      requiresFunctionalResumeFailureCaseRegistry: true',
+          '',
+        ].join('\n')
+      );
       const record = JSON.parse(readFileSync(recordPath, 'utf8'));
       record.artifactIndex = record.artifactIndex.filter(
         (artifact: Record<string, unknown>) => artifact.artifactType !== 'failure_case_coverage'
@@ -1023,6 +1974,8 @@ describe('requirement-scoped delivery closeout gate', () => {
       const code = mainDeliveryCloseoutGate([
         '--requirement-record',
         recordPath,
+        '--source',
+        path.join(root, 'failure-case-required-source.md'),
         '--attempt-id',
         'closeout-failure-case-missing',
         '--evaluated-at',
@@ -1043,6 +1996,8 @@ describe('requirement-scoped delivery closeout gate', () => {
     try {
       const recordPath = writeRecord(root, {
         ...baseRecord(),
+        aiTddContractGate: { enforcementMode: 'skipped_by_policy' },
+        sourcePath: path.join(root, 'dataset-required-source.md'),
         deliveryEvidence: {
           requiredCommands: [
             {
@@ -1120,6 +2075,8 @@ describe('requirement-scoped delivery closeout gate', () => {
     try {
       const recordPath = writeRecord(root, {
         ...baseRecord(),
+        aiTddContractGate: { enforcementMode: 'skipped_by_policy' },
+        sourcePath: path.join(root, 'dataset-required-source.md'),
         deliveryEvidence: {
           requiredCommands: [
             {
@@ -1149,7 +2106,9 @@ describe('requirement-scoped delivery closeout gate', () => {
       const extensionRef = record.extensionRefs.at(-1);
       const extension = JSON.parse(readFileSync(extensionRef.path, 'utf8'));
       extension.productionSubsystemAcceptanceRegistry.subsystemAcceptance = [];
-      extension.productionSubsystemAcceptanceRegistryHash = sha256Text(JSON.stringify(extension.productionSubsystemAcceptanceRegistry));
+      extension.productionSubsystemAcceptanceRegistryHash = sha256Text(
+        JSON.stringify(extension.productionSubsystemAcceptanceRegistry)
+      );
       writeJson(extensionRef.path, extension);
       extensionRef.contentHash = sha256File(extensionRef.path);
       writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
@@ -1208,7 +2167,8 @@ describe('requirement-scoped delivery closeout gate', () => {
       const record = JSON.parse(readFileSync(recordPath, 'utf8'));
       const extensionRef = record.extensionRefs.at(-1);
       const extension = JSON.parse(readFileSync(extensionRef.path, 'utf8'));
-      extension.sourceDocumentHash = 'sha256:2222222222222222222222222222222222222222222222222222222222222222';
+      extension.sourceDocumentHash =
+        'sha256:2222222222222222222222222222222222222222222222222222222222222222';
       writeJson(extensionRef.path, extension);
 
       const code = mainDeliveryCloseoutGate([
@@ -1259,6 +2219,17 @@ describe('requirement-scoped delivery closeout gate', () => {
         ],
         requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
       });
+      writeText(
+        path.join(root, 'dataset-required-source.md'),
+        [
+          'implementationConfirmation:',
+          '  status: user_confirmed',
+          '  applicability:',
+          '    scoringDashboardSft:',
+          '      applies: true',
+          '',
+        ].join('\n')
+      );
       const manifestPath = path.join(
         root,
         '_bmad-output',
@@ -1269,12 +2240,15 @@ describe('requirement-scoped delivery closeout gate', () => {
         'dataset-manifest.json'
       );
       const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
-      manifest.source.sourceDocumentHash = 'sha256:2222222222222222222222222222222222222222222222222222222222222222';
+      manifest.source.sourceDocumentHash =
+        'sha256:2222222222222222222222222222222222222222222222222222222222222222';
       writeJson(manifestPath, manifest);
 
       const code = mainDeliveryCloseoutGate([
         '--requirement-record',
         recordPath,
+        '--source',
+        path.join(root, 'dataset-required-source.md'),
         '--attempt-id',
         'closeout-stale-dataset',
         '--evaluated-at',
@@ -1283,7 +2257,10 @@ describe('requirement-scoped delivery closeout gate', () => {
       expect(code).toBe(1);
       const nextRecord = JSON.parse(readFileSync(recordPath, 'utf8'));
       expect(nextRecord.closeout.attempts[0].blockingReasons).toEqual(
-        expect.arrayContaining(['dataset_manifest_source_document_hash_mismatch', 'dataset_release_manifest_hash_mismatch'])
+        expect.arrayContaining([
+          'dataset_manifest_source_document_hash_mismatch',
+          'dataset_release_manifest_hash_mismatch',
+        ])
       );
     } finally {
       cleanupTempRoot(root);
@@ -1756,6 +2733,66 @@ describe('requirement-scoped delivery closeout gate', () => {
     }
   });
 
+  it('ignores open closeout-blocker RCA records from superseded attempts', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-superseded-rca-'));
+    try {
+      const recordPath = writeRecord(root, {
+        ...baseRecord(),
+        rcaRecords: [
+          {
+            eventType: 'rca_created',
+            rcaId: 'rca:closeout-old',
+            type: 'closeout_blocker',
+            status: 'open',
+            sourceRefs: [
+              { sourceType: 'failure_record', id: 'failure:closeout-old' },
+              { sourceType: 'closeout_attempt', id: 'closeout-old' },
+            ],
+          },
+        ],
+        deliveryEvidence: {
+          requiredCommands: [
+            {
+              commandId: 'CMD-DELIVERY',
+              blockingIfMissing: true,
+              negativeOrRegression: true,
+              closeoutAttemptId: 'closeout-current',
+              artifactRefs: [evidenceArtifactRef()],
+            },
+          ],
+        },
+        executionIterations: [
+          {
+            executionIterationId: 'exec-001',
+            commandRunRefs: [
+              {
+                commandId: 'CMD-DELIVERY',
+                closeoutAttemptId: 'closeout-current',
+                exitCode: 0,
+              },
+            ],
+          },
+        ],
+        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+      });
+      const code = mainDeliveryCloseoutGate([
+        '--requirement-record',
+        recordPath,
+        '--attempt-id',
+        'closeout-current',
+        '--evaluated-at',
+        '2026-05-19T00:01:00.000Z',
+      ]);
+      expect(code).toBe(0);
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(record.closeout.decision).toBe('pass');
+      expect(record.lastEventType).toBe('delivery_confirmation_user_acceptance_requested');
+      expect(record.status).toBe('awaiting_user_acceptance');
+    } finally {
+      cleanupTempRoot(root);
+    }
+  });
+
   it('does not self-lock a repaired current closeout attempt on its previous blocked failure', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-current-attempt-repaired-'));
     try {
@@ -1817,7 +2854,9 @@ describe('requirement-scoped delivery closeout gate', () => {
   });
 
   it('still blocks when the current attempt has a non-closeout open failure', () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-current-attempt-other-failure-'));
+    const root = mkdtempSync(
+      path.join(os.tmpdir(), 'delivery-closeout-current-attempt-other-failure-')
+    );
     try {
       const recordPath = writeRecord(root, {
         ...baseRecord(),
@@ -1927,9 +2966,7 @@ describe('requirement-scoped delivery closeout gate', () => {
       expect(record.rerunLoops[0]).not.toHaveProperty('decision');
       expect(record.rerunLoops[0]).not.toHaveProperty('result');
       expect(record.failureRecords.at(-1).sourceRefs).toEqual(
-        expect.arrayContaining([
-          { sourceType: 'rerun_loop', id: 'rerun-001' },
-        ])
+        expect.arrayContaining([{ sourceType: 'rerun_loop', id: 'rerun-001' }])
       );
     } finally {
       cleanupTempRoot(root);

@@ -9,9 +9,9 @@ import { createDefaultOrchestrationState } from '../../scripts/orchestration-sta
 describe('runtime long-run policy contract', () => {
   it('fails closed on missing fields and writes replayable long-run state', () => {
     expect(validateLongRunPolicy(LONG_RUN_RUNTIME_POLICY)).toEqual([]);
-    expect(validateLongRunPolicy({ ...LONG_RUN_RUNTIME_POLICY, lease_ttl_ms: undefined })).toContain(
-      'lease_ttl_ms'
-    );
+    expect(
+      validateLongRunPolicy({ ...LONG_RUN_RUNTIME_POLICY, lease_ttl_ms: undefined })
+    ).toContain('lease_ttl_ms');
 
     const state = createDefaultOrchestrationState({
       sessionId: 'long-run-session',

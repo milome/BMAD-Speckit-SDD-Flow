@@ -13,20 +13,24 @@ describe('commit gate', () => {
 
 describe('state transitions', () => {
   it('transitions specify to specify_passed on PASS', () => {
-    expect(resolveNextStage({
-      currentStage: 'specify',
-      auditStatus: 'PASS',
-    })).toEqual({
+    expect(
+      resolveNextStage({
+        currentStage: 'specify',
+        auditStatus: 'PASS',
+      })
+    ).toEqual({
       next_stage: 'specify_passed',
       allowed_action: 'allow',
     });
   });
 
   it('blocks on FAIL', () => {
-    expect(resolveNextStage({
-      currentStage: 'specify',
-      auditStatus: 'FAIL',
-    })).toEqual({
+    expect(
+      resolveNextStage({
+        currentStage: 'specify',
+        auditStatus: 'FAIL',
+      })
+    ).toEqual({
       next_stage: 'blocked',
       allowed_action: 'iterate',
     });

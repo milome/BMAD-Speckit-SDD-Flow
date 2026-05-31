@@ -72,18 +72,21 @@ function makeSample(): CanonicalSftSample {
 describe('quality gates', () => {
   it('downgrades samples with missing code pair and too many iterations', () => {
     const base = makeSample();
-    const sample = applyQualityGates({
-      ...base,
-      quality: {
-        ...base.quality,
-        has_code_pair: false,
-        token_estimate: 200,
+    const sample = applyQualityGates(
+      {
+        ...base,
+        quality: {
+          ...base.quality,
+          has_code_pair: false,
+          token_estimate: 200,
+        },
       },
-    }, {
-      minScore: 90,
-      maxIterations: 3,
-      maxTokens: 8192,
-    });
+      {
+        minScore: 90,
+        maxIterations: 3,
+        maxTokens: 8192,
+      }
+    );
 
     expect(sample.quality.rejection_reasons).toEqual(['missing_code_pair', 'too_many_iterations']);
 
@@ -92,32 +95,33 @@ describe('quality gates', () => {
       expect.arrayContaining(['missing_code_pair', 'too_many_iterations'])
     );
     expect(sample.quality.training_ready).toBe(false);
-    expect(sample.quality.training_blockers).toEqual(
-      expect.arrayContaining(['missing_code_pair'])
-    );
+    expect(sample.quality.training_blockers).toEqual(expect.arrayContaining(['missing_code_pair']));
   });
 
   it('allows documentation samples to omit code pairs without missing_code_pair rejection', () => {
     const base = makeSample();
-    const sample = applyQualityGates({
-      ...base,
-      metadata: {
-        ...base.metadata,
-        sample_kind: 'documentation',
+    const sample = applyQualityGates(
+      {
+        ...base,
+        metadata: {
+          ...base.metadata,
+          sample_kind: 'documentation',
+        },
+        quality: {
+          ...base.quality,
+          has_code_pair: false,
+          iteration_count: 0,
+          token_estimate: 200,
+          warnings: [],
+          rejection_reasons: [],
+        },
       },
-      quality: {
-        ...base.quality,
-        has_code_pair: false,
-        iteration_count: 0,
-        token_estimate: 200,
-        warnings: [],
-        rejection_reasons: [],
-      },
-    }, {
-      minScore: 90,
-      maxIterations: 3,
-      maxTokens: 8192,
-    });
+      {
+        minScore: 90,
+        maxIterations: 3,
+        maxTokens: 8192,
+      }
+    );
 
     expect(sample.quality.rejection_reasons).toEqual([]);
 
@@ -149,9 +153,7 @@ describe('quality gates', () => {
       expect.arrayContaining(['redaction_blocked', 'secret_detected_unresolved'])
     );
     expect(sample.quality.training_ready).toBe(false);
-    expect(sample.quality.training_blockers).toEqual(
-      expect.arrayContaining(['redaction_blocked'])
-    );
+    expect(sample.quality.training_blockers).toEqual(expect.arrayContaining(['redaction_blocked']));
   });
 
   it('does not mark already-redacted pii as unresolved when another finding blocks the sample', () => {
@@ -174,10 +176,7 @@ describe('quality gates', () => {
             action: 'block',
           },
         ],
-        redacted_fields: [
-          'messages[1].content',
-          'messages[2].tool_calls[0].function.arguments',
-        ],
+        redacted_fields: ['messages[1].content', 'messages[2].tool_calls[0].function.arguments'],
       },
     });
 

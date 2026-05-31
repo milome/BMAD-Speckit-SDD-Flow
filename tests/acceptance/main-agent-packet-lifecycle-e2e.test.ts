@@ -44,32 +44,40 @@ describe('main-agent packet lifecycle E2E', () => {
       expect(ready.pendingPacketStatus).toBe('ready_for_main_agent');
 
       claimMainAgentPendingPacket(root, sessionId);
-      expect(resolveMainAgentOrchestrationSurface({
-        projectRoot: root,
-        flow: 'story',
-        stage: 'implement',
-      }).pendingPacketStatus).toBe('claimed_by_main_agent');
+      expect(
+        resolveMainAgentOrchestrationSurface({
+          projectRoot: root,
+          flow: 'story',
+          stage: 'implement',
+        }).pendingPacketStatus
+      ).toBe('claimed_by_main_agent');
 
       markMainAgentPacketDispatched(root, sessionId, packetId);
-      expect(resolveMainAgentOrchestrationSurface({
-        projectRoot: root,
-        flow: 'story',
-        stage: 'implement',
-      }).pendingPacketStatus).toBe('dispatched');
+      expect(
+        resolveMainAgentOrchestrationSurface({
+          projectRoot: root,
+          flow: 'story',
+          stage: 'implement',
+        }).pendingPacketStatus
+      ).toBe('dispatched');
 
       completeMainAgentPendingPacket(root, sessionId, packetId);
-      expect(resolveMainAgentOrchestrationSurface({
-        projectRoot: root,
-        flow: 'story',
-        stage: 'implement',
-      }).pendingPacketStatus).toBe('completed');
+      expect(
+        resolveMainAgentOrchestrationSurface({
+          projectRoot: root,
+          flow: 'story',
+          stage: 'implement',
+        }).pendingPacketStatus
+      ).toBe('completed');
 
       invalidateMainAgentPendingPacket(root, sessionId, packetId);
-      expect(resolveMainAgentOrchestrationSurface({
-        projectRoot: root,
-        flow: 'story',
-        stage: 'implement',
-      }).pendingPacketStatus).toBe('invalidated');
+      expect(
+        resolveMainAgentOrchestrationSurface({
+          projectRoot: root,
+          flow: 'story',
+          stage: 'implement',
+        }).pendingPacketStatus
+      ).toBe('invalidated');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

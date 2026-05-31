@@ -6,10 +6,7 @@ import type { RunScoreRecord } from '../writer/types';
 
 export type ScoresTableMode = 'all' | 'epic' | 'story';
 
-export function formatScoresToTable(
-  records: RunScoreRecord[],
-  mode: ScoresTableMode
-): string {
+export function formatScoresToTable(records: RunScoreRecord[], mode: ScoresTableMode): string {
   if (records.length === 0) return '';
   const sorted = [...records].sort((a, b) => {
     const ta = new Date(a.timestamp).getTime();
@@ -18,10 +15,8 @@ export function formatScoresToTable(
   });
 
   if (mode === 'all') {
-    const header =
-      '| run_id | epic | story | stage | phase_score | phase_weight | timestamp |';
-    const sep =
-      '|-------|------|-------|-------|-------------|--------------|-----------|';
+    const header = '| run_id | epic | story | stage | phase_score | phase_weight | timestamp |';
+    const sep = '|-------|------|-------|-------|-------------|--------------|-----------|';
     const rows = sorted.map((r) => {
       const parsed = parseEpicStoryFromRecord(r);
       const epic = parsed ? String(parsed.epicId) : '-';
@@ -32,8 +27,7 @@ export function formatScoresToTable(
   }
 
   if (mode === 'epic') {
-    const header =
-      '| story | stage | phase_score | phase_weight | timestamp |';
+    const header = '| story | stage | phase_score | phase_weight | timestamp |';
     const sep = '|-------|-------|-------------|--------------|-----------|';
     const rows = sorted.map((r) => {
       const parsed = parseEpicStoryFromRecord(r);
@@ -43,10 +37,8 @@ export function formatScoresToTable(
     return [header, sep, ...rows].join('\n');
   }
 
-  const header =
-    '| stage | phase_score | phase_weight | check_items_summary | timestamp |';
-  const sep =
-    '|-------|-------------|--------------|---------------------|-----------|';
+  const header = '| stage | phase_score | phase_weight | check_items_summary | timestamp |';
+  const sep = '|-------|-------------|--------------|---------------------|-----------|';
   const rows = sorted.map((r) => {
     let summary = '-';
     if (r.check_items && r.check_items.length > 0) {

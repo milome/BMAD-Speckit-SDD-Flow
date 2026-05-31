@@ -7,9 +7,7 @@ export interface AssignDeterministicSplitOptions {
   strategy?: string;
 }
 
-export function assignDeterministicSplit(
-  options: AssignDeterministicSplitOptions
-): CanonicalSplit {
+export function assignDeterministicSplit(options: AssignDeterministicSplitOptions): CanonicalSplit {
   const strategy = options.strategy ?? 'story_hash_v1';
   const stableKey = `${options.seed}:${options.groupKey ?? 'ungrouped'}`;
   const hash = createHash('sha256').update(stableKey).digest('hex');

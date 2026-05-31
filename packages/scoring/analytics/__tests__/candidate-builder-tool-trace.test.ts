@@ -162,8 +162,12 @@ describe('canonical candidate builder tool trace injection', () => {
     expect(result.samples[0].export_compatibility.hf_conversational.reasons).toContain(
       'target_incompatible_hf_conversational'
     );
-    expect(result.samples[0].source.artifact_refs.some((ref) => ref.kind === 'tool_trace')).toBe(true);
-    expect(result.samples[0].provenance.lineage.some((entry) => entry.includes('tool-trace'))).toBe(true);
+    expect(result.samples[0].source.artifact_refs.some((ref) => ref.kind === 'tool_trace')).toBe(
+      true
+    );
+    expect(result.samples[0].provenance.lineage.some((entry) => entry.includes('tool-trace'))).toBe(
+      true
+    );
   });
 
   it('rejects tool-trace-backed samples when tool call arguments contain private keys', async () => {

@@ -9,7 +9,9 @@ import type { RunScoreRecord } from '../../writer/types';
 const rulesDir = path.resolve(process.cwd(), 'packages', 'scoring', 'rules');
 const opts = { rulesDir };
 
-function makeRecord(overrides: Partial<RunScoreRecord> & { raw_phase_score?: number }): RunScoreRecord & { raw_phase_score?: number } {
+function makeRecord(
+  overrides: Partial<RunScoreRecord> & { raw_phase_score?: number }
+): RunScoreRecord & { raw_phase_score?: number } {
   return {
     run_id: 'test',
     scenario: 'real_dev',

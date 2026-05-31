@@ -16,15 +16,23 @@ import {
   extractStructuredDriftSignalBlock,
 } from '../parsers';
 import type { AuditStage } from '../parsers';
+import type { DimensionMode } from '../parsers/dimension-parser';
+import { resolveScoringDimensionContract } from '../contracts/dimension-contracts';
 import { loadAndDedupeRecords } from '../query/loader';
 import { writeScoreRecordSync } from '../writer';
 import type { WriteMode } from '../writer';
 import { applyTierAndVeto } from '../veto';
 import { evaluateReadinessDrift } from '../governance/readiness-drift';
-import { resolveRulesDir } from '../constants/path';
+import { getScoringDataPath, resolveRulesDir } from '../constants/path';
 import { computeContentHash, computeStringHash, getGitHeadHash } from '../utils/hash';
 import { persistPatchSnapshot } from '../utils/patch-snapshot';
-import type { CheckItem, DimensionScore, IterationRecord, JourneyContractSignals, RunScoreRecord } from '../writer/types';
+import type {
+  CheckItem,
+  DimensionScore,
+  IterationRecord,
+  JourneyContractSignals,
+  RunScoreRecord,
+} from '../writer/types';
 import { appendRuntimeEvent } from '../runtime';
 
 /**
@@ -69,11 +77,19 @@ export interface ParseAndWriteScoreOptions {
   triggerStage?: string;
   /** Story 9.4: 本 stage 失败轮报告路径列表（不含验证轮）；仅 scenario=real_dev 时生效 */
   iterationReportPaths?: string[];
+  /** Stage-aware dimension contract id for this score materialization attempt. */
+  dimensionContractId?: string;
+  /** Explicit dimension mode; overrides legacy stageToMode for this call when consistent. */
+  dimensionMode?: DimensionMode;
+  /** Expected top-level dimensions for this scoring attempt. */
+  expectedDimensions?: string[];
+  /** Atomic item set id; 20+ check_items remain atomic items, not top-level dimensions. */
+  atomicItemSetId?: string;
 }
 
 function resolveScoreDataPath(dataPath?: string): string {
   if (dataPath == null || dataPath === '') {
-    return path.resolve(process.cwd(), 'packages', 'scoring', 'data');
+    return getScoringDataPath();
   }
   return path.isAbsolute(dataPath) ? dataPath : path.resolve(process.cwd(), dataPath);
 }
@@ -131,9 +147,10 @@ function deriveJourneyContractSignals(checkItems: CheckItem[]): JourneyContractS
   return Object.keys(signals).length > 0 ? signals : undefined;
 }
 
-function deriveStructuredDriftSignals(
-  content: string
-): { blockPresent: boolean; signals?: JourneyContractSignals } {
+function deriveStructuredDriftSignals(content: string): {
+  blockPresent: boolean;
+  signals?: JourneyContractSignals;
+} {
   const block = extractStructuredDriftSignalBlock(content);
   if (!block.present) {
     return { blockPresent: false };
@@ -236,7 +253,9 @@ function parseIterationReportToRecord(
  * @returns {Promise<void>} Promise that resolves when write completes.
  * @throws Error when reportPath and content are both missing/empty.
  */
-export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Promise<RunScoreRecord> {
+export async function parseAndWriteScore(
+  options: ParseAndWriteScoreOptions
+): Promise<RunScoreRecord> {
   const scopedConsoleError = console.error;
   const { stage, runId, scenario, writeMode, dataPath } = options;
   let content = options.content;
@@ -260,7 +279,19 @@ export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Pr
     scenario,
   });
 
-  const dimensionScores = parseDimensionScores(content, stageToMode(stage));
+  const dimensionContract = resolveScoringDimensionContract({
+    stage,
+    dimensionMode: options.dimensionMode,
+    dimensionContractId: options.dimensionContractId,
+    expectedDimensions: options.expectedDimensions,
+    atomicItemSetId: options.atomicItemSetId,
+  });
+  if (dimensionContract.status !== 'resolved' || !dimensionContract.dimensionMode) {
+    throw new Error(
+      `parseAndWriteScore: dimension contract ${dimensionContract.status}: ${dimensionContract.blockingReasons.join(', ')}`
+    );
+  }
+  const dimensionScores = parseDimensionScores(content, dimensionContract.dimensionMode);
   let baseRecord =
     dimensionScores.length > 0
       ? {
@@ -326,9 +357,7 @@ export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Pr
   const baseCommitHash = options.skipAutoHash
     ? options.baseCommitHash
     : (options.baseCommitHash ?? getGitHeadHash(gitCwd));
-  const contentHash = options.skipAutoHash
-    ? undefined
-    : computeStringHash(content);
+  const contentHash = options.skipAutoHash ? undefined : computeStringHash(content);
 
   let sourceHash: string | undefined;
   if (options.sourceHashFilePath) {
@@ -348,7 +377,7 @@ export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Pr
       failRecords.push(parseIterationReportToRecord(absPath, iterContent, stage));
     }
     const mainOverallGrade = extractOverallGrade(content);
-    const mainDimensionScores = parseDimensionScores(content, stageToMode(stage));
+    const mainDimensionScores = parseDimensionScores(content, dimensionContract.dimensionMode);
     const passRecord: IterationRecord = {
       timestamp: baseRecord.timestamp,
       result: 'pass',
@@ -419,12 +448,16 @@ export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Pr
     ...(contentHash != null ? { content_hash: contentHash } : {}),
     ...(sourceHash != null ? { source_hash: sourceHash } : {}),
     ...(patchSnapshot ?? {}),
-    ...(computeSourcePath(stage, options.artifactDocPath, reportPath)),
+    ...computeSourcePath(stage, options.artifactDocPath, reportPath),
     ...(options.triggerStage != null ? { trigger_stage: options.triggerStage } : {}),
+    dimension_contract_id: dimensionContract.dimensionContractId ?? undefined,
+    dimension_mode: dimensionContract.dimensionMode,
+    expected_dimensions: dimensionContract.expectedDimensions,
+    atomic_item_set_id: dimensionContract.atomicItemSetId ?? undefined,
   };
 
   if ((stage === 'implement' || stage === 'post_impl') && dimensionScores.length === 0) {
-    const expectedEn = listDimensionNamesEn('code');
+    const expectedEn = listDimensionNamesEn(dimensionContract.dimensionMode);
     const dimHint =
       expectedEn.length > 0
         ? expectedEn.join(', ')
@@ -440,8 +473,12 @@ export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Pr
     );
   }
 
-  if ((stage === 'implement' || stage === 'post_impl') && readinessDrift.effective_verdict !== 'approved') {
-    const blocker = readinessDrift.blocking_reason ?? 'Readiness drift requires another gated pass.';
+  if (
+    (stage === 'implement' || stage === 'post_impl') &&
+    readinessDrift.effective_verdict !== 'approved'
+  ) {
+    const blocker =
+      readinessDrift.blocking_reason ?? 'Readiness drift requires another gated pass.';
     scopedConsoleError(
       `WARN: implement stage effective verdict is ${readinessDrift.effective_verdict}. ${blocker}`
     );
@@ -465,28 +502,31 @@ export async function parseAndWriteScore(options: ParseAndWriteScoreOptions): Pr
     writeMode === 'jsonl'
       ? path.join(resolvedDataPath, 'scores.jsonl')
       : path.join(resolvedDataPath, `${runId}.json`);
-  appendRuntimeEvent({
-    event_id: randomUUID(),
-    event_type: 'score.written',
-    event_version: 1,
-    timestamp: recordToWrite.timestamp,
-    run_id: runId,
-    flow: 'story',
-    stage,
-    payload: {
-      score_record_id: `${runId}:${stage}`,
-      path: scoreRecordPath,
-      phase_score: recordToWrite.phase_score,
-      veto_triggered: recordToWrite.veto_triggered ?? false,
+  appendRuntimeEvent(
+    {
+      event_id: randomUUID(),
+      event_type: 'score.written',
+      event_version: 1,
+      timestamp: recordToWrite.timestamp,
+      run_id: runId,
+      flow: 'story',
+      stage,
+      payload: {
+        score_record_id: `${runId}:${stage}`,
+        path: scoreRecordPath,
+        phase_score: recordToWrite.phase_score,
+        veto_triggered: recordToWrite.veto_triggered ?? false,
+      },
+      source: {
+        source_path: recordToWrite.source_path,
+        base_commit_hash: recordToWrite.base_commit_hash,
+        content_hash: recordToWrite.content_hash,
+      },
     },
-    source: {
-      source_path: recordToWrite.source_path,
-      base_commit_hash: recordToWrite.base_commit_hash,
-      content_hash: recordToWrite.content_hash,
-    },
-  }, {
-    root: inferRuntimeRootFromDataPath(dataPath),
-  });
+    {
+      root: inferRuntimeRootFromDataPath(dataPath),
+    }
+  );
 
   return recordToWrite;
 }

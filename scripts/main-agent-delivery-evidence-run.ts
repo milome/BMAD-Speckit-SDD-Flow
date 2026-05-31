@@ -115,9 +115,10 @@ function main(argv: string[]): number {
     ...(args.recordId ? ['--record-id', args.recordId] : []),
     ...(args.requirementSetId ? ['--requirement-set-id', args.requirementSetId] : []),
   ];
-  const releaseGateCommand = provider === 'real'
-    ? 'node node_modules/ts-node/dist/bin.js --project tsconfig.node.json --transpile-only scripts/main-agent-host-matrix-pr-orchestrator.ts --provider real --enableRealPrApi true'
-    : 'node node_modules/ts-node/dist/bin.js --project tsconfig.node.json --transpile-only scripts/main-agent-host-matrix-pr-orchestrator.ts --provider mock';
+  const releaseGateCommand =
+    provider === 'real'
+      ? 'node node_modules/ts-node/dist/bin.js --project tsconfig.node.json --transpile-only scripts/main-agent-host-matrix-pr-orchestrator.ts --provider real --enableRealPrApi true'
+      : 'node node_modules/ts-node/dist/bin.js --project tsconfig.node.json --transpile-only scripts/main-agent-host-matrix-pr-orchestrator.ts --provider mock';
   const releaseGateEnv = {
     MAIN_AGENT_RELEASE_GATE_E2E_COMMAND: releaseGateCommand,
   };
@@ -126,7 +127,9 @@ function main(argv: string[]): number {
     console.error('[main-agent-delivery-evidence-run] sprint audit skipped by --skipSprintAudit');
   }
   if (args.token) {
-    console.error('[main-agent-delivery-evidence-run] --token is ignored; release gate now owns sprint authorization');
+    console.error(
+      '[main-agent-delivery-evidence-run] --token is ignored; release gate now owns sprint authorization'
+    );
   }
 
   steps.push(

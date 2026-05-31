@@ -72,7 +72,9 @@ function normalizePathForRecord(value: string): string {
 export function mainControlEventLogRebaseline(argv: string[]): number {
   const args = parseArgs(argv);
   if (args.help) {
-    console.log('Usage: control-event-log-rebaseline --requirement-record <json> [--reason <text>] [--json]');
+    console.log(
+      'Usage: control-event-log-rebaseline --requirement-record <json> [--reason <text>] [--json]'
+    );
     return 0;
   }
   if (!args.requirementRecord) throw new Error('missing required args: requirementRecord');
@@ -87,7 +89,9 @@ export function mainControlEventLogRebaseline(argv: string[]): number {
     rebaseline: {
       controlled: true,
       mode: 'event-log-chain-rebaseline',
-      reason: args.reason ?? 'strict closeout proof requires controlled rebaseline after historical event-chain discontinuity',
+      reason:
+        args.reason ??
+        'strict closeout proof requires controlled rebaseline after historical event-chain discontinuity',
       detectedBreaks: breaks,
       priorEventCount: events.length,
       priorEventHash: text(events.at(-1)?.eventHash),
@@ -118,7 +122,11 @@ export function mainControlEventLogRebaseline(argv: string[]): number {
     receiptPath: normalizePathForRecord(commit.receiptPath),
     detectedBreakCount: breaks.length,
   };
-  process.stdout.write(args.json ? `${JSON.stringify(output, null, 2)}\n` : `control_log_rebaseline=${commit.event.eventHash}\n`);
+  process.stdout.write(
+    args.json
+      ? `${JSON.stringify(output, null, 2)}\n`
+      : `control_log_rebaseline=${commit.event.eventHash}\n`
+  );
   return 0;
 }
 
@@ -126,7 +134,13 @@ if (require.main === module) {
   try {
     process.exitCode = mainControlEventLogRebaseline(process.argv.slice(2));
   } catch (error) {
-    console.error(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : String(error) }, null, 2));
+    console.error(
+      JSON.stringify(
+        { ok: false, error: error instanceof Error ? error.message : String(error) },
+        null,
+        2
+      )
+    );
     process.exitCode = 2;
   }
 }

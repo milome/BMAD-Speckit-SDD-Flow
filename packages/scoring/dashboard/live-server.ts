@@ -73,11 +73,7 @@ function getUiAssetContent(assetName: string): string {
   throw new Error(`dashboard ui asset not found: ${assetName}`);
 }
 
-function sendJson(
-  response: http.ServerResponse,
-  statusCode: number,
-  payload: unknown
-): void {
+function sendJson(response: http.ServerResponse, statusCode: number, payload: unknown): void {
   response.writeHead(statusCode, {
     'content-type': 'application/json; charset=utf-8',
     'cache-control': 'no-store',

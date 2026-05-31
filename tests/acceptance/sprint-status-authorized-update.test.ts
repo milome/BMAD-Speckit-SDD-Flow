@@ -6,13 +6,22 @@ import { describe, expect, it } from 'vitest';
 import { runSprintStatusAuthorizedUpdate } from '../../scripts/sprint-status-authorized-update';
 
 function writeContract(root: string): string {
-  const contractPath = path.join(root, '_bmad', '_config', 'orchestration-governance.contract.yaml');
+  const contractPath = path.join(
+    root,
+    '_bmad',
+    '_config',
+    'orchestration-governance.contract.yaml'
+  );
   fs.mkdirSync(path.dirname(contractPath), { recursive: true });
   fs.writeFileSync(contractPath, 'signals: {}\nstage_requirements: {}\nmapping_contract: {}\n');
   return crypto.createHash('sha256').update(fs.readFileSync(contractPath)).digest('hex');
 }
 
-function reportHash(report: { generatedAt: string; checks: unknown[]; blocking_reasons: string[] }) {
+function reportHash(report: {
+  generatedAt: string;
+  checks: unknown[];
+  blocking_reasons: string[];
+}) {
   return crypto
     .createHash('sha256')
     .update(
@@ -48,11 +57,7 @@ describe('sprint-status authorized update', () => {
         },
       };
       report.completion_intent.gateReportHash = reportHash(report);
-      fs.writeFileSync(
-        reportPath,
-        JSON.stringify(report),
-        'utf8'
-      );
+      fs.writeFileSync(reportPath, JSON.stringify(report), 'utf8');
 
       const result = runSprintStatusAuthorizedUpdate(root, {
         storyKey: '1-1-user-authentication',

@@ -171,7 +171,10 @@ function text(value: unknown): string {
 
 function objects(value: unknown): JsonObject[] {
   return Array.isArray(value)
-    ? value.filter((item): item is JsonObject => Boolean(item) && typeof item === 'object' && !Array.isArray(item))
+    ? value.filter(
+        (item): item is JsonObject =>
+          Boolean(item) && typeof item === 'object' && !Array.isArray(item)
+      )
     : [];
 }
 
@@ -215,7 +218,11 @@ function writeJson(file: string, value: unknown): void {
 }
 
 function defaultInventoryOutputPath(recordPath: string): string {
-  return path.join(path.dirname(path.resolve(recordPath)), 'subagents', 'subagent-surface-inventory.json');
+  return path.join(
+    path.dirname(path.resolve(recordPath)),
+    'subagents',
+    'subagent-surface-inventory.json'
+  );
 }
 
 function readJson(file: string): JsonObject {
@@ -241,11 +248,15 @@ function extractImplementationConfirmation(sourceText: string): JsonObject {
   }
   const parsed = nested(yaml.load(lines.slice(start, end).join('\n')));
   const confirmation = nested(parsed.implementationConfirmation);
-  if (Object.keys(confirmation).length === 0) throw new Error('implementationConfirmation block invalid');
+  if (Object.keys(confirmation).length === 0)
+    throw new Error('implementationConfirmation block invalid');
   return confirmation;
 }
 
-function registryFromSource(sourcePath: string): { confirmation: JsonObject; registry: RegistrySurface[] } {
+function registryFromSource(sourcePath: string): {
+  confirmation: JsonObject;
+  registry: RegistrySurface[];
+} {
   const confirmation = extractImplementationConfirmation(fs.readFileSync(sourcePath, 'utf8'));
   const governance = nested(confirmation.subagentExecutionGovernance);
   const registrySource = objects(confirmation.subagentExecutionSurfaceRegistry).length
@@ -330,18 +341,24 @@ function registryIssues(root: string, registry: RegistrySurface[]): string[] {
   const ids = new Set<string>();
   for (const surface of registry) {
     if (!surface.surfaceId) issues.push('registry_surface_id_missing');
-    if (ids.has(surface.surfaceId)) issues.push(`registry_surface_id_duplicate:${surface.surfaceId}`);
+    if (ids.has(surface.surfaceId))
+      issues.push(`registry_surface_id_duplicate:${surface.surfaceId}`);
     ids.add(surface.surfaceId);
-    if (!surface.path) issues.push(`registry_surface_path_missing:${surface.surfaceId || '<missing>'}`);
+    if (!surface.path)
+      issues.push(`registry_surface_path_missing:${surface.surfaceId || '<missing>'}`);
     if (!surface.surfaceType) issues.push(`registry_surface_type_missing:${surface.surfaceId}`);
-    if (!surface.classification) issues.push(`registry_classification_missing:${surface.surfaceId}`);
+    if (!surface.classification)
+      issues.push(`registry_classification_missing:${surface.surfaceId}`);
     if (surface.canAffectControlFlow && !surface.requiredEnvelope) {
       issues.push(`registry_control_flow_without_envelope:${surface.surfaceId}`);
     }
     if (surface.canAffectControlFlow && !surface.currentAttemptRevalidationRequired) {
-      issues.push(`registry_control_flow_without_current_attempt_revalidation:${surface.surfaceId}`);
+      issues.push(
+        `registry_control_flow_without_current_attempt_revalidation:${surface.surfaceId}`
+      );
     }
-    if (surface.linkedRequirements.length === 0) issues.push(`registry_linked_requirements_missing:${surface.surfaceId}`);
+    if (surface.linkedRequirements.length === 0)
+      issues.push(`registry_linked_requirements_missing:${surface.surfaceId}`);
     if (surface.path && !fileExistsForRegistryPath(root, surface.path)) {
       issues.push(`registry_path_unresolved:${surface.surfaceId}`);
     }
@@ -367,8 +384,16 @@ function discoverFiles(root: string, includePaths: string[] = TARGET_PATHS): str
   const directPaths = includePaths.filter((item) => !item.includes('*'));
   const globPatterns = includePaths.filter((item) => item.includes('*')).map(globToRegex);
   const direct = directPaths.flatMap((item) => walkFiles(root, item));
-  const globRoots = [...new Set(includePaths.filter((item) => item.includes('*')).map((item) => item.split('*')[0].replace(/[/\\]$/u, '')))];
-  const globFiles = globRoots.flatMap((item) => walkFiles(root, item || '.')).filter((item) => globPatterns.some((regex) => regex.test(item)));
+  const globRoots = [
+    ...new Set(
+      includePaths
+        .filter((item) => item.includes('*'))
+        .map((item) => item.split('*')[0].replace(/[/\\]$/u, ''))
+    ),
+  ];
+  const globFiles = globRoots
+    .flatMap((item) => walkFiles(root, item || '.'))
+    .filter((item) => globPatterns.some((regex) => regex.test(item)));
   return [...new Set([...direct, ...globFiles])].sort();
 }
 
@@ -398,7 +423,9 @@ function canonicalPatternForPath(filePath: string, pattern: string): string {
 function registryForPath(filePath: string, registry: RegistrySurface[]): RegistrySurface | null {
   const normalized = normalizePathForRecord(filePath);
   if (normalized.startsWith('_bmad/codex/skills/bmad-story-assistant/')) {
-    const storyAndBugSurface = registry.find((surface) => surface.surfaceId === 'story_and_bug_assistant_party_mode');
+    const storyAndBugSurface = registry.find(
+      (surface) => surface.surfaceId === 'story_and_bug_assistant_party_mode'
+    );
     if (storyAndBugSurface) return storyAndBugSurface;
   }
   for (const surface of registry) {
@@ -407,7 +434,10 @@ function registryForPath(filePath: string, registry: RegistrySurface[]): Registr
       parts.some((part) => {
         const normalizedPart = normalizePathForRecord(part);
         if (normalizedPart.includes('*')) return globToRegex(normalizedPart).test(normalized);
-        return normalized === normalizedPart || normalized.startsWith(`${normalizedPart.replace(/\/$/u, '')}/`);
+        return (
+          normalized === normalizedPart ||
+          normalized.startsWith(`${normalizedPart.replace(/\/$/u, '')}/`)
+        );
       })
     ) {
       return surface;
@@ -426,17 +456,31 @@ function exclusionForPath(filePath: string): { code: string; reason: string } | 
   ) {
     return {
       code: 'comment_without_execution_semantics',
-      reason: 'localized message, README, or generic hook text mentions a subagent token but does not define a subagent execution surface',
+      reason:
+        'localized message, README, or generic hook text mentions a subagent token but does not define a subagent execution surface',
     };
   }
   if (normalized.startsWith('tests/')) {
-    return { code: 'test_fixture_only', reason: 'test fixture models subagent behavior but is not an execution authority' };
+    return {
+      code: 'test_fixture_only',
+      reason: 'test fixture models subagent behavior but is not an execution authority',
+    };
   }
-  if (normalized.startsWith('docs/fixes/') || normalized.startsWith('docs/sample/') || normalized.startsWith('docs/design/2026-')) {
-    return { code: 'legacy_reference_only', reason: 'legacy or design reference only; not an active execution surface' };
+  if (
+    normalized.startsWith('docs/fixes/') ||
+    normalized.startsWith('docs/sample/') ||
+    normalized.startsWith('docs/design/2026-')
+  ) {
+    return {
+      code: 'legacy_reference_only',
+      reason: 'legacy or design reference only; not an active execution surface',
+    };
   }
   if (normalized.startsWith('docs/') || normalized.startsWith('specs/')) {
-    return { code: 'non_control_doc_sample', reason: 'documentation or specification sample; cannot drive control decisions' };
+    return {
+      code: 'non_control_doc_sample',
+      reason: 'documentation or specification sample; cannot drive control decisions',
+    };
   }
   return null;
 }
@@ -446,11 +490,15 @@ function surfaceKindForPath(filePath: string, matchPattern: string): string {
   if (normalized.includes('/hooks/')) return 'hooks_and_hook_summaries';
   if (normalized.includes('/agents/')) return 'agent_prompt_publication_surfaces';
   if (normalized.includes('/skills/')) return 'skill_and_workflow_markdown_subagent_mentions';
-  if (normalized.startsWith('packages/bmad-speckit/src')) return 'package_ai_registry_subagent_support';
-  if (normalized.startsWith('docs/') || normalized.startsWith('specs/')) return 'docs_samples_and_legacy_references';
+  if (normalized.startsWith('packages/bmad-speckit/src'))
+    return 'package_ai_registry_subagent_support';
+  if (normalized.startsWith('docs/') || normalized.startsWith('specs/'))
+    return 'docs_samples_and_legacy_references';
   if (normalized.startsWith('tests/')) return 'tests_and_fixtures_that_model_subagent_behavior';
-  if (normalized.includes('worktree') || matchPattern.includes('parallel')) return 'worktree_and_parallel_execution_surfaces';
-  if (normalized.includes('governance') || normalized.includes('host')) return 'host_worker_adapters';
+  if (normalized.includes('worktree') || matchPattern.includes('parallel'))
+    return 'worktree_and_parallel_execution_surfaces';
+  if (normalized.includes('governance') || normalized.includes('host'))
+    return 'host_worker_adapters';
   return 'code_dispatch_scripts';
 }
 
@@ -508,7 +556,11 @@ function buildRows(input: {
   return rows;
 }
 
-function validateRow(row: InventoryRow, registryIds: Set<string>, scannerConfigHash: string): string[] {
+function validateRow(
+  row: InventoryRow,
+  registryIds: Set<string>,
+  scannerConfigHash: string
+): string[] {
   const issues: string[] = [];
   for (const field of [
     'surfacePath',
@@ -529,26 +581,33 @@ function validateRow(row: InventoryRow, registryIds: Set<string>, scannerConfigH
     issues.push(`coverage_status_invalid:${row.surfacePath}`);
   }
   if (row.coverageStatus === 'covered') {
-    if (!row.registrySurfaceId) issues.push(`covered_registry_surface_id_missing:${row.surfacePath}`);
+    if (!row.registrySurfaceId)
+      issues.push(`covered_registry_surface_id_missing:${row.surfacePath}`);
     if (row.registrySurfaceId && !registryIds.has(row.registrySurfaceId)) {
-      issues.push(`covered_registry_surface_id_unknown:${row.surfacePath}:${row.registrySurfaceId}`);
+      issues.push(
+        `covered_registry_surface_id_unknown:${row.surfacePath}:${row.registrySurfaceId}`
+      );
     }
   }
   if (row.coverageStatus === 'excluded') {
     if (!row.explicitExclusionReason) issues.push(`excluded_reason_missing:${row.surfacePath}`);
     if (!ALLOWED_EXCLUSION_CODES.has(row.exclusionReasonCode)) {
-      issues.push(`excluded_reason_code_invalid:${row.surfacePath}:${row.exclusionReasonCode || '<missing>'}`);
+      issues.push(
+        `excluded_reason_code_invalid:${row.surfacePath}:${row.exclusionReasonCode || '<missing>'}`
+      );
     }
   }
   if (row.coverageStatus === 'blocked') issues.push(`inventory_row_blocked:${row.surfacePath}`);
   if (row.canAffectControlFlow && !row.requiredEnvelope) {
     issues.push(`control_flow_without_required_envelope:${row.surfacePath}`);
   }
-  if (row.scannerConfigHash !== scannerConfigHash) issues.push(`scanner_config_hash_stale:${row.surfacePath}`);
+  if (row.scannerConfigHash !== scannerConfigHash)
+    issues.push(`scanner_config_hash_stale:${row.surfacePath}`);
   if (row.coverageStatus === 'covered' && row.linkedRequirementIds.length === 0) {
     issues.push(`linked_requirement_ids_missing:${row.surfacePath}`);
   }
-  if (row.linkedEvidenceIds.length === 0) issues.push(`linked_evidence_ids_missing:${row.surfacePath}`);
+  if (row.linkedEvidenceIds.length === 0)
+    issues.push(`linked_evidence_ids_missing:${row.surfacePath}`);
   if (!isSha256(row.matchedTextHash)) issues.push(`matched_text_hash_invalid:${row.surfacePath}`);
   return issues;
 }
@@ -579,7 +638,8 @@ function validateInventory(input: {
   }
   for (const row of input.rows) {
     issues.push(...validateRow(row, registryIds, input.scannerConfigHash));
-    if (row.sourceDocumentHash !== input.sourceDocumentHash) issues.push(`row_source_hash_mismatch:${row.surfacePath}`);
+    if (row.sourceDocumentHash !== input.sourceDocumentHash)
+      issues.push(`row_source_hash_mismatch:${row.surfacePath}`);
     if (row.implementationConfirmationHash !== input.implementationConfirmationHash) {
       issues.push(`row_implementation_hash_mismatch:${row.surfacePath}`);
     }
@@ -670,7 +730,9 @@ function evaluate(input: {
 export function runSubagentSurfaceInventory(argv: string[]): number {
   const args = parseArgs(argv);
   if (args.help) {
-    console.log('Usage: subagent-surface-inventory --source <md> --requirement-record <json> [--out <json>] [--json]');
+    console.log(
+      'Usage: subagent-surface-inventory --source <md> --requirement-record <json> [--out <json>] [--json]'
+    );
     return 0;
   }
   if (!args.source || !args.requirementRecord) {
@@ -692,7 +754,11 @@ export function runSubagentSurfaceInventory(argv: string[]): number {
     blockingIssues: strings(result.report.blockingIssues),
     controlWrite: 'forbidden_use_controlled_ingest',
   };
-  process.stdout.write(args.json ? `${JSON.stringify(output, null, 2)}\n` : `subagent_surface_inventory=${result.decision}\n`);
+  process.stdout.write(
+    args.json
+      ? `${JSON.stringify(output, null, 2)}\n`
+      : `subagent_surface_inventory=${result.decision}\n`
+  );
   return result.decision === 'pass' ? 0 : 1;
 }
 
@@ -707,7 +773,13 @@ if (require.main === module) {
   try {
     process.exitCode = runSubagentSurfaceInventory(process.argv.slice(2));
   } catch (error) {
-    console.error(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : String(error) }, null, 2));
+    console.error(
+      JSON.stringify(
+        { ok: false, error: error instanceof Error ? error.message : String(error) },
+        null,
+        2
+      )
+    );
     process.exitCode = 2;
   }
 }

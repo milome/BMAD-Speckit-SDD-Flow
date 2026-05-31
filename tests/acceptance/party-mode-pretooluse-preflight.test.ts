@@ -52,9 +52,7 @@ describe('party-mode pretooluse preflight', () => {
       expect(out.systemMessage).toContain('main Agent must ask the user to choose intensity');
       expect(out.systemMessage).toContain('请选择本次 Party-Mode 讨论强度');
       expect(out.systemMessage).toContain('推荐档位：`final_solution_task_list_100`');
-      expect(out.systemMessage).toContain(
-        '必须等待用户明确回复 `20` / `50` / `100` 后再继续'
-      );
+      expect(out.systemMessage).toContain('必须等待用户明确回复 `20` / `50` / `100` 后再继续');
       expect(out.systemMessage).toContain('将所选档位显式传入 `gateProfileId` / `gate_profile_id`');
       expect(out.systemMessage).toContain('## 用户选择');
       expect(out.systemMessage).toContain('强度: 50 (decision_root_cause_50)');
@@ -128,7 +126,9 @@ describe('party-mode pretooluse preflight', () => {
       expect(out.systemMessage).toContain(
         'high-confidence final outputs require a canonical markdown document path'
       );
-      expect(out.systemMessage).toContain('_bmad-output/implementation-artifacts/_orphan/BUGFIX_<slug>.md');
+      expect(out.systemMessage).toContain(
+        '_bmad-output/implementation-artifacts/_orphan/BUGFIX_<slug>.md'
+      );
       expect(out.systemMessage).toContain('must write/update that document directly');
     } finally {
       fs.rmSync(tempRoot, { recursive: true, force: true });
@@ -226,9 +226,7 @@ describe('party-mode pretooluse preflight', () => {
       };
       expect(out.continue).toBe(false);
       expect(out.stopReason).toContain('已检测到用户已选档位');
-      expect(out.systemMessage).toContain(
-        'a user-selected intensity was detected in free text'
-      );
+      expect(out.systemMessage).toContain('a user-selected intensity was detected in free text');
       expect(out.systemMessage).toContain('不要再次询问用户 20 / 50 / 100');
       expect(out.systemMessage).toContain('`gateProfileId` / `gate_profile_id`');
       expect(out.systemMessage).toContain('强度: 20 (quick_probe_20)');

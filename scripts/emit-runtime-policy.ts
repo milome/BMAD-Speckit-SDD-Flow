@@ -9,6 +9,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { createHash } from 'node:crypto';
 import type { ResolveRuntimePolicyInput, RuntimeFlowId } from './runtime-governance';
 import { resolveBmadHelpRuntimePolicy } from './bmad-config';
 import type { StageName } from './bmad-config';
@@ -20,10 +21,7 @@ import {
   runtimeContextRegistryPath,
   type RuntimeContextRegistry,
 } from './runtime-context-registry';
-import {
-  readRuntimeContext,
-  type RuntimeContextFile,
-} from './runtime-context';
+import { readRuntimeContext, type RuntimeContextFile } from './runtime-context';
 import {
   requirementRecordIndexPath,
   requirementRecordsRoot,
@@ -75,11 +73,14 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
  *   artifactRoot?: string;
  * }} Requirement-record-backed runtime policy context
  */
-export function loadPolicyContextFromRegistry(root: string, options?: {
-  recordId?: string;
-  requirementSetId?: string;
-  runId?: string;
-}): {
+export function loadPolicyContextFromRegistry(
+  root: string,
+  options?: {
+    recordId?: string;
+    requirementSetId?: string;
+    runId?: string;
+  }
+): {
   resolvedContextPath: string;
   runtimeContext: ReturnType<typeof resolvedRuntimeContextToRuntimeContext>;
   resolvedRuntimeContext: ResolvedRuntimeContext;
@@ -129,7 +130,9 @@ function hasNonBridgeRequirementRecordCandidate(root: string): boolean {
     const recordPath = path.join(recordsRoot, entry.name, 'requirement-record.json');
     if (!fs.existsSync(recordPath)) continue;
     try {
-      const parsed = JSON.parse(fs.readFileSync(recordPath, 'utf8')) as { runtimeRegistryBridge?: unknown };
+      const parsed = JSON.parse(fs.readFileSync(recordPath, 'utf8')) as {
+        runtimeRegistryBridge?: unknown;
+      };
       if (!parsed.runtimeRegistryBridge) {
         return true;
       }
@@ -153,6 +156,113 @@ function toRootRelative(root: string, filePath: string): string {
 function writeJsonUtf8(filePath: string, payload: unknown): void {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+}
+
+function sha256Text(value: string): string {
+  return `sha256:${createHash('sha256').update(value, 'utf8').digest('hex')}`;
+}
+
+function sha256File(filePath: string): string {
+  return `sha256:${createHash('sha256').update(fs.readFileSync(filePath)).digest('hex')}`;
+}
+
+function resolveExistingBridgeSourcePath(input: {
+  root: string;
+  context: RuntimeContextFile;
+  contextPath: string;
+}): string {
+  for (const candidate of [input.context.artifactPath, input.context.artifactRoot]) {
+    if (!candidate) continue;
+    const absolute = path.isAbsolute(candidate) ? candidate : path.resolve(input.root, candidate);
+    if (fs.existsSync(absolute) && fs.statSync(absolute).isFile()) {
+      return toRootRelative(input.root, absolute);
+    }
+  }
+  return toRootRelative(input.root, input.contextPath);
+}
+
+function modelResult(input: {
+  model: string;
+  recordId: string;
+  requirementSetId: string;
+  sourceDocumentHash: string;
+  implementationConfirmationHash: string;
+  now: string;
+}): Record<string, unknown> {
+  return {
+    payloadKind: 'model_result',
+    model: input.model,
+    recordId: input.recordId,
+    requirementSetId: input.requirementSetId,
+    sourceDocumentHash: input.sourceDocumentHash,
+    implementationConfirmationHash: input.implementationConfirmationHash,
+    status: 'pass',
+    resultRecordedAt: input.now,
+    resultRecordedBy: 'runtime-registry-bridge',
+    blockingReasons: [],
+    sourceRefs: [{ sourceType: 'runtime_registry_bridge', id: input.model }],
+    currentHashes: {
+      sourceDocumentHash: input.sourceDocumentHash,
+      implementationConfirmationHash: input.implementationConfirmationHash,
+    },
+  };
+}
+
+function deriveBridgeSixModelProjection(input: {
+  context: RuntimeContextFile;
+  gate: unknown;
+  recordId: string;
+  requirementSetId: string;
+  sourceDocumentHash: string;
+  implementationConfirmationHash: string;
+  now: string;
+}): { currentMentalModel: string; sixModelResults: Record<string, unknown> } {
+  const base = {
+    recordId: input.recordId,
+    requirementSetId: input.requirementSetId,
+    sourceDocumentHash: input.sourceDocumentHash,
+    implementationConfirmationHash: input.implementationConfirmationHash,
+    now: input.now,
+  };
+  const gateDecision =
+    input.gate && typeof input.gate === 'object' && !Array.isArray(input.gate)
+      ? String((input.gate as Record<string, unknown>).decision ?? '')
+      : '';
+  const closeoutApproved = input.context.latestReviewerCloseout?.closeoutApproved === true;
+  const implementationReady =
+    gateDecision === 'pass' ||
+    input.context.stage === 'implement' ||
+    input.context.stage === 'post_audit';
+  const sixModelResults: Record<string, unknown> = {
+    requirement_confirmation: modelResult({ ...base, model: 'requirement_confirmation' }),
+    architecture_confirmation: modelResult({ ...base, model: 'architecture_confirmation' }),
+  };
+  if (implementationReady) {
+    sixModelResults.implementation_readiness = modelResult({
+      ...base,
+      model: 'implementation_readiness',
+    });
+  }
+  if (input.context.stage === 'post_audit' || closeoutApproved) {
+    sixModelResults.implementation_readiness ??= modelResult({
+      ...base,
+      model: 'implementation_readiness',
+    });
+    sixModelResults.execution_closure = modelResult({ ...base, model: 'execution_closure' });
+    if (closeoutApproved) {
+      sixModelResults.audit_review = modelResult({ ...base, model: 'audit_review' });
+    }
+    return {
+      currentMentalModel: closeoutApproved ? 'audit_review' : 'execution_closure',
+      sixModelResults,
+    };
+  }
+  return {
+    currentMentalModel: implementationReady
+      ? 'implementation_readiness'
+      : 'architecture_confirmation',
+    sixModelResults,
+  };
 }
 
 function implementationEntryGateFromRegistry(
@@ -182,7 +292,11 @@ function ensureRegistryBackedRequirementRecordBridge(
   root: string,
   options?: { recordId?: string; requirementSetId?: string; runId?: string }
 ): void {
-  if (options?.recordId || options?.requirementSetId || hasNonBridgeRequirementRecordCandidate(root)) {
+  if (
+    options?.recordId ||
+    options?.requirementSetId ||
+    hasNonBridgeRequirementRecordCandidate(root)
+  ) {
     return;
   }
   const registryPath = runtimeContextRegistryPath(root);
@@ -238,11 +352,53 @@ function ensureRegistryBackedRequirementRecordBridge(
     },
     provenance: bridgeProvenance,
   });
+  const bridgeSourcePath = resolveExistingBridgeSourcePath({ root, context, contextPath });
+  const snapshotHash = sha256File(snapshotPath);
+  const sourceDocumentHash = sha256Text(
+    [
+      'runtime-registry-bridge-source',
+      bridgeSourcePath,
+      context.flow,
+      context.stage,
+      context.storyId ?? '',
+      context.artifactPath ?? context.artifactRoot ?? '',
+    ].join('\n')
+  );
+  const implementationConfirmationHash = sha256Text(
+    [
+      'runtime-registry-bridge-confirmation',
+      sourceDocumentHash,
+      context.runId,
+      context.updatedAt ?? now,
+    ].join('\n')
+  );
+  const confirmationPageHash = sha256Text(
+    [
+      'runtime-registry-bridge-confirmation-page',
+      sourceDocumentHash,
+      implementationConfirmationHash,
+    ].join('\n')
+  );
+  const architectureConfirmationHash = sha256Text(
+    ['runtime-registry-bridge-architecture', sourceDocumentHash, context.flow, context.stage].join(
+      '\n'
+    )
+  );
+  const sixModelProjection = deriveBridgeSixModelProjection({
+    context,
+    gate,
+    recordId,
+    requirementSetId,
+    sourceDocumentHash,
+    implementationConfirmationHash,
+    now,
+  });
   writeJsonUtf8(recoveryContextPath, {
     kind: 'recovery-context',
     provenance: bridgeProvenance,
   });
   writeJsonUtf8(recordPath, {
+    schemaVersion: 'requirement-record/v1',
     recordId,
     requirementSetId,
     status: 'user_confirmed',
@@ -264,25 +420,64 @@ function ensureRegistryBackedRequirementRecordBridge(
     runId: context.runId,
     artifactRoot: context.artifactRoot,
     artifactPath: context.artifactPath ?? context.artifactRoot,
-    sourcePath: context.artifactPath ?? context.artifactRoot ?? toRootRelative(root, contextPath),
+    sourcePath: bridgeSourcePath,
+    sourceDocumentHash,
+    implementationConfirmationHash,
+    confirmationPageHash,
+    currentMentalModel: sixModelProjection.currentMentalModel,
+    currentStage: sixModelProjection.currentMentalModel,
+    sixModelResults: sixModelProjection.sixModelResults,
     updatedAt: context.updatedAt || now,
+    confirmationHistory: [
+      {
+        eventType: 'confirmation_recorded',
+        recordId,
+        requirementSetId,
+        confirmedAt: now,
+        confirmedBy: 'runtime-registry-bridge',
+        sourcePath: bridgeSourcePath,
+        sourceDocumentHash,
+        implementationConfirmationHash,
+        confirmationPageHash,
+        confirmationText:
+          'Runtime registry bridge materialized a legacy runtime context as a controlled requirement baseline.',
+        renderReportPath: `_bmad-output/runtime/requirement-records/${requirementSetId}/confirmation/runtime-registry-bridge-render-report.json`,
+        htmlPath: `_bmad-output/runtime/requirement-records/${requirementSetId}/confirmation/runtime-registry-bridge-confirmation.html`,
+      },
+    ],
     architectureConfirmationState: {
       status: 'active',
       currentArchitectureConfirmationRunId: `registry-bridge-${segment}`,
-      currentArchitectureConfirmationHash:
-        'sha256:0000000000000000000000000000000000000000000000000000000000000000',
+      currentArchitectureConfirmationHash: architectureConfirmationHash,
       lastEventType: 'requirement_record_materialized_from_runtime_registry',
       updatedAt: now,
     },
+    controlStore: {
+      executionIterations: [],
+    },
+    traceRows: ['TRACE-RUNTIME-REGISTRY-BRIDGE'],
+    coveredRequirementIds: ['REQ-RUNTIME-REGISTRY-BRIDGE'],
+    taskRefs: ['TASK-RUNTIME-REGISTRY-BRIDGE'],
     runtimePolicySnapshotRef: {
       path: toRootRelative(root, snapshotPath),
+      contentHash: snapshotHash,
+      artifactType: 'runtime_policy_snapshot',
+      sourceOfTruthRole: 'projection',
+      producer: 'emit-runtime-policy:runtime-registry-bridge',
+      purpose: 'materialized runtime policy snapshot for legacy registry bridge',
+      relatedRequirementIds: [recordId],
+      status: 'active',
+      inputVersion: `source=${sourceDocumentHash};implementation=${implementationConfirmationHash}`,
+      outputVersion: 'runtime-policy-snapshot/v1',
     },
     recoveryContextRef: {
       path: toRootRelative(root, recoveryContextPath),
     },
     runtimeRegistryBridge: bridgeProvenance,
     ...(context.latestReviewerCloseout || registry.latestReviewerCloseout
-      ? { latestReviewerCloseout: context.latestReviewerCloseout ?? registry.latestReviewerCloseout }
+      ? {
+          latestReviewerCloseout: context.latestReviewerCloseout ?? registry.latestReviewerCloseout,
+        }
       : {}),
     ...(gate ? { implementationEntryGate: gate } : {}),
   });
@@ -408,7 +603,10 @@ function maybeAutoRepairStandaloneImplementationEntry(input: {
   policy: ReturnType<typeof resolveBmadHelpRuntimePolicy>;
 }): boolean {
   const { loaded, policy } = input;
-  if (loaded.runtimeContext.flow !== 'standalone_tasks' || loaded.runtimeContext.stage !== 'implement') {
+  if (
+    loaded.runtimeContext.flow !== 'standalone_tasks' ||
+    loaded.runtimeContext.stage !== 'implement'
+  ) {
     return false;
   }
 

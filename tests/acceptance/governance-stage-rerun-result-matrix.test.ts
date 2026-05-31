@@ -1,4 +1,13 @@
-import { cpSync, existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  cpSync,
+  existsSync,
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -61,7 +70,9 @@ function buildArtifactFixture(
   const key = `${workflow}/${step}`;
   const fixture = resolveGovernanceStageFixture(key);
   if (!fixture) {
-    throw new Error(`Missing artifact fixture mapping for governed stage: ${key} (gateSet=${gateSet})`);
+    throw new Error(
+      `Missing artifact fixture mapping for governed stage: ${key} (gateSet=${gateSet})`
+    );
   }
   return fixture;
 }
@@ -94,41 +105,51 @@ function expectStageEvent(project: string, rerunGate: string): void {
 }
 
 describe('governance stage rerun-result matrix', () => {
-  it.each(loadGovernedStageCases())('$workflow/$step emits governance-rerun-result for $rerunGate', (entry) => {
-    const project = setupProject();
-    try {
-      const artifactPath = join(
-        project,
-        '_bmad-output',
-        'planning-artifacts',
-        'feature-matrix',
-        entry.artifactName
-      );
-      writeFileSync(artifactPath, entry.content, 'utf8');
-
-      let stdout = '';
+  it.each(loadGovernedStageCases())(
+    '$workflow/$step emits governance-rerun-result for $rerunGate',
+    (entry) => {
+      const project = setupProject();
       try {
-        stdout = execFileSync(
-          process.execPath,
-          [join(ROOT, '_bmad', 'runtime', 'hooks', 'pre-continue-check.cjs'), entry.workflow, entry.step],
-          { cwd: project, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }
+        const artifactPath = join(
+          project,
+          '_bmad-output',
+          'planning-artifacts',
+          'feature-matrix',
+          entry.artifactName
         );
-      } catch (error: any) {
-        stdout = error.stdout || '';
+        writeFileSync(artifactPath, entry.content, 'utf8');
+
+        let stdout = '';
+        try {
+          stdout = execFileSync(
+            process.execPath,
+            [
+              join(ROOT, '_bmad', 'runtime', 'hooks', 'pre-continue-check.cjs'),
+              entry.workflow,
+              entry.step,
+            ],
+            { cwd: project, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }
+          );
+        } catch (error: any) {
+          stdout = error.stdout || '';
+        }
+
+        const result = JSON.parse(stdout) as { ok: boolean };
+        expect(result.ok).toBe(false);
+        expectStageEvent(project, entry.rerunGate);
+      } finally {
+        rmSync(project, { recursive: true, force: true });
       }
-
-      const result = JSON.parse(stdout) as { ok: boolean };
-      expect(result.ok).toBe(false);
-      expectStageEvent(project, entry.rerunGate);
-    } finally {
-      rmSync(project, { recursive: true, force: true });
     }
-  });
+  );
 
-  it.each(loadGovernedStageCases())('$workflow/$step fixture intent stays explicit for future maintainers', (entry) => {
-    expect(entry.fixtureIntent.length).toBeGreaterThan(24);
-    expect(entry.fixtureIntent).toMatch(/fails|blocked|blocker|missing|placeholder|templated/i);
-  });
+  it.each(loadGovernedStageCases())(
+    '$workflow/$step fixture intent stays explicit for future maintainers',
+    (entry) => {
+      expect(entry.fixtureIntent.length).toBeGreaterThan(24);
+      expect(entry.fixtureIntent).toMatch(/fails|blocked|blocker|missing|placeholder|templated/i);
+    }
+  );
 
   it('fixture catalog keys stay exactly aligned with routing ∩ gates enumeration', () => {
     expect(listGovernanceStageFixtureKeys()).toEqual(enumerateGovernedRoutingIntersection());

@@ -22,17 +22,38 @@ describe('init-to-root critical party-mode helper sync', () => {
 
   it('force-syncs party-mode-read-current-session helper into both _bmad/runtime/hooks and .cursor/hooks', () => {
     const target = makeTarget();
-    const sourceHelper = path.join(ROOT, '_bmad', 'runtime', 'hooks', 'party-mode-read-current-session.cjs');
+    const sourceHelper = path.join(
+      ROOT,
+      '_bmad',
+      'runtime',
+      'hooks',
+      'party-mode-read-current-session.cjs'
+    );
 
-    const result = spawnSync(process.execPath, [path.join(ROOT, 'scripts', 'init-to-root.js'), target, '--agent', 'cursor'], {
-      cwd: ROOT,
-      encoding: 'utf8',
-    });
+    const result = spawnSync(
+      process.execPath,
+      [path.join(ROOT, 'scripts', 'init-to-root.js'), target, '--agent', 'cursor'],
+      {
+        cwd: ROOT,
+        encoding: 'utf8',
+      }
+    );
 
     expect(result.status).toBe(0);
 
-    const runtimeHelper = path.join(target, '_bmad', 'runtime', 'hooks', 'party-mode-read-current-session.cjs');
-    const cursorHelper = path.join(target, '.cursor', 'hooks', 'party-mode-read-current-session.cjs');
+    const runtimeHelper = path.join(
+      target,
+      '_bmad',
+      'runtime',
+      'hooks',
+      'party-mode-read-current-session.cjs'
+    );
+    const cursorHelper = path.join(
+      target,
+      '.cursor',
+      'hooks',
+      'party-mode-read-current-session.cjs'
+    );
 
     expect(fs.existsSync(runtimeHelper)).toBe(true);
     expect(fs.existsSync(cursorHelper)).toBe(true);

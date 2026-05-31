@@ -59,9 +59,7 @@ describe('evaluateEpicVeto', () => {
   });
 
   it('⑤ iter4 fail >= 1 triggers', () => {
-    const records = [
-      makeStoryRecord({ iteration_count: 4, veto_triggered: true }),
-    ];
+    const records = [makeStoryRecord({ iteration_count: 4, veto_triggered: true })];
     const out = evaluateEpicVeto({ storyRecords: records, epicStoryCount: 1 }, opts);
     expect(out.triggered).toBe(true);
     expect(out.triggeredConditions).toContain('⑤_iter4_fail_ge1');
@@ -105,10 +103,7 @@ describe('evaluateEpicVeto', () => {
   });
 
   it('no conditions -> not triggered', () => {
-    const records = [
-      makeStoryRecord({ first_pass: true }),
-      makeStoryRecord({ first_pass: true }),
-    ];
+    const records = [makeStoryRecord({ first_pass: true }), makeStoryRecord({ first_pass: true })];
     const out = evaluateEpicVeto({ storyRecords: records, epicStoryCount: 2 }, opts);
     expect(out.triggered).toBe(false);
     expect(out.triggeredConditions).toHaveLength(0);

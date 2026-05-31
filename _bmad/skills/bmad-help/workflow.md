@@ -17,12 +17,26 @@
 - **`sourceMode` stays internal** — derive user-visible `contextMaturity` from runtime/artifact evidence
 - **Use explicit evidence before recommendation** — derive `implementationReadinessStatus` before any implementation-first suggestion
 - **Use the unified gate label `implementation-readiness`** when explaining implementation blocking or readiness repair
+- **Use shared readiness route labels** — use `upstream_planning_readiness`, `speckit_runtime_readiness`, `readiness_help_projection`, `governed_runtime_readiness_gate`, and `readiness_auto_remediation` consistently with `bmad-check-implementation-readiness`
 - **最多 1 到 2 个关键问题** — ask only when evidence is insufficient
 - **Implementation entry may be `recommended` only when readiness is `ready_clean` or `repair_closed`**
 - **`standalone_tasks + high complexity` must upgrade to a story-oriented path**
 - **Present routes as `recommended` or `blocked`** — when the current flow must be upgraded, surface `rerouteRequired` instead of a soft-allowed implementation label
 
 ## DISPLAY RULES
+
+## DUAL VIEW OUTPUT
+
+- **Governed Runtime Next Step first** — when an active runtime record exists, default output must show `Governed Runtime Next Step` before any upstream catalog details.
+- **BMAD Upstream Workflow Catalog on request** — when the user asks for BMAD upstream workflows, a menu, catalog, or upstream BMAD Method compatibility, also show `BMAD Upstream Workflow Catalog`.
+- **Catalog is informational under governed runtime** — the upstream catalog is informational unless no governed runtime state exists or the user explicitly chooses upstream planning artifact work.
+- **Catalog item status labels** — each upstream item must be labeled as `available`, `blocked by currentMentalModel`, `compatibility only`, or `replaced by project official skill`.
+- **Runtime readiness gate label** — when runtime state exists, `Check Implementation Readiness` maps to `governed_runtime_readiness_gate`, not directly to the upstream planning readiness workflow.
+- **No remediation execution** — `bmad-help` may explain that `readiness_auto_remediation` is the main Agent lane for blocked runtime readiness, but it must not trigger remediation.
+- **No mental model progression** — Only `main_agent_orchestration` and controlled ingest may progress the six mental model chain.
+- **Compiled dispatch route is informational** — when a confirmed `implementationConfirmation` exists, implementation dispatch uses req-trace compiled artifacts first: `model_packet.json` is machine authority; `human_prompt.txt` and `goal_execution.md` are host projections.
+- **Execution strategy display is not scope selection** — if execution strategy options are shown, label them as adapter / artifact-depth choices after validated `model_packet.json`, not as requirement scope choices.
+- **Old skill adapters remain blocked** — show `bugfix`, `standalone_tasks`, and `story` implementation adapters as compatibility or blocked options until adapter capability, prompt equivalence, artifact manifest, write scope, SDD reconciliation, and controlled evidence ingest gates pass.
 
 ## PRESENTATION PRIORITY
 

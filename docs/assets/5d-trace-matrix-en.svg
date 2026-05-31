@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 680">
+  <title>Five-dimension trace matrix</title>
+  <desc>Shows how requirements map to trace rows, evidence, commands, artifacts, and gate decisions.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#8b5a2b"/>
+    </marker>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="2" dy="2" stdDeviation="3" flood-opacity="0.15"/>
+    </filter>
+  </defs>
+  <style>
+    .bg { fill: #fafaf9; }
+    .dim-box { fill: #ffffff; stroke-width: 2; filter: url(#shadow); }
+    .dim-must { stroke: #dc2626; }
+    .dim-trace { stroke: #2563eb; }
+    .dim-evidence { stroke: #16a34a; }
+    .dim-command { stroke: #ea580c; }
+    .dim-artifact { stroke: #7c3aed; }
+    .text { font-family: system-ui, -apple-system, sans-serif; font-size: 14px; fill: #44403c; text-anchor: middle; }
+    .text-title { font-weight: 600; font-size: 16px; }
+    .text-sub { font-size: 12px; fill: #6b7280; }
+    .dim-title { font-weight: 700; font-size: 15px; }
+    .center-core { fill: #faf5ff; stroke: #7c3aed; stroke-width: 3; filter: url(#shadow); }
+    .arrow-line { stroke: #8b5a2b; stroke-width: 1.5; fill: none; marker-end: url(#arrow); }
+    .bidirectional { stroke-dasharray: 4,2; }
+    .title { font-family: system-ui, -apple-system, sans-serif; font-size: 22px; font-weight: 700; fill: #1c1917; text-anchor: middle; }
+    .id-tag { font-family: 'Consolas', monospace; font-size: 11px; fill: #ffffff; font-weight: 600; }
+    .trace-row { fill: #f0f9ff; stroke: #0ea5e9; stroke-width: 1.5; }
+    .label-box { fill: #f9fafb; stroke: #e5e7eb; stroke-width: 1; }
+  </style>
+  <rect width="960" height="680" class="bg"/>
+
+  <!-- Title Section -->
+  <text x="480" y="35" class="title">5D Trace Matrix</text>
+  <text x="480" y="55" class="text text-sub">End-to-end bidirectional traceability from requirement commitment to delivery evidence</text>
+  <text x="480" y="72" class="text" style="font-size:11px;fill:#6b7280;">TRACE ROW orchestrates requirements, tasks, evidence, commands, artifacts, and acceptance checks</text>
+
+  <!-- Central Trace Row - Core Execution Slice -->
+  <circle cx="480" cy="340" r="70" class="center-core"/>
+  <text x="480" y="325" class="text dim-title" fill="#7c3aed">TRACE ROW</text>
+  <text x="480" y="345" class="text" style="font-size:12px;">Execution Slice</text>
+  <text x="480" y="365" class="text text-sub" style="font-size:11px;">orchestrates</text>
+
+  <!-- Dimension 1: MUST (Requirements) - Top -->
+  <rect x="380" y="90" width="200" height="100" rx="8" class="dim-box dim-must"/>
+  <text x="480" y="115" class="text dim-title" fill="#dc2626">① MUST</text>
+  <text x="480" y="135" class="text" style="font-size:12px;">Requirement Commitment</text>
+  <text x="480" y="155" class="text text-sub" style="font-size:11px;">What to build</text>
+  <text x="480" y="175" class="text text-sub" style="font-size:11px;">MUST-REQ-001, MUST-REQ-002...</text>
+
+  <!-- Dimension 2: TRACE (Execution) - Left -->
+  <rect x="60" y="295" width="180" height="90" rx="8" class="dim-box dim-trace"/>
+  <text x="150" y="320" class="text dim-title" fill="#2563eb">② TRACE</text>
+  <text x="150" y="340" class="text" style="font-size:13px;">Execution Slice</text>
+  <text x="150" y="360" class="text text-sub" style="font-size:12px;">How to execute</text>
+  <text x="150" y="378" class="text text-sub" style="font-size:11px;">TRACE-REG-001...</text>
+
+  <!-- Dimension 3: EVD (Proof) - Bottom -->
+  <rect x="380" y="490" width="200" height="100" rx="8" class="dim-box dim-evidence"/>
+  <text x="480" y="515" class="text dim-title" fill="#16a34a">③ EVD</text>
+  <text x="480" y="535" class="text" style="font-size:13px;">Verification Evidence</text>
+  <text x="480" y="555" class="text text-sub" style="font-size:12px;">Proof of compliance</text>
+  <text x="480" y="575" class="text text-sub" style="font-size:11px;">EVD-TEST-001 (test-pass)</text>
+
+  <!-- Dimension 4: CMD (Action) - Right -->
+  <rect x="720" y="295" width="180" height="90" rx="8" class="dim-box dim-command"/>
+  <text x="810" y="320" class="text dim-title" fill="#ea580c">④ CMD</text>
+  <text x="810" y="340" class="text" style="font-size:13px;">Execution Command</text>
+  <text x="810" y="360" class="text text-sub" style="font-size:12px;">Action to verify</text>
+  <text x="810" y="378" class="text text-sub" style="font-size:11px;">CMD-REG-TEST-001...</text>
+
+  <!-- Dimension 5: ART (Output) - Top-Right -->
+  <rect x="680" y="90" width="220" height="100" rx="8" class="dim-box dim-artifact"/>
+  <text x="790" y="115" class="text dim-title" fill="#7c3aed">⑤ ART</text>
+  <text x="790" y="135" class="text" style="font-size:13px;">Deliverable</text>
+  <text x="790" y="155" class="text text-sub" style="font-size:12px;">What is delivered</text>
+  <text x="790" y="175" class="text text-sub" style="font-size:11px;">code, config, docs...</text>
+
+  <!-- Connection Lines with Labels -->
+  <line x1="480" y1="190" x2="480" y2="270" class="arrow-line bidirectional"/>
+  <text x="505" y="235" class="text" style="font-size:11px;fill:#dc2626;">covers</text>
+
+  <line x1="240" y1="340" x2="410" y2="340" class="arrow-line bidirectional"/>
+  <text x="325" y="330" class="text" style="font-size:11px;fill:#2563eb;">slice</text>
+
+  <line x1="480" y1="490" x2="480" y2="410" class="arrow-line bidirectional"/>
+  <text x="505" y="455" class="text" style="font-size:11px;fill:#16a34a;">proves</text>
+
+  <line x1="720" y1="340" x2="550" y2="340" class="arrow-line bidirectional"/>
+  <text x="635" y="330" class="text" style="font-size:11px;fill:#ea580c;">runs</text>
+
+  <line x1="680" y1="180" x2="530" y2="290" class="arrow-line bidirectional"/>
+  <text x="590" y="220" class="text" style="font-size:11px;fill:#7c3aed;">produces</text>
+
+  <!-- Sample Trace Row Detail Box -->
+  <rect x="60" y="410" width="280" height="160" rx="6" class="trace-row"/>
+  <text x="200" y="435" class="text" style="font-weight:600;">Example: TRACE-REG-001</text>
+  <text x="75" y="460" class="text text-sub" style="text-anchor:start;font-size:11px;">covers: MUST-REQ-001, NEG-SEC-001</text>
+  <text x="75" y="482" class="text text-sub" style="text-anchor:start;font-size:11px;">taskRefs: TASK-REG-001</text>
+  <text x="75" y="504" class="text text-sub" style="text-anchor:start;font-size:11px;">acceptanceRefs: ACC-REG-001 / E2E-REG-001</text>
+  <text x="75" y="526" class="text text-sub" style="text-anchor:start;font-size:11px;">commandRefs: CMD-REG-TEST-001</text>
+  <text x="75" y="548" class="text text-sub" style="text-anchor:start;font-size:11px;">artifactRefs: ART-REG-RPT-01</text>
+  <text x="75" y="565" class="text" style="text-anchor:start;font-size:10px;fill:#0ea5e9;">Note: TRACE ROW contains complete trace chain</text>
+
+  <!-- Matrix Properties -->
+  <rect x="620" y="410" width="300" height="160" rx="6" fill="#fff7ed" stroke="#ea580c" stroke-width="1"/>
+  <text x="770" y="435" class="text" style="font-weight:600;">Matrix Properties</text>
+  <text x="635" y="460" class="text" style="text-anchor:start;font-size:10px;">• <tspan font-weight="600">Completeness</tspan>: Each MUST has at least one TRACE</text>
+  <text x="635" y="480" class="text" style="text-anchor:start;font-size:10px;">• <tspan font-weight="600">EVD proof</tspan>: Evidence bound to TRACE</text>
+  <text x="635" y="500" class="text" style="text-anchor:start;font-size:10px;">• <tspan font-weight="600">CMD reproducibility</tspan>: Command replayable</text>
+  <text x="635" y="520" class="text" style="text-anchor:start;font-size:10px;">• <tspan font-weight="600">ACC/E2E acceptance</tspan>: Checks auditable</text>
+  <text x="635" y="540" class="text" style="text-anchor:start;font-size:10px;">• <tspan font-weight="600">Atomicity</tspan>: TRACE is minimal execution unit</text>
+  <text x="635" y="560" class="text" style="text-anchor:start;font-size:9px;fill:#ea580c;">Note: Five dimensions form complete quality gate loop</text>
+
+  <!-- Legend -->
+  <rect x="60" y="590" width="840" height="75" rx="6" fill="#ffffff" stroke="#e5e7eb" stroke-width="1"/>
+  <text x="80" y="615" class="text" style="text-anchor:start;font-weight:600;">Trace Rules:</text>
+  <text x="80" y="638" class="text text-sub" style="text-anchor:start;font-size:11px;">Forward: MUST → TRACE → CMD → ART + EVD</text>
+  <text x="80" y="655" class="text text-sub" style="text-anchor:start;font-size:10px;">Note: From requirements, generate deliverables and collect evidence</text>
+  <text x="520" y="638" class="text text-sub" style="text-anchor:start;font-size:11px;">Reverse: EVD → TRACE → MUST (reverse audit)</text>
+  <text x="520" y="655" class="text text-sub" style="text-anchor:start;font-size:10px;">Note: From evidence, verify execution slice and requirement coverage</text>
+</svg>

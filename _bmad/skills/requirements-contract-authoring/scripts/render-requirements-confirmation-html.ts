@@ -6,6 +6,15 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const yaml = require('./load-js-yaml');
+const {
+  evaluateTargetModificationPathCoverage,
+} = require('./target_modification_path_coverage');
+const {
+  classifyConfirmationDrift,
+  SEMANTIC_RECONFIRMATION_REQUIRED,
+  STALE_BOOKKEEPING_REPAIR_REQUIRED,
+  PROJECTION_REFRESH_REQUIRED,
+} = require('./confirmation_drift_classifier');
 
 const VALID_LANGUAGES = new Set(['zh-CN', 'en-US', 'bilingual']);
 const VALID_ENTRY_FLOWS = new Set(['bugfix', 'standalone_tasks', 'story']);
@@ -16,11 +25,32 @@ const VALID_ENTRY_FLOW_CLASSES = new Set([
 ]);
 const VALID_WORKFLOW_ADAPTERS = new Set(['direct', 'legacy', 'bmad', 'speckit']);
 const VALID_THEMES = new Set(['readable', 'compact', 'audit']);
-const ID_PATTERN = /\b(MUST|NEG|OUT|EVD|TRACE|Q)-\d+\b/g;
+const VALID_RENDER_MODES = new Set(['confirmation', 'closeout-review']);
+const ID_PATTERN = /\b(MUST|NEG|OUT|EVD|TRACE|ACC|E2E|FAIL|EDGE|ART|CMD|TASK|SEQ|FLOW|BOUNDARY|Q)-[A-Za-z0-9_.:-]+\b/g;
 const SELF_PAGE_HASH_PLACEHOLDER = 'sha256:SELF_CONFIRMATION_PAGE_HASH';
+const SELF_CLOSEOUT_PAGE_HASH_PLACEHOLDER = 'sha256:SELF_CLOSEOUT_CONFIRMATION_PAGE_HASH';
 const GENERATED_AT_HASH_PLACEHOLDER = 'CONFIRMATION_GENERATED_AT_HASH_PLACEHOLDER';
 const CURRENT_TARGET_SCHEMA_VERSION = 'current-target-map/v1';
 const CURRENT_TARGET_DISPLAY_PROFILE = 'closed_loop_current_target_map';
+const CURRENT_TARGET_REQUIRED_VIEW_PACK = 'currentTargetMap';
+const CURRENT_TARGET_MINIMUM_COVERAGE = {
+  currentSummary: 1,
+  targetSummary: 1,
+  diffRows: 3,
+  process: 1,
+  artifactPaths: 1,
+};
+const REQUIRED_PRE_CONFIRMATION_DRILLDOWN_SECTIONS = [
+  'Pre-Confirmation Semantic Drilldown',
+  'Semantic Kernel Summary',
+  'MUST Decomposition Packet',
+  'Atomicity Drivers',
+  'Atomic Task Baseline',
+  'Projection Coverage',
+  'Critical Auditor Convergence',
+  'Gap History',
+  'Packet-To-Source Reconciliation',
+];
 const DEFAULT_CONFIRMATION_PROFILE = 'implementation_confirmation';
 const REQUIRED_APPLICABILITY_DOMAINS = [
   'governanceEvents',
@@ -28,6 +58,7 @@ const REQUIRED_APPLICABILITY_DOMAINS = [
   'scoringDashboardSft',
   'currentTargetMap',
   'scriptsAndHooks',
+  'aiTddContractGate',
 ];
 const CORE_VIEW_PACKS = [
   'coreDesign',
@@ -37,6 +68,7 @@ const CORE_VIEW_PACKS = [
   'businessVisuals',
   'resumeFailureCases',
   'traceMatrix',
+  'targetModificationPaths',
   'artifactAutomationPlan',
   'architectureImpact',
   'entryFlow',
@@ -110,10 +142,11 @@ const CURRENT_TARGET_TABLE_PROFILES = {
     className: 'compact-map-table profile-diff-rows',
     emptyStateText: '源文档未提供 diffRows[]。',
     fields: [
+      { key: 'id', header: 'ID', cell: 'code', width: '12%', required: false },
       { key: 'dimension', header: '维度', cell: 'text', width: '18%', required: true },
-      { key: 'currentState', header: '当前', cell: 'text', width: '32%', required: true },
-      { key: 'targetState', header: '目标', cell: 'text', width: '32%', required: true },
-      { key: 'action', header: '动作', cell: 'tag', width: '18%', required: true },
+      { key: 'currentState', header: '当前', cell: 'text', width: '27%', required: true },
+      { key: 'targetState', header: '目标', cell: 'text', width: '27%', required: true },
+      { key: 'action', header: '动作', cell: 'tag', width: '16%', required: true },
     ],
   },
   targetFlow: {
@@ -163,10 +196,10 @@ const CURRENT_TARGET_TABLE_PROFILES = {
     className: 'compact-map-table profile-existing-artifacts',
     emptyStateText: '源文档未提供 existingArtifacts[]。',
     fields: [
-      { key: 'currentPath', header: '现有路径', cell: 'code', width: '30%', required: true },
-      { key: 'currentFunction', header: '当前功能', cell: 'text', width: '26%', required: true },
-      { key: 'targetTreatment', header: '目标处理', cell: 'text', width: '28%', required: true },
-      { key: 'completionProofPolicy', header: '是否可直接证明完成', cell: 'tag', width: '16%', required: true },
+      { key: 'currentPath', header: '现有路径', cell: 'code', width: '32%', required: true },
+      { key: 'currentFunction', header: '当前功能', cell: 'text', width: '22%', required: true },
+      { key: 'targetTreatment', header: '目标处理', cell: 'text', width: '30%', required: true },
+      { key: 'completionProofPolicy', header: '完成证明策略', cell: 'tag', width: '16%', required: true },
     ],
   },
   scriptConvergence: {
@@ -174,9 +207,9 @@ const CURRENT_TARGET_TABLE_PROFILES = {
     className: 'compact-map-table profile-script-convergence',
     emptyStateText: '源文档未提供 scriptConvergence[]。',
     fields: [
-      { key: 'scriptOrConfigPath', header: '脚本 / 配置路径', cell: 'code', width: '28%', required: true },
-      { key: 'currentFunction', header: '当前功能描述', cell: 'text', width: '26%', required: true },
-      { key: 'targetOwnerModel', header: '目标 ownerModel', cell: 'tag', width: '14%', required: true },
+      { key: 'scriptOrConfigPath', header: '脚本 / 配置路径', cell: 'code', width: '26%', required: true },
+      { key: 'currentFunction', header: '当前功能描述', cell: 'text', width: '24%', required: true },
+      { key: 'targetOwnerModel', header: '目标 ownerModel', cell: 'tag', width: '18%', required: true },
       { key: 'targetWritesOrOutputs', header: '目标写入 / 输出', cell: 'code', width: '20%', required: true },
       { key: 'completionAuthority', header: '完成权限', cell: 'tag', width: '12%', required: true },
     ],
@@ -238,9 +271,10 @@ const CURRENT_TARGET_TABLE_PROFILES = {
     className: 'compact-map-table profile-process',
     emptyStateText: '源文档未提供 process[]。',
     fields: [
-      { key: 'phase', header: '阶段', cell: 'text', width: '22%', required: true },
-      { key: 'currentState', header: '当前', cell: 'text', width: '39%', required: true },
-      { key: 'targetState', header: '目标', cell: 'text', width: '39%', required: true },
+      { key: 'id', header: 'ID', cell: 'code', width: '12%', required: false },
+      { key: 'phase', header: '阶段', cell: 'text', width: '20%', required: true },
+      { key: 'currentState', header: '当前', cell: 'text', width: '34%', required: true },
+      { key: 'targetState', header: '目标', cell: 'text', width: '34%', required: true },
     ],
   },
   artifactPaths: {
@@ -376,6 +410,14 @@ function confirmationPageHashFor(htmlWithSelfHashPlaceholder, generatedAt) {
   return sha256(htmlWithSelfHashPlaceholder.replaceAll(generatedAt, GENERATED_AT_HASH_PLACEHOLDER));
 }
 
+function closeoutConfirmationPageHashFor(htmlWithSelfHashPlaceholder, generatedAt) {
+  return sha256(
+    htmlWithSelfHashPlaceholder
+      .replaceAll(generatedAt, GENERATED_AT_HASH_PLACEHOLDER)
+      .replaceAll(SELF_CLOSEOUT_PAGE_HASH_PLACEHOLDER, SELF_PAGE_HASH_PLACEHOLDER)
+  );
+}
+
 function escapeHtml(value) {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -400,6 +442,16 @@ function asArray(value) {
 function stringList(value) {
   if (!Array.isArray(value)) return [];
   return value.map((item) => String(item));
+}
+
+function extractPathRefs(value) {
+  const refs = new Set();
+  const normalized = String(value ?? '').replace(/\r?\n/g, ' ');
+  const matches = normalized.matchAll(
+    /(?<![A-Za-z0-9_@.-])((?:[A-Za-z]:)?[./\\A-Za-z0-9_-][A-Za-z0-9_./\\-]*\.(?:test|spec)\.(?:tsx|ts|jsx|js|mjs|cjs)|[./\\A-Za-z0-9_-][A-Za-z0-9_./\\-]*\.(?:tsx|ts|jsx|json|mjs|cjs|js|ya?ml|md))(?=$|[^A-Za-z0-9_.-])/giu
+  );
+  for (const match of matches) refs.add(match[1]);
+  return [...refs];
 }
 
 function hasOwn(value, key) {
@@ -447,6 +499,10 @@ function viewPackEnabled(profile, pack) {
   return profile?.enabledViewPackSet?.has(pack) === true;
 }
 
+function viewPackRequired(profile, pack) {
+  return asArray(profile?.requiredViewPacks).includes(pack);
+}
+
 function extractIds(value) {
   return unique(String(value ?? '').match(ID_PATTERN) ?? []);
 }
@@ -459,6 +515,20 @@ function readDataFile(filePath) {
   const raw = readText(filePath);
   if (/\.ya?ml$/iu.test(filePath)) return yaml.load(raw);
   return JSON.parse(raw);
+}
+
+function readJsonSafe(filePath) {
+  try {
+    if (!filePath || !fs.existsSync(path.resolve(filePath))) return { ok: false, missing: true, path: filePath };
+    return { ok: true, value: readDataFile(path.resolve(filePath)), path: path.resolve(filePath) };
+  } catch (error) {
+    return {
+      ok: false,
+      missing: false,
+      path: filePath,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
 }
 
 function defaultRequirementRecordPath(recordId) {
@@ -504,6 +574,113 @@ function readRequirementRecord(args, recordId) {
       source: args.requirementRecord ? 'explicit' : 'default',
     };
   }
+}
+
+function defaultAuthoringDir(recordId) {
+  return path.resolve('_bmad-output', 'runtime', 'requirement-records', recordId, 'authoring');
+}
+
+function defaultPreRenderMustGateReportPath(recordId) {
+  return path.join(defaultAuthoringDir(recordId), 'pre-render-must-decomposition-gate-report.json');
+}
+
+function authoringRepairIssue(message, refs = []) {
+  return {
+    ...blocking('pre_confirmation_authoring_repair_required', message, refs),
+    legacyCode: 'missing_pre_confirmation_semantic_drilldown_gate_report',
+    repairAction: 'run_authoring_repair_preserve_existing',
+    repairCommand: 'main-agent-orchestration --action authoring-repair --mode preserve-existing --source <source> --json',
+  };
+}
+
+function loadPreConfirmationSemanticDrilldown(args, confirmation, hashes) {
+  const explicitPath =
+    args.drilldownGateReport ??
+    args.mustDecompositionGateReport ??
+    args.preRenderMustDecompositionGateReport ??
+    confirmation.preConfirmationDrilldown?.preRenderGateReportPath ??
+    confirmation.preConfirmationDrilldown?.mustDecompositionGateReportPath;
+  const reportPath = explicitPath || (confirmation.recordId ? defaultPreRenderMustGateReportPath(confirmation.recordId) : '');
+  const issues = [];
+  if (!reportPath) {
+    issues.push(authoringRepairIssue('pre-render MUST decomposition gate report is required before confirmation HTML'));
+    return {
+      status: 'missing',
+      reportPath: '',
+      report: null,
+      blockingIssues: issues,
+      warnings: [],
+      requiredSections: REQUIRED_PRE_CONFIRMATION_DRILLDOWN_SECTIONS,
+    };
+  }
+  const read = readJsonSafe(reportPath);
+  if (!read.ok) {
+    issues.push(
+      read.missing
+        ? authoringRepairIssue(
+            read.error ?? 'pre-render MUST decomposition gate report is missing or unreadable',
+            [normalizePathForReport(path.resolve(reportPath))]
+          )
+        : blocking(
+        'pre_confirmation_semantic_drilldown_gate_report_parse_failed',
+        read.error ?? 'pre-render MUST decomposition gate report is missing or unreadable',
+        [normalizePathForReport(path.resolve(reportPath))]
+      )
+    );
+    return {
+      status: 'blocked',
+      reportPath: normalizePathForReport(path.resolve(reportPath)),
+      report: null,
+      blockingIssues: issues,
+      warnings: [],
+      requiredSections: REQUIRED_PRE_CONFIRMATION_DRILLDOWN_SECTIONS,
+    };
+  }
+  const report = read.value;
+  if (report.schemaVersion !== 'pre-render-must-decomposition-gate-report/v1' && report.schemaVersion !== 'semantic-checkpoint-pre-render-gate/v1') {
+    issues.push(blocking('pre_confirmation_semantic_drilldown_gate_schema_invalid', 'drilldown gate report schemaVersion is invalid', ['schemaVersion']));
+  }
+  if (report.sourceDocumentHash && report.sourceDocumentHash !== hashes.sourceDocumentHash) {
+    issues.push(blocking('pre_confirmation_semantic_drilldown_gate_source_hash_stale', 'drilldown gate report sourceDocumentHash is stale', ['sourceDocumentHash']));
+  }
+  if (report.implementationConfirmationHash && report.implementationConfirmationHash !== hashes.implementationConfirmationHash) {
+    issues.push(
+      blocking(
+        'pre_confirmation_semantic_drilldown_gate_implementation_hash_stale',
+        'drilldown gate report implementationConfirmationHash is stale',
+        ['implementationConfirmationHash']
+      )
+    );
+  }
+  if (report.verdict !== 'PASS' || report.confirmability === 'blocked') {
+    for (const code of asArray(report.failedChecks)) {
+      issues.push(blocking(`pre_confirmation_semantic_drilldown_${code}`, `drilldown gate failed: ${code}`, [code]));
+    }
+    if (!asArray(report.failedChecks).length) {
+      issues.push(blocking('pre_confirmation_semantic_drilldown_gate_failed', 'drilldown gate verdict is not PASS'));
+    }
+  }
+  if ((report.criticalAuditor?.consecutiveNoNewGapRounds ?? 0) < 3) {
+    issues.push(blocking('pre_confirmation_semantic_drilldown_less_than_three_critic_rounds', 'Critical Auditor convergence is below three no-new-gap rounds'));
+  }
+  if (report.packetSourceReconciliation?.verdict && report.packetSourceReconciliation.verdict !== 'pass') {
+    issues.push(blocking('pre_confirmation_semantic_drilldown_reconciliation_failed', 'packet/source reconciliation did not pass'));
+  }
+  if (issues.length) {
+    issues.push(
+      authoringRepairIssue('pre-confirmation authoring repair must be rerun before rendering confirmation HTML', [
+        normalizePathForReport(path.resolve(reportPath)),
+      ])
+    );
+  }
+  return {
+    status: issues.length ? 'blocked' : 'pass',
+    reportPath: normalizePathForReport(path.resolve(reportPath)),
+    report,
+    blockingIssues: issues,
+    warnings: [],
+    requiredSections: REQUIRED_PRE_CONFIRMATION_DRILLDOWN_SECTIONS,
+  };
 }
 
 function normalizePathForReport(filePath) {
@@ -942,6 +1119,7 @@ function sanitizeMermaidTransitionLabel(label) {
   return String(label ?? '')
     .replace(/\[([A-Z]+-\d+[A-Z]*)\]/gu, '$1')
     .replace(/[<>{}]/gu, ' ')
+    .replace(/;/gu, ' and')
     .replace(/\s+/gu, ' ')
     .trim();
 }
@@ -954,9 +1132,27 @@ function sanitizeMermaidStateLine(line) {
 
 function sanitizeMermaidSequenceNoteLine(line) {
   return String(line ?? '').replace(/^(\s*Note\s+(?:over|right of|left of)\s+[^:]+:\s*)(.+)$/iu, (_match, prefix, label) => {
-    const safeLabel = sanitizeMermaidTransitionLabel(label).replace(/;/gu, ' and').trim();
+    const safeLabel = sanitizeMermaidTransitionLabel(label);
     return `${prefix}${safeLabel}`;
   });
+}
+
+function sanitizeMermaidSequenceMessageLine(line) {
+  return String(line ?? '').replace(
+    /^(\s*\S+\s*(?:-{1,2}|={1,2})(?:>>|>|x|\){1,2})?\s*\S+\s*:\s*)(.+)$/u,
+    (_match, prefix, label) => {
+      const safeLabel = sanitizeMermaidTransitionLabel(label);
+      return `${prefix}${safeLabel}`;
+    }
+  );
+}
+
+function sanitizeMermaidSequenceLine(line) {
+  if (/^\s*Note\s+/iu.test(line)) return sanitizeMermaidSequenceNoteLine(line);
+  if (/^\s*\S+\s*(?:-{1,2}|={1,2})(?:>>|>|x|\){1,2})?\s*\S+\s*:/u.test(line)) {
+    return sanitizeMermaidSequenceMessageLine(line);
+  }
+  return line;
 }
 
 function mermaidRenderSource(source) {
@@ -964,7 +1160,7 @@ function mermaidRenderSource(source) {
   if (/^\s*sequenceDiagram\b/imu.test(text)) {
     return text
       .split(/\r?\n/u)
-      .map((line) => (/^\s*Note\s+/iu.test(line) ? sanitizeMermaidSequenceNoteLine(line) : line))
+      .map((line) => sanitizeMermaidSequenceLine(line))
       .join('\n');
   }
   if (!/^\s*(flowchart|graph|stateDiagram|stateDiagram-v2)\b/imu.test(text)) return text;
@@ -1630,6 +1826,10 @@ function findUnboundDiagramSemantics(source) {
 }
 
 function makeIdSet(confirmation) {
+  const sequenceViews = asArray(confirmation.sequenceViews);
+  const flowViews = asArray(confirmation.flowViews);
+  const edgeCaseViews = asArray(confirmation.edgeCaseViews);
+  const boundaryViews = asArray(confirmation.boundaryViews);
   return {
     must: new Set(asArray(confirmation.must).map((item) => item.id)),
     notDone: new Set(asArray(confirmation.notDone).map((item) => item.id)),
@@ -1639,6 +1839,24 @@ function makeIdSet(confirmation) {
     traceRows: new Set(asArray(confirmation.traceRows).map((item) => item.id)),
     failurePaths: new Set(asArray(confirmation.failurePaths).map((item) => item.id)),
     edgeCases: new Set(asArray(confirmation.edgeCases).map((item) => item.id)),
+    acceptance: new Set(normalizeAcceptanceSuites(confirmation).map((item) => item.id)),
+    artifacts: new Set(asArray(confirmation.artifactAutomationPlan).map((item) => item.artifactId ?? item.id)),
+    commands: new Set([
+      ...asArray(confirmation.requiredCommands).map((item) => item?.id ?? item?.commandId),
+      ...asArray(confirmation.suggestedCommands).map((item) => item?.id ?? item?.commandId),
+    ]),
+    tasks: new Set([
+      ...asArray(confirmation.implementationTasks).map((item) => item.taskId ?? item.id),
+      ...asArray(confirmation.aiTddContractExecutionManifestProjection?.atomicImplementationTaskLineage).map(
+        (item) => item.taskId ?? item.id
+      ),
+    ]),
+    views: new Set([
+      ...sequenceViews.map((item) => item.id),
+      ...flowViews.map((item) => item.id),
+      ...edgeCaseViews.map((item) => item.id),
+      ...boundaryViews.map((item) => item.id),
+    ]),
   };
 }
 
@@ -1652,7 +1870,65 @@ function allKnownIds(idSet) {
     ...idSet.traceRows,
     ...idSet.failurePaths,
     ...idSet.edgeCases,
+    ...idSet.acceptance,
+    ...idSet.artifacts,
+    ...idSet.commands,
+    ...idSet.tasks,
+    ...idSet.views,
   ]);
+}
+
+function normalizeAcceptanceSuites(confirmation) {
+  const sections = [
+    ['acceptanceTests', 'acceptance', 'ACC'],
+    ['acceptanceTestSuites', 'acceptance', 'ACC'],
+    ['integrationTests', 'integration', 'ACC'],
+    ['contractTests', 'contract', 'ACC'],
+    ['e2eSuites', 'e2e', 'E2E'],
+    ['e2eTests', 'e2e', 'E2E'],
+  ];
+  const rows = [];
+  for (const [section, suiteType, prefix] of sections) {
+    asArray(confirmation?.[section]).forEach((item, index) => {
+      const id = String(item?.id ?? item?.testId ?? `${prefix}-${String(index + 1).padStart(3, '0')}`).trim();
+      rows.push({
+        id,
+        suiteType: String(item?.suiteType ?? item?.kind ?? suiteType),
+        sourceSection: section,
+        files: unique([
+          String(item?.file ?? item?.path ?? item?.testFile ?? item?.testPath ?? '').trim(),
+          ...stringList(item?.files),
+          ...stringList(item?.testFiles),
+        ]),
+        covers: unique([
+          ...stringList(item?.covers),
+          ...stringList(item?.requirementRefs),
+          ...stringList(item?.linkedRequirementIds),
+          ...stringList(item?.mustRefs),
+          ...stringList(item?.negRefs),
+        ]),
+        traceRows: unique([...stringList(item?.traceRows), ...stringList(item?.traceRefs)]),
+        evidenceRefs: unique([...stringList(item?.evidenceRefs), ...stringList(item?.linkedEvidenceIds)]),
+        failurePathRefs: unique([...stringList(item?.failurePathRefs), ...stringList(item?.linkedFailurePathIds)]),
+        edgeCaseRefs: unique([...stringList(item?.edgeCaseRefs), ...stringList(item?.linkedEdgeCaseIds)]),
+        commandRefs: unique([
+          ...stringList(item?.commandRefs),
+          ...stringList(item?.requiredCommandRefs),
+          ...stringList(item?.requiredCommandIds),
+        ]),
+        expectedPreImplementationState: String(item?.expectedPreImplementationState ?? '').trim(),
+        oracle: String(item?.oracle ?? item?.expectedBehavior ?? item?.assertion ?? '').trim(),
+        positiveControl: item?.positiveControl === true,
+        negativeControls: unique([...stringList(item?.negativeControls), ...stringList(item?.negativeControlRefs)]),
+        mockOnly: item?.mockOnly === true,
+      });
+    });
+  }
+  return rows.filter((row) => row.id);
+}
+
+function findAcceptanceCovering(acceptanceRows, id) {
+  return acceptanceRows.filter((row) => row.covers.includes(id)).map((row) => row.id);
 }
 
 function findRowsCovering(traceRows, id) {
@@ -1698,6 +1974,281 @@ function findArtifactRefs(artifactPlan, id) {
     .map((item) => item.artifactId ?? item.id);
 }
 
+function refsForRow(row, keys) {
+  return unique(keys.flatMap((key) => stringList(row?.[key])));
+}
+
+function commandRefsForTrace(row) {
+  return refsForRow(row, [
+    'commandRefs',
+    'requiredCommandRefs',
+    'requiredCommandIds',
+    'contractValidationCommandRefs',
+    'deliveryEvidenceCommandRefs',
+  ]);
+}
+
+function isAiTddCanonicalArtifactPlanRow(row) {
+  const role = String(row?.sourceOfTruthRole ?? '').trim();
+  const artifactType = String(row?.artifactType ?? '').trim();
+  return (
+    role === 'implementation' ||
+    role === 'control' ||
+    row?.canAffectControlFlow === true ||
+    /^(?:code|script|hook|test|config|schema|control_record)$/iu.test(artifactType)
+  );
+}
+
+function rowsMissing(rows, category) {
+  return rows.flatMap((row) =>
+    stringList(row.missing).map((code) => ({
+      id: row.id || row.pathOrField || category,
+      code,
+      category,
+    }))
+  );
+}
+
+function aiTddContractManifestRequired(confirmation) {
+  return applicabilityDomainApplies(confirmation, 'aiTddContractGate');
+}
+
+function buildAiTddContractManifestCoverage(input) {
+  const { confirmation, traceRows, views, artifactPlan, targetModificationPaths, acceptanceRows, targetModificationPathCoverage } = input;
+  const required = aiTddContractManifestRequired(confirmation);
+  const allViews = [
+    ...asArray(views.sequenceViews),
+    ...asArray(views.flowViews),
+    ...asArray(views.edgeCaseViews),
+    ...asArray(views.boundaryViews),
+  ];
+  const failureNegRefs = new Map(
+    asArray(confirmation.failurePaths).map((row) => [row.id, refsForRow(row, ['linkedNegIds', 'negRefs'])])
+  );
+  const traceRefsFor = (requirementRefs, evidenceRefs, explicitRefs = []) =>
+    unique([
+      ...explicitRefs,
+      ...asArray(traceRows)
+        .filter(
+          (trace) =>
+            stringList(trace.covers).some((ref) => requirementRefs.includes(ref)) ||
+            stringList(trace.evidenceRefs).some((ref) => evidenceRefs.includes(ref))
+        )
+        .map((trace) => trace.id),
+    ]);
+  const viewRefsFor = (id, explicitRefs = []) =>
+    unique([...explicitRefs, ...allViews.filter((view) => stringList(view.covers).includes(id) || stringList(view.cases).includes(id)).map((view) => view.id)]);
+  const acceptanceRefsFor = (key, id) =>
+    asArray(acceptanceRows)
+      .filter((row) => stringList(row[key]).includes(id))
+      .map((row) => row.id);
+
+  const failurePaths = asArray(confirmation.failurePaths).map((row) => {
+    const linkedNegIds = refsForRow(row, ['linkedNegIds', 'negRefs']);
+    const linkedEvidenceIds = refsForRow(row, ['linkedEvidenceIds', 'evidenceRefs']);
+    const traceRefs = traceRefsFor(linkedNegIds, linkedEvidenceIds, refsForRow(row, ['traceRows', 'traceRefs']));
+    const viewRefs = viewRefsFor(row.id, refsForRow(row, ['viewRefs', 'sequenceViewRefs', 'boundaryViewRefs']));
+    const acceptanceRefs = acceptanceRefsFor('failurePathRefs', row.id);
+    const missing = [
+      ...(linkedNegIds.length ? [] : ['failure_path_neg_refs_missing']),
+      ...(linkedEvidenceIds.length ? [] : ['failure_path_evidence_refs_missing']),
+      ...(traceRefs.length ? [] : ['failure_path_trace_coverage_missing']),
+      ...(acceptanceRefs.length ? [] : ['failure_path_acceptance_coverage_missing']),
+      ...(viewRefs.length ? [] : ['failure_path_view_coverage_missing']),
+    ];
+    return { id: row.id, linkedNegIds, linkedEvidenceIds, traceRefs, viewRefs, acceptanceRefs, missing, ready: missing.length === 0 };
+  }).filter((row) => row.id);
+
+  const edgeCases = asArray(confirmation.edgeCases).map((row) => {
+    const linkedFailurePathIds = refsForRow(row, ['linkedFailurePathIds', 'failurePathRefs']);
+    const linkedNegIds = unique([
+      ...refsForRow(row, ['linkedNegIds', 'negRefs']),
+      ...linkedFailurePathIds.flatMap((id) => failureNegRefs.get(id) ?? []),
+    ]);
+    const linkedEvidenceIds = refsForRow(row, ['linkedEvidenceIds', 'evidenceRefs']);
+    const traceRefs = traceRefsFor(linkedNegIds, linkedEvidenceIds, refsForRow(row, ['traceRows', 'traceRefs']));
+    const viewRefs = viewRefsFor(row.id, refsForRow(row, ['viewRefs', 'sequenceViewRefs', 'boundaryViewRefs']));
+    const acceptanceRefs = acceptanceRefsFor('edgeCaseRefs', row.id);
+    const missing = [
+      ...(linkedFailurePathIds.length + linkedNegIds.length ? [] : ['edge_case_failure_or_neg_missing']),
+      ...(linkedEvidenceIds.length ? [] : ['edge_case_evidence_refs_missing']),
+      ...(traceRefs.length ? [] : ['edge_case_trace_coverage_missing']),
+      ...(acceptanceRefs.length ? [] : ['edge_case_acceptance_coverage_missing']),
+      ...(viewRefs.length ? [] : ['edge_case_view_coverage_missing']),
+    ];
+    return { id: row.id, linkedFailurePathIds, linkedNegIds, linkedEvidenceIds, traceRefs, viewRefs, acceptanceRefs, missing, ready: missing.length === 0 };
+  }).filter((row) => row.id);
+
+  const commandTargetRows = asArray(confirmation.requiredCommands).map((row) => {
+    const id = row.id || row.commandId;
+    const files = extractPathRefs(String(row.command ?? ''));
+    const linkedTraceRows = asArray(traceRows).filter((trace) => commandRefsForTrace(trace).includes(id));
+    const traceRefs = unique([...refsForRow(row, ['traceRows', 'traceRefs']), ...linkedTraceRows.map((trace) => trace.id)]);
+    const evidenceRefs = unique([
+      ...refsForRow(row, ['evidenceRefs', 'linkedEvidenceIds']),
+      ...linkedTraceRows.flatMap((trace) => stringList(trace.evidenceRefs)),
+    ]);
+    const missing = [
+      ...(files.length ? [] : ['command_target_files_missing']),
+      ...(traceRefs.length ? [] : ['command_target_trace_refs_missing']),
+      ...(evidenceRefs.length ? [] : ['command_target_evidence_refs_missing']),
+    ];
+    return { id, files, traceRefs, evidenceRefs, missing, ready: missing.length === 0 };
+  }).filter((row) => row.id);
+
+  const traceClosureRows = asArray(traceRows).map((row) => {
+    const commandRefs = commandRefsForTrace(row);
+    const artifactRefs = stringList(row.artifactRefs);
+    const acceptanceRefs = stringList(row.acceptanceRefs);
+    const missing = [
+      ...(stringList(row.covers).length ? [] : ['trace_closure_requirement_refs_missing']),
+      ...(stringList(row.evidenceRefs).length ? [] : ['trace_closure_evidence_refs_missing']),
+      ...(commandRefs.length ? [] : ['trace_closure_command_refs_missing']),
+      ...(acceptanceRefs.length ? [] : ['trace_closure_acceptance_refs_missing']),
+      ...(artifactRefs.length ? [] : ['trace_closure_artifact_refs_missing']),
+    ];
+    return { id: row.id, covers: stringList(row.covers), evidenceRefs: stringList(row.evidenceRefs), commandRefs, acceptanceRefs, artifactRefs, missing, ready: missing.length === 0 };
+  }).filter((row) => row.id);
+
+  const canonicalRows = [
+    ...asArray(confirmation.currentTargetMap?.canonicalArtifacts).map((row) => ({
+      id: row.id || row.targetPathOrField,
+      pathOrField: row.targetPathOrField,
+      traceRefs: refsForRow(row, ['traceRows', 'traceRefs']),
+      evidenceRefs: refsForRow(row, ['evidenceRefs', 'linkedEvidenceIds']),
+      sourceSection: 'currentTargetMap.canonicalArtifacts',
+    })),
+    ...asArray(confirmation.currentTargetMap?.pathRegistry).map((row) => ({
+      id: row.id || row.path || row.fixedPath,
+      pathOrField: row.path || row.fixedPath,
+      traceRefs: refsForRow(row, ['traceRows', 'traceRefs']),
+      evidenceRefs: refsForRow(row, ['evidenceRefs', 'linkedEvidenceIds']),
+      sourceSection: 'currentTargetMap.pathRegistry',
+    })),
+    ...asArray(artifactPlan)
+      .filter(isAiTddCanonicalArtifactPlanRow)
+      .map((row) => ({
+        id: row.artifactId || row.id,
+        pathOrField: row.path,
+        traceRefs: refsForRow(row, ['traceRows', 'traceRefs']),
+        evidenceRefs: refsForRow(row, ['evidenceRefs', 'linkedEvidenceIds']),
+        sourceSection: 'artifactAutomationPlan',
+      })),
+    ...asArray(targetModificationPaths).map((row) => ({
+      id: row.id,
+      pathOrField: row.path,
+      traceRefs: stringList(row.traceRefs),
+      evidenceRefs: stringList(row.evidenceRefs),
+      sourceSection: 'targetModificationPaths',
+    })),
+  ].filter((row) => row.id || row.pathOrField).map((row) => {
+    const missing = [
+      ...(row.pathOrField ? [] : ['canonical_surface_path_or_field_missing']),
+      ...(row.traceRefs.length ? [] : ['canonical_surface_trace_refs_missing']),
+      ...(row.evidenceRefs.length ? [] : ['canonical_surface_evidence_refs_missing']),
+    ];
+    return { ...row, missing, ready: missing.length === 0 };
+  });
+
+  const currentTargetMap = confirmation.currentTargetMap ?? {};
+  const currentTargetGroups = [
+    ['currentSummary', asArray(currentTargetMap.currentSummary)],
+    ['targetSummary', asArray(currentTargetMap.targetSummary)],
+    ['diffRows', asArray(currentTargetMap.diffRows)],
+    ['process', asArray(currentTargetMap.process)],
+    ['artifactPaths', asArray(currentTargetMap.artifactPaths)],
+    ['canonicalArtifacts', asArray(currentTargetMap.canonicalArtifacts)],
+    ['existingArtifacts', asArray(currentTargetMap.existingArtifacts)],
+  ];
+  const currentTargetRows = currentTargetGroups.map(([id, rows]) => ({
+    id,
+    count: rows.length,
+    missing: rows.length ? [] : ['current_target_map_group_missing'],
+    ready: rows.length > 0,
+  }));
+  const currentTargetMissing = [
+    ...rowsMissing(currentTargetRows, 'CURRENT_TARGET_MAP'),
+    ...(currentTargetMap.schemaVersion === CURRENT_TARGET_SCHEMA_VERSION
+      ? []
+      : [{ id: 'schemaVersion', code: 'current_target_map_schema_version_missing_or_invalid', category: 'CURRENT_TARGET_MAP' }]),
+    ...(currentTargetMap.displayProfile === CURRENT_TARGET_DISPLAY_PROFILE
+      ? []
+      : [{ id: 'displayProfile', code: 'current_target_map_display_profile_missing_or_invalid', category: 'CURRENT_TARGET_MAP' }]),
+  ];
+
+  const legacyRows = asArray(confirmation.currentTargetMap?.existingArtifacts)
+    .filter((row) => ['legacy_only', 'not_completion_proof'].includes(String(row.completionProofPolicy ?? '')))
+    .map((row) => {
+      const traceRefs = refsForRow(row, ['traceRows', 'traceRefs']);
+      const evidenceRefs = refsForRow(row, ['evidenceRefs', 'linkedEvidenceIds']);
+      const missing = [
+        ...(row.currentPath ? [] : ['legacy_denial_oracle_missing']),
+        ...(traceRefs.length + evidenceRefs.length ? [] : ['legacy_denial_refs_missing']),
+      ];
+      return { id: row.id || row.currentPath, pathOrField: row.currentPath, completionProofPolicy: row.completionProofPolicy, traceRefs, evidenceRefs, missing, ready: missing.length === 0 };
+    });
+
+  const closeout = confirmation.closeoutReadinessPreview ?? {};
+  const closeoutMissing = [
+    ...(stringList(closeout.requiredCommands).length ? [] : ['closeout_proof_required_commands_missing']),
+    ...([closeout.orphanPolicy, closeout.currentAttemptPolicy, closeout.recordClosedPolicy].filter(Boolean).length ? [] : ['closeout_proof_policies_missing']),
+    ...(canonicalRows.length ? [] : ['closeout_proof_target_refs_missing']),
+  ];
+
+  const evidenceRows = asArray(confirmation.evidence).map((row) => {
+    const requiredCommandRefs = refsForRow(row, ['requiredCommandRefs', 'commandRefs']);
+    const artifactRefs = refsForRow(row, ['artifactRefs']);
+    const missing = [
+      ...(String(row.oracle ?? '').trim() ? [] : ['evidence_trust_oracle_missing']),
+      ...(requiredCommandRefs.length ? [] : ['evidence_trust_command_refs_missing']),
+      ...(artifactRefs.length ? [] : ['evidence_trust_artifact_refs_missing']),
+    ];
+    return { id: row.id, requiredCommandRefs, artifactRefs, missing, ready: missing.length === 0 };
+  }).filter((row) => row.id);
+
+  const sections = {
+    errorCaseCoverage: { rows: [...failurePaths, ...edgeCases], missing: [...rowsMissing(failurePaths, 'FAIL'), ...rowsMissing(edgeCases, 'EDGE')] },
+    commandTargetCollection: { rows: commandTargetRows, missing: rowsMissing(commandTargetRows, 'CMD_TARGET') },
+    traceClosureAssertions: { rows: traceClosureRows, missing: rowsMissing(traceClosureRows, 'TRACE_CLOSURE') },
+    currentTargetMap: { rows: currentTargetRows, missing: currentTargetMissing },
+    canonicalSurfaceReconciliation: { rows: canonicalRows, missing: rowsMissing(canonicalRows, 'CANONICAL_SURFACE') },
+    legacyDenial: { rows: legacyRows, missing: rowsMissing(legacyRows, 'LEGACY_DENIAL') },
+    closeoutProof: { rows: [{ id: 'closeoutReadinessPreview', requiredCommands: stringList(closeout.requiredCommands), policies: [closeout.orphanPolicy, closeout.currentAttemptPolicy, closeout.recordClosedPolicy].filter(Boolean), missing: closeoutMissing }], missing: closeoutMissing.map((code) => ({ id: 'closeoutReadinessPreview', code, category: 'CLOSEOUT_PROOF' })) },
+    evidenceTrustStates: { rows: evidenceRows, missing: rowsMissing(evidenceRows, 'EVIDENCE_TRUST') },
+    targetModificationPathCoverage: {
+      rows: targetModificationPaths,
+      missing: [
+        ...asArray(targetModificationPathCoverage?.missingCoverage).map((row) => ({
+          id: row.path,
+          code: 'target_modification_path_coverage_missing',
+          category: 'TARGET_MODIFICATION_PATH_COVERAGE',
+        })),
+        ...asArray(targetModificationPathCoverage?.unclassifiedCoverage).map((row) => ({
+          id: row.path,
+          code: 'target_modification_path_classification_missing',
+          category: 'TARGET_MODIFICATION_PATH_COVERAGE',
+        })),
+      ],
+    },
+  };
+  for (const section of Object.values(sections)) {
+    section.ready = section.rows.length > 0 && section.missing.length === 0;
+    section.decision = section.ready ? 'pass' : 'blocked';
+    if (!section.rows.length) section.missing.push({ id: 'section', code: 'ai_tdd_manifest_section_empty', category: 'AI_TDD_MANIFEST' });
+  }
+  const blockingIssues = Object.entries(sections).flatMap(([sectionName, section]) =>
+    section.missing.map((item) => blocking(`ai_tdd_manifest_${item.code}`, `${sectionName} missing ${item.id}: ${item.code}`, [sectionName, item.id]))
+  );
+  return {
+    required,
+    ready: !required || blockingIssues.length === 0,
+    decision: !required || blockingIssues.length === 0 ? 'pass' : 'blocked',
+    sections,
+    blockingIssues: required ? blockingIssues : [],
+    counts: Object.fromEntries(Object.entries(sections).map(([key, section]) => [key, section.rows.length])),
+  };
+}
+
 function hasStatusWithoutUserApproval(status) {
   return ['DEFERRED', 'OUT_OF_SCOPE'].includes(String(status ?? '').toUpperCase());
 }
@@ -1708,6 +2259,173 @@ function traceContractValidationCommandRefs(row) {
 
 function traceDeliveryEvidenceCommandRefs(row) {
   return stringList(row.deliveryEvidenceCommandRefs);
+}
+
+function targetModificationPathsRequired(confirmation, artifactPlan) {
+  if (applicabilityDomainApplies(confirmation, 'scriptsAndHooks')) return true;
+  if (applicabilityDomainApplies(confirmation, 'currentTargetMap')) return true;
+  if (applicabilityDomainApplies(confirmation, 'governanceEvents')) return true;
+  if (runtimeRecoveryRequiresRegistry(confirmation)) return true;
+  return artifactPlan.some(
+    (item) =>
+      item.sourceOfTruthRole === 'implementation' ||
+      item.canAffectControlFlow === true ||
+      /^(?:code|script|hook|test|config|schema)$/iu.test(String(item.artifactType ?? ''))
+  );
+}
+
+function normalizeTargetModificationPaths(confirmation, artifactPlan) {
+  const rows = [];
+  const scalarList = (value) =>
+    asArray(value)
+      .filter((item) => typeof item === 'string' || typeof item === 'number')
+      .map((item) => String(item));
+  const pushRow = (row, index, sourceSection) => {
+    const pathValue = String(row?.path ?? row?.targetPath ?? row?.targetPathOrField ?? row?.file ?? row?.glob ?? '').trim();
+    if (!pathValue) return;
+    rows.push({
+      id: String(row?.id ?? row?.targetModificationId ?? `TARGET-MOD-${String(index + 1).padStart(3, '0')}`).trim(),
+      path: normalizePathForReport(pathValue),
+      coverageRole: String(
+        row?.coverageRole ??
+          row?.targetPathRole ??
+          row?.pathRole ??
+          row?.classification ??
+          row?.role ??
+          ''
+      ).trim(),
+      changeType: String(row?.changeType ?? row?.operation ?? row?.action ?? row?.modificationType ?? '').trim(),
+      intent: String(row?.intent ?? row?.purpose ?? row?.description ?? row?.reason ?? '').trim(),
+      ownerModel: String(row?.ownerModel ?? row?.owner ?? '').trim(),
+      requirementRefs: unique([...stringList(row?.requirementRefs), ...stringList(row?.linkedRequirements), ...stringList(row?.covers)]),
+      traceRefs: unique([...stringList(row?.traceRefs), ...stringList(row?.traceRows)]),
+      evidenceRefs: unique([...stringList(row?.evidenceRefs), ...stringList(row?.linkedEvidenceIds)]),
+      artifactRefs: unique([...stringList(row?.artifactRefs), ...stringList(row?.outputArtifacts)]),
+      requiresReconfirmationOnChange: row?.requiresReconfirmationOnChange === false ? false : true,
+      sourceSection,
+      sourceArtifactId: String(row?.sourceArtifactId ?? row?.artifactId ?? '').trim(),
+    });
+  };
+
+  scalarList(confirmation?.targetModificationPaths).forEach((value, index) =>
+    pushRow({ path: value }, index, 'targetModificationPaths')
+  );
+  asArray(confirmation?.targetModificationPaths).forEach((row, index) => {
+    if (row && typeof row === 'object') pushRow(row, index, 'targetModificationPaths');
+  });
+  scalarList(confirmation?.targetPaths).forEach((value, index) => pushRow({ path: value }, index, 'targetPaths'));
+  asArray(confirmation?.implementationTasks).forEach((task, taskIndex) => {
+    scalarList(task?.targetPaths).forEach((value, pathIndex) =>
+      pushRow(
+        {
+          id: task?.id ? `${task.id}-TARGET-${pathIndex + 1}` : undefined,
+          path: value,
+          intent: task?.description ?? task?.title ?? task?.intent,
+          ownerModel: task?.ownerModel,
+          requirementRefs: task?.requirementRefs ?? task?.covers,
+          traceRefs: task?.traceRefs ?? task?.traceRows,
+          evidenceRefs: task?.evidenceRefs,
+        },
+        taskIndex + pathIndex,
+        'implementationTasks.targetPaths'
+      )
+    );
+  });
+
+  if (!rows.length) {
+    artifactPlan
+      .filter(
+        (item) =>
+          item.sourceOfTruthRole === 'implementation' ||
+          item.canAffectControlFlow === true ||
+          /^(?:code|script|hook|test|config|schema)$/iu.test(String(item.artifactType ?? ''))
+      )
+      .forEach((item, index) =>
+        pushRow(
+          {
+            id: `TARGET-MOD-DERIVED-${String(index + 1).padStart(3, '0')}`,
+            path: item.path,
+            changeType: item.artifactType,
+            intent: item.currentFunction || item.targetRole,
+            ownerModel: item.ownerModel,
+            linkedRequirements: item.linkedRequirements,
+            artifactRefs: [item.artifactId],
+            requiresReconfirmationOnChange: true,
+            sourceArtifactId: item.artifactId,
+          },
+          index,
+          'artifactAutomationPlan.derived'
+        )
+      );
+  }
+
+  const seen = new Set();
+  return rows.filter((row) => {
+    const key = `${row.path}\u0000${row.sourceSection}\u0000${row.id}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function validateTargetModificationPaths(confirmation, targetModificationPaths, artifactPlan, idSet, pathCoverage = null) {
+  const issues = [];
+  const artifactIds = new Set(artifactPlan.map((item) => item.artifactId).filter(Boolean));
+  const explicitRows = targetModificationPaths.filter((row) => row.sourceSection !== 'artifactAutomationPlan.derived');
+  if (targetModificationPathsRequired(confirmation, artifactPlan) && !explicitRows.length) {
+    issues.push(
+      blocking(
+        'target_modification_paths_missing',
+        'implementationConfirmation.targetModificationPaths[] must explicitly declare target paths when scripts/hooks/governance/current-target or implementation artifacts apply; artifactAutomationPlan-derived rows are display hints only',
+        ['implementationConfirmation.targetModificationPaths']
+      )
+    );
+  }
+  targetModificationPaths.forEach((row) => {
+    const rowId = row.id || row.path || 'TARGET-MOD-UNKNOWN';
+    if (!row.path) issues.push(blocking('target_modification_path_missing', `${rowId} missing path`, [rowId]));
+    for (const ref of row.requirementRefs) {
+      if (!idSet.must.has(ref) && !idSet.notDone.has(ref) && !idSet.mustNot.has(ref)) {
+        issues.push(blocking('target_modification_unknown_requirement_ref', `${rowId} references unknown requirement ${ref}`, [rowId, ref]));
+      }
+    }
+    for (const ref of row.traceRefs) {
+      if (!idSet.traceRows.has(ref)) {
+        issues.push(blocking('target_modification_unknown_trace_ref', `${rowId} references unknown trace ${ref}`, [rowId, ref]));
+      }
+    }
+    for (const ref of row.evidenceRefs) {
+      if (!idSet.evidence.has(ref)) {
+        issues.push(blocking('target_modification_unknown_evidence_ref', `${rowId} references unknown evidence ${ref}`, [rowId, ref]));
+      }
+    }
+    for (const ref of row.artifactRefs) {
+      if (!artifactIds.has(ref)) {
+        issues.push(blocking('target_modification_unknown_artifact_ref', `${rowId} references unknown artifact ${ref}`, [rowId, ref]));
+      }
+    }
+  });
+  if (pathCoverage) {
+    for (const row of pathCoverage.missing ?? []) {
+      issues.push(
+        blocking(
+          'target_modification_path_coverage_missing',
+          `${row.path} is declared by ${row.sources.join(', ')} but missing from targetModificationPaths[]`,
+          [row.path, ...row.refs]
+        )
+      );
+    }
+    for (const row of pathCoverage.unclassified ?? []) {
+      issues.push(
+        blocking(
+          'target_modification_path_classification_missing',
+          `${row.path} is a command/current-target path and must be classified as validation_only, generated_output, runtime_output, or an explicit modification`,
+          [row.path, ...row.refs]
+        )
+      );
+    }
+  }
+  return issues;
 }
 
 function mergeArtifactPlans(inlinePlan, externalPlan) {
@@ -1738,6 +2456,8 @@ function mergeArtifactPlans(inlinePlan, externalPlan) {
     currentFunction: item.currentFunction ?? item.function ?? item.description ?? '',
     targetRole: item.targetRole ?? '',
     linkedRequirements: stringList(item.linkedRequirements),
+    traceRows: unique([...stringList(item.traceRows), ...stringList(item.traceRefs)]),
+    evidenceRefs: unique([...stringList(item.evidenceRefs), ...stringList(item.linkedEvidenceIds)]),
     raw: item,
   }));
 }
@@ -2105,6 +2825,9 @@ function validateInput(args) {
       )
     );
   }
+  if (args.mode && !VALID_RENDER_MODES.has(args.mode)) {
+    issues.push(blocking('invalid_mode', `--mode must be ${[...VALID_RENDER_MODES].join('|')}`));
+  }
   if (args.theme && !VALID_THEMES.has(args.theme)) {
     issues.push(blocking('invalid_theme', `--theme must be ${[...VALID_THEMES].join('|')}`));
   }
@@ -2210,43 +2933,150 @@ function warning(code, message, refs = []) {
   return { severity: 'warning', code, message, refs };
 }
 
-function buildReconfirmationState(confirmation, currentHashes) {
+function hasCjkText(value) {
+  return /[\u3400-\u9fff]/u.test(String(value ?? ''));
+}
+
+function hasLatinWordText(value) {
+  return /[A-Za-z]{3,}/u.test(String(value ?? ''));
+}
+
+function localizedValue(item, key, language) {
+  if (!item || typeof item !== 'object') return '';
+  if (language === 'zh-CN' || language === 'bilingual') {
+    const candidates = [
+      item[`${key}ZhCN`],
+      item[`${key}ZhCn`],
+      item[`${key}Zh`],
+      item[`${key}_zh_CN`],
+      item[`${key}_zh`],
+      item.zhCN?.[key],
+      item.zh?.[key],
+      item.localized?.['zh-CN']?.[key],
+      item.localized?.zhCN?.[key],
+      item.localized?.zh?.[key],
+      item.localizedText?.['zh-CN'],
+      item.localizedText?.zhCN,
+      item.localizedText?.zh,
+    ];
+    for (const candidate of candidates) {
+      if (String(candidate ?? '').trim()) return candidate;
+    }
+  }
+  return item[key];
+}
+
+function userFacingText(item, key, language) {
+  const localized = localizedValue(item, key, language);
+  if (String(localized ?? '').trim()) return localized;
+  return item?.[key];
+}
+
+function isEnglishOnlyConfirmationText(value) {
+  const text = String(value ?? '').trim();
+  return Boolean(text) && hasLatinWordText(text) && !hasCjkText(text);
+}
+
+function validateConfirmationLanguageContent(confirmation, language) {
+  if (language !== 'zh-CN' && language !== 'bilingual') return [];
+  const issues = [];
+  const fieldGroups = [
+    ['must', 'must', ['text']],
+    ['notDone', 'notDone', ['text', 'whyItBlocksCompletion']],
+    ['mustNot', 'mustNot', ['text', 'scopeBoundary']],
+    ['evidence', 'evidence', ['text', 'oracle']],
+    ['failurePaths', 'failurePaths', ['title', 'trigger', 'expectedBehavior', 'forbiddenBehavior']],
+    ['edgeCases', 'edgeCases', ['condition', 'expectedBehavior', 'forbiddenBehavior']],
+    ['openQuestions', 'openQuestions', ['text', 'requiredDecision', 'impactIfUnresolved']],
+  ];
+  for (const [groupName, arrayKey, fields] of fieldGroups) {
+    asArray(confirmation?.[arrayKey]).forEach((item, index) => {
+      const ref = item?.id ?? `${groupName}[${index}]`;
+      for (const field of fields) {
+        const raw = item?.[field];
+        if (!String(raw ?? '').trim()) continue;
+        const localized = localizedValue(item, field, language);
+        if (!hasCjkText(localized) && isEnglishOnlyConfirmationText(raw)) {
+          issues.push(
+            blocking(
+              'confirmation_language_content_english_only',
+              `confirmationLanguage=${language} requires Chinese confirmation text for ${ref}.${field}; provide Chinese source text or ${field}Zh/textZh/localized.zh-CN before user confirmation.`,
+              [ref, field]
+            )
+          );
+        }
+      }
+    });
+  }
+  asArray(confirmation?.traceRows).forEach((row, index) => {
+    const ref = row?.id ?? `traceRows[${index}]`;
+    for (const field of ['closureAssertion', 'targetStateAssertion', 'acceptanceSummary']) {
+      const raw = row?.[field];
+      if (!String(raw ?? '').trim()) continue;
+      const localized = localizedValue(row, field, language);
+      if (!hasCjkText(localized) && isEnglishOnlyConfirmationText(raw)) {
+        issues.push(
+          blocking(
+            'confirmation_language_content_english_only',
+            `confirmationLanguage=${language} requires Chinese confirmation text for ${ref}.${field}; provide Chinese source text or ${field}Zh/localized.zh-CN before user confirmation.`,
+            [ref, field]
+          )
+        );
+      }
+    }
+  });
+  return issues;
+}
+
+function buildReconfirmationState(confirmation, currentHashes, driftClassification = null) {
   const request = confirmation.reconfirmationRequest && typeof confirmation.reconfirmationRequest === 'object'
     ? confirmation.reconfirmationRequest
     : {};
   const previousSourceDocumentHash =
-    request.previousSourceDocumentHash ?? confirmation.sourceDocumentHash ?? null;
+    driftClassification?.latestConfirmedSourceDocumentHash ??
+    request.previousSourceDocumentHash ??
+    confirmation.sourceDocumentHash ??
+    null;
   const previousImplementationConfirmationHash =
-    request.previousImplementationConfirmationHash ?? confirmation.implementationConfirmationHash ?? null;
+    driftClassification?.latestConfirmedImplementationConfirmationHash ??
+    request.previousImplementationConfirmationHash ??
+    confirmation.implementationConfirmationHash ??
+    null;
   const currentSourceDocumentHash =
-    request.currentSourceDocumentHash ?? currentHashes.sourceDocumentHash;
+    driftClassification?.currentSourceDocumentHash ?? request.currentSourceDocumentHash ?? currentHashes.sourceDocumentHash;
   const currentImplementationConfirmationHash =
-    request.currentImplementationConfirmationHash ?? currentHashes.implementationConfirmationHash;
-  const sourceChanged =
-    Boolean(previousSourceDocumentHash) && previousSourceDocumentHash !== currentHashes.sourceDocumentHash;
-  const implementationChanged =
-    Boolean(previousImplementationConfirmationHash) &&
-    previousImplementationConfirmationHash !== currentHashes.implementationConfirmationHash;
-  const required = Boolean(request.required) || sourceChanged || implementationChanged || confirmation.status === 'reconfirm_required';
-  const allowedUserActions = stringList(request.allowedUserActions).length
-    ? stringList(request.allowedUserActions)
-    : [
-        'confirm_current_version',
-        'reject_current_changes_restore_last_confirmed',
-        'accept_partial_changes_create_followup',
-        'regenerate_confirmation_view',
-      ];
+    driftClassification?.currentImplementationConfirmationHash ??
+    request.currentImplementationConfirmationHash ??
+    currentHashes.implementationConfirmationHash;
+  const sourceChanged = driftClassification
+    ? driftClassification.sourceChanged === true
+    : Boolean(previousSourceDocumentHash) && previousSourceDocumentHash !== currentHashes.sourceDocumentHash;
+  const implementationChanged = driftClassification
+    ? driftClassification.implementationChanged === true
+    : Boolean(previousImplementationConfirmationHash) &&
+      previousImplementationConfirmationHash !== currentHashes.implementationConfirmationHash;
+  const required = driftClassification
+    ? driftClassification.kind === SEMANTIC_RECONFIRMATION_REQUIRED
+    : Boolean(request.required) || sourceChanged || implementationChanged;
+  const allowedUserActions = stringList(request.allowedUserActions);
   return {
     required,
     reason:
+      request.reasonCode ??
       request.reason ??
       (sourceChanged
         ? 'sourceDocumentHash_changed'
         : implementationChanged
           ? 'implementationConfirmationHash_changed'
-          : confirmation.status === 'reconfirm_required'
-            ? 'status_reconfirm_required'
-            : null),
+          : null),
+    reasonCode: request.reasonCode ?? null,
+    userFacingTitle: request.userFacingTitle ?? null,
+    userFacingSummary: request.userFacingSummary ?? null,
+    persuasiveRationale: request.persuasiveRationale ?? null,
+    evidenceBundle: request.evidenceBundle ?? null,
+    driftClassification: driftClassification ?? null,
+    bookkeepingRepairRequired: driftClassification?.kind === STALE_BOOKKEEPING_REPAIR_REQUIRED,
+    projectionRefreshRequired: driftClassification?.kind === PROJECTION_REFRESH_REQUIRED,
     sourceChanged,
     implementationChanged,
     previousSourceDocumentHash,
@@ -2273,13 +3103,36 @@ function buildCoverage(input) {
     edgeCaseViews,
     boundaryViews,
     artifactPlan,
+    targetModificationPaths,
     mermaidBlocks,
     reconfirmationState,
   } = input;
   const idSet = makeIdSet(confirmation);
   const knownIds = allKnownIds(idSet);
+  const acceptanceRows = normalizeAcceptanceSuites(confirmation);
+  const targetModificationPathCoverageAudit = evaluateTargetModificationPathCoverage(
+    confirmation,
+    targetModificationPaths,
+    artifactPlan
+  );
+  const aiTddContractManifestCoverage = buildAiTddContractManifestCoverage({
+    confirmation,
+    traceRows,
+    views: { sequenceViews, flowViews, edgeCaseViews, boundaryViews },
+    artifactPlan,
+    targetModificationPaths,
+    acceptanceRows,
+    targetModificationPathCoverage: targetModificationPathCoverageAudit,
+  });
+  const artifactIds = new Set(artifactPlan.map((item) => item.artifactId).filter(Boolean));
+  const acceptanceIds = new Set(acceptanceRows.map((item) => item.id));
+  const requiredCommandIds = new Set([
+    ...asArray(confirmation.requiredCommands).map((item) => item?.id ?? item?.commandId).filter(Boolean),
+    ...asArray(confirmation.suggestedCommands).map((item) => item?.id ?? item?.commandId).filter(Boolean),
+  ]);
   const blockingIssues = [];
   const warnings = [];
+  blockingIssues.push(...aiTddContractManifestCoverage.blockingIssues);
 
   function validateRefs(refs, validSet, code, owner) {
     for (const ref of refs) {
@@ -2303,9 +3156,11 @@ function buildCoverage(input) {
     }
   }
 
+  const isManagedReconfirmationStatus =
+    confirmation.status === 'reconfirm_required' || confirmation.status === 'reconfirmation_required';
   const hasManagedReconfirmationRequest =
     reconfirmationState?.required === true &&
-    confirmation.status === 'reconfirm_required' &&
+    isManagedReconfirmationStatus &&
     confirmation.reconfirmationRequest &&
     confirmation.reconfirmationRequest.required === true;
 
@@ -2328,11 +3183,11 @@ function buildCoverage(input) {
     );
   }
   if (reconfirmationState?.required) {
-    if (confirmation.status !== 'reconfirm_required' && confirmation.status !== 'draft') {
+    if (!isManagedReconfirmationStatus && confirmation.status !== 'draft') {
       blockingIssues.push(
         blocking(
           'reconfirmation_status_not_set',
-          'Hash drift requires status draft or reconfirm_required before a new user confirmation can be recorded.',
+          'Hash drift requires status draft, reconfirm_required, or reconfirmation_required before a new user confirmation can be recorded.',
           ['implementationConfirmation.status']
         )
       );
@@ -2343,6 +3198,15 @@ function buildCoverage(input) {
           'reconfirmation_request_missing',
           'Hash drift must create a reconfirmationRequest; users must not manually edit hashes or confirmation state.',
           ['implementationConfirmation.reconfirmationRequest']
+        )
+      );
+    }
+    if (!asArray(reconfirmationState.diffSummary).length) {
+      blockingIssues.push(
+        blocking(
+          'reconfirmation_missing_diff_summary',
+          'reconfirmationRequest.diffSummary[] is required when reconfirmation is required.',
+          ['implementationConfirmation.reconfirmationRequest.diffSummary']
         )
       );
     }
@@ -2358,6 +3222,9 @@ function buildCoverage(input) {
     if (![...findViewsCovering(sequenceViews, item.id), ...findViewsCovering(flowViews, item.id)].length) {
       blockingIssues.push(blocking('must_missing_happy_or_flow_view', `${item.id} has no happy/state/flow view`, [item.id]));
     }
+    if (!findAcceptanceCovering(acceptanceRows, item.id).length) {
+      blockingIssues.push(blocking('must_missing_acceptance_or_e2e_coverage', `${item.id} has no ACC/E2E coverage`, [item.id]));
+    }
   }
 
   for (const item of asArray(confirmation.notDone)) {
@@ -2367,6 +3234,9 @@ function buildCoverage(input) {
     }
     if (![...findViewsCovering(sequenceViews, item.id), ...findViewsCovering(edgeCaseViews, item.id)].length) {
       blockingIssues.push(blocking('neg_missing_failure_or_edge_view', `${item.id} has no failure/edge view`, [item.id]));
+    }
+    if (!findAcceptanceCovering(acceptanceRows, item.id).length) {
+      blockingIssues.push(blocking('neg_missing_acceptance_or_e2e_coverage', `${item.id} has no ACC/E2E coverage`, [item.id]));
     }
   }
 
@@ -2412,6 +3282,7 @@ function buildCoverage(input) {
     const rowId = row.id ?? 'TRACE-UNKNOWN';
     validateRefs(stringList(row.covers), new Set([...idSet.must, ...idSet.notDone, ...idSet.mustNot]), 'trace_unknown_cover_ref', rowId);
     validateRefs(stringList(row.evidenceRefs), idSet.evidence, 'trace_unknown_evidence_ref', rowId);
+    validateRefs(stringList(row.acceptanceRefs), acceptanceIds, 'trace_unknown_acceptance_ref', rowId);
     if (!stringList(row.covers).length && !isBoundaryOnlyTrace(row, boundaryViews)) {
       blockingIssues.push(blocking('trace_missing_covers', `${rowId} has no covers`, [rowId]));
     }
@@ -2464,6 +3335,7 @@ function buildCoverage(input) {
   if (!flowViews.length) blockingIssues.push(blocking('missing_flow_views', 'flowViews[] is required'));
   if (!edgeCaseViews.length) blockingIssues.push(blocking('missing_edge_case_views', 'edgeCaseViews[] is required'));
   if (!boundaryViews.length) blockingIssues.push(blocking('missing_boundary_views', 'boundaryViews[] is required'));
+  blockingIssues.push(...collectReconfirmationEvidenceIssues(reconfirmationState, knownIds));
   const requirementBoundary = inferRequirementBoundary(
     confirmation,
     { sequenceViews, flowViews, edgeCaseViews, boundaryViews },
@@ -2477,6 +3349,36 @@ function buildCoverage(input) {
         requirementBoundary.business.requirementIds
       )
     );
+  }
+
+  for (const row of acceptanceRows) {
+    const rowId = row.id || 'ACC-UNKNOWN';
+    if (!/^(ACC|E2E)-/u.test(rowId)) {
+      blockingIssues.push(blocking('acceptance_invalid_id', `${rowId} must start with ACC- or E2E-`, [rowId]));
+    }
+    if (!row.files.length) {
+      blockingIssues.push(blocking('acceptance_missing_file', `${rowId} must declare file/files`, [rowId]));
+    }
+    for (const file of row.files) {
+      if (!file) continue;
+      const absolute = path.isAbsolute(file) ? file : path.resolve(process.cwd(), file);
+      if (!fs.existsSync(absolute)) {
+        blockingIssues.push(blocking('acceptance_test_file_missing', `${rowId} references missing file ${file}`, [rowId, file]));
+      }
+    }
+    validateRefs(row.covers, new Set([...idSet.must, ...idSet.notDone]), 'acceptance_unknown_requirement_ref', rowId);
+    validateRefs(row.traceRows, idSet.traceRows, 'acceptance_unknown_trace_ref', rowId);
+    validateRefs(row.evidenceRefs, idSet.evidence, 'acceptance_unknown_evidence_ref', rowId);
+    validateRefs(row.commandRefs, requiredCommandIds, 'acceptance_unknown_command_ref', rowId);
+    if (!row.covers.length) blockingIssues.push(blocking('acceptance_missing_covers', `${rowId} has no covers[]`, [rowId]));
+    if (!row.traceRows.length) blockingIssues.push(blocking('acceptance_missing_trace_rows', `${rowId} has no traceRows[]`, [rowId]));
+    if (!row.evidenceRefs.length) blockingIssues.push(blocking('acceptance_missing_evidence_refs', `${rowId} has no evidenceRefs[]`, [rowId]));
+    if (!row.commandRefs.length) blockingIssues.push(blocking('acceptance_missing_command_refs', `${rowId} has no commandRefs[]`, [rowId]));
+    if (!row.oracle) blockingIssues.push(blocking('acceptance_missing_oracle', `${rowId} has no oracle`, [rowId]));
+    if (row.mockOnly) blockingIssues.push(blocking('acceptance_mock_only_invalid', `${rowId} is mock-only`, [rowId]));
+    if (/^(exit code|stdout|http 200|page render|mock calls?)$/iu.test(row.oracle)) {
+      blockingIssues.push(blocking('acceptance_oracle_smoke_only', `${rowId} uses smoke-only oracle`, [rowId]));
+    }
   }
   if (requirementBoundary.business.requirementIds.length && !requirementBoundary.business.diagramRefs.length) {
     blockingIssues.push(
@@ -2508,6 +3410,15 @@ function buildCoverage(input) {
   if (!artifactPlan.length) {
     blockingIssues.push(blocking('missing_artifact_automation_plan', 'artifactAutomationPlan[] is required'));
   }
+  blockingIssues.push(
+    ...validateTargetModificationPaths(
+      confirmation,
+      targetModificationPaths,
+      artifactPlan,
+      idSet,
+      targetModificationPathCoverageAudit
+    )
+  );
 
   const requiredArtifactFields = [
     'artifactId',
@@ -2596,6 +3507,48 @@ function buildCoverage(input) {
         findArtifactRefs(artifactPlan, id),
       ])
     ),
+    targetModificationPathCoverage: {
+      rows: targetModificationPaths,
+      byRequirement: Object.fromEntries(
+        [...idSet.must, ...idSet.notDone, ...idSet.mustNot].map((id) => [
+          id,
+          targetModificationPaths.filter((row) => row.requirementRefs.includes(id)).map((row) => row.id),
+        ])
+      ),
+      byTrace: Object.fromEntries(
+        [...idSet.traceRows].map((id) => [
+          id,
+          targetModificationPaths.filter((row) => row.traceRefs.includes(id)).map((row) => row.id),
+        ])
+      ),
+      missingArtifactRefs: unique(
+        targetModificationPaths.flatMap((row) => row.artifactRefs).filter((ref) => !artifactIds.has(ref))
+      ),
+      requiredCoverage: targetModificationPathCoverageAudit.required,
+      missingCoverage: targetModificationPathCoverageAudit.missing,
+      unclassifiedCoverage: targetModificationPathCoverageAudit.unclassified,
+      ready: targetModificationPathCoverageAudit.ready,
+      counts: {
+        total: targetModificationPaths.length,
+        explicit: targetModificationPaths.filter((row) => row.sourceSection !== 'artifactAutomationPlan.derived').length,
+        derived: targetModificationPaths.filter((row) => row.sourceSection === 'artifactAutomationPlan.derived').length,
+        requiredCoverage: targetModificationPathCoverageAudit.counts.required,
+        missingCoverage: targetModificationPathCoverageAudit.counts.missing,
+        unclassifiedCoverage: targetModificationPathCoverageAudit.counts.unclassified,
+      },
+    },
+    aiTddContractManifestCoverage,
+    acceptanceCoverage: {
+      rows: acceptanceRows,
+      byRequirement: Object.fromEntries(
+        [...idSet.must, ...idSet.notDone].map((id) => [id, findAcceptanceCovering(acceptanceRows, id)])
+      ),
+      counts: {
+        acceptanceTests: acceptanceRows.filter((row) => row.sourceSection !== 'e2eSuites' && row.sourceSection !== 'e2eTests').length,
+        e2eSuites: acceptanceRows.filter((row) => row.sourceSection === 'e2eSuites' || row.sourceSection === 'e2eTests').length,
+        total: acceptanceRows.length,
+      },
+    },
   };
 }
 
@@ -2641,6 +3594,79 @@ function buildEmptyCurrentTargetMap() {
     schemaIssues: [],
     tableCoverage: {},
   };
+}
+
+function collectReconfirmationEvidenceIssues(reconfirmationState, knownIds) {
+  if (!reconfirmationState?.required) return [];
+  const findings = [];
+  const issueFor = (code, message, refs = []) => blocking(code, message, refs);
+  if (!reconfirmationState.reasonCode) {
+    findings.push(issueFor('reconfirmation_missing_reason_code', 'reconfirmationRequest.reasonCode is required'));
+  }
+  if (!String(reconfirmationState.userFacingSummary ?? '').trim()) {
+    findings.push(issueFor('reconfirmation_missing_user_facing_summary', 'reconfirmationRequest.userFacingSummary is required'));
+  }
+  const rationale = reconfirmationState.persuasiveRationale ?? {};
+  for (const field of ['whyReconfirmNow', 'riskIfSkipped', 'whyEvidenceIsSufficient']) {
+    if (!String(rationale[field] ?? '').trim()) {
+      findings.push(
+        issueFor(
+          `reconfirmation_missing_${field}`,
+          `reconfirmationRequest.persuasiveRationale.${field} is required`
+        )
+      );
+    }
+  }
+  const evidenceBundle = reconfirmationState.evidenceBundle ?? {};
+  if (evidenceBundle.sufficiencyVerdict !== 'sufficient') {
+    findings.push(
+      issueFor(
+        'reconfirmation_evidence_not_sufficient',
+        'reconfirmationRequest.evidenceBundle.sufficiencyVerdict must be sufficient'
+      )
+    );
+  }
+  const items = asArray(evidenceBundle.items);
+  if (!items.length) {
+    findings.push(
+      issueFor(
+        'reconfirmation_missing_evidence_items',
+        'reconfirmationRequest.evidenceBundle.items[] is required'
+      )
+    );
+  }
+  for (const item of items) {
+    const refs = [...stringList(item?.sourceRefs), ...stringList(item?.proofRefs)];
+    if (!refs.length) {
+      findings.push(
+        issueFor(
+          'reconfirmation_evidence_item_missing_refs',
+          `${item?.id ?? 'reconfirmation evidence item'} must include sourceRefs[] or proofRefs[]`
+        )
+      );
+      continue;
+    }
+    for (const ref of refs) {
+      if (!knownIds.has(ref) && !/^ART-|^CMD-/u.test(ref)) {
+        findings.push(
+          issueFor(
+            'reconfirmation_evidence_item_unknown_ref',
+            `${item?.id ?? 'reconfirmation evidence item'} references unknown ID ${ref}`,
+            [ref]
+          )
+        );
+      }
+    }
+  }
+  if (!stringList(reconfirmationState.allowedUserActions).length) {
+    findings.push(
+      issueFor(
+        'reconfirmation_missing_allowed_user_actions',
+        'reconfirmationRequest.allowedUserActions[] is required'
+      )
+    );
+  }
+  return findings;
 }
 
 const CURRENT_TARGET_ARRAY_FIELDS = [
@@ -2968,6 +3994,8 @@ function mergeCurrentTargetMaps(inlineMap, externalMap, options = {}) {
 function countCurrentTargetRows(map) {
   const normalized = normalizeCurrentTargetMap(map);
   return {
+    currentSummary: normalized.currentSummary.length,
+    targetSummary: normalized.targetSummary.length,
     requirementGeneration: normalized.requirementGeneration.length,
     facts: normalized.facts.length,
     process: normalized.process.length,
@@ -2991,6 +4019,8 @@ function countCurrentTargetRows(map) {
 
 function emptyCurrentTargetCoverage() {
   return {
+    currentSummary: 0,
+    targetSummary: 0,
     requirementGeneration: 0,
     facts: 0,
     process: 0,
@@ -3020,11 +4050,77 @@ function hasCurrentTargetData(map) {
   );
 }
 
-function validateConfirmationProfile(profile, currentTargetMap) {
+function currentTargetMapApplies(confirmation) {
+  return applicabilityDomainApplies(confirmation, 'currentTargetMap');
+}
+
+function currentTargetRequiresCanonicalArtifacts(confirmation) {
+  return [
+    'governanceEvents',
+    'runtimeRecovery',
+    'scoringDashboardSft',
+    'scriptsAndHooks',
+  ].some((domain) => applicabilityDomainApplies(confirmation, domain));
+}
+
+function validateRequiredCurrentTargetMap(confirmation, profile, currentTargetMap) {
+  const issues = [];
+  if (!currentTargetMapApplies(confirmation)) return issues;
+
+  if (!viewPackRequired(profile, CURRENT_TARGET_REQUIRED_VIEW_PACK) || !viewPackEnabled(profile, CURRENT_TARGET_REQUIRED_VIEW_PACK)) {
+    issues.push(
+      blocking(
+        'current_target_required_view_pack_missing',
+        'applicability.currentTargetMap.applies=true requires requiredViewPacks[] to include currentTargetMap before confirmation',
+        ['applicability.currentTargetMap', 'requiredViewPacks']
+      )
+    );
+  }
+
+  if (currentTargetMap.schemaVersion !== CURRENT_TARGET_SCHEMA_VERSION) {
+    issues.push(
+      blocking(
+        'current_target_required_schema_version_missing_or_invalid',
+        `applicability.currentTargetMap.applies=true requires currentTargetMap.schemaVersion=${CURRENT_TARGET_SCHEMA_VERSION}`,
+        ['currentTargetMap.schemaVersion']
+      )
+    );
+  }
+  if (currentTargetMap.displayProfile !== CURRENT_TARGET_DISPLAY_PROFILE) {
+    issues.push(
+      blocking(
+        'current_target_required_display_profile_missing_or_invalid',
+        `applicability.currentTargetMap.applies=true requires currentTargetMap.displayProfile=${CURRENT_TARGET_DISPLAY_PROFILE}`,
+        ['currentTargetMap.displayProfile']
+      )
+    );
+  }
+
+  const counts = countCurrentTargetRows(currentTargetMap);
+  const requiredCoverage = { ...CURRENT_TARGET_MINIMUM_COVERAGE };
+  if (currentTargetRequiresCanonicalArtifacts(confirmation)) requiredCoverage.canonicalArtifacts = 1;
+  const missingCoverage = Object.entries(requiredCoverage)
+    .filter(([field, minimum]) => Number(counts[field] ?? 0) < minimum)
+    .map(([field, minimum]) => `${field}:${counts[field] ?? 0}/${minimum}`);
+  if (missingCoverage.length > 0) {
+    issues.push(
+      blocking(
+        'current_target_required_coverage_insufficient',
+        `applicability.currentTargetMap.applies=true requires visible current/target comparison coverage (${missingCoverage.join(', ')})`,
+        missingCoverage.map((item) => `currentTargetCoverage.${item}`)
+      )
+    );
+  }
+
+  return issues;
+}
+
+function validateConfirmationProfile(confirmation, profile, currentTargetMap) {
   const issues = [];
   for (const pack of profile.unknownViewPacks) {
     issues.push(blocking('unknown_view_pack', `Unknown confirmation view pack ${pack}`, [pack]));
   }
+  issues.push(...validateRequiredCurrentTargetMap(confirmation, profile, currentTargetMap));
   if (viewPackEnabled(profile, 'currentTargetMap')) {
     if (!hasCurrentTargetData(currentTargetMap)) {
       issues.push(
@@ -3079,6 +4175,7 @@ function renderedSectionsForProfile(profile) {
     'fingerprint',
     'core-design',
     'progress-delta',
+    'pre-confirmation-semantic-drilldown',
     'decision-summary',
     'confirm-instruction',
     'requirements',
@@ -3088,6 +4185,7 @@ function renderedSectionsForProfile(profile) {
     'resume-failure-cases',
     'trace-matrix',
     ...(viewPackEnabled(profile, 'currentTargetMap') ? ['current-target'] : []),
+    'target-modification-paths',
     'artifact-plan',
     'controlled-ingest-writers',
     'architecture-impact',
@@ -3141,6 +4239,20 @@ function renderIdBadges(values) {
 
 function renderStatusBadge(label, tone = 'blue') {
   return `<span class="tag ${tone}">${escapeHtml(label)}</span>`;
+}
+
+function statusBadgeTone(value) {
+  const text = String(value ?? '').toLowerCase();
+  if (/accepted_success|current_pass|legal_transition|final_acceptance_ready|delivery_ready|pass|passed|true|closed/u.test(text)) {
+    return 'green';
+  }
+  if (/blocked|false|missing|illegal|unproven|open_or_unaccepted|no_controlled|failed/u.test(text)) {
+    return 'red';
+  }
+  if (/open_before_closeout|pending|diagnostic|source_projection_gap/u.test(text)) {
+    return 'gold';
+  }
+  return 'blue';
 }
 
 function renderCompactIdBadges(values, limit = 8) {
@@ -3225,6 +4337,7 @@ function getUiText(language) {
     governanceMermaidVisual: '治理 Mermaid 图',
     traceMatrix: 'Trace Matrix',
     currentTarget: '现状 vs 目标态',
+    targetModificationPaths: '目标修改路径清单',
     artifactPlan: 'Artifact Plan',
     architectureImpact: 'Architecture Impact',
     entryFlow: 'EntryFlow',
@@ -3308,7 +4421,7 @@ function getUiText(language) {
       ['哪些是不做或不能算完成？', '查看 NEG 和 OUT 区。没有证据或没有用户明确批准变更时，不能声明完成。'],
       ['业务流程是否完整，包括失败路径？', '查看 happy path、failure path、state/flow、edge case 和 Mermaid 覆盖关系。'],
       ['每个需求未来怎么验收？', '查看 Evidence 和 Trace Matrix：其中列出 gate、oracle、命令和工件。'],
-      ['AI 会生成哪些文件、脚本、hooks、报告？', '查看工件与自动化计划视图，其中按确认产物、证据、旧工件、脚本、hooks 和不生成项分组。'],
+      ['AI 会生成或修改哪些文件、脚本、hooks、报告？', '先查看目标修改路径清单确认预计修改面，再查看工件与自动化计划视图了解证据、报告和生命周期。'],
       ['哪些产物会影响主流程，哪些只是证据？', '查看 sourceOfTruthRole 和 canAffectControlFlow 字段。'],
       ['当前做法和目标态差距在哪里？', '查看现状 vs 目标态对比区。'],
       ['确认后 agent 被允许进入什么阶段、不能做什么？', '下一阶段由源文档字段和阻断项决定；即使确认页生成成功，agent 仍不能实现未确认 ID，也不能在 HTML 中确认。'],
@@ -3373,6 +4486,7 @@ function getUiText(language) {
     governanceMermaidVisual: 'Governance Mermaid Diagram',
     traceMatrix: 'Trace Matrix',
     currentTarget: 'Current vs Target',
+    targetModificationPaths: 'Target Modification Paths',
     artifactPlan: 'Artifact Plan',
     architectureImpact: 'Architecture Impact',
     entryFlow: 'EntryFlow',
@@ -3458,7 +4572,7 @@ function getUiText(language) {
       ['What is not done or cannot count as complete?', 'See NEG and OUT sections. They cannot be claimed complete without evidence or explicit user change approval.'],
       ['Is the business flow complete, including failures?', 'See happy path, failure path, state/flow, edge case, and Mermaid coverage sections.'],
       ['How will each requirement be accepted later?', 'See Evidence and Trace Matrix sections with gates, oracles, commands, and artifacts.'],
-      ['What files, scripts, hooks, and reports will AI generate?', 'See Artifact & Automation Plan View grouped by confirmation, evidence, legacy, scripts, hooks, and not-generated items.'],
+      ['What files, scripts, hooks, and reports will AI modify or generate?', 'Review Target Modification Paths first for planned code/config/test changes, then Artifact & Automation Plan for evidence, reports, and lifecycle.'],
       ['Which artifacts can affect the main flow?', 'See sourceOfTruthRole and canAffectControlFlow columns.'],
       ['Where is the current-vs-target gap?', 'See Current vs Target section.'],
       ['After confirmation, what may the agent do?', 'The next stage depends on source fields and blockers. The agent still cannot implement unconfirmed IDs or confirm inside HTML.'],
@@ -3781,13 +4895,15 @@ function selectDiagramBlocks(mermaidBlocks, views) {
 }
 
 function renderRequirementSections(input) {
-  const { confirmation, traceRows, views, artifactPlan, progressDelta } = input;
+  const { confirmation, traceRows, views, artifactPlan, progressDelta, language } = input;
+  const acceptanceRows = normalizeAcceptanceSuites(confirmation);
   const mustRows = asArray(confirmation.must).map((item) => [
     item.id,
     renderStatusBadge(statusForRequirementId(item.id, progressDelta).label, statusForRequirementId(item.id, progressDelta).tone),
-    item.text,
+    userFacingText(item, 'text', language),
     renderIdBadges(item.evidenceRefs),
     renderIdBadges(findRowsCovering(traceRows, item.id)),
+    renderIdBadges(findAcceptanceCovering(acceptanceRows, item.id)),
     renderIdBadges(findViewsCovering(views.sequenceViews, item.id)),
     renderIdBadges(item.upstreamRequirementIds),
     item.riskLevel ?? 'unspecified',
@@ -3795,44 +4911,45 @@ function renderRequirementSections(input) {
   const negRows = asArray(confirmation.notDone).map((item) => [
     item.id,
     renderStatusBadge(statusForRequirementId(item.id, progressDelta).label, statusForRequirementId(item.id, progressDelta).tone),
-    item.text,
+    userFacingText(item, 'text', language),
     renderIdBadges(item.evidenceRefs),
-    item.whyItBlocksCompletion ?? 'completion is blocked until proven',
+    renderIdBadges(findAcceptanceCovering(acceptanceRows, item.id)),
+    userFacingText(item, 'whyItBlocksCompletion', language) ?? 'completion is blocked until proven',
     String(item.negativeAssertionRequired ?? true),
     renderIdBadges([...findViewsCovering(views.sequenceViews, item.id), ...findViewsCovering(views.edgeCaseViews, item.id)]),
   ]);
   const outRows = asArray(confirmation.mustNot).map((item) => [
     item.id,
     renderStatusBadge(statusForRequirementId(item.id, progressDelta).label, statusForRequirementId(item.id, progressDelta).tone),
-    item.text,
-    item.scopeBoundary ?? 'scope boundary must be preserved',
+    userFacingText(item, 'text', language),
+    userFacingText(item, 'scopeBoundary', language) ?? 'scope boundary must be preserved',
     String(item.userApprovalRequiredIfChanged ?? true),
     renderIdBadges(findViewsCovering(views.boundaryViews, item.id)),
   ]);
   const evidenceRows = asArray(confirmation.evidence).map((item) => [
     item.id,
     renderStatusBadge(statusForRequirementId(item.id, progressDelta).label, statusForRequirementId(item.id, progressDelta).tone),
-    item.text,
+    userFacingText(item, 'text', language),
     item.gate ?? '',
-    item.oracle ?? '',
+    userFacingText(item, 'oracle', language) ?? '',
     renderIdBadges(item.requiredCommandRefs),
     renderIdBadges(item.artifactRefs ?? findArtifactRefs(artifactPlan, item.id)),
     item.acceptanceType ?? 'unspecified',
   ]);
   const questionRows = asArray(confirmation.openQuestions).map((item) => [
     item.id,
-    item.text,
+    userFacingText(item, 'text', language),
     String(item.blocksImplementation === true),
     item.owner ?? '',
-    item.requiredDecision ?? '',
-    item.impactIfUnresolved ?? '',
+    userFacingText(item, 'requiredDecision', language) ?? '',
+    userFacingText(item, 'impactIfUnresolved', language) ?? '',
   ]);
   const failureRows = asArray(confirmation.failurePaths).map((item) => [
     item.id,
-    item.title ?? '',
-    item.trigger ?? '',
-    item.expectedBehavior ?? '',
-    item.forbiddenBehavior ?? '',
+    userFacingText(item, 'title', language) ?? '',
+    userFacingText(item, 'trigger', language) ?? '',
+    userFacingText(item, 'expectedBehavior', language) ?? '',
+    userFacingText(item, 'forbiddenBehavior', language) ?? '',
     String(item.blocksCompletionWhenViolated === true),
     renderIdBadges(item.linkedNegIds),
     renderIdBadges(item.linkedEvidenceIds),
@@ -3841,21 +4958,33 @@ function renderRequirementSections(input) {
   const edgeRows = asArray(confirmation.edgeCases).map((item) => [
     item.id,
     item.category ?? '',
-    item.condition ?? item.expectedBehavior ?? '',
-    item.expectedBehavior ?? '',
-    item.forbiddenBehavior ?? '',
+    userFacingText(item, 'condition', language) ?? userFacingText(item, 'expectedBehavior', language) ?? '',
+    userFacingText(item, 'expectedBehavior', language) ?? '',
+    userFacingText(item, 'forbiddenBehavior', language) ?? '',
     renderIdBadges(item.linkedFailurePathIds),
     renderIdBadges(item.linkedEvidenceIds),
     String(item.blocksImplementation === true),
   ]);
+  const acceptanceTableRows = acceptanceRows.map((item) => [
+    item.id,
+    item.suiteType,
+    item.files.map((file) => inlineCode(file)).join('<br/>'),
+    renderIdBadges(item.covers),
+    renderIdBadges(item.traceRows),
+    renderIdBadges(item.evidenceRefs),
+    renderIdBadges(item.commandRefs),
+    item.expectedPreImplementationState || 'unspecified',
+    escapeHtml(item.oracle),
+    String(item.mockOnly),
+  ]);
   return `<section class="card" id="requirements">
     <h2>需求内容区</h2>
     <h3>Must Do</h3>${renderTable(
-      ['id', 'userStatus', 'text', 'evidenceRefs', 'coveredByTraceRows', 'coveredBySequenceViews', 'upstreamRequirementIds', 'riskLevel'],
+      ['id', 'userStatus', 'text', 'evidenceRefs', 'coveredByTraceRows', 'acceptanceRefs', 'coveredBySequenceViews', 'upstreamRequirementIds', 'riskLevel'],
       mustRows
     )}
     <h3>Not Done / Cannot Count As Complete</h3>${renderTable(
-      ['id', 'userStatus', 'text', 'evidenceRefs', 'whyItBlocksCompletion', 'negativeAssertionRequired', 'coveredByFailurePath'],
+      ['id', 'userStatus', 'text', 'evidenceRefs', 'acceptanceRefs', 'whyItBlocksCompletion', 'negativeAssertionRequired', 'coveredByFailurePath'],
       negRows
     )}
     <h3>Must Not Do / Out Of Scope</h3>${renderTable(
@@ -3865,6 +4994,10 @@ function renderRequirementSections(input) {
     <h3>Evidence</h3>${renderTable(
       ['id', 'userStatus', 'text', 'gate', 'oracle', 'requiredCommandRefs', 'artifactRefs', 'acceptanceType'],
       evidenceRows
+    )}
+    <h3>Acceptance / E2E Suites</h3>${renderTable(
+      ['id', 'suiteType', 'files', 'covers', 'traceRows', 'evidenceRefs', 'commandRefs', 'expectedPreImplementationState', 'oracle', 'mockOnly'],
+      acceptanceTableRows
     )}
     <h3>Failure Paths</h3>${renderTable(
       ['id', 'title', 'trigger', 'expectedBehavior', 'forbiddenBehavior', 'blocksCompletion', 'linkedNegIds', 'linkedEvidenceIds', 'requiredAssertions'],
@@ -4076,14 +5209,193 @@ function collectCommandRefs(entry) {
 }
 
 function collectArtifactRefs(entry) {
+  const primitiveRefs = (value) =>
+    asArray(value).filter((item) => item === null || typeof item !== 'object').map((item) => String(item));
   return unique([
-    ...stringList(entry?.artifactRefs),
-    ...stringList(entry?.evidenceArtifactRefs),
+    ...primitiveRefs(entry?.artifactRefs),
+    ...primitiveRefs(entry?.evidenceArtifactRefs),
     ...asArray(entry?.evidenceArtifactRefs).map((ref) => ref?.artifactId ?? ref?.path ?? ref?.contentHash ?? '').filter(Boolean),
     ...asArray(entry?.artifactRefs)
       .map((ref) => (typeof ref === 'object' ? ref.artifactId ?? ref.path ?? ref.hash : ref))
       .filter(Boolean),
   ].map((item) => String(item)));
+}
+
+function collectArtifactObjects(entry) {
+  return [
+    ...asArray(entry?.artifactRefs),
+    ...asArray(entry?.evidenceArtifactRefs),
+  ].filter((item) => item && typeof item === 'object' && !Array.isArray(item));
+}
+
+function artifactIsBound(artifact) {
+  if (!artifact || typeof artifact !== 'object' || Array.isArray(artifact)) return false;
+  return Boolean(
+    firstString(artifact.path, artifact.artifactId, artifact.hash, artifact.contentHash) &&
+      firstString(artifact.hash, artifact.contentHash)
+  );
+}
+
+function closeoutAttempts(record) {
+  return asArray(record?.closeout?.attempts);
+}
+
+function latestCloseoutAttempt(record, currentAttemptId) {
+  const attempts = closeoutAttempts(record);
+  if (currentAttemptId) {
+    const matched = attempts.find((attempt) => firstString(attempt?.closeoutAttemptId, attempt?.attemptId) === currentAttemptId);
+    if (matched) return matched;
+  }
+  return attempts.at(-1) ?? null;
+}
+
+function deliveryEvidenceObject(record) {
+  return record?.deliveryEvidence && typeof record.deliveryEvidence === 'object' && !Array.isArray(record.deliveryEvidence)
+    ? record.deliveryEvidence
+    : {};
+}
+
+function commandSelectedForAttempt(command, attemptId) {
+  if (!attemptId) return false;
+  if (firstString(command?.closeoutAttemptId) === attemptId) return true;
+  const lastRunRef = command?.lastRunRef;
+  return Boolean(
+    lastRunRef &&
+      typeof lastRunRef === 'object' &&
+      !Array.isArray(lastRunRef) &&
+      firstString(lastRunRef.closeoutAttemptId) === attemptId
+  );
+}
+
+function requiredCommandsForAttempt(record, attemptId) {
+  return asArray(deliveryEvidenceObject(record).requiredCommands).filter((command) =>
+    commandSelectedForAttempt(command, attemptId)
+  );
+}
+
+function commandRunId(command) {
+  const lastRunRef = command?.lastRunRef;
+  return firstString(
+    command?.runId,
+    lastRunRef && typeof lastRunRef === 'object' && !Array.isArray(lastRunRef) ? lastRunRef.runId : ''
+  );
+}
+
+function defaultCloseoutReportPath(requirementRecordState) {
+  if (!requirementRecordState?.path) return '';
+  return path.join(path.dirname(path.resolve(requirementRecordState.path)), 'delivery-closeout-report.json');
+}
+
+function readCloseoutReport(args, requirementRecordState) {
+  const requestedPath = args.closeoutReport
+    ? path.resolve(args.closeoutReport)
+    : defaultCloseoutReportPath(requirementRecordState);
+  if (!requestedPath) {
+    return { found: false, path: '', report: null, hash: null, loadError: null, source: 'unresolved' };
+  }
+  if (!fs.existsSync(requestedPath)) {
+    return {
+      found: false,
+      path: normalizePathForReport(requestedPath),
+      report: null,
+      hash: null,
+      loadError: null,
+      source: args.closeoutReport ? 'explicit' : 'default',
+    };
+  }
+  try {
+    const raw = readText(requestedPath);
+    return {
+      found: true,
+      path: normalizePathForReport(requestedPath),
+      report: /\.ya?ml$/iu.test(requestedPath) ? yaml.load(raw) : JSON.parse(raw),
+      hash: sha256(raw),
+      loadError: null,
+      source: args.closeoutReport ? 'explicit' : 'default',
+    };
+  } catch (error) {
+    return {
+      found: false,
+      path: normalizePathForReport(requestedPath),
+      report: null,
+      hash: null,
+      loadError: error instanceof Error ? error.message : String(error),
+      source: args.closeoutReport ? 'explicit' : 'default',
+    };
+  }
+}
+
+function currentCloseoutChecks(closeoutReportState, attempt) {
+  const reportChecks = asArray(closeoutReportState?.report?.checks);
+  if (reportChecks.length) return reportChecks;
+  return asArray(attempt?.checks);
+}
+
+function checkPassed(check) {
+  if (check?.passed === true) return true;
+  if (check?.passed === false) return false;
+  const status = String(check?.status ?? check?.decision ?? '').toLowerCase();
+  if (!status) return false;
+  return ['pass', 'passed', 'ready', 'complete', 'completed', 'closed', 'true'].includes(status);
+}
+
+function checkIssueCount(check) {
+  return Number(check?.issueCount ?? check?.failedEvidenceCount ?? check?.missingEvidenceCount ?? check?.openCount ?? 0) || 0;
+}
+
+function closeoutReportDecision(closeoutReportState, attemptDecision) {
+  return String(closeoutReportState?.report?.decision ?? closeoutReportState?.report?.closeoutReadyDecision ?? attemptDecision ?? '').toLowerCase();
+}
+
+function closeoutUserAcceptanceRequestProof(record, currentAttemptId, attempt) {
+  if (!record || !currentAttemptId) {
+    return { awaitingUserAcceptance: false, proofKind: 'missing_record_or_attempt', proofRefs: [] };
+  }
+  const refs = [];
+  const closeoutAttemptMatches = firstString(record?.closeout?.currentAttemptId) === currentAttemptId;
+  const closeoutDecisionPass = String(record?.closeout?.decision ?? '').toLowerCase() === 'pass';
+  const attemptDecisionPass = String(attempt?.decision ?? '').toLowerCase() === 'pass';
+  const acceptanceRequest = record?.closeout?.acceptanceRequest ?? {};
+  const acceptanceRequestPresent =
+    acceptanceRequest && typeof acceptanceRequest === 'object' && Object.keys(acceptanceRequest).length > 0;
+  const requestMatches =
+    !acceptanceRequestPresent ||
+    (String(acceptanceRequest?.status ?? '') === 'awaiting_user_acceptance' &&
+      firstString(acceptanceRequest?.closeoutAttemptId) === currentAttemptId);
+  if (record.status === 'awaiting_user_acceptance') refs.push('record.status=awaiting_user_acceptance');
+  if (record.lastEventType === 'delivery_confirmation_user_acceptance_requested') {
+    refs.push('record.lastEventType=delivery_confirmation_user_acceptance_requested');
+  }
+  if (acceptanceRequestPresent && requestMatches) {
+    refs.push('record.closeout.acceptanceRequest.status=awaiting_user_acceptance');
+  }
+  const awaitingUserAcceptance =
+    closeoutAttemptMatches &&
+    (closeoutDecisionPass || attemptDecisionPass) &&
+    record.status === 'awaiting_user_acceptance' &&
+    String(record.currentMentalModel ?? '') === 'delivery_confirmation' &&
+    String(record.currentStage ?? '') === 'delivery_confirmation' &&
+    String(record.lastEventType ?? '') === 'delivery_confirmation_user_acceptance_requested' &&
+    requestMatches;
+  return {
+    awaitingUserAcceptance,
+    proofKind: awaitingUserAcceptance
+      ? 'closeout_user_acceptance_request_proof'
+      : 'closeout_user_acceptance_request_missing',
+    proofRefs: refs,
+  };
+}
+
+function terminalStatus(value) {
+  return ['pass', 'passed', 'closed', 'done', 'completed', 'resolved', 'success'].includes(String(value ?? '').toLowerCase());
+}
+
+function countOpenItems(rows) {
+  return asArray(rows).filter((row) => {
+    const status = row?.status ?? row?.decision ?? row?.state ?? row?.result;
+    if (status === undefined || status === null || status === '') return false;
+    return !terminalStatus(status);
+  }).length;
 }
 
 function firstString(...values) {
@@ -4381,7 +5693,7 @@ function statusForRequirementId(id, progressDelta) {
 }
 
 function buildProgressDelta(input) {
-  const { confirmation, traceRows, traceExecutionState, reconfirmationState, ui } = input;
+  const { confirmation, traceRows, traceExecutionState, reconfirmationState, ui, sourceProjectionDiagnostics, closeoutRuntimeReady } = input;
   const byGroup = allConfirmationIdsByGroup(confirmation);
   const idToTraceRows = buildIdToTraceRows(traceRows);
   const affectedTraceRows = unique([
@@ -4414,6 +5726,23 @@ function buildProgressDelta(input) {
       idStatuses[id] = traceStatusForIds([id], idToTraceRows, traceExecutionState, ui);
     }
   }
+  const sourceProjectionGapIds = new Set(
+    asArray(sourceProjectionDiagnostics?.unboundEvidence).map((row) => row.id).filter(Boolean)
+  );
+  if (closeoutRuntimeReady) {
+    for (const id of sourceProjectionGapIds) {
+      if (idStatuses[id]?.proofState === 'missing_evidence') {
+        idStatuses[id] = {
+          traceIds: [],
+          label: 'source_projection_gap',
+          tone: 'gold',
+          proofState: 'source_projection_gap',
+          explanation:
+            'source evidence[] entry exists but no source traceRows[].evidenceRefs row binds it; this is not closeout runtime evidence missing',
+        };
+      }
+    }
+  }
   for (const id of byGroup.mustNot) {
     idStatuses[id] = {
       traceIds: idToTraceRows[id] ?? [],
@@ -4438,6 +5767,9 @@ function buildProgressDelta(input) {
     .map(([id]) => id);
   const missingEvidenceIds = Object.entries(idStatuses)
     .filter(([, status]) => ['missing_evidence', 'no_controlled_record'].includes(status.proofState))
+    .map(([id]) => id);
+  const sourceProjectionGapEvidenceIds = Object.entries(idStatuses)
+    .filter(([, status]) => status.proofState === 'source_projection_gap')
     .map(([id]) => id);
   const historicalPassedTraceRows = traceRowsWithState
     .filter((row) => row.validity === 'stale')
@@ -4471,6 +5803,7 @@ function buildProgressDelta(input) {
     historicalPassedTraceRows,
     currentAttemptProofValidIds,
     currentEvidenceRecordedIds,
+    sourceProjectionGapEvidenceIds,
     currentPassTraceRows,
     staleProofIds,
     missingEvidenceIds,
@@ -4492,6 +5825,7 @@ function buildProgressDelta(input) {
       reviewFocusIds: reviewFocusIds.length,
       currentAttemptProofValidIds: currentAttemptProofValidIds.length,
       currentEvidenceRecordedIds: currentEvidenceRecordedIds.length,
+      sourceProjectionGapEvidenceIds: sourceProjectionGapEvidenceIds.length,
       staleProofIds: staleProofIds.length,
       missingEvidenceIds: missingEvidenceIds.length,
       currentPassTraceRows: currentPassTraceRows.length,
@@ -4532,6 +5866,338 @@ function buildDeliveryReadiness(progressDelta, traceExecutionState, ui) {
   };
 }
 
+function buildSourceProjectionDiagnostics(confirmation, traceRows) {
+  const idToTraceRows = buildIdToTraceRows(traceRows);
+  const evidenceRows = asArray(confirmation?.evidence);
+  const unboundEvidence = evidenceRows
+    .filter((row) => row?.id && !asArray(idToTraceRows[row.id]).length)
+    .map((row) => ({
+      id: row.id,
+      diagnosticType: 'source_projection_gap',
+      proofState: 'source_evidence_unbound_to_trace',
+      explanation:
+        'source evidence[] entry exists but no source traceRows[].evidenceRefs row binds it; this is not closeout runtime evidence missing',
+      requiredCommandRefs: stringList(row.requiredCommandRefs),
+      artifactRefs: stringList(row.artifactRefs),
+    }));
+  return {
+    unboundEvidenceCount: unboundEvidence.length,
+    unboundEvidence,
+  };
+}
+
+function buildCloseoutGateMatrix(closeoutReportState, attempt) {
+  const checks = currentCloseoutChecks(closeoutReportState, attempt);
+  const rows = checks.map((check) => ({
+    id: firstString(check?.id, check?.checkId, check?.name),
+    passed: checkPassed(check),
+    issueCount: Number(check?.issueCount ?? 0) || 0,
+    openCount: Number(check?.openCount ?? 0) || 0,
+    missingEvidenceCount: Number(check?.missingEvidenceCount ?? 0) || 0,
+    failedEvidenceCount: Number(check?.failedEvidenceCount ?? 0) || 0,
+    deliveryStatus: firstString(check?.deliveryStatus, check?.status, check?.decision),
+    reportPath: firstString(check?.reportPath, closeoutReportState?.report?.reportPath, attempt?.reportPath, closeoutReportState?.path),
+    blockingReasons: stringList(check?.blockingReasons),
+  })).filter((row) => row.id);
+  return {
+    reportFound: closeoutReportState?.found === true,
+    reportPath: closeoutReportState?.path ?? '',
+    reportDecision: closeoutReportDecision(closeoutReportState, attempt?.decision),
+    reportLoadError: closeoutReportState?.loadError ?? null,
+    totalCount: rows.length,
+    passedCount: rows.filter((row) => row.passed).length,
+    failedCount: rows.filter((row) => !row.passed).length,
+    rows,
+  };
+}
+
+function buildCloseoutAttemptHistory(record) {
+  const attempts = closeoutAttempts(record).map((attempt, index) => {
+    const checks = asArray(attempt?.checks);
+    return {
+      index: index + 1,
+      closeoutAttemptId: firstString(attempt?.closeoutAttemptId, attempt?.attemptId),
+      decision: firstString(attempt?.decision, attempt?.status),
+      blockingReasons: stringList(attempt?.blockingReasons),
+      checkCount: checks.length,
+      passedCheckCount: checks.filter(checkPassed).length,
+      failedCheckCount: checks.filter((check) => !checkPassed(check)).length,
+      reportPath: firstString(attempt?.reportPath),
+      evaluatedAt: firstString(attempt?.evaluatedAt, attempt?.updatedAt, attempt?.generatedAt),
+    };
+  });
+  return {
+    totalCount: attempts.length,
+    blockedCount: attempts.filter((attempt) => String(attempt.decision).toLowerCase() === 'blocked').length,
+    passedCount: attempts.filter((attempt) => String(attempt.decision).toLowerCase() === 'pass').length,
+    attempts,
+  };
+}
+
+function buildRuntimeEvidenceClosureSummary(record) {
+  const requirementClosures = asArray(record?.requirementClosures);
+  const gateChecks = asArray(record?.gateChecks);
+  const contractChecks = asArray(record?.contractChecks);
+  const failureRecords = asArray(record?.failureRecords);
+  const rcaRecords = asArray(record?.rcaRecords);
+  const rerunLoops = asArray(record?.rerunLoops);
+  const artifactIndex = asArray(record?.artifactIndex);
+  const readinessAuditRequests = asArray(record?.readinessAuditRequests);
+  const readinessAuditResults = asArray(record?.readinessAuditResults);
+  const readinessScoringRecords = asArray(record?.readinessScoringRecords);
+  const executionIterations = asArray(record?.executionIterations);
+  const deliveryRequiredCommands = asArray(record?.deliveryEvidence?.requiredCommands);
+  const rows = [
+    ['executionIterations', executionIterations.length, countOpenItems(executionIterations)],
+    ['requirementClosures', requirementClosures.length, countOpenItems(requirementClosures)],
+    ['gateChecks', gateChecks.length, countOpenItems(gateChecks)],
+    ['contractChecks', contractChecks.length, countOpenItems(contractChecks)],
+    ['failureRecords', failureRecords.length, countOpenItems(failureRecords)],
+    ['rcaRecords', rcaRecords.length, countOpenItems(rcaRecords)],
+    ['rerunLoops', rerunLoops.length, countOpenItems(rerunLoops)],
+    ['artifactIndex', artifactIndex.length, 0],
+    ['readinessAuditRequests', readinessAuditRequests.length, countOpenItems(readinessAuditRequests)],
+    ['readinessAuditResults', readinessAuditResults.length, countOpenItems(readinessAuditResults)],
+    ['readinessScoringRecords', readinessScoringRecords.length, countOpenItems(readinessScoringRecords)],
+    ['deliveryRequiredCommands', deliveryRequiredCommands.length, countOpenItems(deliveryRequiredCommands)],
+    ['closeoutAttempts', closeoutAttempts(record).length, 0],
+  ].map(([name, totalCount, openCount]) => ({
+    name,
+    totalCount,
+    openCount,
+    status: Number(openCount) === 0 ? 'closed_or_not_applicable' : 'open_items_present',
+  }));
+  return { rows };
+}
+
+function buildFinalAcceptanceReview(input) {
+  const { args, traceRows, traceExecutionState, requirementRecordState, deliveryReadiness } = input;
+  const applies = args.mode === 'closeout-review';
+  const record = requirementRecordState?.record;
+  const currentAttemptId = traceExecutionState?.currentAttemptId ?? '';
+  const attempt = latestCloseoutAttempt(record, currentAttemptId);
+  const attemptDecision = String(attempt?.decision ?? record?.closeout?.decision ?? '').toLowerCase();
+  const attemptBlockingReasons = stringList(attempt?.blockingReasons);
+  const acceptanceRequestProof = closeoutUserAcceptanceRequestProof(record, currentAttemptId, attempt);
+  const awaitingUserAcceptance =
+    requirementRecordState?.found === true && acceptanceRequestProof.awaitingUserAcceptance;
+  const allRequiredCommands = asArray(deliveryEvidenceObject(record).requiredCommands);
+  const currentAttemptCommands = requiredCommandsForAttempt(record, currentAttemptId);
+  const artifactBoundCommands = currentAttemptCommands.filter((command) =>
+    collectArtifactObjects(command).some(artifactIsBound)
+  );
+  const requiredCommandEvidence = {
+    totalCount: allRequiredCommands.length,
+    currentAttemptCount: currentAttemptCommands.length,
+    artifactBoundCount: artifactBoundCommands.length,
+    currentAttemptCommandIds: currentAttemptCommands.map((command) => firstString(command.commandId, command.id)),
+    artifactBoundCommandIds: artifactBoundCommands.map((command) => firstString(command.commandId, command.id)),
+  };
+  const rows = {};
+  const rowIssues = [];
+  for (const row of asArray(traceRows)) {
+    const state = traceExecutionState?.rows?.[row.id] ?? {};
+    const originalConfirmationStatus = String(row.status ?? 'PENDING');
+    const finalAcceptanceStatus = state.status === 'current_pass' ? 'accepted_success' : 'open_or_unaccepted';
+    const transitionLegality =
+      awaitingUserAcceptance &&
+      attemptDecision === 'pass' &&
+      attemptBlockingReasons.length === 0 &&
+      state.status === 'current_pass' &&
+      state.validity === 'current'
+        ? 'legal_transition'
+        : 'illegal_or_unproven_transition';
+    if (finalAcceptanceStatus !== 'accepted_success' || transitionLegality !== 'legal_transition') {
+      rowIssues.push(
+        blocking(
+          'final_acceptance_trace_not_accepted',
+          `${row.id} final acceptance is ${finalAcceptanceStatus}/${transitionLegality}`,
+          [row.id]
+        )
+      );
+    }
+    rows[row.id] = {
+      traceId: row.id,
+      originalConfirmationStatus,
+      preCloseoutRuntimeStatus: originalConfirmationStatus === 'PASS' ? 'already_terminal_before_closeout' : 'open_before_closeout',
+      postCloseoutRuntimeStatus: state.status ?? 'no_controlled_record',
+      finalAcceptanceStatus,
+      transitionLegality,
+      evidenceRefs: state.evidenceRefs ?? [],
+      commandRefs: state.commandRefs ?? [],
+      artifactRefs: state.artifactRefs ?? [],
+      runId: state.runId ?? '',
+      closeoutAttemptId: state.closeoutAttemptId ?? currentAttemptId,
+      blockingReason:
+        finalAcceptanceStatus === 'accepted_success' && transitionLegality === 'legal_transition'
+          ? ''
+          : state.reason || 'trace_not_current_pass_after_user_acceptance_request',
+    };
+  }
+
+  const blockingIssues = [];
+  if (applies && !requirementRecordState?.found) {
+    blockingIssues.push(blocking('final_acceptance_requirement_record_missing', 'requirement-record.json is required for closeout review'));
+  }
+  if (applies && !awaitingUserAcceptance) {
+    blockingIssues.push(
+      blocking(
+        'final_acceptance_user_acceptance_request_missing',
+        'closeout-review requires awaiting_user_acceptance proof for the current attempt before user closeout confirmation'
+      )
+    );
+  }
+  if (applies && !currentAttemptId) {
+    blockingIssues.push(blocking('final_acceptance_current_attempt_missing', 'closeout currentAttemptId is required'));
+  }
+  if (applies && attemptDecision !== 'pass') {
+    blockingIssues.push(
+      blocking('final_acceptance_attempt_not_passed', `current closeout attempt decision is ${attemptDecision || '<missing>'}`)
+    );
+  }
+  if (applies && attemptBlockingReasons.length) {
+    blockingIssues.push(
+      blocking(
+        'final_acceptance_attempt_has_blocking_reasons',
+        `current closeout attempt still has blockers: ${attemptBlockingReasons.join(', ')}`
+      )
+    );
+  }
+  if (applies && allRequiredCommands.length === 0) {
+    blockingIssues.push(
+      blocking('final_acceptance_required_commands_missing', 'deliveryEvidence.requiredCommands[] is required for closeout review')
+    );
+  }
+  if (applies && allRequiredCommands.length > 0 && currentAttemptCommands.length === 0) {
+    blockingIssues.push(
+      blocking(
+        'final_acceptance_required_commands_current_attempt_missing',
+        'no deliveryEvidence.requiredCommands[] entry is bound to the current closeout attempt'
+      )
+    );
+  }
+  if (applies && currentAttemptCommands.length > 0 && artifactBoundCommands.length !== currentAttemptCommands.length) {
+    blockingIssues.push(
+      blocking(
+        'final_acceptance_required_commands_not_artifact_bound',
+        `${artifactBoundCommands.length}/${currentAttemptCommands.length} current-attempt required commands have artifact-bound evidence`
+      )
+    );
+  }
+  if (applies) blockingIssues.push(...rowIssues);
+  const ready = applies ? blockingIssues.length === 0 : false;
+  return {
+    applies,
+    ready,
+    status: ready ? 'final_acceptance_ready' : applies ? 'final_acceptance_ready=false' : 'not_applicable',
+    recordClosed: record?.status === 'closed',
+    awaitingUserAcceptance,
+    acceptanceRequestProof,
+    lastEventType: record?.lastEventType ?? '',
+    lastAppliedEventId: '',
+    currentAttemptId,
+    attemptDecision,
+    attemptBlockingReasons,
+    deliveryReadinessDiagnostic: deliveryReadiness ?? null,
+    requiredCommandEvidence,
+    blockingIssues,
+    rows,
+  };
+}
+
+function buildCloseoutDeliveryVerdict(input) {
+  const { args, finalAcceptanceReview, closeoutGateMatrix, sourceProjectionDiagnostics, closeoutReportHash } = input;
+  const applies = args.mode === 'closeout-review';
+  const failedChecks = asArray(closeoutGateMatrix?.rows).filter((row) => !row.passed);
+  const reportDecision = String(closeoutGateMatrix?.reportDecision ?? '').toLowerCase();
+  const reportReady = closeoutGateMatrix?.reportFound === true && reportDecision === 'pass' && failedChecks.length === 0;
+  const reasons = [];
+  if (applies && !finalAcceptanceReview?.ready) reasons.push('finalAcceptanceReview_not_ready');
+  if (applies && !closeoutGateMatrix?.reportFound) reasons.push('delivery_closeout_report_missing');
+  if (applies && closeoutGateMatrix?.reportLoadError) reasons.push(`delivery_closeout_report_load_error:${closeoutGateMatrix.reportLoadError}`);
+  if (applies && closeoutGateMatrix?.reportFound && reportDecision !== 'pass') {
+    reasons.push(`delivery_closeout_report_decision_${reportDecision || 'missing'}`);
+  }
+  if (applies && failedChecks.length) {
+    reasons.push(`delivery_closeout_report_failed_checks:${failedChecks.map((row) => row.id).join(',')}`);
+  }
+  const ready = applies && finalAcceptanceReview?.ready === true && reportReady;
+  return {
+    applies,
+    ready,
+    status: !applies ? 'not_applicable' : ready ? 'final_acceptance_ready' : 'final_acceptance_blocked',
+    label: !applies ? 'not_applicable' : ready ? 'final_acceptance_ready' : 'final_acceptance_blocked',
+    reasons,
+    currentAttemptId: finalAcceptanceReview?.currentAttemptId ?? '',
+    finalAcceptanceStatus: finalAcceptanceReview?.status ?? 'not_applicable',
+    closeoutReportPath: closeoutGateMatrix?.reportPath ?? '',
+    deliveryCloseoutReportHash: closeoutReportHash ?? null,
+    closeoutReportDecision: closeoutGateMatrix?.reportDecision ?? '',
+    closeoutCheckCount: closeoutGateMatrix?.totalCount ?? 0,
+    closeoutFailedCheckCount: failedChecks.length,
+    sourceProjectionGapCount: sourceProjectionDiagnostics?.unboundEvidenceCount ?? 0,
+  };
+}
+
+function closeoutProjectionIdentity(outPath, recordId, closeoutAttemptId) {
+  const canonicalPath = path.join(
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    recordId || 'unrecorded',
+    'confirmation',
+    `closeout-confirmation-${closeoutAttemptId || 'unattempted'}.html`
+  );
+  const currentAliasPath = path.join(
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    recordId || 'unrecorded',
+    'confirmation',
+    'closeout-confirmation-current.html'
+  );
+  const normalizedOut = normalizePathForReport(path.resolve(outPath));
+  const normalizedCanonical = normalizePathForReport(path.resolve(canonicalPath));
+  const normalizedAlias = normalizePathForReport(path.resolve(currentAliasPath));
+  const outputRole =
+    normalizedOut === normalizedCanonical
+      ? 'canonical_attempt_projection'
+      : normalizedOut === normalizedAlias
+        ? 'current_alias_projection'
+        : 'noncanonical_diagnostic_projection';
+  return {
+    schemaVersion: 'closeout-confirmation-projection/v1',
+    closeoutAttemptId: closeoutAttemptId || '',
+    canonicalPath: normalizePathForReport(canonicalPath),
+    currentAliasPath: normalizePathForReport(currentAliasPath),
+    renderedPath: normalizePathForReport(outPath),
+    outputRole,
+    preservesScopeConfirmation: true,
+  };
+}
+
+function buildCloseoutConfirmInstruction(input) {
+  return [
+    '确认最终验收并关闭需求',
+    `sourceDocumentHash=${input.sourceDocumentHash}`,
+    `implementationConfirmationHash=${input.implementationConfirmationHash}`,
+    `closeoutAttemptId=${input.closeoutAttemptId || ''}`,
+    `closeoutConfirmationPageHash=${SELF_CLOSEOUT_PAGE_HASH_PLACEHOLDER}`,
+    `deliveryCloseoutReportHash=${input.deliveryCloseoutReportHash || 'sha256:missing_delivery_closeout_report'}`,
+  ].join('\n');
+}
+
+function scopeConfirmationPageHashForCloseout(requirementRecordState, confirmation) {
+  const record = requirementRecordState?.record ?? {};
+  return firstString(
+    record.confirmationPageHash,
+    asArray(record.confirmationHistory)
+      .filter((item) => item && typeof item === 'object' && item.eventType === 'confirmation_recorded')
+      .at(-1)?.confirmationPageHash,
+    confirmation?.confirmationRender?.htmlHash
+  );
+}
+
 function overflowText(ui, count) {
   if (count <= 0) return '';
   return ui.overflowPrefix === '+'
@@ -4561,6 +6227,14 @@ function renderProgressDelta(progressDelta, reconfirmationState, ui) {
     [ui.staleTraceSummary, renderIdBadges(progressDelta.historicalPassedTraceRows.slice(0, 20)), overflowText(ui, progressDelta.historicalPassedTraceRows.length - 20)],
     [ui.affectedTraceCoveredIds, renderIdBadges(progressDelta.affectedTraceCoveredIds.slice(0, 20)), overflowText(ui, progressDelta.affectedTraceCoveredIds.length - 20)],
   ];
+  const sourceProjectionGapRows = asArray(progressDelta.sourceProjectionGapEvidenceIds).map((id) => {
+    const status = progressDelta.idStatuses[id] ?? {};
+    return [
+      id,
+      renderStatusBadge('source_projection_gap', 'gold'),
+      status.explanation ?? 'source projection diagnostic only; not closeout runtime missing evidence',
+    ];
+  });
   return `<section class="card progress-delta" id="progress-delta">
     <h2>${escapeHtml(ui.progressDelta)}</h2>
     <p class="section-lead">${escapeHtml(ui.progressLead)}</p>
@@ -4571,6 +6245,7 @@ function renderProgressDelta(progressDelta, reconfirmationState, ui) {
       <div class="metric"><strong>${escapeHtml(progressDelta.counts.currentAttemptProofValidIds)}</strong><span>${escapeHtml(ui.currentAttemptProofValid)}</span></div>
       <div class="metric warn"><strong>${escapeHtml(progressDelta.counts.staleProofIds)}</strong><span>${escapeHtml(ui.staleProofNeedsRecheck)}</span></div>
       <div class="metric danger"><strong>${escapeHtml(progressDelta.counts.missingEvidenceIds)}</strong><span>${escapeHtml(ui.missingCurrentEvidence)}</span></div>
+      <div class="metric warn"><strong>${escapeHtml(progressDelta.counts.sourceProjectionGapEvidenceIds ?? 0)}</strong><span>source_projection_gap</span></div>
     </div>
     <div class="review-flow">
       <section class="review-step">
@@ -4590,6 +6265,13 @@ function renderProgressDelta(progressDelta, reconfirmationState, ui) {
         <h3>${escapeHtml(ui.historicalEvidenceSummary)}</h3>
         ${renderTable(['summary', 'sample', 'overflow'], historyRows, { className: 'compact-map-table' })}
       </section>
+      <section class="review-step">
+        <h3>Source Projection Gap Overrides</h3>
+        <p class="muted">These rows are source trace binding diagnostics, not closeout runtime missing evidence.</p>
+        ${sourceProjectionGapRows.length
+          ? renderTable(['Evidence', 'Diagnostic', 'Explanation'], sourceProjectionGapRows, { className: 'compact-map-table source-projection-gap-table' })
+          : '<p class="empty-state">No source projection gap override applied.</p>'}
+      </section>
     </div>
   </section>`;
 }
@@ -4602,6 +6284,7 @@ function renderTraceMatrix(traceRows, traceExecutionState = null) {
     renderIdBadges(row.evidenceRefs),
     renderIdBadges(traceContractValidationCommandRefs(row)),
     renderIdBadges(traceDeliveryEvidenceCommandRefs(row)),
+    renderIdBadges(row.acceptanceRefs),
     renderIdBadges(row.sequenceViewRefs ?? row.diagramRefs),
     renderIdBadges(row.artifactRefs),
     row.status ?? 'PENDING',
@@ -4629,7 +6312,7 @@ function renderTraceMatrix(traceRows, traceExecutionState = null) {
       ],
       { className: 'compact-map-table' }
     ) : ''}
-    ${renderTable(['Trace', 'Covers', 'Tasks', 'Evidence', 'Contract Validation Commands', 'Delivery Evidence Commands', 'Diagrams', 'Artifacts', 'Contract Status', 'Controlled Execution Status', 'Current Validity', 'Execution Evidence / Reason', 'Blocking Reason'], rows)}
+    ${renderTable(['Trace', 'Covers', 'Tasks', 'Evidence', 'Contract Validation Commands', 'Delivery Evidence Commands', 'Acceptance/E2E', 'Diagrams', 'Artifacts', 'Contract Status', 'Controlled Execution Status', 'Current Validity', 'Execution Evidence / Reason', 'Blocking Reason'], rows)}
   </section>`;
 }
 
@@ -4676,6 +6359,32 @@ function renderCurrentTarget(map, artifactPlan, profile) {
       rows.map((row) => row.map((cell, index) => mapCell(cell, index, tagColumnIndex))),
       { className: 'compact-map-table' }
     );
+  const renderTargetRealization = () => {
+    const realizationRows = asArray(map.targetRealization);
+    if (!realizationRows.length) return '';
+    const summary = map.targetRealizationSummary ?? {};
+    const rows = realizationRows.map((row) => [
+      row.id,
+      inlineCode(row.source_target ?? ''),
+      inlineCode(row.runtime_evidence ?? ''),
+      renderStatusBadge(row.verification_status ?? 'not_evaluable', statusBadgeTone(row.verification_status ?? 'not_evaluable')),
+      renderIdBadges(row.evidence_refs),
+      renderStatusBadge(String(row.legal_transition ?? false), statusBadgeTone(row.legal_transition)),
+    ]);
+    return `<h3>目标态实现核实层</h3>
+    <p class="section-lead">closeout-review 模式下，本层从受控 runtime evidence / trace / command / closeout gate 投影目标态是否达成；不会仅凭 source 文案标记 achieved。</p>
+    <div class="metric-strip target-realization-summary">
+      <div class="metric compact green"><strong>${escapeHtml(summary.achieved ?? 0)}</strong><span>achieved</span></div>
+      <div class="metric compact warn"><strong>${escapeHtml(summary.partially_achieved ?? 0)}</strong><span>partially_achieved</span></div>
+      <div class="metric compact danger"><strong>${escapeHtml(summary.not_achieved ?? 0)}</strong><span>not_achieved</span></div>
+      <div class="metric compact warn"><strong>${escapeHtml(summary.not_evaluable ?? 0)}</strong><span>not_evaluable</span></div>
+    </div>
+    ${renderTable(
+      ['ID', 'source_target', 'runtime_evidence', 'verification_status', 'evidence_refs', 'legal_transition'],
+      rows,
+      { className: 'compact-map-table target-realization-table' }
+    )}`;
+  };
   const renderDiffDeck = (rows) =>
     rows.length
       ? `<div class="diff-deck compact-diff-deck">${rows
@@ -4770,6 +6479,7 @@ function renderCurrentTarget(map, artifactPlan, profile) {
       </article>
     </div>
     <h3>核心差异</h3>${renderDiffDeck(asArray(map.diffRows))}
+    ${renderTargetRealization()}
     <div class="target-flow">${targetFlowRows.length
       ? targetFlowRows.map((row) => `<div class="flow-step"><strong>${escapeHtml(row.stepTitle ?? '')}</strong><span>${inlineCode(row.description ?? '')}</span></div>`).join('')
       : '<p class="empty-state">源文档未提供 targetFlow[]。</p>'}</div>
@@ -4850,6 +6560,72 @@ function renderProfileTable(profileKey, rows, options = {}) {
   });
 }
 
+function buildTargetRealizationProjection(input) {
+  const { args, currentTargetMap, finalAcceptanceReview, closeoutGateMatrix, traceExecutionState } = input;
+  if (args.mode !== 'closeout-review') return currentTargetMap;
+  const traceRows = Object.values(finalAcceptanceReview?.rows ?? {});
+  const acceptedTraceCount = traceRows.filter(
+    (row) => row.finalAcceptanceStatus === 'accepted_success' && row.transitionLegality === 'legal_transition'
+  ).length;
+  const runtimeReady =
+    finalAcceptanceReview?.ready === true &&
+    closeoutGateMatrix?.reportFound === true &&
+    String(closeoutGateMatrix?.reportDecision ?? '').toLowerCase() === 'pass';
+  const rows = [
+    ...asArray(currentTargetMap.diffRows).map((row, index) => ({
+      source: 'currentTargetMap.diffRows',
+      id: row.id ?? `DIFF-${String(index + 1).padStart(3, '0')}`,
+      source_target: row.targetState ?? row.action ?? '',
+    })),
+    ...asArray(currentTargetMap.process).map((row, index) => ({
+      source: 'currentTargetMap.process',
+      id: row.id ?? `PROCESS-${String(index + 1).padStart(3, '0')}`,
+      source_target: row.targetState ?? row.phase ?? '',
+    })),
+  ];
+  const evidenceRefs = unique(
+    traceRows.flatMap((row) => [
+      ...stringList(row.evidenceRefs),
+      ...stringList(row.commandRefs),
+      ...stringList(row.artifactRefs),
+    ])
+  );
+  const targetRealization = rows.map((row) => {
+    const verificationStatus =
+      runtimeReady && acceptedTraceCount > 0
+        ? 'achieved'
+        : traceExecutionState?.recordFound
+          ? 'not_achieved'
+          : 'not_evaluable';
+    return {
+      id: row.id,
+      source: row.source,
+      source_target: row.source_target,
+      runtime_evidence:
+        verificationStatus === 'achieved'
+          ? `finalAcceptanceReview.ready=true; acceptedTraceRows=${acceptedTraceCount}; closeoutDecision=${closeoutGateMatrix?.reportDecision ?? ''}`
+          : traceExecutionState?.recordFound
+            ? 'runtime evidence exists but final acceptance is not ready'
+            : 'no controlled runtime record available',
+      verification_status: verificationStatus,
+      evidence_refs: evidenceRefs,
+      legal_transition: verificationStatus === 'achieved',
+    };
+  });
+  const targetRealizationSummary = targetRealization.reduce(
+    (acc, row) => {
+      acc[row.verification_status] = (acc[row.verification_status] ?? 0) + 1;
+      return acc;
+    },
+    { achieved: 0, partially_achieved: 0, not_achieved: 0, not_evaluable: 0 }
+  );
+  return {
+    ...currentTargetMap,
+    targetRealization,
+    targetRealizationSummary,
+  };
+}
+
 function renderArtifactPlan(artifactPlan) {
   const groups = classifyArtifactGroups(artifactPlan);
   const headers = [
@@ -4907,6 +6683,86 @@ function renderArtifactPlan(artifactPlan) {
         }
       )
       .join('')}
+  </section>`;
+}
+
+function renderTargetModificationPaths(targetModificationPaths) {
+  const rows = targetModificationPaths.map((item) => [
+    item.id,
+    item.path,
+    item.coverageRole || item.changeType || 'unspecified',
+    item.intent || '',
+    item.ownerModel || '',
+    renderIdBadges(item.requirementRefs),
+    renderIdBadges(item.traceRefs),
+    renderIdBadges(item.evidenceRefs),
+    renderIdBadges(item.artifactRefs),
+    String(item.requiresReconfirmationOnChange),
+    item.sourceSection,
+  ]);
+  return `<section class="card" id="target-modification-paths">
+    <h2>目标修改路径清单</h2>
+    <p class="section-lead">本区展示用户确认后 agent 预计会修改、新增或生成的 repo 路径。它回答“会动哪些文件/脚本/测试/配置”，不能被工件计划或现状/目标态对比替代。</p>
+    ${
+      rows.length
+        ? renderTable(
+          ['ID', '路径', '修改类型', '意图', 'ownerModel', '需求', 'Trace', 'Evidence', 'Artifacts', '越界需重新确认', '来源字段'],
+          rows,
+          { className: 'target-modification-paths-table' }
+        )
+        : '<p class="empty-state">源文档未提供 targetModificationPaths[]。</p>'
+    }
+  </section>`;
+}
+
+function renderAiTddContractManifestCoverage(coverage) {
+  const sections = coverage?.sections ?? {};
+  const sectionLabels = [
+    ['errorCaseCoverage', 'Error cases'],
+    ['commandTargetCollection', 'Command targets'],
+    ['traceClosureAssertions', 'Trace closure'],
+    ['currentTargetMap', 'Current/target map'],
+    ['targetModificationPathCoverage', 'Target modification path coverage'],
+    ['canonicalSurfaceReconciliation', 'Canonical surfaces'],
+    ['legacyDenial', 'Legacy denial'],
+    ['closeoutProof', 'Closeout proof'],
+    ['evidenceTrustStates', 'Evidence trust'],
+  ];
+  const summaryRows = sectionLabels.map(([key, label]) => {
+    const section = sections[key] ?? {};
+    return [
+      label,
+      renderStatusBadge(section.ready ? 'pass' : 'blocked', section.ready ? 'green' : 'red'),
+      String(asArray(section.rows).length),
+      String(asArray(section.missing).length),
+    ];
+  });
+  const detailRows = sectionLabels.flatMap(([key, label]) =>
+    asArray(sections[key]?.rows).map((row) => [
+      label,
+      row.id || row.pathOrField || '',
+      renderIdBadges([
+        ...stringList(row.linkedNegIds),
+        ...stringList(row.linkedFailurePathIds),
+        ...stringList(row.linkedEvidenceIds),
+        ...stringList(row.evidenceRefs),
+        ...stringList(row.traceRefs),
+        ...stringList(row.commandRefs),
+        ...stringList(row.acceptanceRefs),
+        ...stringList(row.artifactRefs),
+      ]),
+      stringList(row.missing).join(', ') || 'pass',
+    ])
+  );
+  return `<section class="card" id="ai-tdd-contract-manifest">
+    <h2>AI-TDD 契约执行清单</h2>
+    <p class="section-lead">本区展示 implementation readiness / delivery verification / closeout 共享的契约完整性标准。确认页必须能看到这些清单；缺失时 confirmability 会被阻断。</p>
+    ${renderTable(['Section', '状态', 'Rows', 'Missing'], summaryRows, { className: 'compact-map-table' })}
+    ${
+      detailRows.length
+        ? renderTable(['Section', 'ID/Surface', 'Refs', 'Missing'], detailRows, { className: 'compact-map-table' })
+        : '<p class="empty-state">源文档未提供 AI-TDD 契约执行清单可投影内容。</p>'
+    }
   </section>`;
 }
 
@@ -5054,8 +6910,22 @@ function renderScoringDashboardSft(confirmation) {
 
 function renderReconfirmationPanel(reconfirmationState) {
   if (!reconfirmationState?.required) return '';
+  const rationale = reconfirmationState.persuasiveRationale ?? {};
+  const evidenceBundle = reconfirmationState.evidenceBundle ?? {};
+  const evidenceRows = asArray(evidenceBundle.items).map((item, index) => [
+    item.id ?? `RCEVD-${String(index + 1).padStart(3, '0')}`,
+    item.kind ?? 'evidence',
+    item.title ?? '未命名证据',
+    item.summary ?? '',
+    renderIdBadges([...(stringList(item.sourceRefs)), ...(stringList(item.proofRefs))]),
+  ]);
   const rows = [
-    ['reason', reconfirmationState.reason ?? 'reconfirmation_required'],
+    ['reasonCode', reconfirmationState.reasonCode ?? reconfirmationState.reason ?? 'reconfirmation_required'],
+    ['userFacingSummary', reconfirmationState.userFacingSummary ?? '未提供'],
+    ['whyReconfirmNow', rationale.whyReconfirmNow ?? '未提供'],
+    ['riskIfSkipped', rationale.riskIfSkipped ?? '未提供'],
+    ['whyEvidenceIsSufficient', rationale.whyEvidenceIsSufficient ?? '未提供'],
+    ['evidenceSufficiency', evidenceBundle.sufficiencyVerdict ?? '未提供'],
     ['previousSourceDocumentHash', reconfirmationState.previousSourceDocumentHash ?? '未提供'],
     ['currentSourceDocumentHash', reconfirmationState.currentSourceDocumentHash ?? '未提供'],
     ['previousImplementationConfirmationHash', reconfirmationState.previousImplementationConfirmationHash ?? '未提供'],
@@ -5074,9 +6944,11 @@ function renderReconfirmationPanel(reconfirmationState) {
     ];
   });
   return `<section class="card" id="reconfirmation-request">
-    <h2>重新确认请求</h2>
-    <p class="blocked">检测到确认边界漂移。用户只需要确认业务意图，不应手工修改 hash、status 或 confirmationHistory。</p>
+    <h2>${escapeHtml(reconfirmationState.userFacingTitle ?? '需要重新确认')}</h2>
+    <p class="blocked">检测到确认边界语义漂移。用户只需要确认业务意图，不应手工修改 hash、status 或 confirmationHistory。</p>
     ${renderTable(['字段', '值'], rows)}
+    <h3>重新确认证据</h3>
+    ${evidenceRows.length ? renderTable(['证据 ID', '类型', '标题', '说明', '绑定引用'], evidenceRows) : '<p class="empty-state">源文档未提供 reconfirmationRequest.evidenceBundle.items[]。</p>'}
     <h3>差异摘要</h3>
     ${diffRows.length ? renderTable(['项', '变化'], diffRows) : '<p class="empty-state">源文档未提供 reconfirmationRequest.diffSummary[]。</p>'}
   </section>`;
@@ -5092,7 +6964,9 @@ function renderCoreDesignSummary(input) {
     warnings,
     confirmability,
     deliveryReadiness,
+    closeoutDeliveryVerdict,
   } = input;
+  const primaryDelivery = closeoutDeliveryVerdict?.applies ? closeoutDeliveryVerdict : deliveryReadiness;
   const controlArtifacts = artifactPlan.filter(
     (item) => item.canAffectControlFlow || item.sourceOfTruthRole === 'control'
   ).length;
@@ -5112,7 +6986,7 @@ function renderCoreDesignSummary(input) {
     <div class="metric-grid">
       ${metrics.map(([value, label]) => `<div class="metric"><strong>${escapeHtml(value)}</strong><span>${escapeHtml(label)}</span></div>`).join('')}
       <div class="metric status-metric"><strong class="status-${confirmability}">${escapeHtml(confirmability)}</strong><span>${escapeHtml(ui.confirmability)}</span></div>
-      <div class="metric status-metric ${deliveryReadiness.ready ? 'green' : 'danger'}"><strong class="status-${deliveryReadiness.ready ? 'confirmable' : 'blocked'}">${escapeHtml(deliveryReadiness.label)}</strong><span>${escapeHtml(ui.deliveryReadiness)}</span></div>
+      <div class="metric status-metric ${primaryDelivery.ready ? 'green' : 'danger'}"><strong class="status-${primaryDelivery.ready ? 'confirmable' : 'blocked'}">${escapeHtml(primaryDelivery.label)}</strong><span>${escapeHtml(closeoutDeliveryVerdict?.applies ? 'Closeout Delivery Verdict' : ui.deliveryReadiness)}</span></div>
       <div class="metric"><strong>${traceRows.length}</strong><span>traceRows</span></div>
       <div class="metric"><strong>${artifactPlan.length}</strong><span>工件计划项</span></div>
       <div class="metric"><strong>${controlArtifacts}</strong><span>影响控制流的工件</span></div>
@@ -5125,7 +6999,43 @@ function renderCoreDesignSummary(input) {
   </section>`;
 }
 
-function renderDeliveryReadiness(deliveryReadiness, ui) {
+function renderDeliveryReadiness(deliveryReadiness, ui, closeoutDeliveryVerdict = null, sourceProjectionDiagnostics = null) {
+  if (closeoutDeliveryVerdict?.applies) {
+    const diagnosticRows = deliveryReadiness.reasons.length
+      ? deliveryReadiness.reasons.map((reason, index) => [`${String(index + 1).padStart(2, '0')}`, reason])
+      : [['--', 'preCloseoutDiagnostic has no blocking reason']];
+    const sourceGapRows = asArray(sourceProjectionDiagnostics?.unboundEvidence).map((row) => [
+      row.id,
+      renderStatusBadge(row.diagnosticType, 'gold'),
+      row.explanation,
+      renderIdBadges(row.requiredCommandRefs),
+      renderIdBadges(row.artifactRefs),
+    ]);
+    const verdictReasonRows = closeoutDeliveryVerdict.reasons.length
+      ? closeoutDeliveryVerdict.reasons.map((reason, index) => [`${String(index + 1).padStart(2, '0')}`, reason])
+      : [['--', 'final_acceptance_ready']];
+    return `<section class="card" id="delivery-readiness">
+      <h2>Closeout Delivery Verdict</h2>
+      <p class="section-lead">closeout-review 模式下，本区主状态来自最终验收和受控 closeout report；旧 deliveryReadiness 只作为 preCloseoutDiagnostic 展示。</p>
+      <div class="metric-grid closeout-verdict-metrics">
+        <div class="metric status-metric ${closeoutDeliveryVerdict.ready ? 'green' : 'danger'}"><strong class="status-${closeoutDeliveryVerdict.ready ? 'confirmable' : 'blocked'}">${escapeHtml(closeoutDeliveryVerdict.label)}</strong><span>closeoutDeliveryVerdict</span></div>
+        <div class="metric"><strong>${escapeHtml(closeoutDeliveryVerdict.currentAttemptId)}</strong><span>current closeout attempt</span></div>
+        <div class="metric"><strong>${escapeHtml(closeoutDeliveryVerdict.closeoutReportDecision || '')}</strong><span>closeout report decision</span></div>
+        <div class="metric"><strong>${escapeHtml(closeoutDeliveryVerdict.closeoutCheckCount)}</strong><span>closeout checks</span></div>
+        <div class="metric danger"><strong>${escapeHtml(closeoutDeliveryVerdict.closeoutFailedCheckCount)}</strong><span>failed closeout checks</span></div>
+        <div class="metric warn"><strong>${escapeHtml(closeoutDeliveryVerdict.sourceProjectionGapCount)}</strong><span>source projection gaps</span></div>
+      </div>
+      <h3>Closeout Verdict Reasons</h3>
+      ${renderTable(['reasonId', 'reason'], verdictReasonRows, { className: 'compact-map-table' })}
+      <h3>Pre-Closeout Diagnostic</h3>
+      <p class="muted">以下诊断来自 source trace/evidence projection，不是 closeout runtime acceptance verdict。</p>
+      ${renderTable(['reasonId', 'reason'], diagnosticRows, { className: 'compact-map-table' })}
+      <h3>Source Projection Gap Diagnostic</h3>
+      ${sourceGapRows.length
+        ? renderTable(['Evidence', 'Diagnostic', 'Explanation', 'Commands', 'Artifacts'], sourceGapRows, { className: 'compact-map-table source-projection-gap-table' })
+        : '<p class="empty-state">No source evidence projection gaps detected.</p>'}
+    </section>`;
+  }
   const reasonRows = deliveryReadiness.reasons.length
     ? deliveryReadiness.reasons.map((reason, index) => [`${String(index + 1).padStart(2, '0')}`, reason])
     : [['--', ui.deliveryReady]];
@@ -5140,6 +7050,262 @@ function renderDeliveryReadiness(deliveryReadiness, ui) {
       <div class="metric warn"><strong>${escapeHtml(deliveryReadiness.staleProofCount)}</strong><span>${escapeHtml(ui.staleProofNeedsRecheck)}</span></div>
     </div>
     <div class="table-wrap">${renderTable(['reasonId', 'reason'], reasonRows)}</div>
+  </section>`;
+}
+
+function renderFinalAcceptanceReview(finalAcceptanceReview) {
+  if (!finalAcceptanceReview?.applies) return '';
+  const issueRows = finalAcceptanceReview.blockingIssues.length
+    ? finalAcceptanceReview.blockingIssues.map((issue) => [
+        issue.code ?? 'final_acceptance_blocker',
+        issue.message ?? '',
+        renderIdBadges(issue.refs ?? []),
+      ])
+    : [['--', 'final_acceptance_ready=true', '<span class="muted">无</span>']];
+  const traceRows = Object.values(finalAcceptanceReview.rows).map((row) => [
+    row.traceId,
+    renderStatusBadge(row.originalConfirmationStatus, statusBadgeTone(row.originalConfirmationStatus)),
+    renderStatusBadge(row.preCloseoutRuntimeStatus, statusBadgeTone(row.preCloseoutRuntimeStatus)),
+    renderStatusBadge(row.postCloseoutRuntimeStatus, statusBadgeTone(row.postCloseoutRuntimeStatus)),
+    renderStatusBadge(row.finalAcceptanceStatus, statusBadgeTone(row.finalAcceptanceStatus)),
+    renderStatusBadge(row.transitionLegality, statusBadgeTone(row.transitionLegality)),
+    renderIdBadges(row.evidenceRefs),
+    renderIdBadges(row.commandRefs),
+    renderIdBadges(row.artifactRefs),
+    row.runId,
+    row.closeoutAttemptId,
+    row.blockingReason,
+  ]);
+  return `<section class="card" id="final-acceptance-review">
+    <h2>Final Acceptance Review</h2>
+    <p class="section-lead">Closeout review is a read-only post-closeout projection. It preserves the original confirmation status and adds runtime/final acceptance columns from the controlled requirement record.</p>
+    <div class="metric-grid final-acceptance-metrics">
+      <div class="metric status-metric ${finalAcceptanceReview.ready ? 'green' : 'danger'}"><strong class="status-${finalAcceptanceReview.ready ? 'confirmable' : 'blocked'}">${escapeHtml(finalAcceptanceReview.status)}</strong><span>finalAcceptanceReview.ready</span></div>
+      <div class="metric"><strong>${escapeHtml(finalAcceptanceReview.currentAttemptId)}</strong><span>current closeout attempt</span></div>
+      <div class="metric"><strong>${escapeHtml(String(finalAcceptanceReview.awaitingUserAcceptance))}</strong><span>awaitingUserAcceptance</span></div>
+      <div class="metric"><strong>${escapeHtml(finalAcceptanceReview.attemptDecision || '')}</strong><span>attemptDecision</span></div>
+      <div class="metric"><strong>${escapeHtml(finalAcceptanceReview.requiredCommandEvidence.currentAttemptCount)}</strong><span>current-attempt commands</span></div>
+      <div class="metric"><strong>${escapeHtml(finalAcceptanceReview.requiredCommandEvidence.artifactBoundCount)}</strong><span>artifact-bound commands</span></div>
+    </div>
+    ${renderTable(['Field', 'Value'], [
+      ['lastEventType', finalAcceptanceReview.lastEventType],
+      ['attemptBlockingReasons', finalAcceptanceReview.attemptBlockingReasons.join(', ') || 'none'],
+      ['requiredCommandIds', renderIdBadges(finalAcceptanceReview.requiredCommandEvidence.currentAttemptCommandIds)],
+      ['artifactBoundCommandIds', renderIdBadges(finalAcceptanceReview.requiredCommandEvidence.artifactBoundCommandIds)],
+    ], { className: 'compact-map-table' })}
+    <h3>Final Acceptance Blockers</h3>
+    ${renderTable(['code', 'message', 'refs'], issueRows, { className: 'compact-map-table' })}
+    <h3>Closeout Trace Acceptance Matrix</h3>
+    ${renderTable([
+      'Trace',
+      'Original Confirmation Status',
+      'Pre-Closeout Runtime Status',
+      'Post-Closeout Runtime Status',
+      'Final Acceptance Status',
+      'Transition Legality',
+      'Evidence',
+      'Command',
+      'Artifact',
+      'Run ID',
+      'Closeout Attempt ID',
+      'Blocking Reason',
+    ], traceRows, { className: 'closeout-trace-acceptance-table' })}
+  </section>`;
+}
+
+function renderStructuredValue(value) {
+  if (value === null || value === undefined || value === '') return '<span class="muted">无</span>';
+  if (Array.isArray(value)) {
+    const scalarItems = value.filter((item) => item === null || typeof item !== 'object').map((item) => String(item));
+    if (scalarItems.length === value.length) return renderIdBadges(scalarItems);
+    return `<code>${escapeHtml(JSON.stringify(value))}</code>`;
+  }
+  if (typeof value === 'object') return `<code>${escapeHtml(JSON.stringify(value))}</code>`;
+  if (typeof value === 'boolean') return renderStatusBadge(String(value), value ? 'green' : 'red');
+  return inlineCode(String(value));
+}
+
+function objectRows(value, keys = null) {
+  const source = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+  const selectedKeys = keys ?? Object.keys(source);
+  return selectedKeys.map((key) => [key, renderStructuredValue(source[key])]);
+}
+
+function renderCloseoutGateResultMatrix(closeoutGateMatrix) {
+  const rows = asArray(closeoutGateMatrix?.rows).map((row) => [
+    row.id,
+    renderStatusBadge(String(row.passed), row.passed ? 'green' : 'red'),
+    String(row.issueCount),
+    String(row.openCount),
+    String(row.missingEvidenceCount),
+    String(row.failedEvidenceCount),
+    row.deliveryStatus || '',
+    row.reportPath || '',
+    stringList(row.blockingReasons).join(', ') || 'none',
+  ]);
+  return `<section class="card" id="closeout-gate-result-matrix">
+    <h2>Closeout Gate Result Matrix</h2>
+    <p class="section-lead">本区渲染当前 closeout report 的每个 check。它是 closeoutDeliveryVerdict 的主要运行态证据来源。</p>
+    <div class="metric-grid">
+      <div class="metric status-metric ${closeoutGateMatrix?.failedCount ? 'danger' : 'green'}"><strong class="status-${closeoutGateMatrix?.failedCount ? 'blocked' : 'confirmable'}">${escapeHtml(closeoutGateMatrix?.reportDecision || 'missing')}</strong><span>closeout report decision</span></div>
+      <div class="metric"><strong>${escapeHtml(closeoutGateMatrix?.totalCount ?? 0)}</strong><span>checks total</span></div>
+      <div class="metric"><strong>${escapeHtml(closeoutGateMatrix?.passedCount ?? 0)}</strong><span>checks passed</span></div>
+      <div class="metric danger"><strong>${escapeHtml(closeoutGateMatrix?.failedCount ?? 0)}</strong><span>checks failed</span></div>
+    </div>
+    ${rows.length
+      ? renderTable(['Check ID', 'Passed', 'Issue Count', 'Open Count', 'Missing Evidence', 'Failed Evidence', 'Delivery Status', 'Report Path', 'Blocking Reasons'], rows, { className: 'compact-map-table closeout-gate-result-table' })
+      : '<p class="empty-state">No closeout checks were available from delivery-closeout-report.json or the current closeout attempt.</p>'}
+  </section>`;
+}
+
+function renderCloseoutAttemptHistory(closeoutAttemptHistory) {
+  const rows = asArray(closeoutAttemptHistory?.attempts).map((attempt) => [
+    String(attempt.index),
+    attempt.closeoutAttemptId,
+    renderStatusBadge(attempt.decision || 'missing', statusBadgeTone(attempt.decision)),
+    stringList(attempt.blockingReasons).join(', ') || 'none',
+    String(attempt.checkCount),
+    String(attempt.passedCheckCount),
+    String(attempt.failedCheckCount),
+    attempt.evaluatedAt || '',
+    attempt.reportPath || '',
+  ]);
+  return `<section class="card" id="closeout-attempt-history">
+    <h2>Closeout Attempt History</h2>
+    <p class="section-lead">本区保留所有 closeout attempt，让审核者看到 blocked 到 pass 的合法演进。</p>
+    ${rows.length
+      ? renderTable(['#', 'Attempt ID', 'Decision', 'Blocking Reasons', 'Checks', 'Passed', 'Failed', 'Evaluated At', 'Report Path'], rows, { className: 'compact-map-table closeout-attempt-history-table' })
+      : '<p class="empty-state">No closeout attempt history found.</p>'}
+  </section>`;
+}
+
+function renderRuntimeEvidenceClosureSummary(runtimeEvidenceClosureSummary) {
+  const rows = asArray(runtimeEvidenceClosureSummary?.rows).map((row) => [
+    row.name,
+    String(row.totalCount),
+    String(row.openCount),
+    renderStatusBadge(row.status, statusBadgeTone(row.status)),
+  ]);
+  return `<section class="card" id="runtime-evidence-closure-summary">
+    <h2>Runtime Evidence Closure Summary</h2>
+    <p class="section-lead">本区按 requirement record 汇总运行态闭环证据数量，帮助判断 open 状态是否已经合法关闭。</p>
+    ${renderTable(['Record Area', 'Total Count', 'Open Count', 'Status'], rows, { className: 'compact-map-table runtime-evidence-summary-table' })}
+  </section>`;
+}
+
+function renderSourceCloseoutPolicy(confirmation, sourceProjectionDiagnostics) {
+  const postCloseout = confirmation.postCloseoutConfirmationReview ?? {};
+  const preview = confirmation.closeoutReadinessPreview ?? {};
+  const suggestedRows = asArray(confirmation.suggestedCommands).map((row) => [
+    row.id ?? row.commandId ?? '',
+    row.command ?? '',
+    renderIdBadges(row.traceRows),
+    renderIdBadges(row.evidenceRefs),
+  ]);
+  const projectionRows = asArray(confirmation.mustDerivedProjectionMap).map((row) => [
+    row.id ?? '',
+    renderStructuredValue(row.mustRefs ?? row.mustIds ?? row.sourceRefs),
+    renderStructuredValue(row.projectionRefs ?? row.targetRefs ?? row.traceRefs),
+    row.policy ?? row.status ?? row.text ?? '',
+  ]);
+  const manifest = confirmation.aiTddContractExecutionManifestProjection ?? {};
+  const manifestRows = objectRows(manifest, [
+    'schemaVersion',
+    'applies',
+    'requiredSections',
+    'atomicImplementationTaskLineage',
+    'finalGateMatrix',
+    'executionLoopProtocol',
+    'semanticGapPolicy',
+    'hostExecutionHints',
+    'evidenceTrustStates',
+  ]);
+  const gapRows = asArray(sourceProjectionDiagnostics?.unboundEvidence).map((row) => [
+    row.id,
+    renderStatusBadge(row.diagnosticType, 'gold'),
+    row.explanation,
+    renderIdBadges(row.requiredCommandRefs),
+    renderIdBadges(row.artifactRefs),
+  ]);
+  return `<section class="card" id="source-closeout-policy">
+    <h2>Source Closeout Policy</h2>
+    <p class="section-lead">本区渲染 source-defined closeout policy。它解释页面必须如何保留原确认状态、增加最终验收列，并避免把 source projection gap 误报为 runtime closeout blocker。</p>
+    <h3>postCloseoutConfirmationReview</h3>
+    ${renderTable(['Field', 'Value'], objectRows(postCloseout), { className: 'compact-map-table source-closeout-policy-table' })}
+    <h3>closeoutReadinessPreview</h3>
+    ${renderTable(['Field', 'Value'], objectRows(preview), { className: 'compact-map-table source-closeout-policy-table' })}
+    <h3>suggestedCommands</h3>
+    ${suggestedRows.length
+      ? renderTable(['Command ID', 'Command', 'Trace Rows', 'Evidence'], suggestedRows, { className: 'compact-map-table' })
+      : '<p class="empty-state">源文档未提供 suggestedCommands[]。</p>'}
+    <h3>mustDerivedProjectionMap</h3>
+    ${projectionRows.length
+      ? renderTable(['ID', 'MUST Refs', 'Projection Refs', 'Policy'], projectionRows, { className: 'compact-map-table' })
+      : '<p class="empty-state">源文档未提供 mustDerivedProjectionMap[]。</p>'}
+    <h3>AI-TDD Closeout Projection Policy</h3>
+    ${renderTable(['Field', 'Value'], manifestRows, { className: 'compact-map-table' })}
+    <h3>Source Projection Gap Diagnostic</h3>
+    ${gapRows.length
+      ? renderTable(['Evidence', 'Diagnostic', 'Explanation', 'Commands', 'Artifacts'], gapRows, { className: 'compact-map-table source-projection-gap-table' })
+      : '<p class="empty-state">No source projection gaps detected.</p>'}
+  </section>`;
+}
+
+function renderPreConfirmationSemanticDrilldown(drilldown) {
+  const report = drilldown?.report ?? {};
+  const nestedGate = report.mustDecompositionGate ?? {};
+  const packet = report.mustDecompositionPacketRef ?? nestedGate.mustDecompositionPacketRef ?? {};
+  const kernel = report.semanticKernelRef ?? nestedGate.semanticKernelRef ?? {};
+  const critic = report.criticalAuditor ?? nestedGate.criticalAuditor ?? {};
+  const reconciliation = report.packetSourceReconciliation ?? nestedGate.packetSourceReconciliation ?? {};
+  const failedChecks = asArray(report.failedChecks);
+  return `<section class="card" id="pre-confirmation-semantic-drilldown">
+    <h2>Pre-Confirmation Semantic Drilldown</h2>
+    <p class="section-lead">本区说明模型如何理解需求、如何自我追问、MUST 如何拆成原子任务，以及 packet/source 是否同源同步。用户确认的只是需求范围，不是 delivery ready 或 closeout ready。</p>
+    ${renderTable(['Field', 'Value'], [
+      ['Gate verdict', report.verdict ?? drilldown.status ?? 'missing'],
+      ['Gate report', drilldown.reportPath || 'missing'],
+      ['Semantic kernel hash', kernel.hash ?? 'missing'],
+      ['Packet hash', packet.hash ?? 'missing'],
+      ['Packet status', packet.status ?? 'missing'],
+      ['Critical Auditor rounds', String(critic.consecutiveNoNewGapRounds ?? critic.rounds ?? 0)],
+      ['Reconciliation verdict', reconciliation.verdict ?? 'missing'],
+      ['Failed checks', failedChecks.join(', ') || 'none'],
+    ])}
+    <h3>Semantic Kernel Summary</h3>
+    ${renderTable(['Kernel Field', 'Value'], [
+      ['path', kernel.path ?? 'missing'],
+      ['hash', kernel.hash ?? 'missing'],
+      ['sourceDocumentHash', report.sourceDocumentHash ?? 'missing'],
+      ['implementationConfirmationHash', report.implementationConfirmationHash ?? 'missing'],
+    ])}
+    <h3>MUST Decomposition Packet</h3>
+    ${renderTable(['Packet Field', 'Value'], [
+      ['path', packet.path ?? 'missing'],
+      ['hash', packet.hash ?? 'missing'],
+      ['status', packet.status ?? 'missing'],
+      ['confirmability', report.confirmability ?? 'blocked'],
+    ])}
+    <h3>Atomicity Drivers</h3>
+    <p class="muted">每个 MUST 必须在 packet 中记录 decompositionBasis、atomicityDrivers、questionCoverage 和 atomicityCompleteness；缺失或 under-split 会阻断确认页。</p>
+    <h3>Atomic Task Baseline</h3>
+    <p class="muted">expectedTaskCount 与 actualTaskCount 必须一致；任何 covers 多个独立行为面或多个独立 oracle 的 task 会被判定为 over-broad。</p>
+    <h3>Projection Coverage</h3>
+    <p class="muted">EVD / TRACE / ACC / E2E / failure / edge / currentTarget / AI-TDD / artifacts / commands / closeout 均必须从 packet projection 物化，不允许 source row 独立发明。</p>
+    <h3>Critical Auditor Convergence</h3>
+    ${renderTable(['Field', 'Value'], [
+      ['minimumRounds', String(critic.minimumRounds ?? 3)],
+      ['consecutiveNoNewGapRounds', String(critic.consecutiveNoNewGapRounds ?? 0)],
+      ['latestReceiptHash', critic.latestReceiptHash ?? 'missing'],
+      ['convergenceVerdict', critic.convergenceVerdict ?? 'blocked'],
+    ])}
+    <h3>Gap History</h3>
+    <p class="muted">${failedChecks.length ? failedChecks.map(escapeHtml).join(', ') : 'No unresolved validated gap in the loaded drilldown gate report.'}</p>
+    <h3>Packet-To-Source Reconciliation</h3>
+    ${renderTable(['Field', 'Value'], [
+      ['reportPath', reconciliation.reportPath ?? 'missing'],
+      ['verdict', reconciliation.verdict ?? 'missing'],
+    ])}
   </section>`;
 }
 
@@ -5401,8 +7567,9 @@ main{padding:${compact ? '22px' : '44px'} min(6vw,88px) 86px;min-width:0;max-wid
 .status-confirmable{background:var(--green-soft);color:var(--green);padding:5px 9px;border-radius:3px;font-weight:700}.status-blocked{background:var(--red-soft);color:var(--red);padding:5px 9px;border-radius:3px;font-weight:700}
 .confirm-box{background:#191815;color:#fff;border-radius:0;border-left:4px solid var(--gold);padding:18px 20px}.confirm-box pre{white-space:pre-wrap;font-family:var(--mono)}button.copy{padding:8px 12px;border-radius:3px;border:1px solid var(--gold);background:#f8efd7;color:#2b2110;cursor:pointer}
 .table-wrap{overflow-x:auto;overflow-y:auto;border:1px solid var(--line);border-radius:0;min-width:0;max-width:100%;scrollbar-gutter:stable;background:#fff}.table-wrap table{width:max-content;min-width:100%;border-collapse:collapse;background:#fff;table-layout:auto}.table-wrap th,.table-wrap td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left;min-width:140px;max-width:560px;overflow-wrap:break-word}.table-wrap th{position:sticky;top:0;background:#efe7d8;cursor:pointer;text-align:left;font-size:12px;letter-spacing:.02em}.table-wrap tr:nth-child(even) td{background:#fbf8f1}.table-wrap code,.table-wrap .id-badge{white-space:nowrap}.compact-map-table{min-width:1100px}.id-badge{display:inline-block;font-family:var(--mono);font-size:11px;margin:2px;padding:2px 6px;border-radius:3px;background:var(--blue-soft);color:var(--blue)}
+.closeout-verdict-metrics,.final-acceptance-metrics{grid-template-columns:repeat(auto-fit,minmax(180px,1fr));max-width:100%;overflow:hidden}.closeout-verdict-metrics .metric strong,.final-acceptance-metrics .metric strong{font-size:13px!important;line-height:1.25!important;max-width:100%;white-space:normal!important;overflow-wrap:anywhere!important;word-break:break-word!important;font-family:var(--mono)}.closeout-verdict-metrics .metric,.final-acceptance-metrics .metric{min-width:0;max-width:100%;overflow:hidden}.target-realization-table{width:100%;min-width:980px;table-layout:fixed}.target-realization-table th,.target-realization-table td{overflow-wrap:anywhere;word-break:break-word}.target-realization-summary .metric strong{font-size:14px}.closeout-trace-acceptance-table{width:100%!important;min-width:1320px!important;table-layout:fixed!important}.closeout-trace-acceptance-table th,.closeout-trace-acceptance-table td{min-width:0!important;max-width:none!important;overflow-wrap:anywhere!important;word-break:break-word!important}.closeout-trace-acceptance-table code,.closeout-trace-acceptance-table .id-badge,.closeout-trace-acceptance-table .tag,.closeout-gate-result-table code,.closeout-gate-result-table .id-badge,.closeout-gate-result-table .tag,.closeout-attempt-history-table code,.closeout-attempt-history-table .id-badge,.closeout-attempt-history-table .tag{white-space:normal!important;overflow-wrap:anywhere!important;word-break:break-word!important}.source-projection-gap-table td{overflow-wrap:anywhere;word-break:break-word}
 .issue-list{padding-left:18px}.blocking{background:var(--red-soft);border-left:4px solid var(--red);padding:8px;margin:8px 0}.warning{background:var(--gold-soft);border-left:4px solid var(--gold);padding:8px;margin:8px 0}.ok{background:var(--green-soft);color:var(--green);padding:10px;border-radius:0}.blocked{background:var(--red-soft);color:var(--red);padding:10px;border-radius:0}.muted{color:var(--muted)}
-.split{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;min-width:0}.review-flow{display:grid;gap:0;margin-top:22px;min-width:0;border-top:1px solid var(--line)}.review-step{border-top:0;border-bottom:1px solid var(--line);padding:18px 0;min-width:0}.review-step:first-child{border-top:0}.review-step h3{margin-top:0}.panel-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.tag{display:inline-flex;align-items:center;border-radius:3px;padding:4px 8px;font-size:11px;font-weight:800;background:var(--blue-soft);color:var(--blue);border:1px solid rgba(49,95,134,.16);white-space:nowrap}.tag.red{background:var(--red-soft);color:var(--red)}.tag.green{background:var(--green-soft);color:var(--green)}.tag.blue{background:var(--blue-soft);color:var(--blue)}.tag.gold{background:var(--gold-soft);color:var(--gold)}.list{display:grid;gap:0;margin:0;padding:0;list-style:none;min-width:0;border-top:1px solid var(--line)}.list li{display:grid;gap:4px;border-left:0;border-bottom:1px solid var(--line);padding:10px 0;background:transparent;border-radius:0;min-width:0}.list strong{font-size:14px}.list span{color:var(--muted);font-size:13px;overflow-wrap:anywhere}.current li{border-left-color:var(--red)}.target li{border-left-color:var(--green)}.current-target-map h3{margin:22px 0 8px}.current-target-map .table-wrap{margin:0 0 14px;border-radius:0}.current-target-map .compact-map-table{font-size:12px;line-height:1.34;min-width:860px}.current-target-map .compact-map-table th,.current-target-map .compact-map-table td{padding:6px 8px}.current-target-map .compact-map-table th{font-size:11px;text-transform:uppercase;letter-spacing:.02em}.current-target-map .compact-map-table code,.current-target-map code{font-family:var(--mono);font-size:11px;background:#f7efe3;border:1px solid rgba(120,104,78,.2);border-radius:3px;padding:1px 4px;overflow-wrap:anywhere}.metric-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;margin:18px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);min-width:0}.metric.compact{padding:10px 12px;border-radius:0}.metric.compact strong{font-size:24px}.metric.compact span{text-transform:none}.footnote{font-family:var(--mono);font-size:12px;color:var(--blue)!important}.diff-deck{display:grid;gap:0;margin:18px 0;min-width:0;border-top:1px solid var(--line)}.compact-diff-deck{grid-template-columns:1fr;align-items:stretch}.diff-card{border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;overflow:hidden;min-width:0}.diff-card-title{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid rgba(120,104,78,.18);background:transparent}.diff-card-title strong{font-family:Georgia,"Noto Serif SC",serif;font-size:16px}.diff-card-title span{font-family:var(--mono);font-size:10.5px;color:var(--blue);text-align:right;overflow-wrap:anywhere}.diff-compare{display:grid;grid-template-columns:1fr 1fr;min-width:0}.diff-side{padding:10px 12px;min-height:72px;min-width:0}.diff-side b{display:block;font-family:var(--mono);font-size:11px;margin-bottom:5px}.diff-side p{margin:0;color:var(--muted);font-size:12px;line-height:1.38;overflow-wrap:anywhere}.diff-minus{background:rgba(248,221,215,.42);border-right:1px solid rgba(120,104,78,.18)}.diff-minus b{color:var(--red)}.diff-plus{background:rgba(223,240,231,.48)}.diff-plus b{color:var(--green)}.target-flow{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;align-items:stretch;margin:20px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);min-width:0}.flow-step{border-radius:0;border:0;border-right:1px solid var(--line);background:transparent;padding:12px;position:relative;min-width:0}.flow-step:last-child{border-right:0}.flow-step span{display:block;color:var(--muted);font-size:12px;margin-top:6px;overflow-wrap:anywhere}.flow-step::after{content:"";position:absolute}.callout{border-radius:0;border:0;border-left:4px solid var(--red);background:rgba(247,223,216,.36);padding:11px 14px;margin:10px 0;overflow-wrap:anywhere}
+.split{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;min-width:0}.review-flow{display:grid;gap:0;margin-top:22px;min-width:0;border-top:1px solid var(--line)}.review-step{border-top:0;border-bottom:1px solid var(--line);padding:18px 0;min-width:0}.review-step:first-child{border-top:0}.review-step h3{margin-top:0}.panel-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.tag{display:inline-flex;align-items:center;border-radius:3px;padding:4px 8px;font-size:11px;font-weight:800;background:var(--blue-soft);color:var(--blue);border:1px solid rgba(49,95,134,.16);white-space:nowrap}.tag.red{background:var(--red-soft);color:var(--red)}.tag.green{background:var(--green-soft);color:var(--green)}.tag.blue{background:var(--blue-soft);color:var(--blue)}.tag.gold{background:var(--gold-soft);color:var(--gold)}.list{display:grid;gap:0;margin:0;padding:0;list-style:none;min-width:0;border-top:1px solid var(--line)}.list li{display:grid;gap:4px;border-left:0;border-bottom:1px solid var(--line);padding:10px 0;background:transparent;border-radius:0;min-width:0}.list strong{font-size:14px}.list span{color:var(--muted);font-size:13px;overflow-wrap:anywhere}.current li{border-left-color:var(--red)}.target li{border-left-color:var(--green)}.current-target-map h3{margin:22px 0 8px}.current-target-map .table-wrap{margin:0 0 14px;border-radius:0}.current-target-map .compact-map-table{width:100%;min-width:960px;table-layout:fixed;font-size:12px;line-height:1.34}.current-target-map .compact-map-table th,.current-target-map .compact-map-table td{min-width:0;max-width:none;padding:6px 8px;overflow-wrap:anywhere;word-break:break-word;hyphens:auto}.current-target-map .compact-map-table th{font-size:11px;text-transform:uppercase;letter-spacing:.02em}.current-target-map .compact-map-table code,.current-target-map code{display:inline;max-width:100%;font-family:var(--mono);font-size:11px;background:#f7efe3;border:1px solid rgba(120,104,78,.2);border-radius:3px;padding:1px 4px;white-space:normal;overflow-wrap:anywhere;word-break:break-word}.current-target-map .compact-map-table .tag{max-width:100%;white-space:normal;overflow-wrap:anywhere;word-break:break-word}.metric-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;margin:18px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);min-width:0}.metric.compact{padding:10px 12px;border-radius:0}.metric.compact strong{font-size:24px}.metric.compact span{text-transform:none}.footnote{font-family:var(--mono);font-size:12px;color:var(--blue)!important}.diff-deck{display:grid;gap:0;margin:18px 0;min-width:0;border-top:1px solid var(--line)}.compact-diff-deck{grid-template-columns:1fr;align-items:stretch}.diff-card{border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;overflow:hidden;min-width:0}.diff-card-title{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid rgba(120,104,78,.18);background:transparent}.diff-card-title strong{font-family:Georgia,"Noto Serif SC",serif;font-size:16px}.diff-card-title span{font-family:var(--mono);font-size:10.5px;color:var(--blue);text-align:right;overflow-wrap:anywhere}.diff-compare{display:grid;grid-template-columns:1fr 1fr;min-width:0}.diff-side{padding:10px 12px;min-height:72px;min-width:0}.diff-side b{display:block;font-family:var(--mono);font-size:11px;margin-bottom:5px}.diff-side p{margin:0;color:var(--muted);font-size:12px;line-height:1.38;overflow-wrap:anywhere}.diff-minus{background:rgba(248,221,215,.42);border-right:1px solid rgba(120,104,78,.18)}.diff-minus b{color:var(--red)}.diff-plus{background:rgba(223,240,231,.48)}.diff-plus b{color:var(--green)}.target-flow{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;align-items:stretch;margin:20px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);min-width:0}.flow-step{border-radius:0;border:0;border-right:1px solid var(--line);background:transparent;padding:12px;position:relative;min-width:0}.flow-step:last-child{border-right:0}.flow-step span{display:block;color:var(--muted);font-size:12px;margin-top:6px;overflow-wrap:anywhere}.flow-step::after{content:"";position:absolute}.callout{border-radius:0;border:0;border-left:4px solid var(--red);background:rgba(247,223,216,.36);padding:11px 14px;margin:10px 0;overflow-wrap:anywhere}
 .diagram-viewer{border:1px solid var(--line);border-radius:0;background:#fbf8f1;padding:14px;margin:18px 0 28px}.diagram-toolbar{display:flex;gap:12px;justify-content:space-between;align-items:center;margin-bottom:12px;border-bottom:1px solid var(--line);padding-bottom:10px}.diagram-tabs{display:flex;gap:6px;flex-wrap:wrap}.diagram-actions{display:flex;gap:8px;flex-wrap:wrap}.diagram-tab,.diagram-actions button{border:1px solid rgba(120,104,78,.34);background:#fffdf8;color:var(--ink);border-radius:3px;padding:7px 10px;font-size:12px;font-weight:800;cursor:pointer}.diagram-tab.active,.diagram-actions button:hover{background:#24211b;color:#fff;border-color:#24211b}.mermaid-runtime-status{margin:0 0 12px}.diagram-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:12px}.diagram-viewer[data-diagram-mode="single"] .diagram-grid{display:block}.diagram-viewer[data-diagram-mode="single"] .diagram-card{display:none}.diagram-viewer[data-diagram-mode="single"] .diagram-card.active{display:block}.diagram-viewer[data-diagram-mode="all"] .diagram-card{display:block}.diagram-card{border:0;border-top:1px solid var(--line);border-radius:0;padding:12px 0;background:transparent;box-shadow:none;overflow:hidden}.diagram-viewer[data-diagram-mode="single"] .diagram-card{max-width:none;margin:0}.diagram-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;border-bottom:1px solid rgba(120,104,78,.2);padding-bottom:7px}.diagram-title strong{display:block;font-family:Georgia,"Noto Serif SC",serif;font-size:17px;line-height:1}.diagram-title span{display:block;margin-top:4px;color:var(--muted);font-family:var(--mono);font-size:10px}.diagram-meta{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;max-width:58%}.diagram-rendered{background:#fffdf8;border:1px solid var(--line);border-radius:0;padding:16px 18px 22px;margin-top:9px;overflow:auto;max-height:520px;min-height:300px;text-align:left;resize:vertical;scrollbar-gutter:stable both-edges}.diagram-viewer[data-diagram-mode="all"] .diagram-rendered{max-height:360px;min-height:260px}.diagram-rendered h4{margin:0 0 12px;font-size:11px;color:var(--gold);letter-spacing:.08em;text-transform:uppercase}.mermaid-source-native{display:none}.mermaid-native-render{display:block;min-width:max-content;min-height:210px;text-align:left;transform-origin:top left}.mermaid-native-render svg{display:block;margin:0 !important;max-width:none !important;overflow:visible}.mermaid-native-render .actor,.mermaid-native-render .messageText,.mermaid-native-render .noteText,.mermaid-native-render text{font-size:12px !important}.mermaid-runtime-error{margin:12px 0}.fallback-diagram{margin-top:14px;border-top:1px dashed rgba(120,104,78,.35);padding-top:10px}.fallback-diagram summary{cursor:pointer;color:var(--muted);font-weight:800}.fallback-diagram:not([open]){opacity:.72}.rendered-mermaid{background:transparent;border-radius:0}.diagram-legend{display:flex;gap:10px;align-items:center;flex-wrap:wrap;color:var(--muted);font-size:10.5px;margin:0 0 7px}.legend-dot{width:8px;height:8px;border-radius:99px;background:var(--blue);display:inline-block}.legend-dot.pass{background:var(--green)}.legend-dot.warn{background:var(--red)}.compact-lanes{min-width:max(600px,100%);display:grid;grid-template-columns:repeat(var(--lane-count),minmax(118px,1fr));gap:7px}.diagram-viewer[data-diagram-mode="single"] .compact-lanes{min-width:max(820px,100%)}.compact-lane{border:1px solid rgba(120,104,78,.22);border-radius:0;background:rgba(255,255,255,.5);padding:7px;position:relative;min-height:158px}.compact-lane::before{content:"";position:absolute;top:42px;bottom:9px;left:50%;border-left:2px dashed rgba(36,33,27,.13)}.compact-lane h4{position:relative;z-index:2;margin:0 0 7px;background:var(--paper);border:1px solid rgba(120,104,78,.18);border-radius:0;padding:6px;text-align:center;font-size:11px;line-height:1.2}.compact-event{position:relative;z-index:2;margin:7px 0;padding:7px;border-radius:0;border:1px solid rgba(36,33,27,.11);background:var(--paper);box-shadow:none;font-size:11px}.compact-event strong{display:block;font-size:11px;line-height:1.25;margin-bottom:4px}.compact-event small{color:var(--muted);font-family:var(--mono);font-size:9.5px;line-height:1.2}.compact-event.warn,.flow-step-card.warn{border-color:rgba(166,61,47,.28);background:#fff6f3}.compact-event.pass,.flow-step-card.pass{border-color:rgba(47,111,84,.28);background:#f3fbf6}.event-ids{margin-top:5px}.id-badge.mini{font-size:10px;padding:1px 5px;margin:1px}.id-more{display:inline-block;font-family:var(--mono);font-size:10px;margin:1px;padding:1px 5px;border-radius:3px;background:var(--gold-soft);color:var(--gold)}.compact-flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:7px}.diagram-viewer[data-diagram-mode="single"] .compact-flow{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}.flow-step-card{border-radius:0;border:1px solid rgba(47,111,84,.22);background:var(--green-soft);padding:8px;position:relative;min-height:78px}.flow-step-card::after{content:"";position:absolute}.flow-step-card.muted-card{background:#f8f3e9;border-style:dashed}.step-index{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:3px;background:#fff;color:var(--green);font-weight:800;margin-bottom:5px;font-size:10px}.flow-step-card strong{display:block;font-size:11.5px;line-height:1.25}.mermaid,pre{background:#181713;color:#fff;border-radius:0;padding:14px;overflow:auto}.answers{display:grid;grid-template-columns:1fr;gap:0;border-top:1px solid var(--line)}.answer{border:0;border-bottom:1px solid var(--line);background:transparent;padding:12px 0;border-radius:0}
 body[data-filter="control"] .card:not(:has(.artifact-plan-table)){opacity:.45}body[data-filter="new"] .artifact-plan-table tbody tr{display:none}body[data-filter="new"] .artifact-plan-table tbody tr:has([data-new-artifact="true"]){display:table-row}body[data-filter="new"] .card:not(#artifact-plan):not(#fingerprint):not(#current-target){display:none}.artifact-plan-table tr[hidden],.card[hidden],.artifact-group-section[hidden]{display:none!important}@media(max-width:900px){.layout,body[data-nav-collapsed="true"] .layout{grid-template-columns:1fr}.nav{position:relative;height:auto}body[data-nav-collapsed="true"] .nav h2,body[data-nav-collapsed="true"] .nav-links,body[data-nav-collapsed="true"] .nav-filters,body[data-nav-collapsed="true"] .nav hr{display:block}body[data-nav-collapsed="true"] .nav-toggle{writing-mode:horizontal-tb;min-height:auto}.diff-compare{grid-template-columns:1fr}.diff-minus{border-right:0;border-bottom:1px solid rgba(120,104,78,.18)}}@media print{.nav,button{display:none}.layout{display:block}.card{box-shadow:none;break-inside:avoid}body{background:#fff}}
 @media(max-width:1100px){.split{grid-template-columns:1fr}.target-flow{grid-template-columns:1fr}.flow-step::after{content:"v";right:18px;top:auto;bottom:-18px}.flow-step:last-child::after{content:""}.diagram-toolbar{align-items:flex-start;flex-direction:column}.diagram-grid{grid-template-columns:1fr}.diagram-meta{max-width:100%;justify-content:flex-start}.compact-lanes,.diagram-viewer[data-diagram-mode="single"] .compact-lanes{min-width:720px}.flow-step-card::after{content:""}}
@@ -5432,17 +7599,26 @@ function buildHtml(input) {
     views,
     traceRows,
     artifactPlan,
+    targetModificationPaths,
     currentTargetMap,
     confirmationProfile,
     traceExecutionState,
     progressDelta,
     deliveryReadiness,
+    closeoutDeliveryVerdict,
+    closeoutGateMatrix,
+    closeoutAttemptHistory,
+    runtimeEvidenceClosureSummary,
+    sourceProjectionDiagnostics,
+    finalAcceptanceReview,
     reconfirmationState,
     resumeFailureRegistry,
     controlledIngestWriters,
     mermaidRuntime,
     requirementBoundary,
+    preConfirmationSemanticDrilldown,
   } = input;
+  const aiTddContractManifestCoverage = input.coverage.aiTddContractManifestCoverage;
   const ui = getUiText(args.language);
   const diagramGroups = selectDiagramBlocks(mermaidBlocks, views);
   const nextStage =
@@ -5450,6 +7626,7 @@ function buildHtml(input) {
       ? confirmation.nextStageAfterConfirmation ?? ui.nextStageReadyFallback
       : ui.nextStageBlocked;
   const sectionHtml = [
+    reconfirmationState?.required ? ['reconfirmation-request', renderReconfirmationPanel(reconfirmationState)] : null,
     [
       'core-design',
       renderCoreDesignSummary({
@@ -5461,11 +7638,27 @@ function buildHtml(input) {
         warnings,
         confirmability,
         deliveryReadiness,
+        closeoutDeliveryVerdict,
       }),
     ],
-    ['delivery-readiness', renderDeliveryReadiness(deliveryReadiness, ui)],
+    ['delivery-readiness', renderDeliveryReadiness(deliveryReadiness, ui, closeoutDeliveryVerdict, sourceProjectionDiagnostics)],
+    finalAcceptanceReview?.applies
+      ? ['final-acceptance-review', renderFinalAcceptanceReview(finalAcceptanceReview)]
+      : null,
+    closeoutDeliveryVerdict?.applies
+      ? ['closeout-gate-result-matrix', renderCloseoutGateResultMatrix(closeoutGateMatrix)]
+      : null,
+    closeoutDeliveryVerdict?.applies
+      ? ['closeout-attempt-history', renderCloseoutAttemptHistory(closeoutAttemptHistory)]
+      : null,
+    closeoutDeliveryVerdict?.applies
+      ? ['runtime-evidence-closure-summary', renderRuntimeEvidenceClosureSummary(runtimeEvidenceClosureSummary)]
+      : null,
+    closeoutDeliveryVerdict?.applies
+      ? ['source-closeout-policy', renderSourceCloseoutPolicy(confirmation, sourceProjectionDiagnostics)]
+      : null,
     ['progress-delta', renderProgressDelta(progressDelta, reconfirmationState, ui)],
-    reconfirmationState?.required ? ['reconfirmation-request', renderReconfirmationPanel(reconfirmationState)] : null,
+    ['pre-confirmation-semantic-drilldown', renderPreConfirmationSemanticDrilldown(preConfirmationSemanticDrilldown)],
     ['decision-summary', `<section class="card" id="decision-summary"><h2>${escapeHtml(ui.decisionSummary)}</h2>${renderTable(
       [ui.decisionQuestion, ui.decisionAnswer],
       [
@@ -5474,6 +7667,7 @@ function buildHtml(input) {
         ['是否存在 open questions', asArray(confirmation.openQuestions).length ? ui.yes : ui.no],
         ['是否存在无覆盖项', blockingIssues.some((i) => /coverage|missing_.*view|trace_/u.test(i.code)) ? ui.yes : ui.no],
         ['是否存在计划外工件', blockingIssues.some((i) => /artifact/u.test(i.code)) ? ui.yes : ui.no],
+        ['是否提供目标修改路径清单', targetModificationPaths.length ? ui.yes : ui.no],
         ['是否存在会影响控制层的脚本 / hook / gate', artifactPlan.some((item) => item.canAffectControlFlow) ? ui.yes : ui.no],
         ['用户确认后会进入哪个下一阶段', nextStage],
       ]
@@ -5483,7 +7677,7 @@ function buildHtml(input) {
     )}</p><pre id="confirm-text">${escapeHtml(
       confirmInstruction
     )}</pre><button class="copy" data-copy-target="confirm-text">${escapeHtml(ui.copy)}</button></div></section>`],
-    ['requirements', renderRequirementSections({ confirmation, traceRows, views, artifactPlan, progressDelta })],
+    ['requirements', renderRequirementSections({ confirmation, traceRows, views, artifactPlan, progressDelta, language: args.language })],
     ['requirement-boundary', renderRequirementBoundary(requirementBoundary, ui)],
     ['business-visuals', renderBusinessVisuals(diagramGroups, requirementBoundary, ui, mermaidRuntime, args)],
     ['governance-visuals', renderGovernanceVisuals(diagramGroups, requirementBoundary, ui, mermaidRuntime, args)],
@@ -5492,6 +7686,8 @@ function buildHtml(input) {
     viewPackEnabled(confirmationProfile, 'currentTargetMap')
       ? ['current-target', renderCurrentTarget(currentTargetMap, artifactPlan, confirmationProfile)]
       : null,
+    ['ai-tdd-contract-manifest', renderAiTddContractManifestCoverage(aiTddContractManifestCoverage)],
+    ['target-modification-paths', renderTargetModificationPaths(targetModificationPaths)],
     ['artifact-plan', renderArtifactPlan(artifactPlan)],
     ['controlled-ingest-writers', renderControlledIngestWriterRegistry(controlledIngestWriters)],
     ['architecture-impact', renderArchitectureImpact(confirmation)],
@@ -5508,7 +7704,13 @@ function buildHtml(input) {
     fingerprint: ui.fingerprint,
     'core-design': ui.coreDesign,
     'delivery-readiness': ui.deliveryReadiness,
+    'final-acceptance-review': 'Final Acceptance Review',
+    'closeout-gate-result-matrix': 'Closeout Gate Result Matrix',
+    'closeout-attempt-history': 'Closeout Attempt History',
+    'runtime-evidence-closure-summary': 'Runtime Evidence Closure Summary',
+    'source-closeout-policy': 'Source Closeout Policy',
     'progress-delta': ui.progressDelta,
+    'pre-confirmation-semantic-drilldown': 'Pre-Confirmation Semantic Drilldown',
     'reconfirmation-request': '重新确认请求',
     'decision-summary': ui.decisionSummary,
     'confirm-instruction': ui.confirmInstruction,
@@ -5519,6 +7721,8 @@ function buildHtml(input) {
     'resume-failure-cases': '恢复失败路径矩阵',
     'trace-matrix': ui.traceMatrix,
     'current-target': ui.currentTarget,
+    'ai-tdd-contract-manifest': 'AI-TDD 契约执行清单',
+    'target-modification-paths': ui.targetModificationPaths,
     'artifact-plan': ui.artifactPlan,
     'controlled-ingest-writers': 'Controlled Ingest Writers',
     'architecture-impact': ui.architectureImpact,
@@ -5551,7 +7755,11 @@ function buildHtml(input) {
     ['optionalViewPacks', confirmationProfile.optionalViewPacks.join(', ')],
     [ui.currentStatus, confirmation.status ?? 'unknown'],
     [ui.confirmability, confirmability],
-    [ui.deliveryReadiness, deliveryReadiness.label],
+    [
+      closeoutDeliveryVerdict?.applies ? 'closeoutDeliveryVerdict' : ui.deliveryReadiness,
+      closeoutDeliveryVerdict?.applies ? closeoutDeliveryVerdict.label : deliveryReadiness.label,
+    ],
+    ['finalAcceptanceReview', finalAcceptanceReview?.applies ? finalAcceptanceReview.status : 'not_applicable'],
   ];
   return `<!doctype html>
 <html lang="${attr(args.language === 'en-US' ? 'en' : 'zh-CN')}">
@@ -5580,7 +7788,11 @@ ${sectionHtml.map(([, html]) => html).join('\n')}
 }
 
 function buildReport(input) {
-  const currentTargetEnabled = viewPackEnabled(input.confirmationProfile, 'currentTargetMap');
+  const currentTargetEnabled =
+    currentTargetMapApplies(input.confirmation) || viewPackEnabled(input.confirmationProfile, 'currentTargetMap');
+  const renderedSectionOrder = Array.isArray(input.renderedSectionOrder)
+    ? input.renderedSectionOrder
+    : renderedSectionsForProfile(input.confirmationProfile);
   return {
     recordId: input.recordId,
     requirementSetId: input.requirementSetId,
@@ -5594,10 +7806,21 @@ function buildReport(input) {
     implementationConfirmationHash: input.implementationConfirmationHash,
     implementationConfirmationHashScope: 'semantic_implementation_confirmation_excluding_bookkeeping',
     confirmationPageHash: input.confirmationPageHash,
-    confirmationPageHashScope: 'html_normalized_with_self_hash_placeholder_and_generated_at_excluded',
+    confirmationPageHashScope:
+      input.args.mode === 'closeout-review'
+        ? 'scope_confirmation_hash_compatibility_field_not_closeout_authority'
+        : 'html_normalized_with_self_hash_placeholder_and_generated_at_excluded',
+    closeoutConfirmationPageHash: input.closeoutConfirmationPageHash ?? null,
+    renderedCloseoutCompatibilityHash:
+      input.args.mode === 'closeout-review' ? input.renderedConfirmationPageHash ?? null : null,
+    closeoutConfirmationHashScope: input.closeoutConfirmationHashScope ?? null,
+    closeoutProjectionIdentity: input.closeoutProjectionIdentity ?? null,
+    closeoutConfirmInstruction: input.closeoutConfirmInstruction ?? null,
+    deliveryCloseoutReportHash: input.deliveryCloseoutReportHash ?? null,
     actualHtmlFileHash: input.actualHtmlFileHash,
     generatedAt: input.generatedAt,
     language: input.args.language,
+    mode: input.args.mode,
     confirmationProfile: input.confirmationProfile?.confirmationProfile ?? DEFAULT_CONFIRMATION_PROFILE,
     requiredViewPacks: input.confirmationProfile?.requiredViewPacks ?? CORE_VIEW_PACKS,
     optionalViewPacks: input.confirmationProfile?.optionalViewPacks ?? [],
@@ -5606,7 +7829,33 @@ function buildReport(input) {
     unknownViewPacks: input.confirmationProfile?.unknownViewPacks ?? [],
     confirmability: input.confirmability,
     scopeConfirmability: input.confirmability,
+    preConfirmationSemanticDrilldown: input.preConfirmationSemanticDrilldown,
     deliveryReadiness: input.deliveryReadiness,
+    preCloseoutDiagnostic: input.args.mode === 'closeout-review' ? input.deliveryReadiness : null,
+    closeoutDeliveryVerdict: input.closeoutDeliveryVerdict ?? null,
+    closeoutGateMatrix: input.closeoutGateMatrix ?? null,
+    closeoutAttemptHistory: input.closeoutAttemptHistory ?? null,
+    runtimeEvidenceClosureSummary: input.runtimeEvidenceClosureSummary ?? null,
+    sourceProjectionDiagnostics: input.sourceProjectionDiagnostics ?? null,
+    sourceCloseoutPolicyCoverage:
+      input.args.mode === 'closeout-review'
+        ? {
+            postCloseoutConfirmationReviewFields: Object.keys(
+              input.confirmation?.postCloseoutConfirmationReview ?? {}
+            ),
+            closeoutReadinessPreviewFields: Object.keys(input.confirmation?.closeoutReadinessPreview ?? {}),
+            suggestedCommandIds: asArray(input.confirmation?.suggestedCommands).map((row) =>
+              firstString(row?.id, row?.commandId)
+            ),
+            mustDerivedProjectionMapIds: asArray(input.confirmation?.mustDerivedProjectionMap).map((row) =>
+              firstString(row?.id)
+            ),
+            aiTddContractExecutionManifestProjectionFields: Object.keys(
+              input.confirmation?.aiTddContractExecutionManifestProjection ?? {}
+            ),
+          }
+        : null,
+    finalAcceptanceReview: input.finalAcceptanceReview,
     blockingIssues: input.blockingIssues,
     warnings: input.warnings,
     diagramCoverage: input.coverage.diagramCoverage,
@@ -5615,10 +7864,21 @@ function buildReport(input) {
     progressDelta: input.progressDelta ?? null,
     requirementBoundary: input.requirementBoundary ?? null,
     artifactAutomationCoverage: input.coverage.artifactAutomationCoverage,
+    targetModificationPathCoverage: input.coverage.targetModificationPathCoverage,
+    aiTddContractManifestCoverage: input.coverage.aiTddContractManifestCoverage,
+    targetModificationPaths: input.targetModificationPaths,
+    acceptanceCoverage: input.coverage.acceptanceCoverage,
     currentTargetCoverage: currentTargetEnabled ? input.currentTargetCoverage : emptyCurrentTargetCoverage(),
     currentTargetSchemaVersion: currentTargetEnabled ? input.currentTargetSchemaVersion : '',
     currentTargetDisplayProfile: currentTargetEnabled ? input.currentTargetDisplayProfile : '',
     currentTargetTableCoverage: currentTargetEnabled ? input.currentTargetTableCoverage : emptyCurrentTargetTableCoverage(),
+    currentTargetRealization:
+      input.args.mode === 'closeout-review'
+        ? {
+            rows: asArray(input.currentTargetMap?.targetRealization),
+            summary: input.currentTargetMap?.targetRealizationSummary ?? null,
+          }
+        : null,
     currentTargetSchemaIssues: currentTargetEnabled ? input.currentTargetSchemaIssues : [],
     governanceEventTypeRegistry: input.governanceEventTypeRegistry ?? {},
     governanceEventTypeSchemaIssues: input.governanceEventTypeSchemaIssues ?? [],
@@ -5630,6 +7890,14 @@ function buildReport(input) {
     },
     controlledIngestWriterSchemaIssues: input.controlledIngestWriterSchemaIssues ?? [],
     reconfirmationRequest: input.reconfirmationState ?? null,
+    confirmationDriftClassification: input.reconfirmationState?.driftClassification ?? null,
+    renderedSectionOrder,
+    reconfirmationBannerRendered: renderedSectionOrder.includes('reconfirmation-request'),
+    reconfirmationEvidenceVerdict:
+      input.reconfirmationState?.evidenceBundle?.sufficiencyVerdict ?? null,
+    reconfirmationPrimaryProofRefs: asArray(
+      input.reconfirmationState?.evidenceBundle?.items
+    ).flatMap((item) => stringList(item?.proofRefs)),
     resumeFailureCaseCoverage: {
       status: input.resumeFailureRegistry?.status ?? null,
       caseCount: input.resumeFailureRegistry?.cases?.length ?? 0,
@@ -5682,7 +7950,7 @@ function buildReport(input) {
       format: input.mermaidRuntime?.format ?? null,
       issues: input.mermaidRuntime?.issues ?? [],
     },
-    renderedSections: renderedSectionsForProfile(input.confirmationProfile),
+    renderedSections: renderedSectionOrder,
   };
 }
 
@@ -5693,28 +7961,64 @@ function buildSummary(report, confirmation, views, artifactPlan) {
     sourceDocumentHash: report.sourceDocumentHash,
     implementationConfirmationHash: report.implementationConfirmationHash,
     confirmationPageHash: report.confirmationPageHash,
+    closeoutConfirmationPageHash: report.closeoutConfirmationPageHash ?? null,
+    closeoutConfirmInstruction: report.closeoutConfirmInstruction ?? null,
+    closeoutConfirmationHashScope: report.closeoutConfirmationHashScope ?? null,
+    closeoutProjectionIdentity: report.closeoutProjectionIdentity ?? null,
+    deliveryCloseoutReportHash: report.deliveryCloseoutReportHash ?? null,
     language: report.language,
     generatedAt: report.generatedAt,
     confirmability: report.confirmability,
     scopeConfirmability: report.scopeConfirmability,
+    preConfirmationSemanticDrilldown: report.preConfirmationSemanticDrilldown,
     blockingIssues: report.blockingIssues,
     deliveryReadiness: report.deliveryReadiness,
+    preCloseoutDiagnostic: report.preCloseoutDiagnostic ?? null,
+    closeoutDeliveryVerdict: report.closeoutDeliveryVerdict ?? null,
+    closeoutGateMatrix: report.closeoutGateMatrix ?? null,
+    closeoutAttemptHistory: report.closeoutAttemptHistory ?? null,
+    runtimeEvidenceClosureSummary: report.runtimeEvidenceClosureSummary ?? null,
+    sourceProjectionDiagnostics: report.sourceProjectionDiagnostics ?? null,
+    sourceCloseoutPolicyCoverage: report.sourceCloseoutPolicyCoverage ?? null,
+    finalAcceptanceReview: report.finalAcceptanceReview ?? null,
+    renderedSectionOrder: report.renderedSectionOrder ?? [],
     warnings: report.warnings,
     mermaidRuntime: report.mermaidRuntime,
+    aiTddContractManifestCoverage: report.aiTddContractManifestCoverage,
     requirementBoundary: report.requirementBoundary,
     progressDelta: report.progressDelta ?? null,
+    currentTargetRealization: report.currentTargetRealization ?? null,
     counts: {
       must: asArray(confirmation.must).length,
       notDone: asArray(confirmation.notDone).length,
       mustNot: asArray(confirmation.mustNot).length,
       evidence: asArray(confirmation.evidence).length,
+      acceptanceTests: report.acceptanceCoverage?.counts?.acceptanceTests ?? 0,
+      e2eSuites: report.acceptanceCoverage?.counts?.e2eSuites ?? 0,
       failurePaths: asArray(confirmation.failurePaths).length,
       edgeCases: asArray(confirmation.edgeCases).length,
       traceRows: asArray(confirmation.traceRows).length,
       sequenceViews: views.sequenceViews.length,
       resumeFailureCases: report.resumeFailureCaseCoverage?.caseCount ?? 0,
+      targetModificationPaths: report.targetModificationPaths?.length ?? 0,
+      aiTddManifestSections: Object.keys(report.aiTddContractManifestCoverage?.sections ?? {}).length,
       artifactPlanItems: artifactPlan.length,
     },
+  };
+}
+
+function companionOutputPaths(outPath, mode) {
+  if (mode === 'closeout-review') {
+    const parsed = path.parse(outPath);
+    const basename = path.join(parsed.dir, parsed.name);
+    return {
+      summaryPath: `${basename}.summary.json`,
+      reportPath: `${basename}.render-report.json`,
+    };
+  }
+  return {
+    summaryPath: path.join(path.dirname(outPath), 'confirmation-summary.json'),
+    reportPath: path.join(path.dirname(outPath), 'confirmation-render-report.json'),
   };
 }
 
@@ -5758,10 +8062,6 @@ function main(argv) {
   const sourceType = inferSourceType(sourcePath, sourceText, entryFlow);
   const sourceDocumentHash = sourceDocumentHashFor(sourceText, blockText, confirmation);
   const implementationConfirmationHash = implementationConfirmationHashFor(confirmation);
-  const reconfirmationState = buildReconfirmationState(confirmation, {
-    sourceDocumentHash,
-    implementationConfirmationHash,
-  });
   const confirmationProfile = resolveConfirmationProfile(confirmation);
   const governanceEventTypes = normalizeGovernanceEventTypeRegistry(confirmation);
   const controlledIngestWriters = normalizeControlledIngestWriterRegistry(confirmation, governanceEventTypes);
@@ -5771,6 +8071,7 @@ function main(argv) {
   );
   const externalPlan = args.artifactPlan ? readDataFile(path.resolve(args.artifactPlan)) : null;
   const artifactPlan = mergeArtifactPlans(confirmation.artifactAutomationPlan, externalPlan);
+  const targetModificationPaths = normalizeTargetModificationPaths(confirmation, artifactPlan);
   const views = normalizeViews(confirmation);
   const mermaidBlocks = uniqueBlocks([
     ...buildDerivedMermaidBlocks(confirmation, views),
@@ -5779,6 +8080,23 @@ function main(argv) {
   const requirementBoundary = inferRequirementBoundary(confirmation, views, mermaidBlocks);
   const traceRows = enrichTraceRowsWithBoundaryCoverage(confirmation.traceRows, views.boundaryViews);
   const requirementRecordState = readRequirementRecord(args, recordId);
+  const driftClassification = classifyConfirmationDrift({
+    confirmation,
+    requirementRecord: requirementRecordState,
+    renderReport: null,
+    currentHashes: {
+      sourceDocumentHash,
+      implementationConfirmationHash,
+    },
+  });
+  const reconfirmationState = buildReconfirmationState(
+    confirmation,
+    {
+      sourceDocumentHash,
+      implementationConfirmationHash,
+    },
+    driftClassification
+  );
   const traceExecutionState = buildTraceExecutionState({
     traceRows,
     requirementRecordState,
@@ -5787,17 +8105,74 @@ function main(argv) {
     architectureConfirmationHash: args.architectureConfirmationHash ?? confirmation.architectureConfirmationHash ?? '',
   });
   const ui = getUiText(args.language);
+  const closeoutReportState = readCloseoutReport(args, requirementRecordState);
+  const currentCloseoutAttempt = latestCloseoutAttempt(
+    requirementRecordState.record,
+    traceExecutionState.currentAttemptId
+  );
+  const sourceProjectionDiagnostics = buildSourceProjectionDiagnostics(confirmation, traceRows);
+  const closeoutGateMatrix = buildCloseoutGateMatrix(closeoutReportState, currentCloseoutAttempt);
+  const closeoutAttemptHistory = buildCloseoutAttemptHistory(requirementRecordState.record);
+  const runtimeEvidenceClosureSummary = buildRuntimeEvidenceClosureSummary(requirementRecordState.record);
+  const externalCurrentTargetMap = args.currentTargetMap ? readDataFile(path.resolve(args.currentTargetMap)) : null;
+  const currentTargetRequired = currentTargetMapApplies(confirmation);
+  const mergedCurrentTargetMap = mergeCurrentTargetMaps(confirmation.currentTargetMap, externalCurrentTargetMap, {
+    enabled: currentTargetRequired || viewPackEnabled(confirmationProfile, 'currentTargetMap'),
+  });
+  const preliminaryProgressDelta = buildProgressDelta({
+    confirmation,
+    traceRows,
+    traceExecutionState,
+    reconfirmationState,
+    ui,
+    sourceProjectionDiagnostics,
+    closeoutRuntimeReady: false,
+  });
+  const preliminaryDeliveryReadiness = buildDeliveryReadiness(preliminaryProgressDelta, traceExecutionState, ui);
+  const preliminaryFinalAcceptanceReview = buildFinalAcceptanceReview({
+    args,
+    traceRows,
+    traceExecutionState,
+    requirementRecordState,
+    deliveryReadiness: preliminaryDeliveryReadiness,
+  });
+  const preliminaryCloseoutDeliveryVerdict = buildCloseoutDeliveryVerdict({
+    args,
+    finalAcceptanceReview: preliminaryFinalAcceptanceReview,
+    closeoutGateMatrix,
+    sourceProjectionDiagnostics,
+    closeoutReportHash: closeoutReportState.hash,
+  });
   const progressDelta = buildProgressDelta({
     confirmation,
     traceRows,
     traceExecutionState,
     reconfirmationState,
     ui,
+    sourceProjectionDiagnostics,
+    closeoutRuntimeReady: preliminaryCloseoutDeliveryVerdict.ready === true,
   });
   const deliveryReadiness = buildDeliveryReadiness(progressDelta, traceExecutionState, ui);
-  const externalCurrentTargetMap = args.currentTargetMap ? readDataFile(path.resolve(args.currentTargetMap)) : null;
-  const currentTargetMap = mergeCurrentTargetMaps(confirmation.currentTargetMap, externalCurrentTargetMap, {
-    enabled: viewPackEnabled(confirmationProfile, 'currentTargetMap'),
+  const finalAcceptanceReview = buildFinalAcceptanceReview({
+    args,
+    traceRows,
+    traceExecutionState,
+    requirementRecordState,
+    deliveryReadiness,
+  });
+  const closeoutDeliveryVerdict = buildCloseoutDeliveryVerdict({
+    args,
+    finalAcceptanceReview,
+    closeoutGateMatrix,
+    sourceProjectionDiagnostics,
+    closeoutReportHash: closeoutReportState.hash,
+  });
+  const currentTargetMap = buildTargetRealizationProjection({
+    args,
+    currentTargetMap: mergedCurrentTargetMap,
+    finalAcceptanceReview,
+    closeoutGateMatrix,
+    traceExecutionState,
   });
   const coverage = buildCoverage({
     confirmation,
@@ -5807,12 +8182,13 @@ function main(argv) {
     edgeCaseViews: views.edgeCaseViews,
     boundaryViews: views.boundaryViews,
     artifactPlan,
+    targetModificationPaths,
     mermaidBlocks,
     reconfirmationState,
   });
-  coverage.blockingIssues.push(...validateConfirmationProfile(confirmationProfile, currentTargetMap));
+  coverage.blockingIssues.push(...validateConfirmationProfile(confirmation, confirmationProfile, currentTargetMap));
   coverage.blockingIssues.push(...validateOwnerModelPolicy(confirmation, artifactPlan));
-  if (viewPackEnabled(confirmationProfile, 'currentTargetMap')) {
+  if (currentTargetRequired || viewPackEnabled(confirmationProfile, 'currentTargetMap')) {
     coverage.blockingIssues.push(...currentTargetMap.schemaIssues);
   }
   coverage.blockingIssues.push(...governanceEventTypes.schemaIssues);
@@ -5820,6 +8196,7 @@ function main(argv) {
   coverage.blockingIssues.push(...validateConditionalApplicabilityModules(confirmation, resumeFailureRegistry));
   coverage.blockingIssues.push(...validateArtifactPlanEventTypes(artifactPlan, governanceEventTypes.definitions));
   coverage.blockingIssues.push(...resumeFailureRegistry.schemaIssues);
+  coverage.blockingIssues.push(...validateConfirmationLanguageContent(confirmation, args.language));
 
   if (confirmation.status === 'user_confirmed') {
     coverage.warnings.push(warning('source_already_user_confirmed', 'renderer does not confirm or change status'));
@@ -5839,14 +8216,33 @@ function main(argv) {
       )
     );
   }
+  const preConfirmationSemanticDrilldown = loadPreConfirmationSemanticDrilldown(args, confirmation, {
+    sourceDocumentHash,
+    implementationConfirmationHash,
+  });
+  coverage.blockingIssues.push(...preConfirmationSemanticDrilldown.blockingIssues);
+  coverage.warnings.push(...preConfirmationSemanticDrilldown.warnings);
 
   const confirmability = coverage.blockingIssues.length ? 'blocked' : 'confirmable';
-  const confirmInstruction = [
+  const scopeConfirmInstruction = [
     confirmation.confirmPhrase ?? ui.confirmPhrase,
     `sourceDocumentHash=${sourceDocumentHash}`,
     `implementationConfirmationHash=${implementationConfirmationHash}`,
     `confirmationPageHash=${SELF_PAGE_HASH_PLACEHOLDER}`,
   ].join('\n');
+  const closeoutProjection = closeoutProjectionIdentity(
+    outPath,
+    recordId,
+    closeoutDeliveryVerdict.currentAttemptId
+  );
+  const closeoutConfirmInstruction = buildCloseoutConfirmInstruction({
+    sourceDocumentHash,
+    implementationConfirmationHash,
+    closeoutAttemptId: closeoutDeliveryVerdict.currentAttemptId,
+    deliveryCloseoutReportHash: closeoutReportState.hash,
+  });
+  const confirmInstruction =
+    args.mode === 'closeout-review' ? closeoutConfirmInstruction : scopeConfirmInstruction;
   const htmlWithSelfHashPlaceholder = buildHtml({
     args,
     sourceType,
@@ -5869,30 +8265,91 @@ function main(argv) {
     views,
     traceRows,
     artifactPlan,
+    targetModificationPaths,
     currentTargetMap,
     confirmationProfile,
     traceExecutionState,
     progressDelta,
     deliveryReadiness,
+    closeoutDeliveryVerdict,
+    closeoutGateMatrix,
+    closeoutAttemptHistory,
+    runtimeEvidenceClosureSummary,
+    sourceProjectionDiagnostics,
+    finalAcceptanceReview,
     reconfirmationState,
     resumeFailureRegistry,
     controlledIngestWriters,
     mermaidRuntime,
     requirementBoundary,
+    preConfirmationSemanticDrilldown,
+    coverage,
   });
-  const confirmationPageHash = confirmationPageHashFor(htmlWithSelfHashPlaceholder, generatedAt);
-  const finalConfirmInstruction = confirmInstruction.replaceAll(
-    SELF_PAGE_HASH_PLACEHOLDER,
-    confirmationPageHash
+  const renderedSectionOrder = [
+    'fingerprint',
+    ...(reconfirmationState?.required ? ['reconfirmation-request'] : []),
+    'core-design',
+    'delivery-readiness',
+    ...(finalAcceptanceReview.applies ? ['final-acceptance-review'] : []),
+    ...(closeoutDeliveryVerdict.applies
+      ? [
+          'closeout-gate-result-matrix',
+          'closeout-attempt-history',
+          'runtime-evidence-closure-summary',
+          'source-closeout-policy',
+        ]
+      : []),
+    'progress-delta',
+    'pre-confirmation-semantic-drilldown',
+    'decision-summary',
+    'confirm-instruction',
+    'requirements',
+    'requirement-boundary',
+    'business-visuals',
+    'governance-visuals',
+    'resume-failure-cases',
+    'trace-matrix',
+    ...(viewPackEnabled(confirmationProfile, 'currentTargetMap') ? ['current-target'] : []),
+    'ai-tdd-contract-manifest',
+    'target-modification-paths',
+    'artifact-plan',
+    'controlled-ingest-writers',
+    'architecture-impact',
+    'entry-flow',
+    'scoring-dashboard-sft',
+    'closeout-preview',
+    'blocking-issues',
+    'warnings',
+    'eight-questions',
+  ];
+  const renderedConfirmationPageHash = confirmationPageHashFor(
+    htmlWithSelfHashPlaceholder.replaceAll(SELF_CLOSEOUT_PAGE_HASH_PLACEHOLDER, SELF_PAGE_HASH_PLACEHOLDER),
+    generatedAt
   );
+  const closeoutConfirmationPageHash =
+    args.mode === 'closeout-review'
+      ? closeoutConfirmationPageHashFor(htmlWithSelfHashPlaceholder, generatedAt)
+      : null;
+  const confirmationPageHash =
+    args.mode === 'closeout-review'
+      ? scopeConfirmationPageHashForCloseout(requirementRecordState, confirmation) || renderedConfirmationPageHash
+      : renderedConfirmationPageHash;
+  const finalConfirmInstruction = confirmInstruction
+    .replaceAll(SELF_PAGE_HASH_PLACEHOLDER, confirmationPageHash)
+    .replaceAll(SELF_CLOSEOUT_PAGE_HASH_PLACEHOLDER, closeoutConfirmationPageHash ?? confirmationPageHash);
   const finalHtml = htmlWithSelfHashPlaceholder.replaceAll(
     SELF_PAGE_HASH_PLACEHOLDER,
     confirmationPageHash
-  );
+  ).replaceAll(SELF_CLOSEOUT_PAGE_HASH_PLACEHOLDER, closeoutConfirmationPageHash ?? confirmationPageHash);
   const actualHtmlFileHash = sha256(finalHtml);
 
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
   fs.writeFileSync(outPath, finalHtml, 'utf8');
+  if (args.mode === 'closeout-review' && closeoutProjection.outputRole === 'current_alias_projection') {
+    const canonicalPath = path.resolve(closeoutProjection.canonicalPath);
+    fs.mkdirSync(path.dirname(canonicalPath), { recursive: true });
+    fs.writeFileSync(canonicalPath, finalHtml, 'utf8');
+  }
 
   const common = {
     args,
@@ -5907,19 +8364,34 @@ function main(argv) {
     sourceDocumentHash,
     implementationConfirmationHash,
     confirmationPageHash,
+    renderedConfirmationPageHash,
+    closeoutConfirmationPageHash,
+    closeoutConfirmInstruction:
+      args.mode === 'closeout-review' ? finalConfirmInstruction : null,
+    closeoutConfirmationHashScope:
+      args.mode === 'closeout-review'
+        ? 'closeout_html_normalized_with_self_hash_placeholder_and_generated_at_excluded'
+        : null,
+    closeoutProjectionIdentity: closeoutProjection,
+    deliveryCloseoutReportHash: closeoutReportState.hash ?? null,
     actualHtmlFileHash,
     generatedAt,
     confirmation,
     confirmability,
     deliveryReadiness,
+    closeoutDeliveryVerdict,
+    closeoutGateMatrix,
+    closeoutAttemptHistory,
+    runtimeEvidenceClosureSummary,
+    sourceProjectionDiagnostics,
     confirmInstruction: finalConfirmInstruction,
     blockingIssues: coverage.blockingIssues,
     warnings: coverage.warnings,
     coverage,
     confirmationProfile,
-    currentTargetCoverage: viewPackEnabled(confirmationProfile, 'currentTargetMap')
-      ? countCurrentTargetRows(currentTargetMap)
-      : countCurrentTargetRows(buildEmptyCurrentTargetMap()),
+    currentTargetMap,
+    targetModificationPaths,
+    currentTargetCoverage: countCurrentTargetRows(currentTargetMap),
     currentTargetSchemaVersion: currentTargetMap.schemaVersion,
     currentTargetDisplayProfile: currentTargetMap.displayProfile,
     currentTargetTableCoverage: currentTargetMap.tableCoverage,
@@ -5927,6 +8399,7 @@ function main(argv) {
     traceExecutionState,
     progressDelta,
     deliveryReadiness,
+    finalAcceptanceReview,
     governanceEventTypeRegistry: Object.fromEntries(governanceEventTypes.definitions.entries()),
     governanceEventTypeSchemaIssues: governanceEventTypes.schemaIssues,
     controlledIngestWriterRegistry: controlledIngestWriters.rows,
@@ -5936,11 +8409,12 @@ function main(argv) {
     resumeFailureRegistry,
     mermaidRuntime,
     requirementBoundary,
+    preConfirmationSemanticDrilldown,
+    renderedSectionOrder,
   };
   const report = buildReport(common);
   const summary = buildSummary(report, confirmation, views, artifactPlan);
-  const summaryPath = path.join(path.dirname(outPath), 'confirmation-summary.json');
-  const reportPath = path.join(path.dirname(outPath), 'confirmation-render-report.json');
+  const { summaryPath, reportPath } = companionOutputPaths(outPath, args.mode);
   fs.writeFileSync(summaryPath, `${JSON.stringify(summary, null, 2)}\n`, 'utf8');
   fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
 
@@ -5954,7 +8428,12 @@ function main(argv) {
     console.log(`deliveryReadiness=${deliveryReadiness.label}`);
   }
 
-  if (args.strict !== false && coverage.blockingIssues.length) {
+  if (
+    args.strict !== false &&
+    (coverage.blockingIssues.length ||
+      (finalAcceptanceReview.applies && !finalAcceptanceReview.ready) ||
+      (closeoutDeliveryVerdict.applies && !closeoutDeliveryVerdict.ready))
+  ) {
     return 3;
   }
   return 0;

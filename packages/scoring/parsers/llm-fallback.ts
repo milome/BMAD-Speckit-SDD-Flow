@@ -69,10 +69,7 @@ export function normalizeLlmSeverity(raw: string): '高' | '中' | '低' {
  * @returns {LlmExtractionResult} Parsed extraction result
  * @throws {ParseError} If payload shape is invalid
  */
-function parseAndValidate(
-  raw: string,
-  attempt: number
-): LlmExtractionResult {
+function parseAndValidate(raw: string, attempt: number): LlmExtractionResult {
   let obj: unknown;
   try {
     obj = JSON.parse(raw);
@@ -84,7 +81,7 @@ function parseAndValidate(
   }
   const o = obj as Record<string, unknown>;
   const grade = o.grade;
-  if (typeof grade !== 'string' || !VALID_GRADES.includes(grade as typeof VALID_GRADES[number])) {
+  if (typeof grade !== 'string' || !VALID_GRADES.includes(grade as (typeof VALID_GRADES)[number])) {
     throw new ParseError(`Invalid grade: ${String(grade)} (attempt ${attempt})`);
   }
   const issuesRaw = o.issues;
@@ -139,7 +136,10 @@ export async function llmStructuredExtract(
     throw new ParseError('SCORING_LLM_API_KEY is not set');
   }
 
-  const baseUrl = (process.env.SCORING_LLM_BASE_URL ?? 'https://api.openai.com/v1').replace(/\/$/, '');
+  const baseUrl = (process.env.SCORING_LLM_BASE_URL ?? 'https://api.openai.com/v1').replace(
+    /\/$/,
+    ''
+  );
   const model = process.env.SCORING_LLM_MODEL ?? 'gpt-4o-mini';
   const timeoutMs = parseInt(String(process.env.SCORING_LLM_TIMEOUT_MS ?? 30000), 10) || 30000;
 

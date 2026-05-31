@@ -1,9 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as yaml from 'js-yaml';
-import type {
-  GovernanceHostKind,
-} from './governance-remediation-runner';
+import type { GovernanceHostKind } from './governance-remediation-runner';
 import type { ModelGovernanceHintCandidate } from './model-governance-hints-schema';
 import type {
   GovernanceProviderAdapter,
@@ -141,13 +139,17 @@ export function readGovernanceRemediationConfig(
     return defaultGovernanceRemediationConfig();
   }
 
-  const parsed = yaml.load(fs.readFileSync(file, 'utf8')) as Partial<GovernanceRemediationConfig> | null;
+  const parsed = yaml.load(
+    fs.readFileSync(file, 'utf8')
+  ) as Partial<GovernanceRemediationConfig> | null;
   const base = defaultGovernanceRemediationConfig();
   const primaryHost =
     parsed?.primaryHost && isHostKind(parsed.primaryHost) ? parsed.primaryHost : base.primaryHost;
   const packetHosts = uniqueHosts(
     Array.isArray(parsed?.packetHosts)
-      ? parsed.packetHosts.filter((host): host is GovernanceHostKind => typeof host === 'string' && isHostKind(host))
+      ? parsed.packetHosts.filter(
+          (host): host is GovernanceHostKind => typeof host === 'string' && isHostKind(host)
+        )
       : base.packetHosts
   );
   const execution = parsed?.execution ?? base.execution;
@@ -174,7 +176,7 @@ export function readGovernanceRemediationConfig(
       ? execution.fallbackHosts.filter(
           (host): host is GovernanceHostKind => typeof host === 'string' && isHostKind(host)
         )
-      : base.execution?.fallbackHosts ?? []
+      : (base.execution?.fallbackHosts ?? [])
   ).filter((host) => host !== authoritativeHost);
   const provider = {
     ...base.provider,
@@ -189,14 +191,14 @@ export function readGovernanceRemediationConfig(
       enabled:
         typeof execution?.enabled === 'boolean'
           ? execution.enabled
-          : base.execution?.enabled ?? false,
+          : (base.execution?.enabled ?? false),
       interactiveMode:
         execution &&
         typeof execution === 'object' &&
         typeof execution.interactiveMode === 'string' &&
         execution.interactiveMode === 'main-agent'
           ? 'main-agent'
-          : base.execution?.interactiveMode ?? 'main-agent',
+          : (base.execution?.interactiveMode ?? 'main-agent'),
       fallbackAutonomousMode: false,
       authoritativeHost,
       fallbackHosts,
@@ -204,65 +206,65 @@ export function readGovernanceRemediationConfig(
         leaseTimeoutSeconds:
           Number(execution?.dispatch?.leaseTimeoutSeconds) > 0
             ? Number(execution?.dispatch?.leaseTimeoutSeconds)
-            : base.execution?.dispatch.leaseTimeoutSeconds ?? 900,
+            : (base.execution?.dispatch.leaseTimeoutSeconds ?? 900),
         heartbeatIntervalSeconds:
           Number(execution?.dispatch?.heartbeatIntervalSeconds) > 0
             ? Number(execution?.dispatch?.heartbeatIntervalSeconds)
-            : base.execution?.dispatch.heartbeatIntervalSeconds ?? 60,
+            : (base.execution?.dispatch.heartbeatIntervalSeconds ?? 60),
         maxDispatchAttempts:
           Number(execution?.dispatch?.maxDispatchAttempts) > 0
             ? Number(execution?.dispatch?.maxDispatchAttempts)
-            : base.execution?.dispatch.maxDispatchAttempts ?? 3,
+            : (base.execution?.dispatch.maxDispatchAttempts ?? 3),
       },
       execution: {
         timeoutMinutes:
           Number(execution?.execution?.timeoutMinutes) > 0
             ? Number(execution?.execution?.timeoutMinutes)
-            : base.execution?.execution.timeoutMinutes ?? 30,
+            : (base.execution?.execution.timeoutMinutes ?? 30),
         maxExecutionAttempts:
           Number(execution?.execution?.maxExecutionAttempts) > 0
             ? Number(execution?.execution?.maxExecutionAttempts)
-            : base.execution?.execution.maxExecutionAttempts ?? 2,
+            : (base.execution?.execution.maxExecutionAttempts ?? 2),
       },
       rerunGate: {
         required:
           typeof execution?.rerunGate?.required === 'boolean'
             ? execution.rerunGate.required
-            : base.execution?.rerunGate.required ?? true,
+            : (base.execution?.rerunGate.required ?? true),
         autoSchedule:
           typeof execution?.rerunGate?.autoSchedule === 'boolean'
             ? execution.rerunGate.autoSchedule
-            : base.execution?.rerunGate.autoSchedule ?? true,
+            : (base.execution?.rerunGate.autoSchedule ?? true),
         maxGateRetries:
           Number(execution?.rerunGate?.maxGateRetries) > 0
             ? Number(execution?.rerunGate?.maxGateRetries)
-            : base.execution?.rerunGate.maxGateRetries ?? 2,
+            : (base.execution?.rerunGate.maxGateRetries ?? 2),
       },
       escalation: {
         afterDispatchFailures:
           Number(execution?.escalation?.afterDispatchFailures) > 0
             ? Number(execution?.escalation?.afterDispatchFailures)
-            : base.execution?.escalation.afterDispatchFailures ?? 3,
+            : (base.execution?.escalation.afterDispatchFailures ?? 3),
         afterExecutionFailures:
           Number(execution?.escalation?.afterExecutionFailures) > 0
             ? Number(execution?.escalation?.afterExecutionFailures)
-            : base.execution?.escalation.afterExecutionFailures ?? 2,
+            : (base.execution?.escalation.afterExecutionFailures ?? 2),
         afterGateFailures:
           Number(execution?.escalation?.afterGateFailures) > 0
             ? Number(execution?.escalation?.afterGateFailures)
-            : base.execution?.escalation.afterGateFailures ?? 2,
+            : (base.execution?.escalation.afterGateFailures ?? 2),
       },
       projections: {
         emitNonAuthoritativePackets:
           typeof execution?.projections?.emitNonAuthoritativePackets === 'boolean'
             ? execution.projections.emitNonAuthoritativePackets
-            : base.execution?.projections.emitNonAuthoritativePackets ?? true,
+            : (base.execution?.projections.emitNonAuthoritativePackets ?? true),
         archivePath:
           typeof execution?.projections?.archivePath === 'string' &&
           execution.projections.archivePath.trim() !== ''
             ? execution.projections.archivePath
-            : base.execution?.projections.archivePath ??
-              '_bmad-output/runtime/governance/archive',
+            : (base.execution?.projections.archivePath ??
+              '_bmad-output/runtime/governance/archive'),
       },
     },
     provider: {

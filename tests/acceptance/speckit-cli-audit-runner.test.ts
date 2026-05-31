@@ -72,7 +72,9 @@ describe('speckit-cli audit runner integration', () => {
         packetExecutionClosureStatus: 'awaiting_rerun_gate',
       },
     });
-    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(((code?: string | number | null) => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(((
+      code?: string | number | null
+    ) => {
       throw new Error(`process.exit:${code}`);
     }) as never);
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});

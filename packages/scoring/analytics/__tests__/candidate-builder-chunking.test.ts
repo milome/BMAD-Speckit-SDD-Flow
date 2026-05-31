@@ -95,8 +95,12 @@ describe('canonical candidate builder chunking', () => {
 
     expect(result.samples.length).toBeGreaterThan(1);
     expect(result.samples.every((sample) => sample.quality.token_estimate <= 110)).toBe(true);
-    expect(result.samples.every((sample) => sample.quality.acceptance_decision === 'accepted')).toBe(true);
-    expect(new Set(result.samples.map((sample) => sample.sample_id)).size).toBe(result.samples.length);
+    expect(
+      result.samples.every((sample) => sample.quality.acceptance_decision === 'accepted')
+    ).toBe(true);
+    expect(new Set(result.samples.map((sample) => sample.sample_id)).size).toBe(
+      result.samples.length
+    );
     expect(new Set(result.samples.map((sample) => sample.split.group_key)).size).toBe(1);
   });
 });

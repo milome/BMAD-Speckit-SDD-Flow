@@ -30,10 +30,7 @@ import {
   REVIEWER_SHARED_CORE_PROFILE_PACK,
   REVIEWER_SHARED_CORE_VERSION,
 } from './reviewer-shared-core';
-import {
-  buildReviewerRolloutGate,
-  type ReviewerRolloutGate,
-} from './reviewer-rollout-gate';
+import { buildReviewerRolloutGate, type ReviewerRolloutGate } from './reviewer-rollout-gate';
 
 export { REVIEWER_SHARED_CORE_VERSION } from './reviewer-shared-core';
 export { REVIEWER_ROLLOUT_GATE_VERSION } from './reviewer-rollout-gate';

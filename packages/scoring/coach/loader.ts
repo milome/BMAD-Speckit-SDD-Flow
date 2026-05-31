@@ -47,7 +47,8 @@ export function loadRunRecords(runId: string, dataPath?: string): RunScoreRecord
     return [];
   }
 
-  const lines = fs.readFileSync(jsonlPath, 'utf-8')
+  const lines = fs
+    .readFileSync(jsonlPath, 'utf-8')
     .split('\n')
     .map((line) => line.trim())
     .filter((line) => line.length > 0);
@@ -62,4 +63,3 @@ export function loadRunRecords(runId: string, dataPath?: string): RunScoreRecord
 
   return sortByTimestamp(records);
 }
-

@@ -12,8 +12,9 @@ import type {
 import { resolveBmadHelpRuntimePolicy } from './bmad-config';
 import type { StageName } from './bmad-config';
 import { loadPolicyContextFromRegistry } from './emit-runtime-policy';
-import type { RuntimeFlowId } from './runtime-governance';
+import type { ImplementationEntryGate, RuntimeFlowId } from './runtime-governance';
 import { stableStringifyPolicy } from './stable-runtime-policy-json';
+import { resolveMainAgentOrchestrationSurface } from './main-agent-orchestration';
 import {
   governanceEventTypeRegistryPolicyHash,
   governanceEventTypeRegistryHash,
@@ -68,12 +69,35 @@ interface RuntimeGovernanceResolution {
 
 function parseArgs(argv: string[]): Record<string, string | undefined> {
   const out: Record<string, string | undefined> = {};
+  const aliases: Record<string, string> = {
+    'record-id': 'recordId',
+    'requirement-set-id': 'requirementSetId',
+    'run-id': 'runId',
+    'parent-closeout-attempt-id': 'parentCloseoutAttemptId',
+    'source-document-hash': 'sourceDocumentHash',
+    'implementation-confirmation-hash': 'implementationConfirmationHash',
+    'packet-path': 'packetPath',
+    'task-report-path': 'taskReportPath',
+    'smoke-target-path': 'smokeTargetPath',
+    'timeout-ms': 'timeoutMs',
+    'codex-binary': 'codexBinary',
+    'governance-event-type-registry-policy-path': 'governanceEventTypeRegistryPolicyPath',
+    'governance-event-type-registry-path': 'governanceEventTypeRegistryPath',
+    'governance-event-type-registry-policy-hash': 'governanceEventTypeRegistryPolicyHash',
+    'governance-event-type-registry-hash': 'governanceEventTypeRegistryHash',
+    'architecture-confirmation-hash': 'architectureConfirmationHash',
+    'trace-rows': 'traceRows',
+    'covered-requirement-ids': 'coveredRequirementIds',
+    'task-refs': 'taskRefs',
+    'report-path': 'reportPath',
+  };
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index];
     if (token === '--smoke') {
       out.smoke = 'true';
     } else if (token.startsWith('--') && argv[index + 1]) {
-      out[token.slice(2)] = argv[++index];
+      const key = token.slice(2);
+      out[aliases[key] ?? key] = argv[++index];
     }
   }
   return out;
@@ -108,6 +132,10 @@ function pathMatchesScope(filePath: string, scopes: string[]): boolean {
 
 function readPacket(packetPath: string): Packet {
   return JSON.parse(readStrictUtf8JsonText(packetPath, { allowUtf8Bom: true })) as Packet;
+}
+
+function sha256File(filePath: string): string {
+  return `sha256:${createHash('sha256').update(fs.readFileSync(filePath)).digest('hex')}`;
 }
 
 function packetExpectedDelta(packet: Packet): string {
@@ -178,10 +206,18 @@ function resolveCodexAgentSpec(
 
 function resolveRuntimeGovernanceBlock(
   projectRoot: string,
-  options?: { recordId?: string; requirementSetId?: string; runId?: string }
+  options?: { recordId?: string; requirementSetId?: string; runId?: string; packet?: Packet }
 ): RuntimeGovernanceResolution {
   try {
     const loaded = loadPolicyContextFromRegistry(projectRoot, options);
+    const currentSurface = resolveMainAgentOrchestrationSurface({
+      projectRoot,
+      recordId: options?.recordId,
+      requirementSetId: options?.requirementSetId,
+      runId: options?.runId,
+      flow: loaded.flow as RuntimeFlowId,
+      stage: loaded.stage as StageName,
+    });
     const policy = resolveBmadHelpRuntimePolicy({
       flow: loaded.flow as RuntimeFlowId,
       stage: loaded.stage as StageName,
@@ -194,10 +230,15 @@ function resolveRuntimeGovernanceBlock(
       ...(loaded.runId ? { runId: loaded.runId } : {}),
       ...(loaded.artifactRoot ? { artifactRoot: loaded.artifactRoot } : {}),
     });
+    const governance = alignPolicyWithCurrentDispatchSurface(
+      policy as unknown as Record<string, unknown>,
+      currentSurface,
+      options?.packet
+    );
     return {
       status: 'resolved',
       content: stableStringifyPolicy({
-        ...policy,
+        ...governance,
         flow: loaded.runtimeContext.flow,
         stage: loaded.runtimeContext.stage,
         runtimeContextPath: loaded.resolvedContextPath,
@@ -221,6 +262,123 @@ function resolveRuntimeGovernanceBlock(
   }
 }
 
+function passImplementationEntryGateFromSurface(
+  surface: ReturnType<typeof resolveMainAgentOrchestrationSurface>
+): ImplementationEntryGate | null {
+  if (surface.latestGate?.gateId !== 'implementation-readiness') {
+    return null;
+  }
+  if (surface.latestGate.decision !== 'pass') {
+    return null;
+  }
+  const flow =
+    surface.orchestrationState?.flow === 'bugfix' ||
+    surface.orchestrationState?.flow === 'standalone_tasks'
+      ? surface.orchestrationState.flow
+      : 'story';
+  return {
+    gateName: 'implementation-readiness',
+    requestedFlow: flow,
+    recommendedFlow: flow,
+    decision: 'pass',
+    readinessStatus: 'ready_clean',
+    blockerCodes: [],
+    blockerSummary: [],
+    rerouteRequired: false,
+    rerouteReason: null,
+    evidenceSources: {
+      readinessReportPath: null,
+      remediationArtifactPath: null,
+      executionRecordPath: null,
+      authoritativeAuditReportPath: null,
+    },
+    semanticFingerprint: null,
+    evaluatedAt: new Date().toISOString(),
+  };
+}
+
+function alignPolicyWithCurrentDispatchSurface(
+  policy: Record<string, unknown>,
+  surface: ReturnType<typeof resolveMainAgentOrchestrationSurface>,
+  packet?: Packet
+): Record<string, unknown> {
+  const packetTaskType = packet && 'taskType' in packet ? packet.taskType : null;
+  const activePacketStatus = surface.orchestrationState?.pendingPacket?.status ?? null;
+  const activeDispatchPacketMatches =
+    Boolean(packet) &&
+    surface.orchestrationState?.pendingPacket?.packetId === packet?.packetId &&
+    (activePacketStatus === 'ready_for_main_agent' ||
+      activePacketStatus === 'claimed_by_main_agent' ||
+      activePacketStatus === 'dispatched');
+  const activeImplementDispatchPacket =
+    activeDispatchPacketMatches && packetTaskType === 'implement';
+  const packetImpliesImplement =
+    (surface.mainAgentNextAction === 'dispatch_implement' && surface.mainAgentReady === true) ||
+    activeImplementDispatchPacket;
+  if (!packetImpliesImplement) {
+    return policy;
+  }
+  const alignedSurface = activeImplementDispatchPacket
+    ? {
+        ...surface,
+        mainAgentNextAction: 'dispatch_implement',
+        mainAgentReady: true,
+        ...(surface.runtimeResumeProjection
+          ? {
+              runtimeResumeProjection: {
+                ...surface.runtimeResumeProjection,
+                runtimeNextAction: 'dispatch_implement',
+                ready: true,
+              },
+            }
+          : {}),
+      }
+    : surface;
+
+  const gate =
+    passImplementationEntryGateFromSurface(alignedSurface) ??
+    (policy.implementationEntryGate &&
+    typeof policy.implementationEntryGate === 'object' &&
+    !Array.isArray(policy.implementationEntryGate)
+      ? (policy.implementationEntryGate as ImplementationEntryGate)
+      : null);
+  const nextPolicy = {
+    ...policy,
+    implementationReadinessStatus: 'ready_clean',
+    implementationEntryRecommended: true,
+    implementationEntryDecision: 'pass',
+    ...(gate ? { implementationEntryGate: { ...gate, decision: 'pass' } } : {}),
+    mainAgentCanContinue: alignedSurface.mainAgentCanContinue,
+    continueDecision: alignedSurface.continueDecision,
+    mainAgentNextAction: alignedSurface.mainAgentNextAction,
+    mainAgentReady: alignedSurface.mainAgentReady,
+    mainAgentOrchestration: alignedSurface,
+  };
+  const helpRouting =
+    policy.helpRouting &&
+    typeof policy.helpRouting === 'object' &&
+    !Array.isArray(policy.helpRouting)
+      ? (policy.helpRouting as Record<string, unknown>)
+      : null;
+  return helpRouting
+    ? {
+        ...nextPolicy,
+        helpRouting: {
+          ...helpRouting,
+          implementationReadinessStatus: 'ready_clean',
+          implementationEntryRecommended: true,
+          implementationEntryDecision: 'pass',
+          ...(gate ? { implementationEntryGate: { ...gate, decision: 'pass' } } : {}),
+          mainAgentCanContinue: alignedSurface.mainAgentCanContinue,
+          continueDecision: alignedSurface.continueDecision,
+          mainAgentNextAction: alignedSurface.mainAgentNextAction,
+          mainAgentReady: alignedSurface.mainAgentReady,
+          mainAgentOrchestration: alignedSurface,
+        },
+      }
+    : nextPolicy;
+}
+
 function buildPrompt(input: {
   packet: Packet;
   packetPath: string;
@@ -230,6 +388,8 @@ function buildPrompt(input: {
   agentRole: string;
   agentSpec: { path: string; content: string } | null;
   runtimeGovernance: string;
+  compiledPromptContent?: string;
+  compiledGoalExplanation?: string | null;
 }): string {
   const smokeLine = input.smokeTargetPath
     ? `For this bounded smoke run, write a small proof file at ${input.smokeTargetPath} and do not modify files outside allowedWriteScope.`
@@ -253,6 +413,18 @@ function buildPrompt(input: {
     `Allowed write scope: ${packetAllowedWriteScope(input.packet).join(', ') || '(none)'}`,
     `Expected delta: ${packetExpectedDelta(input.packet)}`,
     smokeLine,
+    input.compiledPromptContent
+      ? [
+          '--- Entry Flow Discipline Profile ---',
+          `flow: ${'flow' in input.packet ? input.packet.flow : 'unknown'}`,
+          `authorityMode: ${'authorityMode' in input.packet ? (input.packet.authorityMode ?? 'legacy_generic_prompt') : 'legacy_generic_prompt'}`,
+          input.compiledGoalExplanation ?? '',
+          '--- End Entry Flow Discipline Profile ---',
+          '--- Compiled Human Prompt ---',
+          input.compiledPromptContent,
+          '--- End Compiled Human Prompt ---',
+        ].join('\n')
+      : '',
     `When finished, write a JSON TaskReport to: ${input.codexWritableTaskReportPath}`,
     input.codexWritableTaskReportPath === input.taskReportPath
       ? ''
@@ -311,6 +483,164 @@ function readStrictUtf8JsonText(filePath: string, options: { allowUtf8Bom: boole
     return raw.subarray(3).toString('utf8');
   }
   return raw.toString('utf8');
+}
+
+function readJsonIfExists(filePath: string | null | undefined): Record<string, unknown> | null {
+  if (!filePath || !fs.existsSync(filePath)) return null;
+  const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8')) as unknown;
+  return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+    ? (parsed as Record<string, unknown>)
+    : null;
+}
+
+function nested(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function readCompiledPromptProjection(input: {
+  packet: Packet;
+}):
+  | { status: 'pass'; content: string; goalExplanation: string | null }
+  | { status: 'blocked'; driftFlags: string[]; evidence: string[] } {
+  if (
+    !('authorityMode' in input.packet) ||
+    input.packet.authorityMode !== 'compiled_implementation_confirmation'
+  ) {
+    return { status: 'pass', content: '', goalExplanation: null };
+  }
+  const ref = input.packet.compiledPromptRef;
+  if (!ref) {
+    return {
+      status: 'blocked',
+      driftFlags: ['compiled-prompt-missing'],
+      evidence: ['compiledPromptRef missing for compiled_implementation_confirmation packet'],
+    };
+  }
+  if (!fs.existsSync(ref.humanPromptPath)) {
+    return {
+      status: 'blocked',
+      driftFlags: ['compiled-prompt-missing'],
+      evidence: [`compiled human_prompt.txt missing: ${ref.humanPromptPath}`],
+    };
+  }
+  if (sha256File(ref.humanPromptPath) !== ref.humanPromptHash) {
+    return {
+      status: 'blocked',
+      driftFlags: ['compiled-prompt-hash-mismatch'],
+      evidence: [`compiled human_prompt.txt hash mismatch: ${ref.humanPromptPath}`],
+    };
+  }
+  if (!fs.existsSync(ref.auditReceiptPath)) {
+    return {
+      status: 'blocked',
+      driftFlags: ['compiled-audit-receipt-missing'],
+      evidence: [`compiled audit_receipt.json missing: ${ref.auditReceiptPath}`],
+    };
+  }
+  if (sha256File(ref.auditReceiptPath) !== ref.auditReceiptHash) {
+    return {
+      status: 'blocked',
+      driftFlags: ['compiled-audit-receipt-hash-mismatch'],
+      evidence: [`compiled audit_receipt.json hash mismatch: ${ref.auditReceiptPath}`],
+    };
+  }
+  const receipt = readJsonIfExists(ref.auditReceiptPath);
+  const receiptGoalCommand = nested(receipt?.goalCommand);
+  const goalMode = text(receiptGoalCommand.mode);
+  if (goalMode === 'native_goal_document_ref') {
+    if (!ref.goalExecutionPath || !fs.existsSync(ref.goalExecutionPath)) {
+      return {
+        status: 'blocked',
+        driftFlags: ['compiled-goal-execution-missing'],
+        evidence: ['native /goal receipt requires hash-bound goal_execution.md'],
+      };
+    }
+    if (!ref.goalExecutionHash || sha256File(ref.goalExecutionPath) !== ref.goalExecutionHash) {
+      return {
+        status: 'blocked',
+        driftFlags: ['compiled-goal-execution-hash-mismatch'],
+        evidence: [`goal_execution.md hash mismatch: ${ref.goalExecutionPath}`],
+      };
+    }
+  }
+  if (goalMode === 'native_goal_inline') {
+    return {
+      status: 'blocked',
+      driftFlags: ['compiled-native-goal-inline-rejected'],
+      evidence: [
+        'native_goal_inline is forbidden; compiler must provide goal_execution.md document ref',
+      ],
+    };
+  }
+
+  const packetProfile = nested((input.packet as ExecutionPacket).executionDisciplineProfile);
+  const profileId = text(packetProfile.profileId);
+  const profileHash = text(packetProfile.profileHash);
+  const receiptProfile = nested(receipt?.executionDisciplineProfile);
+  if (profileId && text(receiptProfile.profileId) && text(receiptProfile.profileId) !== profileId) {
+    return {
+      status: 'blocked',
+      driftFlags: ['compiled-profile-id-mismatch'],
+      evidence: [
+        'audit_receipt.json executionDisciplineProfile.profileId differs from dispatch packet',
+      ],
+    };
+  }
+  if (
+    profileHash &&
+    text(receiptProfile.profileHash) &&
+    text(receiptProfile.profileHash) !== profileHash
+  ) {
+    return {
+      status: 'blocked',
+      driftFlags: ['compiled-profile-hash-mismatch'],
+      evidence: [
+        'audit_receipt.json executionDisciplineProfile.profileHash differs from dispatch packet',
+      ],
+    };
+  }
+  const content = fs.readFileSync(ref.humanPromptPath, 'utf8');
+  if (profileId && !content.includes(profileId)) {
+    return {
+      status: 'blocked',
+      driftFlags: ['compiled-human-prompt-profile-missing'],
+      evidence: ['human_prompt.txt does not include execution discipline profile id'],
+    };
+  }
+  if (profileHash && !content.includes(profileHash)) {
+    return {
+      status: 'blocked',
+      driftFlags: ['compiled-human-prompt-profile-hash-missing'],
+      evidence: ['human_prompt.txt does not include execution discipline profile hash'],
+    };
+  }
+  if (goalMode === 'native_goal_document_ref' && ref.goalExecutionPath) {
+    const goalContent = fs.readFileSync(ref.goalExecutionPath, 'utf8');
+    if (profileId && !goalContent.includes(profileId)) {
+      return {
+        status: 'blocked',
+        driftFlags: ['compiled-goal-profile-missing'],
+        evidence: ['goal_execution.md does not include execution discipline profile id'],
+      };
+    }
+    if (profileHash && !goalContent.includes(profileHash)) {
+      return {
+        status: 'blocked',
+        driftFlags: ['compiled-goal-profile-hash-missing'],
+        evidence: ['goal_execution.md does not include execution discipline profile hash'],
+      };
+    }
+  }
+  return {
+    status: 'pass',
+    content,
+    goalExplanation:
+      goalMode === 'native_goal_document_ref'
+        ? '/goal is an entry pointer only; execution scope is goal_execution.md plus model_packet.json, and model_packet.json remains machine authority.'
+        : null,
+  };
 }
 
 function normalizeTaskReport(report: TaskReport): TaskReport {
@@ -468,25 +798,35 @@ function writeTaskReport(taskReportPath: string, report: TaskReport): void {
   fs.writeFileSync(taskReportPath, JSON.stringify(report, null, 2) + '\n', 'utf8');
 }
 
-function readRequirementRecord(projectRoot: string, recordId?: string): Record<string, unknown> | null {
-  if (!recordId) return null;
-  const recordPath = path.join(
-    projectRoot,
-    '_bmad-output',
-    'runtime',
-    'requirement-records',
-    recordId,
-    'requirement-record.json'
-  );
-  if (!fs.existsSync(recordPath)) return null;
-  const parsed = JSON.parse(fs.readFileSync(recordPath, 'utf8')) as unknown;
-  return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
-    ? (parsed as Record<string, unknown>)
-    : null;
+function readRequirementRecord(
+  projectRoot: string,
+  ...recordIds: Array<string | undefined>
+): Record<string, unknown> | null {
+  const candidates = [...new Set(recordIds.map(text).filter(Boolean))];
+  for (const recordId of candidates) {
+    const recordPath = path.join(
+      projectRoot,
+      '_bmad-output',
+      'runtime',
+      'requirement-records',
+      recordId,
+      'requirement-record.json'
+    );
+    if (!fs.existsSync(recordPath)) continue;
+    const parsed = JSON.parse(fs.readFileSync(recordPath, 'utf8')) as unknown;
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : null;
+  }
+  return null;
 }
 
 function text(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+function strings(value: unknown): string[] {
+  return Array.isArray(value) ? value.map((item) => text(item)).filter(Boolean) : [];
 }
 
 function recordArchitectureHash(record: Record<string, unknown> | null): string {
@@ -519,7 +859,12 @@ function gitHead(projectRoot: string): string {
 function evidencePathFromTaskReportItem(item: string): string | null {
   const codexSmokePrefix = 'codex-smoke:';
   if (item.startsWith(codexSmokePrefix)) return item.slice(codexSmokePrefix.length);
-  if (/^[A-Za-z]:[\\/]/u.test(item) || item.startsWith('/') || item.includes('/') || item.includes('\\')) {
+  if (
+    /^[A-Za-z]:[\\/]/u.test(item) ||
+    item.startsWith('/') ||
+    item.includes('/') ||
+    item.includes('\\')
+  ) {
     return item;
   }
   return null;
@@ -602,11 +947,18 @@ export function runCodexWorkerAdapter(input: {
   const projectRoot = path.resolve(input.projectRoot);
   const packetPath = path.resolve(input.packetPath);
   const packet = readPacket(packetPath);
-  const requirementRecord = readRequirementRecord(projectRoot, input.requirementSetId ?? input.recordId);
-  const sourceDocumentHash = input.sourceDocumentHash ?? text(requirementRecord?.sourceDocumentHash);
+  const requirementRecord = readRequirementRecord(
+    projectRoot,
+    input.requirementSetId,
+    input.recordId,
+    packet.parentSessionId
+  );
+  const sourceDocumentHash =
+    input.sourceDocumentHash ?? text(requirementRecord?.sourceDocumentHash);
   const implementationConfirmationHash =
     input.implementationConfirmationHash ?? text(requirementRecord?.implementationConfirmationHash);
-  const architectureConfirmationHash = input.architectureConfirmationHash ?? recordArchitectureHash(requirementRecord);
+  const architectureConfirmationHash =
+    input.architectureConfirmationHash ?? recordArchitectureHash(requirementRecord);
   const parentCloseoutAttemptId =
     input.parentCloseoutAttemptId ||
     recordCloseoutAttemptId(requirementRecord) ||
@@ -679,6 +1031,7 @@ export function runCodexWorkerAdapter(input: {
     recordId: input.recordId,
     requirementSetId: input.requirementSetId,
     runId: input.runId,
+    packet,
   });
   if (
     runtimeGovernance.status === 'blocked' &&
@@ -726,17 +1079,6 @@ export function runCodexWorkerAdapter(input: {
       },
     };
   }
-  const prompt = buildPrompt({
-    packet,
-    packetPath,
-    taskReportPath,
-    codexWritableTaskReportPath,
-    smokeTargetPath: input.smoke ? smokeTargetPath : null,
-    agentRole,
-    agentSpec,
-    runtimeGovernance: runtimeGovernance.content,
-  });
-
   let exitCode = 0;
   let stdinPath: string | null = null;
   let stdoutPath: string | null = null;
@@ -788,6 +1130,61 @@ export function runCodexWorkerAdapter(input: {
       },
     };
   }
+  const compiledPromptProjection = readCompiledPromptProjection({ packet });
+  if (compiledPromptProjection.status === 'blocked') {
+    const blockedReport: TaskReport = {
+      packetId: packet.packetId,
+      status: 'blocked',
+      filesChanged: [],
+      validationsRun: ['codex-worker-adapter-compiled-prompt'],
+      evidence: compiledPromptProjection.evidence,
+      downstreamContext: [packetExpectedDelta(packet)],
+      driftFlags: compiledPromptProjection.driftFlags,
+    };
+    writeTaskReport(taskReportPath, blockedReport);
+    return {
+      reportType: 'main_agent_codex_worker_adapter',
+      generatedAt: new Date().toISOString(),
+      projectRoot,
+      packetPath,
+      taskReportPath,
+      mode: input.smoke ? 'smoke' : 'codex_exec',
+      codexCommand: input.smoke ? ['codex', 'worker-adapter-smoke'] : [],
+      exitCode: 1,
+      scopePassed: false,
+      taskReport: blockedReport,
+      stdinPath: null,
+      stdoutPath: null,
+      stderrPath: null,
+      agentRole,
+      agentSpecPath: agentSpec.path,
+      runtimeGovernanceStatus: runtimeGovernance.status,
+      runtimeGovernanceError: runtimeGovernance.error,
+      actualFilesChanged: [],
+      transportEnvelope: null,
+      transportEnvelopeValidation: { ok: false, mismatches: compiledPromptProjection.driftFlags },
+      subagentEvidenceEnvelope: null,
+      subagentEvidenceEnvelopeValidation: {
+        ok: false,
+        status: 'blocked',
+        mismatches: compiledPromptProjection.driftFlags,
+        sourceRefs: [],
+        evidenceArtifactRefs: [],
+      },
+    };
+  }
+  const prompt = buildPrompt({
+    packet,
+    packetPath,
+    taskReportPath,
+    codexWritableTaskReportPath,
+    smokeTargetPath: input.smoke ? smokeTargetPath : null,
+    agentRole,
+    agentSpec,
+    runtimeGovernance: runtimeGovernance.content,
+    compiledPromptContent: compiledPromptProjection.content,
+    compiledGoalExplanation: compiledPromptProjection.goalExplanation,
+  });
   const codexCommand = input.smoke
     ? ['codex', 'worker-adapter-smoke']
     : [
@@ -914,12 +1311,15 @@ export function runCodexWorkerAdapter(input: {
     governanceEventTypeRegistry: input.governanceEventTypeRegistry,
     registryHash:
       input.governanceEventTypeRegistryHash ??
-      (input.governanceEventTypeRegistry ? governanceEventTypeRegistryHash(input.governanceEventTypeRegistry) : undefined),
+      (input.governanceEventTypeRegistry
+        ? governanceEventTypeRegistryHash(input.governanceEventTypeRegistry)
+        : undefined),
     architectureConfirmationHash,
   });
-  const traceRows = input.traceRows ?? [];
-  const coveredRequirementIds = input.coveredRequirementIds ?? [];
-  const taskRefs = input.taskRefs ?? [];
+  const traceRows = input.traceRows ?? strings(requirementRecord?.traceRows);
+  const coveredRequirementIds =
+    input.coveredRequirementIds ?? strings(requirementRecord?.coveredRequirementIds);
+  const taskRefs = input.taskRefs ?? strings(requirementRecord?.taskRefs);
   const subagentArtifactRefs = taskReportArtifactRefs({
     projectRoot,
     taskReport,
@@ -963,7 +1363,9 @@ export function runCodexWorkerAdapter(input: {
           },
           commandRuns: [commandRun],
           artifactRefs: subagentArtifactRefs,
-          transportRefs: transportEnvelope ? [{ eventType: transportEnvelope.eventType, packetId: transportEnvelope.packetId }] : [],
+          transportRefs: transportEnvelope
+            ? [{ eventType: transportEnvelope.eventType, packetId: transportEnvelope.packetId }]
+            : [],
         })
       : null;
   const subagentEvidenceEnvelopeValidation = subagentEvidenceEnvelope
@@ -1031,16 +1433,31 @@ export function main(argv: string[]): number {
       ? JSON.parse(fs.readFileSync(path.resolve(args.governanceEventTypeRegistryPath), 'utf8'))
       : undefined,
     governanceEventTypeRegistryPolicy: args.governanceEventTypeRegistryPolicyPath
-      ? JSON.parse(fs.readFileSync(path.resolve(args.governanceEventTypeRegistryPolicyPath), 'utf8'))
+      ? JSON.parse(
+          fs.readFileSync(path.resolve(args.governanceEventTypeRegistryPolicyPath), 'utf8')
+        )
       : undefined,
     governanceEventTypeRegistryPolicyHash: args.governanceEventTypeRegistryPolicyHash,
     governanceEventTypeRegistryHash: args.governanceEventTypeRegistryHash,
     architectureConfirmationHash: args.architectureConfirmationHash,
-    traceRows: args.traceRows ? args.traceRows.split(',').map((item) => item.trim()).filter(Boolean) : undefined,
-    coveredRequirementIds: args.coveredRequirementIds
-      ? args.coveredRequirementIds.split(',').map((item) => item.trim()).filter(Boolean)
+    traceRows: args.traceRows
+      ? args.traceRows
+          .split(',')
+          .map((item) => item.trim())
+          .filter(Boolean)
       : undefined,
-    taskRefs: args.taskRefs ? args.taskRefs.split(',').map((item) => item.trim()).filter(Boolean) : undefined,
+    coveredRequirementIds: args.coveredRequirementIds
+      ? args.coveredRequirementIds
+          .split(',')
+          .map((item) => item.trim())
+          .filter(Boolean)
+      : undefined,
+    taskRefs: args.taskRefs
+      ? args.taskRefs
+          .split(',')
+          .map((item) => item.trim())
+          .filter(Boolean)
+      : undefined,
   });
   const reportPath = path.resolve(
     args.reportPath ??

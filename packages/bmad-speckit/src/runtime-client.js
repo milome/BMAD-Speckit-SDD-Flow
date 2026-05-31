@@ -31,11 +31,11 @@ function loadScoringAnalyticsRuntime() {
 }
 
 function getScoringDataPath() {
-  const primary = path.resolve(process.cwd(), 'packages', 'scoring', 'data');
-  if (fs.existsSync(primary)) {
-    return primary;
+  const envPath = process.env.SCORING_DATA_PATH;
+  if (envPath) {
+    return path.isAbsolute(envPath) ? envPath : path.resolve(process.cwd(), envPath);
   }
-  return path.resolve(__dirname, '..', '..', 'scoring', 'data');
+  return path.resolve(process.cwd(), '_bmad-output', 'scoring');
 }
 
 const DEFAULT_TARGET = 'openai_chat';

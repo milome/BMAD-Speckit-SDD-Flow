@@ -18,11 +18,47 @@
     "requirementSetId": { "$ref": "#/$defs/nonEmptyString" },
     "sourcePath": { "$ref": "#/$defs/nonEmptyString" },
     "status": {
-      "enum": ["draft", "user_confirmed", "reconfirm_required", "in_progress", "blocked", "closed"]
+      "enum": ["draft", "user_confirmed", "awaiting_user_acceptance", "reconfirm_required", "in_progress", "blocked", "closed"]
     },
     "flow": { "enum": ["story", "bugfix", "standalone_tasks", "epic", "unknown"] },
     "stage": { "$ref": "#/$defs/nonEmptyString" },
     "currentStage": { "$ref": "#/$defs/nonEmptyString" },
+    "currentMentalModel": {
+      "enum": [
+        "requirement_confirmation",
+        "architecture_confirmation",
+        "implementation_readiness",
+        "execution_closure",
+        "audit_review",
+        "delivery_confirmation"
+      ]
+    },
+    "mentalModelTransitions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/mentalModelTransition" }
+    },
+    "sixModelResults": { "$ref": "#/$defs/sixModelResults" },
+    "pendingBlockerIntake": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/pendingBlockerIntake" }
+    },
+    "blockerIntakeRuns": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/blockerIntakeRun" }
+    },
+    "reconfirmationRequests": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/reconfirmationRequest" }
+    },
+    "bmadAssociation": { "$ref": "#/$defs/bmadAssociation" },
+    "sprintStatusUpdateAuthorizations": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/sprintStatusUpdateAuthorization" }
+    },
+    "externalBoardSyncReceipts": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/externalBoardSyncReceipt" }
+    },
     "entryFlow": { "enum": ["story", "bugfix", "standalone_tasks"] },
     "entryFlowClass": { "enum": ["full_story_entry", "corrective_entry", "task_packet_entry"] },
     "workflowAdapter": { "enum": ["bmad", "speckit", "direct", "legacy"] },
@@ -80,6 +116,10 @@
           { "$ref": "#/$defs/subagentEvidenceEnvelopeEvent" }
         ]
       }
+    },
+    "executionStrategySelections": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/executionStrategySelectionEvent" }
     },
     "requirementClosures": {
       "type": "array",
@@ -177,7 +217,7 @@
       "properties": {
         "baselineId": { "$ref": "#/$defs/nonEmptyString" },
         "activationId": { "$ref": "#/$defs/nonEmptyString" },
-        "status": { "enum": ["current", "stale", "blocked"] },
+        "status": { "enum": ["current", "stale", "blocked", "not_established"] },
         "scoringRunId": { "$ref": "#/$defs/nonEmptyString" },
         "scoringRecordPath": { "$ref": "#/$defs/nonEmptyString" },
         "sourceRequirementRecordHash": { "$ref": "#/$defs/sha256" },
@@ -194,6 +234,33 @@
       "items": { "$ref": "#/$defs/artifactRef" }
     },
     "deliveryEvidence": { "$ref": "#/$defs/deliveryEvidence" },
+    "closeout": { "$ref": "#/$defs/closeout" },
+    "closeoutAcceptance": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "closeoutAcceptanceHistory": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "implementationReadiness": { "$ref": "#/$defs/controlEventList" },
+    "executionClosures": { "$ref": "#/$defs/controlEventList" },
+    "auditReviews": { "$ref": "#/$defs/controlEventList" },
+    "deliveryConfirmations": { "$ref": "#/$defs/controlEventList" },
+    "externalBoardEvidence": { "$ref": "#/$defs/controlEventList" },
+    "bmadAssociations": { "$ref": "#/$defs/controlEventList" },
+    "postCloseDefectLinks": { "$ref": "#/$defs/controlEventList" },
+    "semanticCoverage": { "$ref": "#/$defs/controlEventList" },
+    "auditReviewDispatchPackets": { "$ref": "#/$defs/controlEventList" },
+    "auditScoringConvergence": { "$ref": "#/$defs/controlEventList" },
+    "sixModelRuntimeDecisions": { "$ref": "#/$defs/controlEventList" },
+    "runtimeModeSelections": { "$ref": "#/$defs/controlEventList" },
+    "taskProgress": { "$ref": "#/$defs/controlEventList" },
+    "auditTriadConvergence": { "$ref": "#/$defs/controlEventList" },
+    "aiTddContractGate": { "$ref": "#/$defs/aiTddContractGate" },
     "hookReconciliation": { "$ref": "#/$defs/hookReconciliation" },
     "latestReviewerCloseout": {
       "type": "object",
@@ -220,6 +287,13 @@
     "nonEmptyString": {
       "type": "string",
       "minLength": 1
+    },
+    "controlEventList": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
     },
     "sha256": {
       "type": "string",
@@ -369,6 +443,211 @@
         "id": { "$ref": "#/$defs/nonEmptyString" }
       }
     },
+    "modelResult": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "payloadKind",
+        "model",
+        "recordId",
+        "requirementSetId",
+        "sourceDocumentHash",
+        "implementationConfirmationHash",
+        "status",
+        "resultRecordedAt",
+        "resultRecordedBy",
+        "blockingReasons",
+        "sourceRefs",
+        "currentHashes"
+      ],
+      "properties": {
+        "payloadKind": { "const": "model_result" },
+        "model": {
+          "enum": [
+            "requirement_confirmation",
+            "architecture_confirmation",
+            "implementation_readiness",
+            "execution_closure",
+            "audit_review",
+            "delivery_confirmation"
+          ]
+        },
+        "recordId": { "$ref": "#/$defs/nonEmptyString" },
+        "requirementSetId": { "$ref": "#/$defs/nonEmptyString" },
+        "sourceDocumentHash": { "$ref": "#/$defs/sha256" },
+        "implementationConfirmationHash": { "$ref": "#/$defs/sha256" },
+        "status": { "enum": ["pass", "awaiting_user_acceptance", "blocked", "fail", "stale", "not_established"] },
+        "resultRecordedAt": { "type": "string", "format": "date-time" },
+        "resultRecordedBy": { "$ref": "#/$defs/nonEmptyString" },
+        "blockingReasons": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "sourceRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/sourceRef" }
+        },
+        "currentHashes": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "readinessReportRef": { "$ref": "#/$defs/reportRef" },
+        "deliveryCloseoutReportRef": { "$ref": "#/$defs/reportRef" },
+        "closeoutAcceptanceRequestRef": {
+          "type": ["object", "null"],
+          "additionalProperties": true
+        },
+        "readinessBaselineMetadata": { "$ref": "#/$defs/readinessBaselineMetadata" }
+      }
+    },
+    "reportRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path"],
+      "properties": {
+        "path": { "$ref": "#/$defs/nonEmptyString" },
+        "contentHash": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "sixModelResults": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "requirement_confirmation": {
+          "allOf": [
+            { "$ref": "#/$defs/modelResult" },
+            { "properties": { "model": { "const": "requirement_confirmation" } } }
+          ]
+        },
+        "architecture_confirmation": {
+          "allOf": [
+            { "$ref": "#/$defs/modelResult" },
+            { "properties": { "model": { "const": "architecture_confirmation" } } }
+          ]
+        },
+        "implementation_readiness": {
+          "allOf": [
+            { "$ref": "#/$defs/modelResult" },
+            { "properties": { "model": { "const": "implementation_readiness" } } }
+          ]
+        },
+        "execution_closure": {
+          "allOf": [
+            { "$ref": "#/$defs/modelResult" },
+            { "properties": { "model": { "const": "execution_closure" } } }
+          ]
+        },
+        "audit_review": {
+          "allOf": [
+            { "$ref": "#/$defs/modelResult" },
+            { "properties": { "model": { "const": "audit_review" } } }
+          ]
+        },
+        "delivery_confirmation": {
+          "allOf": [
+            { "$ref": "#/$defs/modelResult" },
+            { "properties": { "model": { "const": "delivery_confirmation" } } }
+          ]
+        }
+      }
+    },
+    "readinessBaselineMetadata": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "baselineId",
+        "activationId",
+        "status",
+        "scoringRunId",
+        "scoringRecordPath",
+        "sourceRequirementRecordHash",
+        "auditTraceHash",
+        "readinessGateRecipeVersion"
+      ],
+      "properties": {
+        "baselineId": { "$ref": "#/$defs/nonEmptyString" },
+        "activationId": { "$ref": "#/$defs/nonEmptyString" },
+        "status": { "enum": ["current", "stale", "blocked", "not_established"] },
+        "scoringRunId": { "$ref": "#/$defs/nonEmptyString" },
+        "scoringRecordPath": { "$ref": "#/$defs/nonEmptyString" },
+        "sourceRequirementRecordHash": { "$ref": "#/$defs/sha256" },
+        "auditTraceHash": { "$ref": "#/$defs/sha256" },
+        "readinessGateRecipeVersion": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "mentalModelTransition": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["eventType", "fromModel", "toModel", "recordedAt", "recordedBy"],
+      "properties": {
+        "eventType": { "enum": ["mental_model_transition_recorded", "mental_model_rollback_recorded"] },
+        "fromModel": { "$ref": "#/$defs/nonEmptyString" },
+        "toModel": { "$ref": "#/$defs/nonEmptyString" },
+        "recordedAt": { "type": "string", "format": "date-time" },
+        "recordedBy": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "pendingBlockerIntake": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["intakeId", "status", "sourceRefs"],
+      "properties": {
+        "intakeId": { "$ref": "#/$defs/nonEmptyString" },
+        "status": {
+          "enum": ["blocking_open", "open", "in_progress", "controlled_confirmed", "closed", "cancelled"]
+        },
+        "sourceRefs": { "type": "array", "items": { "$ref": "#/$defs/sourceRef" } }
+      }
+    },
+    "blockerIntakeRun": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["runId", "status", "recordedAt"],
+      "properties": {
+        "runId": { "$ref": "#/$defs/nonEmptyString" },
+        "status": { "$ref": "#/$defs/nonEmptyString" },
+        "recordedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "reconfirmationRequest": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["requestId", "targetModel", "status", "sourceRefs"],
+      "properties": {
+        "requestId": { "$ref": "#/$defs/nonEmptyString" },
+        "targetModel": { "$ref": "#/$defs/nonEmptyString" },
+        "status": { "$ref": "#/$defs/nonEmptyString" },
+        "sourceRefs": { "type": "array", "items": { "$ref": "#/$defs/sourceRef" } }
+      }
+    },
+    "bmadAssociation": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["relationship"],
+      "properties": {
+        "relationship": { "enum": ["orphan", "linked", "adopted_by_story", "promoted_to_story", "story"] }
+      }
+    },
+    "sprintStatusUpdateAuthorization": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["authorizationId", "status", "targetPath"],
+      "properties": {
+        "authorizationId": { "$ref": "#/$defs/nonEmptyString" },
+        "status": { "$ref": "#/$defs/nonEmptyString" },
+        "targetPath": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "externalBoardSyncReceipt": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["receiptId", "board", "status"],
+      "properties": {
+        "receiptId": { "$ref": "#/$defs/nonEmptyString" },
+        "board": { "$ref": "#/$defs/nonEmptyString" },
+        "status": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
     "rerunAuthoritySourceRef": {
       "type": "object",
       "additionalProperties": false,
@@ -420,7 +699,24 @@
         "eventType": { "$ref": "#/$defs/nonEmptyString" },
         "artifactType": { "$ref": "#/$defs/nonEmptyString" },
         "sourceOfTruthRole": {
-          "enum": ["control", "evidence", "projection", "read_model"]
+          "enum": [
+            "acceptance_oracle",
+            "audit_convergence_authority",
+            "audit_dispatch_contract",
+            "audit_profile_contract",
+            "audit_triad_convergence_authority",
+            "closeout_oracle",
+            "control",
+            "evidence",
+            "execution_runtime_mode_selection",
+            "historical_requirement_context",
+            "host_surface_projection",
+            "implementation",
+            "projection",
+            "read_model",
+            "runtime_next_action_authority",
+            "semantic_coverage_gate_receipt"
+          ]
         },
         "recordId": { "$ref": "#/$defs/nonEmptyString" },
         "requirementSetId": { "$ref": "#/$defs/nonEmptyString" },
@@ -789,6 +1085,61 @@
         ]
       }
     },
+    "executionStrategySelectionEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "eventType",
+        "recordId",
+        "requirementSetId",
+        "strategyId",
+        "availability",
+        "selectedBy",
+        "strategyOptionsHash",
+        "selectedOptionHash",
+        "modelPacketHash",
+        "sourceDocumentHash",
+        "implementationConfirmationHash",
+        "sourceRefs",
+        "recordedAt",
+        "recordedBy"
+      ],
+      "properties": {
+        "eventType": { "const": "execution_strategy_selected" },
+        "recordId": { "$ref": "#/$defs/nonEmptyString" },
+        "requirementSetId": { "$ref": "#/$defs/nonEmptyString" },
+        "strategyId": {
+          "enum": [
+            "compiled_trace_direct",
+            "compiled_trace_with_sdd_artifacts",
+            "governed_skill_adapter",
+            "governed_skill_prompt"
+          ]
+        },
+        "availability": { "const": "available" },
+        "selectedBy": { "enum": ["user", "policy"] },
+        "strategyOptionsHash": { "$ref": "#/$defs/sha256" },
+        "selectedOptionHash": { "$ref": "#/$defs/sha256" },
+        "modelPacketHash": { "$ref": "#/$defs/sha256" },
+        "sourceDocumentHash": { "$ref": "#/$defs/sha256" },
+        "implementationConfirmationHash": { "$ref": "#/$defs/sha256" },
+        "sourceRefs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/sourceRef" }
+        },
+        "recordedAt": { "type": "string", "format": "date-time" },
+        "recordedBy": { "$ref": "#/$defs/nonEmptyString" }
+      },
+      "not": {
+        "anyOf": [
+          { "required": ["traceRows"] },
+          { "required": ["requiredCommands"] },
+          { "required": ["requirementScopeDecision"] },
+          { "required": ["recordClosed"] }
+        ]
+      }
+    },
     "requirementClosure": {
       "type": "object",
       "additionalProperties": false,
@@ -982,6 +1333,27 @@
               "evaluatedBy": { "$ref": "#/$defs/nonEmptyString" }
             }
           }
+        },
+        "acceptanceRequest": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "closeoutAttemptId", "htmlPath", "renderReportPath", "closeoutConfirmationPageHash", "deliveryCloseoutReportHash"],
+          "properties": {
+            "status": { "enum": ["awaiting_user_acceptance", "user_accepted_closeout"] },
+            "closeoutAttemptId": { "$ref": "#/$defs/nonEmptyString" },
+            "requestedAt": { "type": "string", "format": "date-time" },
+            "requestedBy": { "$ref": "#/$defs/nonEmptyString" },
+            "acceptedAt": { "type": "string", "format": "date-time" },
+            "acceptedBy": { "$ref": "#/$defs/nonEmptyString" },
+            "htmlPath": { "$ref": "#/$defs/nonEmptyString" },
+            "renderReportPath": { "$ref": "#/$defs/nonEmptyString" },
+            "summaryPath": { "$ref": "#/$defs/nonEmptyString" },
+            "closeoutConfirmationPageHash": { "$ref": "#/$defs/sha256" },
+            "deliveryCloseoutReportHash": { "$ref": "#/$defs/sha256" },
+            "closeoutConfirmInstruction": { "$ref": "#/$defs/nonEmptyString" },
+            "userPrompt": { "$ref": "#/$defs/nonEmptyString" },
+            "ingestCommand": { "$ref": "#/$defs/nonEmptyString" }
+          }
         }
       }
     },
@@ -1129,6 +1501,233 @@
           }
         }
       }
+    },
+    "aiTddContractGate": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "applies": { "type": "boolean" },
+        "required": { "type": "boolean" },
+        "enforcementMode": { "enum": ["default_for_confirmed", "explicit_required", "skipped_by_policy"] },
+        "lastReportPath": { "$ref": "#/$defs/nonEmptyString" },
+        "lastReportHash": { "$ref": "#/$defs/sha256" },
+        "requirementPreImplementationPlan": { "$ref": "#/$defs/aiTddPreImplementationPlan" },
+        "preImplementationRedProofs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/aiTddRedProof" }
+        },
+        "readinessAutoRemediationOverlay": { "$ref": "#/$defs/readinessAutoRemediationOverlay" },
+        "acceptanceTests": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/aiTddAcceptanceSuite" }
+        },
+        "e2eSuites": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/aiTddAcceptanceSuite" }
+        }
+      }
+    },
+    "readinessAutoRemediationOverlay": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "sourceMutationPolicy"],
+      "properties": {
+        "schemaVersion": { "const": "readiness-auto-remediation-overlay/v1" },
+        "sourceMutationPolicy": { "const": "non_semantic_projection_only" },
+        "acceptanceBindings": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/readinessOverlayBinding" }
+        },
+        "traceBindings": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/readinessOverlayBinding" }
+        },
+        "evidenceBindings": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/readinessOverlayBinding" }
+        },
+        "commandBindings": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/readinessOverlayBinding" }
+        },
+        "artifactBindings": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/readinessOverlayBinding" }
+        },
+        "derivedFromRequirementRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "derivedFromTraceRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "derivedFromEvidenceRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "derivedFromCommandRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "derivedFromArtifactRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        }
+      }
+    },
+    "readinessOverlayBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmptyString" },
+        "covers": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "evidenceRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "commandRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "requiredCommandRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "acceptanceRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "artifactRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "traceRows": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "traceRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        }
+      }
+    },
+    "aiTddPreImplementationPlan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "status", "acceptanceIds", "requiredProofPolicy", "recordedAt", "recordedBy"],
+      "properties": {
+        "schemaVersion": { "$ref": "#/$defs/nonEmptyString" },
+        "status": { "$ref": "#/$defs/nonEmptyString" },
+        "sourceReportPath": { "$ref": "#/$defs/nonEmptyString" },
+        "sourceReportHash": { "$ref": "#/$defs/sha256" },
+        "acceptanceIds": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "pattern": "^(ACC|E2E)-"
+          }
+        },
+        "requiredProofPolicy": { "$ref": "#/$defs/nonEmptyString" },
+        "recordedAt": { "type": "string", "format": "date-time" },
+        "recordedBy": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "aiTddRedProof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["proofId", "acceptanceId", "state", "oracle", "recordedAt", "recordedBy"],
+      "properties": {
+        "proofId": { "$ref": "#/$defs/nonEmptyString" },
+        "acceptanceId": { "$ref": "#/$defs/nonEmptyString" },
+        "commandId": { "$ref": "#/$defs/nonEmptyString" },
+        "runId": { "$ref": "#/$defs/nonEmptyString" },
+        "state": {
+          "enum": ["expected_red", "unexpected_green", "invalid_red"]
+        },
+        "oracle": { "$ref": "#/$defs/nonEmptyString" },
+        "proofSource": { "$ref": "#/$defs/nonEmptyString" },
+        "failureClass": {
+          "enum": ["oracle_failure", "unexpected_pass", "missing_test_file", "runner_crash", "syntax_error", "environment_error", "unbound_oracle"]
+        },
+        "exitCode": { "type": "integer" },
+        "artifactRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/artifactRef" }
+        },
+        "recordedAt": { "type": "string", "format": "date-time" },
+        "recordedBy": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "aiTddAcceptanceSuite": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "covers", "traceRows", "evidenceRefs", "commandRefs", "oracle"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^(ACC|E2E)-[A-Za-z0-9_.:-]+$"
+        },
+        "suiteType": {
+          "enum": ["acceptance", "e2e", "integration", "contract"]
+        },
+        "file": { "$ref": "#/$defs/nonEmptyString" },
+        "files": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "covers": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "pattern": "^(MUST|NEG)-"
+          }
+        },
+        "traceRows": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "pattern": "^TRACE-"
+          }
+        },
+        "evidenceRefs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "pattern": "^EVD-"
+          }
+        },
+        "commandRefs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "pattern": "^CMD-"
+          }
+        },
+        "expectedPreImplementationState": {
+          "enum": ["expected_red", "unexpected_green", "invalid_red", "not_applicable"]
+        },
+        "oracle": { "$ref": "#/$defs/nonEmptyString" },
+        "positiveControl": { "type": "boolean" },
+        "negativeControls": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "mockOnly": { "type": "boolean" }
+      },
+      "anyOf": [
+        { "required": ["file"] },
+        { "required": ["files"] }
+      ]
     }
   }
 }

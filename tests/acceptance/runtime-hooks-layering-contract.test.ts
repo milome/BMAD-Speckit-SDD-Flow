@@ -5,7 +5,13 @@ import path from 'node:path';
 describe('runtime hooks layering contract', () => {
   it('defines shared runtime hooks plus thin Claude/Cursor adapters', () => {
     const root = process.cwd();
-    const sharedCore = path.join(root, '_bmad', 'runtime', 'hooks', 'runtime-policy-inject-core.cjs');
+    const sharedCore = path.join(
+      root,
+      '_bmad',
+      'runtime',
+      'hooks',
+      'runtime-policy-inject-core.cjs'
+    );
     const claudeAdapter = path.join(root, '_bmad', 'claude', 'hooks', 'runtime-policy-inject.cjs');
     const cursorAdapter = path.join(root, '_bmad', 'cursor', 'hooks', 'runtime-policy-inject.cjs');
 

@@ -19,7 +19,12 @@ export interface ReadinessDriftProjection extends ReadinessDriftEvaluation {
   readiness_score: number | null;
   readiness_raw_score: number | null;
   readiness_dimensions: Record<string, number> | null;
-  baseline_source?: 'requirement_metadata' | 'requirement_scoped_scoring' | 'legacy_scoring_data' | 'none' | 'stale_requirement_metadata';
+  baseline_source?:
+    | 'requirement_metadata'
+    | 'requirement_scoped_scoring'
+    | 'legacy_scoring_data'
+    | 'none'
+    | 'stale_requirement_metadata';
 }
 
 export interface RequirementReadinessBaselineMetadata {
@@ -101,8 +106,12 @@ export function findLatestImplementationReadinessBaseline(
   records: RunScoreRecord[]
 ): RunScoreRecord | null {
   const readiness = records
-    .filter((record) => record.scenario === 'real_dev' && record.stage === 'implementation_readiness')
-    .sort((left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime());
+    .filter(
+      (record) => record.scenario === 'real_dev' && record.stage === 'implementation_readiness'
+    )
+    .sort(
+      (left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime()
+    );
   return readiness[0] ?? null;
 }
 
@@ -113,11 +122,13 @@ function mismatchFields(input: {
   const baseline = input.baseline;
   const current = input.currentHashes;
   if (!baseline || !current) return [];
-  return ([
-    'sourceDocumentHash',
-    'implementationConfirmationHash',
-    'architectureConfirmationHash',
-  ] as const).filter((field) => {
+  return (
+    [
+      'sourceDocumentHash',
+      'implementationConfirmationHash',
+      'architectureConfirmationHash',
+    ] as const
+  ).filter((field) => {
     const recorded = baseline[field];
     const expected = current[field];
     return Boolean(recorded && expected && recorded !== expected);
@@ -130,7 +141,8 @@ function projectionFromRequirementBaseline(
   return {
     readiness_baseline_run_id: baseline.scoringRunId ?? null,
     readiness_score: typeof baseline.score === 'number' ? baseline.score : null,
-    readiness_raw_score: typeof baseline.rawScore === 'number' ? baseline.rawScore : baseline.score ?? null,
+    readiness_raw_score:
+      typeof baseline.rawScore === 'number' ? baseline.rawScore : (baseline.score ?? null),
     readiness_dimensions: baseline.dimensions ?? null,
     drift_signals: [],
     drifted_dimensions: [],
@@ -148,7 +160,8 @@ function projectionFromRequirementScopedScore(
   return {
     readiness_baseline_run_id: baseline.scoringRunId ?? null,
     readiness_score: typeof baseline.score === 'number' ? baseline.score : null,
-    readiness_raw_score: typeof baseline.rawScore === 'number' ? baseline.rawScore : baseline.score ?? null,
+    readiness_raw_score:
+      typeof baseline.rawScore === 'number' ? baseline.rawScore : (baseline.score ?? null),
     readiness_dimensions: baseline.dimensions ?? null,
     drift_signals: [],
     drifted_dimensions: [],
@@ -220,7 +233,8 @@ export function evaluateReadinessDrift(input: {
       drifted_dimensions: driftedDimensions,
       drift_severity: 'critical',
       re_readiness_required: true,
-      blocking_reason: 'Critical readiness drift detected against the current implementation baseline.',
+      blocking_reason:
+        'Critical readiness drift detected against the current implementation baseline.',
       effective_verdict: 'blocked',
     };
   }
@@ -232,7 +246,8 @@ export function evaluateReadinessDrift(input: {
       drifted_dimensions: driftedDimensions,
       drift_severity: 'major',
       re_readiness_required: true,
-      blocking_reason: 'Major readiness drift detected; implementation cannot be approved until re-readiness.',
+      blocking_reason:
+        'Major readiness drift detected; implementation cannot be approved until re-readiness.',
       effective_verdict: 'required_fixes',
     };
   }
@@ -265,7 +280,9 @@ export function buildReadinessDriftProjection(input: {
         readiness_baseline_run_id: currentBaseline.scoringRunId ?? null,
         readiness_score: typeof currentBaseline.score === 'number' ? currentBaseline.score : null,
         readiness_raw_score:
-          typeof currentBaseline.rawScore === 'number' ? currentBaseline.rawScore : currentBaseline.score ?? null,
+          typeof currentBaseline.rawScore === 'number'
+            ? currentBaseline.rawScore
+            : (currentBaseline.score ?? null),
         readiness_dimensions: currentBaseline.dimensions ?? null,
         drift_signals: staleFields,
         drifted_dimensions: [],
@@ -296,7 +313,9 @@ export function buildReadinessDriftProjection(input: {
         (record) =>
           record.stage === 'implement' || record.stage === 'tasks' || record.stage === 'post_impl'
       )
-      .sort((left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime())[0] ??
+      .sort(
+        (left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime()
+      )[0] ??
     null;
 
   if (
@@ -313,12 +332,14 @@ export function buildReadinessDriftProjection(input: {
         currentRecord.readiness_baseline_run_id ?? baseline?.run_id ?? null,
       readiness_score: baseline?.phase_score ?? null,
       readiness_raw_score:
-        (baseline as RunScoreRecord & { raw_phase_score?: number } | null)?.raw_phase_score ??
+        (baseline as (RunScoreRecord & { raw_phase_score?: number }) | null)?.raw_phase_score ??
         baseline?.phase_score ??
         null,
       readiness_dimensions:
         baseline?.dimension_scores && baseline.dimension_scores.length > 0
-          ? Object.fromEntries(baseline.dimension_scores.map((entry) => [entry.dimension, entry.score]))
+          ? Object.fromEntries(
+              baseline.dimension_scores.map((entry) => [entry.dimension, entry.score])
+            )
           : null,
       drift_signals: currentRecord.drift_signals ?? [],
       drifted_dimensions: currentRecord.drifted_dimensions ?? [],
@@ -340,12 +361,14 @@ export function buildReadinessDriftProjection(input: {
     ...evaluation,
     readiness_score: baseline?.phase_score ?? null,
     readiness_raw_score:
-      (baseline as RunScoreRecord & { raw_phase_score?: number } | null)?.raw_phase_score ??
+      (baseline as (RunScoreRecord & { raw_phase_score?: number }) | null)?.raw_phase_score ??
       baseline?.phase_score ??
       null,
     readiness_dimensions:
       baseline?.dimension_scores && baseline.dimension_scores.length > 0
-        ? Object.fromEntries(baseline.dimension_scores.map((entry) => [entry.dimension, entry.score]))
+        ? Object.fromEntries(
+            baseline.dimension_scores.map((entry) => [entry.dimension, entry.score])
+          )
         : null,
     baseline_source: baseline?.run_id ? 'legacy_scoring_data' : 'none',
   };

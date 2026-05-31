@@ -16,7 +16,10 @@ function getRulesDir(options?: { rulesDir?: string }): string {
  * @param {string} severity - severity 级别
  * @returns {number} 出现次数
  */
-function countSeverityFails(records: { result: string; severity: string }[], severity: string): number {
+function countSeverityFails(
+  records: { result: string; severity: string }[],
+  severity: string
+): number {
   return records.filter((r) => r.result === 'fail' && r.severity === severity).length;
 }
 

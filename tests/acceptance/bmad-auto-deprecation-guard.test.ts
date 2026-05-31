@@ -43,7 +43,9 @@ describe('bmad-auto deprecation guard', () => {
         expect(content).toContain('Deprecated');
         expect(content).toContain('main-agent-orchestration --action inspect');
         expect(content).toContain('main-agent-orchestration --action run-loop');
-        expect(content).not.toContain('Load and follow `{project-root}/_bmad/skills/bmads-auto/SKILL.md`');
+        expect(content).not.toContain(
+          'Load and follow `{project-root}/_bmad/skills/bmads-auto/SKILL.md`'
+        );
         expect(content).not.toContain('This entry continues BMAD-Speckit automation');
       }
     }

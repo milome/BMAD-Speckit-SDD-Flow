@@ -1,0 +1,231 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 1240" role="img" aria-labelledby="title desc">
+  <title id="title">Six mental models and sixteen governed subsystems</title>
+  <desc id="desc">BMAD-Speckit-SDD-Flow runtime architecture showing the controlled requirement record, six mental model lanes, all sixteen production-loop subsystems, fail-closed reruns, and read-only projections.</desc>
+  <defs>
+    <marker id="arrowBlue" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M1 1 L9 4 L1 7 Z" fill="#60a5fa"/>
+    </marker>
+    <marker id="arrowGreen" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M1 1 L9 4 L1 7 Z" fill="#10b981"/>
+    </marker>
+    <marker id="arrowAmber" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M1 1 L9 4 L1 7 Z" fill="#f59e0b"/>
+    </marker>
+    <marker id="arrowRed" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M1 1 L9 4 L1 7 Z" fill="#ef4444"/>
+    </marker>
+    <marker id="arrowCyan" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M1 1 L9 4 L1 7 Z" fill="#38bdf8"/>
+    </marker>
+    <filter id="softShadow" x="-14%" y="-14%" width="128%" height="128%">
+      <feDropShadow dx="0" dy="14" stdDeviation="13" flood-color="#0f172a" flood-opacity="0.35"/>
+    </filter>
+    <linearGradient id="authorityPanel" x1="58" y1="112" x2="1222" y2="244" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#1f2937"/>
+    </linearGradient>
+    <linearGradient id="lanePanel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#111827"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <style>
+      .canvas { fill: #0f172a; }
+      .title { font: 800 34px "Segoe UI", "Noto Sans", Arial, sans-serif; fill: #f8fafc; letter-spacing: -0.4px; }
+      .subtitle { font: 500 16.5px "Segoe UI", "Noto Sans", Arial, sans-serif; fill: #cbd5e1; }
+      .eyebrow { font: 800 12px "Segoe UI", "Noto Sans", Arial, sans-serif; fill: #94a3b8; letter-spacing: 0.2em; }
+      .panel-title { font: 800 20px "Segoe UI", "Noto Sans", Arial, sans-serif; fill: #f8fafc; }
+      .panel-copy { font: 600 14px "Segoe UI", "Noto Sans", Arial, sans-serif; fill: #cbd5e1; }
+      .model-index { font: 800 11px "Segoe UI", "Noto Sans", Arial, sans-serif; fill: #94a3b8; letter-spacing: 0.14em; }
+      .model-title { font: 800 16px "Segoe UI", "Noto Sans", Arial, sans-serif; fill: #f8fafc; }
+      .model-question { font: 600 11px "Segoe UI", "Noto Sans", Arial, sans-serif; fill: #cbd5e1; }
+      .chip-title { font: 800 11px "Segoe UI", "Noto Sans", Arial, sans-serif; fill: #f8fafc; }
+      .chip-id { font: 700 9px Consolas, Monaco, monospace; fill: #cbd5e1; }
+      .label { font: 800 12px "Segoe UI", "Noto Sans", Arial, sans-serif; fill: #bfdbfe; }
+      .small { font: 600 11px "Segoe UI", "Noto Sans", Arial, sans-serif; fill: #94a3b8; }
+      .warning { font: 800 12px "Segoe UI", "Noto Sans", Arial, sans-serif; fill: #fde68a; }
+    </style>
+  </defs>
+
+  <rect class="canvas" width="1280" height="1240" rx="34"/>
+  <g opacity="0.32" stroke="#334155" stroke-width="1">
+    <path d="M0 120 H1280 M0 240 H1280 M0 360 H1280 M0 480 H1280 M0 600 H1280 M0 720 H1280 M0 840 H1280 M0 960 H1280 M0 1080 H1280 M0 1200 H1280"/>
+    <path d="M120 0 V1240 M280 0 V1240 M440 0 V1240 M600 0 V1240 M760 0 V1240 M920 0 V1240 M1080 0 V1240"/>
+  </g>
+  <circle cx="1110" cy="128" r="170" fill="#1e40af" opacity="0.22"/>
+  <circle cx="170" cy="790" r="190" fill="#0f766e" opacity="0.20"/>
+  <circle cx="630" cy="120" r="128" fill="#0369a1" opacity="0.13"/>
+
+  <g transform="translate(58 58)">
+    <circle cx="8" cy="0" r="7" fill="#60a5fa"/>
+    <text class="eyebrow" x="24" y="4">RUNTIME CONTROL ARCHITECTURE</text>
+    <text class="title" x="0" y="54">Six Mental Models and 16 Governed Subsystems</text>
+    <text class="subtitle" x="0" y="84">The main agent branches from controlled RequirementRecord evidence, not from dashboard color, score green, task done, or legacy hints.</text>
+  </g>
+
+  <g filter="url(#softShadow)">
+    <rect x="828" y="44" width="394" height="62" rx="18" fill="#0f172a" stroke="#10b981" stroke-width="1.5"/>
+    <text class="label" x="1025" y="70" text-anchor="middle">production loop ready</text>
+    <text class="small" x="1025" y="91" text-anchor="middle">16 of 16 subsystems expose input, output, status, evidence, hash, and failure handling</text>
+  </g>
+
+  <g filter="url(#softShadow)">
+    <rect x="72" y="128" width="1136" height="58" rx="18" fill="#0f172a" stroke="#8b5cf6" stroke-width="1.8" stroke-dasharray="8 6"/>
+    <rect x="94" y="143" width="126" height="28" rx="11" fill="#1e293b" stroke="#8b5cf6" stroke-width="1.2"/>
+    <text class="label" x="157" y="161" text-anchor="middle">MAIN AGENT</text>
+    <text class="label" x="682" y="151" text-anchor="middle">Main Agent: Orchestration Layer</text>
+    <text class="small" x="682" y="171" text-anchor="middle">inspect reads controlled context and evidence first, then routes, dispatches, handles reconfirm_required, and re-reads after audit or closeout</text>
+  </g>
+
+  <g filter="url(#softShadow)">
+    <rect x="58" y="226" width="1164" height="132" rx="23" fill="url(#authorityPanel)" stroke="#60a5fa" stroke-width="2"/>
+    <text class="panel-title" x="88" y="269">Controlled RequirementRecord Store</text>
+    <text class="panel-copy" x="88" y="298">inspect resolves the active requirement, verifies record hashes, recovery context, runtime policy, current attempt, and governed event provenance.</text>
+    <text class="panel-copy" x="88" y="324">Index files, scoring records, dashboard views, SFT datasets, and help text are projections unless they are re-ingested as governed evidence.</text>
+  </g>
+
+  <path d="M640 186 V222" stroke="#8b5cf6" stroke-width="3" marker-end="url(#arrowBlue)"/>
+  <text class="small" x="662" y="210">inspect reads context and evidence</text>
+  <path d="M640 358 V416" stroke="#60a5fa" stroke-width="3" marker-end="url(#arrowBlue)"/>
+
+  <g transform="translate(50 520)">
+    <g filter="url(#softShadow)">
+      <rect x="0" y="0" width="180" height="492" rx="20" fill="url(#lanePanel)" stroke="#60a5fa" stroke-width="2"/>
+      <text class="model-index" x="18" y="32">MODEL 01</text>
+      <text class="model-title" x="18" y="59">Requirement</text>
+      <text class="model-title" x="18" y="79">Confirmation</text>
+      <text class="model-question" x="18" y="110">scope, non-scope, proof IDs</text>
+      <rect x="16" y="144" width="148" height="46" rx="13" fill="#1e293b" stroke="#60a5fa" stroke-width="1.5"/>
+      <text class="chip-title" x="90" y="164" text-anchor="middle">Requirement Intake</text>
+      <text class="chip-id" x="90" y="181" text-anchor="middle">requirement_confirmation</text>
+    </g>
+
+    <g transform="translate(200 0)" filter="url(#softShadow)">
+      <rect x="0" y="0" width="180" height="492" rx="20" fill="url(#lanePanel)" stroke="#38bdf8" stroke-width="2"/>
+      <text class="model-index" x="18" y="32">MODEL 02</text>
+      <text class="model-title" x="18" y="59">Architecture</text>
+      <text class="model-title" x="18" y="79">Confirmation</text>
+      <text class="model-question" x="18" y="110">contracts, schemas, risk</text>
+      <rect x="16" y="144" width="148" height="46" rx="13" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5"/>
+      <text class="chip-title" x="90" y="164" text-anchor="middle">Architecture Boundary</text>
+      <text class="chip-id" x="90" y="181" text-anchor="middle">architecture_confirmation</text>
+      <rect x="16" y="202" width="148" height="46" rx="13" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5"/>
+      <text class="chip-title" x="90" y="222" text-anchor="middle">Governance Contracts</text>
+      <text class="chip-id" x="90" y="239" text-anchor="middle">governance</text>
+    </g>
+
+    <g transform="translate(400 0)" filter="url(#softShadow)">
+      <rect x="0" y="0" width="180" height="492" rx="20" fill="url(#lanePanel)" stroke="#10b981" stroke-width="2"/>
+      <text class="model-index" x="18" y="32">MODEL 03</text>
+      <text class="model-title" x="18" y="59">Implementation</text>
+      <text class="model-title" x="18" y="79">Readiness</text>
+      <text class="model-question" x="18" y="110">entry gate and baseline</text>
+      <rect x="16" y="144" width="148" height="46" rx="13" fill="#1e293b" stroke="#10b981" stroke-width="1.5"/>
+      <text class="chip-title" x="90" y="164" text-anchor="middle">Readiness Gate</text>
+      <text class="chip-id" x="90" y="181" text-anchor="middle">implementation_readiness</text>
+      <rect x="16" y="218" width="148" height="88" rx="16" fill="#0f172a" stroke="#10b981" stroke-width="1.5" stroke-dasharray="7 5"/>
+      <text class="label" x="90" y="249" text-anchor="middle">audit-required</text>
+      <text class="small" x="90" y="272" text-anchor="middle">activation first, score after</text>
+      <text class="small" x="90" y="291" text-anchor="middle">with provenance</text>
+    </g>
+
+    <g transform="translate(600 0)" filter="url(#softShadow)">
+      <rect x="0" y="0" width="180" height="492" rx="20" fill="url(#lanePanel)" stroke="#8b5cf6" stroke-width="2"/>
+      <text class="model-index" x="18" y="32">MODEL 04</text>
+      <text class="model-title" x="18" y="59">Execution</text>
+      <text class="model-title" x="18" y="79">Closure</text>
+      <text class="model-question" x="18" y="110">bounded packets, trace proof</text>
+      <rect x="16" y="144" width="148" height="46" rx="13" fill="#1e293b" stroke="#8b5cf6" stroke-width="1.5"/>
+      <text class="chip-title" x="90" y="164" text-anchor="middle">Dispatch Evidence</text>
+      <text class="chip-id" x="90" y="181" text-anchor="middle">bounded_packet_closure</text>
+      <rect x="16" y="202" width="148" height="46" rx="13" fill="#1e293b" stroke="#8b5cf6" stroke-width="1.5"/>
+      <text class="chip-title" x="90" y="222" text-anchor="middle">Execution Tracking</text>
+      <text class="chip-id" x="90" y="239" text-anchor="middle">execution_tracking</text>
+      <rect x="16" y="260" width="148" height="46" rx="13" fill="#1e293b" stroke="#8b5cf6" stroke-width="1.5"/>
+      <text class="chip-title" x="90" y="280" text-anchor="middle">Prompt Packets</text>
+      <text class="chip-id" x="90" y="297" text-anchor="middle">prompt_packet_generation</text>
+    </g>
+
+    <g transform="translate(800 0)" filter="url(#softShadow)">
+      <rect x="0" y="0" width="180" height="492" rx="20" fill="url(#lanePanel)" stroke="#f59e0b" stroke-width="2"/>
+      <text class="model-index" x="18" y="32">MODEL 05</text>
+      <text class="model-title" x="18" y="59">Audit</text>
+      <text class="model-title" x="18" y="79">Review</text>
+      <text class="model-question" x="18" y="110">findings, RCA, scoring, data</text>
+      <rect x="16" y="132" width="148" height="42" rx="12" fill="#1e293b" stroke="#f59e0b" stroke-width="1.5"/>
+      <text class="chip-title" x="90" y="149" text-anchor="middle">Audit Review</text>
+      <text class="chip-id" x="90" y="165" text-anchor="middle">audit_review</text>
+      <rect x="16" y="184" width="148" height="42" rx="12" fill="#1e293b" stroke="#f59e0b" stroke-width="1.5"/>
+      <text class="chip-title" x="90" y="201" text-anchor="middle">RCA Improvement</text>
+      <text class="chip-id" x="90" y="217" text-anchor="middle">rca_improvement</text>
+      <rect x="16" y="236" width="148" height="42" rx="12" fill="#1e293b" stroke="#f59e0b" stroke-width="1.5"/>
+      <text class="chip-title" x="90" y="253" text-anchor="middle">Scoring Bridge</text>
+      <text class="chip-id" x="90" y="269" text-anchor="middle">scoring</text>
+      <rect x="16" y="288" width="148" height="42" rx="12" fill="#1e293b" stroke="#f59e0b" stroke-width="1.5"/>
+      <text class="chip-title" x="90" y="305" text-anchor="middle">Data Production</text>
+      <text class="chip-id" x="90" y="321" text-anchor="middle">data_production</text>
+      <rect x="16" y="340" width="148" height="42" rx="12" fill="#1e293b" stroke="#f59e0b" stroke-width="1.5"/>
+      <text class="chip-title" x="90" y="357" text-anchor="middle">Eval and SFT</text>
+      <text class="chip-id" x="90" y="373" text-anchor="middle">eval_sft</text>
+      <rect x="16" y="392" width="148" height="42" rx="12" fill="#1e293b" stroke="#f59e0b" stroke-width="1.5"/>
+      <text class="chip-title" x="90" y="409" text-anchor="middle">Coach Diagnostics</text>
+      <text class="chip-id" x="90" y="425" text-anchor="middle">coach</text>
+    </g>
+
+    <g transform="translate(1000 0)" filter="url(#softShadow)">
+      <rect x="0" y="0" width="180" height="492" rx="20" fill="url(#lanePanel)" stroke="#ec4899" stroke-width="2"/>
+      <text class="model-index" x="18" y="32">MODEL 06</text>
+      <text class="model-title" x="18" y="59">Delivery</text>
+      <text class="model-title" x="18" y="79">Confirmation</text>
+      <text class="model-question" x="18" y="110">current attempt only</text>
+      <rect x="16" y="144" width="148" height="46" rx="13" fill="#1e293b" stroke="#ec4899" stroke-width="1.5"/>
+      <text class="chip-title" x="90" y="164" text-anchor="middle">Delivery Closeout</text>
+      <text class="chip-id" x="90" y="181" text-anchor="middle">delivery_closeout</text>
+      <rect x="16" y="202" width="148" height="46" rx="13" fill="#1e293b" stroke="#ec4899" stroke-width="1.5"/>
+      <text class="chip-title" x="90" y="222" text-anchor="middle">Observability</text>
+      <text class="chip-id" x="90" y="239" text-anchor="middle">observability</text>
+      <rect x="16" y="260" width="148" height="46" rx="13" fill="#1e293b" stroke="#ec4899" stroke-width="1.5"/>
+      <text class="chip-title" x="90" y="280" text-anchor="middle">Dashboard Read Model</text>
+      <text class="chip-id" x="90" y="297" text-anchor="middle">dashboard_read_model</text>
+    </g>
+
+    <path d="M180 246 H192" stroke="#10b981" stroke-width="3" marker-end="url(#arrowGreen)"/>
+    <path d="M380 246 H392" stroke="#10b981" stroke-width="3" marker-end="url(#arrowGreen)"/>
+    <path d="M580 246 H592" stroke="#10b981" stroke-width="3" marker-end="url(#arrowGreen)"/>
+    <path d="M780 246 H792" stroke="#10b981" stroke-width="3" marker-end="url(#arrowGreen)"/>
+    <path d="M980 246 H992" stroke="#10b981" stroke-width="3" marker-end="url(#arrowGreen)"/>
+    <path d="M1094 246 H1192 V-50 H510" fill="none" stroke="#ef4444" stroke-width="3" stroke-dasharray="9 7" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M510 -50 V0" fill="none" stroke="#ef4444" stroke-width="3" stroke-dasharray="9 7" stroke-linecap="round" marker-end="url(#arrowRed)"/>
+    <path d="M710 -50 V0" fill="none" stroke="#ef4444" stroke-width="3" stroke-dasharray="9 7" stroke-linecap="round" marker-end="url(#arrowRed)"/>
+    <path d="M910 -50 V0" fill="none" stroke="#ef4444" stroke-width="3" stroke-dasharray="9 7" stroke-linecap="round" marker-end="url(#arrowRed)"/>
+    <text class="warning" x="760" y="-74" text-anchor="middle">fail closed: stale, ambiguous, or missing evidence returns to audit, readiness, or execution</text>
+    <text class="label" x="590" y="-128" text-anchor="middle">cyan dashed request taps: any stage can ask main orchestration to route reconfirmation</text>
+    <path d="M90 0 V-114" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-dasharray="5 6" stroke-linecap="round"/>
+    <path d="M290 0 V-114" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-dasharray="5 6" stroke-linecap="round"/>
+    <path d="M490 0 V-114" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-dasharray="5 6" stroke-linecap="round"/>
+    <path d="M690 0 V-114" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-dasharray="5 6" stroke-linecap="round"/>
+    <path d="M890 0 V-114" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-dasharray="5 6" stroke-linecap="round"/>
+    <path d="M1090 0 V-114" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-dasharray="5 6" stroke-linecap="round"/>
+    <path d="M90 -114 V0" fill="none" stroke="#38bdf8" stroke-width="2.8" stroke-dasharray="6 6" stroke-linecap="round" marker-end="url(#arrowCyan)"/>
+    <path d="M290 -114 V0" fill="none" stroke="#38bdf8" stroke-width="2.8" stroke-dasharray="6 6" stroke-linecap="round" marker-end="url(#arrowCyan)"/>
+  </g>
+
+  <g filter="url(#softShadow)">
+    <rect x="58" y="1048" width="1164" height="116" rx="22" fill="#111827" stroke="#334155" stroke-width="2"/>
+    <text class="panel-title" x="88" y="1088">Read-Only Projection Layer</text>
+    <text class="panel-copy" x="88" y="1116">Dashboard, Runtime MCP, scoring views, coach output, SFT datasets, and help recommendations expose evidence for humans and agents.</text>
+    <text class="panel-copy" x="88" y="1140">They never close a requirement, replace Delivery Closeout Gate, or choose the next global branch without controlled ingest evidence.</text>
+    <rect x="830" y="1080" width="334" height="44" rx="14" fill="#0f172a" stroke="#ef4444" stroke-width="1.5"/>
+    <text class="warning" x="997" y="1108" text-anchor="middle">forbidden as completion authority</text>
+  </g>
+
+  <g transform="translate(58 1204)">
+    <circle cx="6" cy="0" r="6" fill="#10b981"/>
+    <text class="small" x="20" y="5">solid arrows: governed progression</text>
+    <circle cx="250" cy="0" r="6" fill="#ef4444"/>
+    <text class="small" x="264" y="5">red dashed polyline: fail-closed rerun</text>
+    <circle cx="515" cy="0" r="6" fill="#38bdf8"/>
+    <text class="small" x="529" y="5">cyan dashed taps: reconfirm request to main orchestration</text>
+    <circle cx="890" cy="0" r="6" fill="#60a5fa"/>
+    <text class="small" x="904" y="5">control source: requirement-record.json</text>
+  </g>
+</svg>

@@ -1,0 +1,146 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 650">
+  <title>AI-TDD state machine</title>
+  <desc>Shows the state transition from Manifest draft to TDD-RED, implementation, TDD-GREEN, and closed delivery.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#8b5a2b"/>
+    </marker>
+    <marker id="arrow-red" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#dc2626"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#16a34a"/>
+    </marker>
+    <marker id="arrow-orange" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#ea580c"/>
+    </marker>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="2" dy="2" stdDeviation="3" flood-opacity="0.15"/>
+    </filter>
+  </defs>
+
+  <style>
+    .bg { fill: #fafaf9; }
+    .title { font-family: system-ui, -apple-system, sans-serif; font-size: 22px; font-weight: 700; fill: #1c1917; text-anchor: middle; }
+    .subtitle { font-family: system-ui, -apple-system, sans-serif; font-size: 12px; fill: #78716c; text-anchor: middle; }
+
+    /* State Styles */
+    .state-draft { fill: #f3f4f6; stroke: #6b7280; stroke-width: 2; }
+    .state-red { fill: #fef2f2; stroke: #dc2626; stroke-width: 3; filter: url(#shadow); }
+    .state-impl { fill: #f3f4f6; stroke: #6b7280; stroke-width: 2; }
+    .state-green { fill: #f0fdf4; stroke: #16a34a; stroke-width: 3; filter: url(#shadow); }
+    .state-closed { fill: #f0fdf4; stroke: #16a34a; stroke-width: 2; }
+
+    /* Text Styles */
+    .text { font-family: system-ui, -apple-system, sans-serif; font-size: 13px; fill: #44403c; text-anchor: middle; }
+    .text-state { font-weight: 700; font-size: 15px; }
+    .text-red { fill: #dc2626; }
+    .text-green { fill: #16a34a; }
+    .text-sub { font-size: 11px; fill: #6b7280; }
+
+    /* Arrow Styles */
+    .arrow-main { stroke: #8b5a2b; stroke-width: 2; fill: none; marker-end: url(#arrow); }
+    .arrow-red { stroke: #dc2626; stroke-width: 2; fill: none; marker-end: url(#arrow-red); }
+    .arrow-green { stroke: #16a34a; stroke-width: 2; fill: none; marker-end: url(#arrow-green); }
+    .arrow-orange { stroke: #ea580c; stroke-width: 2; fill: none; marker-end: url(#arrow-orange); stroke-dasharray: 5,3; }
+    .arrow-loop { stroke: #6b7280; stroke-width: 1.5; fill: none; stroke-dasharray: 4,2; }
+
+    /* Label Styles */
+    .label { font-family: system-ui, -apple-system, sans-serif; font-size: 10px; fill: #6b7280; text-anchor: middle; }
+    .label-red { fill: #dc2626; }
+    .label-green { fill: #16a34a; }
+    .label-orange { fill: #ea580c; }
+
+    /* Initial State */
+    .initial { fill: #1f2937; }
+  </style>
+
+  <!-- Background -->
+  <rect width="1100" height="650" class="bg"/>
+
+  <!-- Title -->
+  <text x="550" y="40" class="title">AI-TDD State Machine</text>
+  <text x="550" y="65" class="subtitle">Gate-Based Routing: Implicit Decision at Entry &amp; Delivery Gates</text>
+
+  <!-- Initial State -->
+  <circle cx="80" cy="250" r="8" class="initial"/>
+
+  <!-- State 1: MANIFEST_DRAFT -->
+  <rect x="130" y="200" width="150" height="100" rx="8" class="state-draft"/>
+  <text x="205" y="230" class="text text-state" style="font-size:13px;">MANIFEST_DRAFT</text>
+  <text x="205" y="255" class="text text-sub">Contract drafting</text>
+  <text x="205" y="275" class="text text-sub">Requirements pending</text>
+
+  <!-- State 2: AI-TDD-RED -->
+  <rect x="350" y="200" width="150" height="100" rx="8" class="state-red"/>
+  <text x="425" y="225" class="text text-state text-red" style="font-size:13px;">AI-TDD-RED</text>
+  <text x="425" y="245" class="text text-sub">Entry Gate</text>
+  <text x="425" y="265" class="text" style="font-size:12px;">Tests exist</text>
+  <text x="425" y="285" class="text" style="font-size:12px;">Impl missing</text>
+
+  <!-- State 3: IMPLEMENTING -->
+  <rect x="570" y="200" width="150" height="100" rx="8" class="state-impl"/>
+  <text x="645" y="230" class="text text-state" style="font-size:12px;">IMPLEMENTING</text>
+  <text x="645" y="255" class="text text-sub">Iterative development</text>
+  <text x="645" y="275" class="text text-sub">AI generates code</text>
+
+  <!-- State 4: AI-TDD-GREEN -->
+  <rect x="790" y="200" width="150" height="100" rx="8" class="state-green"/>
+  <text x="865" y="225" class="text text-state text-green" style="font-size:12px;">AI-TDD-GREEN</text>
+  <text x="865" y="245" class="text text-sub">Delivery Gate</text>
+  <text x="865" y="265" class="text">Tests passing</text>
+  <text x="865" y="285" class="text">Evidence complete</text>
+
+  <!-- State 5: CLOSED -->
+  <circle cx="1020" cy="250" r="35" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+  <circle cx="1020" cy="250" r="26" fill="none" stroke="#16a34a" stroke-width="2"/>
+  <text x="1020" y="245" class="text text-state text-green" style="font-size:16px;">✓</text>
+  <text x="1020" y="260" class="text" style="font-size:11px;">CLOSED</text>
+
+  <!-- Main Flow Arrows -->
+  <!-- Initial -> Draft -->
+  <line x1="88" y1="250" x2="130" y2="250" class="arrow-main"/>
+  <text x="109" y="235" class="label">init</text>
+
+  <!-- Draft -> RED -->
+  <line x1="280" y1="250" x2="350" y2="250" class="arrow-red"/>
+  <text x="315" y="235" class="label label-red">confirm</text>
+
+  <!-- RED -> IMPLEMENTING -->
+  <line x1="500" y1="250" x2="570" y2="250" class="arrow-main"/>
+  <text x="535" y="235" class="label">gate pass</text>
+
+  <!-- IMPLEMENTING -> GREEN -->
+  <line x1="720" y1="250" x2="790" y2="250" class="arrow-green"/>
+  <text x="755" y="235" class="label label-green">tests pass</text>
+
+  <!-- GREEN -> CLOSED -->
+  <line x1="940" y1="250" x2="985" y2="250" class="arrow-green"/>
+  <text x="962" y="235" class="label label-green">audit ok</text>
+
+  <!-- Loopback: RED reject/revise -> MANIFEST_DRAFT -->
+  <polyline points="425,300 425,380 205,380 205,300" class="arrow-loop"/>
+  <polygon points="205,297 202,303 208,303" fill="#dc2626"/>
+  <text x="315" y="400" class="label label-red">reject / revise</text>
+
+  <!-- Loopback: GREEN hash-unchanged -> IMPLEMENTING -->
+  <polyline points="865,300 865,420 645,420 645,300" class="arrow-orange"/>
+  <polygon points="645,297 642,303 648,303" fill="#ea580c"/>
+  <text x="755" y="445" class="label label-orange">[hash unchanged] iterate Run Loop</text>
+
+  <!-- Loopback: GREEN hash-changed -> MANIFEST_DRAFT -->
+  <polyline points="825,300 825,480 205,480 205,300" class="arrow-red"/>
+  <polygon points="205,297 202,303 208,303" fill="#dc2626"/>
+  <text x="515" y="505" class="label label-red">[hash changed] re-confirm requirements</text>
+
+  <!-- Legend -->
+  <rect x="50" y="540" width="1000" height="95" rx="6" fill="#ffffff" stroke="#e5e7eb" stroke-width="1"/>
+
+  <text x="70" y="565" class="text" style="text-anchor:start;font-weight:600;font-size:11px;">Gate-Based Decision Logic:</text>
+  <text x="70" y="585" class="text text-sub" style="text-anchor:start;font-size:10px;">• <tspan font-weight="600" fill="#dc2626">AI-TDD-RED (Entry)</tspan>: Tests must exist &amp; fail → Gate Pass to IMPLEMENTING</text>
+  <text x="70" y="605" class="text text-sub" style="text-anchor:start;font-size:10px;">• <tspan font-weight="600" fill="#16a34a">AI-TDD-GREEN (Delivery)</tspan>: Tests must pass &amp; evidence complete → Audit OK to CLOSED</text>
+
+  <text x="580" y="565" class="text" style="text-anchor:start;font-weight:600;font-size:11px;">Failure Recovery Paths:</text>
+  <text x="580" y="585" class="text text-sub" style="text-anchor:start;font-size:10px;">① <tspan font-weight="600" fill="#ea580c">[hash unchanged]</tspan>: Return to IMPLEMENTING (continue Run Loop)</text>
+  <text x="580" y="605" class="text text-sub" style="text-anchor:start;font-size:10px;">② <tspan font-weight="600" fill="#dc2626">[hash changed]</tspan>: Return to MANIFEST_DRAFT (re-confirm contract)</text>
+</svg>

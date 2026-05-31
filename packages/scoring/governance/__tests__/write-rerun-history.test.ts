@@ -6,7 +6,7 @@ import { writeGovernanceRerunHistory } from '../write-rerun-history';
 
 function readWrittenRecord(root: string, runId: string) {
   return JSON.parse(
-    readFileSync(path.join(root, 'packages', 'scoring', 'data', `${runId}.json`), 'utf8')
+    readFileSync(path.join(root, '_bmad-output', 'scoring', `${runId}.json`), 'utf8')
   ) as { stage: string };
 }
 

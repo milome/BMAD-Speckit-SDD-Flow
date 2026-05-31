@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "goal-contract-profile.schema/v1",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "profileId",
+    "profileVersion",
+    "contractVersion",
+    "templatePath",
+    "templateHash",
+    "profileHash",
+    "requiredSections",
+    "requiredFrontMatterFields",
+    "requiredSlots",
+    "optionalSlots",
+    "invariantFragments",
+    "compatibility",
+    "governanceRules"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "string" },
+    "profileId": { "type": "string" },
+    "profileVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "contractVersion": { "type": "string" },
+    "templatePath": { "type": "string" },
+    "templateHash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "profileHash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "requiredSections": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "requiredFrontMatterFields": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "requiredSlots": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "optionalSlots": { "type": "array", "items": { "type": "string" } },
+    "invariantFragments": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "compatibility": {
+      "type": "object",
+      "required": ["semverPolicy", "rendererId", "minimumRendererVersion", "supportedMajorVersions"],
+      "properties": {
+        "semverPolicy": { "type": "object" },
+        "rendererId": { "type": "string" },
+        "minimumRendererVersion": { "type": "string" },
+        "supportedMajorVersions": { "type": "array", "items": { "type": "number" }, "minItems": 1 }
+      }
+    },
+    "governanceRules": { "type": "object" }
+  },
+  "additionalProperties": true
+}

@@ -135,6 +135,23 @@ implementation_readiness:
       item_id: "readiness_cross_document_traceability"
       patterns: ["Cross-Document Traceability", "PRD Requirement", "Architecture Decision", "Epic Story", "Traceability Status"]
 
+delivery:
+  empty_overall: "delivery_overall"
+  empty_dimensions: "delivery_dimensions"
+  checks:
+    - text: "Delivery Evidence Closure"
+      item_id: "delivery_evidence_closure"
+      patterns: ["Delivery Evidence Closure", "delivery closeout report", "required command evidence", "artifact index"]
+    - text: "Current Attempt Binding"
+      item_id: "delivery_current_attempt_binding"
+      patterns: ["Current Attempt Binding", "closeoutAttemptId", "execution iteration", "stale evidence"]
+    - text: "Audit Convergence Receipt"
+      item_id: "delivery_audit_convergence_receipt"
+      patterns: ["Audit Convergence Receipt", "three no-new-valid-gap", "runAuditorHost", "score receipt"]
+    - text: "Closeout Authority"
+      item_id: "delivery_closeout_authority"
+      patterns: ["Closeout Authority", "record_closed", "delivery_confirmation pass", "open failure", "RCA"]
+
 tasks:
   empty_overall: "tasks_overall"
   empty_dimensions: "tasks_dimensions"

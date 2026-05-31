@@ -31,13 +31,9 @@ describe('readiness drift', () => {
   });
 
   it('maps drifted dimensions deterministically', () => {
-    expect(
-      deriveReadinessDriftedDimensions(['smoke_task_chain', 'shared_path_reference'])
-    ).toEqual([
-      'Smoke E2E Readiness',
-      'P0 Journey Coverage',
-      'Evidence Proof Chain',
-    ]);
+    expect(deriveReadinessDriftedDimensions(['smoke_task_chain', 'shared_path_reference'])).toEqual(
+      ['Smoke E2E Readiness', 'P0 Journey Coverage', 'Evidence Proof Chain']
+    );
   });
 
   it('blocks implement verdict when readiness baseline is missing', () => {

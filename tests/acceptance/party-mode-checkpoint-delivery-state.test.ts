@@ -11,7 +11,11 @@ import {
   writeBatchReceipt,
 } from '../../scripts/party-mode-runtime';
 
-function writeCheckpointArtifacts(root: string, sessionKey: string, batchTargetRound: number): void {
+function writeCheckpointArtifacts(
+  root: string,
+  sessionKey: string,
+  batchTargetRound: number
+): void {
   const checkpointPaths = deriveBatchCheckpointPaths(root, sessionKey, batchTargetRound);
   fs.mkdirSync(path.dirname(checkpointPaths.checkpointJsonPath), { recursive: true });
   fs.writeFileSync(checkpointPaths.checkpointJsonPath, '{}\n', 'utf8');

@@ -187,9 +187,15 @@ function normalizeLayerStage(stage: string): StageName {
 function stageEvidenceNames(stage: StageName): Set<string> {
   const normalized = String(stage).toLowerCase();
   const dashed = normalized.replace(/_/g, '-');
-  const names = new Set([`${normalized}.json`, `${normalized}.md`, `${dashed}.json`, `${dashed}.md`]);
+  const names = new Set([
+    `${normalized}.json`,
+    `${normalized}.md`,
+    `${dashed}.json`,
+    `${dashed}.md`,
+  ]);
   if (stage === 'arch') {
-    for (const item of ['architecture.md', 'architecture.json', 'arch.md', 'arch.json']) names.add(item);
+    for (const item of ['architecture.md', 'architecture.json', 'arch.md', 'arch.json'])
+      names.add(item);
   }
   if (stage === 'epics') {
     names.add('epics.md');
@@ -206,7 +212,10 @@ function stageEvidenceNames(stage: StageName): Set<string> {
   return names;
 }
 
-function gateReportPassed(filePath: string, predicate: (value: Record<string, unknown>) => boolean): boolean {
+function gateReportPassed(
+  filePath: string,
+  predicate: (value: Record<string, unknown>) => boolean
+): boolean {
   if (!fs.existsSync(filePath)) return false;
   try {
     return predicate(JSON.parse(fs.readFileSync(filePath, 'utf8')) as Record<string, unknown>);
@@ -215,14 +224,17 @@ function gateReportPassed(filePath: string, predicate: (value: Record<string, un
   }
 }
 
-function loadFiveLayerDefinitions(projectRoot: string): Array<{ id: FiveLayerId; stages: StageName[] }> {
+function loadFiveLayerDefinitions(
+  projectRoot: string
+): Array<{ id: FiveLayerId; stages: StageName[] }> {
   const mappingPath = path.join(projectRoot, '_bmad', '_config', 'stage-mapping.yaml');
   const parsed = yaml.load(fs.readFileSync(mappingPath, 'utf8')) as {
     layer_to_stages?: Record<string, { stages?: string[]; closeout_stages?: string[] }>;
   };
   const raw = parsed.layer_to_stages ?? {};
   return (['layer_1', 'layer_2', 'layer_3', 'layer_4', 'layer_5'] as const).map((id) => {
-    const stages = id === 'layer_5' && raw[id]?.closeout_stages ? raw[id].closeout_stages : raw[id]?.stages;
+    const stages =
+      id === 'layer_5' && raw[id]?.closeout_stages ? raw[id].closeout_stages : raw[id]?.stages;
     return {
       id,
       stages: Array.from(new Set((stages ?? []).map(normalizeLayerStage))),
@@ -230,17 +242,23 @@ function loadFiveLayerDefinitions(projectRoot: string): Array<{ id: FiveLayerId;
   });
 }
 
-function hasFiveLayerEvidence(projectRoot: string, layerId: FiveLayerId, stage: StageName): boolean {
+function hasFiveLayerEvidence(
+  projectRoot: string,
+  layerId: FiveLayerId,
+  stage: StageName
+): boolean {
   const root = path.join(projectRoot, outputRootForLayer(layerId));
   if (!fs.existsSync(root)) return false;
   if (stage === ('release_gate' as StageName)) {
-    return gateReportPassed(path.join(root, 'main-agent-release-gate-report.json'), (value) =>
-      value.critical_failures === 0 && value.blocked_sprint_status_update === false
+    return gateReportPassed(
+      path.join(root, 'main-agent-release-gate-report.json'),
+      (value) => value.critical_failures === 0 && value.blocked_sprint_status_update === false
     );
   }
   if (stage === ('delivery_truth_gate' as StageName)) {
-    return gateReportPassed(path.join(root, 'main-agent-delivery-truth-gate-report.json'), (value) =>
-      value.completionAllowed === true
+    return gateReportPassed(
+      path.join(root, 'main-agent-delivery-truth-gate-report.json'),
+      (value) => value.completionAllowed === true
     );
   }
   const explicitPath = path.join(root, `${layerId}-${stage}.complete.json`);
@@ -257,7 +275,9 @@ function hasFiveLayerEvidence(projectRoot: string, layerId: FiveLayerId, stage: 
     .some((entry) => names.has(entry.name.toLowerCase()));
 }
 
-function resolveFiveLayerRoutingProgress(projectRoot?: string): BmadHelpFiveLayerRoutingProgress | null {
+function resolveFiveLayerRoutingProgress(
+  projectRoot?: string
+): BmadHelpFiveLayerRoutingProgress | null {
   if (!projectRoot) return null;
   try {
     const root = path.resolve(projectRoot);
@@ -276,7 +296,9 @@ function resolveFiveLayerRoutingProgress(projectRoot?: string): BmadHelpFiveLaye
         (layer) =>
           layer.stages.length > 0 &&
           layer.stages.every((stage) =>
-            statuses.some((item) => item.layer === layer.id && item.stage === stage && item.completed)
+            statuses.some(
+              (item) => item.layer === layer.id && item.stage === stage && item.completed
+            )
           )
       )
       .map((layer) => layer.id);
@@ -588,15 +610,9 @@ function resolveAuditFactSummary(input: {
       .filter(Boolean);
     const candidateMatchesScope =
       scopedHints.length === 0 ||
-      scopedHints.some((hint) =>
-        candidateArtifactPath.toLowerCase().includes(hint.toLowerCase())
-      );
+      scopedHints.some((hint) => candidateArtifactPath.toLowerCase().includes(hint.toLowerCase()));
 
-    if (
-      closeout &&
-      closeout.stage === 'story' &&
-      candidateMatchesScope
-    ) {
+    if (closeout && closeout.stage === 'story' && candidateMatchesScope) {
       return {
         artifactDocPath: closeout.artifactPath ?? null,
         reportPath: closeout.reportPath ?? null,
@@ -903,16 +919,13 @@ function resolveRequirementRecordImplementationEntryGate(
   runtimeContext: Partial<RuntimeContextFile> | null
 ): ImplementationEntryGate | null {
   const candidate = (
-    runtimeContext as
-      | {
-          resolvedRuntimeContext?: { kind?: string };
-          implementationEntryGate?: ImplementationEntryGate;
-        }
-      | null
+    runtimeContext as {
+      resolvedRuntimeContext?: { kind?: string };
+      implementationEntryGate?: ImplementationEntryGate;
+    } | null
   )?.implementationEntryGate;
-  const resolvedKind = (
-    runtimeContext as { resolvedRuntimeContext?: { kind?: string } } | null
-  )?.resolvedRuntimeContext?.kind;
+  const resolvedKind = (runtimeContext as { resolvedRuntimeContext?: { kind?: string } } | null)
+    ?.resolvedRuntimeContext?.kind;
   if (resolvedKind !== 'ResolvedRuntimeContext' || !candidate) {
     return null;
   }
@@ -920,9 +933,9 @@ function resolveRequirementRecordImplementationEntryGate(
   const evidence = candidate.evidenceSources;
   const hasEvidenceSource = Boolean(
     evidence?.readinessReportPath ||
-      evidence?.remediationArtifactPath ||
-      evidence?.executionRecordPath ||
-      evidence?.authoritativeAuditReportPath
+    evidence?.remediationArtifactPath ||
+    evidence?.executionRecordPath ||
+    evidence?.authoritativeAuditReportPath
   );
   const emptyMissingGate =
     candidate.decision === 'block' &&
@@ -953,7 +966,9 @@ function buildImplementationEntryBlockers(input: {
         break;
       case 'standalone_tasks':
         blockerCodes.push('standalone_tasks_document_audit_not_closed');
-        blockerSummary.push('TASKS/BUGFIX prerequisite audit authoritative closeout is missing or has not passed');
+        blockerSummary.push(
+          'TASKS/BUGFIX prerequisite audit authoritative closeout is missing or has not passed'
+        );
         break;
       default:
         break;
@@ -1127,17 +1142,17 @@ export function resolveBmadHelpRoutingState(
       ? continueState
       : mainAgentOrchestration.continueDecision != null ||
           mainAgentOrchestration.mainAgentCanContinue != null
-      ? {
-          mainAgentCanContinue: mainAgentOrchestration.mainAgentCanContinue,
-          source:
-            mainAgentOrchestration.source === 'reviewer_closeout'
-              ? continueState.source
-              : mainAgentOrchestration.source === 'orchestration_state'
-                ? ('runtimeContext' as const)
-                : continueState.source,
-          continueDecision: mainAgentOrchestration.continueDecision,
-        }
-      : continueState;
+        ? {
+            mainAgentCanContinue: mainAgentOrchestration.mainAgentCanContinue,
+            source:
+              mainAgentOrchestration.source === 'reviewer_closeout'
+                ? continueState.source
+                : mainAgentOrchestration.source === 'orchestration_state'
+                  ? ('runtimeContext' as const)
+                  : continueState.source,
+            continueDecision: mainAgentOrchestration.continueDecision,
+          }
+        : continueState;
   const fiveLayerProgress = resolveFiveLayerRoutingProgress(input.projectRoot);
 
   return {

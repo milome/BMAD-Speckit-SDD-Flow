@@ -145,7 +145,9 @@ describe('pre-continue self-write skip', () => {
         expect(result.ok).toBe(false);
         expect(result.skipped).toBe(false);
         expect(result.reason).toBe('packet-write-blocked');
-        expect(typeof result.workflow === 'string' || typeof result.workflow === 'undefined').toBe(true);
+        expect(typeof result.workflow === 'string' || typeof result.workflow === 'undefined').toBe(
+          true
+        );
         expect(typeof result.step === 'string' || typeof result.step === 'undefined').toBe(true);
         expect(typeof result.gate === 'string' || typeof result.gate === 'undefined').toBe(true);
         expect(command.stderr).toContain(

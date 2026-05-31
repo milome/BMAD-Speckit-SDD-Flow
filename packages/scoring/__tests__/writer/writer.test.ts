@@ -15,9 +15,7 @@ const validRecord: RunScoreRecord = {
   stage: 'implement',
   phase_score: 22,
   phase_weight: 0.25,
-  check_items: [
-    { item_id: 'func_correct', passed: true, score_delta: 0, note: '' },
-  ],
+  check_items: [{ item_id: 'func_correct', passed: true, score_delta: 0, note: '' }],
   timestamp: '2026-03-04T12:00:00.000Z',
   iteration_count: 0,
   iteration_records: [],
@@ -28,7 +26,10 @@ describe('writeScoreRecord', () => {
   let tmpDir: string;
 
   beforeEach(async () => {
-    tmpDir = path.join(os.tmpdir(), `writer-test-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+    tmpDir = path.join(
+      os.tmpdir(),
+      `writer-test-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    );
     await fs.mkdir(tmpDir, { recursive: true });
   });
 
@@ -94,9 +95,7 @@ describe('writeScoreRecord', () => {
   it('AC-4: check_items structure item_id, passed, score_delta, note', async () => {
     const withNote: RunScoreRecord = {
       ...validRecord,
-      check_items: [
-        { item_id: 'a', passed: false, score_delta: -5, note: 'failed' },
-      ],
+      check_items: [{ item_id: 'a', passed: false, score_delta: -5, note: 'failed' }],
     };
     await writeScoreRecord(withNote, 'single_file', { dataPath: tmpDir });
     const filePath = path.join(tmpDir, 'test-run-1.json');

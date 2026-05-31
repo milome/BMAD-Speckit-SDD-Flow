@@ -40,8 +40,7 @@ function usesTooling(sample: CanonicalSftSample): boolean {
     Boolean(sample.tools && sample.tools.length > 0) ||
     sample.messages.some(
       (message) =>
-        message.role === 'tool' ||
-        Boolean(message.tool_calls && message.tool_calls.length > 0)
+        message.role === 'tool' || Boolean(message.tool_calls && message.tool_calls.length > 0)
     )
   );
 }
@@ -111,7 +110,9 @@ export function applyQualityGates(
   }
   if (sample.redaction.status === 'blocked') {
     hardReasons.push('redaction_blocked');
-    if (hasUnresolvedFinding(sample, (kind) => kind.includes('secret') || kind.includes('private'))) {
+    if (
+      hasUnresolvedFinding(sample, (kind) => kind.includes('secret') || kind.includes('private'))
+    ) {
       hardReasons.push('secret_detected_unresolved');
     }
     if (hasUnresolvedFinding(sample, (kind) => kind.includes('pii'))) {
@@ -150,7 +151,7 @@ export function applyQualityGates(
   const sharedHardReasons = unique(hardReasons);
   const toolAware = usesTooling(sample);
   const trainingBlockers = unique([
-    ...sample.quality.training_blockers ?? [],
+    ...(sample.quality.training_blockers ?? []),
     ...sharedHardReasons,
     ...(toolAware && effectiveTraceCompleteness === 'partial' ? ['tool_trace_partial'] : []),
     ...(toolAware && effectiveTraceCompleteness === 'missing' ? ['tool_trace_missing'] : []),
@@ -169,7 +170,11 @@ export function applyQualityGates(
       warnings: sharedWarnings,
     },
     export_compatibility: {
-      openai_chat: withCompatibility(sharedHardReasons.length === 0, sharedHardReasons, sharedWarnings),
+      openai_chat: withCompatibility(
+        sharedHardReasons.length === 0,
+        sharedHardReasons,
+        sharedWarnings
+      ),
       hf_conversational: toolAware
         ? withCompatibility(
             false,
@@ -177,13 +182,14 @@ export function applyQualityGates(
             sharedWarnings
           )
         : withCompatibility(sharedHardReasons.length === 0, sharedHardReasons, sharedWarnings),
-      hf_tool_calling: sample.tools && sample.tools.length > 0
-        ? withCompatibility(sharedHardReasons.length === 0, sharedHardReasons, sharedWarnings)
-        : withCompatibility(
-            false,
-            unique([...sharedHardReasons, 'target_incompatible_hf_tool_calling']),
-            sharedWarnings
-          ),
+      hf_tool_calling:
+        sample.tools && sample.tools.length > 0
+          ? withCompatibility(sharedHardReasons.length === 0, sharedHardReasons, sharedWarnings)
+          : withCompatibility(
+              false,
+              unique([...sharedHardReasons, 'target_incompatible_hf_tool_calling']),
+              sharedWarnings
+            ),
     },
   };
 }

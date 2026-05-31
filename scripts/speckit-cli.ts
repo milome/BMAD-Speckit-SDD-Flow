@@ -145,7 +145,7 @@ const COMMANDS: Record<string, CommandConfig> = {
   },
 };
 
-const VERSION = '1.0.3';
+const VERSION = '2.0.0';
 
 function printUsage(command?: string): void {
   if (command && COMMANDS[command]) {
@@ -361,44 +361,44 @@ ${RALPH_SCRIPT_ENFORCED_SUBSET.map((item) => `- ${item}`).join('\n')}
 
 ## Ralph Phase Hooks
 - TDD-RED hook: ${buildSpeckitImplementRecordPhaseCommand({
-  tasksPath: String(options.tasksPath),
-  mode: typeof options.mode === 'string' ? options.mode : undefined,
-  epic: typeof options.epic === 'string' ? options.epic : undefined,
-  story: typeof options.story === 'string' ? options.story : undefined,
-  epicSlug: typeof options.epicSlug === 'string' ? options.epicSlug : undefined,
-  storySlug: typeof options.storySlug === 'string' ? options.storySlug : undefined,
-  userStoryId: '<US-ID>',
-  title: '<US title>',
-  phase: 'TDD-RED',
-  detail: '<failing test command => N failed>',
-  storyLogTimestamp: '<ISO8601>',
-})}
+          tasksPath: String(options.tasksPath),
+          mode: typeof options.mode === 'string' ? options.mode : undefined,
+          epic: typeof options.epic === 'string' ? options.epic : undefined,
+          story: typeof options.story === 'string' ? options.story : undefined,
+          epicSlug: typeof options.epicSlug === 'string' ? options.epicSlug : undefined,
+          storySlug: typeof options.storySlug === 'string' ? options.storySlug : undefined,
+          userStoryId: '<US-ID>',
+          title: '<US title>',
+          phase: 'TDD-RED',
+          detail: '<failing test command => N failed>',
+          storyLogTimestamp: '<ISO8601>',
+        })}
 - TDD-GREEN hook: ${buildSpeckitImplementRecordPhaseCommand({
-  tasksPath: String(options.tasksPath),
-  mode: typeof options.mode === 'string' ? options.mode : undefined,
-  epic: typeof options.epic === 'string' ? options.epic : undefined,
-  story: typeof options.story === 'string' ? options.story : undefined,
-  epicSlug: typeof options.epicSlug === 'string' ? options.epicSlug : undefined,
-  storySlug: typeof options.storySlug === 'string' ? options.storySlug : undefined,
-  userStoryId: '<US-ID>',
-  title: '<US title>',
-  phase: 'TDD-GREEN',
-  detail: '<passing test command => N passed>',
-  storyLogTimestamp: '<ISO8601>',
-})}
+          tasksPath: String(options.tasksPath),
+          mode: typeof options.mode === 'string' ? options.mode : undefined,
+          epic: typeof options.epic === 'string' ? options.epic : undefined,
+          story: typeof options.story === 'string' ? options.story : undefined,
+          epicSlug: typeof options.epicSlug === 'string' ? options.epicSlug : undefined,
+          storySlug: typeof options.storySlug === 'string' ? options.storySlug : undefined,
+          userStoryId: '<US-ID>',
+          title: '<US title>',
+          phase: 'TDD-GREEN',
+          detail: '<passing test command => N passed>',
+          storyLogTimestamp: '<ISO8601>',
+        })}
 - TDD-REFACTOR hook: ${buildSpeckitImplementRecordPhaseCommand({
-  tasksPath: String(options.tasksPath),
-  mode: typeof options.mode === 'string' ? options.mode : undefined,
-  epic: typeof options.epic === 'string' ? options.epic : undefined,
-  story: typeof options.story === 'string' ? options.story : undefined,
-  epicSlug: typeof options.epicSlug === 'string' ? options.epicSlug : undefined,
-  storySlug: typeof options.storySlug === 'string' ? options.storySlug : undefined,
-  userStoryId: '<US-ID>',
-  title: '<US title>',
-  phase: 'TDD-REFACTOR',
-  detail: '<refactor summary>',
-  storyLogTimestamp: '<ISO8601>',
-})}
+          tasksPath: String(options.tasksPath),
+          mode: typeof options.mode === 'string' ? options.mode : undefined,
+          epic: typeof options.epic === 'string' ? options.epic : undefined,
+          story: typeof options.story === 'string' ? options.story : undefined,
+          epicSlug: typeof options.epicSlug === 'string' ? options.epicSlug : undefined,
+          storySlug: typeof options.storySlug === 'string' ? options.storySlug : undefined,
+          userStoryId: '<US-ID>',
+          title: '<US title>',
+          phase: 'TDD-REFACTOR',
+          detail: '<refactor summary>',
+          storyLogTimestamp: '<ISO8601>',
+        })}
 `
       : '';
 
@@ -510,14 +510,16 @@ export async function runAudit(
     'closeoutEnvelope' in result &&
     result.closeoutEnvelope &&
     typeof result.closeoutEnvelope === 'object'
-      ? isReviewCloseoutApproved(result.closeoutEnvelope as {
-          resultCode: 'approved' | 'required_fixes' | 'blocked' | 'unknown';
-          packetExecutionClosureStatus:
-            | 'awaiting_rerun_gate'
-            | 'retry_pending'
-            | 'gate_passed'
-            | 'escalated';
-        })
+      ? isReviewCloseoutApproved(
+          result.closeoutEnvelope as {
+            resultCode: 'approved' | 'required_fixes' | 'blocked' | 'unknown';
+            packetExecutionClosureStatus:
+              | 'awaiting_rerun_gate'
+              | 'retry_pending'
+              | 'gate_passed'
+              | 'escalated';
+          }
+        )
       : result.status === 'PASS';
 
   if (result.status !== 'PASS' || !closeoutApproved) {

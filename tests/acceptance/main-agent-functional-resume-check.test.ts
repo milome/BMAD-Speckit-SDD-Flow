@@ -6,7 +6,8 @@ import { describe, expect, it } from 'vitest';
 import { mainFunctionalResumeCheck } from '../../scripts/main-agent-functional-resume-check';
 
 const SOURCE_HASH = 'sha256:1111111111111111111111111111111111111111111111111111111111111111';
-const IMPLEMENTATION_HASH = 'sha256:2222222222222222222222222222222222222222222222222222222222222222';
+const IMPLEMENTATION_HASH =
+  'sha256:2222222222222222222222222222222222222222222222222222222222222222';
 const ARCHITECTURE_HASH = 'sha256:3333333333333333333333333333333333333333333333333333333333333333';
 const ARTIFACT_HASH = 'sha256:4444444444444444444444444444444444444444444444444444444444444444';
 
@@ -56,14 +57,22 @@ function registryFixture(overrides: Record<string, unknown> = {}): Record<string
   };
 }
 
-function implementationConfirmationSource(root: string, overrides: Record<string, unknown> = {}): string {
+function implementationConfirmationSource(
+  root: string,
+  overrides: Record<string, unknown> = {}
+): string {
   const sourcePath = path.join(root, 'source.md');
   const registry = registryFixture(overrides.registry as Record<string, unknown> | undefined);
   const governanceEventTypeRegistryPolicy =
     overrides.governanceEventTypeRegistryPolicy === null
       ? null
-      : (overrides.governanceEventTypeRegistryPolicy as Record<string, unknown> | undefined) ?? {
-          controlFieldVocabulary: ['artifactIndex', 'gateChecks', 'recoveryContext', 'runtimePolicySnapshotRef'],
+      : ((overrides.governanceEventTypeRegistryPolicy as Record<string, unknown> | undefined) ?? {
+          controlFieldVocabulary: [
+            'artifactIndex',
+            'gateChecks',
+            'recoveryContext',
+            'runtimePolicySnapshotRef',
+          ],
           payloadKindContracts: [
             {
               payloadKind: 'decision',
@@ -95,41 +104,43 @@ function implementationConfirmationSource(root: string, overrides: Record<string
             },
             {
               allowedControlWriteMode: 'context_update',
-              allowedWritesControlFields: ['artifactIndex', 'recoveryContext', 'runtimePolicySnapshotRef'],
+              allowedWritesControlFields: [
+                'artifactIndex',
+                'recoveryContext',
+                'runtimePolicySnapshotRef',
+              ],
             },
           ],
           eventSpecificRequirements: [],
-        };
-  const governanceEventTypeRegistry =
-    (overrides.governanceEventTypeRegistry as unknown[]) ??
-    [
-      {
-        eventType: 'gate_check_recorded',
-        ownerModel: 'implementation_readiness',
-        payloadKind: 'decision',
-        writesControlFields: ['gateChecks'],
-        canAffectControlFlow: true,
-        payloadContract: {
-          requiredFields: ['eventType', 'decision'],
-          forbiddenFields: ['result', 'status'],
-          requiredSourceRefs: false,
-          allowedControlWriteMode: 'control',
-        },
+        });
+  const governanceEventTypeRegistry = (overrides.governanceEventTypeRegistry as unknown[]) ?? [
+    {
+      eventType: 'gate_check_recorded',
+      ownerModel: 'implementation_readiness',
+      payloadKind: 'decision',
+      writesControlFields: ['gateChecks'],
+      canAffectControlFlow: true,
+      payloadContract: {
+        requiredFields: ['eventType', 'decision'],
+        forbiddenFields: ['result', 'status'],
+        requiredSourceRefs: false,
+        allowedControlWriteMode: 'control',
       },
-      {
-        eventType: 'recovery_context_updated',
-        ownerModel: 'execution_closure',
-        payloadKind: 'artifactRefs',
-        writesControlFields: ['recoveryContext'],
-        canAffectControlFlow: true,
-        payloadContract: {
-          requiredFields: ['eventType', 'artifactRefs'],
-          forbiddenFields: ['result', 'decision', 'status'],
-          requiredSourceRefs: false,
-          allowedControlWriteMode: 'context_update',
-        },
+    },
+    {
+      eventType: 'recovery_context_updated',
+      ownerModel: 'execution_closure',
+      payloadKind: 'artifactRefs',
+      writesControlFields: ['recoveryContext'],
+      canAffectControlFlow: true,
+      payloadContract: {
+        requiredFields: ['eventType', 'artifactRefs'],
+        forbiddenFields: ['result', 'decision', 'status'],
+        requiredSourceRefs: false,
+        allowedControlWriteMode: 'context_update',
       },
-    ];
+    },
+  ];
   writeFileSync(
     sourcePath,
     [
@@ -265,7 +276,14 @@ describe('main-agent functional resume check', () => {
     try {
       const recordPath = writeRecord(root);
       const sourcePath = implementationConfirmationSource(root);
-      const outDir = path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'REQ-RESUME', 'resume');
+      const outDir = path.join(
+        root,
+        '_bmad-output',
+        'runtime',
+        'requirement-records',
+        'REQ-RESUME',
+        'resume'
+      );
       const code = mainFunctionalResumeCheck([
         '--requirement-record',
         recordPath,
@@ -291,7 +309,9 @@ describe('main-agent functional resume check', () => {
       expect(existsSync(path.join(outDir, 'trace-checkpoints.jsonl'))).toBe(true);
       expect(existsSync(path.join(outDir, 'resume-packets.jsonl'))).toBe(true);
       expect(existsSync(proofPath)).toBe(true);
-      const packet = JSON.parse(readFileSync(path.join(outDir, 'resume-packets.jsonl'), 'utf8').trim());
+      const packet = JSON.parse(
+        readFileSync(path.join(outDir, 'resume-packets.jsonl'), 'utf8').trim()
+      );
       expect(packet).toMatchObject({
         packetType: 'functional_resume_packet',
         decision: 'pass',
@@ -342,12 +362,12 @@ describe('main-agent functional resume check', () => {
       ]);
 
       expect(code).toBe(1);
-      const packet = JSON.parse(readFileSync(path.join(outDir, 'resume-packets.jsonl'), 'utf8').trim());
+      const packet = JSON.parse(
+        readFileSync(path.join(outDir, 'resume-packets.jsonl'), 'utf8').trim()
+      );
       expect(packet.decision).toBe('blocked');
       expect(packet.blockingIssues).toEqual(
-        expect.arrayContaining([
-          'resume-authority-hashes-current:sourceDocumentHash',
-        ])
+        expect.arrayContaining(['resume-authority-hashes-current:sourceDocumentHash'])
       );
     } finally {
       rmSync(root, { recursive: true, force: true });
@@ -385,7 +405,9 @@ describe('main-agent functional resume check', () => {
       ]);
 
       expect(code).toBe(1);
-      const packet = JSON.parse(readFileSync(path.join(outDir, 'resume-packets.jsonl'), 'utf8').trim());
+      const packet = JSON.parse(
+        readFileSync(path.join(outDir, 'resume-packets.jsonl'), 'utf8').trim()
+      );
       expect(packet.blockingIssues).toEqual(
         expect.arrayContaining([
           'resume-open-blockers-clear:pending_rerun:rerun-001',
@@ -448,7 +470,9 @@ describe('main-agent functional resume check', () => {
       ]);
 
       expect(code).toBe(0);
-      const packet = JSON.parse(readFileSync(path.join(outDir, 'resume-packets.jsonl'), 'utf8').trim());
+      const packet = JSON.parse(
+        readFileSync(path.join(outDir, 'resume-packets.jsonl'), 'utf8').trim()
+      );
       expect(packet.checks).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
@@ -480,7 +504,9 @@ describe('main-agent functional resume check', () => {
       ]);
 
       expect(code).toBe(1);
-      const packet = JSON.parse(readFileSync(path.join(outDir, 'resume-packets.jsonl'), 'utf8').trim());
+      const packet = JSON.parse(
+        readFileSync(path.join(outDir, 'resume-packets.jsonl'), 'utf8').trim()
+      );
       expect(packet.blockingIssues).toEqual(
         expect.arrayContaining([
           'resume-required-artifacts-indexed:artifact_not_indexed_or_hash_mismatch:_bmad-output/runtime/requirement-records/REQ-RESUME/evidence/proof.json',
@@ -508,10 +534,14 @@ describe('main-agent functional resume check', () => {
       ]);
 
       expect(code).toBe(1);
-      const packet = JSON.parse(readFileSync(path.join(outDir, 'resume-packets.jsonl'), 'utf8').trim());
+      const packet = JSON.parse(
+        readFileSync(path.join(outDir, 'resume-packets.jsonl'), 'utf8').trim()
+      );
       expect(packet.blockingIssues).toEqual(
         expect.arrayContaining([
-          expect.stringContaining('resume-failure-case-registry-valid:functional_resume_failure_case_registry_missing'),
+          expect.stringContaining(
+            'resume-failure-case-registry-valid:functional_resume_failure_case_registry_missing'
+          ),
         ])
       );
     } finally {
@@ -529,7 +559,11 @@ describe('main-agent functional resume check', () => {
             {
               groupId: 'hash_and_trace_checkpoint',
               label: 'Hash and trace checkpoint',
-              caseRefs: ['resume_happy_path', 'sourceDocumentHash_changed', 'trace_checkpoint_missing'],
+              caseRefs: [
+                'resume_happy_path',
+                'sourceDocumentHash_changed',
+                'trace_checkpoint_missing',
+              ],
             },
           ],
           failureCases: [
@@ -568,7 +602,9 @@ describe('main-agent functional resume check', () => {
       ]);
 
       expect(code).toBe(1);
-      const packet = JSON.parse(readFileSync(path.join(outDir, 'resume-packets.jsonl'), 'utf8').trim());
+      const packet = JSON.parse(
+        readFileSync(path.join(outDir, 'resume-packets.jsonl'), 'utf8').trim()
+      );
       expect(packet.resumeFailureCaseRegistryCoverage).toMatchObject({
         failureCases: 3,
         failureCaseExercisedCount: 2,
@@ -594,7 +630,11 @@ describe('main-agent functional resume check', () => {
             {
               groupId: 'hash_and_trace_checkpoint',
               label: 'Hash and trace checkpoint',
-              caseRefs: ['resume_happy_path', 'sourceDocumentHash_changed', 'trace_checkpoint_missing'],
+              caseRefs: [
+                'resume_happy_path',
+                'sourceDocumentHash_changed',
+                'trace_checkpoint_missing',
+              ],
             },
           ],
           failureCases: [
@@ -633,7 +673,9 @@ describe('main-agent functional resume check', () => {
       ]);
 
       expect(code).toBe(0);
-      const packet = JSON.parse(readFileSync(path.join(outDir, 'resume-packets.jsonl'), 'utf8').trim());
+      const packet = JSON.parse(
+        readFileSync(path.join(outDir, 'resume-packets.jsonl'), 'utf8').trim()
+      );
       expect(packet.resumeFailureCaseRegistryCoverage).toMatchObject({
         failureCases: 3,
         failureCaseExercisedCount: 3,
@@ -685,7 +727,9 @@ describe('main-agent functional resume check', () => {
       ]);
 
       expect(code).toBe(1);
-      const packet = JSON.parse(readFileSync(path.join(outDir, 'resume-packets.jsonl'), 'utf8').trim());
+      const packet = JSON.parse(
+        readFileSync(path.join(outDir, 'resume-packets.jsonl'), 'utf8').trim()
+      );
       expect(packet.blockingIssues).toEqual(
         expect.arrayContaining([
           expect.stringContaining('resume_failure_case_unknown_recovery_action'),
@@ -721,7 +765,9 @@ describe('main-agent functional resume check', () => {
       ]);
 
       expect(code).toBe(1);
-      const packet = JSON.parse(readFileSync(path.join(outDir, 'resume-packets.jsonl'), 'utf8').trim());
+      const packet = JSON.parse(
+        readFileSync(path.join(outDir, 'resume-packets.jsonl'), 'utf8').trim()
+      );
       expect(packet.blockingIssues).toEqual(
         expect.arrayContaining([
           expect.stringContaining('resume_failure_second_event_registry_present'),
@@ -765,7 +811,9 @@ describe('main-agent functional resume check', () => {
       ]);
 
       expect(code).toBe(1);
-      const packet = JSON.parse(readFileSync(path.join(outDir, 'resume-packets.jsonl'), 'utf8').trim());
+      const packet = JSON.parse(
+        readFileSync(path.join(outDir, 'resume-packets.jsonl'), 'utf8').trim()
+      );
       expect(packet.blockingIssues).toEqual(
         expect.arrayContaining([
           expect.stringContaining('resume_failure_recovery_action_missing_record_event_types'),
@@ -802,7 +850,9 @@ describe('main-agent functional resume check', () => {
       ]);
 
       expect(code).toBe(1);
-      const packet = JSON.parse(readFileSync(path.join(outDir, 'resume-packets.jsonl'), 'utf8').trim());
+      const packet = JSON.parse(
+        readFileSync(path.join(outDir, 'resume-packets.jsonl'), 'utf8').trim()
+      );
       expect(packet.blockingIssues).toEqual(
         expect.arrayContaining([
           expect.stringContaining('governance_event_type_missing_payload_contract'),
@@ -831,7 +881,9 @@ describe('main-agent functional resume check', () => {
       ]);
 
       expect(code).toBe(1);
-      const packet = JSON.parse(readFileSync(path.join(outDir, 'resume-packets.jsonl'), 'utf8').trim());
+      const packet = JSON.parse(
+        readFileSync(path.join(outDir, 'resume-packets.jsonl'), 'utf8').trim()
+      );
       expect(packet.blockingIssues).toEqual(
         expect.arrayContaining([
           expect.stringContaining('governance_event_type_registry_policy_missing'),

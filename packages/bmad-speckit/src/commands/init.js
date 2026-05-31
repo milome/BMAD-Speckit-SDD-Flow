@@ -239,7 +239,7 @@ function validateAIIds(aiIds, cwd) {
  * Run SyncService and SkillPublisher for each AI in the list.
  * @param {string} targetPath - Project root.
  * @param {string[]} aiIds - AI IDs to sync.
- * @param {{ bmadPath?: string, noAiSkills?: boolean }} options - Sync options.
+ * @param {{ bmadPath?: string, noAiSkills?: boolean, allowGlobalSkillWrites?: boolean, globalSkillWriteReason?: string }} options - Sync options.
  * @returns {{ published: string[], skippedReasons: string[] }} Aggregated results.
  */
 function syncAllAIs(targetPath, aiIds, options = {}) {
@@ -275,7 +275,10 @@ function createInitInstallTracker(targetPath, bmadRoot, selectedAIs, installedVi
   });
 
   tracker.registerProjectSpecs(collectManagedSurfaceSpecs(targetPath, bmadRoot, selectedAIs));
-  if (!(options.noAiSkills === true || options['no-ai-skills'] === true || options.aiSkills === false)) {
+  if (
+    options.allowGlobalSkillWrites === true &&
+    !(options.noAiSkills === true || options['no-ai-skills'] === true || options.aiSkills === false)
+  ) {
     tracker.registerGlobalSpecs(collectManagedGlobalSkillSpecs(targetPath, bmadRoot, selectedAIs));
   }
   return tracker;
@@ -390,9 +393,12 @@ async function runWorktreeFlow(targetPath, options, _log) {
 
   createWorktreeSkeleton(targetPath, bmadPathResolved, selectedAIs[0]);
   const noAiSkills = options.noAiSkills === true || options['no-ai-skills'] === true || options.aiSkills === false;
+  const allowGlobalSkillWrites = options.allowGlobalSkillWrites === true;
   const publishResult = syncAllAIs(targetPath, selectedAIs, {
     bmadPath: bmadPathResolved,
     noAiSkills,
+    allowGlobalSkillWrites,
+    globalSkillWriteReason: allowGlobalSkillWrites ? 'bmad-speckit init --allow-global-skill-writes' : '',
   });
   writeSelectedAI(targetPath, selectedAIs, 'latest', bmadPathResolved, {
     skillsPublished: publishResult.published,
@@ -435,6 +441,7 @@ async function runNonInteractiveFlow(targetPath, options, log) {
   const { generateSkeleton, createWorktreeSkeleton, writeSelectedAI, runGitInit } = require('./init-skeleton');
   const { generateScript } = require('./script-generator');
   const noAiSkills = options.noAiSkills === true || options['no-ai-skills'] === true || options.aiSkills === false;
+  const allowGlobalSkillWrites = options.allowGlobalSkillWrites === true;
 
   try {
     if (options.resolvedBmadPath) {
@@ -449,6 +456,8 @@ async function runNonInteractiveFlow(targetPath, options, log) {
       const publishResult = syncAllAIs(finalPath, selectedAIs, {
         bmadPath: options.resolvedBmadPath,
         noAiSkills,
+        allowGlobalSkillWrites,
+        globalSkillWriteReason: allowGlobalSkillWrites ? 'bmad-speckit init --allow-global-skill-writes' : '',
       });
       writeSelectedAI(finalPath, selectedAIs, tag, options.resolvedBmadPath, {
         skillsPublished: publishResult.published,
@@ -477,7 +486,11 @@ async function runNonInteractiveFlow(targetPath, options, log) {
         options
       );
       await generateSkeleton(finalPath, templateDir, modules, options.force);
-      const publishResult = syncAllAIs(finalPath, selectedAIs, { noAiSkills });
+      const publishResult = syncAllAIs(finalPath, selectedAIs, {
+        noAiSkills,
+        allowGlobalSkillWrites,
+        globalSkillWriteReason: allowGlobalSkillWrites ? 'bmad-speckit init --allow-global-skill-writes' : '',
+      });
       writeSelectedAI(finalPath, selectedAIs, tag, null, {
         skillsPublished: publishResult.published,
         skippedReasons: publishResult.skippedReasons,
@@ -651,7 +664,12 @@ async function runInteractiveFlow(targetPath, options, log) {
     );
     await generateSkeleton(finalPath, templateDir, modules, options.force);
     const noAiSkills = options.noAiSkills === true || options['no-ai-skills'] === true || options.aiSkills === false;
-    const publishResult = syncAllAIs(finalPath, selectedAIs, { noAiSkills });
+    const allowGlobalSkillWrites = options.allowGlobalSkillWrites === true;
+    const publishResult = syncAllAIs(finalPath, selectedAIs, {
+      noAiSkills,
+      allowGlobalSkillWrites,
+      globalSkillWriteReason: allowGlobalSkillWrites ? 'bmad-speckit init --allow-global-skill-writes' : '',
+    });
     writeSelectedAI(finalPath, selectedAIs, tag, null, {
       skillsPublished: publishResult.published,
       skippedReasons: publishResult.skippedReasons,

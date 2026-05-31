@@ -46,12 +46,7 @@ describe('fresh-regression-matrix helpers', () => {
 
   it('resolveFreshRegressionRoot normalizes feature worktree roots before resolving sibling fresh worktree', () => {
     delete process.env.FRESH_REGRESSION_ROOT;
-    const repo = path.join(
-      tmpBase,
-      'BMAD-Speckit-SDD-Flow',
-      '.worktrees',
-      'runtime-dashboard-sft'
-    );
+    const repo = path.join(tmpBase, 'BMAD-Speckit-SDD-Flow', '.worktrees', 'runtime-dashboard-sft');
     expect(resolveFreshRegressionRoot(repo)).toBe(
       path.join(tmpBase, 'BMAD-Speckit-SDD-Flow-01-fresh-regression')
     );

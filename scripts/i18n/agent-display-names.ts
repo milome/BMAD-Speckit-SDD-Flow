@@ -174,7 +174,11 @@ export function buildLocalizedAgentDisplayProfile(
   entry: AgentDisplayRegistryEntry | undefined,
   resolvedMode: AgentDisplayResolvedMode
 ): LocalizedAgentDisplayProfile {
-  const displayName = resolveLocalizedField(entry?.displayName, manifestRow.displayName, resolvedMode);
+  const displayName = resolveLocalizedField(
+    entry?.displayName,
+    manifestRow.displayName,
+    resolvedMode
+  );
   const title = resolveLocalizedField(entry?.title, manifestRow.title, resolvedMode);
 
   return {

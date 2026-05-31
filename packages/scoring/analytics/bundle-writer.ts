@@ -2,10 +2,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { exportCanonicalSamples } from './exporters';
 import type { DatasetBundleManifest, CanonicalSftSample } from './types';
-import {
-  renderValidationReportMarkdown,
-  type DatasetExportTarget,
-} from './validation-report';
+import { renderValidationReportMarkdown, type DatasetExportTarget } from './validation-report';
 import { computeStringHash } from '../utils/hash';
 import {
   assignDedupeClusters,
@@ -109,8 +106,12 @@ export async function writeDatasetBundle(
       test: exportResult.validationReport.counts.test,
     },
     provider_summary: {
-      provider_ids: [...new Set(clusteredSamples.map((sample) => sample.source.provider_id).filter(Boolean))],
-      provider_modes: [...new Set(clusteredSamples.map((sample) => sample.source.provider_mode).filter(Boolean))],
+      provider_ids: [
+        ...new Set(clusteredSamples.map((sample) => sample.source.provider_id).filter(Boolean)),
+      ],
+      provider_modes: [
+        ...new Set(clusteredSamples.map((sample) => sample.source.provider_mode).filter(Boolean)),
+      ],
     },
     redaction_summary: exportResult.validationReport.redaction_summary,
     validation_summary: {

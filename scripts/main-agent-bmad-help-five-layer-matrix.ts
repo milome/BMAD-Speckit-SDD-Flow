@@ -152,11 +152,7 @@ function outputRootForLayer(layerId: LayerDefinition['id']): string {
   }
 }
 
-function stageEvidencePath(
-  projectRoot: string,
-  layer: LayerDefinition,
-  stage: StageName
-): string {
+function stageEvidencePath(projectRoot: string, layer: LayerDefinition, stage: StageName): string {
   return path.join(projectRoot, layer.outputRoot, `${layer.id}-${stage}.complete.json`);
 }
 
@@ -188,16 +184,18 @@ function resolveStageEvidence(
   if (stage === ('release_gate' as StageName)) {
     const completed =
       fs.existsSync(root) &&
-      gateReportPassed(path.join(root, 'main-agent-release-gate-report.json'), (value) =>
-        value.critical_failures === 0 && value.blocked_sprint_status_update === false
+      gateReportPassed(
+        path.join(root, 'main-agent-release-gate-report.json'),
+        (value) => value.critical_failures === 0 && value.blocked_sprint_status_update === false
       );
     return { completed, evidenceKind: completed ? 'gate_report' : 'missing' };
   }
   if (stage === ('delivery_truth_gate' as StageName)) {
     const completed =
       fs.existsSync(root) &&
-      gateReportPassed(path.join(root, 'main-agent-delivery-truth-gate-report.json'), (value) =>
-        value.completionAllowed === true
+      gateReportPassed(
+        path.join(root, 'main-agent-delivery-truth-gate-report.json'),
+        (value) => value.completionAllowed === true
       );
     return { completed, evidenceKind: completed ? 'gate_report' : 'missing' };
   }
@@ -209,7 +207,10 @@ function resolveStageEvidence(
     });
     if (strictMarkerComplete) return { completed: true, evidenceKind: 'strict_marker' };
     const upstreamPrdComplete = hasUpstreamPlanningArtifact(projectRoot, ['prd.md']);
-    return { completed: upstreamPrdComplete, evidenceKind: upstreamPrdComplete ? 'upstream_artifact' : 'missing' };
+    return {
+      completed: upstreamPrdComplete,
+      evidenceKind: upstreamPrdComplete ? 'upstream_artifact' : 'missing',
+    };
   }
   if (!fs.existsSync(root)) {
     if (layer.id === 'layer_2' && stage === 'arch') {
@@ -232,11 +233,17 @@ function resolveStageEvidence(
   if (completed) return { completed: true, evidenceKind: 'strict_marker' };
   if (layer.id === 'layer_2' && stage === 'arch') {
     const upstreamComplete = hasUpstreamPlanningArtifact(projectRoot, ['architecture.md']);
-    return { completed: upstreamComplete, evidenceKind: upstreamComplete ? 'upstream_artifact' : 'missing' };
+    return {
+      completed: upstreamComplete,
+      evidenceKind: upstreamComplete ? 'upstream_artifact' : 'missing',
+    };
   }
   if (layer.id === 'layer_3' && stage === 'epics') {
     const upstreamComplete = hasUpstreamPlanningArtifact(projectRoot, ['epics.md']);
-    return { completed: upstreamComplete, evidenceKind: upstreamComplete ? 'upstream_artifact' : 'missing' };
+    return {
+      completed: upstreamComplete,
+      evidenceKind: upstreamComplete ? 'upstream_artifact' : 'missing',
+    };
   }
   return { completed: false, evidenceKind: 'missing' };
 }
@@ -244,9 +251,15 @@ function resolveStageEvidence(
 function exactStageEvidenceNames(stage: StageName): Set<string> {
   const normalized = String(stage).toLowerCase();
   const dashed = normalized.replace(/_/g, '-');
-  const names = new Set([`${normalized}.json`, `${normalized}.md`, `${dashed}.json`, `${dashed}.md`]);
+  const names = new Set([
+    `${normalized}.json`,
+    `${normalized}.md`,
+    `${dashed}.json`,
+    `${dashed}.md`,
+  ]);
   if (stage === 'arch') {
-    for (const item of ['architecture.md', 'architecture.json', 'arch.md', 'arch.json']) names.add(item);
+    for (const item of ['architecture.md', 'architecture.json', 'arch.md', 'arch.json'])
+      names.add(item);
   }
   if (stage === 'epics') {
     names.add('epics.md');
@@ -263,7 +276,10 @@ function exactStageEvidenceNames(stage: StageName): Set<string> {
   return names;
 }
 
-function gateReportPassed(filePath: string, predicate: (value: Record<string, unknown>) => boolean): boolean {
+function gateReportPassed(
+  filePath: string,
+  predicate: (value: Record<string, unknown>) => boolean
+): boolean {
   if (!fs.existsSync(filePath)) return false;
   try {
     return predicate(JSON.parse(fs.readFileSync(filePath, 'utf8')) as Record<string, unknown>);
@@ -329,7 +345,9 @@ export function resolveBmadHelpFiveLayerProgressState(input: {
       (layer) =>
         layer.stages.length > 0 &&
         layer.stages.every((stage) =>
-          stageStatuses.some((item) => item.layer === layer.id && item.stage === stage && item.completed)
+          stageStatuses.some(
+            (item) => item.layer === layer.id && item.stage === stage && item.completed
+          )
         )
     )
     .map((layer) => layer.id);
@@ -342,15 +360,28 @@ export function resolveBmadHelpFiveLayerProgressState(input: {
   };
 }
 
-function validateBmadHelpEntry(projectRoot: string): BmadHelpFiveLayerMatrixReport['bmadHelpEntry'] {
+function validateBmadHelpEntry(
+  projectRoot: string
+): BmadHelpFiveLayerMatrixReport['bmadHelpEntry'] {
   const commandPath = path.join(projectRoot, '_bmad', 'commands', 'bmad-help.md');
   const bmadsCommandPath = path.join(projectRoot, '_bmad', 'commands', 'bmads.md');
   const bmadsRuntimePath = path.join(projectRoot, '_bmad', '_config', 'bmads-runtime.yaml');
-  const workflowPath = path.join(projectRoot, '_bmad', 'core', 'skills', 'bmad-help', 'workflow.md');
+  const workflowPath = path.join(
+    projectRoot,
+    '_bmad',
+    'core',
+    'skills',
+    'bmad-help',
+    'workflow.md'
+  );
   const catalogPath = path.join(projectRoot, '_bmad', '_config', 'bmad-help.csv');
   const command = fs.readFileSync(commandPath, 'utf8');
-  const bmadsCommand = fs.existsSync(bmadsCommandPath) ? fs.readFileSync(bmadsCommandPath, 'utf8') : '';
-  const bmadsRuntime = fs.existsSync(bmadsRuntimePath) ? fs.readFileSync(bmadsRuntimePath, 'utf8') : '';
+  const bmadsCommand = fs.existsSync(bmadsCommandPath)
+    ? fs.readFileSync(bmadsCommandPath, 'utf8')
+    : '';
+  const bmadsRuntime = fs.existsSync(bmadsRuntimePath)
+    ? fs.readFileSync(bmadsRuntimePath, 'utf8')
+    : '';
   const workflow = fs.readFileSync(workflowPath, 'utf8');
   const catalog = fs.existsSync(catalogPath) ? fs.readFileSync(catalogPath, 'utf8') : '';
   const readme = readFirstExistingFile([
@@ -360,7 +391,14 @@ function validateBmadHelpEntry(projectRoot: string): BmadHelpFiveLayerMatrixRepo
   ]);
   const codexSetup = readFirstExistingFile([
     path.join(projectRoot, 'docs', 'how-to', 'codex-setup.md'),
-    path.join(projectRoot, 'node_modules', 'bmad-speckit-sdd-flow', 'docs', 'how-to', 'codex-setup.md'),
+    path.join(
+      projectRoot,
+      'node_modules',
+      'bmad-speckit-sdd-flow',
+      'docs',
+      'how-to',
+      'codex-setup.md'
+    ),
   ]);
   const layerTokens = ['layer_1', 'layer_2', 'layer_3', 'layer_4', 'layer_5'];
   return {
@@ -460,7 +498,10 @@ function runLayerStage(input: {
       flow: input.layer.flow,
       stage: input.stage,
       sourceMode: 'full_bmad',
-      contextScope: input.stage === 'prd' || input.stage === 'arch' || input.stage === 'epics' ? 'project' : 'story',
+      contextScope:
+        input.stage === 'prd' || input.stage === 'arch' || input.stage === 'epics'
+          ? 'project'
+          : 'story',
       runId: `${input.layer.id}-${input.stage}-run`,
       storyId: `${input.layer.id}-${input.stage}`,
       updatedAt: new Date().toISOString(),

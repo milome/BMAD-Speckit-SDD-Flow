@@ -6,10 +6,10 @@
 Overall Grade: B
 
 Dimension scores:
-- Functionality: 85/100
-- Code Quality: 82/100
-- Test Coverage: 78/100
-- Security: 80/100
+- Story Scope Integrity: 85/100
+- Story Acceptance Coverage: 82/100
+- Story Evidence Traceability: 78/100
+- Story Execution Readiness: 80/100
 
 Issue List:
 (none)

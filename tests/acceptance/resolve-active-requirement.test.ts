@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -12,6 +13,10 @@ import { mainEmitRuntimePolicy } from '../../scripts/emit-runtime-policy';
 import { mainMainAgentOrchestration } from '../../scripts/main-agent-orchestration';
 
 let root: string;
+
+function sha256Text(value: string): string {
+  return `sha256:${createHash('sha256').update(value, 'utf8').digest('hex')}`;
+}
 
 beforeEach(() => {
   root = fs.mkdtempSync(path.join(os.tmpdir(), 'resolved-runtime-context-'));
@@ -27,6 +32,7 @@ function writeRequirementRecord(overrides: Record<string, unknown> = {}): {
   indexPath: string;
 } {
   const requirementSetId = String(overrides.requirementSetId ?? 'REQSET-ACTIVE-001');
+  const sourcePath = 'tests/fixtures/requirements/active-requirement.md';
   const base = path.join(requirementRecordsRoot(root), requirementSetId);
   fs.mkdirSync(path.join(base, 'recovery'), { recursive: true });
   const recordPath = path.join(base, 'requirement-record.json');
@@ -41,6 +47,8 @@ function writeRequirementRecord(overrides: Record<string, unknown> = {}): {
       stage: overrides.stage ?? 'implement',
     },
   };
+  const runtimePolicySnapshotText = `${JSON.stringify(runtimePolicySnapshot, null, 2)}\n`;
+  const runtimePolicySnapshotPath = `_bmad-output/runtime/requirement-records/${requirementSetId}/recovery/runtime-policy-snapshot.json`;
   const record = {
     recordId: 'REQ-ACTIVE-001',
     requirementSetId,
@@ -51,19 +59,56 @@ function writeRequirementRecord(overrides: Record<string, unknown> = {}): {
     entryFlowClass: 'full_story_entry',
     workflowAdapter: 'bmad',
     sourceMode: 'full_bmad',
-    sourcePath: 'docs/prd.md',
+    sourcePath,
     sourceDocumentHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
     implementationConfirmationHash:
       'sha256:2222222222222222222222222222222222222222222222222222222222222222',
-    confirmationPageHash:
-      'sha256:3333333333333333333333333333333333333333333333333333333333333333',
+    confirmationPageHash: 'sha256:3333333333333333333333333333333333333333333333333333333333333333',
+    confirmationHistory: [
+      {
+        eventType: 'confirmation_recorded',
+        recordId: 'REQ-ACTIVE-001',
+        requirementSetId,
+        confirmedAt: '2026-05-19T00:00:00.000Z',
+        confirmedBy: 'test-fixture',
+        sourcePath,
+        sourceDocumentHash:
+          'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+        sourceDocumentHashScope: 'semantic_source_excluding_confirmation_bookkeeping',
+        implementationConfirmationHash:
+          'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+        implementationConfirmationHashScope:
+          'semantic_implementation_confirmation_excluding_bookkeeping',
+        confirmationPageHash:
+          'sha256:3333333333333333333333333333333333333333333333333333333333333333',
+        confirmationText:
+          'confirmed sourceDocumentHash=sha256:1111111111111111111111111111111111111111111111111111111111111111 implementationConfirmationHash=sha256:2222222222222222222222222222222222222222222222222222222222222222 confirmationPageHash=sha256:3333333333333333333333333333333333333333333333333333333333333333',
+        renderReportPath:
+          '_bmad-output/runtime/requirement-records/REQ-ACTIVE-001/confirmation/confirmation-render-report.json',
+        htmlPath:
+          '_bmad-output/runtime/requirement-records/REQ-ACTIVE-001/confirmation/confirmation.html',
+        entryFlow: 'story',
+        entryFlowClass: 'full_story_entry',
+        workflowAdapter: 'bmad',
+        contractAuthoringRequired: true,
+      },
+    ],
     epicId: 'epic-01',
     storyId: '1.1',
     runId: 'run-active-001',
     artifactRoot: '_bmad-output/implementation-artifacts/epic-01/story-1.1',
     artifactPath: '_bmad-output/implementation-artifacts/epic-01/story-1.1/story.md',
     runtimePolicySnapshotRef: {
-      path: `_bmad-output/runtime/requirement-records/${requirementSetId}/recovery/runtime-policy-snapshot.json`,
+      artifactType: 'runtime_policy_snapshot',
+      sourceOfTruthRole: 'projection',
+      path: runtimePolicySnapshotPath,
+      contentHash: sha256Text(runtimePolicySnapshotText),
+      producer: 'resolve-active-requirement.test',
+      purpose: 'exercise requirement-scoped runtime policy resolution',
+      relatedRequirementIds: [requirementSetId],
+      status: 'active',
+      inputVersion: 'resolve-active-requirement-fixture-v1',
+      outputVersion: 'runtime-policy-snapshot/v1',
     },
     recoveryContextRef: {
       path: `_bmad-output/runtime/requirement-records/${requirementSetId}/recovery/recovery-context.json`,
@@ -89,11 +134,19 @@ function writeRequirementRecord(overrides: Record<string, unknown> = {}): {
     },
     ...overrides,
   };
+  for (const source of [record.sourcePath, record.artifactPath]) {
+    if (typeof source !== 'string' || source.length === 0) continue;
+    const absolute = path.resolve(root, source);
+    fs.mkdirSync(path.dirname(absolute), { recursive: true });
+    if (!fs.existsSync(absolute)) {
+      fs.writeFileSync(absolute, `# Fixture source for ${record.recordId}\n`, 'utf8');
+    }
+  }
   fs.writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
   if (shouldWriteSnapshot) {
     fs.writeFileSync(
       path.join(base, 'recovery', 'runtime-policy-snapshot.json'),
-      `${JSON.stringify(runtimePolicySnapshot, null, 2)}\n`,
+      runtimePolicySnapshotText,
       'utf8'
     );
   }
@@ -152,10 +205,52 @@ function captureStdout(fn: () => number): { code: number; stdout: string; stderr
   }
 }
 
+function writeFakeReqTraceSkill(projectRoot: string): void {
+  const scriptPath = path.join(
+    projectRoot,
+    '_bmad',
+    'skills',
+    'req-trace-matrix-prompt-generator',
+    'scripts',
+    'generate_prompt.js'
+  );
+  fs.mkdirSync(path.dirname(scriptPath), { recursive: true });
+  fs.writeFileSync(
+    scriptPath,
+    [
+      '#!/usr/bin/env node',
+      "const fs = require('node:fs');",
+      "const path = require('node:path');",
+      "const crypto = require('node:crypto');",
+      'function arg(name) { const i = process.argv.indexOf(name); return i === -1 ? null : process.argv[i + 1]; }',
+      "function sha(value) { return 'sha256:' + crypto.createHash('sha256').update(value, 'utf8').digest('hex'); }",
+      "const outDir = arg('--out-dir');",
+      "const recordPath = arg('--requirement-record');",
+      "const profilePath = arg('--execution-discipline-profile-ref');",
+      "if (!outDir || !recordPath) { console.log('BLOCK: missing args'); process.exit(3); }",
+      'fs.mkdirSync(outDir, { recursive: true });',
+      "const record = JSON.parse(fs.readFileSync(recordPath, 'utf8'));",
+      "const profile = profilePath && fs.existsSync(profilePath) ? JSON.parse(fs.readFileSync(profilePath, 'utf8')) : { profileId: 'test-profile', profileHash: 'sha256:test' };",
+      "const modelPacket = { artifactRole: 'execution_authority', sourceDocumentHash: record.sourceDocumentHash, implementationConfirmationHash: record.implementationConfirmationHash, executionDisciplineProfile: profile };",
+      "fs.writeFileSync(path.join(outDir, 'model_packet.json'), JSON.stringify(modelPacket, null, 2) + '\\n', 'utf8');",
+      "fs.writeFileSync(path.join(outDir, 'human_prompt.txt'), `Execution Discipline Profile\\nprofileId: ${profile.profileId}\\nprofileHash: ${profile.profileHash}\\ncompiled direct body\\n`, 'utf8');",
+      "const goalPath = path.join(outDir, 'goal_execution.md');",
+      "fs.writeFileSync(goalPath, `## Execution Discipline Profile\\nprofileId: ${profile.profileId}\\nprofileHash: ${profile.profileHash}\\n`, 'utf8');",
+      "const receipt = { decision: 'pass', goalCommand: { mode: 'native_goal_document_ref', documentHash: sha(fs.readFileSync(goalPath, 'utf8')) }, executionHost: arg('--execution-host'), humanPromptProfile: arg('--human-prompt-profile'), humanPromptLanguage: arg('--prompt-language'), continuationDirective: { strategy: 'test' }, humanPromptRequiredFragmentsPassed: true, executionDisciplineProfile: { profileId: profile.profileId, profileHash: profile.profileHash, humanPromptProfileRendered: true, goalExecutionProfileRendered: true } };",
+      "fs.writeFileSync(path.join(outDir, 'audit_receipt.json'), JSON.stringify(receipt, null, 2) + '\\n', 'utf8');",
+      'process.exit(0);',
+      '',
+    ].join('\n'),
+    'utf8'
+  );
+}
+
 describe('Active Requirement Resolver / ResolvedRuntimeContext', () => {
   it('resolves active requirement from requirement-records index without legacy project context', () => {
     const { recordPath, indexPath } = writeRequirementRecord();
-    expect(fs.existsSync(path.join(root, '_bmad-output', 'runtime', 'context', 'project.json'))).toBe(false);
+    expect(
+      fs.existsSync(path.join(root, '_bmad-output', 'runtime', 'context', 'project.json'))
+    ).toBe(false);
 
     const resolved = resolveActiveRequirement({ root });
     expect(resolved).toMatchObject({
@@ -249,7 +344,9 @@ describe('Active Requirement Resolver / ResolvedRuntimeContext', () => {
       stage: 'implement',
       runtimePolicySnapshotExists: false,
     });
-    expect(fs.existsSync(path.join(root, '_bmad-output', 'runtime', 'context', 'project.json'))).toBe(false);
+    expect(
+      fs.existsSync(path.join(root, '_bmad-output', 'runtime', 'context', 'project.json'))
+    ).toBe(false);
   });
 
   it('main-agent inspect uses requirement record implementation gate and orchestration hints', () => {
@@ -319,7 +416,12 @@ describe('Active Requirement Resolver / ResolvedRuntimeContext', () => {
     const surface = JSON.parse(result.stdout);
     expect(surface.mainAgentNextAction).toBe('dispatch_implement');
     expect(surface.mainAgentReady).toBe(true);
-    expect(surface.runtimeResumeProjection.blockingReasonRefs).toEqual([]);
+    expect(surface.runtimeResumeProjection.blockingReasonRefs).toEqual([
+      {
+        sourceType: 'compiled_prompt_ref',
+        id: 'missing_current_hash_compiledPromptRef',
+      },
+    ]);
   });
 
   it('dispatch-plan hydrates requirement-scoped state when explicit record args bypass a stale legacy state', () => {
@@ -331,6 +433,7 @@ describe('Active Requirement Resolver / ResolvedRuntimeContext', () => {
           'sha256:4444444444444444444444444444444444444444444444444444444444444444',
       },
     });
+    writeFakeReqTraceSkill(root);
     fs.writeFileSync(
       indexPath,
       `${JSON.stringify(
@@ -351,7 +454,13 @@ describe('Active Requirement Resolver / ResolvedRuntimeContext', () => {
       )}\n`,
       'utf8'
     );
-    const legacyStateDir = path.join(root, '_bmad-output', 'runtime', 'governance', 'orchestration-state');
+    const legacyStateDir = path.join(
+      root,
+      '_bmad-output',
+      'runtime',
+      'governance',
+      'orchestration-state'
+    );
     fs.mkdirSync(legacyStateDir, { recursive: true });
     fs.writeFileSync(
       path.join(legacyStateDir, 'story-old-session.json'),
@@ -365,7 +474,14 @@ describe('Active Requirement Resolver / ResolvedRuntimeContext', () => {
           nextAction: 'await_user',
           pendingPacket: {
             packetId: 'old-packet',
-            packetPath: path.join(root, '_bmad-output', 'runtime', 'governance', 'packets', 'old.json'),
+            packetPath: path.join(
+              root,
+              '_bmad-output',
+              'runtime',
+              'governance',
+              'packets',
+              'old.json'
+            ),
             packetKind: 'execution',
             status: 'completed',
             createdAt: '2026-05-20T00:00:00.000Z',
@@ -470,6 +586,7 @@ describe('Active Requirement Resolver / ResolvedRuntimeContext', () => {
         },
       ],
     });
+    writeFakeReqTraceSkill(root);
     const stateDir = path.join(path.dirname(recordPath), 'orchestration', 'orchestration-state');
     const packetDir = path.join(path.dirname(recordPath), 'prompts', 'prompt-packets');
     fs.mkdirSync(stateDir, { recursive: true });

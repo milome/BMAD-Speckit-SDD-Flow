@@ -151,20 +151,25 @@ PRD审计报告
 
     it('正则失败 + 有 key + LLM 成功 → 返回 RunScoreRecord', async () => {
       process.env.SCORING_LLM_API_KEY = 'test-key';
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          choices: [{
-            message: {
-              content: JSON.stringify({
-                grade: 'B',
-                issues: [{ severity: '高', description: '需求缺失' }],
-                veto_items: [],
-              }),
-            },
-          }],
-        }),
-      }));
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            choices: [
+              {
+                message: {
+                  content: JSON.stringify({
+                    grade: 'B',
+                    issues: [{ severity: '高', description: '需求缺失' }],
+                    veto_items: [],
+                  }),
+                },
+              },
+            ],
+          }),
+        })
+      );
 
       const result = await parsePrdReport({
         content: contentWithoutGrade,

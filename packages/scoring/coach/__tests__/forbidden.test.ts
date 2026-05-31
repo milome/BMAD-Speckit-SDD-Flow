@@ -30,4 +30,3 @@ describe('forbidden words validation', () => {
     expect(out.warnings.length).toBeGreaterThan(0);
   });
 });
-

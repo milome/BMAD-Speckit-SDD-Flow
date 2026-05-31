@@ -65,9 +65,9 @@ describe('BMADS five-layer main-agent matrix', () => {
       expect(report.layers.every((layer) => layer.passed)).toBe(true);
       expect(report.steps.length).toBeGreaterThanOrEqual(10);
       expect(report.steps.every((step) => step.passed)).toBe(true);
-      expect(report.steps.every((step) => step.orchestration.pendingPacketStatus === 'completed')).toBe(
-        true
-      );
+      expect(
+        report.steps.every((step) => step.orchestration.pendingPacketStatus === 'completed')
+      ).toBe(true);
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }
@@ -133,7 +133,11 @@ describe('BMADS five-layer main-agent matrix', () => {
     try {
       fs.cpSync(path.resolve('_bmad'), path.join(root, '_bmad'), { recursive: true });
       writeLayer1Inputs(root);
-      markBmadHelpFiveLayerStageComplete({ projectRoot: root, layer: 'layer_1', stage: 'prd' as any });
+      markBmadHelpFiveLayerStageComplete({
+        projectRoot: root,
+        layer: 'layer_1',
+        stage: 'prd' as any,
+      });
 
       const policy = resolveBmadHelpRuntimePolicy({
         projectRoot: root,
@@ -269,7 +273,13 @@ describe('BMADS five-layer main-agent matrix', () => {
       expect(state.currentStage).toBe('delivery_truth_gate');
 
       fs.writeFileSync(
-        path.join(root, '_bmad-output', 'runtime', 'gates', 'main-agent-delivery-truth-gate-report.json'),
+        path.join(
+          root,
+          '_bmad-output',
+          'runtime',
+          'gates',
+          'main-agent-delivery-truth-gate-report.json'
+        ),
         '{"completionAllowed":false}\n',
         'utf8'
       );
@@ -283,7 +293,13 @@ describe('BMADS five-layer main-agent matrix', () => {
       expect(state.completedLayers).not.toContain('layer_5');
 
       fs.writeFileSync(
-        path.join(root, '_bmad-output', 'runtime', 'gates', 'main-agent-delivery-truth-gate-report.json'),
+        path.join(
+          root,
+          '_bmad-output',
+          'runtime',
+          'gates',
+          'main-agent-delivery-truth-gate-report.json'
+        ),
         '{"completionAllowed":true}\n',
         'utf8'
       );
@@ -347,13 +363,21 @@ describe('BMADS five-layer main-agent matrix', () => {
         '{"flow":"story","stage":"prd"}\n',
         'utf8'
       );
-      fs.writeFileSync(path.join(root, '_bmad-output', 'planning-artifacts', 'prd.md'), '# PRD\n', 'utf8');
+      fs.writeFileSync(
+        path.join(root, '_bmad-output', 'planning-artifacts', 'prd.md'),
+        '# PRD\n',
+        'utf8'
+      );
       fs.writeFileSync(
         path.join(root, '_bmad-output', 'planning-artifacts', 'architecture.md'),
         '# Architecture\n',
         'utf8'
       );
-      fs.writeFileSync(path.join(root, '_bmad-output', 'planning-artifacts', 'epics.md'), '# Epics\n', 'utf8');
+      fs.writeFileSync(
+        path.join(root, '_bmad-output', 'planning-artifacts', 'epics.md'),
+        '# Epics\n',
+        'utf8'
+      );
 
       const state = resolveBmadHelpFiveLayerProgressState({ projectRoot: root });
 
@@ -362,15 +386,33 @@ describe('BMADS five-layer main-agent matrix', () => {
       expect(state.completedLayers).toEqual(['layer_1', 'layer_2']);
       expect(state.stageStatuses).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ layer: 'layer_1', stage: 'prd', evidenceKind: 'upstream_artifact' }),
-          expect.objectContaining({ layer: 'layer_2', stage: 'arch', evidenceKind: 'upstream_artifact' }),
-          expect.objectContaining({ layer: 'layer_3', stage: 'epics', evidenceKind: 'upstream_artifact' }),
+          expect.objectContaining({
+            layer: 'layer_1',
+            stage: 'prd',
+            evidenceKind: 'upstream_artifact',
+          }),
+          expect.objectContaining({
+            layer: 'layer_2',
+            stage: 'arch',
+            evidenceKind: 'upstream_artifact',
+          }),
+          expect.objectContaining({
+            layer: 'layer_3',
+            stage: 'epics',
+            evidenceKind: 'upstream_artifact',
+          }),
         ])
       );
       expect(
         validateLayer1PrdCompletionMarker({
           projectRoot: root,
-          markerPath: path.join(root, '_bmad-output', 'runtime', 'context', 'layer_1-prd.complete.json'),
+          markerPath: path.join(
+            root,
+            '_bmad-output',
+            'runtime',
+            'context',
+            'layer_1-prd.complete.json'
+          ),
         })
       ).toBe(false);
     } finally {

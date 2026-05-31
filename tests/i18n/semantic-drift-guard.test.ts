@@ -51,7 +51,9 @@ describe('protected-token-check', () => {
     const result = assertProtectedTokensPreserved(tokens, outputs);
 
     expect(result.valid).toBe(false);
-    expect(result.errors).toContain('Protected token missing from output: --triggerStage speckit_4_2');
+    expect(result.errors).toContain(
+      'Protected token missing from output: --triggerStage speckit_4_2'
+    );
   });
 
   it('fails when anchor tokens are altered', () => {

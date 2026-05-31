@@ -97,12 +97,15 @@ function writeFakeCodexBinary(root: string): string {
     fakeCodexPath,
     [
       "const fs = require('fs');",
+      "const path = require('path');",
       "const input = fs.readFileSync(0, 'utf8');",
       'const reportPath = input.match(/write a JSON TaskReport to: (.+)/i)?.[1]?.trim();',
       'const packetId = input.match(/Packet ID: (.+)/i)?.[1]?.trim();',
+      'const allowedScopeLine = input.match(/Allowed write scope: (.+)/i)?.[1] || "";',
+      'const evidencePath = allowedScopeLine.split(",").map((item) => item.trim()).find((item) => item && !item.endsWith("/**") && fs.existsSync(path.resolve(item))) || reportPath;',
       'if (!reportPath || !packetId) process.exit(2);',
-      "fs.mkdirSync(require('path').dirname(reportPath), { recursive: true });",
-      "fs.writeFileSync(reportPath, JSON.stringify({ packetId, status: 'done', filesChanged: [], validationsRun: ['fake-codex-consumer-exec'], evidence: ['fake-codex-consumer-exec'], downstreamContext: ['consumer codex exec completed'] }, null, 2) + '\\n', 'utf8');",
+      'fs.mkdirSync(path.dirname(reportPath), { recursive: true });',
+      "fs.writeFileSync(reportPath, JSON.stringify({ packetId, status: 'done', filesChanged: [], validationsRun: ['fake-codex-consumer-exec'], evidence: [evidencePath], downstreamContext: ['consumer codex exec completed'] }, null, 2) + '\\n', 'utf8');",
       'process.exit(0);',
       '',
     ].join('\n')

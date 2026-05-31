@@ -34,9 +34,7 @@ function buildStructuredRecommendationItems(input: {
   values: string[];
   items?: Array<{ value: string; reason: string; confidence: 'low' | 'medium' | 'high' }>;
 }): StructuredGovernanceRecommendationItem[] {
-  const itemMap = new Map(
-    (input.items ?? []).map((item) => [item.value, item] as const)
-  );
+  const itemMap = new Map((input.items ?? []).map((item) => [item.value, item] as const));
 
   return unique(input.values)
     .filter(Boolean)
@@ -129,7 +127,9 @@ export function filterModelGovernanceHintCandidate(
     rationale: candidate.rationale,
     overrideAllowed: false,
     debug: {
-      strippedForbiddenOverrides: unique(strippedForbiddenOverrides) as ModelGovernanceForbiddenOverrideKey[],
+      strippedForbiddenOverrides: unique(
+        strippedForbiddenOverrides
+      ) as ModelGovernanceForbiddenOverrideKey[],
       ignoredBecause: unique(ignoredBecause),
     },
   };

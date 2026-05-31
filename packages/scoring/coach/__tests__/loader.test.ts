@@ -78,10 +78,7 @@ describe('loadRunRecords', () => {
     const runId = `loader-mixed-${Date.now()}`;
     const dataPath = path.join(os.tmpdir(), `coach-loader-mixed-${Date.now()}`);
     fs.mkdirSync(dataPath, { recursive: true });
-    const mixed = [
-      makeRecord(runId, 'implement'),
-      makeRecord('other-run', 'post_impl'),
-    ];
+    const mixed = [makeRecord(runId, 'implement'), makeRecord('other-run', 'post_impl')];
     fs.writeFileSync(path.join(dataPath, `${runId}.json`), JSON.stringify(mixed, null, 2), 'utf-8');
 
     const records = loadRunRecords(runId, dataPath);
@@ -91,4 +88,3 @@ describe('loadRunRecords', () => {
     fs.rmSync(dataPath, { recursive: true, force: true });
   });
 });
-

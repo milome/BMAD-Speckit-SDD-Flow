@@ -366,4 +366,3 @@ export function runFreshRegressionMatrixMain(): number {
 if (require.main === module) {
   process.exitCode = runFreshRegressionMatrixMain();
 }
-

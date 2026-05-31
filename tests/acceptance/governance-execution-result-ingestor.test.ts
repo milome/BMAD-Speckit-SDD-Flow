@@ -54,7 +54,12 @@ const GOVERNANCE_EVENT_TYPE_REGISTRY_POLICY = {
   controlWriteModePolicies: [
     {
       allowedControlWriteMode: 'control',
-      allowedWritesControlFields: ['executionIterations', 'gateChecks', 'hookTrustReceipts', 'rerunLoops'],
+      allowedWritesControlFields: [
+        'executionIterations',
+        'gateChecks',
+        'hookTrustReceipts',
+        'rerunLoops',
+      ],
     },
     {
       allowedControlWriteMode: 'artifact_only',
@@ -140,14 +145,20 @@ const REGISTRY_BINDING = {
   governanceEventTypeRegistry: GOVERNANCE_EVENT_TYPE_REGISTRY,
   registryPolicyHash: governanceEventTypeRegistryPolicyHash(GOVERNANCE_EVENT_TYPE_REGISTRY_POLICY),
   registryHash: governanceEventTypeRegistryHash(GOVERNANCE_EVENT_TYPE_REGISTRY),
-  architectureConfirmationHash: 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+  architectureConfirmationHash:
+    'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
 };
 
 describe('governance execution result ingestor', () => {
   it('moves running execution records into awaiting_rerun_gate on successful result', async () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'gov-exec-result-ingestor-'));
     try {
-      const packetPath = path.join(root, '_bmad-output', 'planning-artifacts', 'attempt-1.cursor-packet.md');
+      const packetPath = path.join(
+        root,
+        '_bmad-output',
+        'planning-artifacts',
+        'attempt-1.cursor-packet.md'
+      );
       mkdirSync(path.dirname(packetPath), { recursive: true });
       writeFileSync(packetPath, '# packet\n', 'utf8');
 
@@ -187,7 +198,12 @@ describe('governance execution result ingestor', () => {
   it('ingests no-hook execution status through a typed GovernanceTransportEnvelope', async () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'gov-exec-envelope-ingestor-'));
     try {
-      const packetPath = path.join(root, '_bmad-output', 'planning-artifacts', 'attempt-1.codex-packet.md');
+      const packetPath = path.join(
+        root,
+        '_bmad-output',
+        'planning-artifacts',
+        'attempt-1.codex-packet.md'
+      );
       mkdirSync(path.dirname(packetPath), { recursive: true });
       writeFileSync(packetPath, '# packet\n', 'utf8');
 
@@ -286,8 +302,12 @@ describe('governance execution result ingestor', () => {
     );
 
     expect(validation.ok).toBe(false);
-    expect(validation.mismatches).toContain('envelope_payload_kind_mismatch:gate_check_recorded:status');
-    expect(validation.mismatches).toContain('envelope_forbidden_field_present:gate_check_recorded:status');
+    expect(validation.mismatches).toContain(
+      'envelope_payload_kind_mismatch:gate_check_recorded:status'
+    );
+    expect(validation.mismatches).toContain(
+      'envelope_forbidden_field_present:gate_check_recorded:status'
+    );
   });
 
   it('blocks codex hooks-enabled trust assignment without independent probe receipts and hashes', () => {
@@ -310,7 +330,8 @@ describe('governance execution result ingestor', () => {
           hooksFeatureStable: true,
           capabilityProbeReceiptRef: { path: 'capability-probe.json' },
           sessionStartSmokeReceiptRef: { path: 'session-start-smoke.json' },
-          managedHookConfigHash: 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          managedHookConfigHash:
+            'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
         },
       },
       REGISTRY_BINDING
@@ -339,11 +360,22 @@ describe('governance execution result ingestor', () => {
           hookTrust: 'trusted',
           codexVersion: '0.130.0',
           hooksFeatureStable: true,
-          capabilityProbeReceiptRef: { path: 'capability-probe.json', contentHash: 'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' },
-          sessionStartSmokeReceiptRef: { path: 'session-start-smoke.json', contentHash: 'sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc' },
-          hookTrustReceiptRef: { path: 'hook-trust-receipt.json', contentHash: 'sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd' },
-          managedHookConfigHash: 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-          runtimePolicySnapshotHash: 'sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+          capabilityProbeReceiptRef: {
+            path: 'capability-probe.json',
+            contentHash: 'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+          },
+          sessionStartSmokeReceiptRef: {
+            path: 'session-start-smoke.json',
+            contentHash: 'sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+          },
+          hookTrustReceiptRef: {
+            path: 'hook-trust-receipt.json',
+            contentHash: 'sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+          },
+          managedHookConfigHash:
+            'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          runtimePolicySnapshotHash:
+            'sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
         },
       },
       REGISTRY_BINDING
@@ -369,7 +401,10 @@ describe('governance execution result ingestor', () => {
 
     expect(validation.ok).toBe(false);
     expect(validation.mismatches).toEqual(
-      expect.arrayContaining(['envelope_event_registry_missing', 'envelope_event_registry_hash_missing'])
+      expect.arrayContaining([
+        'envelope_event_registry_missing',
+        'envelope_event_registry_hash_missing',
+      ])
     );
   });
 
@@ -392,7 +427,9 @@ describe('governance execution result ingestor', () => {
     );
 
     expect(validation.ok).toBe(false);
-    expect(validation.mismatches).toContain('envelope_decision_invalid:architecture_reaudit_blocked');
+    expect(validation.mismatches).toContain(
+      'envelope_decision_invalid:architecture_reaudit_blocked'
+    );
   });
 
   it('requires artifactRefs only when registry payloadContract declares it', () => {
@@ -413,7 +450,9 @@ describe('governance execution result ingestor', () => {
     );
 
     expect(validation.ok).toBe(false);
-    expect(validation.mismatches).toContain('envelope_required_field_missing:artifact_indexed:artifactRefs');
+    expect(validation.mismatches).toContain(
+      'envelope_required_field_missing:artifact_indexed:artifactRefs'
+    );
   });
 
   it('rejects artifact-only events that smuggle control fields in payload', () => {
@@ -473,9 +512,9 @@ describe('governance execution result ingestor', () => {
     } as const;
 
     expect(validateGovernanceTransportEnvelope(envelope, REGISTRY_BINDING).ok).toBe(true);
-    expect(() => ingestGovernanceTransportEnvelope('/tmp/not-used', envelope as any, REGISTRY_BINDING)).toThrow(
-      'unsupported governance-execution-result-ingestor eventType: artifact_indexed'
-    );
+    expect(() =>
+      ingestGovernanceTransportEnvelope('/tmp/not-used', envelope as any, REGISTRY_BINDING)
+    ).toThrow('unsupported governance-execution-result-ingestor eventType: artifact_indexed');
   });
 
   it('rejects self-consistent registries whose payloadContract violates policy', () => {
@@ -508,7 +547,9 @@ describe('governance execution result ingestor', () => {
       {
         governanceEventTypeRegistryPolicy: GOVERNANCE_EVENT_TYPE_REGISTRY_POLICY,
         governanceEventTypeRegistry: invalidRegistry,
-        registryPolicyHash: governanceEventTypeRegistryPolicyHash(GOVERNANCE_EVENT_TYPE_REGISTRY_POLICY),
+        registryPolicyHash: governanceEventTypeRegistryPolicyHash(
+          GOVERNANCE_EVENT_TYPE_REGISTRY_POLICY
+        ),
         registryHash: governanceEventTypeRegistryHash(invalidRegistry),
         architectureConfirmationHash: REGISTRY_BINDING.architectureConfirmationHash,
       }

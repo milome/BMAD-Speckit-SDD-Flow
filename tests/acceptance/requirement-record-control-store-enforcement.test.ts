@@ -17,16 +17,21 @@ describe('requirement record control store enforcement', () => {
   it('forces control writers through control-events jsonl atomic reducer path', () => {
     for (const scriptPath of CONTROL_WRITER_SCRIPTS) {
       const source = readProjectFile(scriptPath);
-      expect(source, `${scriptPath} must use the control-store committer`).toContain('appendControlEventAndReplay');
-      expect(source, `${scriptPath} must not overwrite requirement-record.json directly`).not.toMatch(
-        /writeFileSync\s*\(\s*recordPath\b/u
+      expect(source, `${scriptPath} must use the control-store committer`).toContain(
+        'appendControlEventAndReplay'
       );
-      expect(source, `${scriptPath} must not default control events to mentor-events.jsonl`).not.toMatch(
-        /data['"`]\s*,\s*['"`]mentor-events\.jsonl/u
-      );
-      expect(source, `${scriptPath} must not hard-code data/mentor-events.jsonl as a control log`).not.toContain(
-        'data/mentor-events.jsonl'
-      );
+      expect(
+        source,
+        `${scriptPath} must not overwrite requirement-record.json directly`
+      ).not.toMatch(/writeFileSync\s*\(\s*recordPath\b/u);
+      expect(
+        source,
+        `${scriptPath} must not default control events to mentor-events.jsonl`
+      ).not.toMatch(/data['"`]\s*,\s*['"`]mentor-events\.jsonl/u);
+      expect(
+        source,
+        `${scriptPath} must not hard-code data/mentor-events.jsonl as a control log`
+      ).not.toContain('data/mentor-events.jsonl');
     }
   });
 

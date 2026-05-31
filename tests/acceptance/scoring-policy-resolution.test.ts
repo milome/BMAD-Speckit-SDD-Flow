@@ -13,9 +13,13 @@ function copyPolicyFixture(root: string): void {
     path.join(repoRoot, '_bmad', '_config', 'scoring-policy.contract.yaml'),
     path.join(root, '_bmad', '_config', 'scoring-policy.contract.yaml')
   );
-  fs.cpSync(path.join(repoRoot, 'packages', 'scoring', 'rules'), path.join(root, 'packages', 'scoring', 'rules'), {
-    recursive: true,
-  });
+  fs.cpSync(
+    path.join(repoRoot, 'packages', 'scoring', 'rules'),
+    path.join(root, 'packages', 'scoring', 'rules'),
+    {
+      recursive: true,
+    }
+  );
 }
 
 describe('resolveScoringPolicy', () => {
@@ -29,7 +33,9 @@ describe('resolveScoringPolicy', () => {
       expect(policy.contractHash).toMatch(/^sha256:[a-f0-9]{64}$/);
       expect(policy.scoringPolicyHash).toMatch(/^sha256:[a-f0-9]{64}$/);
       expect(policy.stageRuleRefs.length).toBeGreaterThanOrEqual(7);
-      expect(policy.stageRuleRefs.every((ref) => /^sha256:[a-f0-9]{64}$/.test(ref.hash))).toBe(true);
+      expect(policy.stageRuleRefs.every((ref) => /^sha256:[a-f0-9]{64}$/.test(ref.hash))).toBe(
+        true
+      );
       expect(policy.requiredScoreArtifactKinds).toContain('score_record');
       expect(policy.scoreMaterializationPolicy.requireScoreWriteResultOk).toBe(true);
     } finally {

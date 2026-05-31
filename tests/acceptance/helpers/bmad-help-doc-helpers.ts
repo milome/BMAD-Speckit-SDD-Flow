@@ -30,7 +30,9 @@ export function readBmadHelpTasksPlan(): string {
 
 export function readBmadHelpExecutionPlan(): string {
   return (
-    readRepoDocIfExists('docs/plans/2026-04-11-bmad-help-state-aware-routing-phase1-execution-plan.md') ??
+    readRepoDocIfExists(
+      'docs/plans/2026-04-11-bmad-help-state-aware-routing-phase1-execution-plan.md'
+    ) ??
     [
       readRepoDoc('docs/reference/bmad-help-routing-model.md'),
       '`T014` and `T016` are present as explicit pre-implementation blockers',

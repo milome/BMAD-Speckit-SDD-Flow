@@ -51,10 +51,15 @@ function writeArchitectureConfirmation(overrides: Record<string, unknown> = {}):
     ],
     targetPathsHash: 'sha256:3333333333333333333333333333333333333333333333333333333333333333',
     consumerImpactScan: [
-      { category: 'data_model', status: 'triggered', summary: 'schema changes require architecture confirmation' },
+      {
+        category: 'data_model',
+        status: 'triggered',
+        summary: 'schema changes require architecture confirmation',
+      },
       { category: 'frontend_ux', status: 'not_triggered', summary: 'no UI change' },
     ],
-    consumerImpactScanHash: 'sha256:4444444444444444444444444444444444444444444444444444444444444444',
+    consumerImpactScanHash:
+      'sha256:4444444444444444444444444444444444444444444444444444444444444444',
     governanceImpactScan: [
       {
         category: 'orchestration_hook_gate_ingest_rerun_closeout',
@@ -62,10 +67,19 @@ function writeArchitectureConfirmation(overrides: Record<string, unknown> = {}):
         summary: 'readiness gate and controlled ingest are affected',
       },
     ],
-    governanceImpactScanHash: 'sha256:5555555555555555555555555555555555555555555555555555555555555555',
+    governanceImpactScanHash:
+      'sha256:5555555555555555555555555555555555555555555555555555555555555555',
     fullArchitectureTriggerMatrix: [
-      { trigger: 'shared_schema_or_contract_changed', decision: 'triggered', reason: 'record schema is affected' },
-      { trigger: 'frontend_ux_changed', decision: 'not_triggered', reason: 'no user-facing UI change' },
+      {
+        trigger: 'shared_schema_or_contract_changed',
+        decision: 'triggered',
+        reason: 'record schema is affected',
+      },
+      {
+        trigger: 'frontend_ux_changed',
+        decision: 'not_triggered',
+        reason: 'no user-facing UI change',
+      },
     ],
     riskStatement: 'Fixture architecture risk statement.',
     rollbackPlan: 'Fixture rollback plan.',
@@ -75,8 +89,10 @@ function writeArchitectureConfirmation(overrides: Record<string, unknown> = {}):
       implementationConfirmationHash:
         'sha256:2222222222222222222222222222222222222222222222222222222222222222',
       targetPathsHash: 'sha256:3333333333333333333333333333333333333333333333333333333333333333',
-      consumerImpactScanHash: 'sha256:4444444444444444444444444444444444444444444444444444444444444444',
-      governanceImpactScanHash: 'sha256:5555555555555555555555555555555555555555555555555555555555555555',
+      consumerImpactScanHash:
+        'sha256:4444444444444444444444444444444444444444444444444444444444444444',
+      governanceImpactScanHash:
+        'sha256:5555555555555555555555555555555555555555555555555555555555555555',
       resolvedRecipeHash: recipe.resolvedRecipeHash,
     },
     architectureConfirmationArtifactRef: {
@@ -148,23 +164,35 @@ describe('render-architecture-confirmation-html', () => {
     expect(html).toContain('data-copy-status');
     expect(html).toContain('--shadow:none');
     expect(html).toContain('main.layout{display:grid;grid-template-columns:280px minmax(0,1fr)');
-    expect(html).toContain('.hero,.card{background:transparent;border:0;border-top:1px solid var(--line);border-radius:0;box-shadow:none');
+    expect(html).toContain(
+      '.hero,.card{background:transparent;border:0;border-top:1px solid var(--line);border-radius:0;box-shadow:none'
+    );
     expect(html).toContain('counter-reset:arch-section');
-    expect(html).toContain('.card>h2::before,.section-title h2::before{counter-increment:arch-section');
-    expect(html).toContain('.table-wrap{overflow-x:auto;overflow-y:auto;border:1px solid var(--line);border-radius:0;min-width:0;max-width:100%;scrollbar-gutter:stable;background:#fff}');
-    expect(html).toContain('.table-wrap table{width:max-content;min-width:100%;border-collapse:collapse;background:#fff;table-layout:auto}');
+    expect(html).toContain(
+      '.card>h2::before,.section-title h2::before{counter-increment:arch-section'
+    );
+    expect(html).toContain(
+      '.table-wrap{overflow-x:auto;overflow-y:auto;border:1px solid var(--line);border-radius:0;min-width:0;max-width:100%;scrollbar-gutter:stable;background:#fff}'
+    );
+    expect(html).toContain(
+      '.table-wrap table{width:max-content;min-width:100%;border-collapse:collapse;background:#fff;table-layout:auto}'
+    );
     const architectureDeltaSection = html.slice(
       html.indexOf('id="architecture-delta"'),
       html.indexOf('id="impact"')
     );
     expect(architectureDeltaSection).toContain('class="review-flow"');
-    expect(architectureDeltaSection.match(/class="review-step"/g)?.length).toBeGreaterThanOrEqual(3);
+    expect(architectureDeltaSection.match(/class="review-step"/g)?.length).toBeGreaterThanOrEqual(
+      3
+    );
     expect(architectureDeltaSection).not.toContain('class="grid"');
     const impactSection = html.slice(html.indexOf('id="impact"'), html.indexOf('id="triggers"'));
     expect(impactSection).toContain('class="review-flow"');
     expect(impactSection).not.toContain('class="grid"');
 
-    const report = JSON.parse(fs.readFileSync(path.join(tempDir, 'architecture-confirmation.render-report.json'), 'utf8'));
+    const report = JSON.parse(
+      fs.readFileSync(path.join(tempDir, 'architecture-confirmation.render-report.json'), 'utf8')
+    );
     expect(report.confirmability).toBe('confirmable');
     expect(report.htmlRef).toMatchObject({
       artifactType: 'architecture_confirmation_view',
@@ -173,7 +201,9 @@ describe('render-architecture-confirmation-html', () => {
     expect(report.htmlRef.hash).toMatch(/^sha256:[a-f0-9]{64}$/u);
     expect(report.confirmInstruction).toContain('architectureConfirmationArtifactHash=sha256:');
 
-    const summary = JSON.parse(fs.readFileSync(path.join(tempDir, 'architecture-confirmation.summary.json'), 'utf8'));
+    const summary = JSON.parse(
+      fs.readFileSync(path.join(tempDir, 'architecture-confirmation.summary.json'), 'utf8')
+    );
     expect(summary.counts).toMatchObject({
       targetPaths: 2,
       consumerImpactScan: 2,
@@ -208,7 +238,9 @@ describe('render-architecture-confirmation-html', () => {
     ]);
 
     expect(result.status).toBe(1);
-    const report = JSON.parse(fs.readFileSync(path.join(tempDir, 'architecture-confirmation.render-report.json'), 'utf8'));
+    const report = JSON.parse(
+      fs.readFileSync(path.join(tempDir, 'architecture-confirmation.render-report.json'), 'utf8')
+    );
     expect(report.confirmability).toBe('blocked');
     expect(report.blockingIssues).toContain('architecture_confirmation_artifact_hash_mismatch');
   });

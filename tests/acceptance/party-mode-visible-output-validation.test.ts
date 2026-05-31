@@ -11,7 +11,13 @@ const TEMP_ROOTS: string[] = [];
 function writePartyModeValidationContext(root: string, agentId: string): void {
   const milestoneDir = path.join(root, '.claude', 'state', 'milestones');
   mkdirSync(milestoneDir, { recursive: true });
-  const auditPath = path.join(root, '_bmad-output', 'party-mode', 'evidence', 'pm-visible-001.audit.json');
+  const auditPath = path.join(
+    root,
+    '_bmad-output',
+    'party-mode',
+    'evidence',
+    'pm-visible-001.audit.json'
+  );
   mkdirSync(path.dirname(auditPath), { recursive: true });
   writeFileSync(
     auditPath,
@@ -210,7 +216,13 @@ describe('party-mode visible output validation', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'party-mode-visible-pass-'));
     TEMP_ROOTS.push(root);
     writePartyModeValidationContext(root, 'party-agent-002');
-    const auditPath = path.join(root, '_bmad-output', 'party-mode', 'evidence', 'pm-visible-001.audit.json');
+    const auditPath = path.join(
+      root,
+      '_bmad-output',
+      'party-mode',
+      'evidence',
+      'pm-visible-001.audit.json'
+    );
 
     const r = spawnSync(process.execPath, [HOOK], {
       encoding: 'utf8',
@@ -242,7 +254,13 @@ describe('party-mode visible output validation', () => {
       targetRoundsTotal: 50,
       checkpointRounds: [20, 40, 50],
     });
-    const statePath = path.join(root, '.claude', 'state', 'milestones', 'party-agent-004.party-mode.json');
+    const statePath = path.join(
+      root,
+      '.claude',
+      'state',
+      'milestones',
+      'party-agent-004.party-mode.json'
+    );
     const state = JSON.parse(readFileSync(statePath, 'utf8')) as Record<string, unknown>;
     state.current_batch_index = 1;
     state.current_batch_start_round = 1;

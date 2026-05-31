@@ -9,13 +9,19 @@ describe('runtime dashboard host bootstrap skeleton', () => {
   });
 
   it('claude session-start hook calls runtime dashboard auto-start helper', () => {
-    const sessionStart = readFileSync(path.join(process.cwd(), '.claude', 'hooks', 'session-start.cjs'), 'utf8');
+    const sessionStart = readFileSync(
+      path.join(process.cwd(), '.claude', 'hooks', 'session-start.cjs'),
+      'utf8'
+    );
     expect(sessionStart).toContain('autoStartRuntimeDashboard');
     expect(sessionStart).toContain('shouldAnnounceAutoStart');
   });
 
   it('shared runtime auto-start helper exists under _bmad runtime hooks', () => {
-    const helper = readFileSync(path.join(process.cwd(), '_bmad', 'runtime', 'hooks', 'runtime-dashboard-auto-start.cjs'), 'utf8');
+    const helper = readFileSync(
+      path.join(process.cwd(), '_bmad', 'runtime', 'hooks', 'runtime-dashboard-auto-start.cjs'),
+      'utf8'
+    );
     expect(helper).toContain('ensureRuntimeDashboardServer');
     expect(helper).toContain('BMAD_RUNTIME_DASHBOARD_AUTOSTART');
     expect(helper).toContain('shouldAnnounceAutoStart');

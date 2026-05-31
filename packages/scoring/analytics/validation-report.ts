@@ -220,7 +220,8 @@ export function buildDatasetRedactionPreview(
       if (byStatus !== 0) {
         return byStatus;
       }
-      const bySeverity = severityRank(right.redaction.findings) - severityRank(left.redaction.findings);
+      const bySeverity =
+        severityRank(right.redaction.findings) - severityRank(left.redaction.findings);
       if (bySeverity !== 0) {
         return bySeverity;
       }
@@ -381,7 +382,8 @@ export function finalizeValidationReport<Row>(
   ).length;
   const blockedCount = seenSamples.filter((sample) => sample.redaction.status === 'blocked').length;
   const hostKindCount = seenSamples.filter(
-    (sample) => typeof sample.metadata.host_kind === 'string' && sample.metadata.host_kind.trim() !== ''
+    (sample) =>
+      typeof sample.metadata.host_kind === 'string' && sample.metadata.host_kind.trim() !== ''
   ).length;
   const providerFactCount = seenSamples.filter(
     (sample) =>
@@ -411,20 +413,26 @@ export function finalizeValidationReport<Row>(
       thresholdFailures.push('host_kind_coverage_below_threshold');
     }
   }
-  const baseTrainingReadyPassed = seenSamples.every((sample) => sample.quality.training_ready !== false);
+  const baseTrainingReadyPassed = seenSamples.every(
+    (sample) => sample.quality.training_ready !== false
+  );
 
   return {
     export_target: target,
     generated_at: new Date().toISOString(),
     schema_valid: true,
     privacy_gate_passed: seenSamples.every(
-      (sample) => sample.redaction.status !== 'blocked' && sample.quality.rejection_reasons.indexOf('redaction_blocked') === -1
+      (sample) =>
+        sample.redaction.status !== 'blocked' &&
+        sample.quality.rejection_reasons.indexOf('redaction_blocked') === -1
     ),
     trace_quality_passed: seenSamples.every(
-      (sample) => sample.quality.trace_completeness == null || sample.quality.trace_completeness === 'complete'
+      (sample) =>
+        sample.quality.trace_completeness == null ||
+        sample.quality.trace_completeness === 'complete'
     ),
-    provider_compatibility_passed: seenSamples.every(
-      (sample) => sample.export_compatibility[target].reasons.every((reason) => !reason.includes('provider'))
+    provider_compatibility_passed: seenSamples.every((sample) =>
+      sample.export_compatibility[target].reasons.every((reason) => !reason.includes('provider'))
     ),
     training_ready_passed: baseTrainingReadyPassed && thresholdFailures.length === 0,
     quality_thresholds: qualityThresholds,
@@ -457,7 +465,9 @@ export function renderValidationReportMarkdown(report: DatasetValidationReport):
     report.rejected_samples.length === 0
       ? '- 无'
       : report.rejected_samples
-          .map((sample) => `- ${sample.sample_id}: ${sample.reasons.join(', ') || 'unknown_rejection'}`)
+          .map(
+            (sample) => `- ${sample.sample_id}: ${sample.reasons.join(', ') || 'unknown_rejection'}`
+          )
           .join('\n');
   const appliedRulesSection =
     report.redaction_summary.applied_rules.length === 0

@@ -30,9 +30,9 @@ describe('main-agent chaos recovery e2e', () => {
       'host_switching',
     ]);
     expect(report.scenarios.every((scenario) => scenario.recovered)).toBe(true);
-    expect(report.scenarios.every((scenario) => scenario.finalState.nextAction === 'continue_ready')).toBe(
-      true
-    );
+    expect(
+      report.scenarios.every((scenario) => scenario.finalState.nextAction === 'continue_ready')
+    ).toBe(true);
     expect(recoveredPacket).toEqual({ packetId: 'chaos-packet', recovered: true });
     expect(
       report.scenarios

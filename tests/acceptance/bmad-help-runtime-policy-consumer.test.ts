@@ -233,14 +233,17 @@ describe('bmad-help runtime policy consumers', () => {
         ].join('\n'),
         'utf8'
       );
-      await runAuditorHost({
-        projectRoot: root,
-        reportPath: bugfixAuditReportPath,
-        stage: 'bugfix',
-        artifactPath: bugfixPath,
-      }, {
-        scoreCommand: async () => ({ parsedRecord: { effective_verdict: 'approved' } }),
-      });
+      await runAuditorHost(
+        {
+          projectRoot: root,
+          reportPath: bugfixAuditReportPath,
+          stage: 'bugfix',
+          artifactPath: bugfixPath,
+        },
+        {
+          scoreCommand: async () => ({ parsedRecord: { effective_verdict: 'approved' } }),
+        }
+      );
 
       const policy = resolveBmadHelpRuntimePolicy({
         projectRoot: root,
@@ -376,15 +379,18 @@ describe('bmad-help runtime policy consumers', () => {
         ].join('\n'),
         'utf8'
       );
-      await runAuditorHost({
-        projectRoot: root,
-        reportPath: tasksAuditReportPath,
-        stage: 'document',
-        artifactPath: tasksPath,
-        iterationCount: '1',
-      }, {
-        scoreCommand: async () => ({ parsedRecord: { effective_verdict: 'approved' } }),
-      });
+      await runAuditorHost(
+        {
+          projectRoot: root,
+          reportPath: tasksAuditReportPath,
+          stage: 'document',
+          artifactPath: tasksPath,
+          iterationCount: '1',
+        },
+        {
+          scoreCommand: async () => ({ parsedRecord: { effective_verdict: 'approved' } }),
+        }
+      );
 
       const reportPath = path.join(
         root,
@@ -632,7 +638,9 @@ describe('bmad-help runtime policy consumers', () => {
       expect(policy.helpRouting.canonicalImplementationGate).toBe('implementation-readiness');
       expect(policy.helpRouting.sourceMode).toBe('full_bmad');
       expect(policy.helpRouting.evidenceSources.readinessReportPath).toBe(reportPath);
-      expect(policy.helpRouting.evidenceSources.authoritativeAuditReportPath).toContain('AUDIT_story.md');
+      expect(policy.helpRouting.evidenceSources.authoritativeAuditReportPath).toContain(
+        'AUDIT_story.md'
+      );
       expect(policy.helpRouting.evidence.implementationReadiness.readinessReportPresent).toBe(true);
       expect(policy.helpRouting.recommendedFlow).toBe('story');
       expect(policy.helpRouting.recommendationLabel).toBe('recommended');

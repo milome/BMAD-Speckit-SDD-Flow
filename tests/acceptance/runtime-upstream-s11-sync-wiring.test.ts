@@ -6,10 +6,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const ROOT = join(import.meta.dirname, '..', '..');
-const DEV_STORY = join(
-  ROOT,
-  '_bmad/bmm/workflows/4-implementation/dev-story/instructions.xml'
-);
+const DEV_STORY = join(ROOT, '_bmad/bmm/workflows/4-implementation/dev-story/instructions.xml');
 const CURSOR_SKILL = join(ROOT, '_bmad/cursor/skills/bmad-story-assistant/SKILL.md');
 const CLAUDE_SKILL = join(ROOT, '_bmad/claude/skills/bmad-story-assistant/SKILL.md');
 

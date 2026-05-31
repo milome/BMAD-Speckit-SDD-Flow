@@ -50,28 +50,38 @@ export function renderDashboardSnapshotMarkdown(
   lines.push('');
   lines.push('## EntryFlow Drill-down Slices');
   lines.push('');
-  lines.push('EntryFlow slices are navigation/read-model drill-downs only; they are not top-level control models.');
+  lines.push(
+    'EntryFlow slices are navigation/read-model drill-downs only; they are not top-level control models.'
+  );
   lines.push('');
   lines.push('| Slice Type | Count | Slice IDs |');
   lines.push('|------------|-------|-----------|');
   lines.push(
     `| stories | ${snapshot.six_model_projection.entryFlowSlices.stories.length} | ${
-      snapshot.six_model_projection.entryFlowSlices.stories.map((item) => item.sliceId).join('<br>') || 'N/A'
+      snapshot.six_model_projection.entryFlowSlices.stories
+        .map((item) => item.sliceId)
+        .join('<br>') || 'N/A'
     } |`
   );
   lines.push(
     `| bugfixes | ${snapshot.six_model_projection.entryFlowSlices.bugfixes.length} | ${
-      snapshot.six_model_projection.entryFlowSlices.bugfixes.map((item) => item.sliceId).join('<br>') || 'N/A'
+      snapshot.six_model_projection.entryFlowSlices.bugfixes
+        .map((item) => item.sliceId)
+        .join('<br>') || 'N/A'
     } |`
   );
   lines.push(
     `| standaloneTasks | ${snapshot.six_model_projection.entryFlowSlices.standaloneTasks.length} | ${
-      snapshot.six_model_projection.entryFlowSlices.standaloneTasks.map((item) => item.sliceId).join('<br>') || 'N/A'
+      snapshot.six_model_projection.entryFlowSlices.standaloneTasks
+        .map((item) => item.sliceId)
+        .join('<br>') || 'N/A'
     } |`
   );
   lines.push(
     `| epics | ${snapshot.six_model_projection.entryFlowSlices.epics.length} | ${
-      snapshot.six_model_projection.entryFlowSlices.epics.map((item) => item.sliceId).join('<br>') || 'N/A'
+      snapshot.six_model_projection.entryFlowSlices.epics
+        .map((item) => item.sliceId)
+        .join('<br>') || 'N/A'
     } |`
   );
   lines.push('');
@@ -83,7 +93,9 @@ export function renderDashboardSnapshotMarkdown(
   lines.push(`- Flow: ${snapshot.runtime_context.flow ?? 'N/A'}`);
   if (snapshot.execution_state.execution_status) {
     lines.push(`- Execution Status: ${snapshot.execution_state.execution_status}`);
-    lines.push(`- Execution Host: ${snapshot.execution_state.dispatched_host ?? snapshot.execution_state.configured_authoritative_host ?? 'N/A'}`);
+    lines.push(
+      `- Execution Host: ${snapshot.execution_state.dispatched_host ?? snapshot.execution_state.configured_authoritative_host ?? 'N/A'}`
+    );
   }
   if (snapshot.runtime_context.scope?.story_key) {
     lines.push(`- Story Key: ${snapshot.runtime_context.scope.story_key}`);
@@ -95,8 +107,12 @@ export function renderDashboardSnapshotMarkdown(
     lines.push('');
     lines.push('## Reviewer Projection');
     lines.push('');
-    lines.push(`- Reviewer Identity: ${snapshot.runtime_context.reviewer_contract.reviewerIdentity}`);
-    lines.push(`- Reviewer Registry: ${snapshot.runtime_context.reviewer_contract.registryVersion}`);
+    lines.push(
+      `- Reviewer Identity: ${snapshot.runtime_context.reviewer_contract.reviewerIdentity}`
+    );
+    lines.push(
+      `- Reviewer Registry: ${snapshot.runtime_context.reviewer_contract.registryVersion}`
+    );
     lines.push(
       `- Shared Core: ${
         snapshot.runtime_context.reviewer_contract.sharedCore
@@ -191,18 +207,12 @@ export function renderDashboardSnapshotMarkdown(
     lines.push(
       `- Readiness Baseline Run ID: ${snapshot.readiness_projection.readiness_baseline_run_id ?? 'N/A'}`
     );
-    lines.push(
-      `- Readiness Score: ${snapshot.readiness_projection.readiness_score ?? 'N/A'}`
-    );
+    lines.push(`- Readiness Score: ${snapshot.readiness_projection.readiness_score ?? 'N/A'}`);
     lines.push(
       `- Readiness Raw Score: ${snapshot.readiness_projection.readiness_raw_score ?? 'N/A'}`
     );
-    lines.push(
-      `- Effective Verdict: ${snapshot.readiness_projection.effective_verdict ?? 'N/A'}`
-    );
-    lines.push(
-      `- Drift Severity: ${snapshot.readiness_projection.drift_severity ?? 'N/A'}`
-    );
+    lines.push(`- Effective Verdict: ${snapshot.readiness_projection.effective_verdict ?? 'N/A'}`);
+    lines.push(`- Drift Severity: ${snapshot.readiness_projection.drift_severity ?? 'N/A'}`);
     lines.push(
       `- Re-Readiness Required: ${snapshot.readiness_projection.re_readiness_required ? 'yes' : 'no'}`
     );
@@ -220,9 +230,7 @@ export function renderDashboardSnapshotMarkdown(
           : 'N/A'
       }`
     );
-    lines.push(
-      `- Blocking Reason: ${snapshot.readiness_projection.blocking_reason ?? 'N/A'}`
-    );
+    lines.push(`- Blocking Reason: ${snapshot.readiness_projection.blocking_reason ?? 'N/A'}`);
   }
   lines.push('');
   lines.push('## SFT Builder Summary');

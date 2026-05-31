@@ -16,7 +16,10 @@ export function getDefaultManifestRoot(): string {
  * @param {string} [manifestRoot] - Optional root directory; defaults to `_bmad/i18n/manifests` under cwd
  * @returns {TemplateManifest} Parsed manifest object
  */
-export function loadManifest(id: string, manifestRoot: string = getDefaultManifestRoot()): TemplateManifest {
+export function loadManifest(
+  id: string,
+  manifestRoot: string = getDefaultManifestRoot()
+): TemplateManifest {
   const filePath = path.join(manifestRoot, `${id}.yaml`);
   if (!existsSync(filePath)) {
     throw new Error(`Manifest not found: ${filePath}`);

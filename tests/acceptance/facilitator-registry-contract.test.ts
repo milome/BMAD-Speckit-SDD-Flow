@@ -14,7 +14,9 @@ describe('facilitator registry contract', () => {
     const registration = getFacilitatorRegistration();
     expect(registration.identity).toBe('party_mode_facilitator');
     expect(registration.displayName).toBe('party-mode-facilitator');
-    expect(registration.cursorDefinitionSourcePath).toBe('.cursor/agents/party-mode-facilitator.md');
+    expect(registration.cursorDefinitionSourcePath).toBe(
+      '.cursor/agents/party-mode-facilitator.md'
+    );
     expect(registration.claudeTarget).toStrictEqual({
       agentPath: '.claude/agents/party-mode-facilitator.md',
       agentMention: '@"party-mode-facilitator (agent)"',
@@ -40,9 +42,9 @@ describe('facilitator registry contract', () => {
 
   it('points at canonical source files for both hosts', () => {
     const registration = getFacilitatorRegistration();
-    expect(
-      existsSync(path.join(process.cwd(), registration.cursorDefinitionSourcePath))
-    ).toBe(true);
+    expect(existsSync(path.join(process.cwd(), registration.cursorDefinitionSourcePath))).toBe(
+      true
+    );
     expect(existsSync(path.join(process.cwd(), registration.claudeTarget.agentPath))).toBe(true);
 
     const claudeContent = readFileSync(

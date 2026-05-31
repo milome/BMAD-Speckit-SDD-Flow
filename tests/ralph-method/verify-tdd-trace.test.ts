@@ -55,7 +55,10 @@ describe('verifyTddTrace', () => {
       .readFileSync(progressPath, 'utf8')
       .replace('Status: PENDING', 'Status: PASSED')
       .replace('[TDD-RED] _pending_', '[TDD-RED] T1 pytest tests/runtime.test.ts -v => 1 failed')
-      .replace('[TDD-GREEN] _pending_', '[TDD-GREEN] T1 pytest tests/runtime.test.ts -v => 1 passed')
+      .replace(
+        '[TDD-GREEN] _pending_',
+        '[TDD-GREEN] T1 pytest tests/runtime.test.ts -v => 1 passed'
+      )
       .replace('[TDD-REFACTOR] _pending_', '[TDD-REFACTOR] T1 No refactor needed ✓');
     fs.writeFileSync(progressPath, validContent, 'utf8');
 
@@ -84,7 +87,10 @@ describe('verifyTddTrace', () => {
       .readFileSync(progressPath, 'utf8')
       .replace('Status: PENDING', 'Status: PASSED')
       .replace('[TDD-RED] _pending_', '[TDD-RED] T1 pytest tests/runtime.test.ts -v => 1 failed')
-      .replace('[TDD-GREEN] _pending_', '[TDD-GREEN] T1 pytest tests/runtime.test.ts -v => 1 passed')
+      .replace(
+        '[TDD-GREEN] _pending_',
+        '[TDD-GREEN] T1 pytest tests/runtime.test.ts -v => 1 passed'
+      )
       .replace('[TDD-REFACTOR] _pending_', '');
     fs.writeFileSync(progressPath, invalidContent, 'utf8');
 

@@ -121,10 +121,8 @@ function defaultHttpJsonRequestBuilder(input: GovernanceProviderAdapterInput): u
         promptRoutingPreview.executionPlanDecision?.semanticSkillFeatures ??
         promptRoutingPreview.executionIntentCandidate?.semanticSkillFeatures ??
         [],
-      semanticFeatureTopN:
-        promptRoutingPreview.executionPlanDecision?.semanticFeatureTopN ??
-        promptRoutingPreview.executionIntentCandidate?.semanticFeatureTopN ??
-        {
+      semanticFeatureTopN: promptRoutingPreview.executionPlanDecision?.semanticFeatureTopN ??
+        promptRoutingPreview.executionIntentCandidate?.semanticFeatureTopN ?? {
           stageHints: [],
           actionHints: [],
           interactionHints: [],
@@ -190,7 +188,9 @@ function normalizeRecommendationItems(value: unknown): ModelGovernanceRecommenda
               : '';
       const reason = typeof record.reason === 'string' ? record.reason.trim() : '';
       const confidence =
-        record.confidence === 'low' || record.confidence === 'medium' || record.confidence === 'high'
+        record.confidence === 'low' ||
+        record.confidence === 'medium' ||
+        record.confidence === 'high'
           ? record.confidence
           : 'medium';
 
@@ -219,7 +219,9 @@ function toModelGovernanceHintCandidate(
   const nested =
     candidate.hint && typeof candidate.hint === 'object' && !Array.isArray(candidate.hint)
       ? (candidate.hint as Record<string, unknown>)
-      : candidate.candidate && typeof candidate.candidate === 'object' && !Array.isArray(candidate.candidate)
+      : candidate.candidate &&
+          typeof candidate.candidate === 'object' &&
+          !Array.isArray(candidate.candidate)
         ? (candidate.candidate as Record<string, unknown>)
         : candidate;
 
@@ -238,12 +240,8 @@ function toModelGovernanceHintCandidate(
     providerId: adapterId,
     providerMode: protocol,
     confidence:
-      confidence === 'low' || confidence === 'medium' || confidence === 'high'
-        ? confidence
-        : 'low',
-    ...(typeof nested.suggestedStage === 'string'
-      ? { suggestedStage: nested.suggestedStage }
-      : {}),
+      confidence === 'low' || confidence === 'medium' || confidence === 'high' ? confidence : 'low',
+    ...(typeof nested.suggestedStage === 'string' ? { suggestedStage: nested.suggestedStage } : {}),
     ...(typeof nested.suggestedAction === 'string'
       ? { suggestedAction: nested.suggestedAction }
       : {}),
@@ -260,11 +258,11 @@ function toModelGovernanceHintCandidate(
         ? recommendedSubagentRoles
         : recommendedSubagentRoleItems.map((item) => item.value),
     ...(recommendedSkillItems.length > 0 ? { recommendedSkillItems } : {}),
-    ...(recommendedSubagentRoleItems.length > 0
-      ? { recommendedSubagentRoleItems }
-      : {}),
+    ...(recommendedSubagentRoleItems.length > 0 ? { recommendedSubagentRoleItems } : {}),
     researchPolicy:
-      researchPolicy === 'allowed' || researchPolicy === 'forbidden' || researchPolicy === 'preferred'
+      researchPolicy === 'allowed' ||
+      researchPolicy === 'forbidden' ||
+      researchPolicy === 'preferred'
         ? researchPolicy
         : 'allowed',
     delegationPreference:
@@ -281,7 +279,8 @@ function toModelGovernanceHintCandidate(
     typeof nested.forbiddenOverrides === 'object' &&
     !Array.isArray(nested.forbiddenOverrides)
       ? {
-          forbiddenOverrides: nested.forbiddenOverrides as ModelGovernanceHintCandidate['forbiddenOverrides'],
+          forbiddenOverrides:
+            nested.forbiddenOverrides as ModelGovernanceHintCandidate['forbiddenOverrides'],
         }
       : {}),
   };
@@ -307,7 +306,9 @@ async function postJson(
       signal: controller.signal,
     });
     if (!response.ok) {
-      throw new Error(`Governance provider request failed: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `Governance provider request failed: ${response.status} ${response.statusText}`
+      );
     }
     return (await response.json()) as unknown;
   } finally {
@@ -361,7 +362,9 @@ function parseOpenAICompatibleResponse(payload: unknown): unknown {
     if (Array.isArray(content)) {
       const text = content
         .map((item) =>
-          item && typeof item === 'object' && typeof (item as Record<string, unknown>).text === 'string'
+          item &&
+          typeof item === 'object' &&
+          typeof (item as Record<string, unknown>).text === 'string'
             ? ((item as Record<string, unknown>).text as string)
             : ''
         )
@@ -370,7 +373,9 @@ function parseOpenAICompatibleResponse(payload: unknown): unknown {
     }
   }
 
-  throw new Error('OpenAI-compatible provider response missing choices[0].message.content or output_text');
+  throw new Error(
+    'OpenAI-compatible provider response missing choices[0].message.content or output_text'
+  );
 }
 
 function parseAnthropicCompatibleResponse(payload: unknown): unknown {

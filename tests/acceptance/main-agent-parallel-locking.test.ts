@@ -45,9 +45,9 @@ describe('main-agent parallel locking', () => {
       contenders: ['n1', 'n2'],
       resolution: 'serialize',
     });
-    expect(plan.conflicts.find((item) => item.scope.includes('sprint-status.yaml'))?.resolution).toBe(
-      'block'
-    );
+    expect(
+      plan.conflicts.find((item) => item.scope.includes('sprint-status.yaml'))?.resolution
+    ).toBe('block');
     expect(plan.merge_order).not.toContain('n3');
   });
 });

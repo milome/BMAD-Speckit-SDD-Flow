@@ -7,10 +7,7 @@ import * as path from 'path';
 import * as os from 'os';
 import Ajv from 'ajv';
 import addFormats from 'ajv-formats';
-import {
-  writeScoreRecordSync,
-  type RunScoreRecord,
-} from '../../packages/scoring/writer';
+import { writeScoreRecordSync, type RunScoreRecord } from '../../packages/scoring/writer';
 
 const validRecord: RunScoreRecord = {
   run_id: 'accept-e1-s2-run',
@@ -18,9 +15,7 @@ const validRecord: RunScoreRecord = {
   stage: 'implement',
   phase_score: 22,
   phase_weight: 0.25,
-  check_items: [
-    { item_id: 'func_correct', passed: true, score_delta: 0, note: '' },
-  ],
+  check_items: [{ item_id: 'func_correct', passed: true, score_delta: 0, note: '' }],
   timestamp: new Date().toISOString(),
   iteration_count: 0,
   iteration_records: [],
@@ -33,7 +28,13 @@ function main() {
   process.env.SCORING_DATA_PATH = testDir;
 
   try {
-    const schemaPath = path.resolve(process.cwd(), 'packages', 'scoring', 'schema', 'run-score-schema.json');
+    const schemaPath = path.resolve(
+      process.cwd(),
+      'packages',
+      'scoring',
+      'schema',
+      'run-score-schema.json'
+    );
     const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf-8'));
     const ajv = new Ajv();
     addFormats(ajv);
@@ -47,7 +48,10 @@ function main() {
       process.exit(1);
     }
     const singleContent = JSON.parse(fs.readFileSync(singlePath, 'utf-8'));
-    if (singleContent.run_id !== validRecord.run_id || singleContent.phase_score !== validRecord.phase_score) {
+    if (
+      singleContent.run_id !== validRecord.run_id ||
+      singleContent.phase_score !== validRecord.phase_score
+    ) {
       console.error('AC-1 FAIL: content mismatch', singleContent);
       process.exit(1);
     }
@@ -76,7 +80,9 @@ function main() {
     const dirSingle = fs.mkdtempSync(path.join(os.tmpdir(), 'accept-e1-s2-single-'));
     const dirJsonl = fs.mkdtempSync(path.join(os.tmpdir(), 'accept-e1-s2-jsonl-'));
     const dirBoth = fs.mkdtempSync(path.join(os.tmpdir(), 'accept-e1-s2-both-'));
-    writeScoreRecordSync({ ...validRecord, run_id: 'only-single' }, 'single_file', { dataPath: dirSingle });
+    writeScoreRecordSync({ ...validRecord, run_id: 'only-single' }, 'single_file', {
+      dataPath: dirSingle,
+    });
     writeScoreRecordSync({ ...validRecord, run_id: 'only-jsonl' }, 'jsonl', { dataPath: dirJsonl });
     writeScoreRecordSync({ ...validRecord, run_id: 'both' }, 'both', { dataPath: dirBoth });
     if (!fs.existsSync(path.join(dirSingle, 'only-single.json'))) {
@@ -108,14 +114,18 @@ function main() {
     const withCheckItems: RunScoreRecord = {
       ...validRecord,
       run_id: 'ac4',
-      check_items: [
-        { item_id: 'a', passed: false, score_delta: -2, note: 'n' },
-      ],
+      check_items: [{ item_id: 'a', passed: false, score_delta: -2, note: 'n' }],
     };
     writeScoreRecordSync(withCheckItems, 'single_file', { dataPath: testDir });
     const ac4Content = JSON.parse(fs.readFileSync(path.join(testDir, 'ac4.json'), 'utf-8'));
     const ci = ac4Content.check_items?.[0];
-    if (!ci || ci.item_id !== 'a' || ci.passed !== false || ci.score_delta !== -2 || ci.note !== 'n') {
+    if (
+      !ci ||
+      ci.item_id !== 'a' ||
+      ci.passed !== false ||
+      ci.score_delta !== -2 ||
+      ci.note !== 'n'
+    ) {
       console.error('AC-4 FAIL: check_items structure', ac4Content.check_items);
       process.exit(1);
     }

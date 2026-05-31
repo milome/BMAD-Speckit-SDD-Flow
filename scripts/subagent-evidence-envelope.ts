@@ -2,7 +2,12 @@
 import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import type { ExecutionPacket, RecommendationPacket, ResumePacket, TaskReport } from './orchestration-dispatch-contract';
+import type {
+  ExecutionPacket,
+  RecommendationPacket,
+  ResumePacket,
+  TaskReport,
+} from './orchestration-dispatch-contract';
 
 type JsonObject = Record<string, unknown>;
 type Packet = ExecutionPacket | RecommendationPacket | ResumePacket;
@@ -204,7 +209,11 @@ export const SUBAGENT_EVIDENCE_ENVELOPE_SCHEMA = {
         contentHash: { type: 'string', pattern: '^sha256:[a-f0-9]{64}$' },
         producer: { type: 'string', minLength: 1 },
         purpose: { type: 'string', minLength: 1 },
-        relatedRequirementIds: { type: 'array', minItems: 1, items: { type: 'string', minLength: 1 } },
+        relatedRequirementIds: {
+          type: 'array',
+          minItems: 1,
+          items: { type: 'string', minLength: 1 },
+        },
         status: { type: 'string', minLength: 1 },
         inputVersion: { type: 'string', minLength: 1 },
         outputVersion: { type: 'string', minLength: 1 },
@@ -264,7 +273,12 @@ function artifactKey(artifact: JsonObject): string {
   return `${normalizePathForRecord(text(artifact.path))}#${artifactHash(artifact)}`;
 }
 
-function addRecursiveFieldHits(value: unknown, fields: readonly string[], prefix: string, out: string[]): void {
+function addRecursiveFieldHits(
+  value: unknown,
+  fields: readonly string[],
+  prefix: string,
+  out: string[]
+): void {
   if (!value || typeof value !== 'object') return;
   if (Array.isArray(value)) {
     for (const item of value) addRecursiveFieldHits(item, fields, prefix, out);
@@ -306,12 +320,14 @@ function validateArtifactRef(artifact: JsonObject, index: number, projectRoot: s
   const artifactPath = text(artifact.path);
   const hash = artifactHash(artifact);
   if (!text(artifact.artifactType)) mismatches.push(`${prefix}_artifact_type_missing`);
-  if (text(artifact.sourceOfTruthRole) !== 'evidence') mismatches.push(`${prefix}_source_of_truth_role_not_evidence`);
+  if (text(artifact.sourceOfTruthRole) !== 'evidence')
+    mismatches.push(`${prefix}_source_of_truth_role_not_evidence`);
   if (!artifactPath) mismatches.push(`${prefix}_path_missing`);
   if (!hash || !SHA256_PATTERN.test(hash)) mismatches.push(`${prefix}_hash_missing_or_invalid`);
   if (!text(artifact.producer)) mismatches.push(`${prefix}_producer_missing`);
   if (!text(artifact.purpose)) mismatches.push(`${prefix}_purpose_missing`);
-  if (strings(artifact.relatedRequirementIds).length === 0) mismatches.push(`${prefix}_related_requirement_ids_missing`);
+  if (strings(artifact.relatedRequirementIds).length === 0)
+    mismatches.push(`${prefix}_related_requirement_ids_missing`);
   if (!text(artifact.status)) mismatches.push(`${prefix}_status_missing`);
   if (!text(artifact.inputVersion)) mismatches.push(`${prefix}_input_version_missing`);
   if (!text(artifact.outputVersion)) mismatches.push(`${prefix}_output_version_missing`);
@@ -351,16 +367,32 @@ export function validateSubagentEvidenceEnvelope(
       mismatches.push(`subagent_envelope_required_field_missing:${field}`);
     }
   }
-  addRecursiveFieldHits(envelope, FORBIDDEN_FIELDS, 'subagent_envelope_forbidden_field_present', mismatches);
-  addRecursiveFieldHits(envelope, DIRECT_CONTROL_FIELDS, 'subagent_envelope_direct_control_field_forbidden', mismatches);
+  addRecursiveFieldHits(
+    envelope,
+    FORBIDDEN_FIELDS,
+    'subagent_envelope_forbidden_field_present',
+    mismatches
+  );
+  addRecursiveFieldHits(
+    envelope,
+    DIRECT_CONTROL_FIELDS,
+    'subagent_envelope_direct_control_field_forbidden',
+    mismatches
+  );
 
-  if (text(envelope.envelopeVersion) !== ENVELOPE_VERSION) mismatches.push('subagent_envelope_version_invalid');
-  if (text(envelope.decisionAuthority) !== 'none') mismatches.push('subagent_envelope_decision_authority_not_none');
+  if (text(envelope.envelopeVersion) !== ENVELOPE_VERSION)
+    mismatches.push('subagent_envelope_version_invalid');
+  if (text(envelope.decisionAuthority) !== 'none')
+    mismatches.push('subagent_envelope_decision_authority_not_none');
   if (!ALLOWED_PACKET_KINDS.has(text(envelope.packetKind))) {
-    mismatches.push(`subagent_envelope_packet_kind_invalid:${text(envelope.packetKind) || '<missing>'}`);
+    mismatches.push(
+      `subagent_envelope_packet_kind_invalid:${text(envelope.packetKind) || '<missing>'}`
+    );
   }
   if (!ALLOWED_EXECUTOR_KINDS.has(text(envelope.executorKind))) {
-    mismatches.push(`subagent_envelope_executor_kind_invalid:${text(envelope.executorKind) || '<missing>'}`);
+    mismatches.push(
+      `subagent_envelope_executor_kind_invalid:${text(envelope.executorKind) || '<missing>'}`
+    );
   }
   if (!ALLOWED_STATUSES.has(text(envelope.status))) {
     mismatches.push(`subagent_envelope_status_invalid:${text(envelope.status) || '<missing>'}`);
@@ -368,14 +400,17 @@ export function validateSubagentEvidenceEnvelope(
 
   const record = options.record;
   if (record) {
-    if (text(envelope.recordId) !== text(record.recordId)) mismatches.push('subagent_envelope_record_id_mismatch');
+    if (text(envelope.recordId) !== text(record.recordId))
+      mismatches.push('subagent_envelope_record_id_mismatch');
     if (text(envelope.requirementSetId) !== text(record.requirementSetId)) {
       mismatches.push('subagent_envelope_requirement_set_id_mismatch');
     }
     if (text(envelope.sourceDocumentHash) !== text(record.sourceDocumentHash)) {
       mismatches.push('subagent_envelope_source_document_hash_mismatch');
     }
-    if (text(envelope.implementationConfirmationHash) !== text(record.implementationConfirmationHash)) {
+    if (
+      text(envelope.implementationConfirmationHash) !== text(record.implementationConfirmationHash)
+    ) {
       mismatches.push('subagent_envelope_implementation_confirmation_hash_mismatch');
     }
     if (text(envelope.architectureConfirmationHash) !== recordArchitectureHash(record)) {
@@ -383,7 +418,10 @@ export function validateSubagentEvidenceEnvelope(
     }
   }
 
-  if (options.expectedParentCloseoutAttemptId && text(envelope.parentCloseoutAttemptId) !== options.expectedParentCloseoutAttemptId) {
+  if (
+    options.expectedParentCloseoutAttemptId &&
+    text(envelope.parentCloseoutAttemptId) !== options.expectedParentCloseoutAttemptId
+  ) {
     mismatches.push('subagent_envelope_parent_closeout_attempt_id_mismatch');
   }
 
@@ -400,10 +438,13 @@ export function validateSubagentEvidenceEnvelope(
   const workspaceRef = isObject(envelope.workspaceRef) ? envelope.workspaceRef : {};
   if (!isObject(envelope.workspaceRef)) mismatches.push('subagent_envelope_workspace_ref_invalid');
   for (const field of WORKSPACE_REF_REQUIRED_FIELDS) {
-    if (!text(workspaceRef[field])) mismatches.push(`subagent_envelope_workspace_ref_missing:${field}`);
+    if (!text(workspaceRef[field]))
+      mismatches.push(`subagent_envelope_workspace_ref_missing:${field}`);
   }
   if (!ALLOWED_WORKSPACE_KINDS.has(text(workspaceRef.kind))) {
-    mismatches.push(`subagent_envelope_workspace_kind_invalid:${text(workspaceRef.kind) || '<missing>'}`);
+    mismatches.push(
+      `subagent_envelope_workspace_kind_invalid:${text(workspaceRef.kind) || '<missing>'}`
+    );
   }
 
   const allowedScope = strings(envelope.allowedWriteScope);
@@ -414,14 +455,18 @@ export function validateSubagentEvidenceEnvelope(
   }
 
   const artifactRefs = objects(envelope.artifactRefs);
-  artifactRefs.forEach((artifact, index) => mismatches.push(...validateArtifactRef(artifact, index, projectRoot)));
+  artifactRefs.forEach((artifact, index) =>
+    mismatches.push(...validateArtifactRef(artifact, index, projectRoot))
+  );
   const envelopeArtifactKeys = new Set(artifactRefs.map(artifactKey));
 
   const indexedArtifactKeys = new Set(objects(options.indexedArtifactRefs).map(artifactKey));
   if (indexedArtifactKeys.size > 0) {
     for (const artifact of artifactRefs) {
       if (!indexedArtifactKeys.has(artifactKey(artifact))) {
-        mismatches.push(`subagent_envelope_artifact_refs_not_indexed:${normalizePathForRecord(text(artifact.path))}`);
+        mismatches.push(
+          `subagent_envelope_artifact_refs_not_indexed:${normalizePathForRecord(text(artifact.path))}`
+        );
       }
     }
   }
@@ -429,19 +474,25 @@ export function validateSubagentEvidenceEnvelope(
   for (const [index, run] of objects(envelope.commandRuns).entries()) {
     for (const field of COMMAND_RUN_REQUIRED_FIELDS) {
       if (field === 'artifactRefs') {
-        if (objects(run.artifactRefs).length === 0) mismatches.push(`subagent_envelope_command_run_missing:${index}:${field}`);
+        if (objects(run.artifactRefs).length === 0)
+          mismatches.push(`subagent_envelope_command_run_missing:${index}:${field}`);
       } else if (field === 'exitCode') {
-        if (typeof run.exitCode !== 'number') mismatches.push(`subagent_envelope_command_run_missing:${index}:${field}`);
+        if (typeof run.exitCode !== 'number')
+          mismatches.push(`subagent_envelope_command_run_missing:${index}:${field}`);
       } else if (!text(run[field])) {
         mismatches.push(`subagent_envelope_command_run_missing:${index}:${field}`);
       }
     }
     if (text(run.closeoutAttemptId) !== text(envelope.parentCloseoutAttemptId)) {
-      mismatches.push(`subagent_envelope_command_run_closeout_attempt_mismatch:${text(run.commandId) || index}`);
+      mismatches.push(
+        `subagent_envelope_command_run_closeout_attempt_mismatch:${text(run.commandId) || index}`
+      );
     }
     for (const artifact of objects(run.artifactRefs)) {
       if (!envelopeArtifactKeys.has(artifactKey(artifact))) {
-        mismatches.push(`subagent_envelope_command_artifact_not_in_envelope:${normalizePathForRecord(text(artifact.path))}`);
+        mismatches.push(
+          `subagent_envelope_command_artifact_not_in_envelope:${normalizePathForRecord(text(artifact.path))}`
+        );
       }
     }
   }
@@ -456,7 +507,10 @@ export function validateSubagentEvidenceEnvelope(
   const sourceRefs = [
     { sourceType: 'subagent_evidence_envelope', id: text(envelope.subtaskId) },
     ...strings(envelope.traceRows).map((id) => ({ sourceType: 'trace_row', id })),
-    ...strings(envelope.coveredRequirementIds).map((id) => ({ sourceType: 'covered_requirement', id })),
+    ...strings(envelope.coveredRequirementIds).map((id) => ({
+      sourceType: 'covered_requirement',
+      id,
+    })),
   ].filter((ref) => text(ref.id));
 
   return {
@@ -523,7 +577,9 @@ export function buildSubagentEvidenceEnvelopeFromTaskReport(input: {
     traceRows: input.traceRows,
     coveredRequirementIds: input.coveredRequirementIds,
     taskRefs: input.taskRefs,
-    allowedWriteScope: Array.isArray(input.packet.allowedWriteScope) ? input.packet.allowedWriteScope : [],
+    allowedWriteScope: Array.isArray(input.packet.allowedWriteScope)
+      ? input.packet.allowedWriteScope
+      : [],
     actualFilesChanged: input.actualFilesChanged,
     diffHash: input.diffHash ?? sha256Object(input.actualFilesChanged),
     workspaceRef: input.workspaceRef,
@@ -536,7 +592,10 @@ export function buildSubagentEvidenceEnvelopeFromTaskReport(input: {
   };
 }
 
-export function validateTaskReportLegacyBoundary(taskReport: unknown, envelope?: unknown): SubagentEvidenceEnvelopeValidation {
+export function validateTaskReportLegacyBoundary(
+  taskReport: unknown,
+  envelope?: unknown
+): SubagentEvidenceEnvelopeValidation {
   if (!isObject(taskReport)) {
     return {
       ok: false,
@@ -572,8 +631,12 @@ export function artifactRefForPath(input: {
   return {
     artifactType: input.artifactType,
     sourceOfTruthRole: 'evidence',
-    path: normalizePathForRecord(path.isAbsolute(input.artifactPath) ? input.artifactPath : input.artifactPath),
-    contentHash: fs.existsSync(absolute) ? sha256File(absolute) : sha256Object({ missingArtifactPath: input.artifactPath }),
+    path: normalizePathForRecord(
+      path.isAbsolute(input.artifactPath) ? input.artifactPath : input.artifactPath
+    ),
+    contentHash: fs.existsSync(absolute)
+      ? sha256File(absolute)
+      : sha256Object({ missingArtifactPath: input.artifactPath }),
     producer: input.producer,
     purpose: input.purpose,
     relatedRequirementIds: input.relatedRequirementIds,
@@ -652,15 +715,28 @@ export function runSubagentEvidenceEnvelopeAcceptance(argv: string[]): number {
   };
   fs.mkdirSync(path.dirname(path.resolve(reportOut)), { recursive: true });
   fs.writeFileSync(path.resolve(reportOut), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
-  process.stdout.write(args.json ? `${JSON.stringify(report, null, 2)}\n` : `subagent_evidence_envelope=${report.decision}\n`);
+  process.stdout.write(
+    args.json
+      ? `${JSON.stringify(report, null, 2)}\n`
+      : `subagent_evidence_envelope=${report.decision}\n`
+  );
   return validation.ok ? 0 : 3;
 }
 
-if (require.main === module && /(^|[\\/])subagent-evidence-envelope(\.[cm]?js|\.ts)?$/iu.test(process.argv[1] ?? '')) {
+if (
+  require.main === module &&
+  /(^|[\\/])subagent-evidence-envelope(\.[cm]?js|\.ts)?$/iu.test(process.argv[1] ?? '')
+) {
   try {
     process.exitCode = runSubagentEvidenceEnvelopeAcceptance(process.argv.slice(2));
   } catch (error) {
-    console.error(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : String(error) }, null, 2));
+    console.error(
+      JSON.stringify(
+        { ok: false, error: error instanceof Error ? error.message : String(error) },
+        null,
+        2
+      )
+    );
     process.exitCode = 2;
   }
 }

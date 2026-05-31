@@ -61,6 +61,23 @@ function safeRemoveEntry(absPath) {
   return withFsRetry(() => removeEntry(absPath));
 }
 
+function archiveGlobalEntry(projectRoot, uninstallSessionId, absPath) {
+  if (!fs.existsSync(absPath)) return '';
+  const archiveRoot = path.join(
+    projectRoot,
+    '_bmad-output',
+    'install-state',
+    uninstallSessionId,
+    'global-skill-archive'
+  );
+  const archivePath = path.join(
+    archiveRoot,
+    `${path.basename(absPath)}-${require('crypto').createHash('sha1').update(absPath).digest('hex').slice(0, 12)}`
+  );
+  copyRecursive(absPath, archivePath);
+  return path.relative(projectRoot, archivePath).replace(/\\/g, '/');
+}
+
 function restoreEntryFromSource(absPath, restoreSource) {
   const sourceStat = fs.statSync(restoreSource);
   if (!sourceStat.isDirectory()) {
@@ -268,6 +285,104 @@ function applyEntryAction({ projectRoot, entry, scope, requestedAgents, dryRun, 
   };
 }
 
+function applyGlobalEntryAction({
+  projectRoot,
+  uninstallSessionId,
+  entry,
+  requestedAgents,
+  dryRun,
+  allowGlobalCleanup,
+}) {
+  const absPath = resolveCurrentPath(projectRoot, entry, 'global');
+  const classification = entry?.preinstall_state?.classification || 'preexisting-unmanaged';
+  const ownerAgents = Array.isArray(entry.owner_agents) ? entry.owner_agents : [];
+  const overlap = ownerAgents.filter((agent) => requestedAgents.has(agent));
+  if (overlap.length === 0) {
+    return { keep: true, entry, report: null };
+  }
+
+  if (!allowGlobalCleanup) {
+    return {
+      keep: true,
+      entry,
+      report: createSkipEntry(
+        entry.path,
+        classification,
+        'global_cleanup_authorization_not_set',
+        'rerun uninstall with --remove-global-skills only when managed global cleanup is intended'
+      ),
+    };
+  }
+
+  const remainingOwners = ownerAgents.filter((agent) => !requestedAgents.has(agent));
+  if (remainingOwners.length > 0) {
+    return {
+      keep: true,
+      entry: { ...entry, owner_agents: remainingOwners },
+      report: {
+        path: entry.path,
+        remaining_owner_agents: remainingOwners,
+        action: 'owner_rewritten',
+      },
+    };
+  }
+
+  if (classification !== 'created') {
+    return {
+      keep: true,
+      entry,
+      report: createSkipEntry(
+        entry.path,
+        classification,
+        classification === 'preexisting-unmanaged' ? 'missing_global_ownership_evidence' : 'global_restore_requires_manual_review',
+        'manual cleanup required because global skill path was not created by this install session'
+      ),
+    };
+  }
+
+  if (fs.existsSync(absPath) && hasCurrentBeenModified(absPath, entry)) {
+    return {
+      keep: true,
+      entry,
+      report: createSkipEntry(
+        entry.path,
+        classification,
+        'current_content_modified_since_install',
+        'manual cleanup required because managed global entry changed after install'
+      ),
+    };
+  }
+
+  if (dryRun) {
+    return {
+      keep: false,
+      entry: null,
+      report: { path: entry.path, action: 'would_archive_and_delete_created' },
+    };
+  }
+
+  try {
+    const archive_ref = archiveGlobalEntry(projectRoot, uninstallSessionId, absPath);
+    safeRemoveEntry(absPath);
+    return {
+      keep: false,
+      entry: null,
+      report: { path: entry.path, action: 'archived_deleted_created', archive_ref },
+    };
+  } catch (error) {
+    return {
+      keep: true,
+      entry,
+      report: createSkipEntry(
+        entry.path,
+        classification,
+        `filesystem_${error.code || 'archive_or_delete_failed'}`,
+        'manual cleanup required because managed global entry is locked or inaccessible'
+      ),
+    };
+  }
+}
+
 function uninstallCommand(options = {}) {
   const projectRoot = path.resolve(options.target || process.cwd());
   const manifestPath = getInstallManifestPath(projectRoot);
@@ -290,6 +405,10 @@ function uninstallCommand(options = {}) {
 
   const dryRun = options.dryRun === true;
   const removeGlobalSkills = options.removeGlobalSkills === true;
+  const uninstallSessionId =
+    typeof require('crypto').randomUUID === 'function'
+      ? require('crypto').randomUUID()
+      : String(Date.now());
   const stopRoots = new Set([
     path.resolve(projectRoot, '.cursor'),
     path.resolve(projectRoot, '.claude'),
@@ -339,33 +458,19 @@ function uninstallCommand(options = {}) {
       nextManagedGlobalSkillPaths.push(entry);
       continue;
     }
-    if (!removeGlobalSkills) {
-      nextManagedGlobalSkillPaths.push(entry);
-      skippedEntries.push(
-        createSkipEntry(
-          entry.path,
-          entry?.preinstall_state?.classification || 'created',
-          'remove_global_skills_flag_not_set',
-          'rerun uninstall with --remove-global-skills to remove global skill directories'
-        )
-      );
-      continue;
-    }
-
-    const globalStopRoots = new Set([path.dirname(path.resolve(entry.path))]);
-    const result = applyEntryAction({
+    const result = applyGlobalEntryAction({
       projectRoot,
+      uninstallSessionId,
       entry,
-      scope: 'global',
       requestedAgents: effectiveAgents,
       dryRun,
-      stopRoots: globalStopRoots,
+      allowGlobalCleanup: removeGlobalSkills,
     });
     if (result.keep && result.entry) {
       nextManagedGlobalSkillPaths.push(result.entry);
     }
     if (result.report) {
-      if (result.report.action === 'deleted_created') deletedEntries.push(result.report);
+      if (result.report.action === 'archived_deleted_created' || result.report.action === 'would_archive_and_delete_created') deletedEntries.push(result.report);
       else if (result.report.action === 'restored_snapshot') restoredEntries.push(result.report);
       else if (result.report.action === 'owner_rewritten') ownerRewriteEntries.push(result.report);
       else {
@@ -386,10 +491,7 @@ function uninstallCommand(options = {}) {
 
   const uninstallReport = {
     install_session_id: manifest.install_session_id || '',
-    uninstall_session_id:
-      typeof require('crypto').randomUUID === 'function'
-        ? require('crypto').randomUUID()
-        : String(Date.now()),
+    uninstall_session_id: uninstallSessionId,
     project_root: projectRoot,
     requested_agents: [...effectiveAgents],
     deleted_entries: deletedEntries,

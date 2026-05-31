@@ -71,9 +71,7 @@ describe('reviewer contract freeze', () => {
     expect(getReviewerProfileFromDefinitionSource('auditor-implement')).toBe('implement_audit');
     expect(getReviewerProfileFromDefinitionSource('auditor-gaps')).toBe('tasks_audit');
     expect(getReviewerProfileFromDefinitionSource('auditor-bugfix')).toBe('bugfix_doc_audit');
-    expect(getReviewerProfileFromDefinitionSource('auditor-tasks-doc')).toBe(
-      'tasks_doc_audit'
-    );
+    expect(getReviewerProfileFromDefinitionSource('auditor-tasks-doc')).toBe('tasks_doc_audit');
     expect(isReviewerProfileId('plan_audit')).toBe(true);
     expect(isReviewerProfileId('invalid_profile')).toBe(false);
   });
@@ -97,9 +95,7 @@ describe('reviewer contract freeze', () => {
     });
     expect(existsSync(path.join(process.cwd(), REVIEWER_SHARED_CORE_METADATA_PATH))).toBe(true);
     expect(existsSync(path.join(process.cwd(), REVIEWER_SHARED_CORE_BASE_PROMPT_PATH))).toBe(true);
-    expect(existsSync(path.join(process.cwd(), REVIEWER_SHARED_CORE_PROFILE_PACK_PATH))).toBe(
-      true
-    );
+    expect(existsSync(path.join(process.cwd(), REVIEWER_SHARED_CORE_PROFILE_PACK_PATH))).toBe(true);
   });
 
   it('freezes facilitator as a single Claude agent mention target instead of a subtype contract', () => {
@@ -110,9 +106,9 @@ describe('reviewer contract freeze', () => {
     expect(CURSOR_FACILITATOR_DEFINITION_SOURCE_PATH).toBe(
       '.cursor/agents/party-mode-facilitator.md'
     );
-    expect(
-      existsSync(path.join(process.cwd(), CURSOR_FACILITATOR_DEFINITION_SOURCE_PATH))
-    ).toBe(true);
+    expect(existsSync(path.join(process.cwd(), CURSOR_FACILITATOR_DEFINITION_SOURCE_PATH))).toBe(
+      true
+    );
     expect(existsSync(path.join(process.cwd(), CLAUDE_FACILITATOR_TARGET_PATH))).toBe(true);
   });
 

@@ -35,8 +35,7 @@ function writeRecord(requirementSetId: string, overrides: Record<string, unknown
     sourceDocumentHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
     implementationConfirmationHash:
       'sha256:2222222222222222222222222222222222222222222222222222222222222222',
-    confirmationPageHash:
-      'sha256:3333333333333333333333333333333333333333333333333333333333333333',
+    confirmationPageHash: 'sha256:3333333333333333333333333333333333333333333333333333333333333333',
     architectureConfirmationState: {
       status: 'active',
       currentArchitectureConfirmationHash:
@@ -70,7 +69,9 @@ describe('resolveActiveRequirement fallback scanning', () => {
       requirementSetId: 'REQSET-RECOVERED',
       safeToWrite: true,
     });
-    expect(fs.existsSync(path.join(root, '_bmad-output', 'runtime', 'context', 'project.json'))).toBe(false);
+    expect(
+      fs.existsSync(path.join(root, '_bmad-output', 'runtime', 'context', 'project.json'))
+    ).toBe(false);
   });
 
   it('recovers when index active pointer is stale', () => {
@@ -156,10 +157,11 @@ describe('resolveActiveRequirement fallback scanning', () => {
         'utf8'
       )
     );
-    expect(projection.rejectedCandidates.map((item: { requirementSetId: string }) => item.requirementSetId)).toEqual([
-      'REQSET-AMBIGUOUS-A',
-      'REQSET-AMBIGUOUS-B',
-    ]);
+    expect(
+      projection.rejectedCandidates.map(
+        (item: { requirementSetId: string }) => item.requirementSetId
+      )
+    ).toEqual(['REQSET-AMBIGUOUS-A', 'REQSET-AMBIGUOUS-B']);
     expect(projection.safeToWrite).toBe(false);
   });
 });

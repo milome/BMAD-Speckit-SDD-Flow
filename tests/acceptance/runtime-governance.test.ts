@@ -73,26 +73,24 @@ describe('runtime-governance (U-1.2b)', () => {
         ...canonical,
         auditRequired: !shouldAudit('gaps', config),
       };
-      expect(() =>
-        assertLegacyAlignedRuntimePolicy(tampered, 'bugfix', 'gaps', config)
-      ).toThrow(/auditRequired mismatch/);
+      expect(() => assertLegacyAlignedRuntimePolicy(tampered, 'bugfix', 'gaps', config)).toThrow(
+        /auditRequired mismatch/
+      );
     });
 
     it('throws when validationLevel is intentionally wrong vs legacy', () => {
       const config = loadConfig();
-      const canonical = resolveRuntimePolicy({ flow: 'standalone_tasks', stage: 'specify', config });
+      const canonical = resolveRuntimePolicy({
+        flow: 'standalone_tasks',
+        stage: 'specify',
+        config,
+      });
       const tampered: RuntimePolicy = {
         ...canonical,
-        validationLevel:
-          shouldValidate('specify', config) === 'basic' ? 'test_only' : 'basic',
+        validationLevel: shouldValidate('specify', config) === 'basic' ? 'test_only' : 'basic',
       };
       expect(() =>
-        assertLegacyAlignedRuntimePolicy(
-          tampered,
-          'standalone_tasks',
-          'specify',
-          config
-        )
+        assertLegacyAlignedRuntimePolicy(tampered, 'standalone_tasks', 'specify', config)
       ).toThrow(/validationLevel mismatch/);
     });
   });

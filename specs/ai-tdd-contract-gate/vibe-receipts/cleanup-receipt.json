@@ -1,0 +1,32 @@
+{
+  "runId": "2026-05-25-ai-tdd-contract-gate",
+  "stage": "phase_cleanup",
+  "canonicalPath": "specs/ai-tdd-contract-gate/vibe-receipts/cleanup-receipt.json",
+  "status": "superseded_by_full_version_work",
+  "previousVerification": [
+    {
+      "command": "npx vitest run tests/acceptance/ai-tdd-contract-gate.test.ts tests/acceptance/pre-rerun-anti-false-positive-gate.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts",
+      "result": "passed",
+      "summary": "3 files, 39 tests passed"
+    },
+    {
+      "command": "npx tsc --project tsconfig.node.json --noEmit",
+      "result": "passed",
+      "summary": "exit 0"
+    },
+    {
+      "command": "node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js",
+      "result": "passed",
+      "summary": "checkedFiles=2817 findings=0"
+    }
+  ],
+  "fullVersionFollowUp": [
+    "Schemaize acceptanceTests and e2eSuites.",
+    "Make renderer, reverse audit, and contract authoring understand ACC/E2E.",
+    "Implement controlled old-implementation red proof.",
+    "Refine row-level matrix.",
+    "Make closeout default-enforced for confirmed requirements.",
+    "Keep canonical requirement, plan, and receipts under specs/ai-tdd-contract-gate."
+  ]
+}
+

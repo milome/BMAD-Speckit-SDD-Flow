@@ -4,11 +4,7 @@
  * 支持 SCORING_DATA_PATH 或 --data-path 覆盖数据路径
  */
 import * as path from 'path';
-import {
-  queryByEpic,
-  queryByStory,
-  queryLatest,
-} from '../packages/scoring/query';
+import { queryByEpic, queryByStory, queryLatest } from '../packages/scoring/query';
 
 function main() {
   const dataPath = process.env.SCORING_DATA_PATH ?? resolveDataPathFromArgs();
@@ -25,7 +21,10 @@ function main() {
   const byStory = queryByStory(3, 3, resolved);
   console.log('queryByStory(3, 3):', byStory.length, 'records');
   if (byStory.length > 0) {
-    console.log('  sample:', JSON.stringify(byStory[0], null, 2).split('\n').slice(0, 5).join('\n'));
+    console.log(
+      '  sample:',
+      JSON.stringify(byStory[0], null, 2).split('\n').slice(0, 5).join('\n')
+    );
   }
 
   const byEpic = queryByEpic(3, resolved);

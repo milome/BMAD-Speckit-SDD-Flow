@@ -27,7 +27,12 @@ describe('consumer uninstall preserves _bmad-output and host shared roots', () =
 
       run(`npm install --save-dev "file:${PKG_ROOT.replace(/\\/g, '/')}"`, target);
 
-      const manifestPath = join(target, '_bmad-output', 'config', 'bmad-speckit-install-manifest.json');
+      const manifestPath = join(
+        target,
+        '_bmad-output',
+        'config',
+        'bmad-speckit-install-manifest.json'
+      );
       expect(existsSync(manifestPath)).toBe(true);
       expect(existsSync(join(target, '_bmad'))).toBe(true);
       expect(existsSync(join(target, '.specify'))).toBe(true);
@@ -74,7 +79,12 @@ describe('consumer uninstall preserves _bmad-output and host shared roots', () =
         `npx bmad-speckit init app --ai cursor-agent --yes --bmad-path "${join(PKG_ROOT, '_bmad').replace(/\\/g, '/')}"`,
         target
       );
-      const manifestPath = join(appRoot, '_bmad-output', 'config', 'bmad-speckit-install-manifest.json');
+      const manifestPath = join(
+        appRoot,
+        '_bmad-output',
+        'config',
+        'bmad-speckit-install-manifest.json'
+      );
       expect(existsSync(manifestPath)).toBe(true);
       const sentinel = join(appRoot, '_bmad-output', 'sentinel.txt');
       writeFileSync(sentinel, 'keep-me\n', 'utf8');
@@ -84,9 +94,9 @@ describe('consumer uninstall preserves _bmad-output and host shared roots', () =
       expect(existsSync(join(appRoot, '_bmad'))).toBe(false);
       expect(existsSync(join(appRoot, '.specify'))).toBe(false);
       expect(readFileSync(sentinel, 'utf8')).toBe('keep-me\n');
-      expect(existsSync(join(appRoot, '_bmad-output', 'config', 'bmad-speckit-uninstall-report.json'))).toBe(
-        true
-      );
+      expect(
+        existsSync(join(appRoot, '_bmad-output', 'config', 'bmad-speckit-uninstall-report.json'))
+      ).toBe(true);
     } finally {
       rmSync(target, { recursive: true, force: true });
       rmSync(packDir, { recursive: true, force: true });

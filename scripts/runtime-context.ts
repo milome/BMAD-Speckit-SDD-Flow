@@ -58,9 +58,7 @@ export interface RuntimeContextFile {
   updatedAt: string;
 }
 
-export type LanguagePolicyContextSyncReason =
-  | 'project_context_missing'
-  | 'project_context_invalid';
+export type LanguagePolicyContextSyncReason = 'project_context_missing' | 'project_context_invalid';
 
 export interface LanguagePolicyContextSyncResult {
   status: 'updated' | 'skipped';
@@ -217,11 +215,7 @@ export function readRuntimeContext(root: string, explicitPath?: string): Runtime
       throw new Error(`runtime-context.languagePolicy invalid: ${file}`);
     }
     const lp = o.languagePolicy as Record<string, unknown>;
-    if (
-      lp.resolvedMode !== 'zh' &&
-      lp.resolvedMode !== 'en' &&
-      lp.resolvedMode !== 'bilingual'
-    ) {
+    if (lp.resolvedMode !== 'zh' && lp.resolvedMode !== 'en' && lp.resolvedMode !== 'bilingual') {
       throw new Error(`runtime-context.languagePolicy.resolvedMode invalid: ${file}`);
     }
   }
@@ -255,7 +249,8 @@ export function readRuntimeContext(root: string, explicitPath?: string): Runtime
   if (typeof o.runId === 'string' && o.runId !== '') out.runId = o.runId;
   if (typeof o.artifactRoot === 'string' && o.artifactRoot !== '')
     out.artifactRoot = o.artifactRoot;
-  if (typeof o.artifactPath === 'string' && o.artifactPath !== '') out.artifactPath = o.artifactPath;
+  if (typeof o.artifactPath === 'string' && o.artifactPath !== '')
+    out.artifactPath = o.artifactPath;
   if (typeof o.workflow === 'string' && o.workflow !== '') out.workflow = o.workflow;
   if (typeof o.step === 'string' && o.step !== '') out.step = o.step;
   if (
@@ -268,11 +263,7 @@ export function readRuntimeContext(root: string, explicitPath?: string): Runtime
   }
   if (o.languagePolicy && typeof o.languagePolicy === 'object') {
     const lp = o.languagePolicy as Record<string, unknown>;
-    if (
-      lp.resolvedMode === 'zh' ||
-      lp.resolvedMode === 'en' ||
-      lp.resolvedMode === 'bilingual'
-    ) {
+    if (lp.resolvedMode === 'zh' || lp.resolvedMode === 'en' || lp.resolvedMode === 'bilingual') {
       out.languagePolicy = { resolvedMode: lp.resolvedMode as 'zh' | 'en' | 'bilingual' };
     }
   }

@@ -8,6 +8,7 @@ import * as path from 'node:path';
 import { execSync } from 'node:child_process';
 import { parseEpicStoryFromRecord } from '../query';
 import { loadAndDedupeRecords } from '../query/loader';
+import { getScoringDataPath } from '../constants/path';
 import { getGitHeadHashFull } from '../utils/hash';
 import type { RunScoreRecord } from '../writer/types';
 import { buildCanonicalCandidatesFromRecords } from './candidate-builder';
@@ -167,7 +168,10 @@ function contentToString(content: CanonicalMessage['content']): string {
   return content.map((part) => part.text).join('\n');
 }
 
-function getFirstMessage(sample: CanonicalSftSample, role: CanonicalMessage['role']): CanonicalMessage | undefined {
+function getFirstMessage(
+  sample: CanonicalSftSample,
+  role: CanonicalMessage['role']
+): CanonicalMessage | undefined {
   return sample.messages.find((message) => message.role === role);
 }
 
@@ -214,11 +218,10 @@ function toLegacyEntry(sample: CanonicalSftSample): SftEntry {
   const userMessage = getFirstMessage(sample, 'user');
   const assistantMessage = getFirstMessage(sample, 'assistant');
   const legacy = extractLegacyInstructionAndInput(userMessage);
-  const output =
-    stripPatchLocationHeaders(
-      getMetadataString(assistantMessage, 'legacy_output') ??
-        (assistantMessage ? contentToString(assistantMessage.content).trim() : '')
-    );
+  const output = stripPatchLocationHeaders(
+    getMetadataString(assistantMessage, 'legacy_output') ??
+      (assistantMessage ? contentToString(assistantMessage.content).trim() : '')
+  );
 
   return {
     instruction: legacy.instruction,
@@ -318,7 +321,7 @@ export async function extractSftDataset(
   options?: ExtractSftDatasetOptions
 ): Promise<{ entries: SftEntry[]; summary: SftExtractSummary }> {
   const minScore = options?.minScore ?? 90;
-  const basePath = resolveDataPath(dataPath ?? path.join(process.cwd(), 'packages', 'scoring', 'data'));
+  const basePath = resolveDataPath(dataPath ?? getScoringDataPath());
   const outPath = resolveOutputPath(basePath, outputPath);
   const cwd = process.cwd();
   const skipReasons: Record<string, number> = {};

@@ -39,7 +39,10 @@ function text(value: unknown): string {
 
 function objects(value: unknown): JsonObject[] {
   return Array.isArray(value)
-    ? value.filter((item): item is JsonObject => Boolean(item) && typeof item === 'object' && !Array.isArray(item))
+    ? value.filter(
+        (item): item is JsonObject =>
+          Boolean(item) && typeof item === 'object' && !Array.isArray(item)
+      )
     : [];
 }
 
@@ -86,17 +89,22 @@ function evaluateDecisionChecks(
 export function mainDecisionFieldCheck(argv: string[]): number {
   const args = parseArgs(argv);
   if (args.help) {
-    console.log('Usage: main-agent-decision-field-check --requirement-record <json> [--target gateChecks|contractChecks] [--json]');
+    console.log(
+      'Usage: main-agent-decision-field-check --requirement-record <json> [--target gateChecks|contractChecks] [--json]'
+    );
     return 0;
   }
   if (!args.requirementRecord) throw new Error('missing required args: requirementRecord');
   const target = args.target ?? 'gateChecks';
-  if (target !== 'gateChecks' && target !== 'contractChecks') throw new Error(`unsupported target: ${target}`);
+  if (target !== 'gateChecks' && target !== 'contractChecks')
+    throw new Error(`unsupported target: ${target}`);
   const recordPath = path.resolve(args.requirementRecord);
   const record = readJson(recordPath);
   const evaluated = evaluateDecisionChecks(record, target);
   const decision = evaluated.blockingReasons.length === 0 ? 'pass' : 'blocked';
-  const reportPath = path.resolve(args.reportPath ?? path.join(path.dirname(recordPath), 'decision-field-check.json'));
+  const reportPath = path.resolve(
+    args.reportPath ?? path.join(path.dirname(recordPath), 'decision-field-check.json')
+  );
   const report = {
     reportType: 'decision_field_check',
     target,
@@ -114,7 +122,9 @@ export function mainDecisionFieldCheck(argv: string[]): number {
     decision,
     blockingReasons: evaluated.blockingReasons,
   };
-  process.stdout.write(args.json ? `${JSON.stringify(output, null, 2)}\n` : `decision_field=${decision}\n`);
+  process.stdout.write(
+    args.json ? `${JSON.stringify(output, null, 2)}\n` : `decision_field=${decision}\n`
+  );
   return decision === 'pass' ? 0 : 1;
 }
 
@@ -122,7 +132,13 @@ if (require.main === module) {
   try {
     process.exitCode = mainDecisionFieldCheck(process.argv.slice(2));
   } catch (error) {
-    console.error(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : String(error) }, null, 2));
+    console.error(
+      JSON.stringify(
+        { ok: false, error: error instanceof Error ? error.message : String(error) },
+        null,
+        2
+      )
+    );
     process.exitCode = 2;
   }
 }

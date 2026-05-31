@@ -57,7 +57,9 @@ describe('cursor party-mode return diagnostic contract', () => {
       expect(content).toContain('visible_output_summary');
       expect(content).toContain('diagnostic_classification');
       expect(fullContent).toContain('party-mode-read-current-session.cjs');
-      expect(fullContent).toMatch(/none\|pending\|partial\|final|none \/ pending \/ partial \/ final|none、pending、partial、final/iu);
+      expect(fullContent).toMatch(
+        /none\|pending\|partial\|final|none \/ pending \/ partial \/ final|none、pending、partial、final/iu
+      );
 
       const currentSessionIndex = content.indexOf('current-session.json');
       const evidenceLevelIndex = content.indexOf('execution_evidence_level');
@@ -105,7 +107,9 @@ describe('cursor party-mode return diagnostic contract', () => {
       expect(fullContent).toContain(
         'node .cursor/hooks/party-mode-read-current-session.cjs --project-root "{project-root}"'
       );
-      expect(fullContent).toMatch(/单独运行|单独执行|standalone command|single command|separately/iu);
+      expect(fullContent).toMatch(
+        /单独运行|单独执行|standalone command|single command|separately/iu
+      );
       expect(fullContent).not.toMatch(/party-mode-read-current-session\.cjs[^\n`]*\|\|/iu);
       expect(fullContent).not.toMatch(/party-mode-read-current-session\.cjs[^\n`]*2>&null/iu);
       expect(fullContent).not.toMatch(/party-mode-read-current-session\.cjs[^\n`]*2>\/dev\/null/iu);
@@ -135,7 +139,9 @@ describe('cursor party-mode return diagnostic contract', () => {
     for (const filePath of DIAGNOSTIC_CONTRACT_FILES) {
       const fullContent = fs.readFileSync(filePath, 'utf8');
       expect(fullContent).toMatch(/为什么以前看起来更稳定|以前.?看起来更稳定/iu);
-      expect(fullContent).toMatch(/旧问题.*显性|旧问题.*暴露|隐性变显性|旧问题.*被吞掉|旧问题.*被看见|旧问题.*被显式分类/iu);
+      expect(fullContent).toMatch(
+        /旧问题.*显性|旧问题.*暴露|隐性变显性|旧问题.*被吞掉|旧问题.*被看见|旧问题.*被显式分类/iu
+      );
       expect(fullContent).toMatch(/新.*回归|同步回归风险|状态同步风险|新回归引入/iu);
       expect(fullContent).toMatch(/(禁止|不得).*(全局无法处理|全局不稳定|整体坏了)/iu);
     }

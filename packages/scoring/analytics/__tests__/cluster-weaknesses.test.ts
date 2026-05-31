@@ -25,16 +25,12 @@ describe('clusterWeaknesses', () => {
       makeRecord({
         run_id: 'r1',
         stage: 'spec',
-        check_items: [
-          { item_id: 'item_a', passed: false, score_delta: -10, note: 'note1' },
-        ],
+        check_items: [{ item_id: 'item_a', passed: false, score_delta: -10, note: 'note1' }],
       }),
       makeRecord({
         run_id: 'r2',
         stage: 'plan',
-        check_items: [
-          { item_id: 'item_a', passed: false, score_delta: -5, note: 'note2' },
-        ],
+        check_items: [{ item_id: 'item_a', passed: false, score_delta: -5, note: 'note2' }],
       }),
     ];
     const result = clusterWeaknesses(records, 2);
@@ -113,9 +109,7 @@ describe('clusterWeaknesses', () => {
       }),
       makeRecord({
         stage: 'plan',
-        check_items: [
-          { item_id: 'item_sev', passed: false, score_delta: -10 },
-        ],
+        check_items: [{ item_id: 'item_sev', passed: false, score_delta: -10 }],
       }),
     ];
     const result = clusterWeaknesses(records, 2);

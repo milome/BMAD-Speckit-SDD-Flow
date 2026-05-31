@@ -1,0 +1,60 @@
+{
+  "schemaVersion": "controlled-integration-extension-fixture/v1",
+  "recordId": "REQ-REQ-TRACE-AI-TDD-PACKET-COMPILER",
+  "requirementSetId": "REQ-REQ-TRACE-AI-TDD-PACKET-COMPILER",
+  "recordHashes": {
+    "sourceDocumentHash": "sha256:5ebb9dfd3c5f7ccb7d09654bba53bb0dc1d61752cbad34b3ec364b0236414baa",
+    "implementationConfirmationHash": "sha256:e8890ee3dca89838461fd4b18293e019a5780ef64b52e2a22ce81ffa28407502",
+    "confirmationPageHash": "sha256:4cbbdac9870e51b55d2e8c0f52515464e256fb1b7d7a6e45bea078cd36dd56d0"
+  },
+  "artifact": {
+    "schemaVersion": "controlled-clarification/execution-discipline-profile-ref/v1",
+    "recordId": "REQ-REQ-TRACE-AI-TDD-PACKET-COMPILER",
+    "relatedPlanPath": "docs/plans/2026-05-26-main-agent-compiled-prompt-dispatch-integration-plan.md",
+    "extensionId": "execution-discipline-profile-ref-integration-extension",
+    "sourceDocumentHash": "sha256:5ebb9dfd3c5f7ccb7d09654bba53bb0dc1d61752cbad34b3ec364b0236414baa",
+    "implementationConfirmationHash": "sha256:e8890ee3dca89838461fd4b18293e019a5780ef64b52e2a22ce81ffa28407502",
+    "confirmationPageHash": "sha256:4cbbdac9870e51b55d2e8c0f52515464e256fb1b7d7a6e45bea078cd36dd56d0",
+    "authorityDecision": "discipline_profile_only",
+    "allowedCompilerInput": "--execution-discipline-profile-ref",
+    "scopeDecision": "profile_input_expands_prompt_artifact_projection_only",
+    "semanticEffect": "no_confirmed_requirement_scope_change",
+    "requirementScopeAuthority": "implementationConfirmation_and_model_packet_only",
+    "hashChangePolicy": "sourceDocumentHash_and_implementationConfirmationHash_must_not_change_silently",
+    "compilerProjectionPolicy": "req-trace_may_validate_and_render_the_profile_snapshot_but_must_not_change_source_rows_or_command_authority",
+    "forbiddenEffects": [
+      "change_confirmed_source_hash",
+      "change_implementation_confirmation_hash",
+      "add_or_remove_must_trace_evd_acc_e2e_rows",
+      "override_model_packet_authority",
+      "override_required_commands",
+      "write_requirement_record_directly",
+      "advance_mental_model"
+    ],
+    "createdBy": "main-agent-orchestration/g12-controlled-integration-extension",
+    "createdAt": "2026-05-28T00:00:00.000Z",
+    "inputRefs": [
+      {
+        "sourceType": "requirement_record",
+        "id": "_bmad-output/runtime/requirement-records/REQ-REQ-TRACE-AI-TDD-PACKET-COMPILER/requirement-record.json",
+        "hash": "sha256:345e0430ae19c58f647e0bf8ca63cb889cdcb553856a6b6bf2740950b13282b2"
+      },
+      {
+        "sourceType": "source_document_hash",
+        "id": "sha256:5ebb9dfd3c5f7ccb7d09654bba53bb0dc1d61752cbad34b3ec364b0236414baa"
+      },
+      {
+        "sourceType": "implementation_confirmation_hash",
+        "id": "sha256:e8890ee3dca89838461fd4b18293e019a5780ef64b52e2a22ce81ffa28407502"
+      },
+      {
+        "sourceType": "confirmation_page_hash",
+        "id": "sha256:4cbbdac9870e51b55d2e8c0f52515464e256fb1b7d7a6e45bea078cd36dd56d0"
+      },
+      {
+        "sourceType": "plan",
+        "id": "docs/plans/2026-05-26-main-agent-compiled-prompt-dispatch-integration-plan.md"
+      }
+    ]
+  }
+}

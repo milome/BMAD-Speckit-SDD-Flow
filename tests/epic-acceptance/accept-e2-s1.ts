@@ -28,13 +28,7 @@ function main(): void {
     const p2 = loadPhaseScoringYaml(2, { rulesDir });
     const p3 = loadPhaseScoringYaml(3, { rulesDir });
     const p4 = loadPhaseScoringYaml(4, { rulesDir });
-    if (
-      p2.version &&
-      p2.stage &&
-      p2.link_环节 === 2 &&
-      p3.link_环节 === 3 &&
-      p4.link_环节 === 4
-    ) {
+    if (p2.version && p2.stage && p2.link_环节 === 2 && p3.link_环节 === 3 && p4.link_环节 === 4) {
       console.log('AC-1: PASS');
       passed++;
     } else {
@@ -68,11 +62,7 @@ function main(): void {
   try {
     const p2 = loadPhaseScoringYaml(2, { rulesDir });
     const valid = (p2.veto_items ?? []).every(
-      (v) =>
-        v.id &&
-        v.ref &&
-        v.consequence &&
-        /^code-reviewer-config#veto_/.test(v.ref)
+      (v) => v.id && v.ref && v.consequence && /^code-reviewer-config#veto_/.test(v.ref)
     );
     if (valid) {
       console.log('AC-3: PASS');
@@ -87,7 +77,11 @@ function main(): void {
   // AC-4: gaps-scoring.yaml 可解析，产出前置 40%、后置 implement/post_impl
   try {
     const g = loadGapsScoringYaml({ rulesDir });
-    if (g.weights.base.spec_coverage === 40 && g.weights.post_implement && g.weights.post_post_impl) {
+    if (
+      g.weights.base.spec_coverage === 40 &&
+      g.weights.post_implement &&
+      g.weights.post_post_impl
+    ) {
       console.log('AC-4: PASS');
       passed++;
     } else {

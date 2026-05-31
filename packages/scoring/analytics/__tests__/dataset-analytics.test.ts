@@ -97,7 +97,11 @@ function makeSample(id: string, overrides: SampleOverrides = {}): CanonicalSftSa
     export_compatibility: {
       openai_chat: { compatible: true, reasons: [], warnings: [] },
       hf_conversational: { compatible: true, reasons: [], warnings: [] },
-      hf_tool_calling: { compatible: false, reasons: ['target_incompatible_hf_tool_calling'], warnings: [] },
+      hf_tool_calling: {
+        compatible: false,
+        reasons: ['target_incompatible_hf_tool_calling'],
+        warnings: [],
+      },
       ...(export_compatibility || {}),
     },
     ...topLevelOverrides,
@@ -146,7 +150,11 @@ describe('dataset analytics', () => {
           provider_id: 'provider-b',
           provider_mode: 'http-json',
         },
-        metadata: { host_kind: 'cursor', sample_kind: 'documentation', schema_targets: ['hf_conversational'] },
+        metadata: {
+          host_kind: 'cursor',
+          sample_kind: 'documentation',
+          schema_targets: ['hf_conversational'],
+        },
         quality: { has_code_pair: false },
         messages: [
           { role: 'system', content: 'You are a coding agent.' },

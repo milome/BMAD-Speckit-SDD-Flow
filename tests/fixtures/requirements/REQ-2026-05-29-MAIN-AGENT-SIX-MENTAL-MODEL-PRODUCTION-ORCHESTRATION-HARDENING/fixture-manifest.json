@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "requirement-fixture-manifest/v1",
+  "fixtureId": "REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING",
+  "sourceFile": "source.requirement.md",
+  "recordId": "REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING",
+  "requirementSetId": "REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING",
+  "flow": "standalone_tasks",
+  "stage": "implement",
+  "runId": "six-mental-model-hardening-fixture",
+  "trackedInputPolicy": {
+    "gitAuthorityPath": "tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/source.requirement.md",
+    "docsRequirementsIsNotFixtureAuthority": true,
+    "runtimeOutputIsNotFixtureAuthority": true
+  }
+}
+

@@ -14,7 +14,12 @@ describe('runtime-context story/run integration wiring', () => {
   it('persists registry with story contexts and run contexts in one runtime output tree', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'story-run-wire-'));
     try {
-      const sprintStatusPath = path.join(root, '_bmad-output', 'implementation-artifacts', 'sprint-status.yaml');
+      const sprintStatusPath = path.join(
+        root,
+        '_bmad-output',
+        'implementation-artifacts',
+        'sprint-status.yaml'
+      );
       mkdirSync(path.dirname(sprintStatusPath), { recursive: true });
       writeFileSync(
         sprintStatusPath,

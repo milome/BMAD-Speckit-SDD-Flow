@@ -14,7 +14,13 @@ const globalSkillPath = path.join(
   'bmad-code-reviewer-lifecycle',
   'SKILL.md'
 );
-const legacySkillPath = path.join(projectRoot, '_bmad', 'skills', 'bmad-code-reviewer-lifecycle', 'SKILL.md');
+const legacySkillPath = path.join(
+  projectRoot,
+  '_bmad',
+  'skills',
+  'bmad-code-reviewer-lifecycle',
+  'SKILL.md'
+);
 const skillPath = fs.existsSync(globalSkillPath) ? globalSkillPath : legacySkillPath;
 const stageMappingPath = path.join(projectRoot, 'config', 'stage-mapping.yaml');
 const reportPathsPath = path.join(projectRoot, 'config', 'eval-lifecycle-report-paths.yaml');
@@ -54,13 +60,20 @@ function main(): void {
         console.error('AC-2: FAIL - stage_to_phase missing');
       } else {
         const prdOk = Array.isArray(stageToPhase.prd) && stageToPhase.prd.includes(1);
-        const archOk = Array.isArray(stageToPhase.arch) && stageToPhase.arch.includes(1) && stageToPhase.arch.includes(2);
+        const archOk =
+          Array.isArray(stageToPhase.arch) &&
+          stageToPhase.arch.includes(1) &&
+          stageToPhase.arch.includes(2);
         const storyOk = Array.isArray(stageToPhase.story) && stageToPhase.story.includes(1);
         if (prdOk && archOk && storyOk) {
           console.log('AC-2: PASS');
           passed++;
         } else {
-          console.error('AC-2: FAIL - prd/arch/story mapping incorrect', { prdOk, archOk, storyOk });
+          console.error('AC-2: FAIL - prd/arch/story mapping incorrect', {
+            prdOk,
+            archOk,
+            storyOk,
+          });
         }
       }
     }
@@ -75,8 +88,7 @@ function main(): void {
     } else {
       const content = fs.readFileSync(reportPathsPath, 'utf-8');
       const hasAuditStory =
-        content.includes('AUDIT_Story_') &&
-        (content.includes('{epic}') || content.includes('3-1'));
+        content.includes('AUDIT_Story_') && (content.includes('{epic}') || content.includes('3-1'));
       if (hasAuditStory) {
         console.log('AC-3: PASS');
         passed++;

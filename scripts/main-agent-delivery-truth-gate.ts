@@ -262,13 +262,14 @@ function checkEvidenceProvenance(input: {
     };
   }
   const first = present[0][1]!;
-  const mismatches = present.filter(([, value]) =>
-    value == null ||
-    value.runId !== first.runId ||
-    value.storyKey !== first.storyKey ||
-    value.evidenceBundleId !== first.evidenceBundleId ||
-    value.gateReportHash == null ||
-    value.gateReportHash === ''
+  const mismatches = present.filter(
+    ([, value]) =>
+      value == null ||
+      value.runId !== first.runId ||
+      value.storyKey !== first.storyKey ||
+      value.evidenceBundleId !== first.evidenceBundleId ||
+      value.gateReportHash == null ||
+      value.gateReportHash === ''
   );
   return {
     passed:

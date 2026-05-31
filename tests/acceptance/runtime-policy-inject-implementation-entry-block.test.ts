@@ -19,13 +19,7 @@ import {
 const repoRoot = process.cwd();
 
 function readSingleOrchestrationState(root: string) {
-  const stateDir = path.join(
-    root,
-    '_bmad-output',
-    'runtime',
-    'governance',
-    'orchestration-state'
-  );
+  const stateDir = path.join(root, '_bmad-output', 'runtime', 'governance', 'orchestration-state');
   const files = fs.readdirSync(stateDir).filter((file) => file.endsWith('.json'));
   expect(files).toHaveLength(1);
   const sessionId = files[0].replace(/\.json$/i, '');
@@ -148,7 +142,11 @@ describe('runtime-policy-inject implementation-entry block', () => {
       expect(state?.pendingPacket?.status).toBe('ready_for_main_agent');
       expect(state?.pendingPacket?.packetKind).toBe('recommendation');
 
-      const packetPath = packetArtifactPath(tempRoot, sessionId, state?.pendingPacket?.packetId || '');
+      const packetPath = packetArtifactPath(
+        tempRoot,
+        sessionId,
+        state?.pendingPacket?.packetId || ''
+      );
       expect(packetPath).toBe(state?.pendingPacket?.packetPath);
       const packet = JSON.parse(fs.readFileSync(packetPath, 'utf8')) as {
         recommendedTaskType?: string;

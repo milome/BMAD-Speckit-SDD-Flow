@@ -443,7 +443,13 @@ export async function runWallClockSoak(input: {
   const flow = input.flow ?? 'story';
   const stage = input.stage ?? 'implement';
   const hostKind = input.hostKind ?? 'cursor';
-  const tickEvidenceDir = path.join(projectRoot, '_bmad-output', 'runtime', 'soak', 'tick-evidence');
+  const tickEvidenceDir = path.join(
+    projectRoot,
+    '_bmad-output',
+    'runtime',
+    'soak',
+    'tick-evidence'
+  );
   const initialTickOffset = Number.isFinite(input.initialTickOffset ?? 0)
     ? Number(input.initialTickOffset ?? 0)
     : 0;

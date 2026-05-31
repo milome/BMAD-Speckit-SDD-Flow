@@ -36,7 +36,10 @@ function text(value: unknown): string {
 
 function objects(value: unknown): JsonObject[] {
   return Array.isArray(value)
-    ? value.filter((item): item is JsonObject => Boolean(item) && typeof item === 'object' && !Array.isArray(item))
+    ? value.filter(
+        (item): item is JsonObject =>
+          Boolean(item) && typeof item === 'object' && !Array.isArray(item)
+      )
     : [];
 }
 
@@ -57,12 +60,16 @@ function normalizePathForRecord(value: string): string {
 }
 
 function latestClosure(record: JsonObject, id: string): JsonObject | null {
-  const matches = objects(record.requirementClosures).filter((closure) => text(closure.requirementId) === id);
+  const matches = objects(record.requirementClosures).filter(
+    (closure) => text(closure.requirementId) === id
+  );
   return matches.length > 0 ? matches[matches.length - 1] : null;
 }
 
 function sourceRefsContain(sourceRefs: unknown, sourceType: string, id: string): boolean {
-  return objects(sourceRefs).some((ref) => text(ref.sourceType) === sourceType && text(ref.id) === id);
+  return objects(sourceRefs).some(
+    (ref) => text(ref.sourceType) === sourceType && text(ref.id) === id
+  );
 }
 
 function executionsFor(record: JsonObject, id: string): JsonObject[] {
@@ -78,7 +85,8 @@ function executionsFor(record: JsonObject, id: string): JsonObject[] {
 function requiredCommandsFor(record: JsonObject, id: string): JsonObject[] {
   const deliveryEvidence = record.deliveryEvidence as JsonObject | undefined;
   return objects(deliveryEvidence?.requiredCommands).filter(
-    (command) => strings(command.traceRows).includes(id) || strings(command.evidenceRefs).includes(id)
+    (command) =>
+      strings(command.traceRows).includes(id) || strings(command.evidenceRefs).includes(id)
   );
 }
 
@@ -97,7 +105,9 @@ function matrixRow(record: JsonObject, id: string): JsonObject {
     status,
     closed: status === 'pass',
     latestClosureRecordedAt: text(closure?.recordedAt) || null,
-    executionIterationIds: executions.map((iteration) => text(iteration.executionIterationId)).filter(Boolean),
+    executionIterationIds: executions
+      .map((iteration) => text(iteration.executionIterationId))
+      .filter(Boolean),
     commandIds: commands.map((command) => text(command.commandId)).filter(Boolean),
     artifactRefs: supportingArtifacts.map((artifact) => ({
       artifactType: text(artifact.artifactType),
@@ -168,11 +178,17 @@ export function mainTraceClosureMatrix(argv: string[]): number {
   const recordPath = path.resolve(args.requirementRecord);
   const record = readJson(recordPath);
   const matrix = buildTraceClosureMatrix(record);
-  const outPath = path.resolve(args.out ?? path.join(path.dirname(recordPath), 'trace-closure-matrix.json'));
+  const outPath = path.resolve(
+    args.out ?? path.join(path.dirname(recordPath), 'trace-closure-matrix.json')
+  );
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
   fs.writeFileSync(outPath, `${JSON.stringify(matrix, null, 2)}\n`, 'utf8');
   const output = { ok: true, outPath: normalizePathForRecord(outPath), counts: matrix.counts };
-  process.stdout.write(args.json ? `${JSON.stringify(output, null, 2)}\n` : `trace_closure_matrix=${normalizePathForRecord(outPath)}\n`);
+  process.stdout.write(
+    args.json
+      ? `${JSON.stringify(output, null, 2)}\n`
+      : `trace_closure_matrix=${normalizePathForRecord(outPath)}\n`
+  );
   return 0;
 }
 
@@ -180,7 +196,13 @@ if (require.main === module) {
   try {
     process.exitCode = mainTraceClosureMatrix(process.argv.slice(2));
   } catch (error) {
-    console.error(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : String(error) }, null, 2));
+    console.error(
+      JSON.stringify(
+        { ok: false, error: error instanceof Error ? error.message : String(error) },
+        null,
+        2
+      )
+    );
     process.exitCode = 2;
   }
 }

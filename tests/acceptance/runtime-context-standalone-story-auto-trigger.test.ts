@@ -3,7 +3,10 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { ensureStoryRuntimeContext, ensureRunRuntimeContext } from '../../scripts/runtime-context';
-import { readRuntimeContextRegistry, runtimeContextRegistryPath } from '../../scripts/runtime-context-registry';
+import {
+  readRuntimeContextRegistry,
+  runtimeContextRegistryPath,
+} from '../../scripts/runtime-context-registry';
 
 const REPO_ROOT = path.join(import.meta.dirname, '..', '..');
 const CREATE_STORY = path.join(

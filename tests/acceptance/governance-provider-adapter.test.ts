@@ -72,7 +72,9 @@ describe('governance provider adapter', () => {
           }),
         ])
       );
-      expect((promptRoutingPreview as { semanticFeatureTopN?: unknown }).semanticFeatureTopN).toMatchObject({
+      expect(
+        (promptRoutingPreview as { semanticFeatureTopN?: unknown }).semanticFeatureTopN
+      ).toMatchObject({
         stageHints: expect.any(Array),
         actionHints: expect.any(Array),
       });
@@ -158,7 +160,8 @@ describe('governance provider adapter', () => {
     });
 
     const candidate = await adapter.resolveModelHints({
-      promptText: '请给我 architecture patch remediation hints，使用 party-mode 和 critical auditor',
+      promptText:
+        '请给我 architecture patch remediation hints，使用 party-mode 和 critical auditor',
       stageContextKnown: true,
       gateFailureExists: true,
       blockerOwnershipLocked: true,
@@ -169,10 +172,7 @@ describe('governance provider adapter', () => {
       actualExecutor: 'party-mode facilitator',
       targetArtifacts: ['architecture.md'],
       availableSkills: ['speckit-workflow', 'code-reviewer'],
-      skillPaths: [
-        'D:/skills/speckit-workflow/SKILL.md',
-        'D:/skills/code-reviewer/SKILL.md',
-      ],
+      skillPaths: ['D:/skills/speckit-workflow/SKILL.md', 'D:/skills/code-reviewer/SKILL.md'],
       skillInventory: [
         {
           skillId: 'speckit-workflow',

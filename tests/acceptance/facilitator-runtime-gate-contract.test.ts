@@ -104,7 +104,9 @@ describe('facilitator runtime gate contract', () => {
     expect(canonical).toContain('_bmad-output/party-mode/sessions/<session_key>.meta.json');
     expect(canonical).toContain('.cursor/hooks/party-mode-read-current-session.cjs');
     expect(canonical).toContain('_bmad/runtime/hooks/party-mode-read-current-session.cjs');
-    expect(canonical).toMatch(/consumer installs must not require a project-root `scripts\/` directory|consumer 安装不得要求项目根存在 `scripts\/` 目录/iu);
+    expect(canonical).toMatch(
+      /consumer installs must not require a project-root `scripts\/` directory|consumer 安装不得要求项目根存在 `scripts\/` 目录/iu
+    );
     expect(canonical).toContain('_bmad-output/party-mode/evidence/<session_key>.audit.json');
     expect(canonical).toContain('20 / 40 / 60 / 80 / ...');
     expect(canonical).toContain('阶段性进展 checkpoint');
@@ -130,7 +132,9 @@ describe('facilitator runtime gate contract', () => {
       path.join(ROOT, '_bmad', 'cursor', 'agents', 'party-mode-facilitator.zh.md'),
     ];
 
-    for (const content of claudeCarrierPaths.map((carrierPath) => fs.readFileSync(carrierPath, 'utf8'))) {
+    for (const content of claudeCarrierPaths.map((carrierPath) =>
+      fs.readFileSync(carrierPath, 'utf8')
+    )) {
       expect(content).toContain('DOCUMENT OWNERSHIP');
       expect(content).toContain('20 / 40 / 60 / 80 / ...');
       expect(content).toContain('## Checkpoint <current_round>/<target_rounds_total>');
@@ -139,7 +143,9 @@ describe('facilitator runtime gate contract', () => {
       expect(content).toContain('10/50');
     }
 
-    for (const content of cursorCarrierPaths.map((carrierPath) => fs.readFileSync(carrierPath, 'utf8'))) {
+    for (const content of cursorCarrierPaths.map((carrierPath) =>
+      fs.readFileSync(carrierPath, 'utf8')
+    )) {
       expect(content).toContain('generalPurpose-compatible wrapper');
       expect(content).toContain('DOCUMENT OWNERSHIP');
       expect(content).toContain('NO MID-RUN PAUSE IN CURSOR');

@@ -58,7 +58,7 @@ describe('main-agent standalone E2E orchestration', () => {
       expect(surface.mainAgentNextAction).toBe('await_user');
       expect(surface.mainAgentReady).toBe(false);
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
     }
   });
 });

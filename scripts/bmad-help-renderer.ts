@@ -169,7 +169,9 @@ function workflowPath(projectRoot: string): string {
   ];
   const match = candidates.find((candidate) => fs.existsSync(candidate));
   if (!match) {
-    throw new Error('bmad-help workflow guidance not found under _bmad/core/skills or _bmad/skills');
+    throw new Error(
+      'bmad-help workflow guidance not found under _bmad/core/skills or _bmad/skills'
+    );
   }
   return match;
 }
@@ -225,14 +227,21 @@ function loadWorkflowGuidance(projectRoot: string): WorkflowGuidance {
   return {
     sourcePath: path.relative(projectRoot, source).replace(/\\/g, '/'),
     routingRules: extractSection(markdown, '## ROUTING RULES').map(stripMarkdown),
-    displayRules: unique([
-      ...extractSection(markdown, '## PRESENTATION PRIORITY'),
-      ...extractSection(markdown, '### Command-Based Workflows'),
-      ...extractSection(markdown, '### Skill-Referenced Workflows'),
-      ...extractSection(markdown, '### Agent-Based Workflows'),
-    ].map(stripMarkdown)),
-    officialExecutionPaths: extractSection(markdown, '## OFFICIAL EXECUTION PATHS (BMAD-Speckit-SDD-Flow)').map(stripMarkdown),
-    additionalGuidance: extractSection(markdown, '8. **Additional guidance to convey**:').map(stripMarkdown),
+    displayRules: unique(
+      [
+        ...extractSection(markdown, '## PRESENTATION PRIORITY'),
+        ...extractSection(markdown, '### Command-Based Workflows'),
+        ...extractSection(markdown, '### Skill-Referenced Workflows'),
+        ...extractSection(markdown, '### Agent-Based Workflows'),
+      ].map(stripMarkdown)
+    ),
+    officialExecutionPaths: extractSection(
+      markdown,
+      '## OFFICIAL EXECUTION PATHS (BMAD-Speckit-SDD-Flow)'
+    ).map(stripMarkdown),
+    additionalGuidance: extractSection(markdown, '8. **Additional guidance to convey**:').map(
+      stripMarkdown
+    ),
   };
 }
 
@@ -260,16 +269,32 @@ function listFiles(root: string): string[] {
   return result;
 }
 
-function detectDiagnostic(projectRoot: string, recommendedActions: BmadHelpOutput['recommendedActions']): BmadHelpOutput['diagnostic'] {
-  const runtimeContext = readJson(path.join(projectRoot, '_bmad-output', 'runtime', 'context', 'project.json'));
+function detectDiagnostic(
+  projectRoot: string,
+  recommendedActions: BmadHelpOutput['recommendedActions']
+): BmadHelpOutput['diagnostic'] {
+  const runtimeContext = readJson(
+    path.join(projectRoot, '_bmad-output', 'runtime', 'context', 'project.json')
+  );
   const outputFiles = listFiles(path.join(projectRoot, '_bmad-output'));
-  const hasPlanning = outputFiles.some((file) => /planning-artifacts[\\/].+\.(md|json)$/iu.test(file));
-  const hasReadiness = outputFiles.some((file) => /implementation-readiness|readiness-report/iu.test(path.basename(file)));
+  const hasPlanning = outputFiles.some((file) =>
+    /planning-artifacts[\\/].+\.(md|json)$/iu.test(file)
+  );
+  const hasReadiness = outputFiles.some((file) =>
+    /implementation-readiness|readiness-report/iu.test(path.basename(file))
+  );
   const hasStories = outputFiles.some((file) => /story|sprint/iu.test(file));
-  const flow = typeof runtimeContext?.flow === 'string' ? runtimeContext.flow : hasStories ? 'story' : 'unknown';
+  const flow =
+    typeof runtimeContext?.flow === 'string'
+      ? runtimeContext.flow
+      : hasStories
+        ? 'story'
+        : 'unknown';
   const stage = typeof runtimeContext?.stage === 'string' ? runtimeContext.stage : 'unknown';
   const contextMaturity = hasPlanning && hasReadiness ? 'high' : hasPlanning ? 'medium' : 'low';
-  const implementationReadinessStatus = hasReadiness ? 'evidence_present_refresh_if_scope_changed' : 'missing_or_unknown';
+  const implementationReadinessStatus = hasReadiness
+    ? 'evidence_present_refresh_if_scope_changed'
+    : 'missing_or_unknown';
   const summary = [
     `flow=${flow}`,
     `stage=${stage}`,
@@ -279,7 +304,8 @@ function detectDiagnostic(projectRoot: string, recommendedActions: BmadHelpOutpu
   return {
     taskPath: helpTaskPath(projectRoot),
     flow,
-    sourceMode: typeof runtimeContext?.sourceMode === 'string' ? runtimeContext.sourceMode : 'unknown',
+    sourceMode:
+      typeof runtimeContext?.sourceMode === 'string' ? runtimeContext.sourceMode : 'unknown',
     contextMaturity,
     complexity: contextMaturity === 'high' ? 'medium-high' : 'medium',
     implementationReadinessStatus,
@@ -287,7 +313,9 @@ function detectDiagnostic(projectRoot: string, recommendedActions: BmadHelpOutpu
     summary,
     evidenceFindings: [
       hasPlanning ? 'planning artifacts detected' : 'planning artifacts not detected',
-      hasReadiness ? 'implementation-readiness evidence detected' : 'implementation-readiness evidence not detected',
+      hasReadiness
+        ? 'implementation-readiness evidence detected'
+        : 'implementation-readiness evidence not detected',
       hasStories ? 'story/sprint evidence detected' : 'story/sprint evidence not detected',
     ],
     gatingNotes: [
@@ -328,7 +356,9 @@ function chooseRecommended(catalog: CatalogItem[]): CatalogItem[] {
   ];
   const picked: CatalogItem[] = [];
   for (const command of priority) {
-    const found = catalog.find((item) => item.command === command || item.workflowFile === `skill:${command}`);
+    const found = catalog.find(
+      (item) => item.command === command || item.workflowFile === `skill:${command}`
+    );
     if (found && !picked.includes(found)) picked.push(found);
   }
   return picked.slice(0, 7);
@@ -347,7 +377,9 @@ function actionFor(item: CatalogItem): BmadHelpOutput['recommendedActions'][numb
     description: item.description,
     outputLocation: item.outputLocation,
     outputs: item.outputs,
-    reason: item.required ? 'recommended: next required or blocking workflow' : 'recommended: useful optional workflow for the current context',
+    reason: item.required
+      ? 'recommended: next required or blocking workflow'
+      : 'recommended: useful optional workflow for the current context',
   };
 }
 
@@ -444,7 +476,9 @@ function renderCatalog(output: BmadHelpOutput): string[] {
   for (const [module, items] of Object.entries(output.catalog.modules)) {
     lines.push('', `### ${module || 'global'} (${items.length})`);
     for (const item of items) {
-      lines.push(`- ${item.name} (${item.code}) - ${item.command || item.workflowFile} - ${item.description}`);
+      lines.push(
+        `- ${item.name} (${item.code}) - ${item.command || item.workflowFile} - ${item.description}`
+      );
     }
   }
   return lines;
@@ -466,7 +500,11 @@ function renderWorkflowGuidance(guidance: WorkflowGuidance): string[] {
     ...guidance.officialExecutionPaths.map((item) => `- ${item}`),
   ];
   if (guidance.additionalGuidance.length > 0) {
-    lines.push('', '### Additional Guidance', ...guidance.additionalGuidance.map((item) => `- ${item}`));
+    lines.push(
+      '',
+      '### Additional Guidance',
+      ...guidance.additionalGuidance.map((item) => `- ${item}`)
+    );
   }
   return lines;
 }
@@ -482,7 +520,8 @@ export function renderBmadHelp(
     lines.push(formatAction(action, index), '');
   });
   if (options.includeCatalog) lines.push('', ...renderCatalog(output));
-  if (options.debug) lines.push('', '## Debug', '', ...output.diagnostic.summary.map((item) => `- ${item}`));
+  if (options.debug)
+    lines.push('', '## Debug', '', ...output.diagnostic.summary.map((item) => `- ${item}`));
   lines.push('', ...renderWorkflowGuidance(output.workflowGuidance));
   return `${lines.join('\n')}\n`;
 }
@@ -541,7 +580,8 @@ export function mainBmadHelpRenderer(argv: string[] = process.argv.slice(2)): nu
       process.stdout.write(
         renderBmadHelp(output, {
           debug: options.debug,
-          includeCatalog: options.catalog || options.all || Boolean(options.module) || Boolean(options.phase),
+          includeCatalog:
+            options.catalog || options.all || Boolean(options.module) || Boolean(options.phase),
         })
       );
     }

@@ -6,7 +6,12 @@ import { describe, expect, it } from 'vitest';
 import { runSprintStatusAuthorizedUpdate } from '../../scripts/sprint-status-authorized-update';
 
 function writeStrongReleaseGate(root: string, reportPath: string) {
-  const contractPath = path.join(root, '_bmad', '_config', 'orchestration-governance.contract.yaml');
+  const contractPath = path.join(
+    root,
+    '_bmad',
+    '_config',
+    'orchestration-governance.contract.yaml'
+  );
   fs.mkdirSync(path.dirname(contractPath), { recursive: true });
   fs.writeFileSync(contractPath, 'signals: {}\nstage_requirements: {}\nmapping_contract: {}\n');
   const token = 'release-gate:pass:replay';

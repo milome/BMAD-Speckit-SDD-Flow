@@ -14,7 +14,12 @@ describe('runtime-context epic/story readiness linkage', () => {
   it('keeps epic and story readiness data together inside registry for create-story routing', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'epic-story-ready-'));
     try {
-      const sprintStatusPath = path.join(root, '_bmad-output', 'implementation-artifacts', 'sprint-status.yaml');
+      const sprintStatusPath = path.join(
+        root,
+        '_bmad-output',
+        'implementation-artifacts',
+        'sprint-status.yaml'
+      );
       mkdirSync(path.dirname(sprintStatusPath), { recursive: true });
       writeFileSync(
         sprintStatusPath,

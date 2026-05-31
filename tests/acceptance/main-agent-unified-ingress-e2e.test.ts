@@ -53,8 +53,16 @@ function prepareRoot(hostKind: MainAgentHostKind, hookAvailable: boolean): strin
         entryFlow: 'story',
         entryFlowClass: 'full_story_entry',
         workflowAdapter: 'bmad',
+        runtimeRegistryBridge: true,
         sourceMode: 'full_bmad',
         sourcePath: `specs/${recordId}/story.md`,
+        sourceDocumentHash:
+          'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+        implementationConfirmationHash:
+          'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+        traceRows: ['TRACE-INGRESS'],
+        coveredRequirementIds: ['MUST-INGRESS'],
+        taskRefs: ['TASK-INGRESS'],
         runId: `ingress-${hostKind}`,
         storyId: `S-${hostKind}`,
         architectureConfirmationState: {
@@ -142,10 +150,13 @@ const GOVERNANCE_EVENT_TYPE_REGISTRY_POLICY = {
 
 const REGISTRY_BINDING = {
   governanceEventTypeRegistryPolicy: GOVERNANCE_EVENT_TYPE_REGISTRY_POLICY,
-  governanceEventTypeRegistryPolicyHash: governanceEventTypeRegistryPolicyHash(GOVERNANCE_EVENT_TYPE_REGISTRY_POLICY),
+  governanceEventTypeRegistryPolicyHash: governanceEventTypeRegistryPolicyHash(
+    GOVERNANCE_EVENT_TYPE_REGISTRY_POLICY
+  ),
   governanceEventTypeRegistry: GOVERNANCE_EVENT_TYPE_REGISTRY,
   governanceEventTypeRegistryHash: governanceEventTypeRegistryHash(GOVERNANCE_EVENT_TYPE_REGISTRY),
-  architectureConfirmationHash: 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+  architectureConfirmationHash:
+    'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
 };
 
 function writeFakeCodexBinary(root: string): string {
@@ -154,19 +165,25 @@ function writeFakeCodexBinary(root: string): string {
     fakeCodexPath,
     [
       "const fs = require('fs');",
+      "const path = require('path');",
       "const input = fs.readFileSync(0, 'utf8');",
-      "const reportPath = input.match(/write a JSON TaskReport to: (.+)/i)?.[1]?.trim();",
-      "const packetId = input.match(/Packet ID: (.+)/i)?.[1]?.trim();",
-      "if (!reportPath || !packetId) process.exit(2);",
-      "fs.mkdirSync(require('path').dirname(reportPath), { recursive: true });",
-      "fs.writeFileSync(reportPath, JSON.stringify({ packetId, status: 'done', filesChanged: [], validationsRun: ['fake-codex-unified-ingress'], evidence: ['fake-codex-unified-ingress'], downstreamContext: ['codex cli ingress completed'] }, null, 2) + '\\n', 'utf8');",
-      "process.exit(0);",
+      'const reportPath = input.match(/write a JSON TaskReport to: (.+)/i)?.[1]?.trim();',
+      'const packetId = input.match(/Packet ID: (.+)/i)?.[1]?.trim();',
+      'if (!reportPath || !packetId) process.exit(2);',
+      'const reportDir = path.dirname(reportPath);',
+      "const evidencePath = path.join(reportDir, 'fake-codex-unified-ingress-evidence.json');",
+      'fs.mkdirSync(reportDir, { recursive: true });',
+      "fs.writeFileSync(evidencePath, JSON.stringify({ packetId, validation: 'fake-codex-unified-ingress', status: 'done' }, null, 2) + '\\n', 'utf8');",
+      "fs.writeFileSync(reportPath, JSON.stringify({ packetId, status: 'done', filesChanged: [], validationsRun: ['fake-codex-unified-ingress'], evidence: [evidencePath], downstreamContext: ['codex cli ingress completed'] }, null, 2) + '\\n', 'utf8');",
+      'process.exit(0);',
       '',
     ].join('\n'),
     'utf8'
   );
   const fakeCodexBin =
-    process.platform === 'win32' ? path.join(root, 'fake-codex.cmd') : path.join(root, 'fake-codex');
+    process.platform === 'win32'
+      ? path.join(root, 'fake-codex.cmd')
+      : path.join(root, 'fake-codex');
   fs.writeFileSync(
     fakeCodexBin,
     process.platform === 'win32'
@@ -211,8 +228,10 @@ function codexHookTrustEnvelope(
         path: 'hook-trust-receipt.json',
         contentHash: 'sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
       },
-      managedHookConfigHash: 'sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
-      runtimePolicySnapshotHash: 'sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+      managedHookConfigHash:
+        'sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+      runtimePolicySnapshotHash:
+        'sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
     },
     ...overrides,
   };

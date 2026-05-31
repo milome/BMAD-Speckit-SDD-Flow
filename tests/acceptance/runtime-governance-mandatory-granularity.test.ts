@@ -30,7 +30,9 @@ describe('runtime-governance mandatory + granularity (§A.6)', () => {
   });
 
   it('runtime-granularity-stages.yaml 每条 stage 在 story flow 下得到 granularityGoverned true', () => {
-    const doc = yaml.load(readFileSync(join(CFG_ROOT, 'runtime-granularity-stages.yaml'), 'utf8')) as {
+    const doc = yaml.load(
+      readFileSync(join(CFG_ROOT, 'runtime-granularity-stages.yaml'), 'utf8')
+    ) as {
       granularity_governed_stages: string[];
     };
     for (const st of doc.granularity_governed_stages) {

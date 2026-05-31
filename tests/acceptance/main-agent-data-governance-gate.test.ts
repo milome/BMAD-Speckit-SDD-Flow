@@ -5,11 +5,16 @@ import { describe, expect, it } from 'vitest';
 import { mainDataGovernanceGate } from '../../scripts/main-agent-data-governance-gate';
 
 const SOURCE_HASH = 'sha256:1111111111111111111111111111111111111111111111111111111111111111';
-const IMPLEMENTATION_HASH = 'sha256:2222222222222222222222222222222222222222222222222222222222222222';
+const IMPLEMENTATION_HASH =
+  'sha256:2222222222222222222222222222222222222222222222222222222222222222';
 const ARCHITECTURE_HASH = 'sha256:3333333333333333333333333333333333333333333333333333333333333333';
 
 function writeJsonl(file: string, rows: Record<string, unknown>[]): void {
-  writeFileSync(file, rows.length > 0 ? `${rows.map((row) => JSON.stringify(row)).join('\n')}\n` : '', 'utf8');
+  writeFileSync(
+    file,
+    rows.length > 0 ? `${rows.map((row) => JSON.stringify(row)).join('\n')}\n` : '',
+    'utf8'
+  );
 }
 
 function sample(id: string, groupKey: string, assignment = 'train'): Record<string, unknown> {
@@ -69,7 +74,10 @@ function sample(id: string, groupKey: string, assignment = 'train'): Record<stri
   };
 }
 
-function writeFixture(root: string, options: { splitLeak?: boolean; contaminationLeak?: boolean } = {}) {
+function writeFixture(
+  root: string,
+  options: { splitLeak?: boolean; contaminationLeak?: boolean } = {}
+) {
   const recordId = 'REQ-DATA-GOVERNANCE';
   const base = path.join(root, '_bmad-output', 'runtime', 'requirement-records', recordId);
   const dataDir = path.join(base, 'data');
@@ -97,7 +105,11 @@ function writeFixture(root: string, options: { splitLeak?: boolean; contaminatio
   writeJsonl(path.join(dataDir, 'canonical-samples.jsonl'), [
     sample('sample-a', 'story-1', 'train'),
     sample('sample-b', 'story-2', 'train'),
-    sample('sample-c', options.splitLeak ? 'story-1' : 'story-3', options.splitLeak ? 'test' : 'train'),
+    sample(
+      'sample-c',
+      options.splitLeak ? 'story-1' : 'story-3',
+      options.splitLeak ? 'test' : 'train'
+    ),
     options.contaminationLeak
       ? {
           ...sample('sample-contaminated', 'story-4', 'train'),
@@ -169,7 +181,9 @@ describe('main-agent data governance gate', () => {
       ]) {
         expect(existsSync(path.join(fixture.outDir, file))).toBe(true);
       }
-      const report = JSON.parse(readFileSync(path.join(fixture.outDir, 'data-governance-gate-report.json'), 'utf8'));
+      const report = JSON.parse(
+        readFileSync(path.join(fixture.outDir, 'data-governance-gate-report.json'), 'utf8')
+      );
       expect(report.decision).toBe('pass');
       expect(report.checks.split.policy).toMatchObject({
         evalFirst: true,
@@ -198,7 +212,9 @@ describe('main-agent data governance gate', () => {
       ]);
 
       expect(code).toBe(1);
-      const splitReport = JSON.parse(readFileSync(path.join(fixture.outDir, 'split-report.json'), 'utf8'));
+      const splitReport = JSON.parse(
+        readFileSync(path.join(fixture.outDir, 'split-report.json'), 'utf8')
+      );
       expect(splitReport.decision).toBe('blocked');
       expect(splitReport.leakingGroups).toEqual([
         { groupKey: 'story-1', splits: ['test', 'train'] },
@@ -222,7 +238,9 @@ describe('main-agent data governance gate', () => {
       ]);
 
       expect(code).toBe(1);
-      const contaminationReport = JSON.parse(readFileSync(path.join(fixture.outDir, 'contamination-report.json'), 'utf8'));
+      const contaminationReport = JSON.parse(
+        readFileSync(path.join(fixture.outDir, 'contamination-report.json'), 'utf8')
+      );
       expect(contaminationReport.decision).toBe('blocked');
       expect(contaminationReport.hits).toEqual(
         expect.arrayContaining([

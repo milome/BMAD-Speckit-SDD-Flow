@@ -48,15 +48,21 @@ describe('main-agent orchestration state idempotency', () => {
       claimMainAgentPendingPacket(root, sessionId, 'main-agent');
       claimMainAgentPendingPacket(root, sessionId, 'main-agent');
       expect(
-        resolveMainAgentOrchestrationSurface({ projectRoot: root, flow: 'story', stage: 'implement' })
-          .pendingPacketStatus
+        resolveMainAgentOrchestrationSurface({
+          projectRoot: root,
+          flow: 'story',
+          stage: 'implement',
+        }).pendingPacketStatus
       ).toBe('claimed_by_main_agent');
 
       markMainAgentPacketDispatched(root, sessionId, packetId);
       markMainAgentPacketDispatched(root, sessionId, packetId);
       expect(
-        resolveMainAgentOrchestrationSurface({ projectRoot: root, flow: 'story', stage: 'implement' })
-          .pendingPacketStatus
+        resolveMainAgentOrchestrationSurface({
+          projectRoot: root,
+          flow: 'story',
+          stage: 'implement',
+        }).pendingPacketStatus
       ).toBe('dispatched');
 
       completeMainAgentPendingPacket(root, sessionId, packetId);

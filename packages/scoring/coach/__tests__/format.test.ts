@@ -101,7 +101,8 @@ describe('formatToMarkdown', () => {
           count: 2,
           affected_stages: ['tasks'],
           epic_stories: ['E6.S4'],
-          recommendation: 'Add at least one smoke task chain per Journey Slice and point setup tasks to that chain.',
+          recommendation:
+            'Add at least one smoke task chain per Journey Slice and point setup tasks to that chain.',
         },
       ],
     });

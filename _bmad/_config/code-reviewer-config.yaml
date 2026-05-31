@@ -94,6 +94,162 @@ modes:
           - "PRD -> Architecture -> Epic Story 可追溯"
           - "Four-Signal Contract Verification 有结论"
 
+  delivery:
+    name: "交付确认审计"
+    description: "审计 delivery_confirmation 的当前尝试证据、审计收敛和关闭权限"
+    prompt_template: "audit-prompts-readiness.md"
+    pass_criteria:
+      A: "交付证据、当前 attempt 绑定、审计收敛和 closeout authority 全部闭合"
+      B: "主要闭合，minor 问题须在本阶段审计闭环内完成修复"
+      C: "存在交付证据或 authority 缺口，需修复后重新审计"
+      D: "关键 closeout authority 缺失，禁止关闭"
+    dimensions:
+      - name: "交付证据闭合"
+        name_en: "Delivery Evidence Closure"
+        weight: 25
+        checks:
+          - "delivery closeout report 当前有效"
+          - "所有 required command evidence 可回查"
+          - "artifact index 覆盖交付证据"
+      - name: "当前尝试绑定"
+        name_en: "Current Attempt Binding"
+        weight: 25
+        checks:
+          - "closeoutAttemptId 与 execution iteration 一致"
+          - "sourceDocumentHash 与 implementationConfirmationHash 当前一致"
+          - "stale evidence 不能作为 pass 证据"
+      - name: "审计收敛回执"
+        name_en: "Audit Convergence Receipt"
+        weight: 25
+        checks:
+          - "三轮 no-new-valid-gap 回执当前有效"
+          - "runAuditorHost receipt 可回查"
+          - "score receipt 使用当前 stage profile"
+      - name: "关闭权限"
+        name_en: "Closeout Authority"
+        weight: 25
+        checks:
+          - "record_closed 只能来自 delivery_confirmation pass"
+          - "reviewer prose、dashboard green、score green 不能关闭记录"
+          - "open failure / RCA / rerun blocker 为零"
+
+  story:
+    name: "Story 文档审计"
+    description: "审计已确认需求投影后的 Story 文档质量"
+    prompt_template: "audit-prompts-story.md"
+    pass_criteria:
+      A: "Story 范围、验收、证据和实施准备全部闭合"
+      B: "Story 主要闭合，minor 问题须在本阶段审计闭环内完成修复"
+      C: "Story 存在明显缺口，需修复后重新审计"
+      D: "Story 关键契约缺失，禁止进入实施"
+    dimensions:
+      - name: "Story 范围完整性"
+        name_en: "Story Scope Integrity"
+        weight: 30
+        checks:
+          - "Story 只投影 confirmed requirement contract"
+          - "Story 不新增或遗漏 MUST / NEG / OUT 范围"
+          - "Story 与 confirmed architecture 对齐"
+      - name: "Story 验收覆盖"
+        name_en: "Story Acceptance Coverage"
+        weight: 25
+        checks:
+          - "验收标准覆盖所有 Story trace slices"
+          - "失败路径与边界路径有对应验收"
+          - "expected red 证据已声明"
+      - name: "Story 证据追溯"
+        name_en: "Story Evidence Traceability"
+        weight: 25
+        checks:
+          - "MUST / EVD / TRACE / ACC / E2E 可追溯"
+          - "runtime artifact 位置可回查"
+          - "不可用证据有明确 blocker"
+      - name: "Story 实施准备"
+        name_en: "Story Execution Readiness"
+        weight: 20
+        checks:
+          - "允许写入范围明确"
+          - "测试命令明确"
+          - "审计和评分闭环要求明确"
+
+  tasks:
+    name: "Standalone Tasks 审计"
+    description: "审计 standalone tasks 拆解、顺序、证据绑定和实施准备"
+    prompt_template: "audit-prompts-tasks.md"
+    pass_criteria:
+      A: "任务原子性、依赖、证据和实施准备全部闭合"
+      B: "主要闭合，minor 问题须在本阶段审计闭环内完成修复"
+      C: "存在明显缺口，需修复后重新审计"
+      D: "关键任务契约缺失，禁止实施"
+    dimensions:
+      - name: "任务原子性"
+        name_en: "Task Atomicity"
+        weight: 30
+        checks:
+          - "每个任务只能关闭一个明确原子目标"
+          - "任务没有 under-split 或跨域混合"
+          - "任务有明确完成条件"
+      - name: "任务依赖顺序"
+        name_en: "Task Dependency Order"
+        weight: 25
+        checks:
+          - "前置依赖明确"
+          - "执行顺序可验证"
+          - "阻塞关系可追溯"
+      - name: "任务证据绑定"
+        name_en: "Task Evidence Binding"
+        weight: 25
+        checks:
+          - "任务绑定 EVD / TRACE / required commands"
+          - "缺失证据不能闭合任务"
+          - "工件和 hash 可回查"
+      - name: "任务实施准备"
+        name_en: "Task Execution Readiness"
+        weight: 20
+        checks:
+          - "写入范围明确"
+          - "测试和审计命令明确"
+          - "score receipt 和 audit report 要求明确"
+
+  bugfix:
+    name: "Bugfix 审计"
+    description: "审计 bugfix 根因、修复正确性、回归保护和证据闭合"
+    prompt_template: "audit-prompts-bugfix.md"
+    pass_criteria:
+      A: "根因、修复、回归保护和证据闭合全部满足"
+      B: "主要满足，minor 问题须在本阶段审计闭环内完成修复"
+      C: "存在明显缺口，需修复后重新审计"
+      D: "根因或回归保护缺失，禁止关闭"
+    dimensions:
+      - name: "根因准确性"
+        name_en: "Root Cause Accuracy"
+        weight: 30
+        checks:
+          - "根因与复现条件一致"
+          - "修复点针对根因而不是症状"
+          - "未扩大需求范围"
+      - name: "修复正确性"
+        name_en: "Fix Correctness"
+        weight: 30
+        checks:
+          - "修复满足 bugfix MUST"
+          - "错误路径和边界路径正确"
+          - "没有引入新行为漂移"
+      - name: "回归保护"
+        name_en: "Regression Protection"
+        weight: 20
+        checks:
+          - "复现测试先 red 后 green"
+          - "相关回归测试执行"
+          - "正式排除测试有客观字段"
+      - name: "Bugfix 证据闭合"
+        name_en: "Bugfix Evidence Closure"
+        weight: 20
+        checks:
+          - "审计报告可解析"
+          - "score receipt 可回查"
+          - "required commands 当前尝试证据完整"
+
   prd:
     name: "PRD审计"
     description: "审计产品需求文档的完整性和准确性"

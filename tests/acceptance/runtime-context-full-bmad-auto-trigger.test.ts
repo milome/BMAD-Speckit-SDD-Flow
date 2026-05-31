@@ -3,7 +3,10 @@ import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'nod
 import os from 'node:os';
 import path from 'node:path';
 import { ensureProjectRuntimeContext } from '../../scripts/runtime-context';
-import { readRuntimeContextRegistry, runtimeContextRegistryPath } from '../../scripts/runtime-context-registry';
+import {
+  readRuntimeContextRegistry,
+  runtimeContextRegistryPath,
+} from '../../scripts/runtime-context-registry';
 
 const REPO_ROOT = path.join(import.meta.dirname, '..', '..');
 const SYNC_SUB = 'bmad-speckit sync-runtime-context-from-sprint';
@@ -18,7 +21,12 @@ describe('runtime-context full_bmad auto trigger', () => {
   it('creates project registry/context automatically from sprint-status without manual registry assembly', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'full-bmad-auto-'));
     try {
-      const sprintStatusPath = path.join(root, '_bmad-output', 'implementation-artifacts', 'sprint-status.yaml');
+      const sprintStatusPath = path.join(
+        root,
+        '_bmad-output',
+        'implementation-artifacts',
+        'sprint-status.yaml'
+      );
       mkdirSync(path.dirname(sprintStatusPath), { recursive: true });
       writeFileSync(
         sprintStatusPath,

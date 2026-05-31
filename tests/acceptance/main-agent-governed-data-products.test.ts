@@ -6,7 +6,8 @@ import { describe, expect, it } from 'vitest';
 import { mainGovernedDataProducts } from '../../scripts/main-agent-governed-data-products';
 
 const SOURCE_HASH = 'sha256:1111111111111111111111111111111111111111111111111111111111111111';
-const IMPLEMENTATION_HASH = 'sha256:2222222222222222222222222222222222222222222222222222222222222222';
+const IMPLEMENTATION_HASH =
+  'sha256:2222222222222222222222222222222222222222222222222222222222222222';
 const ARCHITECTURE_HASH = 'sha256:3333333333333333333333333333333333333333333333333333333333333333';
 
 function sha256Text(value: string): string {
@@ -18,7 +19,11 @@ function readJsonl(file: string): Record<string, unknown>[] {
   return content ? content.split(/\r?\n/u).map((line) => JSON.parse(line)) : [];
 }
 
-function writeFixture(root: string): { recordPath: string; candidateEventsPath: string; dataDir: string } {
+function writeFixture(root: string): {
+  recordPath: string;
+  candidateEventsPath: string;
+  dataDir: string;
+} {
   const recordId = 'REQ-GOVERNED-DATA';
   const base = path.join(root, '_bmad-output', 'runtime', 'requirement-records', recordId);
   const dataDir = path.join(base, 'data');
@@ -26,7 +31,11 @@ function writeFixture(root: string): { recordPath: string; candidateEventsPath: 
   mkdirSync(dataDir, { recursive: true });
   mkdirSync(evidenceDir, { recursive: true });
   const evidencePath = path.join(evidenceDir, 'implementation-evidence-summary.json');
-  writeFileSync(evidencePath, `${JSON.stringify({ traceRows: ['TRACE-DONE'], decision: 'pass' }, null, 2)}\n`, 'utf8');
+  writeFileSync(
+    evidencePath,
+    `${JSON.stringify({ traceRows: ['TRACE-DONE'], decision: 'pass' }, null, 2)}\n`,
+    'utf8'
+  );
   const sourcePath = path.join(root, 'docs', 'design', 'example.md');
   mkdirSync(path.dirname(sourcePath), { recursive: true });
   writeFileSync(sourcePath, '# Example requirement\n', 'utf8');
@@ -80,7 +89,9 @@ function writeFixture(root: string): { recordPath: string; candidateEventsPath: 
             artifactType: 'implementation_evidence',
             sourceOfTruthRole: 'evidence',
             path: evidencePath,
-            contentHash: sha256Text(`${JSON.stringify({ traceRows: ['TRACE-DONE'], decision: 'pass' }, null, 2)}\n`),
+            contentHash: sha256Text(
+              `${JSON.stringify({ traceRows: ['TRACE-DONE'], decision: 'pass' }, null, 2)}\n`
+            ),
             producer: 'main-agent-governed-data-products.test',
             purpose: 'pass-grade controlled implementation evidence',
             relatedRequirementIds: ['TRACE-DONE', 'EVD-DONE'],
@@ -140,7 +151,11 @@ function writeFixture(root: string): { recordPath: string; candidateEventsPath: 
       contamination: { detected: true },
     },
   ];
-  writeFileSync(candidateEventsPath, `${candidateEvents.map((event) => JSON.stringify(event)).join('\n')}\n`, 'utf8');
+  writeFileSync(
+    candidateEventsPath,
+    `${candidateEvents.map((event) => JSON.stringify(event)).join('\n')}\n`,
+    'utf8'
+  );
   return { recordPath, candidateEventsPath, dataDir };
 }
 
@@ -172,9 +187,34 @@ describe('main-agent governed data products', () => {
         'canonical-samples.jsonl',
         'dataset-manifest.json',
         'data-governance-report.json',
+        'governance/split-report.json',
+        'governance/dedup-report.json',
+        'governance/contamination-report.json',
+        'governance/holdout-registry.json',
+        'governance/post-training-eval-report.json',
+        'governance/data-governance-gate-report.json',
+        'governance/training-run.json',
       ]) {
         expect(existsSync(path.join(fixture.dataDir, fileName))).toBe(true);
       }
+      const trainingRun = JSON.parse(
+        readFileSync(path.join(fixture.dataDir, 'governance', 'training-run.json'), 'utf8')
+      );
+      const evalReport = JSON.parse(
+        readFileSync(
+          path.join(fixture.dataDir, 'governance', 'post-training-eval-report.json'),
+          'utf8'
+        )
+      );
+      expect(trainingRun).toMatchObject({
+        status: 'completed',
+        modelTrainingPerformed: false,
+      });
+      expect(evalReport).toMatchObject({
+        decision: 'pass',
+        trainingLossOnly: false,
+        trainingRunId: trainingRun.trainingRunId,
+      });
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -218,9 +258,15 @@ describe('main-agent governed data products', () => {
         sftEligible: false,
       });
       const canonicalSamples = readJsonl(path.join(fixture.dataDir, 'canonical-samples.jsonl'));
-      expect(canonicalSamples.every((sample) => JSON.stringify(sample).includes('candidate-chat-log'))).toBe(false);
+      expect(
+        canonicalSamples.every((sample) => JSON.stringify(sample).includes('candidate-chat-log'))
+      ).toBe(false);
       expect(canonicalSamples.length).toBeGreaterThanOrEqual(1);
-      expect(canonicalSamples.every((sample) => (sample.quality as Record<string, unknown>).training_ready === true)).toBe(true);
+      expect(
+        canonicalSamples.every(
+          (sample) => (sample.quality as Record<string, unknown>).training_ready === true
+        )
+      ).toBe(true);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -241,7 +287,9 @@ describe('main-agent governed data products', () => {
         '2026-05-19T12:00:00.000Z',
       ]);
 
-      const manifest = JSON.parse(readFileSync(path.join(fixture.dataDir, 'dataset-manifest.json'), 'utf8'));
+      const manifest = JSON.parse(
+        readFileSync(path.join(fixture.dataDir, 'dataset-manifest.json'), 'utf8')
+      );
       expect(manifest.source_snapshot).toMatchObject({
         sourceDocumentHash: SOURCE_HASH,
         implementationConfirmationHash: IMPLEMENTATION_HASH,
@@ -263,9 +311,15 @@ describe('main-agent governed data products', () => {
         'human_summary',
       ]);
 
-      const report = JSON.parse(readFileSync(path.join(fixture.dataDir, 'data-governance-report.json'), 'utf8'));
-      expect(report.assertions).toContain('SFT positive samples only include pass-grade controlled execution events');
-      expect(report.assertions).toContain('forbidden direct sources are discarded and never exported to SFT');
+      const report = JSON.parse(
+        readFileSync(path.join(fixture.dataDir, 'data-governance-report.json'), 'utf8')
+      );
+      expect(report.assertions).toContain(
+        'SFT positive samples only include pass-grade controlled execution events'
+      );
+      expect(report.assertions).toContain(
+        'forbidden direct sources are discarded and never exported to SFT'
+      );
       expect(report.counts.destinations).toMatchObject({
         discard: 1,
         rca: 1,
@@ -282,8 +336,15 @@ describe('main-agent governed data products', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'governed-data-preserve-'));
     try {
       const fixture = writeFixture(root);
-      const existingEvent = { eventType: 'execution_iteration_recorded', executionIterationId: 'existing-event' };
-      writeFileSync(path.join(fixture.dataDir, 'mentor-events.jsonl'), `${JSON.stringify(existingEvent)}\n`, 'utf8');
+      const existingEvent = {
+        eventType: 'execution_iteration_recorded',
+        executionIterationId: 'existing-event',
+      };
+      writeFileSync(
+        path.join(fixture.dataDir, 'mentor-events.jsonl'),
+        `${JSON.stringify(existingEvent)}\n`,
+        'utf8'
+      );
 
       mainGovernedDataProducts([
         '--requirement-record',

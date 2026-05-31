@@ -39,7 +39,7 @@
 总体评级: A
 
 维度评分:
-- 需求完整性: 92/100
-- 可测试性: 90/100
-- 一致性: 88/100
-- 可追溯性: 85/100
+- Task Atomicity: 92/100
+- Task Dependency Order: 90/100
+- Task Evidence Binding: 88/100
+- Task Execution Readiness: 85/100

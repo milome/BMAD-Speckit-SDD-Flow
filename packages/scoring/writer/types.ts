@@ -105,6 +105,14 @@ export interface RunScoreRecord {
   source_path?: string;
   /** Story 9.1 T4: 触发阶段标识，如 speckit_5_2、bmad_story_stage4，用于 implement 与 story 阶段区分 */
   trigger_stage?: string;
+  /** Stage-aware top-level dimension contract id used for this score attempt. */
+  dimension_contract_id?: string;
+  /** Stage-aware top-level dimension mode used instead of legacy stageToMode fallback. */
+  dimension_mode?: string;
+  /** Expected top-level dimension names for this score attempt. */
+  expected_dimensions?: string[];
+  /** Atomic check item set id; check_items remain atomic scoring rules/veto inputs. */
+  atomic_item_set_id?: string;
   /** Wave 1B: 从 dedicated journey contract check_items 派生的结构化信号 */
   journey_contract_signals?: JourneyContractSignals;
   /** Batch 2: 最新 readiness baseline run id used for drift comparison */

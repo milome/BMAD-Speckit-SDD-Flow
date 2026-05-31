@@ -221,7 +221,9 @@ describe('parseAndWriteScore', () => {
         skipAutoHash: true,
       });
 
-      const written = JSON.parse(fs.readFileSync(path.join(tempDir, 'post-impl-run.json'), 'utf-8'));
+      const written = JSON.parse(
+        fs.readFileSync(path.join(tempDir, 'post-impl-run.json'), 'utf-8')
+      );
       expect(written.stage).toBe('post_impl');
       expect(written.drift_signals).toEqual(['closure_task_id']);
       expect(written.drift_severity).toBe('critical');
@@ -744,10 +746,10 @@ PRD审计报告
     const dimNames = (written.dimension_scores as Array<{ dimension: string; score: number }>).map(
       (d) => d.dimension
     );
-    expect(dimNames).toContain('需求完整性');
-    expect(dimNames).toContain('可测试性');
-    expect(dimNames).toContain('一致性');
-    expect(dimNames).toContain('可追溯性');
+    expect(dimNames).toContain('Task Atomicity');
+    expect(dimNames).toContain('Task Dependency Order');
+    expect(dimNames).toContain('Task Evidence Binding');
+    expect(dimNames).toContain('Task Execution Readiness');
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
@@ -777,6 +779,13 @@ PRD审计报告
     expect(written.phase_score).toBeDefined();
     expect(written.dimension_scores).toBeInstanceOf(Array);
     expect(written.dimension_scores.length).toBe(4);
+    const dimNames = (written.dimension_scores as Array<{ dimension: string; score: number }>).map(
+      (d) => d.dimension
+    );
+    expect(dimNames).toContain('Task Atomicity');
+    expect(dimNames).toContain('Task Dependency Order');
+    expect(dimNames).toContain('Task Evidence Binding');
+    expect(dimNames).toContain('Task Execution Readiness');
     expect(written.phase_score).toBeGreaterThan(0);
     fs.rmSync(tempDir, { recursive: true, force: true });
   });

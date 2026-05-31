@@ -19,9 +19,7 @@ function encodeMessage(message: JsonRpcMessage): string {
   return `Content-Length: ${Buffer.byteLength(body, 'utf8')}\r\n\r\n${body}`;
 }
 
-async function readMessage(
-  proc: ReturnType<typeof spawn>
-): Promise<JsonRpcMessage> {
+async function readMessage(proc: ReturnType<typeof spawn>): Promise<JsonRpcMessage> {
   return new Promise((resolve, reject) => {
     let buffer = '';
     const onData = (chunk: Buffer) => {
@@ -81,13 +79,16 @@ describe('runtime dashboard sft tab integration', () => {
     });
 
     try {
-      const sftSummary = await (await fetch(`${server.url}/api/sft-summary`)).json() as {
+      const sftSummary = (await (await fetch(`${server.url}/api/sft-summary`)).json()) as {
         total_candidates: number;
         accepted: number;
         rejected: number;
         training_ready_candidates?: number;
         last_bundle?: { bundle_id: string; validation_summary?: { schema_valid?: boolean } } | null;
-        global_last_bundle?: { bundle_id: string; validation_summary?: { schema_valid?: boolean } } | null;
+        global_last_bundle?: {
+          bundle_id: string;
+          validation_summary?: { schema_valid?: boolean };
+        } | null;
         target_availability?: Record<string, { compatible: number; incompatible: number }>;
       };
       const appJs = await (await fetch(`${server.url}/app.js`)).text();
@@ -121,7 +122,13 @@ describe('runtime dashboard sft tab integration', () => {
 
       ensureScoringBuild(process.cwd());
 
-      const binPath = path.join(process.cwd(), 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js');
+      const binPath = path.join(
+        process.cwd(),
+        'packages',
+        'bmad-speckit',
+        'bin',
+        'bmad-speckit.js'
+      );
       const proc = spawn('node', [binPath, 'runtime-mcp', '--dashboard-port', '0'], {
         cwd: fixture.root,
         stdio: ['pipe', 'pipe', 'pipe'],

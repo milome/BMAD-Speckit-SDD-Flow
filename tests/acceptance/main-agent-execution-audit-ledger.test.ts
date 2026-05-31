@@ -87,23 +87,24 @@ function runReleaseGate(
   if (ledgerPath) {
     args.push('--ledgerPath', ledgerPath);
   }
-  const stdout = execFileSync(process.execPath, [
-    path.join(ROOT, 'node_modules', 'ts-node', 'dist', 'bin.js'),
-    ...args,
-  ], {
-    cwd: ROOT,
-    env: {
-      PATH: process.env.PATH,
-      Path: process.env.Path,
-      SystemRoot: process.env.SystemRoot,
-      TEMP: process.env.TEMP,
-      TMP: process.env.TMP,
-      MAIN_AGENT_RELEASE_GATE_LEDGER_PATH: '',
-      MAIN_AGENT_RELEASE_GATE_E2E_COMMAND: `${process.execPath} -e "process.exit(0)"`,
-      MAIN_AGENT_RELEASE_GATE_REPORT_PATH: reportPath,
-    },
-    encoding: 'utf8',
-  });
+  const stdout = execFileSync(
+    process.execPath,
+    [path.join(ROOT, 'node_modules', 'ts-node', 'dist', 'bin.js'), ...args],
+    {
+      cwd: ROOT,
+      env: {
+        PATH: process.env.PATH,
+        Path: process.env.Path,
+        SystemRoot: process.env.SystemRoot,
+        TEMP: process.env.TEMP,
+        TMP: process.env.TMP,
+        MAIN_AGENT_RELEASE_GATE_LEDGER_PATH: '',
+        MAIN_AGENT_RELEASE_GATE_E2E_COMMAND: `${process.execPath} -e "process.exit(0)"`,
+        MAIN_AGENT_RELEASE_GATE_REPORT_PATH: reportPath,
+      },
+      encoding: 'utf8',
+    }
+  );
   return {
     stdout,
     report: JSON.parse(fs.readFileSync(reportPath, 'utf8')),
@@ -163,9 +164,11 @@ describe('main-agent execution audit ledger', () => {
       expect(defaultRun.report.checks.map((item: { id: string }) => item.id)).not.toContain(
         'execution-audit-ledger'
       );
-      expect(explicitRun.report.checks.find((item: { id: string }) => item.id === 'execution-audit-ledger')?.passed).toBe(
-        true
-      );
+      expect(
+        explicitRun.report.checks.find(
+          (item: { id: string }) => item.id === 'execution-audit-ledger'
+        )?.passed
+      ).toBe(true);
       expect(fs.existsSync(path.join(auditDir, 'TASKS_v1.audit-log.md'))).toBe(true);
     } finally {
       fs.rmSync(root, { recursive: true, force: true });

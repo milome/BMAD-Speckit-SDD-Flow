@@ -1,9 +1,11 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import {
   buildMainAgentDispatchInstruction,
+  markMainAgentPacketDispatched,
   runMainAgentAutomaticLoop,
 } from '../../scripts/main-agent-orchestration';
 import { main, runCodexWorkerAdapter } from '../../scripts/main-agent-codex-worker-adapter';
@@ -17,10 +19,100 @@ import {
   writeRuntimeContextRegistry,
 } from '../../scripts/runtime-context-registry';
 
+const SOURCE_DOCUMENT_HASH =
+  'sha256:1111111111111111111111111111111111111111111111111111111111111111';
+const IMPLEMENTATION_CONFIRMATION_HASH =
+  'sha256:2222222222222222222222222222222222222222222222222222222222222222';
+const CONFIRMATION_PAGE_HASH =
+  'sha256:3333333333333333333333333333333333333333333333333333333333333333';
+
+function relativePath(root: string, filePath: string): string {
+  return path.relative(root, filePath).replace(/\\/g, '/');
+}
+
+function confirmationEvent(input: {
+  recordId: string;
+  requirementSetId: string;
+  sourcePath: string;
+}): Record<string, unknown> {
+  return {
+    eventType: 'confirmation_recorded',
+    recordId: input.recordId,
+    requirementSetId: input.requirementSetId,
+    sourcePath: input.sourcePath,
+    sourceDocumentHash: SOURCE_DOCUMENT_HASH,
+    implementationConfirmationHash: IMPLEMENTATION_CONFIRMATION_HASH,
+    confirmationPageHash: CONFIRMATION_PAGE_HASH,
+    confirmationText: 'confirmed codex worker fixture requirement source',
+    renderReportPath: `_bmad-output/runtime/requirement-records/${input.recordId}/confirmation/confirmation-render-report.json`,
+    htmlPath: `_bmad-output/runtime/requirement-records/${input.recordId}/confirmation/confirmation.html`,
+    confirmedAt: '2026-05-19T00:00:00.000Z',
+    confirmedBy: 'test',
+  };
+}
+
+function writeRuntimePolicySnapshot(input: {
+  root: string;
+  requirementSetId: string;
+  flow: string;
+  stage: string;
+}): Record<string, unknown> {
+  const snapshotPath = path.join(
+    input.root,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    input.requirementSetId,
+    'recovery',
+    'runtime-policy-snapshot.json'
+  );
+  fs.writeFileSync(
+    snapshotPath,
+    `${JSON.stringify(
+      {
+        kind: 'runtime-policy-snapshot',
+        flow: input.flow,
+        stage: input.stage,
+        policy: { flow: input.flow, stage: input.stage },
+      },
+      null,
+      2
+    )}\n`,
+    'utf8'
+  );
+  const hash = sha256File(snapshotPath);
+  return {
+    eventType: 'artifact_indexed',
+    artifactType: 'runtime_policy_snapshot',
+    sourceOfTruthRole: 'projection',
+    recordId: input.requirementSetId,
+    requirementSetId: input.requirementSetId,
+    path: relativePath(input.root, snapshotPath),
+    hash,
+    contentHash: hash,
+    producer: 'tests/acceptance/main-agent-codex-worker-adapter-e2e',
+    purpose: 'Materialized runtime policy snapshot for codex worker adapter fixtures',
+    relatedRequirementIds: [input.requirementSetId],
+    status: 'active',
+    inputVersion: 'runtime-policy-snapshot/v1',
+    outputVersion: 'runtime-policy-snapshot/v1',
+  };
+}
+
 function writeTestRequirementRecord(root: string): void {
   const requirementSetId = 'REQ-CODEX-WORKER';
   const base = path.join(root, '_bmad-output', 'runtime', 'requirement-records', requirementSetId);
   fs.mkdirSync(path.join(base, 'recovery'), { recursive: true });
+  const sourcePath = path.join(root, 'tests', 'fixtures', 'requirements', 'codex-worker.md');
+  fs.mkdirSync(path.dirname(sourcePath), { recursive: true });
+  fs.writeFileSync(sourcePath, '# Codex worker fixture\n', 'utf8');
+  const sourcePathRelative = 'tests/fixtures/requirements/codex-worker.md';
+  const runtimePolicySnapshotRef = writeRuntimePolicySnapshot({
+    root,
+    requirementSetId,
+    flow: 'story',
+    stage: 'implement',
+  });
   const record = {
     recordId: requirementSetId,
     requirementSetId,
@@ -31,33 +123,26 @@ function writeTestRequirementRecord(root: string): void {
     entryFlowClass: 'full_story_entry',
     workflowAdapter: 'bmad',
     sourceMode: 'full_bmad',
-    sourcePath: 'docs/prd.md',
-    sourceDocumentHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
-    implementationConfirmationHash:
-      'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+    sourcePath: sourcePathRelative,
+    sourceDocumentHash: SOURCE_DOCUMENT_HASH,
+    implementationConfirmationHash: IMPLEMENTATION_CONFIRMATION_HASH,
     architectureConfirmationState: {
       status: 'active',
       currentArchitectureConfirmationHash:
         'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
     },
+    confirmationPageHash: CONFIRMATION_PAGE_HASH,
     confirmationHistory: [
-      {
-        eventType: 'confirmation_recorded',
-        decision: 'pass',
-        sourceDocumentHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
-        implementationConfirmationHash:
-          'sha256:2222222222222222222222222222222222222222222222222222222222222222',
-        confirmationPageHash: 'sha256:3333333333333333333333333333333333333333333333333333333333333333',
-        confirmedAt: '2026-05-19T00:00:00.000Z',
-        confirmedBy: 'test',
-      },
+      confirmationEvent({
+        recordId: requirementSetId,
+        requirementSetId,
+        sourcePath: sourcePathRelative,
+      }),
     ],
     runId: 'codex-worker-run',
     epicId: 'epic-01',
     storyId: 'S-codex-worker',
-    runtimePolicySnapshotRef: {
-      path: `_bmad-output/runtime/requirement-records/${requirementSetId}/recovery/runtime-policy-snapshot.json`,
-    },
+    runtimePolicySnapshotRef,
     recoveryContextRef: {
       path: `_bmad-output/runtime/requirement-records/${requirementSetId}/recovery/recovery-context.json`,
     },
@@ -96,13 +181,16 @@ function writeTestRequirementRecord(root: string): void {
       },
     ],
   };
-  fs.writeFileSync(path.join(base, 'requirement-record.json'), `${JSON.stringify(record, null, 2)}\n`, 'utf8');
   fs.writeFileSync(
-    path.join(base, 'recovery', 'runtime-policy-snapshot.json'),
-    `${JSON.stringify({ kind: 'runtime-policy-snapshot', flow: 'story', stage: 'implement', policy: { flow: 'story', stage: 'implement' } }, null, 2)}\n`,
+    path.join(base, 'requirement-record.json'),
+    `${JSON.stringify(record, null, 2)}\n`,
     'utf8'
   );
-  fs.writeFileSync(path.join(base, 'recovery', 'recovery-context.json'), '{"kind":"recovery-context"}\n', 'utf8');
+  fs.writeFileSync(
+    path.join(base, 'recovery', 'recovery-context.json'),
+    '{"kind":"recovery-context"}\n',
+    'utf8'
+  );
   const indexPath = path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'index.json');
   fs.writeFileSync(
     indexPath,
@@ -120,6 +208,144 @@ function writeTestRequirementRecord(root: string): void {
             requirementSetId,
             runId: 'codex-worker-run',
             recordPath: `_bmad-output/runtime/requirement-records/${requirementSetId}/requirement-record.json`,
+          },
+        ],
+      },
+      null,
+      2
+    )}\n`,
+    'utf8'
+  );
+}
+
+function writeStandaloneRecordWithoutImplementationEntryGate(root: string): void {
+  const requirementSetId = 'REQ-STANDALONE-CODEX-WORKER';
+  const base = path.join(root, '_bmad-output', 'runtime', 'requirement-records', requirementSetId);
+  fs.mkdirSync(path.join(base, 'recovery'), { recursive: true });
+  writeFakeReqTraceSkill(root);
+  const sourcePath = path.join(root, 'tests', 'fixtures', 'requirements', 'standalone-worker.md');
+  fs.mkdirSync(path.dirname(sourcePath), { recursive: true });
+  fs.writeFileSync(sourcePath, '# Standalone worker fixture\n', 'utf8');
+  const sourcePathRelative = 'tests/fixtures/requirements/standalone-worker.md';
+  const runtimePolicySnapshotRef = writeRuntimePolicySnapshot({
+    root,
+    requirementSetId,
+    flow: 'standalone_tasks',
+    stage: 'implement',
+  });
+  const record = {
+    recordId: requirementSetId,
+    requirementSetId,
+    status: 'user_confirmed',
+    flow: 'standalone_tasks',
+    stage: 'implement',
+    entryFlow: 'standalone_tasks',
+    entryFlowClass: 'task_packet_entry',
+    workflowAdapter: 'direct',
+    sourceMode: 'standalone_story',
+    sourcePath: sourcePathRelative,
+    artifactPath: sourcePathRelative,
+    sourceDocumentHash: SOURCE_DOCUMENT_HASH,
+    implementationConfirmationHash: IMPLEMENTATION_CONFIRMATION_HASH,
+    confirmationPageHash: CONFIRMATION_PAGE_HASH,
+    confirmationHistory: [
+      confirmationEvent({
+        recordId: requirementSetId,
+        requirementSetId,
+        sourcePath: sourcePathRelative,
+      }),
+    ],
+    currentMentalModel: 'implementation_readiness',
+    sixModelResults: {
+      requirement_confirmation: {
+        model: 'requirement_confirmation',
+        status: 'pass',
+        blockingReasons: [],
+      },
+      architecture_confirmation: {
+        model: 'architecture_confirmation',
+        status: 'pass',
+        blockingReasons: [],
+      },
+      implementation_readiness: {
+        model: 'implementation_readiness',
+        status: 'pass',
+        blockingReasons: [],
+      },
+      execution_closure: {
+        model: 'execution_closure',
+        status: 'not_established',
+        blockingReasons: ['execution_closure_not_established'],
+      },
+      audit_review: {
+        model: 'audit_review',
+        status: 'not_established',
+        blockingReasons: ['audit_review_not_established'],
+      },
+      delivery_confirmation: {
+        model: 'delivery_confirmation',
+        status: 'not_established',
+        blockingReasons: ['delivery_confirmation_not_established'],
+      },
+    },
+    architectureConfirmationState: {
+      status: 'active',
+      currentArchitectureConfirmationHash:
+        'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    },
+    runId: 'standalone-codex-worker-run',
+    gateChecks: [
+      {
+        eventType: 'gate_check_recorded',
+        checkId: 'implementation-readiness:2026-05-26T00:00:00.000Z',
+        gate: 'Implementation Readiness Gate',
+        decision: 'pass',
+        blockingReasons: [],
+      },
+    ],
+    runtimePolicySnapshotRef,
+    recoveryContextRef: {
+      path: `_bmad-output/runtime/requirement-records/${requirementSetId}/recovery/recovery-context.json`,
+    },
+    taskBindings: [
+      {
+        taskRef: 'TASK-STANDALONE-CODEX-WORKER',
+        status: 'planned',
+        allowedWriteScope: ['scripts/**', 'tests/acceptance/**', '_bmad/_config/**'],
+        acceptanceRefs: ['EVD-STANDALONE-CODEX-WORKER'],
+      },
+    ],
+  };
+  fs.writeFileSync(
+    path.join(base, 'requirement-record.json'),
+    `${JSON.stringify(record, null, 2)}\n`,
+    'utf8'
+  );
+  fs.writeFileSync(
+    path.join(base, 'recovery', 'recovery-context.json'),
+    '{"kind":"recovery-context"}\n',
+    'utf8'
+  );
+  const indexPath = path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'index.json');
+  fs.mkdirSync(path.dirname(indexPath), { recursive: true });
+  fs.writeFileSync(
+    indexPath,
+    `${JSON.stringify(
+      {
+        version: 1,
+        active: {
+          recordId: requirementSetId,
+          requirementSetId,
+          runId: 'standalone-codex-worker-run',
+        },
+        records: [
+          {
+            recordId: requirementSetId,
+            requirementSetId,
+            runId: 'standalone-codex-worker-run',
+            recordPath: path
+              .relative(root, path.join(base, 'requirement-record.json'))
+              .replace(/\\/g, '/'),
           },
         ],
       },
@@ -191,10 +417,13 @@ const GOVERNANCE_EVENT_TYPE_REGISTRY_POLICY = {
 };
 const REGISTRY_BINDING = {
   governanceEventTypeRegistryPolicy: GOVERNANCE_EVENT_TYPE_REGISTRY_POLICY,
-  governanceEventTypeRegistryPolicyHash: governanceEventTypeRegistryPolicyHash(GOVERNANCE_EVENT_TYPE_REGISTRY_POLICY),
+  governanceEventTypeRegistryPolicyHash: governanceEventTypeRegistryPolicyHash(
+    GOVERNANCE_EVENT_TYPE_REGISTRY_POLICY
+  ),
   governanceEventTypeRegistry: GOVERNANCE_EVENT_TYPE_REGISTRY,
   governanceEventTypeRegistryHash: governanceEventTypeRegistryHash(GOVERNANCE_EVENT_TYPE_REGISTRY),
-  architectureConfirmationHash: 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+  architectureConfirmationHash:
+    'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
 };
 
 type CodexWorkerAdapterInput = Parameters<typeof runCodexWorkerAdapter>[0];
@@ -208,18 +437,27 @@ function runBoundCodexWorkerAdapter(input: CodexWorkerAdapterInput) {
 
 function writeRegistryBindingFile(root: string): string {
   const registryPath = path.join(root, 'governance-event-type-registry.json');
-  fs.writeFileSync(registryPath, `${JSON.stringify(GOVERNANCE_EVENT_TYPE_REGISTRY, null, 2)}\n`, 'utf8');
+  fs.writeFileSync(
+    registryPath,
+    `${JSON.stringify(GOVERNANCE_EVENT_TYPE_REGISTRY, null, 2)}\n`,
+    'utf8'
+  );
   return registryPath;
 }
 
 function writeRegistryPolicyBindingFile(root: string): string {
   const policyPath = path.join(root, 'governance-event-type-registry-policy.json');
-  fs.writeFileSync(policyPath, `${JSON.stringify(GOVERNANCE_EVENT_TYPE_REGISTRY_POLICY, null, 2)}\n`, 'utf8');
+  fs.writeFileSync(
+    policyPath,
+    `${JSON.stringify(GOVERNANCE_EVENT_TYPE_REGISTRY_POLICY, null, 2)}\n`,
+    'utf8'
+  );
   return policyPath;
 }
 
 function prepareCodexRoot(): string {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'main-agent-codex-worker-'));
+  writeFakeReqTraceSkill(root);
   writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
   writeRuntimeContext(
     root,
@@ -239,6 +477,52 @@ function prepareCodexRoot(): string {
 
 function codexSmokeArtifactPath(packetId: string): string {
   return `_bmad-output/runtime/requirement-records/REQ-CODEX-WORKER/artifacts/codex/${packetId}.md`;
+}
+
+function sha256File(filePath: string): string {
+  return `sha256:${createHash('sha256').update(fs.readFileSync(filePath)).digest('hex')}`;
+}
+
+function writeFakeReqTraceSkill(root: string): void {
+  const scriptPath = path.join(
+    root,
+    '_bmad',
+    'skills',
+    'req-trace-matrix-prompt-generator',
+    'scripts',
+    'generate_prompt.js'
+  );
+  fs.mkdirSync(path.dirname(scriptPath), { recursive: true });
+  fs.writeFileSync(
+    scriptPath,
+    [
+      '#!/usr/bin/env node',
+      "const crypto = require('node:crypto');",
+      "const fs = require('node:fs');",
+      "const path = require('node:path');",
+      'function arg(name) { const index = process.argv.indexOf(name); return index === -1 ? null : process.argv[index + 1]; }',
+      "function shaFile(filePath) { return 'sha256:' + crypto.createHash('sha256').update(fs.readFileSync(filePath)).digest('hex'); }",
+      "const outDir = arg('--out-dir');",
+      "const recordPath = arg('--requirement-record');",
+      "const sourcePath = arg('--source-document');",
+      "const profilePath = arg('--execution-discipline-profile-ref');",
+      "if (!outDir || !recordPath || !sourcePath || !profilePath) { console.log('BLOCK: missing compiler args'); process.exit(3); }",
+      "const record = JSON.parse(fs.readFileSync(recordPath, 'utf8'));",
+      "const profile = JSON.parse(fs.readFileSync(profilePath, 'utf8'));",
+      'fs.mkdirSync(outDir, { recursive: true });',
+      "const modelPacketPath = path.join(outDir, 'model_packet.json');",
+      "const humanPromptPath = path.join(outDir, 'human_prompt.txt');",
+      "const goalExecutionPath = path.join(outDir, 'goal_execution.md');",
+      "const auditReceiptPath = path.join(outDir, 'audit_receipt.json');",
+      "fs.writeFileSync(modelPacketPath, JSON.stringify({ artifactRole: 'execution_authority', sourceDocumentHash: record.sourceDocumentHash, implementationConfirmationHash: record.implementationConfirmationHash, executionDisciplineProfile: profile }, null, 2) + '\\n', 'utf8');",
+      "fs.writeFileSync(humanPromptPath, ['Execution Discipline Profile', `profileId: ${profile.profileId}`, `profileHash: ${profile.profileHash}`, 'model_packet.json is the machine-readable execution authority', 'compiled worker body', ''].join('\\n'), 'utf8');",
+      "fs.writeFileSync(goalExecutionPath, ['# Goal Execution', `profileId: ${profile.profileId}`, `profileHash: ${profile.profileHash}`, ''].join('\\n'), 'utf8');",
+      "fs.writeFileSync(auditReceiptPath, JSON.stringify({ decision: 'pass', goalCommand: { mode: 'native_goal_document_ref', documentHash: shaFile(goalExecutionPath) }, executionDisciplineProfile: { profileId: profile.profileId, profileHash: profile.profileHash, humanPromptProfileRendered: true, goalExecutionProfileRendered: true } }, null, 2) + '\\n', 'utf8');",
+      'process.exit(0);',
+      '',
+    ].join('\n'),
+    'utf8'
+  );
 }
 
 describe('main-agent codex worker adapter e2e', () => {
@@ -304,7 +588,9 @@ describe('main-agent codex worker adapter e2e', () => {
       expect(adapter.subagentEvidenceEnvelopeValidation.mismatches).toContain(
         'subagent_envelope_taskRefs_empty'
       );
-      expect(fs.existsSync(path.join(root, codexSmokeArtifactPath(instruction!.packetId)))).toBe(true);
+      expect(fs.existsSync(path.join(root, codexSmokeArtifactPath(instruction!.packetId)))).toBe(
+        true
+      );
       expect(adapter.codexCommand).toEqual(['codex', 'worker-adapter-smoke']);
 
       const result = runMainAgentAutomaticLoop({
@@ -314,9 +600,11 @@ describe('main-agent codex worker adapter e2e', () => {
         args: { taskReportPath },
       });
 
-      expect(result.status).toBe('completed');
+      expect(result.status).toBe('blocked');
       expect(result.taskReport?.packetId).toBe(instruction!.packetId);
-      expect(result.finalSurface.pendingPacketStatus).toBe('completed');
+      expect(result.taskReport?.driftFlags).toContain('codex-smoke-non-delivery-evidence');
+      expect(result.finalSurface.pendingPacketStatus).toBe('invalidated');
+      expect(result.finalSurface.mainAgentNextAction).toBe('dispatch_implement');
       expect(result.finalSurface.orchestrationState?.lastTaskReport?.evidence).toContain(
         `codex-smoke:${codexSmokeArtifactPath(instruction!.packetId)}`
       );
@@ -347,7 +635,8 @@ describe('main-agent codex worker adapter e2e', () => {
         requirementSetId: 'REQ-CODEX-WORKER',
         runId: 'run-codex-worker',
         parentCloseoutAttemptId: 'closeout-codex-worker',
-        sourceDocumentHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+        sourceDocumentHash:
+          'sha256:1111111111111111111111111111111111111111111111111111111111111111',
         implementationConfirmationHash:
           'sha256:2222222222222222222222222222222222222222222222222222222222222222',
         architectureConfirmationHash:
@@ -382,7 +671,9 @@ describe('main-agent codex worker adapter e2e', () => {
   it('recovers runtime governance from requirement records when the index is missing', () => {
     const root = prepareCodexRoot();
     try {
-      fs.rmSync(path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'index.json'), { force: true });
+      fs.rmSync(path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'index.json'), {
+        force: true,
+      });
       const instruction = buildMainAgentDispatchInstruction({
         projectRoot: root,
         flow: 'story',
@@ -404,10 +695,18 @@ describe('main-agent codex worker adapter e2e', () => {
       expect(adapter.runtimeGovernanceStatus).toBe('resolved');
       expect(adapter.runtimeGovernanceError).toBeNull();
       expect(adapter.taskReport.status).toBe('done');
-      expect(fs.existsSync(path.join(root, codexSmokeArtifactPath(instruction!.packetId)))).toBe(true);
+      expect(fs.existsSync(path.join(root, codexSmokeArtifactPath(instruction!.packetId)))).toBe(
+        true
+      );
       expect(
         fs.existsSync(
-          path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'index-repair-projection.json')
+          path.join(
+            root,
+            '_bmad-output',
+            'runtime',
+            'requirement-records',
+            'index-repair-projection.json'
+          )
         )
       ).toBe(true);
     } finally {
@@ -457,7 +756,9 @@ describe('main-agent codex worker adapter e2e', () => {
       expect(adapter.taskReport.validationsRun).toContain(
         'codex-worker-adapter-runtime-governance'
       );
-      expect(fs.existsSync(path.join(root, codexSmokeArtifactPath(instruction!.packetId)))).toBe(false);
+      expect(fs.existsSync(path.join(root, codexSmokeArtifactPath(instruction!.packetId)))).toBe(
+        false
+      );
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }
@@ -602,6 +903,7 @@ describe('main-agent codex worker adapter e2e', () => {
   it('resolves canonical Codex agent specs when runtime .codex agents are not installed', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'main-agent-codex-canonical-'));
     try {
+      writeFakeReqTraceSkill(root);
       writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
       writeRuntimeContext(
         root,
@@ -623,6 +925,7 @@ describe('main-agent codex worker adapter e2e', () => {
         host: 'claude',
         hydratePacket: true,
       });
+      expect(instruction).not.toBeNull();
       const taskReportPath = path.join(root, 'canonical-agent-task-report.json');
 
       const adapter = runBoundCodexWorkerAdapter({
@@ -668,6 +971,171 @@ describe('main-agent codex worker adapter e2e', () => {
       expect(prompt).toContain('--- Runtime Governance JSON ---');
       expect(prompt).toContain('"implementationEntryGate"');
       expect(prompt).toContain('"stage":"implement"');
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('renders compiled human_prompt.txt after governance and blocks stale compiled prompt refs', () => {
+    const root = prepareCodexRoot();
+    try {
+      const instruction = buildMainAgentDispatchInstruction({
+        projectRoot: root,
+        flow: 'story',
+        stage: 'implement',
+        host: 'codex',
+        hydratePacket: true,
+      });
+
+      const adapter = runBoundCodexWorkerAdapter({
+        projectRoot: root,
+        packetPath: instruction!.packetPath,
+        taskReportPath: path.join(root, 'compiled-prompt-task-report.json'),
+        smoke: false,
+        timeoutMs: 1,
+      });
+
+      expect(adapter.stdinPath).toBeTruthy();
+      const prompt = fs.readFileSync(adapter.stdinPath!, 'utf8');
+      expect(prompt.indexOf('--- Runtime Governance JSON ---')).toBeLessThan(
+        prompt.indexOf('--- Compiled Human Prompt ---')
+      );
+      expect(prompt).toContain('--- Entry Flow Discipline Profile ---');
+      expect(prompt).toContain('compiled worker body');
+      expect(prompt).toContain(
+        '/goal is an entry pointer only; execution scope is goal_execution.md plus model_packet.json'
+      );
+      expect(prompt).not.toContain('BUG-A4-IMPL');
+      expect(prompt).not.toContain('STORY-A3-DEV');
+
+      const packet = JSON.parse(fs.readFileSync(instruction!.packetPath, 'utf8')) as Record<
+        string,
+        any
+      >;
+      fs.writeFileSync(packet.compiledPromptRef.humanPromptPath, 'stale compiled prompt\n', 'utf8');
+      const blocked = runBoundCodexWorkerAdapter({
+        projectRoot: root,
+        packetPath: instruction!.packetPath,
+        taskReportPath: path.join(root, 'compiled-prompt-stale-task-report.json'),
+        smoke: false,
+        timeoutMs: 1,
+      });
+      expect(blocked.exitCode).toBe(1);
+      expect(blocked.taskReport.status).toBe('blocked');
+      expect(blocked.taskReport.driftFlags).toContain('compiled-prompt-hash-mismatch');
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('aligns Runtime Governance JSON with the current dispatch packet for requirement-scoped implement work', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'main-agent-codex-policy-align-'));
+    try {
+      writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
+      writeRuntimeContext(
+        root,
+        defaultRuntimeContextFile({
+          flow: 'standalone_tasks',
+          stage: 'implement',
+          sourceMode: 'standalone_story',
+          contextScope: 'run',
+          runId: 'standalone-codex-worker-run',
+          artifactPath: 'tests/fixtures/requirements/standalone-worker.md',
+        })
+      );
+      writeStandaloneRecordWithoutImplementationEntryGate(root);
+      writeTestCodexAgentSpec(root, '.codex/agents');
+
+      const instruction = buildMainAgentDispatchInstruction({
+        projectRoot: root,
+        flow: 'standalone_tasks',
+        stage: 'implement',
+        host: 'codex',
+        requirementSetId: 'REQ-STANDALONE-CODEX-WORKER',
+        hydratePacket: true,
+      });
+      expect(instruction?.nextAction).toBe('dispatch_implement');
+
+      const adapter = runBoundCodexWorkerAdapter({
+        projectRoot: root,
+        requirementSetId: 'REQ-STANDALONE-CODEX-WORKER',
+        packetPath: instruction!.packetPath,
+        taskReportPath: path.join(root, 'policy-align-task-report.json'),
+        smoke: false,
+        timeoutMs: 1,
+      });
+
+      expect(adapter.stdinPath).toBeTruthy();
+      const prompt = fs.readFileSync(adapter.stdinPath!, 'utf8');
+      const start = prompt.indexOf('--- Runtime Governance JSON ---');
+      const end = prompt.indexOf('--- End Runtime Governance JSON ---');
+      const governance = JSON.parse(
+        prompt.slice(start + '--- Runtime Governance JSON ---'.length, end).trim()
+      ) as Record<string, any>;
+      expect(governance.implementationEntryDecision).toBe('pass');
+      expect(governance.mainAgentNextAction).toBe('dispatch_implement');
+      expect(governance.mainAgentOrchestration?.mainAgentNextAction).toBe('dispatch_implement');
+      expect(governance.mainAgentOrchestration?.runtimeResumeProjection?.runtimeNextAction).toBe(
+        'dispatch_implement'
+      );
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('keeps Runtime Governance JSON aligned after an implement packet has been dispatched', () => {
+    const root = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'main-agent-codex-policy-dispatched-align-')
+    );
+    try {
+      writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
+      writeRuntimeContext(
+        root,
+        defaultRuntimeContextFile({
+          flow: 'standalone_tasks',
+          stage: 'implement',
+          sourceMode: 'standalone_story',
+          contextScope: 'run',
+          runId: 'standalone-codex-worker-run',
+          artifactPath: 'tests/fixtures/requirements/standalone-worker.md',
+        })
+      );
+      writeStandaloneRecordWithoutImplementationEntryGate(root);
+      writeTestCodexAgentSpec(root, '.codex/agents');
+
+      const instruction = buildMainAgentDispatchInstruction({
+        projectRoot: root,
+        flow: 'standalone_tasks',
+        stage: 'implement',
+        host: 'codex',
+        requirementSetId: 'REQ-STANDALONE-CODEX-WORKER',
+        hydratePacket: true,
+      });
+      expect(instruction?.nextAction).toBe('dispatch_implement');
+      markMainAgentPacketDispatched(root, instruction!.sessionId, instruction!.packetId);
+
+      const adapter = runBoundCodexWorkerAdapter({
+        projectRoot: root,
+        requirementSetId: 'REQ-STANDALONE-CODEX-WORKER',
+        packetPath: instruction!.packetPath,
+        taskReportPath: path.join(root, 'policy-dispatched-align-task-report.json'),
+        smoke: false,
+        timeoutMs: 1,
+      });
+
+      expect(adapter.stdinPath).toBeTruthy();
+      const prompt = fs.readFileSync(adapter.stdinPath!, 'utf8');
+      const start = prompt.indexOf('--- Runtime Governance JSON ---');
+      const end = prompt.indexOf('--- End Runtime Governance JSON ---');
+      const governance = JSON.parse(
+        prompt.slice(start + '--- Runtime Governance JSON ---'.length, end).trim()
+      ) as Record<string, any>;
+      expect(governance.implementationEntryDecision).toBe('pass');
+      expect(governance.mainAgentNextAction).toBe('dispatch_implement');
+      expect(governance.mainAgentOrchestration?.mainAgentNextAction).toBe('dispatch_implement');
+      expect(governance.mainAgentOrchestration?.runtimeResumeProjection?.runtimeNextAction).toBe(
+        'dispatch_implement'
+      );
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }
@@ -908,6 +1376,57 @@ describe('main-agent codex worker adapter e2e', () => {
       };
       expect(report.packetPath).toBe(instruction!.packetPath);
       expect(report.mode).toBe('smoke');
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('accepts kebab-case requirement identity flags on the CLI', () => {
+    const root = prepareCodexRoot();
+    try {
+      const instruction = buildMainAgentDispatchInstruction({
+        projectRoot: root,
+        flow: 'story',
+        stage: 'implement',
+        host: 'codex',
+        hydratePacket: true,
+      });
+      const reportPath = path.join(root, 'adapter-kebab-report.json');
+      const taskReportPath = path.join(root, 'task-report-kebab.json');
+      const registryPath = writeRegistryBindingFile(root);
+      const policyPath = writeRegistryPolicyBindingFile(root);
+      const exitCode = main([
+        '--cwd',
+        root,
+        '--requirement-set-id',
+        'REQ-CODEX-WORKER',
+        '--packet-path',
+        instruction!.packetPath,
+        '--smoke',
+        '--task-report-path',
+        taskReportPath,
+        '--report-path',
+        reportPath,
+        '--governance-event-type-registry-policy-path',
+        policyPath,
+        '--governance-event-type-registry-policy-hash',
+        REGISTRY_BINDING.governanceEventTypeRegistryPolicyHash,
+        '--governance-event-type-registry-path',
+        registryPath,
+        '--governance-event-type-registry-hash',
+        REGISTRY_BINDING.governanceEventTypeRegistryHash,
+        '--architecture-confirmation-hash',
+        REGISTRY_BINDING.architectureConfirmationHash,
+      ]);
+
+      expect(exitCode).toBe(0);
+      const report = JSON.parse(fs.readFileSync(reportPath, 'utf8')) as {
+        taskReport: { packetId: string; status: string };
+        transportEnvelope: { requirementSetId: string } | null;
+      };
+      expect(report.taskReport.packetId).toBe(instruction!.packetId);
+      expect(report.taskReport.status).toBe('done');
+      expect(report.transportEnvelope?.requirementSetId).toBe('REQ-CODEX-WORKER');
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }

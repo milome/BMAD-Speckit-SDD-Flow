@@ -15,9 +15,7 @@ describe('formatDashboardMarkdown', () => {
         { stage: 'impl', epicStory: 'E6.S4', score: 65 },
         { stage: 'tasks', epicStory: 'E6.S4', score: 70 },
       ],
-      highIterTop3: [
-        { stage: 'spec', epicStory: 'E6.S1', iteration_count: 5 },
-      ],
+      highIterTop3: [{ stage: 'spec', epicStory: 'E6.S1', iteration_count: 5 }],
       journeyContractSummary: [
         {
           signal: 'smoke_task_chain' as const,
@@ -152,7 +150,12 @@ describe('formatDashboardMarkdown', () => {
         { stage: 'spec', epicStory: 'E9.S4', score: 60, evolution_trace: '第1轮 C → 第2轮 B' },
       ],
       highIterTop3: [
-        { stage: 'spec', epicStory: 'E9.S4', iteration_count: 2, evolution_trace: '第1轮 C → 第2轮 B → 第3轮 A' },
+        {
+          stage: 'spec',
+          epicStory: 'E9.S4',
+          iteration_count: 2,
+          evolution_trace: '第1轮 C → 第2轮 B → 第3轮 A',
+        },
       ],
       journeyContractSummary: [],
       governanceRoutingModeDistribution: [],

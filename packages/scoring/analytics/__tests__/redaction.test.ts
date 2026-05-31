@@ -139,12 +139,12 @@ describe('canonical redaction', () => {
         }),
       ])
     );
-    expect(
-      redacted.messages[2]!.tool_calls?.[0]?.function.arguments
-    ).toContain('[REDACTED_SECRET]');
-    expect(
-      redacted.messages[2]!.tool_calls?.[0]?.function.arguments
-    ).not.toContain('sk-1234567890abcdefghijklmnop');
+    expect(redacted.messages[2]!.tool_calls?.[0]?.function.arguments).toContain(
+      '[REDACTED_SECRET]'
+    );
+    expect(redacted.messages[2]!.tool_calls?.[0]?.function.arguments).not.toContain(
+      'sk-1234567890abcdefghijklmnop'
+    );
   });
 
   it('blocks private keys from assistant tool call arguments', () => {
@@ -235,7 +235,8 @@ describe('canonical redaction', () => {
     ]);
     expect(redacted.tools?.[0]?.function.description).toContain('[REDACTED_EMAIL]');
     const noteParam = (
-      (redacted.tools?.[0]?.function.parameters as Record<string, unknown> | undefined)?.properties as Record<string, unknown> | undefined
+      (redacted.tools?.[0]?.function.parameters as Record<string, unknown> | undefined)
+        ?.properties as Record<string, unknown> | undefined
     )?.note as { description?: string } | undefined;
     expect(noteParam?.description).toContain('[REDACTED_SECRET]');
   });

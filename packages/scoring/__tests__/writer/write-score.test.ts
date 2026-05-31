@@ -16,9 +16,7 @@ const validRecord: RunScoreRecord = {
   stage: 'implement',
   phase_score: 22,
   phase_weight: 0.25,
-  check_items: [
-    { item_id: 'func_correct', passed: true, score_delta: 0, note: '' },
-  ],
+  check_items: [{ item_id: 'func_correct', passed: true, score_delta: 0, note: '' }],
   timestamp: '2026-03-04T12:00:00.000Z',
   iteration_count: 0,
   iteration_records: [],
@@ -114,8 +112,13 @@ describe('writer (sync)', () => {
       writeScoreRecordSync(validRecord, 'both');
       expect(fs.existsSync(path.join(testDataPath, 'test-run-1.json'))).toBe(true);
       expect(fs.existsSync(path.join(testDataPath, 'scores.jsonl'))).toBe(true);
-      const single = JSON.parse(fs.readFileSync(path.join(testDataPath, 'test-run-1.json'), 'utf-8'));
-      const lines = fs.readFileSync(path.join(testDataPath, 'scores.jsonl'), 'utf-8').trim().split('\n');
+      const single = JSON.parse(
+        fs.readFileSync(path.join(testDataPath, 'test-run-1.json'), 'utf-8')
+      );
+      const lines = fs
+        .readFileSync(path.join(testDataPath, 'scores.jsonl'), 'utf-8')
+        .trim()
+        .split('\n');
       expect(single.run_id).toBe(validRecord.run_id);
       expect(JSON.parse(lines[0]).run_id).toBe(validRecord.run_id);
     });
@@ -162,9 +165,7 @@ describe('writer (sync)', () => {
     it('check_items 含 item_id、passed、score_delta、note 原样写入', () => {
       const withNote: RunScoreRecord = {
         ...validRecord,
-        check_items: [
-          { item_id: 'a', passed: false, score_delta: -2, note: 'some note' },
-        ],
+        check_items: [{ item_id: 'a', passed: false, score_delta: -2, note: 'some note' }],
       };
       writeScoreRecordSync(withNote, 'single_file');
       const filePath = path.join(testDataPath, 'test-run-1.json');

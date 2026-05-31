@@ -9,7 +9,8 @@ import {
 } from '../../scripts/subagent-surface-inventory';
 
 const SOURCE_HASH = 'sha256:1111111111111111111111111111111111111111111111111111111111111111';
-const IMPLEMENTATION_HASH = 'sha256:2222222222222222222222222222222222222222222222222222222222222222';
+const IMPLEMENTATION_HASH =
+  'sha256:2222222222222222222222222222222222222222222222222222222222222222';
 const ARCHITECTURE_HASH = 'sha256:3333333333333333333333333333333333333333333333333333333333333333';
 
 function sha256Text(value: string): string {
@@ -77,7 +78,10 @@ function registryRows(options: { unsafeEnvelope?: boolean; omitBmm?: boolean } =
       currentAttemptRevalidationRequired: true
       linkedRequirements:
         - MUST-045
-${options.omitBmm ? '' : `    - surfaceId: upstream_product_brief_preview_agents
+${
+  options.omitBmm
+    ? ''
+    : `    - surfaceId: upstream_product_brief_preview_agents
       path: _bmad/bmm/workflows/1-analysis/bmad-product-brief-preview/agents/**
       surfaceType: authoring_research_agents
       classification: authoring_assistant
@@ -86,7 +90,8 @@ ${options.omitBmm ? '' : `    - surfaceId: upstream_product_brief_preview_agents
       currentAttemptRevalidationRequired: false
       linkedRequirements:
         - MUST-045
-`}
+`
+}
 `;
 }
 
@@ -105,7 +110,14 @@ implementationConfirmation:
 ${registryRows(options)}
 `
   );
-  const recordPath = path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'REQ-SUBAGENT', 'requirement-record.json');
+  const recordPath = path.join(
+    root,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    'REQ-SUBAGENT',
+    'requirement-record.json'
+  );
   writeJson(recordPath, {
     recordId: 'REQ-SUBAGENT',
     requirementSetId: 'REQ-SUBAGENT',
@@ -126,7 +138,16 @@ ${registryRows(options)}
     'Use Agent tool subagent for delegated execution.\n'
   );
   writeText(
-    path.join(root, '_bmad', 'bmm', 'workflows', '1-analysis', 'bmad-product-brief-preview', 'agents', 'web-researcher.md'),
+    path.join(
+      root,
+      '_bmad',
+      'bmm',
+      'workflows',
+      '1-analysis',
+      'bmad-product-brief-preview',
+      'agents',
+      'web-researcher.md'
+    ),
     'UTILIZE SUBPROCESSES AND SUBAGENTS for upstream authoring research.\n'
   );
   writeText(
@@ -140,7 +161,15 @@ ${registryRows(options)}
   return {
     sourcePath,
     recordPath,
-    outPath: path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'REQ-SUBAGENT', 'subagents', 'subagent-surface-inventory.json'),
+    outPath: path.join(
+      root,
+      '_bmad-output',
+      'runtime',
+      'requirement-records',
+      'REQ-SUBAGENT',
+      'subagents',
+      'subagent-surface-inventory.json'
+    ),
   };
 }
 
@@ -162,7 +191,10 @@ function runFixture(root: string, options: { unsafeEnvelope?: boolean; omitBmm?:
       'vitest',
       '--json',
     ]);
-    return { code, report: JSON.parse(readFileSync(paths.outPath, 'utf8')) as Record<string, unknown> };
+    return {
+      code,
+      report: JSON.parse(readFileSync(paths.outPath, 'utf8')) as Record<string, unknown>,
+    };
   } finally {
     process.chdir(cwd);
   }
@@ -182,14 +214,20 @@ describe('subagent surface inventory', () => {
         controlDecisionAuthority: 'controlled_ingest_contractChecks_only',
         directArtifactJsonControlForbidden: true,
       });
-      expect((report.blockingIssues as string[])).toEqual([]);
-      expect((report.rows as Array<Record<string, unknown>>).some((row) => row.registrySurfaceId === 'main_agent_codex_worker_adapter')).toBe(
-        true
-      );
-      expect((report.rows as Array<Record<string, unknown>>).some((row) => row.exclusionReasonCode === 'test_fixture_only')).toBe(true);
-      expect((report.scannerConfigHash as string)).toMatch(/^sha256:[a-f0-9]{64}$/u);
-      expect((report.registryHash as string)).toMatch(/^sha256:[a-f0-9]{64}$/u);
-      expect((report.inventoryHash as string)).toMatch(/^sha256:[a-f0-9]{64}$/u);
+      expect(report.blockingIssues as string[]).toEqual([]);
+      expect(
+        (report.rows as Array<Record<string, unknown>>).some(
+          (row) => row.registrySurfaceId === 'main_agent_codex_worker_adapter'
+        )
+      ).toBe(true);
+      expect(
+        (report.rows as Array<Record<string, unknown>>).some(
+          (row) => row.exclusionReasonCode === 'test_fixture_only'
+        )
+      ).toBe(true);
+      expect(report.scannerConfigHash as string).toMatch(/^sha256:[a-f0-9]{64}$/u);
+      expect(report.registryHash as string).toMatch(/^sha256:[a-f0-9]{64}$/u);
+      expect(report.inventoryHash as string).toMatch(/^sha256:[a-f0-9]{64}$/u);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -204,7 +242,9 @@ describe('subagent surface inventory', () => {
       expect(report.decision).toBe('blocked');
       expect(report.blockingIssues as string[]).toEqual(
         expect.arrayContaining([
-          expect.stringContaining('_bmad/bmm/workflows/1-analysis/bmad-product-brief-preview/agents/web-researcher.md'),
+          expect.stringContaining(
+            '_bmad/bmm/workflows/1-analysis/bmad-product-brief-preview/agents/web-researcher.md'
+          ),
         ])
       );
     } finally {

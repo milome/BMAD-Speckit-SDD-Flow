@@ -11,8 +11,11 @@ function workspaceScoringRoot() {
 
 function resolveWorkspaceModule(subpath) {
   const resolved = path.join(workspaceScoringRoot(), ...subpath.split('/'));
-  const filePath = resolved.endsWith('.json') || resolved.endsWith('.js') ? resolved : `${resolved}.js`;
-  return fs.existsSync(filePath) ? filePath : null;
+  const candidates =
+    resolved.endsWith('.json') || resolved.endsWith('.js')
+      ? [resolved]
+      : [`${resolved}.js`, path.join(resolved, 'index.js')];
+  return candidates.find((candidate) => fs.existsSync(candidate)) ?? null;
 }
 
 function loadScoringModule(subpath) {

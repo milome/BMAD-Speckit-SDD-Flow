@@ -1,10 +1,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import type {
-  OrchestrationFlow,
-  PacketKind,
-  TaskReport,
-} from './orchestration-dispatch-contract';
+import type { OrchestrationFlow, PacketKind, TaskReport } from './orchestration-dispatch-contract';
 
 export type OrchestrationHost = 'cursor' | 'claude' | 'codex';
 export type OrchestrationPhase =
@@ -18,11 +14,18 @@ export type OrchestrationPhase =
   | 'post_audit'
   | 'closeout';
 export type OrchestrationNextAction =
+  | 'enter_architecture_confirmation'
+  | 'prepare_architecture_confirmation'
+  | 'recompute_current_model_gate'
+  | 'run_implementation_readiness_gate'
+  | 'run_execution_closure_gate'
   | 'dispatch_implement'
   | 'dispatch_review'
   | 'dispatch_remediation'
   | 'rerun_gate'
   | 'run_closeout'
+  | 'run_pre_confirmation_drilldown'
+  | 'record_closed'
   | 'await_user'
   | 'blocked';
 
@@ -73,23 +76,13 @@ export interface OrchestrationState {
     running_for_ms: number;
     last_tick_ts: string;
     last_progress_ts: string;
-    degradation_level:
-      | 'none'
-      | 'hook_lost'
-      | 'transport_degraded'
-      | 'host_partial'
-      | 'cli_forced';
+    degradation_level: 'none' | 'hook_lost' | 'transport_degraded' | 'host_partial' | 'cli_forced';
     active_host_mode: string;
     resume_count: number;
     resumed_from_checkpoint?: boolean;
   };
   hostRecovery?: {
-    degradation_level:
-      | 'none'
-      | 'hook_lost'
-      | 'transport_degraded'
-      | 'host_partial'
-      | 'cli_forced';
+    degradation_level: 'none' | 'hook_lost' | 'transport_degraded' | 'host_partial' | 'cli_forced';
     active_host_mode: string;
     orchestration_entry: string;
     recovered_host_mode?: string | null;
@@ -147,11 +140,20 @@ function normalizePathForRuntime(value: string): string {
 }
 
 function resolveActiveRequirementRecordPath(projectRoot: string): string | null {
-  const indexPath = path.join(projectRoot, '_bmad-output', 'runtime', 'requirement-records', 'index.json');
+  const indexPath = path.join(
+    projectRoot,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    'index.json'
+  );
   if (!fs.existsSync(indexPath)) return null;
   try {
     const index = JSON.parse(fs.readFileSync(indexPath, 'utf8')) as Record<string, unknown>;
-    const active = object(index.active) ?? object(index.currentRequirementRef) ?? object(index.currentRequirement);
+    const active =
+      object(index.active) ??
+      object(index.currentRequirementRef) ??
+      object(index.currentRequirement);
     const records = Array.isArray(index.records)
       ? index.records.filter((item): item is Record<string, unknown> => Boolean(object(item)))
       : [];
@@ -166,10 +168,18 @@ function resolveActiveRequirementRecordPath(projectRoot: string): string | null 
         (activeRecordId && recordId === activeRecordId)
       );
     });
-    const recordPath = directPath || text(matched?.recordPath ?? matched?.path ?? matched?.controlRecordPath);
+    const recordPath =
+      directPath || text(matched?.recordPath ?? matched?.path ?? matched?.controlRecordPath);
     if (recordPath) return path.resolve(projectRoot, normalizePathForRuntime(recordPath));
     if (activeRequirementSetId) {
-      return path.join(projectRoot, '_bmad-output', 'runtime', 'requirement-records', activeRequirementSetId, 'requirement-record.json');
+      return path.join(
+        projectRoot,
+        '_bmad-output',
+        'runtime',
+        'requirement-records',
+        activeRequirementSetId,
+        'requirement-record.json'
+      );
     }
     return null;
   } catch {
@@ -212,22 +222,32 @@ function requirementScopedStateCandidates(projectRoot: string, sessionId: string
     .readdirSync(recordsRoot, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) =>
-      path.join(recordsRoot, entry.name, 'orchestration', 'orchestration-state', `${sessionId}.json`)
+      path.join(
+        recordsRoot,
+        entry.name,
+        'orchestration',
+        'orchestration-state',
+        `${sessionId}.json`
+      )
     );
 }
 
 function existingOrchestrationStatePath(projectRoot: string, sessionId: string): string | null {
+  const primaryPath = orchestrationStatePath(projectRoot, sessionId);
+  const legacyProjectionPath = path.join(
+    projectRoot,
+    '_bmad-output',
+    'runtime',
+    'governance',
+    'orchestration-state',
+    `${sessionId}.json`
+  );
+  const primaryIsLegacyProjection =
+    path.resolve(primaryPath) === path.resolve(legacyProjectionPath);
   const candidates = [
-    orchestrationStatePath(projectRoot, sessionId),
+    ...(primaryIsLegacyProjection ? [] : [primaryPath]),
     ...requirementScopedStateCandidates(projectRoot, sessionId),
-    path.join(
-      projectRoot,
-      '_bmad-output',
-      'runtime',
-      'governance',
-      'orchestration-state',
-      `${sessionId}.json`
-    ),
+    legacyProjectionPath,
   ];
   const seen = new Set<string>();
   for (const candidate of candidates) {
@@ -298,7 +318,8 @@ export function readOrchestrationStateAtPath(file: string): OrchestrationState |
 }
 
 export function writeOrchestrationState(projectRoot: string, state: OrchestrationState): void {
-  const file = existingOrchestrationStatePath(projectRoot, state.sessionId) ??
+  const file =
+    existingOrchestrationStatePath(projectRoot, state.sessionId) ??
     orchestrationStatePath(projectRoot, state.sessionId);
   writeOrchestrationStateAtPath(file, state);
   const legacyProjectionPath = path.join(
@@ -365,7 +386,7 @@ export function completePendingPacket(
             ...current.pendingPacket,
             status: 'completed',
           }
-        : current.pendingPacket ?? null,
+        : (current.pendingPacket ?? null),
   }));
 }
 
@@ -382,7 +403,7 @@ export function markPendingPacketDispatched(
             ...current.pendingPacket,
             status: 'dispatched',
           }
-        : current.pendingPacket ?? null,
+        : (current.pendingPacket ?? null),
   }));
 }
 
@@ -470,6 +491,6 @@ export function invalidatePendingPacket(
             ...current.pendingPacket,
             status: 'invalidated',
           }
-        : current.pendingPacket ?? null,
+        : (current.pendingPacket ?? null),
   }));
 }

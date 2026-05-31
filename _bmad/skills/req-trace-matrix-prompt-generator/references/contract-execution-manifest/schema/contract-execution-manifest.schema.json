@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contract-execution-manifest.schema.json",
+  "title": "ContractExecutionManifest",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "builderVersion",
+    "manifestHash",
+    "sourceProjectionHash",
+    "implementationConfirmationHash",
+    "requiredSections",
+    "requiredCommands"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "contract-execution-manifest/v1"
+    },
+    "builderVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "manifestHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "sourceProjectionHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "sourceDocumentHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "implementationConfirmationHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "requiredSections": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "requiredCommands": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "command"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "command": {
+            "type": "string"
+          },
+          "traceRefs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "evidenceRefs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "commandTargetCollection": {
+      "type": ["object", "array", "null"]
+    },
+    "closeoutProof": {
+      "type": ["object", "null"]
+    },
+    "aliasAudit": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": true
+}

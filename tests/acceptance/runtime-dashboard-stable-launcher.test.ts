@@ -5,7 +5,10 @@ import * as path from 'node:path';
 import { createRuntimeDashboardFixture } from '../helpers/runtime-dashboard-fixture';
 import { parseAndWriteScore } from '../../packages/scoring/orchestrator/parse-and-write';
 
-const { startRuntimeDashboardServer, stopServerByState } = require('../../scripts/start-runtime-dashboard-server.cjs');
+const {
+  startRuntimeDashboardServer,
+  stopServerByState,
+} = require('../../scripts/start-runtime-dashboard-server.cjs');
 const { clearServerState } = require('../../scripts/runtime-dashboard-server-state.cjs');
 const childProcess = require('node:child_process');
 
@@ -34,7 +37,15 @@ describe('runtime dashboard stable launcher', () => {
 
     await parseAndWriteScore({
       content: fs.readFileSync(
-        path.join(process.cwd(), 'packages', 'scoring', 'parsers', '__tests__', 'fixtures', 'sample-plan-report.md'),
+        path.join(
+          process.cwd(),
+          'packages',
+          'scoring',
+          'parsers',
+          '__tests__',
+          'fixtures',
+          'sample-plan-report.md'
+        ),
         'utf-8'
       ),
       stage: 'plan',
@@ -42,7 +53,8 @@ describe('runtime dashboard stable launcher', () => {
       scenario: 'real_dev',
       writeMode: 'jsonl',
       dataPath: fixture.dataPath,
-      artifactDocPath: '_bmad-output/implementation-artifacts/_orphan/bugfix/fix-runtime-dashboard-findings-duplication.md',
+      artifactDocPath:
+        '_bmad-output/implementation-artifacts/_orphan/bugfix/fix-runtime-dashboard-findings-duplication.md',
       baseCommitHash: 'stable-launcher-bugfix',
     });
 
@@ -54,7 +66,9 @@ describe('runtime dashboard stable launcher', () => {
 
     expect(started.mode).toBe('started');
     expect(started.url).toContain('http://127.0.0.1:');
-    expect(started.state_path).toContain(path.join('outputs', 'runtime', 'runtime-dashboard', 'server.json'));
+    expect(started.state_path).toContain(
+      path.join('outputs', 'runtime', 'runtime-dashboard', 'server.json')
+    );
     expect(fs.existsSync(started.state_path)).toBe(true);
 
     const spawnSpy = vi.spyOn(childProcess, 'spawn');
@@ -95,7 +109,11 @@ describe('runtime dashboard stable launcher', () => {
       });
 
       expect(spawnSpy).not.toHaveBeenCalled();
-      expect(fs.existsSync(path.join(fixture.root, 'outputs', 'runtime', 'runtime-dashboard', 'server.json'))).toBe(false);
+      expect(
+        fs.existsSync(
+          path.join(fixture.root, 'outputs', 'runtime', 'runtime-dashboard', 'server.json')
+        )
+      ).toBe(false);
     } finally {
       if (prev == null) {
         delete process.env.BMAD_SESSION_RESTRICT_BACKGROUND;

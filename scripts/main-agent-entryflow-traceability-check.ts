@@ -60,7 +60,10 @@ function text(value: unknown): string {
 
 function objects(value: unknown): JsonObject[] {
   return Array.isArray(value)
-    ? value.filter((item): item is JsonObject => Boolean(item) && typeof item === 'object' && !Array.isArray(item))
+    ? value.filter(
+        (item): item is JsonObject =>
+          Boolean(item) && typeof item === 'object' && !Array.isArray(item)
+      )
     : [];
 }
 
@@ -69,7 +72,9 @@ function strings(value: unknown): string[] {
 }
 
 function asObject(value: unknown): JsonObject | undefined {
-  return value && typeof value === 'object' && !Array.isArray(value) ? (value as JsonObject) : undefined;
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as JsonObject)
+    : undefined;
 }
 
 function normalizePathForRecord(value: string): string {
@@ -89,7 +94,8 @@ function extractImplementationConfirmation(sourceText: string): JsonObject | und
   for (const match of fenced) {
     try {
       const parsed = asObject(yaml.load(match[1]));
-      if (asObject(parsed?.implementationConfirmation)) return asObject(parsed?.implementationConfirmation);
+      if (asObject(parsed?.implementationConfirmation))
+        return asObject(parsed?.implementationConfirmation);
     } catch {
       continue;
     }
@@ -110,7 +116,10 @@ function extractImplementationConfirmation(sourceText: string): JsonObject | und
   return asObject(parsed?.implementationConfirmation);
 }
 
-function checkEntryFlowState(record: JsonObject, sourceConfirmation?: JsonObject): { issues: string[]; matrix: JsonObject } {
+function checkEntryFlowState(
+  record: JsonObject,
+  sourceConfirmation?: JsonObject
+): { issues: string[]; matrix: JsonObject } {
   const issues: string[] = [];
   const recordEntryFlow = text(record.entryFlow);
   const recordEntryFlowClass = text(record.entryFlowClass);
@@ -121,28 +130,44 @@ function checkEntryFlowState(record: JsonObject, sourceConfirmation?: JsonObject
   const recordContractAuthoringRequired = record.contractAuthoringRequired === true;
   const sourceContractAuthoringRequired = sourceConfirmation?.contractAuthoringRequired === true;
 
-  if (!ENTRY_FLOWS.has(recordEntryFlow)) issues.push(`record_entryFlow_invalid_or_missing:${recordEntryFlow || '<missing>'}`);
+  if (!ENTRY_FLOWS.has(recordEntryFlow))
+    issues.push(`record_entryFlow_invalid_or_missing:${recordEntryFlow || '<missing>'}`);
   if (!ENTRY_FLOW_CLASSES.has(recordEntryFlowClass)) {
     issues.push(`record_entryFlowClass_invalid_or_missing:${recordEntryFlowClass || '<missing>'}`);
   }
   if (!WORKFLOW_ADAPTERS.has(recordWorkflowAdapter)) {
-    issues.push(`record_workflowAdapter_invalid_or_missing:${recordWorkflowAdapter || '<missing>'}`);
+    issues.push(
+      `record_workflowAdapter_invalid_or_missing:${recordWorkflowAdapter || '<missing>'}`
+    );
   }
-  if (!recordContractAuthoringRequired) issues.push('record_contractAuthoringRequired_must_be_true');
-  if (FORBIDDEN_TOP_LEVEL_ENTRY_FLOWS.has(recordEntryFlow)) issues.push(`record_forbidden_top_level_entryFlow:${recordEntryFlow}`);
-  if (recordEntryFlow && EXPECTED_CLASS_BY_FLOW[recordEntryFlow] && recordEntryFlowClass !== EXPECTED_CLASS_BY_FLOW[recordEntryFlow]) {
+  if (!recordContractAuthoringRequired)
+    issues.push('record_contractAuthoringRequired_must_be_true');
+  if (FORBIDDEN_TOP_LEVEL_ENTRY_FLOWS.has(recordEntryFlow))
+    issues.push(`record_forbidden_top_level_entryFlow:${recordEntryFlow}`);
+  if (
+    recordEntryFlow &&
+    EXPECTED_CLASS_BY_FLOW[recordEntryFlow] &&
+    recordEntryFlowClass !== EXPECTED_CLASS_BY_FLOW[recordEntryFlow]
+  ) {
     issues.push(`record_entryFlowClass_mismatch:${recordEntryFlow}:${recordEntryFlowClass}`);
   }
   if (sourceConfirmation) {
-    if (recordEntryFlow !== sourceEntryFlow) issues.push(`entryFlow_source_record_mismatch:${sourceEntryFlow}:${recordEntryFlow}`);
+    if (recordEntryFlow !== sourceEntryFlow)
+      issues.push(`entryFlow_source_record_mismatch:${sourceEntryFlow}:${recordEntryFlow}`);
     if (recordEntryFlowClass !== sourceEntryFlowClass) {
-      issues.push(`entryFlowClass_source_record_mismatch:${sourceEntryFlowClass}:${recordEntryFlowClass}`);
+      issues.push(
+        `entryFlowClass_source_record_mismatch:${sourceEntryFlowClass}:${recordEntryFlowClass}`
+      );
     }
     if (recordWorkflowAdapter !== sourceWorkflowAdapter) {
-      issues.push(`workflowAdapter_source_record_mismatch:${sourceWorkflowAdapter}:${recordWorkflowAdapter}`);
+      issues.push(
+        `workflowAdapter_source_record_mismatch:${sourceWorkflowAdapter}:${recordWorkflowAdapter}`
+      );
     }
-    if (sourceContractAuthoringRequired !== true) issues.push('source_contractAuthoringRequired_must_be_true');
-    if (FORBIDDEN_TOP_LEVEL_ENTRY_FLOWS.has(sourceEntryFlow)) issues.push(`source_forbidden_top_level_entryFlow:${sourceEntryFlow}`);
+    if (sourceContractAuthoringRequired !== true)
+      issues.push('source_contractAuthoringRequired_must_be_true');
+    if (FORBIDDEN_TOP_LEVEL_ENTRY_FLOWS.has(sourceEntryFlow))
+      issues.push(`source_forbidden_top_level_entryFlow:${sourceEntryFlow}`);
   }
 
   return {
@@ -168,7 +193,10 @@ function checkEntryFlowState(record: JsonObject, sourceConfirmation?: JsonObject
   };
 }
 
-function checkGlobalContractTraceabilityPolicy(record: JsonObject): { issues: string[]; policy: JsonObject | null } {
+function checkGlobalContractTraceabilityPolicy(record: JsonObject): {
+  issues: string[];
+  policy: JsonObject | null;
+} {
   const issues: string[] = [];
   const policy = asObject(record.globalContractTraceabilityPolicy);
   if (!policy) return { issues: ['globalContractTraceabilityPolicy_missing'], policy: null };
@@ -179,18 +207,24 @@ function checkGlobalContractTraceabilityPolicy(record: JsonObject): { issues: st
   for (const flow of REQUIRED_TRACEABILITY_FLOWS) {
     if (!flows.has(flow)) issues.push(`globalContractTraceabilityPolicy_missing_entryFlow:${flow}`);
   }
-  if (policy.contractAuthoringRequired !== true) issues.push('globalContractTraceabilityPolicy_contractAuthoringRequired_must_be_true');
-  if (policy.taskBindingRequired !== true) issues.push('globalContractTraceabilityPolicy_taskBindingRequired_must_be_true');
+  if (policy.contractAuthoringRequired !== true)
+    issues.push('globalContractTraceabilityPolicy_contractAuthoringRequired_must_be_true');
+  if (policy.taskBindingRequired !== true)
+    issues.push('globalContractTraceabilityPolicy_taskBindingRequired_must_be_true');
   const dimensions = new Set(strings(policy.taskBindingDimensions));
   for (const dimension of REQUIRED_TRACEABILITY_DIMENSIONS) {
-    if (!dimensions.has(dimension)) issues.push(`globalContractTraceabilityPolicy_missing_dimension:${dimension}`);
+    if (!dimensions.has(dimension))
+      issues.push(`globalContractTraceabilityPolicy_missing_dimension:${dimension}`);
   }
   if (text(policy.missingBindingBehavior) !== 'fail_closed') {
     issues.push('globalContractTraceabilityPolicy_missingBindingBehavior_must_be_fail_closed');
   }
-  if (policy.sourceDocumentHashRequired !== true) issues.push('globalContractTraceabilityPolicy_sourceDocumentHashRequired_must_be_true');
+  if (policy.sourceDocumentHashRequired !== true)
+    issues.push('globalContractTraceabilityPolicy_sourceDocumentHashRequired_must_be_true');
   if (policy.implementationConfirmationHashRequired !== true) {
-    issues.push('globalContractTraceabilityPolicy_implementationConfirmationHashRequired_must_be_true');
+    issues.push(
+      'globalContractTraceabilityPolicy_implementationConfirmationHashRequired_must_be_true'
+    );
   }
   if (policy.reconfirmOnTraceSemanticChange !== true) {
     issues.push('globalContractTraceabilityPolicy_reconfirmOnTraceSemanticChange_must_be_true');
@@ -212,7 +246,10 @@ function checkSourceTaskBinding(
   checkAllSourceTraces: boolean
 ): { issues: string[]; summary: JsonObject } {
   if (!sourceConfirmation) {
-    return { issues: ['source_implementationConfirmation_missing_for_task_binding_check'], summary: {} };
+    return {
+      issues: ['source_implementationConfirmation_missing_for_task_binding_check'],
+      summary: {},
+    };
   }
   const tasks = objects(sourceConfirmation.implementationTasks);
   const sourceTraceRows = objects(sourceConfirmation.traceRows);
@@ -234,10 +271,13 @@ function checkSourceTaskBinding(
     ];
     if (!id) taskBindingIssues.push('implementationTask_id_missing');
     for (const dimension of missingDimensions) {
-      taskBindingIssues.push(`implementationTask_missing_${dimension}_binding:${id || '<missing>'}`);
+      taskBindingIssues.push(
+        `implementationTask_missing_${dimension}_binding:${id || '<missing>'}`
+      );
     }
     for (const traceRef of traceRefs) {
-      if (!traceIds.has(traceRef)) taskBindingIssues.push(`implementationTask_traceRef_unresolved:${id}:${traceRef}`);
+      if (!traceIds.has(traceRef))
+        taskBindingIssues.push(`implementationTask_traceRef_unresolved:${id}:${traceRef}`);
     }
     return { id, binds, missingDimensions, traceRefs };
   });
@@ -248,13 +288,16 @@ function checkSourceTaskBinding(
     const evidenceRefs = strings(row.evidenceRefs);
     const coveredOutIds = covers.filter((item) => item.startsWith('OUT-'));
     if (!id) taskBindingIssues.push('traceRow_id_missing');
-    if (taskRefs.length === 0) taskBindingIssues.push(`traceRow_taskRefs_missing:${id || '<missing>'}`);
-    if (evidenceRefs.length === 0) taskBindingIssues.push(`traceRow_evidenceRefs_missing:${id || '<missing>'}`);
+    if (taskRefs.length === 0)
+      taskBindingIssues.push(`traceRow_taskRefs_missing:${id || '<missing>'}`);
+    if (evidenceRefs.length === 0)
+      taskBindingIssues.push(`traceRow_evidenceRefs_missing:${id || '<missing>'}`);
     if (!covers.some((item) => item.startsWith('MUST-') || item.startsWith('NEG-'))) {
       taskBindingIssues.push(`traceRow_must_or_neg_cover_missing:${id || '<missing>'}`);
     }
     for (const taskRef of taskRefs) {
-      if (!taskIds.has(taskRef)) taskBindingIssues.push(`traceRow_taskRef_unresolved:${id}:${taskRef}`);
+      if (!taskIds.has(taskRef))
+        taskBindingIssues.push(`traceRow_taskRef_unresolved:${id}:${taskRef}`);
       const task = tasks.find((item) => text(item.id) === taskRef);
       const taskHasOutBinding = strings(task?.binds).some((item) => item.startsWith('OUT-'));
       if (coveredOutIds.length > 0 && !taskHasOutBinding) {
@@ -279,7 +322,9 @@ function checkSourceTaskBinding(
 function checkTraceBinding(record: JsonObject): { issues: string[]; summary: JsonObject } {
   const closures = objects(record.requirementClosures);
   const executionIterations = objects(record.executionIterations);
-  const executionTraceRows = new Set(executionIterations.flatMap((item) => strings(item.traceRows)));
+  const executionTraceRows = new Set(
+    executionIterations.flatMap((item) => strings(item.traceRows))
+  );
   const closureIds = new Set(closures.map((item) => text(item.requirementId)).filter(Boolean));
   const requiredIds = ['MUST-024', 'NEG-012', 'OUT-010', 'EVD-006', 'EVD-007', 'EVD-024'];
   return {
@@ -293,7 +338,10 @@ function checkTraceBinding(record: JsonObject): { issues: string[]; summary: Jso
   };
 }
 
-function checkNoStandaloneRuntimeFactArtifacts(record: JsonObject): { issues: string[]; artifacts: JsonObject[] } {
+function checkNoStandaloneRuntimeFactArtifacts(record: JsonObject): {
+  issues: string[];
+  artifacts: JsonObject[];
+} {
   const entryFlow = text(record.entryFlow);
   const artifacts = objects(record.artifactIndex);
   if (entryFlow !== 'standalone_tasks') return { issues: [], artifacts: [] };
@@ -307,7 +355,10 @@ function checkNoStandaloneRuntimeFactArtifacts(record: JsonObject): { issues: st
     );
   });
   return {
-    issues: forbidden.map((artifact) => `standalone_tasks_dedicated_runtime_fact_artifact_forbidden:${text(artifact.path)}`),
+    issues: forbidden.map(
+      (artifact) =>
+        `standalone_tasks_dedicated_runtime_fact_artifact_forbidden:${text(artifact.path)}`
+    ),
     artifacts: forbidden,
   };
 }
@@ -317,11 +368,19 @@ function buildReport(args: ParsedArgs): JsonObject {
   const recordPath = path.resolve(args.requirementRecord);
   const record = readJson(recordPath);
   const sourcePath = args.source ? path.resolve(args.source) : '';
-  const sourceConfirmation = sourcePath ? extractImplementationConfirmation(fs.readFileSync(sourcePath, 'utf8')) : undefined;
+  const sourceConfirmation = sourcePath
+    ? extractImplementationConfirmation(fs.readFileSync(sourcePath, 'utf8'))
+    : undefined;
   const entryFlow = checkEntryFlowState(record, sourceConfirmation);
   const traceabilityPolicy = checkGlobalContractTraceabilityPolicy(record);
-  const activeTraceIds = new Set(objects(record.executionIterations).flatMap((item) => strings(item.traceRows)));
-  const sourceTaskBinding = checkSourceTaskBinding(sourceConfirmation, activeTraceIds, args.checkAllSourceTraces === true);
+  const activeTraceIds = new Set(
+    objects(record.executionIterations).flatMap((item) => strings(item.traceRows))
+  );
+  const sourceTaskBinding = checkSourceTaskBinding(
+    sourceConfirmation,
+    activeTraceIds,
+    args.checkAllSourceTraces === true
+  );
   const trace = checkTraceBinding(record);
   const standaloneArtifacts = checkNoStandaloneRuntimeFactArtifacts(record);
   const blockingReasons = [
@@ -359,12 +418,18 @@ function buildReport(args: ParsedArgs): JsonObject {
 export function mainEntryFlowTraceabilityCheck(argv: string[]): number {
   const args = parseArgs(argv);
   if (args.help) {
-    console.log('Usage: main-agent-entryflow-traceability-check --requirement-record <json> [--source <contract.md>] [--report-path <json>] [--json]');
+    console.log(
+      'Usage: main-agent-entryflow-traceability-check --requirement-record <json> [--source <contract.md>] [--report-path <json>] [--json]'
+    );
     return 0;
   }
   const report = buildReport(args);
   const reportPath = path.resolve(
-    args.reportPath ?? path.join(path.dirname(path.resolve(args.requirementRecord!)), 'entry-flow-adaptation-matrix.json')
+    args.reportPath ??
+      path.join(
+        path.dirname(path.resolve(args.requirementRecord!)),
+        'entry-flow-adaptation-matrix.json'
+      )
   );
   fs.mkdirSync(path.dirname(reportPath), { recursive: true });
   fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
@@ -374,7 +439,11 @@ export function mainEntryFlowTraceabilityCheck(argv: string[]): number {
     decision: report.decision,
     blockingReasons: report.blockingReasons,
   };
-  process.stdout.write(args.json ? `${JSON.stringify(output, null, 2)}\n` : `entryflow_traceability=${report.decision}\n`);
+  process.stdout.write(
+    args.json
+      ? `${JSON.stringify(output, null, 2)}\n`
+      : `entryflow_traceability=${report.decision}\n`
+  );
   return report.decision === 'pass' ? 0 : 1;
 }
 
@@ -382,7 +451,13 @@ if (require.main === module) {
   try {
     process.exitCode = mainEntryFlowTraceabilityCheck(process.argv.slice(2));
   } catch (error) {
-    console.error(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : String(error) }, null, 2));
+    console.error(
+      JSON.stringify(
+        { ok: false, error: error instanceof Error ? error.message : String(error) },
+        null,
+        2
+      )
+    );
     process.exitCode = 2;
   }
 }

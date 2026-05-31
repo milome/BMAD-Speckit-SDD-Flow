@@ -29,10 +29,10 @@ export function aggregateFourDimensions(phaseScores: number[]): Record<string, n
   }
   const [p1, p2, p3, p4, p5, p6] = phaseScores;
   return {
-    '需求与设计能力': p1,
-    '代码与工程能力': Math.round((p2 * 0.25 + p5 * 0.1) / 0.35 * 100) / 100,
-    '质量与闭环能力': Math.round((p3 * 0.25 + p4 * 0.15) / 0.4 * 100) / 100,
-    '端到端交付能力': p6,
+    需求与设计能力: p1,
+    代码与工程能力: Math.round(((p2 * 0.25 + p5 * 0.1) / 0.35) * 100) / 100,
+    质量与闭环能力: Math.round(((p3 * 0.25 + p4 * 0.15) / 0.4) * 100) / 100,
+    端到端交付能力: p6,
   };
 }
 

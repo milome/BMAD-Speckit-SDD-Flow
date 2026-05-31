@@ -4,11 +4,7 @@
  */
 import * as fs from 'fs';
 import * as path from 'path';
-import {
-  applyTierAndVeto,
-  evaluateEpicVeto,
-  buildVetoItemIds,
-} from '../../packages/scoring/veto';
+import { applyTierAndVeto, evaluateEpicVeto, buildVetoItemIds } from '../../packages/scoring/veto';
 
 const rulesDir = path.resolve(process.cwd(), 'packages', 'scoring', 'rules');
 const opts = { rulesDir };
@@ -77,9 +73,30 @@ function main(): void {
   // 3. evaluateEpicVeto: 触发条件 ①
   try {
     const records = [
-      { veto_triggered: true, phase_score: 0, iteration_count: 0, first_pass: false, iteration_records: [], check_items: [] },
-      { veto_triggered: true, phase_score: 0, iteration_count: 0, first_pass: false, iteration_records: [], check_items: [] },
-      { veto_triggered: true, phase_score: 0, iteration_count: 0, first_pass: false, iteration_records: [], check_items: [] },
+      {
+        veto_triggered: true,
+        phase_score: 0,
+        iteration_count: 0,
+        first_pass: false,
+        iteration_records: [],
+        check_items: [],
+      },
+      {
+        veto_triggered: true,
+        phase_score: 0,
+        iteration_count: 0,
+        first_pass: false,
+        iteration_records: [],
+        check_items: [],
+      },
+      {
+        veto_triggered: true,
+        phase_score: 0,
+        iteration_count: 0,
+        first_pass: false,
+        iteration_records: [],
+        check_items: [],
+      },
     ];
     const out3 = evaluateEpicVeto({ storyRecords: records, epicStoryCount: 5 }, opts);
     if (out3.triggered && out3.triggeredConditions.includes('①_veto_count_ge3')) {
@@ -94,7 +111,13 @@ function main(): void {
 
   // 4. grep 验证：scoring/veto 被 parse-and-write 导入
   try {
-    const parseWritePath = path.join(process.cwd(), 'packages', 'scoring', 'orchestrator', 'parse-and-write.ts');
+    const parseWritePath = path.join(
+      process.cwd(),
+      'packages',
+      'scoring',
+      'orchestrator',
+      'parse-and-write.ts'
+    );
     const content = fs.readFileSync(parseWritePath, 'utf-8');
     if (content.includes("from '../veto'") || content.includes('from "../veto"')) {
       console.log('AC-4 (parse-and-write imports veto): PASS');

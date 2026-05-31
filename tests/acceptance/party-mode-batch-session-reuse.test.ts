@@ -84,7 +84,11 @@ describe('party-mode batch session reuse', () => {
           options: Record<string, unknown>
         ) => {
           sessionKey: string;
-          meta: { created_at: string; current_batch_index: number; current_batch_target_round: number };
+          meta: {
+            created_at: string;
+            current_batch_index: number;
+            current_batch_target_round: number;
+          };
         };
       };
 

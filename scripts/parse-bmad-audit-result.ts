@@ -58,7 +58,11 @@ export function parseBmadAuditResult(input: string): ParseBmadAuditResultInput {
     /status:\s*(PASS|FAIL)/,
     /状态:\s*(PASS|FAIL)/
   ) as 'PASS' | 'FAIL' | undefined;
-  const stage = matchCanonicalThenCompatibility(input, /stage:\s*([A-Za-z_]+)/, /阶段:\s*([A-Za-z_]+)/);
+  const stage = matchCanonicalThenCompatibility(
+    input,
+    /stage:\s*([A-Za-z_]+)/,
+    /阶段:\s*([A-Za-z_]+)/
+  );
   const reportPath = matchCanonicalThenCompatibility(
     input,
     /reportPath:\s*(.+)/,

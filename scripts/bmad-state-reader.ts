@@ -21,10 +21,13 @@ export interface StoryState {
     progress?: string;
     code?: string[];
   };
-  scores?: Record<string, {
-    rating: string;
-    dimensions: Record<string, number>;
-  }>;
+  scores?: Record<
+    string,
+    {
+      rating: string;
+      dimensions: Record<string, number>;
+    }
+  >;
 }
 
 export interface BmadProgress {
@@ -117,7 +120,7 @@ export function buildPaths(epic: string, story: string, epicSlug: string, storyS
     prd: `${outputDir}/prd.tasks-E${epic}-S${story}.json`,
     progress: `${outputDir}/progress.tasks-E${epic}-S${story}.txt`,
 
-    storyState: `.claude/state/stories/${epic}-${story}-progress.yaml`
+    storyState: `.claude/state/stories/${epic}-${story}-progress.yaml`,
   };
 }
 
@@ -129,7 +132,12 @@ if (require.main === module) {
     console.log('Artifacts:', JSON.stringify(current.state.artifacts, null, 2));
 
     if (current.state.epic_slug && current.state.story_slug) {
-      const paths = buildPaths(current.epic, current.story, current.state.epic_slug, current.state.story_slug);
+      const paths = buildPaths(
+        current.epic,
+        current.story,
+        current.state.epic_slug,
+        current.state.story_slug
+      );
       console.log('\n预期路径:', JSON.stringify(paths, null, 2));
     }
   }

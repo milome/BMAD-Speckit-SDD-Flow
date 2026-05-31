@@ -7,7 +7,10 @@ const ROOT = join(import.meta.dirname, '..', '..');
 describe('main agent ownership contract', () => {
   it('documents the main agent as the only interactive orchestrator', () => {
     const agentsRef = readFileSync(join(ROOT, 'docs', 'reference', 'agents.md'), 'utf8');
-    const storyGuide = readFileSync(join(ROOT, 'docs', 'how-to', 'bmad-story-assistant.md'), 'utf8');
+    const storyGuide = readFileSync(
+      join(ROOT, 'docs', 'how-to', 'bmad-story-assistant.md'),
+      'utf8'
+    );
 
     expect(agentsRef).toContain('Main Agent 是唯一交互式编排者');
     expect(agentsRef).toContain('子代理只负责 bounded execution');

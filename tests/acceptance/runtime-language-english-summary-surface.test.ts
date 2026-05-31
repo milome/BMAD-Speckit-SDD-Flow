@@ -4,7 +4,12 @@ import { resolveRuntimePolicy } from '../../scripts/runtime-governance';
 
 describe('runtime language english summary surface', () => {
   it('keeps summary-facing policy serialization machine-safe and english-oriented', () => {
-    const policy = resolveRuntimePolicy({ flow: 'story', stage: 'post_audit', storyId: '14.1', runId: 'run-en-001' } as any);
+    const policy = resolveRuntimePolicy({
+      flow: 'story',
+      stage: 'post_audit',
+      storyId: '14.1',
+      runId: 'run-en-001',
+    } as any);
     const json = stableStringifyPolicy(policy);
 
     expect(json).toContain('"triggerStage"');

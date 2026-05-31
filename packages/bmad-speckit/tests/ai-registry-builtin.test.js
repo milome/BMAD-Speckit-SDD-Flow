@@ -73,6 +73,19 @@ describe('ai-registry-builtin (Story 12.1 T2)', () => {
     assert.strictEqual(e.configTemplate.configDir, undefined);
   });
 
+  it('cursor, claude, and codex use project-local skills by default', () => {
+    const cursor = builtin.find((x) => x.id === 'cursor-agent');
+    const claude = builtin.find((x) => x.id === 'claude');
+    const codex = builtin.find((x) => x.id === 'codex');
+
+    assert.strictEqual(cursor.configTemplate.skillsDir, '.cursor/skills');
+    assert.strictEqual(cursor.configTemplate.skillScope, 'project');
+    assert.strictEqual(claude.configTemplate.skillsDir, '.claude/skills');
+    assert.strictEqual(claude.configTemplate.skillScope, 'project');
+    assert.strictEqual(codex.configTemplate.skillsDir, '.codex/skills');
+    assert.strictEqual(codex.configTemplate.skillScope, 'project');
+  });
+
   it('commandsDir or rulesDir at least one (condition) - except cody/tabnine per spec §4.3', () => {
     const exempt = ['cody', 'tabnine', 'generic']; // spec: cody configDir only, tabnine skillsDir only, generic from registry
     for (const entry of builtin) {
