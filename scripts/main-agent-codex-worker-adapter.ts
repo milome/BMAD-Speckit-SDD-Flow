@@ -3,6 +3,7 @@ import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import * as yaml from 'js-yaml';
 import type {
   ExecutionPacket,
   RecommendationPacket,
@@ -829,6 +830,79 @@ function strings(value: unknown): string[] {
   return Array.isArray(value) ? value.map((item) => text(item)).filter(Boolean) : [];
 }
 
+function objects(value: unknown): Record<string, unknown>[] {
+  return Array.isArray(value)
+    ? value.filter(
+        (item): item is Record<string, unknown> =>
+          Boolean(item) && typeof item === 'object' && !Array.isArray(item)
+      )
+    : [];
+}
+
+function uniqueStrings(values: string[]): string[] {
+  return [...new Set(values.map((value) => value.trim()).filter(Boolean))];
+}
+
+function implementationConfirmationFromSource(
+  projectRoot: string,
+  record: Record<string, unknown> | null
+): Record<string, unknown> {
+  const sourcePath = text(record?.sourcePath);
+  if (!sourcePath) return {};
+  const resolved = path.isAbsolute(sourcePath)
+    ? sourcePath
+    : path.resolve(projectRoot, sourcePath);
+  if (!fs.existsSync(resolved) || !fs.statSync(resolved).isFile()) return {};
+  const lines = fs.readFileSync(resolved, 'utf8').replace(/\r\n/g, '\n').split('\n');
+  const start = lines.findIndex((line) => /^implementationConfirmation:\s*$/u.test(line));
+  if (start < 0) return {};
+  let end = lines.length;
+  for (let index = start + 1; index < lines.length; index += 1) {
+    const line = lines[index];
+    if (line.trim() === '') continue;
+    if (/^\S/u.test(line) && !/^implementationConfirmation:\s*$/u.test(line)) {
+      end = index;
+      break;
+    }
+  }
+  const parsed = yaml.load(lines.slice(start, end).join('\n')) as unknown;
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+  const confirmation = (parsed as Record<string, unknown>).implementationConfirmation;
+  return confirmation && typeof confirmation === 'object' && !Array.isArray(confirmation)
+    ? (confirmation as Record<string, unknown>)
+    : {};
+}
+
+function confirmedExecutionRefs(input: {
+  projectRoot: string;
+  record: Record<string, unknown> | null;
+  packet: Packet;
+}): { traceRows: string[]; coveredRequirementIds: string[]; taskRefs: string[] } {
+  const confirmation = implementationConfirmationFromSource(input.projectRoot, input.record);
+  const traceRows = uniqueStrings([
+    ...strings(input.record?.traceRows),
+    ...objects(confirmation.traceRows).map((row) => text(row.id)),
+  ]);
+  const traceCoveredIds = objects(confirmation.traceRows).flatMap((row) => strings(row.covers));
+  const coveredRequirementIds = uniqueStrings([
+    ...strings(input.record?.coveredRequirementIds),
+    ...objects(confirmation.must).map((row) => text(row.id)),
+    ...objects(confirmation.notDone).map((row) => text(row.id)),
+    ...objects(confirmation.mustNot).map((row) => text(row.id)),
+    ...traceCoveredIds,
+  ]);
+  const taskRefs = uniqueStrings([
+    ...strings(input.record?.taskRefs),
+    ...objects(confirmation.atomicImplementationTaskList).map((row) => text(row.id)),
+    ...objects(confirmation.mustExecutionDecompositionMatrix).flatMap((row) =>
+      strings(row.atomicTaskRefs)
+    ),
+    ...objects(confirmation.traceRows).flatMap((row) => strings(row.taskRefs)),
+    input.packet.packetId,
+  ]);
+  return { traceRows, coveredRequirementIds, taskRefs };
+}
+
 function recordArchitectureHash(record: Record<string, unknown> | null): string {
   const state =
     record?.architectureConfirmationState &&
@@ -1316,10 +1390,15 @@ export function runCodexWorkerAdapter(input: {
         : undefined),
     architectureConfirmationHash,
   });
-  const traceRows = input.traceRows ?? strings(requirementRecord?.traceRows);
+  const confirmedRefs = confirmedExecutionRefs({
+    projectRoot,
+    record: requirementRecord,
+    packet,
+  });
+  const traceRows = input.traceRows ?? confirmedRefs.traceRows;
   const coveredRequirementIds =
-    input.coveredRequirementIds ?? strings(requirementRecord?.coveredRequirementIds);
-  const taskRefs = input.taskRefs ?? strings(requirementRecord?.taskRefs);
+    input.coveredRequirementIds ?? confirmedRefs.coveredRequirementIds;
+  const taskRefs = input.taskRefs ?? confirmedRefs.taskRefs;
   const subagentArtifactRefs = taskReportArtifactRefs({
     projectRoot,
     taskReport,
