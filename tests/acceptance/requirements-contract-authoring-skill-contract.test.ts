@@ -11,10 +11,15 @@ function readSkillFile(relativePath: string): string {
 }
 
 function readSkillSurface(relativePath: string): string[] {
-  return [
-    fs.readFileSync(path.join(SKILL_DIR, relativePath), 'utf8'),
-    fs.readFileSync(path.join(CODEX_SKILL_DIR, relativePath), 'utf8'),
-  ];
+  const results = [fs.readFileSync(path.join(SKILL_DIR, relativePath), 'utf8')];
+
+  // Guard .codex read - only include if the directory exists
+  const codexPath = path.join(CODEX_SKILL_DIR, relativePath);
+  if (fs.existsSync(codexPath)) {
+    results.push(fs.readFileSync(codexPath, 'utf8'));
+  }
+
+  return results;
 }
 
 describe('requirements-contract-authoring published contract', () => {

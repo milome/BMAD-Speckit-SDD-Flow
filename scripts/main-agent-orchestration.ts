@@ -1751,6 +1751,17 @@ function preConfirmationPaths(
 }
 
 function sourceMaterializationReceiptPath(root: string, requirementSetId: string): string {
+  // Validate requirementSetId to prevent path traversal
+  if (path.isAbsolute(requirementSetId)) {
+    throw new Error(`requirementSetId must not be absolute: ${requirementSetId}`);
+  }
+  if (requirementSetId.includes('..') || requirementSetId.includes(path.sep)) {
+    throw new Error(`requirementSetId must not contain path separators or traversal segments: ${requirementSetId}`);
+  }
+  if (!/^[A-Za-z0-9_-]+$/u.test(requirementSetId)) {
+    throw new Error(`requirementSetId must contain only alphanumeric characters, hyphens, and underscores: ${requirementSetId}`);
+  }
+
   return path.join(
     root,
     '_bmad-output',
@@ -2569,7 +2580,12 @@ function writtenIdRangesFromConfirmation(confirmation: Record<string, unknown>):
 
 function nextSourceAuditCommand(root: string, sourcePath: string): string {
   const source = toRootRelativePath(root, sourcePath);
-  return `pwsh.exe -NoLogo -NoProfile -Command "& { npx vitest run tests/acceptance/main-agent-source-materialization-before-audit.test.ts; npx vitest run tests/acceptance/main-agent-authoring-repair-preserve-existing.test.ts }" # audits written source: ${source}`;
+  const testCommand = 'npx vitest run tests/acceptance/main-agent-source-materialization-before-audit.test.ts; npx vitest run tests/acceptance/main-agent-authoring-repair-preserve-existing.test.ts';
+
+  if (process.platform === 'win32') {
+    return `pwsh.exe -NoLogo -NoProfile -Command "& { ${testCommand} }" # audits written source: ${source}`;
+  }
+  return `${testCommand} # audits written source: ${source}`;
 }
 
 function writeSourceMaterializationReceipt(input: {
