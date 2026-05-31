@@ -21,6 +21,12 @@ interface ParsedArgs {
   help?: boolean;
 }
 
+function isDirectRunRequiredCommandsFromAiTddManifestCli(entry: string | undefined): boolean {
+  return /(^|[\\/])run-required-commands-from-ai-tdd-manifest(\.[cm]?js|\.ts)?$/iu.test(
+    entry ?? ''
+  );
+}
+
 interface CommandRun {
   commandId: string;
   command: string;
@@ -1343,7 +1349,7 @@ export function mainRunRequiredCommandsFromAiTddManifest(argv: string[]): number
   return 0;
 }
 
-if (require.main === module) {
+if (require.main === module && isDirectRunRequiredCommandsFromAiTddManifestCli(process.argv[1])) {
   try {
     process.exitCode = mainRunRequiredCommandsFromAiTddManifest(process.argv.slice(2));
   } catch (error) {

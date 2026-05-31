@@ -102,7 +102,7 @@ Then switch to the AI host session and activate the Main Agent:
 $bmads
 ```
 
-If you are installing from a CI artifact instead of npm registry, use the same non-invasive path with the local tarball:
+If you are installing from a CI artifact instead of npm registry, use the same verified off-repo path with the local tarball:
 
 ```bash
 npx --yes --package ./bmad-speckit-sdd-flow-<version>.tgz bmad-speckit version

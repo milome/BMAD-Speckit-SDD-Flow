@@ -211,6 +211,7 @@ async function cmdRun(
       runId,
       scenario: 'eval_question',
       writeMode: 'single_file',
+      dataPath: path.resolve(process.cwd(), 'packages', 'scoring', 'data'),
       question_version: version,
     });
     console.log(`run 完成: runId=${runId}, scenario=eval_question, question_version=${version}`);

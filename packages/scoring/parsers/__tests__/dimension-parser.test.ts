@@ -30,9 +30,10 @@ describe('dimension-parser', () => {
     expect(stageToMode('spec')).toBe('prd');
     expect(stageToMode('plan')).toBe('prd');
     expect(stageToMode('gaps')).toBe('prd');
-    expect(stageToMode('tasks')).toBe('prd');
+    expect(stageToMode('tasks')).toBe('tasks');
     expect(stageToMode('arch')).toBe('arch');
-    expect(stageToMode('story')).toBe('code');
+    expect(stageToMode('story')).toBe('story');
+    expect(stageToMode('bugfix')).toBe('bugfix');
     expect(stageToMode('implement')).toBe('code');
     expect(stageToMode('post_impl')).toBe('code');
     expect(stageToMode('pr_review')).toBe('pr');

@@ -102,6 +102,29 @@ function hasCurrentPass(record: Record<string, unknown>, model: string): boolean
   return statusFor(record, model) === 'pass';
 }
 
+function isTerminalCloseout(record: Record<string, unknown>): boolean {
+  const closeout = object(record.closeout);
+  return (
+    text(record.status) === 'closed' ||
+    text(record.lastEventType) === 'record_closed' ||
+    text(closeout?.decision) === 'pass'
+  );
+}
+
+function isCurrentImplementationCompletion(input: {
+  pendingPacketId?: string | null;
+  pendingPacketTaskType?: string | null;
+  lastTaskReportPacketId?: string | null;
+  lastTaskReportStatus?: string | null;
+}): boolean {
+  return (
+    text(input.lastTaskReportStatus) === 'done' &&
+    text(input.pendingPacketTaskType) === 'implement' &&
+    text(input.pendingPacketId) !== '' &&
+    text(input.pendingPacketId) === text(input.lastTaskReportPacketId)
+  );
+}
+
 function nextModelFor(action: SixModelRuntimeNextAction): string | null {
   switch (action) {
     case 'enter_architecture_confirmation':
@@ -150,6 +173,8 @@ export function resolveSixModelRuntimeDecision(input: {
   record: Record<string, unknown> | null;
   attemptId: string;
   pendingPacketId?: string | null;
+  pendingPacketTaskType?: string | null;
+  lastTaskReportPacketId?: string | null;
   lastTaskReportStatus?: string | null;
 }): SixModelRuntimeDecision {
   const record = input.record ?? {};
@@ -172,7 +197,7 @@ export function resolveSixModelRuntimeDecision(input: {
     ready = false;
     transitionMode = 'blocked';
     reasonRefs.push(...buildOpenReconfirmationBlockingReasonRefs(record));
-  } else if (text(record.status) === 'closed') {
+  } else if (isTerminalCloseout(record)) {
     nextAction = 'record_closed';
     ready = true;
     transitionMode = 'auto_after_controlled_ingest';
@@ -201,7 +226,7 @@ export function resolveSixModelRuntimeDecision(input: {
     }
   } else if (currentMentalModel === 'implementation_readiness') {
     if (currentModelStatus === 'pass') {
-      if (input.lastTaskReportStatus === 'done' && !hasCurrentPass(record, 'execution_closure')) {
+      if (isCurrentImplementationCompletion(input) && !hasCurrentPass(record, 'execution_closure')) {
         nextAction = 'run_execution_closure_gate';
         ready = true;
         transitionMode = 'requires_user_or_gate';

@@ -21,6 +21,10 @@ interface ParsedArgs {
   help?: boolean;
 }
 
+function isDirectStrictCloseoutProofGateCli(entry: string | undefined): boolean {
+  return /(^|[\\/])strict-closeout-proof-gate(\.[cm]?js|\.ts)?$/iu.test(entry ?? '');
+}
+
 const ZERO_HASH = 'sha256:0000000000000000000000000000000000000000000000000000000000000000';
 const REBASELINE_EVENT_TYPES = new Set([
   'control_log_rebaseline_recorded',
@@ -749,7 +753,7 @@ export function mainStrictCloseoutProofGate(argv: string[]): number {
   return report.decision === 'pass' ? 0 : 1;
 }
 
-if (require.main === module) {
+if (require.main === module && isDirectStrictCloseoutProofGateCli(process.argv[1])) {
   try {
     process.exitCode = mainStrictCloseoutProofGate(process.argv.slice(2));
   } catch (error) {

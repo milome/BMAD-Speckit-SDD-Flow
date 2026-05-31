@@ -22,6 +22,12 @@ interface ParsedArgs {
   help?: boolean;
 }
 
+function isDirectImplementationReadinessGateCli(entry: string | undefined): boolean {
+  return /(^|[\\/])main-agent-implementation-readiness-gate(\.[cm]?js|\.ts)?$/iu.test(
+    entry ?? ''
+  );
+}
+
 function parseArgs(argv: string[]): ParsedArgs {
   const out: ParsedArgs = {};
   for (let index = 0; index < argv.length; index += 1) {
@@ -781,7 +787,7 @@ export function mainImplementationReadinessGate(argv: string[]): number {
   return evaluation.decision === 'pass' ? 0 : 1;
 }
 
-if (require.main === module) {
+if (require.main === module && isDirectImplementationReadinessGateCli(process.argv[1])) {
   try {
     process.exitCode = mainImplementationReadinessGate(process.argv.slice(2));
   } catch (error) {

@@ -25,6 +25,10 @@ interface ParsedArgs {
   help?: boolean;
 }
 
+function isDirectTargetArtifactRealizationGateCli(entry: string | undefined): boolean {
+  return /(^|[\\/])target-artifact-realization-gate(\.[cm]?js|\.ts)?$/iu.test(entry ?? '');
+}
+
 interface TargetItem {
   id: string;
   aliases?: string[];
@@ -1902,7 +1906,7 @@ export function mainTargetArtifactRealizationGate(argv: string[]): number {
   return text(report.decision) === 'pass' ? 0 : 1;
 }
 
-if (require.main === module) {
+if (require.main === module && isDirectTargetArtifactRealizationGateCli(process.argv[1])) {
   try {
     process.exitCode = mainTargetArtifactRealizationGate(process.argv.slice(2));
   } catch (error) {

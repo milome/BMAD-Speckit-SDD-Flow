@@ -4,9 +4,11 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import type {
+  CompiledPromptRef,
   ExecutionPacket,
   RecommendationPacket,
 } from '../../scripts/orchestration-dispatch-contract';
+import { packetArtifactPath } from '../../scripts/orchestration-dispatch-contract';
 import {
   buildMainAgentDispatchInstruction,
   claimMainAgentPendingPacket,
@@ -110,6 +112,95 @@ function writeTextFixture(filePath: string, value: string): void {
 
 function writeJsonFixture(filePath: string, value: unknown): void {
   writeTextFixture(filePath, `${JSON.stringify(value, null, 2)}\n`);
+}
+
+function removeTempRoot(root: string): void {
+  rmSync(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+}
+
+function copyCriticalAuditorConfig(root: string): void {
+  for (const relativePath of [
+    path.join('_bmad', '_config', 'audit-item-mapping.yaml'),
+    path.join('_bmad', '_config', 'code-reviewer-config.yaml'),
+  ]) {
+    writeTextFixture(path.join(root, relativePath), readFileSync(relativePath, 'utf8'));
+  }
+}
+
+function writeCurrentCompiledImplementPacket(
+  root: string,
+  record: Record<string, unknown>,
+  packetId = 'implement-completed'
+): { packetPath: string; compiledPromptRef: CompiledPromptRef } {
+  const requirementSetId = String(record.requirementSetId);
+  const traceDir = path.join(
+    root,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    requirementSetId,
+    'trace-execution',
+    packetId
+  );
+  const modelPacketPath = path.join(traceDir, 'model_packet.json');
+  const humanPromptPath = path.join(traceDir, 'human_prompt.txt');
+  const auditReceiptPath = path.join(traceDir, 'audit_receipt.json');
+  const goalExecutionPath = path.join(traceDir, 'goal_execution.md');
+  writeJsonFixture(modelPacketPath, {
+    schemaVersion: 'model-packet-fixture/v1',
+    sourceDocumentHash: record.sourceDocumentHash,
+    implementationConfirmationHash: record.implementationConfirmationHash,
+  });
+  writeTextFixture(humanPromptPath, 'compiled prompt fixture\n');
+  writeTextFixture(goalExecutionPath, '# goal fixture\n');
+  writeJsonFixture(auditReceiptPath, {
+    decision: 'pass',
+    goalCommand: {
+      mode: 'native_goal_document_ref',
+      documentHash: sha256Text(readFileSync(goalExecutionPath, 'utf8')),
+    },
+  });
+  const compiledPromptRef: CompiledPromptRef = {
+    modelPacketPath,
+    modelPacketHash: sha256Text(readFileSync(modelPacketPath, 'utf8')),
+    humanPromptPath,
+    humanPromptHash: sha256Text(readFileSync(humanPromptPath, 'utf8')),
+    auditReceiptPath,
+    auditReceiptHash: sha256Text(readFileSync(auditReceiptPath, 'utf8')),
+    goalExecutionPath,
+    goalExecutionHash: sha256Text(readFileSync(goalExecutionPath, 'utf8')),
+    sourceDocumentHash: String(record.sourceDocumentHash),
+    implementationConfirmationHash: String(record.implementationConfirmationHash),
+  };
+  const packet: ExecutionPacket = {
+    packetId,
+    parentSessionId: requirementSetId,
+    flow: 'standalone_tasks',
+    phase: 'implement',
+    taskType: 'implement',
+    role: 'implementation-worker',
+    inputArtifacts: [String(record.sourcePath ?? record.artifactPath ?? 'docs/requirements.md')],
+    allowedWriteScope: ['src/**', 'tests/**', 'docs/**', '_bmad-output/**'],
+    expectedDelta: 'fixture implementation packet',
+    successCriteria: ['compiledPromptRef exists'],
+    stopConditions: ['true blocker'],
+    authorityMode: 'compiled_implementation_confirmation',
+    compiledPromptRef,
+    executionStrategy: {
+      eventType: 'execution_strategy_selected',
+      strategyId: 'compiled_trace_direct',
+      availability: 'available',
+      selectedBy: 'policy',
+      strategyOptionsHash: sha256Text('fixture-options'),
+      selectedOptionHash: sha256Text('fixture-option'),
+      modelPacketHash: compiledPromptRef.modelPacketHash,
+      sourceDocumentHash: compiledPromptRef.sourceDocumentHash,
+      implementationConfirmationHash: compiledPromptRef.implementationConfirmationHash,
+    },
+  };
+  const packetPath = packetArtifactPath(root, requirementSetId, packetId);
+  writeJsonFixture(packetPath, packet);
+  return { packetPath, compiledPromptRef };
 }
 
 function writeConfirmedReadinessRecord(root: string): string {
@@ -657,7 +748,7 @@ describe('main-agent orchestration consumer', () => {
       );
       expect(surface.mainAgentStageSummary?.userFacingMessage).toContain('dispatch_implement');
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      removeTempRoot(root);
     }
   });
 
@@ -795,7 +886,7 @@ describe('main-agent orchestration consumer', () => {
 
       expect(result.status).toBe('completed');
       expect(result.dispatchInstruction?.nextAction).toBe('dispatch_implement');
-      expect(result.finalSurface.mainAgentNextAction).toBe('dispatch_implement');
+      expect(result.finalSurface.mainAgentNextAction).toBe('run_execution_closure_gate');
       expect(result.finalSurface.diagnostics.map((item) => item.category)).not.toContain(
         'repairable_readiness_audit_required'
       );
@@ -806,7 +897,7 @@ describe('main-agent orchestration consumer', () => {
       });
       expect(record).not.toHaveProperty('readinessBaselineActivation');
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      removeTempRoot(root);
     }
   }, 40000);
 
@@ -835,13 +926,13 @@ describe('main-agent orchestration consumer', () => {
 
       expect(receipt.controlPlane).toBe('main-agent-orchestration');
       expect(receipt.runLoop.status).toBe('completed');
-      expect(receipt.runLoop.finalNextAction).toBe('dispatch_implement');
+      expect(receipt.runLoop.finalNextAction).toBe('run_execution_closure_gate');
       const record = JSON.parse(readFileSync(recordPath, 'utf8'));
       expect(record.readinessBaselineMetadata).toMatchObject({
         status: 'current',
       });
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      removeTempRoot(root);
     }
   }, 40000);
 
@@ -1501,6 +1592,7 @@ describe('main-agent orchestration consumer', () => {
   it('falls back to audit write scope when active mapping lacks allowedWriteScope', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-audit-scope-fallback-'));
     try {
+      copyCriticalAuditorConfig(root);
       const recordPath = writeMinimalRequirementRecordContext(root, {
         flow: 'standalone_tasks',
         stage: 'implement',
@@ -1530,7 +1622,19 @@ describe('main-agent orchestration consumer', () => {
         execution_closure: { model: 'execution_closure', status: 'pass' },
         audit_review: { model: 'audit_review', status: 'not_established' },
       };
+      record.taskBindings = [
+        {
+          flow: 'standalone_tasks',
+          runId: record.runId,
+          allowedWriteScope: [],
+        },
+      ];
       writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
+      const { packetPath: completedPacketPath } = writeCurrentCompiledImplementPacket(
+        root,
+        record,
+        'implement-completed'
+      );
       writeJsonFixture(
         path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'index.json'),
         {
@@ -1558,7 +1662,7 @@ describe('main-agent orchestration consumer', () => {
         nextAction: 'dispatch_review',
         pendingPacket: {
           packetId: 'implement-completed',
-          packetPath: recordPath,
+          packetPath: completedPacketPath,
           packetKind: 'execution',
           status: 'completed',
           createdAt: '2026-05-26T00:00:00.000Z',
@@ -1589,7 +1693,7 @@ describe('main-agent orchestration consumer', () => {
       const packet = JSON.parse(readFileSync(instruction!.packetPath, 'utf8')) as ExecutionPacket;
       expect(packet.allowedWriteScope).toEqual(['docs/**', '_bmad-output/**', 'specs/**']);
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      removeTempRoot(root);
     }
   });
 

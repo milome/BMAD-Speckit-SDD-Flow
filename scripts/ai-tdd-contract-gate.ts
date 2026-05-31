@@ -2,7 +2,6 @@
 import { spawnSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { createRequire } from 'node:module';
 import {
   deriveTargetArtifactChecklist,
   evaluateCanonicalEventRegistryGate,
@@ -18,8 +17,7 @@ import {
 } from './target-artifact-realization-gate';
 import { evaluateStrictCloseoutProof } from './strict-closeout-proof-gate';
 
-const requireCommonJs = createRequire(__filename);
-const { buildDerivedContractExecutionManifest } = requireCommonJs(
+const { buildDerivedContractExecutionManifest } = require(
   '../_bmad/shared/contract-execution-manifest/build-contract-execution-manifest.js'
 ) as {
   buildDerivedContractExecutionManifest(input: {
@@ -61,6 +59,10 @@ interface ParsedArgs {
   redProofCommandTimeoutMs?: string;
   json?: boolean;
   help?: boolean;
+}
+
+function isDirectAiTddContractGateCli(entry: string | undefined): boolean {
+  return /(^|[\\/])ai-tdd-contract-gate(\.[cm]?js|\.ts)?$/iu.test(entry ?? '');
 }
 
 interface RequirementRow {
@@ -2813,7 +2815,7 @@ export function aiTddContractGateRequired(record: JsonObject, sourcePath?: strin
   );
 }
 
-if (require.main === module) {
+if (require.main === module && isDirectAiTddContractGateCli(process.argv[1])) {
   try {
     process.exitCode = mainAiTddContractGate(process.argv.slice(2));
   } catch (error) {

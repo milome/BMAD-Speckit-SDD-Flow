@@ -6977,6 +6977,8 @@ export function resolveMainAgentOrchestrationSurface(
         record: requirementRecord,
         attemptId: matrixAttemptId,
         pendingPacketId: scopedState.state?.pendingPacket?.packetId ?? null,
+        pendingPacketTaskType: packetTaskType(pendingPacket),
+        lastTaskReportPacketId: scopedState.state?.lastTaskReport?.packetId ?? null,
         lastTaskReportStatus: scopedState.state?.lastTaskReport?.status ?? null,
       })
     : null;
@@ -6987,11 +6989,19 @@ export function resolveMainAgentOrchestrationSurface(
           decision: sixModelRuntimeDecision,
         })
       : null;
-  const actionNextAction = sixModelRuntimeDecision?.nextAction ?? action.nextAction;
-  const actionReady = sixModelRuntimeDecision?.ready ?? action.ready;
+  const sixModelRuntimeDecisionAuthoritative =
+    Boolean(sixModelRuntimeDecision?.currentMentalModel) &&
+    sixModelRuntimeDecision?.nextAction !== 'record_closed';
+  const actionNextAction = sixModelRuntimeDecisionAuthoritative
+    ? sixModelRuntimeDecision?.nextAction
+    : action.nextAction;
+  const actionReady = sixModelRuntimeDecisionAuthoritative
+    ? sixModelRuntimeDecision?.ready
+    : action.ready;
   const splitBrainBlockerPath =
     input.projectRoot &&
     sixModelRuntimeDecision &&
+    sixModelRuntimeDecisionAuthoritative &&
     scopedState.state?.nextAction &&
     scopedState.state.nextAction !== sixModelRuntimeDecision.nextAction
       ? writeSplitBrainBlocker({
@@ -7179,6 +7189,8 @@ export function ingestMainAgentTaskReport(
     record: requirementRecord,
     attemptId: report.packetId,
     pendingPacketId: evidenceState.pendingPacket?.packetId ?? null,
+    pendingPacketTaskType: packetTaskType(packet),
+    lastTaskReportPacketId: report.packetId,
     lastTaskReportStatus: report.status,
   });
   const matrixPath = writeSixModelRuntimeDecision({ projectRoot, decision: matrix });

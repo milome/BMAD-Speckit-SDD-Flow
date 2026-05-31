@@ -443,7 +443,7 @@ function stageFromConfirmedImplementationEntry(record: JsonObject, flow: Runtime
     ['direct', 'legacy', 'speckit'].includes(workflowAdapter) &&
     ['user_confirmed', 'in_progress'].includes(status)
   ) {
-    return 'requirement_confirmation';
+    return 'implement';
   }
   return '';
 }

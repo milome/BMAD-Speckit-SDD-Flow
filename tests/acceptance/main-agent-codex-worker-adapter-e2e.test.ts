@@ -161,6 +161,39 @@ function writeStandaloneRecordWithoutImplementationEntryGate(root: string): void
     sourceDocumentHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
     implementationConfirmationHash:
       'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+    currentMentalModel: 'implementation_readiness',
+    sixModelResults: {
+      requirement_confirmation: {
+        model: 'requirement_confirmation',
+        status: 'pass',
+        blockingReasons: [],
+      },
+      architecture_confirmation: {
+        model: 'architecture_confirmation',
+        status: 'pass',
+        blockingReasons: [],
+      },
+      implementation_readiness: {
+        model: 'implementation_readiness',
+        status: 'pass',
+        blockingReasons: [],
+      },
+      execution_closure: {
+        model: 'execution_closure',
+        status: 'not_established',
+        blockingReasons: ['execution_closure_not_established'],
+      },
+      audit_review: {
+        model: 'audit_review',
+        status: 'not_established',
+        blockingReasons: ['audit_review_not_established'],
+      },
+      delivery_confirmation: {
+        model: 'delivery_confirmation',
+        status: 'not_established',
+        blockingReasons: ['delivery_confirmation_not_established'],
+      },
+    },
     architectureConfirmationState: {
       status: 'active',
       currentArchitectureConfirmationHash:
