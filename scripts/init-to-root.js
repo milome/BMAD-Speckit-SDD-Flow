@@ -720,13 +720,33 @@ function writeDefaultRuntimeContext(targetDir, pkgRoot) {
     console.warn('Skip runtime-context: write-runtime-context.cjs not found');
     return;
   }
-  const targetContext = path.join(targetDir, '_bmad-output', 'runtime', 'context', 'project.json');
-  const r = spawnSync(process.execPath, [script, targetContext, 'story', 'story_create'], {
+  const targetContext = path.join(targetDir, '_bmad-output', 'runtime', 'context', 'bootstrap.json');
+  const r = spawnSync(process.execPath, [script, targetContext, 'unknown', 'specify'], {
     cwd: targetDir,
     stdio: 'inherit',
   });
   if (r.status !== 0) {
     console.warn('write-runtime-context exited', r.status);
+  }
+}
+
+function retargetRuntimeRegistryToBootstrap(targetDir) {
+  const registryPath = path.join(targetDir, '_bmad-output', 'runtime', 'registry.json');
+  if (!fs.existsSync(registryPath)) {
+    return;
+  }
+  try {
+    const registry = JSON.parse(fs.readFileSync(registryPath, 'utf8'));
+    registry.projectContextPath = path.join('_bmad-output', 'runtime', 'context', 'bootstrap.json');
+    registry.activeScope = {
+      scopeType: 'project',
+      resolvedContextPath: registry.projectContextPath,
+      reason: 'bootstrap context only; no active requirement record is selected during init',
+    };
+    registry.updatedAt = new Date().toISOString();
+    fs.writeFileSync(registryPath, `${JSON.stringify(registry, null, 2)}\n`, 'utf8');
+  } catch (error) {
+    console.warn('retarget runtime-registry bootstrap context failed', error.message || error);
   }
 }
 
@@ -1117,6 +1137,7 @@ syncArchitectureGateConfig(TARGET, path.join(TARGET, '_bmad'));
 
 writeDefaultRuntimeRegistry(TARGET, PKG_ROOT);
 writeDefaultRuntimeContext(TARGET, PKG_ROOT);
+retargetRuntimeRegistryToBootstrap(TARGET);
 writeConsumerBmadSpeckitBinWrappers(TARGET, PKG_ROOT);
 materializeSkillMdByLanguage(TARGET);
 

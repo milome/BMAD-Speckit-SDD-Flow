@@ -52,6 +52,19 @@ describe('install to consumer ->CLI acceptance', () => {
       expect(
         existsSync(join(target, '_bmad-output', 'config', 'bmad-speckit-install-manifest.json'))
       ).toBe(true);
+      expect(
+        existsSync(join(target, '_bmad-output', 'runtime', 'requirement-records', 'index.json'))
+      ).toBe(false);
+      expect(
+        existsSync(
+          join(target, '_bmad-output', 'runtime', 'requirement-records', 'REQ-story_story_create')
+        )
+      ).toBe(false);
+      expect(
+        existsSync(
+          join(target, '_bmad-output', 'runtime', 'requirement-records', 'REQ-story-story_create')
+        )
+      ).toBe(false);
 
       const out = runRepoCli('check', target);
       expect(out).toMatch(/Check OK|OK/i);
@@ -108,6 +121,19 @@ describe('install to consumer ->CLI acceptance', () => {
       expect(
         existsSync(join(target, '_bmad-output', 'config', 'bmad-speckit-install-manifest.json'))
       ).toBe(true);
+      expect(
+        existsSync(join(target, '_bmad-output', 'runtime', 'requirement-records', 'index.json'))
+      ).toBe(false);
+      expect(
+        existsSync(
+          join(target, '_bmad-output', 'runtime', 'requirement-records', 'REQ-story_story_create')
+        )
+      ).toBe(false);
+      expect(
+        existsSync(
+          join(target, '_bmad-output', 'runtime', 'requirement-records', 'REQ-story-story_create')
+        )
+      ).toBe(false);
 
       const out = run('npx bmad-speckit check', target);
       expect(out).toMatch(/Check OK|OK/i);

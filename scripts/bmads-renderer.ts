@@ -73,6 +73,17 @@ type UpstreamArtifact = {
 
 type UpstreamArtifacts = Record<ArtifactKind, UpstreamArtifact[]>;
 
+const QUICK_START_MESSAGE =
+  '当前项目尚未创建需求契约。BMAD 不会把初始化占位状态当作真实需求。请先创建或导入一个可确认的需求源文档。';
+
+const QUICK_START_ENTRIES = [
+  '创建产品/功能需求契约',
+  '创建 Bugfix 需求契约',
+  '创建独立任务契约',
+  '导入已有需求文档',
+  '查看当前阻塞原因',
+];
+
 function parseArgs(argv: string[]): RenderOptions {
   const options: RenderOptions = { projectRoot: process.cwd() };
   for (let index = 0; index < argv.length; index += 1) {
@@ -286,11 +297,22 @@ export function buildBmadsOutput(projectRootInput = process.cwd()): Record<strin
       : null,
     readiness,
     orchestration: {
+      source: orchestration.source,
       nextAction: orchestration.mainAgentNextAction,
       ready: orchestration.mainAgentReady,
       pendingPacketStatus: orchestration.pendingPacketStatus,
       sessionId: orchestration.sessionId,
+      stageSummary: orchestration.mainAgentStageSummary,
     },
+    quickStart:
+      orchestration.source === 'no_active_requirement'
+        ? {
+            status: 'no_active_requirement',
+            nextRequiredAction: 'contract_authoring_required',
+            message: QUICK_START_MESSAGE,
+            entries: QUICK_START_ENTRIES,
+          }
+        : null,
     advisory: runtime.entry.advisory,
     commandHints: [
       'bmads',
@@ -327,10 +349,22 @@ export function renderBmads(output: Record<string, unknown>): string {
   const readiness = output.readiness as ReadinessStatus;
   const artifacts = output.artifacts as UpstreamArtifacts;
   const orchestration = output.orchestration as {
+    source?: string;
     nextAction: string | null;
     ready: boolean | null;
     pendingPacketStatus: string;
     sessionId: string;
+    stageSummary?: {
+      currentMentalModelStatus?: string | null;
+      userFacingMessage?: string;
+      blockingReasons?: string[];
+    } | null;
+  };
+  const quickStart = output.quickStart as null | {
+    status: string;
+    nextRequiredAction: string;
+    message: string;
+    entries: string[];
   };
   const contractStatus = output.contractStatus as Record<string, boolean>;
   const advisory = output.advisory as { bmadHelpCommand: string; message: string };
@@ -388,10 +422,36 @@ export function renderBmads(output: Record<string, unknown>): string {
     '',
     '## Main Agent',
     '',
+    `Source: ${orchestration.source ?? 'unknown'}`,
     `Next action: ${orchestration.nextAction ?? 'none'}`,
     `Ready: ${String(orchestration.ready)}`,
     `Pending packet: ${orchestration.pendingPacketStatus}`,
     `Session: ${orchestration.sessionId}`,
+    ...(orchestration.stageSummary?.currentMentalModelStatus
+      ? [`Mental model status: ${orchestration.stageSummary.currentMentalModelStatus}`]
+      : []),
+    ...(orchestration.stageSummary?.userFacingMessage
+      ? [`Message: ${orchestration.stageSummary.userFacingMessage}`]
+      : []),
+    ...(orchestration.stageSummary?.blockingReasons &&
+    orchestration.stageSummary.blockingReasons.length > 0
+      ? [
+          `Blocking reasons: ${orchestration.stageSummary.blockingReasons.join(', ')}`,
+        ]
+      : []),
+    ...(quickStart
+      ? [
+          '',
+          '## Quick Start',
+          '',
+          quickStart.message,
+          '',
+          `Status: ${quickStart.status}`,
+          `Next required action: ${quickStart.nextRequiredAction}`,
+          '',
+          ...quickStart.entries.map((item) => `- ${item}`),
+        ]
+      : []),
     '',
     '## Contract Status',
     '',

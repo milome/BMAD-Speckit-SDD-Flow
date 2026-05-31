@@ -769,6 +769,45 @@ function writeConfirmedReadinessRecord(root: string): string {
 }
 
 describe('main-agent orchestration consumer', () => {
+  it('returns no-active-requirement surface instead of readiness when no active record exists', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-no-active-'));
+    try {
+      mkdirSync(path.join(root, '_bmad-output', 'runtime', 'context'), { recursive: true });
+      writeFileSync(
+        path.join(root, '_bmad-output', 'runtime', 'context', 'bootstrap.json'),
+        '{"flow":"unknown","stage":"specify"}\n',
+        'utf8'
+      );
+
+      const surface = resolveMainAgentOrchestrationSurface({
+        projectRoot: root,
+        host: 'codex',
+      });
+
+      expect(surface.source).toBe('no_active_requirement');
+      expect(surface.mainAgentReady).toBe(false);
+      expect(surface.mainAgentCanContinue).toBe(false);
+      expect(surface.continueDecision).toBe('blocked');
+      expect(surface.mainAgentNextAction).toBe('contract_authoring_required');
+      expect(surface.mainAgentStageSummary.currentMentalModelStatus).toBe(
+        'no_active_requirement'
+      );
+      expect(surface.mainAgentStageSummary.blockingReasons).toEqual([
+        'no_active_requirement',
+        'contract_authoring_required',
+      ]);
+      expect(surface.mainAgentStageSummary.nextAction).toBe('contract_authoring_required');
+      expect(surface.mainAgentStageSummary.nextAction).not.toBe('run_implementation_readiness_gate');
+      expect(surface.diagnostics[0]).toMatchObject({
+        category: 'active_requirement',
+        repairAction: 'contract_authoring_required',
+        automaticRepairAvailable: false,
+      });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('projects the current six-model stage and next action for user-facing command output', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-stage-summary-'));
     try {

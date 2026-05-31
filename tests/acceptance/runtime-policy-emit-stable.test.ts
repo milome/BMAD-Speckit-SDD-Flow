@@ -127,7 +127,7 @@ describe('emit-runtime-policy vs bmad-help runtime policy facade (stable JSON)',
     fs.rmSync(root, { recursive: true, force: true });
   }, 60000);
 
-  it('emit fails loud when requirement-record context is absent', () => {
+  it('emits no-active projection without materializing a legacy bridge record when requirement-record context is absent', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'bmad-rp-no-reg-'));
     fs.cpSync(path.join(repoRoot, '_bmad'), path.join(root, '_bmad'), { recursive: true });
     const chunks: string[] = [];
@@ -143,14 +143,38 @@ describe('emit-runtime-policy vs bmad-help runtime policy facade (stable JSON)',
     };
     try {
       const code = mainEmitRuntimePolicy(['--cwd', root]);
-      expect(code).toBe(1);
+      expect(code).toBe(0);
     } finally {
       process.stdout.write = origWrite;
       console.error = origError;
-      fs.rmSync(root, { recursive: true, force: true });
     }
-    expect(chunks.join('')).toBe('');
-    expect(errors.join('\n')).toMatch(/emit-runtime-policy:/);
+    const policy = JSON.parse(chunks.join(''));
+    expect(policy).toMatchObject({
+      schemaVersion: 'runtime-policy/no-active-requirement/v1',
+      status: 'no_active_requirement',
+      decision: 'contract_authoring_required',
+      activeRequirement: null,
+      nextRequiredAction: 'contract_authoring_required',
+    });
+    expect(policy.quickStart).toMatchObject({
+      message:
+        '当前项目尚未创建需求契约。BMAD 不会把初始化占位状态当作真实需求。请先创建或导入一个可确认的需求源文档。',
+      entries: [
+        '创建产品/功能需求契约',
+        '创建 Bugfix 需求契约',
+        '创建独立任务契约',
+        '导入已有需求文档',
+        '查看当前阻塞原因',
+      ],
+    });
+    expect(errors.join('\n')).toBe('');
+    expect(
+      fs.existsSync(path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'index.json'))
+    ).toBe(false);
+    expect(
+      fs.existsSync(path.join(root, '_bmad-output', 'runtime', 'requirement-records'))
+    ).toBe(false);
+    fs.rmSync(root, { recursive: true, force: true });
   }, 20_000);
 
   it('emit fails loud when flow/stage are invalid in requirement record', () => {

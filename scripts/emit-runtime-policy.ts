@@ -25,6 +25,7 @@ import { readRuntimeContext, type RuntimeContextFile } from './runtime-context';
 import {
   requirementRecordIndexPath,
   requirementRecordsRoot,
+  isNoActiveRequirementError,
   resolveActiveRequirement,
   resolvedRuntimeContextToRuntimeContext,
   type ResolvedRuntimeContext,
@@ -47,6 +48,8 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
       out.requirementSetId = argv[++i];
     } else if (a === '--run-id' && argv[i + 1]) {
       out.runId = argv[++i];
+    } else if (a === '--legacy-registry-bridge') {
+      out.legacyRegistryBridge = 'true';
     }
   }
   return out;
@@ -79,6 +82,7 @@ export function loadPolicyContextFromRegistry(
     recordId?: string;
     requirementSetId?: string;
     runId?: string;
+    legacyRegistryBridge?: boolean;
   }
 ): {
   resolvedContextPath: string;
@@ -93,7 +97,9 @@ export function loadPolicyContextFromRegistry(
   runId?: string;
   artifactRoot?: string;
 } {
-  ensureRegistryBackedRequirementRecordBridge(root, options);
+  if (options?.legacyRegistryBridge === true) {
+    ensureRegistryBackedRequirementRecordBridge(root, options);
+  }
   const resolvedRuntimeContext = resolveActiveRequirement({
     root,
     recordId: options?.recordId,
@@ -113,6 +119,30 @@ export function loadPolicyContextFromRegistry(
     storySlug: runtimeContext.storySlug,
     runId: runtimeContext.runId,
     artifactRoot: runtimeContext.artifactRoot,
+  };
+}
+
+function noActiveRequirementPolicy(root: string): Record<string, unknown> {
+  return {
+    schemaVersion: 'runtime-policy/no-active-requirement/v1',
+    status: 'no_active_requirement',
+    decision: 'contract_authoring_required',
+    flow: null,
+    stage: null,
+    projectRoot: root,
+    activeRequirement: null,
+    nextRequiredAction: 'contract_authoring_required',
+    quickStart: {
+      message:
+        '当前项目尚未创建需求契约。BMAD 不会把初始化占位状态当作真实需求。请先创建或导入一个可确认的需求源文档。',
+      entries: [
+        '创建产品/功能需求契约',
+        '创建 Bugfix 需求契约',
+        '创建独立任务契约',
+        '导入已有需求文档',
+        '查看当前阻塞原因',
+      ],
+    },
   };
 }
 
@@ -650,16 +680,18 @@ export function mainEmitRuntimePolicy(argv: string[]): number {
   }
 
   try {
-    try {
-      validateActiveRuntimeContextBeforeBridge(root, {
-        recordId: args.recordId,
-        requirementSetId: args.requirementSetId,
-        runId: args.runId,
-      });
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      console.error(`emit-runtime-policy: ${msg}`);
-      return 1;
+    if (args.legacyRegistryBridge === 'true') {
+      try {
+        validateActiveRuntimeContextBeforeBridge(root, {
+          recordId: args.recordId,
+          requirementSetId: args.requirementSetId,
+          runId: args.runId,
+        });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        console.error(`emit-runtime-policy: ${msg}`);
+        return 1;
+      }
     }
 
     let loaded: ReturnType<typeof loadPolicyContextFromRegistry>;
@@ -668,8 +700,13 @@ export function mainEmitRuntimePolicy(argv: string[]): number {
         recordId: args.recordId,
         requirementSetId: args.requirementSetId,
         runId: args.runId,
+        legacyRegistryBridge: args.legacyRegistryBridge === 'true',
       });
     } catch (e) {
+      if (isNoActiveRequirementError(e)) {
+        process.stdout.write(`${stableStringifyPolicy(noActiveRequirementPolicy(root))}\n`);
+        return 0;
+      }
       const msg = e instanceof Error ? e.message : String(e);
       console.error(`emit-runtime-policy: ${msg}`);
       return 1;

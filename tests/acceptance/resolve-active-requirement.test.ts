@@ -5,6 +5,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
+  NO_ACTIVE_REQUIREMENT,
   requirementRecordIndexPath,
   requirementRecordsRoot,
   resolveActiveRequirement,
@@ -246,6 +247,11 @@ function writeFakeReqTraceSkill(projectRoot: string): void {
 }
 
 describe('Active Requirement Resolver / ResolvedRuntimeContext', () => {
+  it('fails closed with NO_ACTIVE_REQUIREMENT when no active requirement exists', () => {
+    expect(() => resolveActiveRequirement({ root })).toThrow(NO_ACTIVE_REQUIREMENT);
+    expect(fs.existsSync(requirementRecordIndexPath(root))).toBe(false);
+  });
+
   it('resolves active requirement from requirement-records index without legacy project context', () => {
     const { recordPath, indexPath } = writeRequirementRecord();
     expect(

@@ -6,6 +6,25 @@ import type { ImplementationEntryGate, RuntimeFlowId } from './runtime-governanc
 import type { RuntimeContextFile } from './runtime-context';
 
 const FLOWS = new Set(['story', 'bugfix', 'standalone_tasks', 'epic', 'unknown']);
+export const NO_ACTIVE_REQUIREMENT = 'NO_ACTIVE_REQUIREMENT' as const;
+
+export class NoActiveRequirementError extends Error {
+  readonly code = NO_ACTIVE_REQUIREMENT;
+
+  constructor(root: string) {
+    super(
+      `NO_ACTIVE_REQUIREMENT: no active requirement record found under ${requirementRecordsRoot(root)}; nextRequiredAction=contract_authoring_required`
+    );
+    this.name = 'NoActiveRequirementError';
+  }
+}
+
+export function isNoActiveRequirementError(error: unknown): boolean {
+  return (
+    error instanceof NoActiveRequirementError ||
+    (error instanceof Error && error.message.includes(NO_ACTIVE_REQUIREMENT))
+  );
+}
 
 function isDirectResolveActiveRequirementCli(entry: string | undefined): boolean {
   return /(^|[\\/])resolve-active-requirement(\.[cm]?js|\.ts)?$/iu.test(entry ?? '');
@@ -422,6 +441,10 @@ function failWithProjection(root: string, projection: RequirementIndexRepairProj
   );
 }
 
+function hasExplicitRequirementSelector(input: ResolveActiveRequirementInput): boolean {
+  return Boolean(input.recordId || input.requirementSetId || input.runId);
+}
+
 function stageFromConfirmedImplementationEntry(record: JsonObject, flow: RuntimeFlowId): string {
   const status = firstText(record.status);
   const entryFlow = firstText(
@@ -495,6 +518,12 @@ export function resolveActiveRequirement(
     const scanned = scanRequirementRecordCandidates(root, input);
     const scanResult = selectScannedCandidate(scanned);
     if (!scanResult.selected) {
+      if (
+        !hasExplicitRequirementSelector(input) &&
+        scanResult.reason === 'blocked_missing_active_requirement'
+      ) {
+        throw new NoActiveRequirementError(root);
+      }
       repairProjection = emitRepairProjection(root, {
         requirementSetId: null,
         recordPath: null,
@@ -542,6 +571,9 @@ export function resolveActiveRequirement(
     const scanned = scanRequirementRecordCandidates(root, {});
     const scanResult = selectScannedCandidate(scanned);
     if (!scanResult.selected) {
+      if (scanResult.reason === 'blocked_missing_active_requirement') {
+        throw new NoActiveRequirementError(root);
+      }
       repairProjection = emitRepairProjection(root, {
         requirementSetId: null,
         recordPath: null,

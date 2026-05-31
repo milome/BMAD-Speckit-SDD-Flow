@@ -73,6 +73,7 @@ import { buildReadinessDriftProjection } from '../packages/scoring/governance/re
 import { loadAndDedupeRecords } from '../packages/scoring/query/loader';
 import { readGovernanceRemediationConfig } from './governance-remediation-config';
 import type { ResolvedRuntimeContext } from './resolve-active-requirement';
+import { isNoActiveRequirementError } from './resolve-active-requirement';
 import { runControlledReadinessAuditBridge } from './controlled-readiness-audit-bridge';
 import { appendControlEventAndReplay } from './requirement-record-control-store';
 import { mainImplementationReadinessGate } from './main-agent-implementation-readiness-gate';
@@ -116,6 +117,7 @@ export type MainAgentOrchestrationSource =
   | 'requirement_record'
   | 'reviewer_closeout'
   | 'implementation_entry_gate'
+  | 'no_active_requirement'
   | 'none';
 export type MainAgentPendingPacketStatus =
   | 'none'
@@ -460,7 +462,10 @@ function loadRuntimeContextForMainAgent(
       requirementSetId: input.requirementSetId,
       runId: input.runId,
     }).runtimeContext;
-  } catch {
+  } catch (error) {
+    if (isNoActiveRequirementError(error)) {
+      return null;
+    }
     return null;
   }
 }
@@ -656,6 +661,59 @@ function buildMainAgentStageSummary(input: {
     blockingReasons,
     lastEventType: normalizeText(input.record.lastEventType) || null,
     userFacingMessage: `当前六心智阶段: ${currentMentalModel ?? 'unknown'} (${statusText}); 下一步: ${nextActionText}.`,
+  };
+}
+
+function buildNoActiveRequirementStageSummary(): MainAgentStageSummary {
+  return {
+    schemaVersion: 'main-agent-stage-summary/v1',
+    recordId: null,
+    requirementSetId: null,
+    currentMentalModel: null,
+    currentMentalModelStatus: 'no_active_requirement',
+    currentStageOrdinal: null,
+    totalStages: SIX_MENTAL_MODEL_SEQUENCE.length,
+    nextAction: 'contract_authoring_required',
+    nextMentalModel: 'requirement_confirmation',
+    ready: false,
+    blocked: true,
+    blockingReasons: ['no_active_requirement', 'contract_authoring_required'],
+    lastEventType: null,
+    userFacingMessage:
+      '当前项目尚未创建需求契约。BMAD 不会把初始化占位状态当作真实需求。请先创建或导入一个可确认的需求源文档。',
+  };
+}
+
+function buildNoActiveRequirementSurface(): MainAgentOrchestrationSurface {
+  return {
+    source: 'no_active_requirement',
+    sessionId: null,
+    orchestrationStatePath: null,
+    orchestrationState: null,
+    pendingPacketStatus: 'none',
+    pendingPacket: null,
+    fourSignal: null,
+    latestGate: null,
+    gatesLoop: null,
+    closeout: null,
+    drift: null,
+    diagnostics: [
+      {
+        category: 'active_requirement',
+        authoritativeSource: '_bmad-output/runtime/requirement-records/index.json',
+        sourceChecked: ['_bmad-output/runtime/requirement-records/index.json'],
+        repairAction: 'contract_authoring_required',
+        automaticRepairAvailable: false,
+        nextCommand: 'bmads',
+        message:
+          'NO_ACTIVE_REQUIREMENT: create or import a requirement contract and complete requirement confirmation before orchestration can continue.',
+      },
+    ],
+    mainAgentCanContinue: false,
+    continueDecision: 'blocked',
+    mainAgentNextAction: 'contract_authoring_required',
+    mainAgentReady: false,
+    mainAgentStageSummary: buildNoActiveRequirementStageSummary(),
   };
 }
 
@@ -1042,6 +1100,24 @@ function pendingPacketMatchesAction(input: {
   }
   const packetKind = input.state?.pendingPacket?.packetKind;
   return packetKind === 'resume' || packetKind === 'recommendation';
+}
+
+function bridgeCompletedRemediationState(input: {
+  pendingPacketStatus: MainAgentPendingPacketStatus;
+  pendingPacket: RecommendationPacket | ExecutionPacket | ResumePacket | null;
+  state: OrchestrationState | null;
+}): boolean {
+  if (input.pendingPacketStatus !== 'completed' || input.state?.lastTaskReport?.status !== 'done') {
+    return false;
+  }
+  if (packetTaskType(input.pendingPacket) === 'remediate') {
+    return true;
+  }
+  const packetId = normalizeText(input.state?.pendingPacket?.packetId);
+  if (packetId.startsWith('remediate-')) {
+    return true;
+  }
+  return input.state?.nextAction === 'rerun_gate';
 }
 
 function isCodexSmokeOnlyTaskReport(report: TaskReport): boolean {
@@ -7015,6 +7091,9 @@ export function resolveMainAgentOrchestrationSurface(
   const scopedState = input.projectRoot
     ? resolveScopedOrchestrationState(input.projectRoot, runtimeContext)
     : { sessionId: null, statePath: null, state: null };
+  if (!requirementRecord && !scopedState.state && !implementationEntryGate) {
+    return buildNoActiveRequirementSurface();
+  }
   const pendingPacket = readPendingPacketPayload(scopedState.state);
   const pendingPacketStatus = normalizePendingPacketStatus(scopedState.state, pendingPacket);
   const fourSignal = scopedState.state?.fourSignal ?? null;
@@ -7113,11 +7192,15 @@ export function resolveMainAgentOrchestrationSurface(
     bridgeRecordWithoutControlledGate &&
     input.stage === 'implement' &&
     action.nextAction === 'run_implementation_readiness_gate';
+  const stateOnlyControlledRemediation =
+    !requirementRecord && Boolean(scopedState.state) && action.source === 'orchestration_state';
   const bridgeCompletedRemediationReturnsToImplement =
-    runtimeRegistryBridgeRecord &&
-    pendingPacketStatus === 'completed' &&
-    packetTaskType(pendingPacket) === 'remediate' &&
-    scopedState.state?.lastTaskReport?.status === 'done';
+    (runtimeRegistryBridgeRecord || stateOnlyControlledRemediation) &&
+    bridgeCompletedRemediationState({
+      pendingPacketStatus,
+      pendingPacket,
+      state: scopedState.state,
+    });
   const sixModelRuntimeDecisionAuthoritative =
     Boolean(sixModelRuntimeDecision?.currentMentalModel) &&
     sixModelRuntimeDecision?.nextAction !== 'record_closed' &&

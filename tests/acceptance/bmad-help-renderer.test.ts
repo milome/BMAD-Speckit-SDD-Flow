@@ -18,6 +18,18 @@ function makeRoot(): string {
   return root;
 }
 
+function makeBootstrapOnlyRoot(): string {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'bmads-empty-state-'));
+  fs.cpSync(path.resolve('_bmad'), path.join(root, '_bmad'), { recursive: true });
+  fs.mkdirSync(path.join(root, '_bmad-output', 'runtime', 'context'), { recursive: true });
+  fs.writeFileSync(
+    path.join(root, '_bmad-output', 'runtime', 'context', 'bootstrap.json'),
+    '{"flow":"unknown","stage":"specify"}\n',
+    'utf8'
+  );
+  return root;
+}
+
 function existingFiles(files: string[]): string[] {
   return files.filter((file) => fs.existsSync(path.resolve(file)));
 }
@@ -144,6 +156,28 @@ describe('bmad-help and BMADS runtime boundary', () => {
       );
       expect(JSON.stringify(output)).toContain('scripts/orchestration-dispatch-contract.ts');
       expect(JSON.stringify(output)).toContain('_bmad/_config/stage-mapping.yaml');
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('renders Quick Start instead of architecture confirmation for empty active-requirement state', () => {
+    const root = makeBootstrapOnlyRoot();
+    try {
+      const output = buildBmadsOutput(root);
+      const text = renderBmads(output);
+
+      expect(text).toContain('## Quick Start');
+      expect(text).toContain('当前项目尚未创建需求契约');
+      expect(text).toContain('创建产品/功能需求契约');
+      expect(text).toContain('创建 Bugfix 需求契约');
+      expect(text).toContain('创建独立任务契约');
+      expect(text).toContain('导入已有需求文档');
+      expect(text).toContain('查看当前阻塞原因');
+      expect(text).toContain('Source: no_active_requirement');
+      expect(text).toContain('Next required action: contract_authoring_required');
+      expect(text).not.toContain('architecture_confirmation(pass)');
+      expect(text).not.toContain('run_implementation_readiness_gate');
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }
