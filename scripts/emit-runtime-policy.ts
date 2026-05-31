@@ -62,6 +62,7 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
  * @param {string} [options.recordId] - Requirement record ID to resolve.
  * @param {string} [options.requirementSetId] - Requirement set ID to resolve.
  * @param {string} [options.runId] - Runtime run ID to resolve.
+ * @param {boolean} [options.legacyRegistryBridge] - Enable the explicit legacy registry bridge.
  * @returns {{
  *   resolvedContextPath: string;
  *   runtimeContext: import('./runtime-context').RuntimeContextFile;
