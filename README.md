@@ -154,7 +154,7 @@ CLI commands are allowed for install validation, CI, debug, fallback hosts, and 
 
 Daily operation should stay simple: activate the host skill, let the Orchestrator Agent inspect the active requirement, and follow the governed next action it returns. Do not bypass the Implementation Readiness Gate by sending an implementation agent directly into coding. Do not claim delivery from dashboard green, score green, task completion, or chat confidence alone. Delivery closes only through the Delivery Closeout Gate and the current evidence chain.
 
-The accepted path is `inspect -> dispatch-plan -> closeout`: inspect resolves governed state, dispatch-plan emits bounded child work, and closeout verifies delivery evidence before completion language is allowed.
+The accepted main-agent path is `inspect -> dispatch-plan -> closeout`: inspect resolves governed state, dispatch-plan emits bounded child work, and closeout verifies delivery evidence before completion language is allowed.
 
 ---
 
