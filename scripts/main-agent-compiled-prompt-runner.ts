@@ -112,11 +112,7 @@ export function resolveConfirmedSource(input: {
     text((record.implementationConfirmation as Record<string, unknown> | undefined)?.status) ===
     'user_confirmed';
   const isRuntimeRegistryBridge = Boolean(record.runtimeRegistryBridge);
-  if (
-    isRuntimeRegistryBridge &&
-    !hasControlledConfirmation(record) &&
-    !hasInlineConfirmedImplementation
-  ) {
+  if (isRuntimeRegistryBridge && !hasInlineConfirmedImplementation) {
     return { status: 'no_confirmed_source', reason: 'runtime_registry_bridge_no_confirmed_source' };
   }
   if (

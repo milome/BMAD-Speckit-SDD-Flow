@@ -95,10 +95,10 @@ describe('controlled blocker intake', () => {
         recordedAt: '2026-05-28T00:00:01.000Z',
         payload: {
           runId: 'blocker-intake-run-001',
-          status: 'blocking',
+          status: 'blocking_open',
           normalizedSignals: SIGNAL_CLASSES.map((signalClass) => ({
             intakeId: `intake-${signalClass}`,
-            status: 'blocking',
+            status: 'blocking_open',
             signalClass,
             sourceRefs: [{ sourceType: signalClass, id: `${signalClass}-001` }],
           })),
@@ -124,7 +124,7 @@ describe('controlled blocker intake', () => {
       );
       expect(record.blockerIntakeRuns.at(-1)).toMatchObject({
         runId: 'blocker-intake-run-001',
-        status: 'blocking',
+        status: 'blocking_open',
       });
     });
   });

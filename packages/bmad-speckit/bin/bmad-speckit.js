@@ -15,6 +15,7 @@
  */
 const { program } = require('commander');
 const { spawnSync } = require('child_process');
+const fs = require('fs');
 const path = require('path');
 const pkg = require('../package.json');
 const ttyUtils = require('../src/utils/tty');
@@ -38,14 +39,28 @@ function resolveRepoScript(scriptName) {
   return scriptPath;
 }
 
+function resolveTsxCli() {
+  const candidates = [
+    path.resolve(process.cwd(), 'node_modules', 'tsx', 'dist', 'cli.mjs'),
+    path.resolve(__dirname, '..', 'node_modules', 'tsx', 'dist', 'cli.mjs'),
+    path.resolve(__dirname, '..', '..', 'node_modules', 'tsx', 'dist', 'cli.mjs'),
+    path.resolve(__dirname, '..', '..', '..', 'node_modules', 'tsx', 'dist', 'cli.mjs'),
+    path.resolve(__dirname, '..', '..', '..', '..', 'tsx', 'dist', 'cli.mjs'),
+  ];
+  return candidates.find((candidate) => fs.existsSync(candidate));
+}
+
 function runScriptPath(scriptPath, args, options = {}) {
+  const tsxCli = scriptPath.endsWith('.ts') ? resolveTsxCli() : undefined;
   const runner = scriptPath.endsWith('.ts')
-    ? ['npx', ['--no-install', 'tsx', scriptPath, ...args]]
+    ? tsxCli
+      ? [process.execPath, [tsxCli, scriptPath, ...args]]
+      : ['npx', ['--no-install', 'tsx', scriptPath, ...args]]
     : [process.execPath, [scriptPath, ...args]];
   return spawnSync(runner[0], runner[1], {
     cwd: process.cwd(),
     stdio: options.silent ? ['inherit', 'ignore', 'inherit'] : 'inherit',
-    shell: process.platform === 'win32',
+    shell: runner[0] === 'npx' && process.platform === 'win32',
   });
 }
 

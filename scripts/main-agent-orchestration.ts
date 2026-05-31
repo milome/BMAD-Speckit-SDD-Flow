@@ -10089,10 +10089,12 @@ export function runMainAgentAutomaticLoop(input: {
       }
     }
     if (!taskReport && instruction.host === 'codex') {
+      const activeRecordId = normalizeText(activeRecord?.recordId);
+      const activeRequirementSetId = normalizeText(activeRecord?.requirementSetId);
       const adapterReport = runCodexWorkerAdapter({
         projectRoot: input.projectRoot,
-        recordId: input.recordId,
-        requirementSetId: input.requirementSetId,
+        recordId: input.recordId ?? (activeRecordId || undefined),
+        requirementSetId: input.requirementSetId ?? (activeRequirementSetId || undefined),
         runId: input.runId,
         packetPath: instruction.packetPath,
         taskReportPath: taskReportPath || undefined,

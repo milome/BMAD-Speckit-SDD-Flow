@@ -145,7 +145,7 @@ function createProvider() {
 }
 
 function writeScoreRecord(root: string, record: RunScoreRecord): void {
-  const dataPath = path.join(root, 'packages', 'scoring', 'data');
+  const dataPath = path.join(root, '_bmad-output', 'scoring');
   mkdirSync(dataPath, { recursive: true });
   writeFileSync(
     path.join(dataPath, `${record.run_id}.json`),

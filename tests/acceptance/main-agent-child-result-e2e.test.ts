@@ -57,7 +57,7 @@ describe('main-agent child result E2E', () => {
       });
 
       expect(state.pendingPacket?.status).toBe('completed');
-      expect(state.nextAction).toBe('dispatch_review');
+      expect(state.nextAction).toBe('run_execution_closure_gate');
       expect(state.lastTaskReport).toMatchObject({
         packetId: dispatch!.packetId,
         status: 'done',
@@ -69,7 +69,7 @@ describe('main-agent child result E2E', () => {
         flow: 'story',
         stage: 'implement',
       });
-      expect(surface.mainAgentNextAction).toBe('dispatch_review');
+      expect(surface.mainAgentNextAction).toBe('run_execution_closure_gate');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

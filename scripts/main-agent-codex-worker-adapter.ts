@@ -800,26 +800,33 @@ function writeTaskReport(taskReportPath: string, report: TaskReport): void {
 
 function readRequirementRecord(
   projectRoot: string,
-  recordId?: string
+  ...recordIds: Array<string | undefined>
 ): Record<string, unknown> | null {
-  if (!recordId) return null;
-  const recordPath = path.join(
-    projectRoot,
-    '_bmad-output',
-    'runtime',
-    'requirement-records',
-    recordId,
-    'requirement-record.json'
-  );
-  if (!fs.existsSync(recordPath)) return null;
-  const parsed = JSON.parse(fs.readFileSync(recordPath, 'utf8')) as unknown;
-  return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
-    ? (parsed as Record<string, unknown>)
-    : null;
+  const candidates = [...new Set(recordIds.map(text).filter(Boolean))];
+  for (const recordId of candidates) {
+    const recordPath = path.join(
+      projectRoot,
+      '_bmad-output',
+      'runtime',
+      'requirement-records',
+      recordId,
+      'requirement-record.json'
+    );
+    if (!fs.existsSync(recordPath)) continue;
+    const parsed = JSON.parse(fs.readFileSync(recordPath, 'utf8')) as unknown;
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : null;
+  }
+  return null;
 }
 
 function text(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+function strings(value: unknown): string[] {
+  return Array.isArray(value) ? value.map((item) => text(item)).filter(Boolean) : [];
 }
 
 function recordArchitectureHash(record: Record<string, unknown> | null): string {
@@ -942,7 +949,9 @@ export function runCodexWorkerAdapter(input: {
   const packet = readPacket(packetPath);
   const requirementRecord = readRequirementRecord(
     projectRoot,
-    input.requirementSetId ?? input.recordId
+    input.requirementSetId,
+    input.recordId,
+    packet.parentSessionId
   );
   const sourceDocumentHash =
     input.sourceDocumentHash ?? text(requirementRecord?.sourceDocumentHash);
@@ -1307,9 +1316,10 @@ export function runCodexWorkerAdapter(input: {
         : undefined),
     architectureConfirmationHash,
   });
-  const traceRows = input.traceRows ?? [];
-  const coveredRequirementIds = input.coveredRequirementIds ?? [];
-  const taskRefs = input.taskRefs ?? [];
+  const traceRows = input.traceRows ?? strings(requirementRecord?.traceRows);
+  const coveredRequirementIds =
+    input.coveredRequirementIds ?? strings(requirementRecord?.coveredRequirementIds);
+  const taskRefs = input.taskRefs ?? strings(requirementRecord?.taskRefs);
   const subagentArtifactRefs = taskReportArtifactRefs({
     projectRoot,
     taskReport,

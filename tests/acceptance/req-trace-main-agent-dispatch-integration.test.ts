@@ -131,6 +131,40 @@ function writeRequirementRecord(
   return { recordPath, sourcePath, sourceDocumentHash, implementationConfirmationHash };
 }
 
+function writeRuntimeRegistryBridgeRecord(root: string): string {
+  const recordDir = path.join(
+    root,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    'REQ-BRIDGE'
+  );
+  const recordPath = path.join(recordDir, 'requirement-record.json');
+  const sourceDocumentHash = sha256Text('runtime bridge source');
+  const implementationConfirmationHash = sha256Text('runtime bridge confirmation');
+  writeJson(recordPath, {
+    recordId: 'REQ-BRIDGE',
+    requirementSetId: 'REQSET-BRIDGE',
+    status: 'user_confirmed',
+    flow: 'story',
+    stage: 'implement',
+    sourcePath: '_bmad-output/runtime/context/project.json',
+    sourceDocumentHash,
+    implementationConfirmationHash,
+    confirmationHistory: [
+      {
+        eventType: 'confirmation_recorded',
+        sourceDocumentHash,
+        implementationConfirmationHash,
+      },
+    ],
+    runtimeRegistryBridge: {
+      eventType: 'requirement_record_materialized_from_runtime_registry',
+    },
+  });
+  return recordPath;
+}
+
 describe('req-trace main-agent dispatch integration', () => {
   it('resolves confirmed and unconfirmed source states without legacy fallback on broken confirmation', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'req-trace-dispatch-resolution-'));
@@ -264,6 +298,30 @@ describe('req-trace main-agent dispatch integration', () => {
       });
 
       expect(result.status).toBe('no_confirmed_source');
+      expect(result.compiledPromptRef).toBeNull();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('does not treat runtime registry bridge history as compiled prompt authority', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'req-trace-dispatch-bridge-'));
+    try {
+      const recordPath = writeRuntimeRegistryBridgeRecord(root);
+      const result = runMainAgentCompiledPrompt({
+        projectRoot: root,
+        recordPath,
+        packetId: 'implement-bridge',
+        flow: 'story',
+        executionHost: 'codex',
+        executionDisciplineProfile: resolveExecutionDisciplineProfile('story'),
+      });
+
+      expect(result.status).toBe('no_confirmed_source');
+      expect(result.confirmedSource).toMatchObject({
+        status: 'no_confirmed_source',
+        reason: 'runtime_registry_bridge_no_confirmed_source',
+      });
       expect(result.compiledPromptRef).toBeNull();
     } finally {
       rmSync(root, { recursive: true, force: true });
