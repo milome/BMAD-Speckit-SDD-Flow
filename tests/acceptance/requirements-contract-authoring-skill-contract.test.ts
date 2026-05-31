@@ -4,9 +4,17 @@ import { describe, expect, it } from 'vitest';
 
 const ROOT = process.cwd();
 const SKILL_DIR = path.join(ROOT, '_bmad', 'skills', 'requirements-contract-authoring');
+const CODEX_SKILL_DIR = path.join(ROOT, '.codex', 'skills', 'requirements-contract-authoring');
 
 function readSkillFile(relativePath: string): string {
   return fs.readFileSync(path.join(SKILL_DIR, relativePath), 'utf8');
+}
+
+function readSkillSurface(relativePath: string): string[] {
+  return [
+    fs.readFileSync(path.join(SKILL_DIR, relativePath), 'utf8'),
+    fs.readFileSync(path.join(CODEX_SKILL_DIR, relativePath), 'utf8'),
+  ];
 }
 
 describe('requirements-contract-authoring published contract', () => {
@@ -128,6 +136,25 @@ describe('requirements-contract-authoring published contract', () => {
     expect(skill).toContain(
       'ready to render a confirmation page with minimal or no renderer repair'
     );
+  });
+
+  it('requires source materialization before deep audit and keeps preserve-existing audit-only', () => {
+    for (const skill of readSkillSurface('SKILL.md')) {
+      expect(skill).toContain('source_materialization_before_deep_audit');
+      expect(skill).toContain(
+        '`author-confirmation-ready-source` MUST write the source document before Critical Auditor, multi-subagent audit, `grill-with-docs`, or `docs-review` starts a deep review loop'
+      );
+      expect(skill).toContain(
+        'only quick scan, atomic decomposition draft creation, packet generation, and source edit planning are allowed'
+      );
+      expect(skill).toContain(
+        '`authoring-repair preserve-existing` MUST audit existing inline `implementationConfirmation` content only'
+      );
+      expect(skill).toContain('MUST NOT create a new `implementationConfirmation` block');
+      expect(skill).toContain(
+        '`grill-with-docs` / `docs-review` MUST audit written files only instead of chat-only drafts'
+      );
+    }
   });
 
   it('requires authority-first fact collection and ID matrix design before authoring prose', () => {

@@ -4,8 +4,8 @@
   "profileVersion": "1.1.0",
   "contractVersion": "goal-execution-contract/v1",
   "templatePath": "_bmad/shared/goal-contract/goal-execution-contract-template.md",
-  "templateHash": "sha256:0d02ab3c6481008f8135b8c3a3f1aed733a943b55d9061706493f2d06d92524d",
-  "profileHash": "sha256:a1971090837806dd1c36fa5dc4c32da9cc7d92cc77289e82ad6ce135e27f62f5",
+  "templateHash": "sha256:f6592e98303d0b39cd16a9bf2bbd9f9278651d4ef2cbcb344ca8e95b2d16fd81",
+  "profileHash": "sha256:1dc4a8b09dc4079795650dc4add84a2b18965d1f1bc661630c6b528a3e64e065",
   "requiredSections": [
     "/goal Entry",
     "Contract Freeze Rules",

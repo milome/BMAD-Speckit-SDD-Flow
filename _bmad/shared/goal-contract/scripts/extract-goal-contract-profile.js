@@ -12,6 +12,14 @@ function sha256(content) {
   return `sha256:${crypto.createHash('sha256').update(content, 'utf8').digest('hex')}`;
 }
 
+function canonicalTextForContractHash(text) {
+  return String(text).replace(/^\uFEFF/u, '').replace(/\r\n/g, '\n');
+}
+
+function templateHashFor(text) {
+  return sha256(canonicalTextForContractHash(text));
+}
+
 function stableStringify(value) {
   if (value === null || typeof value !== 'object') return JSON.stringify(value);
   if (Array.isArray(value)) return `[${value.map((item) => stableStringify(item)).join(',')}]`;
@@ -74,7 +82,7 @@ function extractSlots(templateText) {
 function extractTemplateProfile(templateText) {
   const slotInfo = extractSlots(templateText);
   return {
-    templateHash: sha256(templateText),
+    templateHash: templateHashFor(templateText),
     sections: extractSections(templateText),
     slots: slotInfo.slots.map((slot) => ({
       name: slot.name,
@@ -100,6 +108,7 @@ if (require.main === module) {
 module.exports = {
   ROOT,
   DEFAULT_TEMPLATE,
+  canonicalTextForContractHash,
   extractSections,
   extractSlots,
   extractTemplateProfile,
@@ -107,4 +116,5 @@ module.exports = {
   profileHashFor,
   sha256,
   stableStringify,
+  templateHashFor,
 };

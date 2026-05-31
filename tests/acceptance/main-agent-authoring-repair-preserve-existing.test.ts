@@ -1,6 +1,8 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import * as crypto from 'node:crypto';
 import os from 'node:os';
 import path from 'node:path';
+import * as yaml from 'js-yaml';
 import { describe, expect, it } from 'vitest';
 import {
   mainMainAgentOrchestration,
@@ -11,8 +13,64 @@ function fixedHash(char: string): string {
   return `sha256:${char.repeat(64)}`;
 }
 
+function stableStringify(value: unknown): string {
+  if (value === null || typeof value !== 'object') {
+    return JSON.stringify(value);
+  }
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableStringify(item)).join(',')}]`;
+  }
+  return `{${Object.keys(value as Record<string, unknown>)
+    .sort()
+    .map(
+      (key) => `${JSON.stringify(key)}:${stableStringify((value as Record<string, unknown>)[key])}`
+    )
+    .join(',')}}`;
+}
+
+function sha256Text(value: string): string {
+  return `sha256:${crypto.createHash('sha256').update(value, 'utf8').digest('hex')}`;
+}
+
+function sha256Json(value: unknown): string {
+  return sha256Text(stableStringify(value));
+}
+
 function readJson(file: string): any {
   return JSON.parse(readFileSync(file, 'utf8'));
+}
+
+function semanticConfirmationForHash(
+  confirmation: Record<string, unknown>
+): Record<string, unknown> {
+  const bookkeeping = new Set([
+    'status',
+    'confirmedAt',
+    'confirmedBy',
+    'sourceDocumentHash',
+    'implementationConfirmationHash',
+    'reconfirmationRequest',
+    'confirmationRender',
+  ]);
+  return Object.fromEntries(Object.entries(confirmation).filter(([key]) => !bookkeeping.has(key)));
+}
+
+function currentSourceHashes(source: string): {
+  sourceDocumentHash: string;
+  implementationConfirmationHash: string;
+} {
+  const text = readFileSync(source, 'utf8');
+  const match = text.match(/^implementationConfirmation:\n[\s\S]*$/m);
+  if (!match) {
+    throw new Error('implementationConfirmation block missing');
+  }
+  const confirmation = (yaml.load(match[0]) as any).implementationConfirmation;
+  const semantic = semanticConfirmationForHash(confirmation);
+  const normalizedBlock = `implementationConfirmation:${stableStringify(semantic)}`;
+  return {
+    sourceDocumentHash: sha256Text(text.replace(match[0], normalizedBlock)),
+    implementationConfirmationHash: sha256Json(semantic),
+  };
 }
 
 function writeRichSource(root: string, recordId = 'REQ-AUTHORING-REPAIR-PRESERVE'): string {
@@ -347,6 +405,7 @@ function authoringPaths(root: string, recordId: string) {
     dir,
     kernel: path.join(dir, 'semantic-kernel.json'),
     packet: path.join(dir, 'must_decomposition_packet.json'),
+    sourceMaterializationReceipt: path.join(dir, 'source-materialization-receipt.json'),
     request: (round: number) => path.join(dir, `critical-auditor-round-request-${round}.json`),
     response: (round: number) => path.join(dir, `critical-auditor-round-response-${round}.json`),
     receipt: (round: number) => path.join(dir, `critical-auditor-receipt-round-${round}.json`),
@@ -354,6 +413,49 @@ function authoringPaths(root: string, recordId: string) {
     reconciliation: path.join(dir, 'must_packet_source_reconciliation_report.json'),
     progress: path.join(dir, 'semantic-checkpoint-progress.json'),
   };
+}
+
+function writeSourceMaterializationReceipt(
+  root: string,
+  source: string,
+  requirementSetId: string,
+  recordId = requirementSetId
+): string {
+  const paths = authoringPaths(root, requirementSetId);
+  mkdirSync(paths.dir, { recursive: true });
+  const hashes = currentSourceHashes(source);
+  const receipt: Record<string, unknown> = {
+    schemaVersion: 'source-materialization-receipt/v1',
+    sourcePath: rootRelative(root, source),
+    requirementSetId,
+    recordId,
+    sourceDocumentHashBefore: hashes.sourceDocumentHash,
+    sourceDocumentHashAfter: hashes.sourceDocumentHash,
+    implementationConfirmationHash: hashes.implementationConfirmationHash,
+    writtenIdRanges: [
+      'ACC-001',
+      'ART-001',
+      'CMD-001',
+      'E2E-001',
+      'EVD-001',
+      'FAIL-001',
+      'TARGET-MOD-001',
+      'TRACE-001',
+    ],
+    draftStatus: 'confirmation_ready',
+    nextAuditCommand:
+      'pwsh.exe -NoLogo -NoProfile -Command "& { npx vitest run tests/acceptance/main-agent-source-materialization-before-audit.test.ts; npx vitest run tests/acceptance/main-agent-authoring-repair-preserve-existing.test.ts }"',
+    createdAt: '2026-06-01T00:00:00.000Z',
+    createdBy: 'main-agent-source-materialization',
+    receiptHash: null,
+  };
+  receipt.receiptHash = sha256Json({ ...receipt, receiptHash: null });
+  writeFileSync(
+    paths.sourceMaterializationReceipt,
+    `${JSON.stringify(receipt, null, 2)}\n`,
+    'utf8'
+  );
+  return paths.sourceMaterializationReceipt;
 }
 
 function rootRelative(root: string, filePath: string): string {
@@ -406,6 +508,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
     try {
       const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
       const source = writeRichSource(root, recordId);
+      writeSourceMaterializationReceipt(root, source, `${recordId}-SET`, recordId);
       const original = readFileSync(source, 'utf8');
       const result = runMainAgentAuthoringRepair(root, {
         source,
@@ -441,6 +544,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
     try {
       const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
       const source = writeRichSource(root, recordId);
+      writeSourceMaterializationReceipt(root, source, recordId);
       const original = readFileSync(source, 'utf8');
       const paths = authoringPaths(root, recordId);
 
@@ -513,6 +617,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
     try {
       const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
       const source = writeRichSource(root, recordId);
+      writeSourceMaterializationReceipt(root, source, recordId);
       const paths = authoringPaths(root, recordId);
 
       runMainAgentAuthoringRepair(root, { source, recordId, mode: 'preserve-existing' });
@@ -528,19 +633,15 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       expect(result).toMatchObject({
         ok: false,
         status: 'blocked',
-        blockingStage: 'critical_auditor_round_required',
-        nextRequiredAction: 'write_critical_auditor_round_response',
+        blockingStage: 'source_materialization_required_before_audit',
+        nextRequiredAction: 'materialize_source_document_before_deep_audit',
         consecutiveNoNewGapRounds: 0,
       });
       expect(result.blockingIssues.map((issue: any) => issue.code)).toContain(
-        'critical_auditor_critical_auditor_round_request_1_json_sourceDocumentHash_stale'
+        'source_materialization_receipt_source_hash_stale'
       );
       expect(existsSync(paths.receipt(1))).toBe(false);
-      expect(existsSync(paths.request(1))).toBe(true);
-      expect(readJson(paths.request(1)).sourceDocumentHash).toBe(result.sourceDocumentHash);
-      expect(
-        result.artifacts.some((artifact) => artifact.includes('stale-critical-auditor-'))
-      ).toBe(true);
+      expect(existsSync(paths.request(2))).toBe(false);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -551,6 +652,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
     try {
       const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
       const source = writeRichSource(root, recordId);
+      writeSourceMaterializationReceipt(root, source, recordId);
       const paths = authoringPaths(root, recordId);
 
       runMainAgentAuthoringRepair(root, { source, recordId, mode: 'preserve-existing' });
@@ -606,6 +708,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         .replace(/^ {6,8}derivedFromPacketHash: sha256:a{64}\n/gm, '')
         .replace(/^ {6,8}projectionStatus: synchronized\n/gm, '');
       writeFileSync(source, corrupted, 'utf8');
+      writeSourceMaterializationReceipt(root, source, recordId);
       const paths = authoringPaths(root, recordId);
 
       runMainAgentAuthoringRepair(root, { source, recordId, mode: 'preserve-existing' });
@@ -633,6 +736,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
     try {
       const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
       const source = writeRichSource(root, recordId);
+      writeSourceMaterializationReceipt(root, source, recordId);
       const paths = authoringPaths(root, recordId);
 
       runMainAgentAuthoringRepair(root, { source, recordId, mode: 'preserve-existing' });
@@ -665,6 +769,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
     try {
       const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
       const source = writeRichSource(root, recordId);
+      writeSourceMaterializationReceipt(root, source, recordId);
       const exitCode = mainMainAgentOrchestration([
         '--cwd',
         root,
@@ -691,6 +796,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       writeFileSync(path.join(root, '.gitignore'), 'docs/requirements/\n', 'utf8');
       const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
       const source = writeRichSource(root, recordId);
+      writeSourceMaterializationReceipt(root, source, recordId);
       const result = runMainAgentAuthoringRepair(root, {
         source,
         recordId,

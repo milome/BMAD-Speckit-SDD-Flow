@@ -25,6 +25,22 @@ function loadRenderer() {
   };
 }
 
+function loadProfileModule() {
+  return require(
+    path.join(
+      ROOT,
+      '_bmad',
+      'shared',
+      'goal-contract',
+      'scripts',
+      'extract-goal-contract-profile.js'
+    )
+  ) as {
+    profileHashFor: (profile: Record<string, any>) => string;
+    templateHashFor: (text: string) => string;
+  };
+}
+
 function slotData(overrides: Record<string, string> = {}) {
   return {
     frontMatter: [
@@ -93,6 +109,41 @@ describe('shared goal contract renderer', () => {
     expect(result.audit.requiredSectionsPassed).toBe(true);
     expect(result.audit.invariantFragmentsPassed).toBe(true);
     expect(result.audit.rendererVersion).toBe('req-trace-goal-contract-renderer/v1');
+  });
+
+  it('accepts a CRLF template when the profile contains the canonical template hash', () => {
+    const lfTemplate = fs.readFileSync(TEMPLATE, 'utf8').replace(/\r\n/g, '\n');
+    const crlfTemplate = lfTemplate.replace(/\n/g, '\r\n');
+    const profile = JSON.parse(fs.readFileSync(PROFILE, 'utf8'));
+    const { profileHashFor, templateHashFor } = loadProfileModule();
+    const { renderGoalContract } = loadRenderer();
+    profile.templateHash = templateHashFor(lfTemplate);
+    profile.profileHash = profileHashFor(profile);
+
+    const result = renderGoalContract({
+      templateText: crlfTemplate,
+      profile,
+      slotData: slotData(),
+    });
+
+    expect(result.audit.templateHash).toBe(templateHashFor(lfTemplate));
+    expect(result.audit.templateHash).toBe(templateHashFor(crlfTemplate));
+    expect(result.audit.contentHash).toMatch(/^sha256:/);
+    expect(result.audit.compatibilityDecision).toBe('pass');
+  });
+
+  it('still blocks real semantic template hash mismatches', () => {
+    const templateText = `${fs.readFileSync(TEMPLATE, 'utf8')}\n## Semantic Drift\n`;
+    const profile = JSON.parse(fs.readFileSync(PROFILE, 'utf8'));
+    const { renderGoalContract } = loadRenderer();
+
+    expect(() =>
+      renderGoalContract({
+        templateText,
+        profile,
+        slotData: slotData(),
+      })
+    ).toThrow(/GOAL_CONTRACT_PROFILE_HASH_MISMATCH/);
   });
 
   it('rejects missing, empty, duplicate, or unclosed required slots', () => {
