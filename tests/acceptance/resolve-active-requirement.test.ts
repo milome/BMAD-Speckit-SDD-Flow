@@ -32,6 +32,7 @@ function writeRequirementRecord(overrides: Record<string, unknown> = {}): {
   indexPath: string;
 } {
   const requirementSetId = String(overrides.requirementSetId ?? 'REQSET-ACTIVE-001');
+  const sourcePath = 'tests/fixtures/requirements/active-requirement.md';
   const base = path.join(requirementRecordsRoot(root), requirementSetId);
   fs.mkdirSync(path.join(base, 'recovery'), { recursive: true });
   const recordPath = path.join(base, 'requirement-record.json');
@@ -58,7 +59,7 @@ function writeRequirementRecord(overrides: Record<string, unknown> = {}): {
     entryFlowClass: 'full_story_entry',
     workflowAdapter: 'bmad',
     sourceMode: 'full_bmad',
-    sourcePath: 'docs/prd.md',
+    sourcePath,
     sourceDocumentHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
     implementationConfirmationHash:
       'sha256:2222222222222222222222222222222222222222222222222222222222222222',
@@ -70,7 +71,7 @@ function writeRequirementRecord(overrides: Record<string, unknown> = {}): {
         requirementSetId,
         confirmedAt: '2026-05-19T00:00:00.000Z',
         confirmedBy: 'test-fixture',
-        sourcePath: 'docs/prd.md',
+        sourcePath,
         sourceDocumentHash:
           'sha256:1111111111111111111111111111111111111111111111111111111111111111',
         sourceDocumentHashScope: 'semantic_source_excluding_confirmation_bookkeeping',
@@ -585,6 +586,7 @@ describe('Active Requirement Resolver / ResolvedRuntimeContext', () => {
         },
       ],
     });
+    writeFakeReqTraceSkill(root);
     const stateDir = path.join(path.dirname(recordPath), 'orchestration', 'orchestration-state');
     const packetDir = path.join(path.dirname(recordPath), 'prompts', 'prompt-packets');
     fs.mkdirSync(stateDir, { recursive: true });

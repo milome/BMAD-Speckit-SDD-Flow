@@ -114,6 +114,103 @@ function writeJsonFixture(filePath: string, value: unknown): void {
   writeTextFixture(filePath, `${JSON.stringify(value, null, 2)}\n`);
 }
 
+function writeFakeReqTraceSkill(root: string): void {
+  const scriptPath = path.join(
+    root,
+    '_bmad',
+    'skills',
+    'req-trace-matrix-prompt-generator',
+    'scripts',
+    'generate_prompt.js'
+  );
+  writeTextFixture(
+    scriptPath,
+    [
+      '#!/usr/bin/env node',
+      "const crypto = require('node:crypto');",
+      "const fs = require('node:fs');",
+      "const path = require('node:path');",
+      'function arg(name) { const index = process.argv.indexOf(name); return index === -1 ? null : process.argv[index + 1]; }',
+      "function shaFile(filePath) { return 'sha256:' + crypto.createHash('sha256').update(fs.readFileSync(filePath)).digest('hex'); }",
+      "const outDir = arg('--out-dir');",
+      "const recordPath = arg('--requirement-record');",
+      "const sourcePath = arg('--source-document');",
+      "const profilePath = arg('--execution-discipline-profile-ref');",
+      "if (!outDir || !recordPath || !sourcePath || !profilePath) { console.log('BLOCK: missing compiler args'); process.exit(3); }",
+      "const record = JSON.parse(fs.readFileSync(recordPath, 'utf8'));",
+      "const profile = JSON.parse(fs.readFileSync(profilePath, 'utf8'));",
+      'fs.mkdirSync(outDir, { recursive: true });',
+      "const modelPacketPath = path.join(outDir, 'model_packet.json');",
+      "const humanPromptPath = path.join(outDir, 'human_prompt.txt');",
+      "const goalExecutionPath = path.join(outDir, 'goal_execution.md');",
+      "const auditReceiptPath = path.join(outDir, 'audit_receipt.json');",
+      "fs.writeFileSync(modelPacketPath, JSON.stringify({ artifactRole: 'execution_authority', sourceDocumentHash: record.sourceDocumentHash, implementationConfirmationHash: record.implementationConfirmationHash, executionDisciplineProfile: profile }, null, 2) + '\\n', 'utf8');",
+      "fs.writeFileSync(humanPromptPath, ['Execution Discipline Profile', `profileId: ${profile.profileId}`, `profileHash: ${profile.profileHash}`, 'compiled worker body', ''].join('\\n'), 'utf8');",
+      "fs.writeFileSync(goalExecutionPath, ['# Goal Execution', `profileId: ${profile.profileId}`, `profileHash: ${profile.profileHash}`, ''].join('\\n'), 'utf8');",
+      "fs.writeFileSync(auditReceiptPath, JSON.stringify({ decision: 'pass', goalCommand: { mode: 'native_goal_document_ref', documentHash: shaFile(goalExecutionPath) }, executionDisciplineProfile: { profileId: profile.profileId, profileHash: profile.profileHash, humanPromptProfileRendered: true, goalExecutionProfileRendered: true } }, null, 2) + '\\n', 'utf8');",
+      'process.exit(0);',
+      '',
+    ].join('\n')
+  );
+}
+
+function materializeConfirmedSourceFixture(
+  root: string,
+  recordPath: string,
+  sourcePathRelative: string
+): Record<string, unknown> {
+  const record = JSON.parse(readFileSync(recordPath, 'utf8')) as Record<string, unknown>;
+  const sourcePath = path.join(root, sourcePathRelative);
+  writeTextFixture(sourcePath, `# Fixture source for ${String(record.requirementSetId)}\n`);
+  record.sourcePath = sourcePathRelative;
+  record.artifactPath = sourcePathRelative;
+  record.confirmationHistory = [
+    {
+      eventType: 'confirmation_recorded',
+      recordId: record.recordId,
+      requirementSetId: record.requirementSetId,
+      confirmedAt: '2026-05-26T00:00:00.000Z',
+      confirmedBy: 'test-fixture',
+      sourcePath: sourcePathRelative,
+      sourceDocumentHash: record.sourceDocumentHash,
+      implementationConfirmationHash: record.implementationConfirmationHash,
+      confirmationPageHash: record.confirmationPageHash,
+      confirmationText: 'confirmed minimal requirement record fixture',
+      renderReportPath: `_bmad-output/runtime/requirement-records/${String(record.requirementSetId)}/confirmation/confirmation-render-report.json`,
+      htmlPath: `_bmad-output/runtime/requirement-records/${String(record.requirementSetId)}/confirmation/confirmation.html`,
+    },
+  ];
+  const runtimePolicySnapshotRef =
+    record.runtimePolicySnapshotRef && typeof record.runtimePolicySnapshotRef === 'object'
+      ? (record.runtimePolicySnapshotRef as Record<string, unknown>)
+      : {};
+  const runtimePolicySnapshotPath = String(runtimePolicySnapshotRef.path ?? '');
+  const runtimePolicySnapshotFullPath = runtimePolicySnapshotPath
+    ? path.join(root, runtimePolicySnapshotPath)
+    : null;
+  const runtimePolicySnapshotHash =
+    runtimePolicySnapshotFullPath && existsSync(runtimePolicySnapshotFullPath)
+      ? sha256Text(readFileSync(runtimePolicySnapshotFullPath, 'utf8'))
+      : sha256Text('runtime-policy-snapshot-fixture');
+  record.runtimePolicySnapshotRef = {
+    artifactType: 'runtime_policy_snapshot',
+    sourceOfTruthRole: 'projection',
+    path:
+      runtimePolicySnapshotPath ||
+      `_bmad-output/runtime/requirement-records/${String(record.requirementSetId)}/recovery/runtime-policy-snapshot.json`,
+    hash: runtimePolicySnapshotHash,
+    contentHash: runtimePolicySnapshotHash,
+    producer: 'tests/acceptance/main-agent-orchestration-consumer',
+    purpose: 'Materialized runtime policy snapshot for orchestration fixture',
+    relatedRequirementIds: [String(record.requirementSetId)],
+    status: 'active',
+    inputVersion: 'runtime-policy-snapshot/v1',
+    outputVersion: 'runtime-policy-snapshot/v1',
+  };
+  writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
+  return record;
+}
+
 function removeTempRoot(root: string): void {
   rmSync(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
 }
@@ -205,11 +302,12 @@ function writeCurrentCompiledImplementPacket(
 
 function writeConfirmedReadinessRecord(root: string): string {
   const recipe = resolveArchitectureConfirmationHashRecipe();
+  const sourcePathRelative = 'tests/fixtures/requirements/readiness.md';
   const recordPath = writeMinimalRequirementRecordContext(root, {
     flow: 'standalone_tasks',
     stage: 'implement',
     runId: 'readiness-e2e',
-    artifactPath: 'docs/requirements/readiness.md',
+    artifactPath: sourcePathRelative,
     implementationEntryGate: {
       gateName: 'implementation-readiness',
       requestedFlow: 'standalone_tasks',
@@ -226,13 +324,13 @@ function writeConfirmedReadinessRecord(root: string): string {
         executionRecordPath: null,
         authoritativeAuditReportPath: null,
       },
-      semanticFingerprint: 'docs/requirements/readiness.md',
+      semanticFingerprint: sourcePathRelative,
       evaluatedAt: '2026-05-20T00:00:00.000Z',
     },
   });
   const record = JSON.parse(readFileSync(recordPath, 'utf8'));
   const recordRoot = path.dirname(recordPath);
-  const sourcePath = path.join(root, 'docs', 'requirements', 'readiness.md');
+  const sourcePath = path.join(root, sourcePathRelative);
   const acceptancePath = path.join(root, 'tests', 'acceptance', 'readiness-bridge.test.ts');
   const e2ePath = path.join(root, 'tests', 'e2e', 'readiness-bridge.e2e.test.ts');
   const confirmationDir = path.join(recordRoot, 'confirmation');
@@ -844,6 +942,7 @@ describe('main-agent orchestration consumer', () => {
   it('dispatches implementation and does not project review before execution closure pass', async () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-readiness-auto-baseline-'));
     try {
+      writeFakeReqTraceSkill(root);
       const recordPath = writeConfirmedReadinessRecord(root);
       const dataPath = path.join(root, '_bmad-output', 'scoring');
       const gateCode = mainImplementationReadinessGate([
@@ -904,6 +1003,7 @@ describe('main-agent orchestration consumer', () => {
   it('auto-activates readiness baseline through unified ingress high-level entry', async () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-readiness-unified-baseline-'));
     try {
+      writeFakeReqTraceSkill(root);
       const recordPath = writeConfirmedReadinessRecord(root);
       const gateCode = mainImplementationReadinessGate([
         '--requirement-record',
@@ -1128,11 +1228,16 @@ describe('main-agent orchestration consumer', () => {
   it('invalidates stale post-audit run-closeout state after current confirmation until compiled implementation prompt exists', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-stale-closeout-state-'));
     try {
+      const sourcePathRelative = 'tests/fixtures/requirements/stale-closeout-state.md';
+      writeTextFixture(
+        path.join(root, sourcePathRelative),
+        '# Fixture source for stale closeout state\n'
+      );
       const recordPath = writeMinimalRequirementRecordContext(root, {
         flow: 'standalone_tasks',
         stage: 'implement',
         runId: 'stale-closeout-state',
-        artifactPath: 'docs/requirements/stale-closeout-state.md',
+        artifactPath: sourcePathRelative,
         implementationEntryGate: {
           gateName: 'implementation-readiness',
           requestedFlow: 'standalone_tasks',
@@ -1264,11 +1369,16 @@ describe('main-agent orchestration consumer', () => {
   it('rejects compiled prompt refs that are not bound to the current confirmed hashes', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-stale-compiled-ref-'));
     try {
+      const sourcePathRelative = 'tests/fixtures/requirements/stale-compiled-ref.md';
+      writeTextFixture(
+        path.join(root, sourcePathRelative),
+        '# Fixture source for stale compiled ref\n'
+      );
       const recordPath = writeMinimalRequirementRecordContext(root, {
         flow: 'standalone_tasks',
         stage: 'implement',
         runId: 'stale-compiled-ref',
-        artifactPath: 'docs/requirements/stale-compiled-ref.md',
+        artifactPath: sourcePathRelative,
         implementationEntryGate: {
           gateName: 'implementation-readiness',
           requestedFlow: 'standalone_tasks',
@@ -1391,8 +1501,7 @@ describe('main-agent orchestration consumer', () => {
         flow: 'standalone_tasks',
         stage: 'implement',
         runId: 'req-trace-packet-compiler',
-        artifactPath:
-          'docs/requirements/2026-05-25-req-trace-matrix-ai-tdd-execution-packet-compiler.md',
+        artifactPath: 'tests/fixtures/requirements/req-trace-packet-compiler.md',
         implementationEntryGate: {
           gateName: 'implementation-readiness',
           requestedFlow: 'standalone_tasks',
@@ -1413,7 +1522,12 @@ describe('main-agent orchestration consumer', () => {
           evaluatedAt: '2026-05-26T00:00:00.000Z',
         },
       });
-      const record = JSON.parse(readFileSync(recordPath, 'utf8')) as Record<string, unknown>;
+      writeFakeReqTraceSkill(root);
+      const record = materializeConfirmedSourceFixture(
+        root,
+        recordPath,
+        'tests/fixtures/requirements/req-trace-packet-compiler.md'
+      );
       const staleSessionId = 'story-story-1-eval-system-scoring-core';
       const stalePacket: RecommendationPacket = {
         packetId: 'audit-stale-completed',
@@ -1525,7 +1639,12 @@ describe('main-agent orchestration consumer', () => {
           evaluatedAt: '2026-05-26T00:00:00.000Z',
         },
       });
-      const record = JSON.parse(readFileSync(recordPath, 'utf8')) as Record<string, unknown>;
+      writeFakeReqTraceSkill(root);
+      const record = materializeConfirmedSourceFixture(
+        root,
+        recordPath,
+        'tests/fixtures/requirements/blocked-implementation-recovery.md'
+      );
       const packet: RecommendationPacket = {
         packetId: 'implement-blocked',
         parentSessionId: String(record.requirementSetId),
@@ -1617,7 +1736,12 @@ describe('main-agent orchestration consumer', () => {
           evaluatedAt: '2026-05-26T00:00:00.000Z',
         },
       });
-      const record = JSON.parse(readFileSync(recordPath, 'utf8')) as Record<string, unknown>;
+      writeFakeReqTraceSkill(root);
+      const record = materializeConfirmedSourceFixture(
+        root,
+        recordPath,
+        'tests/fixtures/requirements/blocked-ready-audit-recovery.md'
+      );
       record.sixModelResults = {
         execution_closure: { model: 'execution_closure', status: 'pass' },
         audit_review: { model: 'audit_review', status: 'not_established' },
@@ -1724,7 +1848,26 @@ describe('main-agent orchestration consumer', () => {
           evaluatedAt: '2026-05-26T00:00:00.000Z',
         },
       });
-      const record = JSON.parse(readFileSync(recordPath, 'utf8')) as Record<string, unknown>;
+      writeFakeReqTraceSkill(root);
+      const record = materializeConfirmedSourceFixture(
+        root,
+        recordPath,
+        'tests/fixtures/requirements/blocked-ready-audit-recovery.md'
+      );
+      record.currentMentalModel = 'implementation_readiness';
+      record.sixModelResults = {
+        implementation_readiness: {
+          model: 'implementation_readiness',
+          status: 'pass',
+          blockingReasons: [],
+        },
+        execution_closure: {
+          model: 'execution_closure',
+          status: 'not_established',
+          blockingReasons: ['execution_closure_not_established'],
+        },
+      };
+      writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
       const auditPacket: ExecutionPacket = {
         packetId: 'audit-stale-ready',
         parentSessionId: String(record.requirementSetId),

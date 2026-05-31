@@ -19,10 +19,100 @@ import {
   writeRuntimeContextRegistry,
 } from '../../scripts/runtime-context-registry';
 
+const SOURCE_DOCUMENT_HASH =
+  'sha256:1111111111111111111111111111111111111111111111111111111111111111';
+const IMPLEMENTATION_CONFIRMATION_HASH =
+  'sha256:2222222222222222222222222222222222222222222222222222222222222222';
+const CONFIRMATION_PAGE_HASH =
+  'sha256:3333333333333333333333333333333333333333333333333333333333333333';
+
+function relativePath(root: string, filePath: string): string {
+  return path.relative(root, filePath).replace(/\\/g, '/');
+}
+
+function confirmationEvent(input: {
+  recordId: string;
+  requirementSetId: string;
+  sourcePath: string;
+}): Record<string, unknown> {
+  return {
+    eventType: 'confirmation_recorded',
+    recordId: input.recordId,
+    requirementSetId: input.requirementSetId,
+    sourcePath: input.sourcePath,
+    sourceDocumentHash: SOURCE_DOCUMENT_HASH,
+    implementationConfirmationHash: IMPLEMENTATION_CONFIRMATION_HASH,
+    confirmationPageHash: CONFIRMATION_PAGE_HASH,
+    confirmationText: 'confirmed codex worker fixture requirement source',
+    renderReportPath: `_bmad-output/runtime/requirement-records/${input.recordId}/confirmation/confirmation-render-report.json`,
+    htmlPath: `_bmad-output/runtime/requirement-records/${input.recordId}/confirmation/confirmation.html`,
+    confirmedAt: '2026-05-19T00:00:00.000Z',
+    confirmedBy: 'test',
+  };
+}
+
+function writeRuntimePolicySnapshot(input: {
+  root: string;
+  requirementSetId: string;
+  flow: string;
+  stage: string;
+}): Record<string, unknown> {
+  const snapshotPath = path.join(
+    input.root,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    input.requirementSetId,
+    'recovery',
+    'runtime-policy-snapshot.json'
+  );
+  fs.writeFileSync(
+    snapshotPath,
+    `${JSON.stringify(
+      {
+        kind: 'runtime-policy-snapshot',
+        flow: input.flow,
+        stage: input.stage,
+        policy: { flow: input.flow, stage: input.stage },
+      },
+      null,
+      2
+    )}\n`,
+    'utf8'
+  );
+  const hash = sha256File(snapshotPath);
+  return {
+    eventType: 'artifact_indexed',
+    artifactType: 'runtime_policy_snapshot',
+    sourceOfTruthRole: 'projection',
+    recordId: input.requirementSetId,
+    requirementSetId: input.requirementSetId,
+    path: relativePath(input.root, snapshotPath),
+    hash,
+    contentHash: hash,
+    producer: 'tests/acceptance/main-agent-codex-worker-adapter-e2e',
+    purpose: 'Materialized runtime policy snapshot for codex worker adapter fixtures',
+    relatedRequirementIds: [input.requirementSetId],
+    status: 'active',
+    inputVersion: 'runtime-policy-snapshot/v1',
+    outputVersion: 'runtime-policy-snapshot/v1',
+  };
+}
+
 function writeTestRequirementRecord(root: string): void {
   const requirementSetId = 'REQ-CODEX-WORKER';
   const base = path.join(root, '_bmad-output', 'runtime', 'requirement-records', requirementSetId);
   fs.mkdirSync(path.join(base, 'recovery'), { recursive: true });
+  const sourcePath = path.join(root, 'tests', 'fixtures', 'requirements', 'codex-worker.md');
+  fs.mkdirSync(path.dirname(sourcePath), { recursive: true });
+  fs.writeFileSync(sourcePath, '# Codex worker fixture\n', 'utf8');
+  const sourcePathRelative = 'tests/fixtures/requirements/codex-worker.md';
+  const runtimePolicySnapshotRef = writeRuntimePolicySnapshot({
+    root,
+    requirementSetId,
+    flow: 'story',
+    stage: 'implement',
+  });
   const record = {
     recordId: requirementSetId,
     requirementSetId,
@@ -33,35 +123,26 @@ function writeTestRequirementRecord(root: string): void {
     entryFlowClass: 'full_story_entry',
     workflowAdapter: 'bmad',
     sourceMode: 'full_bmad',
-    sourcePath: 'docs/prd.md',
-    sourceDocumentHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
-    implementationConfirmationHash:
-      'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+    sourcePath: sourcePathRelative,
+    sourceDocumentHash: SOURCE_DOCUMENT_HASH,
+    implementationConfirmationHash: IMPLEMENTATION_CONFIRMATION_HASH,
     architectureConfirmationState: {
       status: 'active',
       currentArchitectureConfirmationHash:
         'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
     },
+    confirmationPageHash: CONFIRMATION_PAGE_HASH,
     confirmationHistory: [
-      {
-        eventType: 'confirmation_recorded',
-        decision: 'pass',
-        sourceDocumentHash:
-          'sha256:1111111111111111111111111111111111111111111111111111111111111111',
-        implementationConfirmationHash:
-          'sha256:2222222222222222222222222222222222222222222222222222222222222222',
-        confirmationPageHash:
-          'sha256:3333333333333333333333333333333333333333333333333333333333333333',
-        confirmedAt: '2026-05-19T00:00:00.000Z',
-        confirmedBy: 'test',
-      },
+      confirmationEvent({
+        recordId: requirementSetId,
+        requirementSetId,
+        sourcePath: sourcePathRelative,
+      }),
     ],
     runId: 'codex-worker-run',
     epicId: 'epic-01',
     storyId: 'S-codex-worker',
-    runtimePolicySnapshotRef: {
-      path: `_bmad-output/runtime/requirement-records/${requirementSetId}/recovery/runtime-policy-snapshot.json`,
-    },
+    runtimePolicySnapshotRef,
     recoveryContextRef: {
       path: `_bmad-output/runtime/requirement-records/${requirementSetId}/recovery/recovery-context.json`,
     },
@@ -106,11 +187,6 @@ function writeTestRequirementRecord(root: string): void {
     'utf8'
   );
   fs.writeFileSync(
-    path.join(base, 'recovery', 'runtime-policy-snapshot.json'),
-    `${JSON.stringify({ kind: 'runtime-policy-snapshot', flow: 'story', stage: 'implement', policy: { flow: 'story', stage: 'implement' } }, null, 2)}\n`,
-    'utf8'
-  );
-  fs.writeFileSync(
     path.join(base, 'recovery', 'recovery-context.json'),
     '{"kind":"recovery-context"}\n',
     'utf8'
@@ -146,6 +222,17 @@ function writeStandaloneRecordWithoutImplementationEntryGate(root: string): void
   const requirementSetId = 'REQ-STANDALONE-CODEX-WORKER';
   const base = path.join(root, '_bmad-output', 'runtime', 'requirement-records', requirementSetId);
   fs.mkdirSync(path.join(base, 'recovery'), { recursive: true });
+  writeFakeReqTraceSkill(root);
+  const sourcePath = path.join(root, 'tests', 'fixtures', 'requirements', 'standalone-worker.md');
+  fs.mkdirSync(path.dirname(sourcePath), { recursive: true });
+  fs.writeFileSync(sourcePath, '# Standalone worker fixture\n', 'utf8');
+  const sourcePathRelative = 'tests/fixtures/requirements/standalone-worker.md';
+  const runtimePolicySnapshotRef = writeRuntimePolicySnapshot({
+    root,
+    requirementSetId,
+    flow: 'standalone_tasks',
+    stage: 'implement',
+  });
   const record = {
     recordId: requirementSetId,
     requirementSetId,
@@ -156,11 +243,18 @@ function writeStandaloneRecordWithoutImplementationEntryGate(root: string): void
     entryFlowClass: 'task_packet_entry',
     workflowAdapter: 'direct',
     sourceMode: 'standalone_story',
-    sourcePath: 'docs/requirements/standalone-worker.md',
-    artifactPath: 'docs/requirements/standalone-worker.md',
-    sourceDocumentHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
-    implementationConfirmationHash:
-      'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+    sourcePath: sourcePathRelative,
+    artifactPath: sourcePathRelative,
+    sourceDocumentHash: SOURCE_DOCUMENT_HASH,
+    implementationConfirmationHash: IMPLEMENTATION_CONFIRMATION_HASH,
+    confirmationPageHash: CONFIRMATION_PAGE_HASH,
+    confirmationHistory: [
+      confirmationEvent({
+        recordId: requirementSetId,
+        requirementSetId,
+        sourcePath: sourcePathRelative,
+      }),
+    ],
     currentMentalModel: 'implementation_readiness',
     sixModelResults: {
       requirement_confirmation: {
@@ -209,9 +303,7 @@ function writeStandaloneRecordWithoutImplementationEntryGate(root: string): void
         blockingReasons: [],
       },
     ],
-    runtimePolicySnapshotRef: {
-      path: `_bmad-output/runtime/requirement-records/${requirementSetId}/recovery/runtime-policy-snapshot.json`,
-    },
+    runtimePolicySnapshotRef,
     recoveryContextRef: {
       path: `_bmad-output/runtime/requirement-records/${requirementSetId}/recovery/recovery-context.json`,
     },
@@ -227,11 +319,6 @@ function writeStandaloneRecordWithoutImplementationEntryGate(root: string): void
   fs.writeFileSync(
     path.join(base, 'requirement-record.json'),
     `${JSON.stringify(record, null, 2)}\n`,
-    'utf8'
-  );
-  fs.writeFileSync(
-    path.join(base, 'recovery', 'runtime-policy-snapshot.json'),
-    `${JSON.stringify({ kind: 'runtime-policy-snapshot', flow: 'standalone_tasks', stage: 'implement' }, null, 2)}\n`,
     'utf8'
   );
   fs.writeFileSync(
@@ -370,6 +457,7 @@ function writeRegistryPolicyBindingFile(root: string): string {
 
 function prepareCodexRoot(): string {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'main-agent-codex-worker-'));
+  writeFakeReqTraceSkill(root);
   writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
   writeRuntimeContext(
     root,
@@ -395,117 +483,46 @@ function sha256File(filePath: string): string {
   return `sha256:${createHash('sha256').update(fs.readFileSync(filePath)).digest('hex')}`;
 }
 
-function attachCompiledPromptRef(root: string, packetPath: string, packetId: string): void {
-  const packet = JSON.parse(fs.readFileSync(packetPath, 'utf8')) as Record<string, any>;
-  const normalizedPacketPath = packetPath.replace(/\\/g, '/');
-  const match = normalizedPacketPath.match(
-    /_bmad-output\/runtime\/requirement-records\/([^/]+)\/prompts\/prompt-packets\/[^/]+\.json$/u
-  );
-  const recordId = match?.[1] ?? 'REQ-CODEX-WORKER';
-  const traceDir = path.join(
+function writeFakeReqTraceSkill(root: string): void {
+  const scriptPath = path.join(
     root,
-    '_bmad-output',
-    'runtime',
-    'requirement-records',
-    recordId,
-    'trace-execution',
-    packetId
+    '_bmad',
+    'skills',
+    'req-trace-matrix-prompt-generator',
+    'scripts',
+    'generate_prompt.js'
   );
-  fs.mkdirSync(traceDir, { recursive: true });
-  const flow = typeof packet.flow === 'string' ? packet.flow : 'story';
-  const profile = {
-    profileId: `${flow}_execution`,
-    profileHash: 'sha256:9999999999999999999999999999999999999999999999999999999999999999',
-  };
-  const modelPacketPath = path.join(traceDir, 'model_packet.json');
-  const humanPromptPath = path.join(traceDir, 'human_prompt.txt');
-  const goalExecutionPath = path.join(traceDir, 'goal_execution.md');
-  const auditReceiptPath = path.join(traceDir, 'audit_receipt.json');
+  fs.mkdirSync(path.dirname(scriptPath), { recursive: true });
   fs.writeFileSync(
-    modelPacketPath,
-    JSON.stringify(
-      {
-        artifactRole: 'execution_authority',
-        sourceDocumentHash:
-          'sha256:1111111111111111111111111111111111111111111111111111111111111111',
-        implementationConfirmationHash:
-          'sha256:2222222222222222222222222222222222222222222222222222222222222222',
-      },
-      null,
-      2
-    ) + '\n',
-    'utf8'
-  );
-  fs.writeFileSync(
-    humanPromptPath,
+    scriptPath,
     [
-      'Execution Discipline Profile',
-      `profileId: ${profile.profileId}`,
-      `profileHash: ${profile.profileHash}`,
-      'model_packet.json is the machine-readable execution authority',
-      'compiled worker body',
+      '#!/usr/bin/env node',
+      "const crypto = require('node:crypto');",
+      "const fs = require('node:fs');",
+      "const path = require('node:path');",
+      'function arg(name) { const index = process.argv.indexOf(name); return index === -1 ? null : process.argv[index + 1]; }',
+      "function shaFile(filePath) { return 'sha256:' + crypto.createHash('sha256').update(fs.readFileSync(filePath)).digest('hex'); }",
+      "const outDir = arg('--out-dir');",
+      "const recordPath = arg('--requirement-record');",
+      "const sourcePath = arg('--source-document');",
+      "const profilePath = arg('--execution-discipline-profile-ref');",
+      "if (!outDir || !recordPath || !sourcePath || !profilePath) { console.log('BLOCK: missing compiler args'); process.exit(3); }",
+      "const record = JSON.parse(fs.readFileSync(recordPath, 'utf8'));",
+      "const profile = JSON.parse(fs.readFileSync(profilePath, 'utf8'));",
+      'fs.mkdirSync(outDir, { recursive: true });',
+      "const modelPacketPath = path.join(outDir, 'model_packet.json');",
+      "const humanPromptPath = path.join(outDir, 'human_prompt.txt');",
+      "const goalExecutionPath = path.join(outDir, 'goal_execution.md');",
+      "const auditReceiptPath = path.join(outDir, 'audit_receipt.json');",
+      "fs.writeFileSync(modelPacketPath, JSON.stringify({ artifactRole: 'execution_authority', sourceDocumentHash: record.sourceDocumentHash, implementationConfirmationHash: record.implementationConfirmationHash, executionDisciplineProfile: profile }, null, 2) + '\\n', 'utf8');",
+      "fs.writeFileSync(humanPromptPath, ['Execution Discipline Profile', `profileId: ${profile.profileId}`, `profileHash: ${profile.profileHash}`, 'model_packet.json is the machine-readable execution authority', 'compiled worker body', ''].join('\\n'), 'utf8');",
+      "fs.writeFileSync(goalExecutionPath, ['# Goal Execution', `profileId: ${profile.profileId}`, `profileHash: ${profile.profileHash}`, ''].join('\\n'), 'utf8');",
+      "fs.writeFileSync(auditReceiptPath, JSON.stringify({ decision: 'pass', goalCommand: { mode: 'native_goal_document_ref', documentHash: shaFile(goalExecutionPath) }, executionDisciplineProfile: { profileId: profile.profileId, profileHash: profile.profileHash, humanPromptProfileRendered: true, goalExecutionProfileRendered: true } }, null, 2) + '\\n', 'utf8');",
+      'process.exit(0);',
       '',
     ].join('\n'),
     'utf8'
   );
-  fs.writeFileSync(
-    goalExecutionPath,
-    [
-      '# Goal Execution',
-      `profileId: ${profile.profileId}`,
-      `profileHash: ${profile.profileHash}`,
-      '',
-    ].join('\n'),
-    'utf8'
-  );
-  const goalHash = sha256File(goalExecutionPath);
-  fs.writeFileSync(
-    auditReceiptPath,
-    JSON.stringify(
-      {
-        decision: 'pass',
-        goalCommand: {
-          mode: 'native_goal_document_ref',
-          documentHash: goalHash,
-        },
-        executionDisciplineProfile: profile,
-      },
-      null,
-      2
-    ) + '\n',
-    'utf8'
-  );
-  packet.authorityMode = 'compiled_implementation_confirmation';
-  packet.executionDisciplineProfile = {
-    ...profile,
-    flow,
-    authority: 'discipline_profile_only',
-  };
-  packet.compiledPromptRef = {
-    modelPacketPath,
-    modelPacketHash: sha256File(modelPacketPath),
-    humanPromptPath,
-    humanPromptHash: sha256File(humanPromptPath),
-    auditReceiptPath,
-    auditReceiptHash: sha256File(auditReceiptPath),
-    goalExecutionPath,
-    goalExecutionHash: goalHash,
-    sourceDocumentHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
-    implementationConfirmationHash:
-      'sha256:2222222222222222222222222222222222222222222222222222222222222222',
-  };
-  packet.executionStrategy = {
-    eventType: 'execution_strategy_selected',
-    strategyId: 'compiled_trace_direct',
-    availability: 'available',
-    selectedBy: 'policy',
-    strategyOptionsHash: 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-    selectedOptionHash: 'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
-    modelPacketHash: packet.compiledPromptRef.modelPacketHash,
-    sourceDocumentHash: packet.compiledPromptRef.sourceDocumentHash,
-    implementationConfirmationHash: packet.compiledPromptRef.implementationConfirmationHash,
-  };
-  fs.writeFileSync(packetPath, JSON.stringify(packet, null, 2) + '\n', 'utf8');
 }
 
 describe('main-agent codex worker adapter e2e', () => {
@@ -522,7 +539,6 @@ describe('main-agent codex worker adapter e2e', () => {
         hydratePacket: true,
       });
       expect(instruction).not.toBeNull();
-      attachCompiledPromptRef(root, instruction!.packetPath, instruction!.packetId);
       const taskReportPath = path.join(
         root,
         '_bmad-output',
@@ -613,7 +629,6 @@ describe('main-agent codex worker adapter e2e', () => {
         hydratePacket: true,
       });
       expect(instruction).not.toBeNull();
-      attachCompiledPromptRef(root, instruction!.packetPath, instruction!.packetId);
       const adapter = runBoundCodexWorkerAdapter({
         projectRoot: root,
         recordId: 'REQ-CODEX-WORKER',
@@ -666,7 +681,6 @@ describe('main-agent codex worker adapter e2e', () => {
         host: 'claude',
         hydratePacket: true,
       });
-      attachCompiledPromptRef(root, instruction!.packetPath, instruction!.packetId);
       const taskReportPath = path.join(root, 'policy-blocked-task-report.json');
 
       const adapter = runBoundCodexWorkerAdapter({
@@ -792,7 +806,6 @@ describe('main-agent codex worker adapter e2e', () => {
         host: 'claude',
         hydratePacket: true,
       });
-      attachCompiledPromptRef(root, instruction!.packetPath, instruction!.packetId);
       const taskReportPath = path.join(root, 'fake-codex-task-report.json');
       const adapter = runBoundCodexWorkerAdapter({
         projectRoot: root,
@@ -890,6 +903,7 @@ describe('main-agent codex worker adapter e2e', () => {
   it('resolves canonical Codex agent specs when runtime .codex agents are not installed', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'main-agent-codex-canonical-'));
     try {
+      writeFakeReqTraceSkill(root);
       writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
       writeRuntimeContext(
         root,
@@ -911,7 +925,7 @@ describe('main-agent codex worker adapter e2e', () => {
         host: 'claude',
         hydratePacket: true,
       });
-      attachCompiledPromptRef(root, instruction!.packetPath, instruction!.packetId);
+      expect(instruction).not.toBeNull();
       const taskReportPath = path.join(root, 'canonical-agent-task-report.json');
 
       const adapter = runBoundCodexWorkerAdapter({
@@ -942,7 +956,6 @@ describe('main-agent codex worker adapter e2e', () => {
         host: 'codex',
         hydratePacket: true,
       });
-      attachCompiledPromptRef(root, instruction!.packetPath, instruction!.packetId);
 
       const adapter = runBoundCodexWorkerAdapter({
         projectRoot: root,
@@ -973,7 +986,6 @@ describe('main-agent codex worker adapter e2e', () => {
         host: 'codex',
         hydratePacket: true,
       });
-      attachCompiledPromptRef(root, instruction!.packetPath, instruction!.packetId);
 
       const adapter = runBoundCodexWorkerAdapter({
         projectRoot: root,
@@ -1028,7 +1040,7 @@ describe('main-agent codex worker adapter e2e', () => {
           sourceMode: 'standalone_story',
           contextScope: 'run',
           runId: 'standalone-codex-worker-run',
-          artifactPath: 'docs/requirements/standalone-worker.md',
+          artifactPath: 'tests/fixtures/requirements/standalone-worker.md',
         })
       );
       writeStandaloneRecordWithoutImplementationEntryGate(root);
@@ -1043,7 +1055,6 @@ describe('main-agent codex worker adapter e2e', () => {
         hydratePacket: true,
       });
       expect(instruction?.nextAction).toBe('dispatch_implement');
-      attachCompiledPromptRef(root, instruction!.packetPath, instruction!.packetId);
 
       const adapter = runBoundCodexWorkerAdapter({
         projectRoot: root,
@@ -1086,7 +1097,7 @@ describe('main-agent codex worker adapter e2e', () => {
           sourceMode: 'standalone_story',
           contextScope: 'run',
           runId: 'standalone-codex-worker-run',
-          artifactPath: 'docs/requirements/standalone-worker.md',
+          artifactPath: 'tests/fixtures/requirements/standalone-worker.md',
         })
       );
       writeStandaloneRecordWithoutImplementationEntryGate(root);
@@ -1101,7 +1112,6 @@ describe('main-agent codex worker adapter e2e', () => {
         hydratePacket: true,
       });
       expect(instruction?.nextAction).toBe('dispatch_implement');
-      attachCompiledPromptRef(root, instruction!.packetPath, instruction!.packetId);
       markMainAgentPacketDispatched(root, instruction!.sessionId, instruction!.packetId);
 
       const adapter = runBoundCodexWorkerAdapter({
@@ -1141,7 +1151,6 @@ describe('main-agent codex worker adapter e2e', () => {
         host: 'claude',
         hydratePacket: true,
       });
-      attachCompiledPromptRef(root, instruction!.packetPath, instruction!.packetId);
       const raw = fs.readFileSync(instruction!.packetPath, 'utf8');
       fs.writeFileSync(instruction!.packetPath, `\uFEFF${raw}`, 'utf8');
 
@@ -1170,7 +1179,6 @@ describe('main-agent codex worker adapter e2e', () => {
         host: 'claude',
         hydratePacket: true,
       });
-      attachCompiledPromptRef(root, instruction!.packetPath, instruction!.packetId);
       const taskReportPath = path.join(root, 'bad-task-report.json');
       fs.writeFileSync(
         taskReportPath,
@@ -1215,7 +1223,6 @@ describe('main-agent codex worker adapter e2e', () => {
         host: 'claude',
         hydratePacket: true,
       });
-      attachCompiledPromptRef(root, instruction!.packetPath, instruction!.packetId);
       const taskReportPath = path.join(root, 'utf16-task-report.json');
       const report = JSON.stringify(
         {
@@ -1299,7 +1306,6 @@ describe('main-agent codex worker adapter e2e', () => {
         host: 'codex',
         hydratePacket: true,
       });
-      attachCompiledPromptRef(root, instruction!.packetPath, instruction!.packetId);
       const taskReportPath = path.join(root, 'hidden-write-task-report.json');
 
       const adapter = runBoundCodexWorkerAdapter({
@@ -1337,7 +1343,6 @@ describe('main-agent codex worker adapter e2e', () => {
         host: 'claude',
         hydratePacket: true,
       });
-      attachCompiledPromptRef(root, instruction!.packetPath, instruction!.packetId);
       const reportPath = path.join(root, 'adapter-report.json');
       const taskReportPath = path.join(root, 'task-report.json');
       const registryPath = writeRegistryBindingFile(root);
@@ -1386,7 +1391,6 @@ describe('main-agent codex worker adapter e2e', () => {
         host: 'codex',
         hydratePacket: true,
       });
-      attachCompiledPromptRef(root, instruction!.packetPath, instruction!.packetId);
       const reportPath = path.join(root, 'adapter-kebab-report.json');
       const taskReportPath = path.join(root, 'task-report-kebab.json');
       const registryPath = writeRegistryBindingFile(root);
