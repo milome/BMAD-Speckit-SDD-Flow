@@ -313,6 +313,39 @@ describe('bmads Six Mental Models panorama', () => {
     }
   });
 
+  it('renders architecture confirmation prompt fallback without false skill affordance', () => {
+    const root = makeRoot([implementationReadyRecord('REQ-ARCH-PROMPT')], 'REQ-ARCH-PROMPT');
+    const recordPath = path.join(
+      root,
+      '_bmad-output',
+      'runtime',
+      'requirement-records',
+      'REQ-ARCH-PROMPT',
+      'requirement-record.json'
+    );
+    const record = JSON.parse(fs.readFileSync(recordPath, 'utf8'));
+    record.currentMentalModel = 'architecture_confirmation';
+    delete record.sixModelResults;
+    fs.writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
+
+    try {
+      const text = renderBmads(buildBmadsOutput({ projectRoot: root, budget: 'route' }));
+
+      assert.match(text, /## Available Next Actions/);
+      assert.match(text, /### Recommended Now/);
+      assert.match(text, /Current route: architecture_confirmation/);
+      assert.match(text, /Next safe action: prepare_architecture_confirmation/);
+      assert.match(text, /This route has no dedicated public skill\. Use the suggested prompt below\./);
+      assert.match(text, /Do not proceed to implementation until architecture confirmation is complete\./);
+      assert.doesNotMatch(text, /^- Skill: `prepare_architecture_confirmation`/m);
+      assert.doesNotMatch(text, /^- Skill: `author-confirmation-ready-source`/m);
+      assert.doesNotMatch(text, /^- Skill: `confirm-closeout-acceptance`/m);
+      assert.doesNotMatch(text, /`record_closed`/);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('uses nested active index records as indexed active requirements, not user explicit selection', () => {
     const root = makeRoot([implementationReadyRecord('REQ-CI-GOVERNANCE-MAPPING-FIXTURE')], 'REQ-CI-GOVERNANCE-MAPPING-FIXTURE');
     try {

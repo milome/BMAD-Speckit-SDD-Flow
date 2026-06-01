@@ -101,6 +101,7 @@ describe('bmad-help and bmads fusion contract', () => {
       assert.match(text, /# bmad-help/);
       assert.match(text, /## Recommended Next Steps/);
       assert.match(text, /## Upstream Workflow Guidance/);
+      assert.match(text, /## See also: bmads/);
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }
@@ -114,6 +115,7 @@ describe('bmad-help and bmads fusion contract', () => {
 
       assert.ok(labels.indexOf('Status Summary') < labels.indexOf('Recommended Next Steps'));
       assert.ok(labels.indexOf('Recommended Next Steps') < labels.indexOf('Upstream Workflow Guidance'));
+      assert.ok(labels.indexOf('Upstream Workflow Guidance') < labels.indexOf('See also: bmads'));
       assert.match(text, /## Runtime Cross-Entry/);
       assert.match(text, /bmad-speckit bmads/);
       assert.match(text, /View Mode: AI-TDD Runtime Six-Model Panorama/);

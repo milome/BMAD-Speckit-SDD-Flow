@@ -3,6 +3,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { resolveDisplayBudget } = require('./ai-tdd/display-budget');
 const { resolveAiTddRuntimeDecision } = require('./ai-tdd/runtime-decision');
+const { HEADING_SCHEMAS, h3, schemaHeading } = require('./markdown-sections');
+const HELP_HEADINGS = HEADING_SCHEMAS.bmadHelp;
 
 const CATALOG_HEADERS = [
   'module',
@@ -394,7 +396,7 @@ function formatAction(action, index) {
 
 function renderDiagnostic(output) {
   return [
-    '## Status Summary',
+    schemaHeading(HELP_HEADINGS, 'statusSummary'),
     '',
     `Source task: ${output.diagnostic.taskPath}`,
     '',
@@ -407,22 +409,22 @@ function renderDiagnostic(output) {
     `| implementation-readiness | ${output.diagnostic.implementationReadinessStatus} |`,
     `| module | ${output.diagnostic.module} |`,
     '',
-    '### Evidence Findings',
+    schemaHeading(HELP_HEADINGS, 'evidenceCurrentPosition'),
     ...output.diagnostic.evidenceFindings.map((item) => `- ${item}`),
     '',
-    '### Gate Notes',
+    schemaHeading(HELP_HEADINGS, 'gateBlockingState'),
     ...output.diagnostic.gatingNotes.map((item) => `- ${item}`),
   ];
 }
 
 function renderCatalog(output) {
   const lines = [
-    '## Catalog Reference',
+    schemaHeading(HELP_HEADINGS, 'catalogReference'),
     '',
     `Display mode: ${output.catalog.visibleMode}; total catalog rows: ${output.catalog.totalItems}`,
   ];
   for (const [module, items] of Object.entries(output.catalog.modules)) {
-    lines.push('', `### ${module || 'global'} (${items.length})`);
+    lines.push('', h3(`${module || 'global'} (${items.length})`));
     for (const item of items) {
       lines.push(
         `- ${item.name} (${item.code}) - ${item.command || item.workflowFile} - ${item.description}`
@@ -434,23 +436,23 @@ function renderCatalog(output) {
 
 function renderWorkflowGuidance(guidance) {
   const lines = [
-    '## Upstream Workflow Guidance',
+    schemaHeading(HELP_HEADINGS, 'upstreamWorkflowGuidance'),
     '',
     `Source: ${guidance.sourcePath}`,
     '',
-    '### Routing Rules',
+    schemaHeading(HELP_HEADINGS, 'routingRules'),
     ...guidance.routingRules.map((item) => `- ${item}`),
     '',
-    '### Display Rules',
+    schemaHeading(HELP_HEADINGS, 'displayRules'),
     ...guidance.displayRules.map((item) => `- ${item}`),
     '',
-    '### Official Execution Paths',
+    schemaHeading(HELP_HEADINGS, 'officialExecutionPaths'),
     ...guidance.officialExecutionPaths.map((item) => `- ${item}`),
   ];
   if (guidance.additionalGuidance.length > 0) {
     lines.push(
       '',
-      '### Additional Guidance',
+      schemaHeading(HELP_HEADINGS, 'additionalGuidance'),
       ...guidance.additionalGuidance.map((item) => `- ${item}`)
     );
   }
@@ -462,7 +464,7 @@ function renderRuntimeCrossEntry(output) {
   if (!runtime || !runtime.primaryRecord || runtime.activeRecords.length === 0) return [];
   const budget = output.displayBudget || resolveDisplayBudget('route');
   const lines = [
-    '## Runtime Cross-Entry',
+    schemaHeading(HELP_HEADINGS, 'runtimeCrossEntry'),
     '',
     `View Mode: ${runtime.viewMode}`,
     `Primary record: ${runtime.primaryRecord.recordId}`,
@@ -478,19 +480,30 @@ function renderRuntimeCrossEntry(output) {
   return lines;
 }
 
+function renderSeeAlsoBmads() {
+  return [
+    schemaHeading(HELP_HEADINGS, 'seeAlsoBmads'),
+    '',
+    'View Mode: AI-TDD Runtime Six-Model Panorama',
+    'Related governed runtime console: bmads',
+    'To see current RequirementRecords, Six Mental Model status, and the next safe runtime action, run `bmad-speckit bmads`.',
+  ];
+}
+
 function renderBmadHelp(output, options = {}) {
-  const lines = ['# bmad-help', ''];
+  const lines = [schemaHeading(HELP_HEADINGS, 'pageTitle'), ''];
   lines.push(...renderDiagnostic(output));
   const runtimeCrossEntry = renderRuntimeCrossEntry(output);
   if (runtimeCrossEntry.length > 0) lines.push('', ...runtimeCrossEntry);
-  lines.push('', '## Recommended Next Steps', '');
+  lines.push('', schemaHeading(HELP_HEADINGS, 'recommendedNextSteps'), '');
   output.recommendedActions.forEach((action, index) => {
     lines.push(formatAction(action, index), '');
   });
   if (options.includeCatalog) lines.push('', ...renderCatalog(output));
   if (options.debug)
-    lines.push('', '## Debug', '', ...output.diagnostic.summary.map((item) => `- ${item}`));
+    lines.push('', schemaHeading(HELP_HEADINGS, 'debug'), '', ...output.diagnostic.summary.map((item) => `- ${item}`));
   lines.push('', ...renderWorkflowGuidance(output.workflowGuidance));
+  lines.push('', ...renderSeeAlsoBmads());
   return `${lines.join('\n')}\n`;
 }
 

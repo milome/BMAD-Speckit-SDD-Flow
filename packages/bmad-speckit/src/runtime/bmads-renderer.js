@@ -3,10 +3,14 @@ const fs = require('node:fs');
 const path = require('node:path');
 const yaml = require('js-yaml');
 const { applyLimit, resolveDisplayBudget } = require('./ai-tdd/display-budget');
+const { HEADING_SCHEMAS, schemaHeading, schemaTitle } = require('./markdown-sections');
 const {
   loadActiveRequirementRecords,
   resolveAiTddRuntimeDecision,
 } = require('./ai-tdd/runtime-decision');
+
+const BMADS_HEADINGS = HEADING_SCHEMAS.bmads;
+const BMADS_ZH_HEADINGS = HEADING_SCHEMAS.bmadsZhCn;
 
 const BMADS_TEXT = {
   en: {
@@ -52,12 +56,24 @@ const BMADS_TEXT = {
     summaryWhyDefault:
       'The next step must follow the current mental model and RequirementRecord route.',
     summaryAction: (primary) => `Next safe action: ${primary.nextSafeAction}.`,
-    sectionStatusSummary: 'Status Summary',
-    sectionRecommendedNextSteps: 'Recommended Next Steps',
-    sectionActiveRequirementRecords: 'Current Actionable Requirement Records',
-    sectionSixMentalModelPanorama: 'Six Mental Model Panorama',
-    sectionRuntimeWorkflowGuidance: 'Runtime Workflow Guidance',
-    sectionSeeAlsoBmadHelp: 'See also: bmad-help',
+    headingSchema: BMADS_HEADINGS,
+    sectionStatusSummary: schemaTitle(BMADS_HEADINGS, 'statusSummary'),
+    sectionRecommendedNextSteps: schemaTitle(BMADS_HEADINGS, 'recommendedNextSteps'),
+    sectionAvailableNextActions: schemaTitle(BMADS_HEADINGS, 'availableNextActions'),
+    sectionRecommendedNow: schemaTitle(BMADS_HEADINGS, 'recommendedNow'),
+    sectionCoreSkills: schemaTitle(BMADS_HEADINGS, 'coreSkills'),
+    sectionNavigation: schemaTitle(BMADS_HEADINGS, 'navigation'),
+    sectionActiveRequirementRecords: schemaTitle(
+      BMADS_HEADINGS,
+      'currentActionableRequirementRecords'
+    ),
+    sectionSixMentalModelPanorama: schemaTitle(BMADS_HEADINGS, 'sixMentalModelPanorama'),
+    sectionRuntimeWorkflowGuidance: schemaTitle(BMADS_HEADINGS, 'runtimeWorkflowGuidance'),
+    sectionSeeAlsoBmadHelp: schemaTitle(BMADS_HEADINGS, 'seeAlsoBmadHelp'),
+    workflowRuntimeAuthority: schemaTitle(BMADS_HEADINGS, 'runtimeAuthority'),
+    workflowSafetyPriority: schemaTitle(BMADS_HEADINGS, 'safetyPriority'),
+    workflowOfficialExecutionPaths: schemaTitle(BMADS_HEADINGS, 'officialExecutionPaths'),
+    workflowReconfirmationRoutes: schemaTitle(BMADS_HEADINGS, 'reconfirmationRoutes'),
     recordSuffixFirstSafeAction: 'first safe action',
     fieldSourceTitle: 'source/title',
     fieldFirstSafeActionReason: 'first safe-action reason',
@@ -95,7 +111,7 @@ const BMADS_TEXT = {
     hiddenCurrentActionableRecords: (count, budgetName) =>
       `${count} additional current-actionable record(s) hidden by ${budgetName} budget`,
     indexPointerWarning: (warning) =>
-      `Runtime index pointer for ${warning.recordId} is ${warning.status}; sourceType=${warning.sourceType}, indexUpdatedAt=${warning.indexUpdatedAt}. It is not treated as user selection or newest-record selection.`,
+      `Runtime index pointer for ${warning.recordId} is ${warning.status}; sourceType=${warning.sourceType}, indexUpdatedAt=${warning.indexUpdatedAt}. Reason: ${warning.message}. It is not treated as user selection or newest-record selection.`,
     modelQuestions: {
       requirement_confirmation: 'What exactly will be done, excluded, and confirmed?',
       architecture_confirmation:
@@ -105,11 +121,21 @@ const BMADS_TEXT = {
       audit_review: 'Are audit, RCA, and rerun loops closed?',
       delivery_confirmation: 'Can the work be safely called complete, shipped, and closed?',
     },
-    runtimeWorkflowGuidance: [
+    runtimeAuthorityGuidance: [
       'On this page, current-actionable means not terminal closed and still carrying a safe route, blocker, acceptance wait, reconfirmation, or current attempt to resolve.',
       'CSV manifests are display projections only; they never write RequirementRecord control state.',
-      '`record_closed` is terminal event state only, not a user-executable route.',
+      'record_closed is terminal event state only, not a user-executable route.',
+    ],
+    safetyPriorityGuidance: [
       'Safety priority outranks explicit user selection: awaiting acceptance, reconfirmation, stale hash, stale attempt, delivery blocker, and readiness blocker win.',
+    ],
+    officialExecutionPaths: [
+      'Requirement contract authoring: use skill `requirements-contract-authoring`; typical action/lane: author-confirmation-ready-source.',
+      'Architecture confirmation: prepare_architecture_confirmation is a runtime route and next safe action, not a skill.',
+      'Implementation readiness: run_implementation_readiness_gate is a runtime gate action, not a skill.',
+      'Delivery confirmation: confirm-closeout-acceptance is a controlled command-like action, not a skill.',
+    ],
+    reconfirmationRoutes: [
       'Reconfirmation routes cover source hash drift, confirmation mismatch, architecture stale state, execution semantic gap, stale closeout page, stale acceptance request, and post-close defect.',
     ],
     relatedWorkflow: 'Related upstream workflow/skill: bmad-help',
@@ -143,7 +169,7 @@ const BMADS_TEXT = {
     ],
     baseAvoid: [
       'Do not choose work only by latest updated time; safety priority outranks explicit selection.',
-      'Do not treat `record_closed` as a manually executable primary action.',
+      'Do not treat record_closed as a manually executable primary action.',
     ],
     activeSeeing: (runtime, primary) => [
       `You are handling ${runtime.inventory?.currentActionableRecords ?? runtime.activeRecords.length} current-actionable RequirementRecord(s).`,
@@ -216,12 +242,24 @@ const BMADS_TEXT = {
     summaryWaitingDefault: (primary) => `第一安全动作记录位于 ${primary.currentMentalModel}。`,
     summaryWhyDefault: '下一步必须服从当前心智模型和 RequirementRecord route。',
     summaryAction: (primary) => `下一安全动作：${primary.nextSafeAction}。`,
-    sectionStatusSummary: '状态摘要',
-    sectionRecommendedNextSteps: '推荐下一步',
-    sectionActiveRequirementRecords: '可继续推进的需求记录',
-    sectionSixMentalModelPanorama: '六心智模型全景',
-    sectionRuntimeWorkflowGuidance: '运行时工作流指引',
-    sectionSeeAlsoBmadHelp: '另见：bmad-help',
+    headingSchema: BMADS_ZH_HEADINGS,
+    sectionStatusSummary: schemaTitle(BMADS_ZH_HEADINGS, 'statusSummary'),
+    sectionRecommendedNextSteps: schemaTitle(BMADS_ZH_HEADINGS, 'recommendedNextSteps'),
+    sectionAvailableNextActions: schemaTitle(BMADS_ZH_HEADINGS, 'availableNextActions'),
+    sectionRecommendedNow: schemaTitle(BMADS_ZH_HEADINGS, 'recommendedNow'),
+    sectionCoreSkills: schemaTitle(BMADS_ZH_HEADINGS, 'coreSkills'),
+    sectionNavigation: schemaTitle(BMADS_ZH_HEADINGS, 'navigation'),
+    sectionActiveRequirementRecords: schemaTitle(
+      BMADS_ZH_HEADINGS,
+      'currentActionableRequirementRecords'
+    ),
+    sectionSixMentalModelPanorama: schemaTitle(BMADS_ZH_HEADINGS, 'sixMentalModelPanorama'),
+    sectionRuntimeWorkflowGuidance: schemaTitle(BMADS_ZH_HEADINGS, 'runtimeWorkflowGuidance'),
+    sectionSeeAlsoBmadHelp: schemaTitle(BMADS_ZH_HEADINGS, 'seeAlsoBmadHelp'),
+    workflowRuntimeAuthority: schemaTitle(BMADS_ZH_HEADINGS, 'runtimeAuthority'),
+    workflowSafetyPriority: schemaTitle(BMADS_ZH_HEADINGS, 'safetyPriority'),
+    workflowOfficialExecutionPaths: schemaTitle(BMADS_ZH_HEADINGS, 'officialExecutionPaths'),
+    workflowReconfirmationRoutes: schemaTitle(BMADS_ZH_HEADINGS, 'reconfirmationRoutes'),
     recordSuffixFirstSafeAction: '第一安全动作',
     fieldSourceTitle: '来源/标题',
     fieldFirstSafeActionReason: '第一安全动作原因',
@@ -259,7 +297,7 @@ const BMADS_TEXT = {
     hiddenCurrentActionableRecords: (count, budgetName) =>
       `${count} 条额外可继续推进记录因 ${budgetName} 显示预算折叠`,
     indexPointerWarning: (warning) =>
-      `${warning.recordId} 的 runtime index 指针状态是 ${warning.status}；sourceType=${warning.sourceType}，indexUpdatedAt=${warning.indexUpdatedAt}。它不会被当成用户选择，也不会被当成最新需求。`,
+      `${warning.recordId} 的 runtime index 指针状态是 ${warning.status}；sourceType=${warning.sourceType}，indexUpdatedAt=${warning.indexUpdatedAt}。原因：${warning.status === 'ignored_fixture_pointer' ? 'runtime index 指针来自 fixture source，不会被当成用户选择' : 'runtime index 指针早于另一条可继续推进记录，不会被当成用户选择'}。它不会被当成用户选择，也不会被当成最新需求。`,
     modelQuestions: {
       requirement_confirmation: '到底要做什么、不做什么、由谁确认？',
       architecture_confirmation: '哪些系统会被影响，架构风险是否已经确认？',
@@ -268,11 +306,21 @@ const BMADS_TEXT = {
       audit_review: '审计、RCA 和 rerun 闭环是否已经关闭？',
       delivery_confirmation: '工作能安全地称为完成、交付并关闭吗？',
     },
-    runtimeWorkflowGuidance: [
+    runtimeAuthorityGuidance: [
       '本页中“可继续推进”表示记录没有 terminal close，并且仍有安全 route、阻塞、验收等待、reconfirmation 或 current attempt 需要处理。',
       'CSV manifest 只是显示投影；它们永远不会写入 RequirementRecord 控制状态。',
-      '`record_closed` 只是终态事件，不是用户可执行的主 route。',
+      'record_closed 只是终态事件，不是用户可执行的主 route。',
+    ],
+    safetyPriorityGuidance: [
       '安全优先级高于 explicit selection：等待验收、重新确认、hash 过期、attempt 过期、交付阻塞和 readiness 阻塞都会优先生效。',
+    ],
+    officialExecutionPaths: [
+      '需求契约编写：使用技能 `requirements-contract-authoring`；常用动作/lane：author-confirmation-ready-source。',
+      '架构确认：prepare_architecture_confirmation 是 runtime route 和下一安全动作，不是技能。',
+      '实现就绪：run_implementation_readiness_gate 是 runtime gate action，不是技能。',
+      '交付确认：confirm-closeout-acceptance 是受控命令型动作，不是技能。',
+    ],
+    reconfirmationRoutes: [
       'Reconfirmation route 覆盖源文档 hash 漂移、确认不匹配、架构过期、执行语义缺口、交付确认页过期、验收请求过期和关闭后缺陷。',
     ],
     relatedWorkflow: '相关 upstream workflow/skill：bmad-help',
@@ -305,7 +353,7 @@ const BMADS_TEXT = {
     ],
     baseAvoid: [
       '不要只按最新更新时间选择记录；安全优先级高于 explicit selection。',
-      '不要把 `record_closed` 当作可手动执行的主动作。',
+      '不要把 record_closed 当作可手动执行的主动作。',
     ],
     activeSeeing: (runtime, primary) => [
       `你正在处理 ${runtime.inventory?.currentActionableRecords ?? runtime.activeRecords.length} 条可继续推进的需求记录。`,
@@ -976,7 +1024,7 @@ function humanDecisionCardFor(runtime, secondaryRecords, labels) {
 
 function renderHumanDecisionCard(runtime, secondaryRecords, labels) {
   const card = humanDecisionCardFor(runtime, secondaryRecords, labels);
-  const lines = ['## Decision Card', ''];
+  const lines = [schemaHeading(labels.headingSchema, 'decisionCard'), ''];
   for (const [title, items] of [
     [labels.decisionHeadings.seeing, card.seeing],
     [labels.decisionHeadings.waiting, card.waiting],
@@ -1038,7 +1086,7 @@ function summaryCardFor(runtime, secondaryRecords, labels) {
 
 function renderStatusSummary(runtime, secondaryRecords, labels) {
   const card = summaryCardFor(runtime, secondaryRecords, labels);
-  const lines = [`## ${labels.sectionStatusSummary}`, ''];
+  const lines = [schemaHeading(labels.headingSchema, 'statusSummary'), ''];
   if (runtime.inventory) {
     lines.push(
       `${labels.inventoryLabel}: ${runtime.inventory.loadableRecords} ${labels.inventoryLoadableLabel}, ${runtime.inventory.currentActionableRecords} ${labels.inventoryCurrentActionableLabel}, ${runtime.inventory.closedOrHistoricalRecords} ${labels.inventoryClosedLabel}`
@@ -1047,9 +1095,11 @@ function renderStatusSummary(runtime, secondaryRecords, labels) {
   for (const warning of runtime.indexPointerWarnings || []) {
     lines.push(`Warning: ${labels.indexPointerWarning(warning)}`);
   }
+  lines.push('', schemaHeading(labels.headingSchema, 'evidenceCurrentPosition'));
   lines.push(`${labels.decisionHeadings.seeing}: ${card.seeing}`);
-  lines.push(`${labels.decisionHeadings.waiting}: ${card.waiting}`);
   lines.push(`${labels.decisionHeadings.why}: ${card.why}`);
+  lines.push('', schemaHeading(labels.headingSchema, 'gateBlockingState'));
+  lines.push(`${labels.decisionHeadings.waiting}: ${card.waiting}`);
   lines.push(`${labels.decisionHeadings.action}: ${card.action}`);
   lines.push(`${labels.decisionHeadings.avoid}:`);
   for (const item of card.avoid) lines.push(`- ${item}`);
@@ -1074,11 +1124,343 @@ function recommendedPrimaryAction(primary, labels) {
 function renderRecommendedNextSteps(runtime, labels) {
   const primary = runtime.primaryRecord;
   return [
-    `## ${labels.sectionRecommendedNextSteps}`,
+    schemaHeading(labels.headingSchema, 'recommendedNextSteps'),
     '',
     `1. ${recommendedPrimaryAction(primary, labels)}`,
     `2. ${labels.recommendedGoal(runtime.goalRoute.skill)}`,
     `3. ${labels.recommendedBmadHelp}`,
+  ];
+}
+
+function actionDisplay({
+  kind,
+  executable,
+  label,
+  ownerSkill = null,
+  actionToken = null,
+  suggestedPrompt = null,
+  renderAsCode = false,
+}) {
+  return {
+    kind,
+    executable: Boolean(executable),
+    label: String(label || ''),
+    ownerSkill,
+    actionToken,
+    suggestedPrompt,
+    renderAsCode: Boolean(renderAsCode),
+  };
+}
+
+function renderActionToken(action) {
+  if (!action?.actionToken) return '';
+  return action.renderAsCode ? `\`${action.actionToken}\`` : action.actionToken;
+}
+
+function coreSkillActions(language) {
+  const zh = resolveLanguage(language) === 'zh-CN';
+  if (zh) {
+    return [
+      actionDisplay({
+        kind: 'skill',
+        executable: true,
+        label: '技能：',
+        ownerSkill: 'requirements-contract-authoring',
+        actionToken: 'requirements-contract-authoring',
+        renderAsCode: true,
+      }),
+      actionDisplay({
+        kind: 'skill',
+        executable: true,
+        label: '技能：',
+        ownerSkill: 'req-trace-matrix-prompt-generator',
+        actionToken: 'req-trace-matrix-prompt-generator',
+        renderAsCode: true,
+      }),
+      actionDisplay({
+        kind: 'skill',
+        executable: true,
+        label: '技能：',
+        ownerSkill: 'goal-execution-contract-generator',
+        actionToken: 'goal-execution-contract-generator',
+        renderAsCode: true,
+      }),
+      actionDisplay({
+        kind: 'skill',
+        executable: true,
+        label: '技能：',
+        ownerSkill: 'grill-with-docs',
+        actionToken: 'grill-with-docs',
+        renderAsCode: true,
+      }),
+      actionDisplay({
+        kind: 'skill',
+        executable: true,
+        label: '技能：',
+        ownerSkill: 'docs-review',
+        actionToken: 'docs-review',
+        renderAsCode: true,
+      }),
+    ];
+  }
+  return [
+    actionDisplay({
+      kind: 'skill',
+      executable: true,
+      label: 'Skill:',
+      ownerSkill: 'requirements-contract-authoring',
+      actionToken: 'requirements-contract-authoring',
+      renderAsCode: true,
+    }),
+    actionDisplay({
+      kind: 'skill',
+      executable: true,
+      label: 'Skill:',
+      ownerSkill: 'req-trace-matrix-prompt-generator',
+      actionToken: 'req-trace-matrix-prompt-generator',
+      renderAsCode: true,
+    }),
+    actionDisplay({
+      kind: 'skill',
+      executable: true,
+      label: 'Skill:',
+      ownerSkill: 'goal-execution-contract-generator',
+      actionToken: 'goal-execution-contract-generator',
+      renderAsCode: true,
+    }),
+    actionDisplay({
+      kind: 'skill',
+      executable: true,
+      label: 'Skill:',
+      ownerSkill: 'grill-with-docs',
+      actionToken: 'grill-with-docs',
+      renderAsCode: true,
+    }),
+    actionDisplay({
+      kind: 'skill',
+      executable: true,
+      label: 'Skill:',
+      ownerSkill: 'docs-review',
+      actionToken: 'docs-review',
+      renderAsCode: true,
+    }),
+  ];
+}
+
+function recommendedNowAction(primary, language) {
+  const zh = resolveLanguage(language) === 'zh-CN';
+  if (!primary) {
+    return actionDisplay({
+      kind: 'skill',
+      executable: true,
+      label: 'requirements contract authoring',
+      ownerSkill: 'requirements-contract-authoring',
+      actionToken: 'requirements-contract-authoring',
+      renderAsCode: true,
+    });
+  }
+  const route = primary.currentMentalModel;
+  const next = primary.nextSafeAction;
+  if (primary.delivery.awaiting || next === 'confirm-closeout-acceptance') {
+    return actionDisplay({
+      kind: 'cli_command',
+      executable: true,
+      label: 'controlled delivery acceptance',
+      actionToken: 'confirm-closeout-acceptance',
+      renderAsCode: true,
+    });
+  }
+  if (/requirements-contract-authoring/iu.test(next) || route === 'requirement_confirmation') {
+    return actionDisplay({
+      kind: 'skill',
+      executable: true,
+      label: 'requirements contract authoring',
+      ownerSkill: 'requirements-contract-authoring',
+      actionToken: 'requirements-contract-authoring',
+      renderAsCode: true,
+    });
+  }
+  if (/goal-execution-contract-generator/iu.test(next)) {
+    return actionDisplay({
+      kind: 'skill',
+      executable: true,
+      label: 'goal execution contract generation',
+      ownerSkill: 'goal-execution-contract-generator',
+      actionToken: 'goal-execution-contract-generator',
+      renderAsCode: true,
+    });
+  }
+  if (/req-trace-matrix-prompt-generator/iu.test(next) || route === 'execution_closure') {
+    return actionDisplay({
+      kind: 'skill',
+      executable: true,
+      label: 'requirement trace compilation',
+      ownerSkill: 'req-trace-matrix-prompt-generator',
+      actionToken: 'req-trace-matrix-prompt-generator',
+      renderAsCode: true,
+    });
+  }
+  if (/review|grill|audit/iu.test(next) || route === 'audit_review') {
+    return actionDisplay({
+      kind: 'skill',
+      executable: true,
+      label: 'document review and grilling',
+      ownerSkill: 'grill-with-docs',
+      actionToken: 'grill-with-docs',
+      renderAsCode: true,
+    });
+  }
+  if (route === 'architecture_confirmation' && next === 'prepare_architecture_confirmation') {
+    return actionDisplay({
+      kind: 'suggested_prompt',
+      executable: true,
+      label: 'architecture confirmation suggested prompt',
+      actionToken: next,
+      suggestedPrompt: zh
+        ? '请根据当前 RequirementRecord 的 architecture_confirmation 状态，生成架构确认问题清单、影响系统、风险确认项、证据要求和阻塞项。不要进入实现，直到架构确认完成。'
+        : 'Please analyze the current RequirementRecord architecture_confirmation state and produce the architecture confirmation questions, affected systems, risk confirmations, evidence requirements, and blocking issues. Do not proceed to implementation until architecture confirmation is complete.',
+      renderAsCode: false,
+    });
+  }
+  return actionDisplay({
+    kind: 'suggested_prompt',
+    executable: true,
+    label: 'runtime route suggested prompt',
+    actionToken: next || route || 'inspect_requirement_record',
+    suggestedPrompt:
+      'Please inspect the current RequirementRecord route, identify the blocking evidence, and produce the safest next user-facing action. Do not proceed to implementation until the current route is complete.',
+    renderAsCode: false,
+  });
+}
+
+function renderCoreSkills(language) {
+  const zh = resolveLanguage(language) === 'zh-CN';
+  const actions = coreSkillActions(language);
+  if (zh) {
+    return [
+      `- ${actions[0].label} ${renderActionToken(actions[0])}`,
+      '  适用：创建或更新需求契约源文档。',
+      '  常用动作：author-confirmation-ready-source',
+      '',
+      `- ${actions[1].label} ${renderActionToken(actions[1])}`,
+      '  适用：把需求 trace 编译成 prompt / model packet / execution input。',
+      '  常见产出：prompt packet、trace matrix、model packet。',
+      '',
+      `- ${actions[2].label} ${renderActionToken(actions[2])}`,
+      '  适用：生成严格 goal 执行合同文档。',
+      '  常见产出：`docs/plans/...goal-execution-plan.md`',
+      '',
+      `- ${actions[3].label} ${renderActionToken(actions[3])}`,
+      '  适用：对需求、计划或规格文档做深度质询。',
+      '',
+      `- ${actions[4].label} ${renderActionToken(actions[4])}`,
+      '  适用：审计文档清晰度、完整性、矛盾和验收就绪度。',
+    ];
+  }
+  return [
+    `- ${actions[0].label} ${renderActionToken(actions[0])}`,
+    '  Use when: creating or updating a requirement contract source document.',
+    '  Typical action: author-confirmation-ready-source',
+    '',
+    `- ${actions[1].label} ${renderActionToken(actions[1])}`,
+    '  Use when: compiling requirement trace into prompt / model packet / execution input.',
+    '  Typical output: prompt packet, trace matrix, model packet.',
+    '',
+    `- ${actions[2].label} ${renderActionToken(actions[2])}`,
+    '  Use when: generating a strict goal execution contract document.',
+    '  Typical output: `docs/plans/...goal-execution-plan.md`',
+    '',
+    `- ${actions[3].label} ${renderActionToken(actions[3])}`,
+    '  Use when: running deep document grilling against a requirement, plan, or spec.',
+    '',
+    `- ${actions[4].label} ${renderActionToken(actions[4])}`,
+    '  Use when: auditing document clarity, completeness, contradictions, and acceptance readiness.',
+  ];
+}
+
+function navigationActions() {
+  return [
+    actionDisplay({
+      kind: 'cli_command',
+      executable: true,
+      label: 'Runtime console',
+      actionToken: 'bmad-speckit bmads',
+      renderAsCode: true,
+    }),
+    actionDisplay({
+      kind: 'cli_command',
+      executable: true,
+      label: 'BMAD workflow help',
+      actionToken: 'bmad-speckit bmad-help',
+      renderAsCode: true,
+    }),
+  ];
+}
+
+function renderNavigation(language) {
+  const zh = resolveLanguage(language) === 'zh-CN';
+  return navigationActions().map((action) =>
+    zh ? `- ${action.label}：${renderActionToken(action)}` : `- ${action.label}: ${renderActionToken(action)}`
+  );
+}
+
+function renderRecommendedNow(runtime, labels, language) {
+  const primary = runtime.primaryRecord;
+  const zh = resolveLanguage(language) === 'zh-CN';
+  const action = recommendedNowAction(primary, language);
+  const route = primary?.currentMentalModel || 'none';
+  const next = primary?.nextSafeAction || 'requirements-contract-authoring author-confirmation-ready-source';
+  const lines = [schemaHeading(labels.headingSchema, 'recommendedNow')];
+  if (zh) {
+    lines.push('', `当前 route：${route}`, `下一安全动作：${next}`);
+    if (action.kind === 'suggested_prompt') {
+      lines.push('这个 route 没有专属公开技能，请复制下面提示词执行。', '', '推荐提示词：');
+      lines.push(
+        action.suggestedPrompt ||
+          '请检查当前 RequirementRecord route，识别阻塞证据，并生成最安全的用户侧下一步。不要进入实现，直到当前 route 完成。'
+      );
+    } else if (action.kind === 'cli_command') {
+      lines.push(`受控动作：${renderActionToken(action)}`, '这个动作不是技能，只能在对应受控确认条件满足时执行。');
+    } else {
+      lines.push(`可用技能：${renderActionToken(action)}`);
+      if (action.ownerSkill === 'requirements-contract-authoring') {
+        lines.push('常用动作/lane：author-confirmation-ready-source');
+      }
+    }
+    return lines;
+  }
+  lines.push('', `Current route: ${route}`, `Next safe action: ${next}`);
+  if (action.kind === 'suggested_prompt') {
+    lines.push('This route has no dedicated public skill. Use the suggested prompt below.', '', 'Suggested prompt:');
+    lines.push(
+      action.suggestedPrompt ||
+        'Please inspect the current RequirementRecord route, identify the blocking evidence, and produce the safest next user-facing action. Do not proceed to implementation until the current route is complete.'
+    );
+  } else if (action.kind === 'cli_command') {
+    lines.push(`Controlled action: ${renderActionToken(action)}`, 'This action is not a skill and is available only under the controlled confirmation condition.');
+  } else {
+    lines.push(`Available skill: ${renderActionToken(action)}`);
+    if (action.ownerSkill === 'requirements-contract-authoring') {
+      lines.push('Typical action/lane: author-confirmation-ready-source');
+    }
+  }
+  return lines;
+}
+
+function renderAvailableNextActions(runtime, labels, language) {
+  const zh = resolveLanguage(language) === 'zh-CN';
+  return [
+    schemaHeading(labels.headingSchema, 'availableNextActions'),
+    '',
+    ...renderRecommendedNow(runtime, labels, language),
+    '',
+    schemaHeading(labels.headingSchema, 'coreSkills'),
+    '',
+    ...renderCoreSkills(language),
+    '',
+    schemaHeading(labels.headingSchema, 'navigation'),
+    '',
+    ...renderNavigation(language),
   ];
 }
 
@@ -1113,6 +1495,24 @@ function routeBasisForModel(row, primary, labels) {
   return labels.routeBasisPending;
 }
 
+function renderRuntimeWorkflowGuidance(labels) {
+  return [
+    schemaHeading(labels.headingSchema, 'runtimeWorkflowGuidance'),
+    '',
+    schemaHeading(labels.headingSchema, 'runtimeAuthority'),
+    ...labels.runtimeAuthorityGuidance.map((item) => `- ${item}`),
+    '',
+    schemaHeading(labels.headingSchema, 'safetyPriority'),
+    ...labels.safetyPriorityGuidance.map((item) => `- ${item}`),
+    '',
+    schemaHeading(labels.headingSchema, 'officialExecutionPaths'),
+    ...labels.officialExecutionPaths.map((item) => `- ${item}`),
+    '',
+    schemaHeading(labels.headingSchema, 'reconfirmationRoutes'),
+    ...labels.reconfirmationRoutes.map((item) => `- ${item}`),
+  ];
+}
+
 function modelQuestionForRow(row, labels) {
   return labels.modelQuestions?.[row.modelId] || row.question;
 }
@@ -1133,7 +1533,9 @@ function renderAiTddStatus(output) {
     '',
     ...renderRecommendedNextSteps(runtime, labels),
     '',
-    `## ${labels.sectionActiveRequirementRecords}`,
+    ...renderAvailableNextActions(runtime, labels, output.language),
+    '',
+    schemaHeading(labels.headingSchema, 'currentActionableRequirementRecords'),
     '',
   ];
   if (!primary) {
@@ -1152,7 +1554,7 @@ function renderAiTddStatus(output) {
       );
     }
   }
-  lines.push('', `## ${labels.sectionSixMentalModelPanorama}`, '');
+  lines.push('', schemaHeading(labels.headingSchema, 'sixMentalModelPanorama'), '');
   const modelRows = applyLimit(runtime.manifests.sixModelManifest || [], budget.projectionRows);
   const totalModels = runtime.manifests.sixModelManifest?.length || modelRows.length;
   for (const [index, row] of modelRows.entries()) {
@@ -1170,11 +1572,9 @@ function renderAiTddStatus(output) {
   }
   lines.push(
     '',
-    `## ${labels.sectionRuntimeWorkflowGuidance}`,
+    ...renderRuntimeWorkflowGuidance(labels),
     '',
-    ...labels.runtimeWorkflowGuidance.map((item) => `- ${item}`),
-    '',
-    `## ${labels.sectionSeeAlsoBmadHelp}`,
+    schemaHeading(labels.headingSchema, 'seeAlsoBmadHelp'),
     '',
     labels.seeAlsoViewMode,
     labels.relatedWorkflow,
@@ -1192,34 +1592,35 @@ function renderDiagnosticDetails(output) {
   const quickStart = output.quickStart;
   const contractStatus = output.contractStatus;
   const advisory = output.advisory;
+  const schema = BMADS_HEADINGS;
   const lines = [
-    '## Project State',
+    schemaHeading(schema, 'projectState'),
     '',
     `Current: ${progress.currentLayer} / ${progress.currentStage}`,
     `Next required: ${progress.nextRequiredLayer}`,
     `Completed layers: ${progress.completedLayers.length > 0 ? progress.completedLayers.join(', ') : 'none'}`,
     '',
-    '## Upstream BMAD Artifacts',
+    schemaHeading(schema, 'upstreamBmadArtifacts'),
     '',
     ...renderArtifactGroup('Product briefs', artifacts.productBriefs),
     ...renderArtifactGroup('PRDs', artifacts.prds),
     ...renderArtifactGroup('Architectures', artifacts.architectures),
     ...renderArtifactGroup('Epics', artifacts.epics),
     '',
-    '## Completed Layer Artifacts',
+    schemaHeading(schema, 'completedLayerArtifacts'),
     '',
     ...progress.stageStatuses
       .filter((item) => progress.completedLayers.includes(item.layer))
       .map((item) => `- ${item.layer}/${item.stage}: ${item.evidenceKind} ${item.evidencePath}`),
     ...(progress.completedLayers.length === 0 ? ['- none'] : []),
     '',
-    '## Implementation Readiness',
+    schemaHeading(schema, 'implementationReadiness'),
     '',
     `Status: ${readiness.status}`,
     `Reason: ${readiness.reason}`,
     `Report: ${readiness.reportPath || 'none'}`,
     '',
-    '## Current Route',
+    schemaHeading(schema, 'currentRoute'),
     '',
   ];
   if (route) {
@@ -1242,7 +1643,7 @@ function renderDiagnosticDetails(output) {
   }
   lines.push(
     '',
-    '## Main Agent',
+    schemaHeading(schema, 'mainAgent'),
     '',
     `Source: ${orchestration.source || 'unknown'}`,
     `Next action: ${orchestration.nextAction || 'none'}`,
@@ -1262,7 +1663,7 @@ function renderDiagnosticDetails(output) {
     ...(quickStart
       ? [
           '',
-          '## Quick Start',
+          schemaHeading(schema, 'quickStart'),
           '',
           quickStart.message,
           '',
@@ -1273,24 +1674,24 @@ function renderDiagnosticDetails(output) {
         ]
       : []),
     '',
-    '## Contract Status',
+    schemaHeading(schema, 'contractStatus'),
     '',
     ...Object.entries(contractStatus).map(
       ([name, exists]) => `- ${name}: ${exists ? 'present' : 'missing'}`
     ),
     '',
-    '## Stage Evidence',
+    schemaHeading(schema, 'stageEvidence'),
     '',
     ...progress.stageStatuses.map(
       (item) =>
         `- ${item.layer}/${item.stage}: ${item.completed ? 'complete' : 'missing'} (${item.evidenceKind}) ${item.evidencePath}`
     ),
     '',
-    '## Command Hints',
+    schemaHeading(schema, 'commandHints'),
     '',
     ...output.commandHints.map((item) => `- ${item}`),
     '',
-    '## BMAD Method Advisory',
+    schemaHeading(schema, 'bmadMethodAdvisory'),
     '',
     `${advisory.message} Command: \`${advisory.bmadHelpCommand}\`.`
   );
@@ -1300,7 +1701,7 @@ function renderDiagnosticDetails(output) {
 function renderBmads(output) {
   const aiTddStatus = renderAiTddStatus(output);
   const lines = [
-    '# BMADS Runtime Console',
+    schemaHeading(BMADS_HEADINGS, 'pageTitle'),
     '',
   ];
   if (aiTddStatus.length > 0) lines.push(...aiTddStatus, '');
