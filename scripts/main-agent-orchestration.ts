@@ -1580,6 +1580,7 @@ export interface MainAgentPreConfirmationDrilldownResult extends PreConfirmation
   ok: boolean;
   selectedAuthoringLane?: 'author-confirmation-ready-source';
   visibleAuthoringLaneMessage?: string;
+  advisoryScan?: Record<string, unknown>;
   status?: 'draft_updated_not_confirmation_ready';
   changedSections?: string[];
   currentBlockingReason?: string | null;
@@ -1650,6 +1651,8 @@ export interface MainAgentAuthoringRepairResult {
   ok: boolean;
   status: 'blocked' | 'pre_render_ready';
   mode: 'preserve-existing';
+  purpose: 'post_materialization_deep_audit';
+  purposeGuard: Record<string, unknown>;
   sourcePath: string;
   recordId: string;
   requirementSetId: string;
@@ -4061,6 +4064,25 @@ function buildAuthoringRepairResult(input: {
     ok: input.status === 'pre_render_ready' && !input.blockingStage,
     status: input.status,
     mode: 'preserve-existing',
+    purpose: 'post_materialization_deep_audit',
+    purposeGuard: {
+      purpose: 'post_materialization_deep_audit',
+      requiredEvidence: [
+        'current_source_hash',
+        'inline_implementationConfirmation',
+        'source_materialization_receipt',
+      ],
+      blockingStage:
+        input.blockingStage === 'source_materialization_required_before_audit'
+          ? 'source_materialization_required_before_deep_audit'
+          : input.blockingStage,
+      notAllowedBeforeMaterialization: [
+        'critical_auditor_round_request_generation',
+        'post_materialization_deep_audit',
+        'grill_with_docs',
+        'docs_review',
+      ],
+    },
     sourcePath: toRootRelativePath(input.root, input.sourcePath),
     recordId: input.recordId,
     requirementSetId: input.requirementSetId,
@@ -4099,6 +4121,18 @@ function buildCriticalAuditorRoundRequest(input: {
   const allProjectionRefs = projectionRefsFromPacket(input.packet);
   const request: Record<string, unknown> = {
     schemaVersion: 'critical-auditor-round-request/v1',
+    purpose: 'critical_auditor_round',
+    purposeGuard: {
+      purpose: 'critical_auditor_round',
+      parentPurpose: 'post_materialization_deep_audit',
+      requiredEvidence: [
+        'gate_dry_run_hash',
+        'current_source_hash',
+        'current_implementationConfirmation_hash',
+        'current_packet_hash',
+      ],
+      sourceMaterializationRequiredBeforeDeepAudit: true,
+    },
     recordId: input.recordId,
     roundIndex: input.roundIndex,
     sourceDocument: toRootRelativePath(input.root, input.sourcePath),
@@ -5776,6 +5810,15 @@ function buildPreConfirmationResult(input: {
         input.root,
         input.sourcePath
       )}`,
+    advisoryScan: {
+      purpose: 'pre_materialization_advisory_scan',
+      evidenceClass: 'not_audit_evidence',
+      notAuditEvidence: true,
+      readOnly: true,
+      loopAllowed: false,
+      artifactWriteAllowed: false,
+      appliesBefore: 'source_materialization',
+    },
     status: input.status,
     changedSections: input.changedSections ?? input.updatedSourceSections ?? [],
     currentBlockingReason: input.currentBlockingReason ?? null,

@@ -172,6 +172,33 @@ describe('requirements-contract-authoring published contract', () => {
     }
   });
 
+  it('requires visible initial scale assessment before any source-document write', () => {
+    for (const skill of readSkillSurface('SKILL.md')) {
+      expect(skill).toContain('## Pre-Write Scale Assessment Gate');
+      expect(skill).toContain('Before any source-document write');
+      expect(skill).toContain('assess_contract_authoring_scale.js');
+      expect(skill).toContain('--phase initial_assessment');
+      expect(skill).toContain('scale-assessment-initial.json');
+      expect(skill).toContain('main-agent-orchestration --action author-confirmation-ready-source');
+      expect(skill).toContain('safe-write helper, large-document replacement helper');
+      expect(skill).toContain('visible scale-assessment `stderr` trace');
+      expect(skill).toContain('pre_write_scale_assessment_required');
+      expect(skill).toContain('Do not claim that checkpoint assessment is unnecessary');
+    }
+
+    for (const workflow of readSkillSurface(
+      path.join('references', 'semantic-checkpoint-workflow.md')
+    )) {
+      expect(workflow).toContain(
+        '`initial_assessment` is a pre-write gate for every source-document write in `author-confirmation-ready-source`'
+      );
+      expect(workflow).toContain('safe-write helper, large-document replacement helper');
+      expect(workflow).toContain('scale-assessment-initial.json');
+      expect(workflow).toContain('visible `initial_assessment` trace to `stderr`');
+      expect(workflow).toContain('pre_write_scale_assessment_required');
+    }
+  });
+
   it('requires source materialization before deep audit and keeps preserve-existing audit-only', () => {
     for (const skill of readSkillSurface('SKILL.md')) {
       expect(skill).toContain('source_materialization_before_deep_audit');
@@ -189,6 +216,41 @@ describe('requirements-contract-authoring published contract', () => {
         '`grill-with-docs` / `docs-review` MUST audit written files only instead of chat-only drafts'
       );
     }
+  });
+
+  it('distinguishes pre-materialization advisory scans from deep audit and checkpoint evidence', () => {
+    for (const skill of readSkillSurface('SKILL.md')) {
+      expect(skill).toContain('pre_materialization_advisory_scan');
+      expect(skill).toContain('purpose=pre_materialization_advisory_scan');
+      expect(skill).toContain('not_audit_evidence');
+      expect(skill).toContain('MUST NOT write audit artifacts');
+      expect(skill).toContain('MUST NOT run as a loop');
+      expect(skill).toContain('MUST NOT be called checkpoint');
+      expect(skill).toContain('MUST NOT be called Critical Auditor');
+      expect(skill).toContain('MUST NOT count as convergence evidence');
+      expect(skill).toContain('post_materialization_deep_audit');
+      expect(skill).toContain('critical_auditor_round');
+    }
+  });
+
+  it('splits atomic decomposition into packet planning before materialization and auditor convergence after materialization', () => {
+    for (const skill of readSkillSurface('SKILL.md')) {
+      expect(skill).toContain('pre-materialization phase performs packet planning and source edit planning');
+      expect(skill).toContain('may use quick scan and `pre_materialization_advisory_scan` only as read-only, non-audit guidance');
+      expect(skill).toContain('post-materialization phase performs auditor convergence');
+    }
+  });
+
+  it('documents that semantic checkpoints do not spawn subagents or perform audit reasoning', () => {
+    const workflow = readSkillFile(path.join('references', 'semantic-checkpoint-workflow.md'));
+
+    expect(workflow).toContain('The checkpoint runner does not spawn subagents');
+    expect(workflow).toContain('Checkpoint mode does not review, audit, reason over semantic gaps');
+    expect(workflow).toContain('run three-perspective analysis');
+    expect(workflow).toContain('perform Critical Auditor convergence');
+    expect(workflow).toContain('persists only source edits that were already materialized');
+    expect(workflow).toContain('human-readable status page to `stderr`');
+    expect(workflow).toContain('must not replace JSON `stdout`');
   });
 
   it('requires authority-first fact collection and ID matrix design before authoring prose', () => {

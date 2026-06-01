@@ -664,6 +664,14 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
 
       const parsed = JSON.parse(captured.stdout);
       expect(parsed.selectedAuthoringLane).toBe('author-confirmation-ready-source');
+      expect(parsed.advisoryScan).toMatchObject({
+        purpose: 'pre_materialization_advisory_scan',
+        evidenceClass: 'not_audit_evidence',
+        notAuditEvidence: true,
+        readOnly: true,
+        loopAllowed: false,
+        artifactWriteAllowed: false,
+      });
       expect(parsed.visibleAuthoringLaneMessage).toContain(
         'author-confirmation-ready-source lane selected'
       );
@@ -1133,8 +1141,8 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       expect(result.currentBlockingReason).toBe('confirmation_language_not_selected');
       expect(result.nextRequiredAction).toBe('select_confirmation_language_then_render_confirmation');
       expect(result.nextUserPrompt).toBe('请选择确认页语言：中文 / English / 中英双语');
-      expect(result.changedSections.length).toBeGreaterThan(0);
-      expect(result.updatedSourceSections.length).toBeGreaterThan(0);
+      expect((result.changedSections ?? []).length).toBeGreaterThan(0);
+      expect((result.updatedSourceSections ?? []).length).toBeGreaterThan(0);
       expect(result.blockingIssues.map((issue) => issue.code)).toContain(
         'language_required_before_render'
       );

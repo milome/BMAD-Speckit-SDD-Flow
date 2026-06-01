@@ -393,6 +393,11 @@ describe('source materialization before deep audit', () => {
         recordId,
         mode: 'preserve-existing',
       });
+      expect(missingReceipt.purpose).toBe('post_materialization_deep_audit');
+      expect(missingReceipt.purposeGuard).toMatchObject({
+        purpose: 'post_materialization_deep_audit',
+        blockingStage: 'source_materialization_required_before_deep_audit',
+      });
       expect(missingReceipt.blockingStage).toBe('source_materialization_required_before_audit');
       expect(missingReceipt.blockingIssues.map((issue: any) => issue.code)).toContain(
         'source_materialization_receipt_missing'
@@ -410,6 +415,9 @@ describe('source materialization before deep audit', () => {
         recordId,
         mode: 'preserve-existing',
       });
+      expect(staleReceipt.purposeGuard.blockingStage).toBe(
+        'source_materialization_required_before_deep_audit'
+      );
       expect(staleReceipt.blockingStage).toBe('source_materialization_required_before_audit');
       expect(staleReceipt.blockingIssues.map((issue: any) => issue.code)).toContain(
         'source_materialization_receipt_source_hash_stale'
@@ -427,6 +435,9 @@ describe('source materialization before deep audit', () => {
         recordId,
         mode: 'preserve-existing',
       });
+      expect(draftReceipt.purposeGuard.blockingStage).toBe(
+        'source_materialization_required_before_deep_audit'
+      );
       expect(draftReceipt.blockingStage).toBe('source_materialization_required_before_audit');
       expect(draftReceipt.blockingIssues.map((issue: any) => issue.code)).toContain(
         'source_materialization_receipt_not_confirmation_ready'
@@ -439,6 +450,9 @@ describe('source materialization before deep audit', () => {
         recordId: 'REQ-NO-INLINE',
         mode: 'preserve-existing',
       });
+      expect(missingInline.purposeGuard.blockingStage).toBe(
+        'source_materialization_required_before_deep_audit'
+      );
       expect(missingInline.blockingStage).toBe('source_materialization_required_before_audit');
       expect(missingInline.blockingIssues.map((issue: any) => issue.code)).toContain(
         'implementation_confirmation_missing'
@@ -463,6 +477,15 @@ describe('source materialization before deep audit', () => {
         mode: 'preserve-existing',
       });
       expect(first.blockingStage).toBe('critical_auditor_round_required');
+      const firstRequest = readJson(requestPath(root, recordId, 1));
+      expect(firstRequest).toMatchObject({
+        purpose: 'critical_auditor_round',
+        purposeGuard: {
+          purpose: 'critical_auditor_round',
+          parentPurpose: 'post_materialization_deep_audit',
+          sourceMaterializationRequiredBeforeDeepAudit: true,
+        },
+      });
       writeValidatedGapResponse(requestPath(root, recordId, 1), responsePath(root, recordId, 1));
 
       const gapResult = runMainAgentAuthoringRepair(root, {
