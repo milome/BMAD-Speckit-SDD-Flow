@@ -12,6 +12,7 @@ const SAFETY_PRIORITY = {
   delivery_closeout_blocker: 60,
   readiness_blocker: 50,
   explicit_user_selection: 40,
+  indexed_active_record: 30,
   active_record: 10,
 };
 
@@ -44,6 +45,11 @@ function truthy(value) {
   return value === true || value === 'true' || value === 'pass' || value === 'passed';
 }
 
+function numericTimestamp(value) {
+  const parsed = Date.parse(text(value));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 function recordIdFromPath(recordPath) {
   return path.basename(path.dirname(recordPath));
 }
@@ -67,6 +73,101 @@ function activeIdsFromIndex(index) {
     else if (item?.requirementSetId) ids.push(String(item.requirementSetId));
   }
   return unique(ids);
+}
+
+function indexedActiveIdsFromIndex(index) {
+  return unique([
+    index?.active?.recordId,
+    index?.active?.requirementSetId,
+    index?.activeRecordId,
+    index?.activeRequirementSetId,
+    index?.currentRequirementSetId,
+    ...asArray(index?.activeRecordIds),
+  ].map((item) => (item ? String(item) : '')));
+}
+
+function idMatchesRecord(item, recordId, requirementSetId) {
+  const ids = new Set([recordId, requirementSetId].filter(Boolean).map(String));
+  return [
+    item?.recordId,
+    item?.requirementSetId,
+    item?.requirementId,
+    item?.id,
+  ].some((candidate) => ids.has(String(candidate || '')));
+}
+
+function indexPointerMetadata(index, recordId, requirementSetId, isIndexedActive) {
+  if (!isIndexedActive) {
+    return {
+      isIndexedActive: false,
+      sourceType: '',
+      updatedAt: '',
+    };
+  }
+  const matchingItem =
+    asArray(index?.items).find((item) => idMatchesRecord(item, recordId, requirementSetId)) ||
+    asArray(index?.records).find((item) => idMatchesRecord(item, recordId, requirementSetId)) ||
+    (idMatchesRecord(index?.active, recordId, requirementSetId) ? index.active : null);
+  return {
+    isIndexedActive: true,
+    sourceType: text(matchingItem?.sourceType) || text(index?.active?.sourceType) || text(index?.sourceType),
+    updatedAt: text(matchingItem?.updatedAt) || text(index?.active?.updatedAt) || text(index?.updatedAt),
+  };
+}
+
+function userSelectedIdsFromOptions(options = {}) {
+  return unique([
+    options.recordId,
+    options.requirementSetId,
+    options.activeRecordId,
+    options.activeRequirementSetId,
+  ].map((item) => (item ? String(item) : '')));
+}
+
+function hasPostCloseRoute(record) {
+  return Boolean(
+    record.postCloseDefectIntake ||
+      record.closureIntegrityIncident ||
+      record.linkedBugfixRequirementId ||
+      record.postCloseDefect ||
+      record.postCloseRoute
+  );
+}
+
+function isTerminalClosedRecord(record) {
+  if (hasPostCloseRoute(record)) return false;
+  const closeoutAcceptance =
+    record.closeoutAcceptance && typeof record.closeoutAcceptance === 'object'
+      ? record.closeoutAcceptance
+      : {};
+  const closeout = record.closeout && typeof record.closeout === 'object' ? record.closeout : {};
+  const acceptanceRequest =
+    closeout.acceptanceRequest && typeof closeout.acceptanceRequest === 'object'
+      ? closeout.acceptanceRequest
+      : {};
+  return (
+    text(record.status) === 'closed' ||
+    text(record.lifecycleStatus) === 'closed' ||
+    text(record.lastEventType) === 'record_closed' ||
+    text(record.lastAppliedEventId).startsWith('record_closed:') ||
+    text(closeoutAcceptance.status) === 'user_accepted_closeout' ||
+    text(acceptanceRequest.status) === 'user_accepted_closeout'
+  );
+}
+
+function classifyRecordActivity(record) {
+  if (isTerminalClosedRecord(record)) {
+    return {
+      activityState: 'closed_history',
+      isCurrentActionable: false,
+      isTerminalClosed: true,
+    };
+  }
+  return {
+    activityState: 'current_actionable',
+    isCurrentActionable: true,
+    isTerminalClosed: false,
+  };
 }
 
 function recordPathsFromIndex(projectRoot, index) {
@@ -95,7 +196,7 @@ function scanRecordPaths(projectRoot) {
     .filter((candidate) => fs.existsSync(candidate));
 }
 
-function loadActiveRequirementRecords(projectRoot) {
+function loadActiveRequirementRecords(projectRoot, options = {}) {
   const indexPath = path.join(
     projectRoot,
     '_bmad-output',
@@ -104,63 +205,92 @@ function loadActiveRequirementRecords(projectRoot) {
     'index.json'
   );
   const index = readJson(indexPath) || {};
-  const explicitIds = new Set(activeIdsFromIndex(index));
+  const indexedActiveIds = new Set(indexedActiveIdsFromIndex(index));
+  const userSelectedIds = new Set(userSelectedIdsFromOptions(options));
   const paths = recordPathsFromIndex(projectRoot, index);
-  const candidates = paths.length > 0 ? paths : scanRecordPaths(projectRoot);
+  const candidates = unique([...paths, ...scanRecordPaths(projectRoot)]);
   const records = [];
+  const allRecords = [];
+  const closedRecords = [];
   for (const recordPath of candidates) {
     const record = readJson(recordPath);
     if (!record || typeof record !== 'object') continue;
     const recordId = text(record.recordId) || text(record.requirementSetId) || recordIdFromPath(recordPath);
+    const requirementSetId = text(record.requirementSetId);
     if (
-      explicitIds.size > 0 &&
-      !explicitIds.has(recordId) &&
-      !explicitIds.has(text(record.requirementSetId))
+      userSelectedIds.size > 0 &&
+      !userSelectedIds.has(recordId) &&
+      !userSelectedIds.has(requirementSetId)
     ) {
       continue;
     }
-    records.push({
+    const isExplicitSelection =
+      userSelectedIds.has(recordId) || userSelectedIds.has(requirementSetId);
+    const isIndexedActive =
+      indexedActiveIds.has(recordId) || indexedActiveIds.has(requirementSetId);
+    const indexPointer = indexPointerMetadata(index, recordId, requirementSetId, isIndexedActive);
+    const activity = classifyRecordActivity(record);
+    const entry = {
       record,
       recordPath,
       recordId,
-      isExplicitSelection:
-        text(index.activeRecordId) === recordId ||
-        text(index.active?.recordId) === recordId ||
-        text(index.activeRequirementSetId) === recordId,
-    });
+      isExplicitSelection,
+      isIndexedActive,
+      indexPointer,
+      ...activity,
+    };
+    allRecords.push(entry);
+    if (activity.isCurrentActionable) records.push(entry);
+    else closedRecords.push(entry);
   }
-  return { index, records };
+  return { index, records, allRecords, closedRecords };
 }
 
-function statusForModel(record, modelId) {
+function modelStatusEvidence(record, modelId, currentMentalModel = '') {
   const explicit = record.sixModelResults?.[modelId]?.status || record.sixModelResults?.[modelId];
-  if (typeof explicit === 'string') return explicit;
-  if (explicit && typeof explicit.status === 'string') return explicit.status;
+  if (typeof explicit === 'string') {
+    return { status: explicit, source: 'explicit sixModelResults' };
+  }
+  if (explicit && typeof explicit.status === 'string') {
+    return { status: explicit.status, source: 'explicit sixModelResults' };
+  }
   if (modelId === 'requirement_confirmation') {
     return record.sourceDocumentHash && record.implementationConfirmationHash
-      ? 'pass'
-      : 'not_established';
+      ? {
+          status: 'pass',
+          source: 'inferred from sourceDocumentHash + implementationConfirmationHash',
+        }
+      : { status: 'not_established', source: 'missing source/implementation confirmation hash' };
   }
   if (modelId === 'architecture_confirmation') {
-    if (/stale/iu.test(text(record.architectureConfirmationState))) return 'stale';
+    if (/stale/iu.test(text(record.architectureConfirmationState))) {
+      return { status: 'stale', source: 'architectureConfirmationState' };
+    }
     return record.architectureConfirmationHash || record.architectureConfirmationState === 'active'
-      ? 'pass'
-      : 'not_established';
+      ? { status: 'pass', source: 'inferred from architectureConfirmationHash' }
+      : { status: 'not_established', source: 'missing architecture confirmation evidence' };
   }
   if (modelId === 'implementation_readiness') {
     const checks = asArray(record.gateChecks).concat(asArray(record.contractChecks));
     if (checks.some((check) => /fail|blocked/iu.test(text(check.status || check.result)))) {
-      return 'blocked';
+      return { status: 'blocked', source: 'gateChecks/contractChecks' };
     }
     if (checks.some((check) => /pass|ready|ready_clean|repair_closed/iu.test(text(check.status || check.result)))) {
-      return 'pass';
+      return { status: 'pass', source: 'gateChecks/contractChecks' };
     }
-    return 'not_established';
+    return { status: 'not_established', source: 'missing readiness gate evidence' };
   }
   if (modelId === 'delivery_confirmation' && deliveryAwaitingAcceptance(record)) {
-    return 'awaiting_user_acceptance';
+    return { status: 'awaiting_user_acceptance', source: 'delivery acceptance request' };
   }
-  return 'not_established';
+  if (modelId === currentMentalModel) {
+    return { status: 'not_established', source: 'inferred current position' };
+  }
+  return { status: 'not_established', source: 'no model evidence found' };
+}
+
+function statusForModel(record, modelId) {
+  return modelStatusEvidence(record, modelId).status;
 }
 
 function inferCurrentMentalModel(record) {
@@ -276,7 +406,15 @@ function deliveryAwaitingAcceptance(record) {
   return deliveryInfo(record).awaiting;
 }
 
-function safetyReason(record, modelStatus, blockers, delivery, reconfirmation, isExplicitSelection) {
+function safetyReason(
+  record,
+  modelStatus,
+  blockers,
+  delivery,
+  reconfirmation,
+  isExplicitSelection,
+  isIndexedActive
+) {
   if (delivery.awaiting) return 'awaiting_user_acceptance';
   if (reconfirmation.required) return 'open_reconfirmation';
   if (delivery.hashMismatch || /hash_mismatch|stale_hash/iu.test(blockers.join(' '))) return 'stale_hash';
@@ -290,6 +428,7 @@ function safetyReason(record, modelStatus, blockers, delivery, reconfirmation, i
   }
   if (modelStatus === 'blocked' || /readiness/iu.test(blockers.join(' '))) return 'readiness_blocker';
   if (isExplicitSelection) return 'explicit_user_selection';
+  if (isIndexedActive) return 'indexed_active_record';
   return 'active_record';
 }
 
@@ -320,7 +459,7 @@ function canCompileGoalPacket(record, summary) {
 }
 
 function summarizeRecord(entry) {
-  const { record, recordPath, recordId, isExplicitSelection } = entry;
+  const { record, recordPath, recordId, isExplicitSelection, isIndexedActive } = entry;
   const currentMentalModel = inferCurrentMentalModel(record);
   const schemaModelStatus = statusForModel(record, currentMentalModel);
   const blockers = openBlockers(record);
@@ -332,7 +471,8 @@ function summarizeRecord(entry) {
     blockers,
     delivery,
     reconfirmation,
-    isExplicitSelection
+    isExplicitSelection,
+    isIndexedActive
   );
   const hasSafetyBlocker = SAFETY_PRIORITY[reason] > SAFETY_PRIORITY.explicit_user_selection;
   const nextSafeAction = nextSafeActionFor({
@@ -352,9 +492,19 @@ function summarizeRecord(entry) {
         : blockers.length > 0
           ? 'blocked'
           : schemaModelStatus;
+  const modelStatuses = {};
+  for (const modelId of MODEL_IDS) {
+    const evidence = modelStatusEvidence(record, modelId, currentMentalModel);
+    modelStatuses[modelId] = {
+      ...evidence,
+      isCurrent: currentMentalModel === modelId,
+    };
+  }
   return {
     recordId,
     sourceOrTitle: sourceOrTitle(record),
+    activityState: entry.activityState,
+    isTerminalClosed: entry.isTerminalClosed,
     currentMentalModel,
     schemaModelStatus,
     displayState,
@@ -374,18 +524,70 @@ function summarizeRecord(entry) {
     primaryReasonToken: reason,
     primaryPriority: SAFETY_PRIORITY[reason],
     isExplicitSelection,
+    isIndexedActive,
+    indexPointer: entry.indexPointer || {
+      isIndexedActive,
+      sourceType: '',
+      updatedAt: '',
+    },
+    indexPointerStatus: isIndexedActive ? 'trusted_pointer' : 'not_index_pointer',
     hasSafetyBlocker,
+    modelStatuses,
     recordPath: normalizePath(path.relative(process.cwd(), recordPath)),
     rawRecord: record,
   };
 }
 
+function isFixtureIndexPointer(record) {
+  return /(?:^|[_-])ci[_-]?fixture(?:$|[_-])|fixture|test/iu.test(
+    text(record.indexPointer?.sourceType)
+  );
+}
+
+function annotateIndexPointerTrust(records, index) {
+  const newestRecordTimestamp = Math.max(0, ...records.map((record) => numericTimestamp(record.updatedAt)));
+  const indexTimestamp = numericTimestamp(index?.updatedAt);
+  for (const record of records) {
+    if (!record.isIndexedActive) {
+      record.indexPointerStatus = 'not_index_pointer';
+      record.selectionPriority = record.primaryPriority;
+      continue;
+    }
+    const pointerTimestamp = numericTimestamp(record.indexPointer?.updatedAt) || indexTimestamp;
+    const fixturePointer = isFixtureIndexPointer(record);
+    const stalePointer =
+      pointerTimestamp > 0 &&
+      newestRecordTimestamp > pointerTimestamp &&
+      numericTimestamp(record.updatedAt) < newestRecordTimestamp;
+    const ignoredForSelection =
+      record.primaryReasonToken === 'indexed_active_record' &&
+      !record.isExplicitSelection &&
+      (fixturePointer || stalePointer);
+    if (ignoredForSelection) {
+      record.indexPointerStatus = fixturePointer
+        ? 'ignored_fixture_pointer'
+        : 'ignored_stale_pointer';
+      record.primaryReasonToken = 'active_record';
+      record.primaryPriority = SAFETY_PRIORITY.active_record;
+      record.selectionPriority = SAFETY_PRIORITY.active_record;
+      continue;
+    }
+    record.indexPointerStatus = 'trusted_pointer';
+    record.selectionPriority = record.primaryPriority;
+  }
+  return records;
+}
+
 function selectPrimaryRecord(records) {
   if (records.length === 0) return null;
   return [...records].sort((left, right) => {
-    if (right.primaryPriority !== left.primaryPriority) {
-      return right.primaryPriority - left.primaryPriority;
+    const leftPriority = left.selectionPriority ?? left.primaryPriority;
+    const rightPriority = right.selectionPriority ?? right.primaryPriority;
+    if (rightPriority !== leftPriority) {
+      return rightPriority - leftPriority;
     }
+    const updatedDelta = numericTimestamp(right.updatedAt) - numericTimestamp(left.updatedAt);
+    if (updatedDelta !== 0) return updatedDelta;
     return left.recordId.localeCompare(right.recordId);
   })[0];
 }
@@ -409,19 +611,41 @@ function goalRouteRecommendation(activeRecords, primaryRecord) {
   };
 }
 
+function indexPointerWarnings(activeRecords) {
+  return activeRecords
+    .filter((record) => /^ignored_/u.test(record.indexPointerStatus))
+    .map((record) => ({
+      recordId: record.recordId,
+      status: record.indexPointerStatus,
+      sourceType: record.indexPointer?.sourceType || 'unknown',
+      indexUpdatedAt: record.indexPointer?.updatedAt || 'unknown',
+      recordUpdatedAt: record.updatedAt,
+      message:
+        record.indexPointerStatus === 'ignored_fixture_pointer'
+          ? 'runtime index pointer comes from a fixture source and is not treated as user selection'
+          : 'runtime index pointer is older than another current-actionable record and is not treated as user selection',
+    }));
+}
+
 function resolveAiTddRuntimeDecision(projectRoot, options = {}) {
   const root = path.resolve(projectRoot || process.cwd());
   const manifests = loadAiTddProjectionManifests(root, { assetRoot: options.assetRoot });
-  const { records } = loadActiveRequirementRecords(root);
-  const activeRecords = records.map(summarizeRecord);
+  const { index, records, allRecords, closedRecords } = loadActiveRequirementRecords(root, options);
+  const activeRecords = annotateIndexPointerTrust(records.map(summarizeRecord), index);
   const primaryRecord = selectPrimaryRecord(activeRecords);
   return {
     viewMode: VIEW_MODE,
     displayBudget: options.displayBudget || 'route',
     manifests,
+    inventory: {
+      loadableRecords: allRecords.length,
+      currentActionableRecords: activeRecords.length,
+      closedOrHistoricalRecords: closedRecords.length,
+    },
     activeRecords,
     primaryRecord,
     primaryBecause: primaryRecord ? primaryRecord.primaryReasonToken : 'no_active_requirement',
+    indexPointerWarnings: indexPointerWarnings(activeRecords),
     nextSafeAction: primaryRecord
       ? primaryRecord.nextSafeAction
       : 'requirements-contract-authoring author-confirmation-ready-source',

@@ -8,7 +8,7 @@ const BUDGET_DETAILS = {
     crossEntryLines: 3,
   },
   route: {
-    projectionRows: 5,
+    projectionRows: 6,
     secondaryRecords: 2,
     skillDetails: true,
     crossEntryLines: 5,

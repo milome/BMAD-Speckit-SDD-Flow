@@ -3,18 +3,344 @@ const fs = require('node:fs');
 const path = require('node:path');
 const yaml = require('js-yaml');
 const { applyLimit, resolveDisplayBudget } = require('./ai-tdd/display-budget');
-const { resolveAiTddRuntimeDecision } = require('./ai-tdd/runtime-decision');
+const {
+  loadActiveRequirementRecords,
+  resolveAiTddRuntimeDecision,
+} = require('./ai-tdd/runtime-decision');
 
-const QUICK_START_MESSAGE =
-  '当前项目尚未创建需求契约。BMAD 不会把初始化占位状态当作真实需求。请先创建或导入一个可确认的需求源文档。';
-
-const QUICK_START_ENTRIES = [
-  '创建产品/功能需求契约',
-  '创建 Bugfix 需求契约',
-  '创建独立任务契约',
-  '导入已有需求文档',
-  '查看当前阻塞原因',
-];
+const BMADS_TEXT = {
+  en: {
+    quickStartMessage:
+      'No confirmed requirement contract is active yet. BMAD will not treat bootstrap or empty state as an implementation target. Create or import a confirmable requirement source first.',
+    quickStartEntries: [
+      'Create a product or feature requirement contract',
+      'Create a bugfix requirement contract',
+      'Create a standalone task contract',
+      'Import an existing requirement document',
+      'Review the current blocker',
+    ],
+    decisionHeadings: {
+      seeing: 'What you are looking at',
+      waiting: 'What is blocking progress',
+      why: 'Why this matters',
+      action: 'What to do now',
+      avoid: 'What not to do',
+    },
+    summaryNoActiveSeeing: (runtime) =>
+      `There are ${runtime?.inventory?.currentActionableRecords ?? 0} current-actionable requirement record(s) to continue.`,
+    summaryNoActiveWaiting:
+      'The system is waiting for a confirmable requirement contract source and its RequirementRecord.',
+    summaryNoActiveWhy:
+      'Without a confirmed source, BMADS cannot decide which mental model or runtime route is safe.',
+    summaryNoActiveAction:
+      'Next safe action: requirements-contract-authoring author-confirmation-ready-source.',
+    summarySeeing: (primary) =>
+      `You are looking at the AI-TDD runtime state for ${primary.recordId}.`,
+    summaryWaitingDelivery: 'The system is waiting for user delivery acceptance.',
+    summaryWhyDelivery:
+      'Delivery confirmation cannot close until controlled closeout acceptance ingest records the exact accepted hash.',
+    summaryWaitingReconfirmation: (primary) =>
+      `The system is waiting for reconfirmation: ${primary.reconfirmation.triggerId}.`,
+    summaryWhyReconfirmation:
+      'A stale source, confirmation, architecture, execution, or closeout carrier must be repaired before later work continues.',
+    summaryWaitingReadiness:
+      'The system is waiting for implementation readiness to pass.',
+    summaryWhyReadiness:
+      'Implementation and story development stay blocked until the governed readiness gate is current and passing.',
+    summaryWaitingDefault: (primary) =>
+      `The first safe-action record is positioned at ${primary.currentMentalModel}.`,
+    summaryWhyDefault:
+      'The next step must follow the current mental model and RequirementRecord route.',
+    summaryAction: (primary) => `Next safe action: ${primary.nextSafeAction}.`,
+    sectionStatusSummary: 'Status Summary',
+    sectionRecommendedNextSteps: 'Recommended Next Steps',
+    sectionActiveRequirementRecords: 'Current Actionable Requirement Records',
+    sectionSixMentalModelPanorama: 'Six Mental Model Panorama',
+    sectionRuntimeWorkflowGuidance: 'Runtime Workflow Guidance',
+    sectionSeeAlsoBmadHelp: 'See also: bmad-help',
+    recordSuffixFirstSafeAction: 'first safe action',
+    fieldSourceTitle: 'source/title',
+    fieldFirstSafeActionReason: 'first safe-action reason',
+    fieldSelectedByUser: 'selected by user',
+    fieldRuntimeIndexPointer: 'runtime index pointer',
+    fieldRuntimeIndexPointerStatus: 'runtime index pointer status',
+    fieldActivityState: 'activity state',
+    fieldCurrentMentalModel: 'current mental model',
+    fieldSchemaModelStatus: 'schema model status',
+    fieldDisplayState: 'display state',
+    fieldBlockerSummary: 'blocker summary',
+    fieldNextSafeAction: 'next safe action',
+    fieldUpdatedAtCurrent: 'updatedAt/current',
+    fieldCurrentAttemptHash: 'current attempt/hash',
+    fieldCloseoutPage: 'closeout page',
+    fieldCloseoutRenderReport: 'closeout render report',
+    fieldDeliveryCloseoutReportHash: 'delivery closeout report hash',
+    fieldExactConfirmationInstruction: 'exact confirmation instruction',
+    fieldUserFacingNextAction: 'user-facing next action',
+    fieldTerminalCompletion: 'terminal completion',
+    boolYes: 'yes',
+    boolNo: 'no',
+    modelQuestionLabel: 'Question',
+    modelStatusLabel: 'Status',
+    modelStatusSourceLabel: 'Evidence source',
+    routeBasisLabel: 'Route basis',
+    routeBasisCurrent: 'current RequirementRecord model',
+    routeBasisPending: 'waiting for prior model evidence',
+    routeBasisTerminal: 'terminal event only, not a user-executable action',
+    currentStatusSuffix: 'inferred current position',
+    inventoryLabel: 'Record inventory',
+    inventoryLoadableLabel: 'loadable record(s)',
+    inventoryCurrentActionableLabel: 'current-actionable record(s)',
+    inventoryClosedLabel: 'closed/history record(s)',
+    hiddenCurrentActionableRecords: (count, budgetName) =>
+      `${count} additional current-actionable record(s) hidden by ${budgetName} budget`,
+    indexPointerWarning: (warning) =>
+      `Runtime index pointer for ${warning.recordId} is ${warning.status}; sourceType=${warning.sourceType}, indexUpdatedAt=${warning.indexUpdatedAt}. It is not treated as user selection or newest-record selection.`,
+    modelQuestions: {
+      requirement_confirmation: 'What exactly will be done, excluded, and confirmed?',
+      architecture_confirmation:
+        'Which systems are affected, and are architectural risks confirmed?',
+      implementation_readiness: 'Is it safe to enter implementation?',
+      execution_closure: 'Are trace slices closed with current evidence?',
+      audit_review: 'Are audit, RCA, and rerun loops closed?',
+      delivery_confirmation: 'Can the work be safely called complete, shipped, and closed?',
+    },
+    runtimeWorkflowGuidance: [
+      'On this page, current-actionable means not terminal closed and still carrying a safe route, blocker, acceptance wait, reconfirmation, or current attempt to resolve.',
+      'CSV manifests are display projections only; they never write RequirementRecord control state.',
+      '`record_closed` is terminal event state only, not a user-executable route.',
+      'Safety priority outranks explicit user selection: awaiting acceptance, reconfirmation, stale hash, stale attempt, delivery blocker, and readiness blocker win.',
+      'Reconfirmation routes cover source hash drift, confirmation mismatch, architecture stale state, execution semantic gap, stale closeout page, stale acceptance request, and post-close defect.',
+    ],
+    relatedWorkflow: 'Related upstream workflow/skill: bmad-help',
+    seeAlsoViewMode: 'View Mode: BMAD Upstream Workflow Panorama',
+    seeAlsoSwitch:
+      'To see the BMAD Method workflow panorama and catalog, run `bmad-speckit bmad-help`.',
+    recommendedActionDelivery:
+      'Open the closeout confirmation page and run confirm-closeout-acceptance, because delivery_confirmation is waiting for controlled user acceptance.',
+    recommendedActionReadiness:
+      'Run the implementation readiness gate first, because the current route is blocked until readiness is current and passing.',
+    recommendedActionReconfirmation:
+      'Repair and reconfirm the requirement source first, because stale confirmation evidence blocks later mental models.',
+    recommendedActionDefault: (primary) =>
+      `Run ${primary.nextSafeAction}, because ${primary.currentMentalModel} is the current AI-TDD control position.`,
+    recommendedGoal: (skill) => `Use ${skill} only after the first safe-action blocker is clear.`,
+    recommendedBmadHelp:
+      'Use `bmad-speckit bmad-help` only when you need the BMAD Method workflow panorama, not to override this runtime safety route.',
+    noActiveSeeing: [
+      'There is no current-actionable requirement record to continue yet.',
+      'The system does not know which requirement should move through confirmation, architecture, readiness, execution, audit, or delivery.',
+    ],
+    noActiveWaiting: [
+      'The system is waiting for a confirmable requirement contract source and its RequirementRecord.',
+    ],
+    noActiveAction: [
+      'Create or update the requirement contract first: requirements-contract-authoring author-confirmation-ready-source.',
+      'If you only need to choose a BMAD workflow, open bmad-help; if you need to continue this governed requirement, create the contract first.',
+    ],
+    noActiveAvoid: [
+      'Do not jump into implementation_readiness, story development, or /goal packet compilation yet.',
+    ],
+    baseAvoid: [
+      'Do not choose work only by latest updated time; safety priority outranks explicit selection.',
+      'Do not treat `record_closed` as a manually executable primary action.',
+    ],
+    activeSeeing: (runtime, primary) => [
+      `You are handling ${runtime.inventory?.currentActionableRecords ?? runtime.activeRecords.length} current-actionable RequirementRecord(s).`,
+      `Look at ${primary.recordId} first because it has the highest safety priority: ${runtime.primaryBecause}.`,
+      `Current position is ${primary.currentMentalModel}; the next step must follow the Next Safe Action.`,
+    ],
+    waitingDelivery: (primary) => `First safe-action record ${primary.recordId} is waiting for user delivery acceptance.`,
+    actionDelivery:
+      'Open the closeout confirmation page first and complete confirm-closeout-acceptance using the exact confirmation instruction.',
+    avoidDelivery:
+      'Do not continue implementation, audit dispatch, or record closure until controlled closeout acceptance ingest completes.',
+    waitingReconfirmation: (primary) =>
+      `First safe-action record ${primary.recordId} is waiting for reconfirmation: ${primary.reconfirmation.triggerId}.`,
+    actionReconfirmation: (primary) =>
+      `Run ${primary.nextSafeAction} first, refresh confirmation material, then continue the later mental model.`,
+    avoidReconfirmation: 'Do not continue from a stale packet or stale confirmation hash.',
+    waitingReadiness: (primary) =>
+      `First safe-action record ${primary.recordId} is waiting for implementation readiness repair or gate pass.`,
+    actionReadiness: (primary) =>
+      `Run ${primary.nextSafeAction} first; do not enter story development directly.`,
+    avoidReadiness:
+      'Do not treat upstream planning readiness as governed runtime readiness.',
+    waitingDefault: (primary) =>
+      `First safe-action record ${primary.recordId} is currently at ${primary.currentMentalModel}.`,
+    actionDefault: (primary) => `Run the Next Safe Action first: ${primary.nextSafeAction}.`,
+    secondaryWaiting: (count) =>
+      `There are ${count} additional current-actionable record(s). They are still visible, but they are not the first safe action right now.`,
+    secondaryAvoid:
+      'Do not push multiple current-actionable records through implementation in parallel unless the first safe-action blocker is cleared.',
+    seeAlso: [
+      'If you need to decide whether this requirement can continue, use this page: RequirementRecord, blockers, and Next Safe Action.',
+      'If you need to decide which BMAD workflow or agent to choose, run `bmad-speckit bmad-help` or use skill `bmad-help`.',
+      'Do not mix control authority between the two entries: runtime safety action comes from this page; BMAD upstream catalog explanation comes from bmad-help.',
+    ],
+  },
+  'zh-CN': {
+    quickStartMessage:
+      '当前项目尚未创建需求契约。BMAD 不会把初始化占位状态当作真实需求。请先创建或导入一个可确认的需求源文档。',
+    quickStartEntries: [
+      '创建产品/功能需求契约',
+      '创建 Bugfix 需求契约',
+      '创建独立任务契约',
+      '导入已有需求文档',
+      '查看当前阻塞原因',
+    ],
+    decisionHeadings: {
+      seeing: '你现在看到什么',
+      waiting: '系统在等什么',
+      why: '为什么这很重要',
+      action: '你现在要做什么',
+      avoid: '不要做什么',
+    },
+    summaryNoActiveSeeing: (runtime) =>
+      `当前还有 ${runtime?.inventory?.currentActionableRecords ?? 0} 条可继续推进的需求记录。`,
+    summaryNoActiveWaiting: '系统在等一个可确认的需求契约源文档和对应 RequirementRecord。',
+    summaryNoActiveWhy: '没有确认过的源文档时，BMADS 不能判断哪个心智模型或 runtime route 是安全的。',
+    summaryNoActiveAction:
+      '下一安全动作：requirements-contract-authoring author-confirmation-ready-source。',
+    summarySeeing: (primary) => `你正在查看 ${primary.recordId} 的 AI-TDD runtime 状态。`,
+    summaryWaitingDelivery: '系统在等用户交付验收。',
+    summaryWhyDelivery:
+      '交付确认必须等 controlled closeout acceptance ingest 记录精确验收 hash 后才能关闭。',
+    summaryWaitingReconfirmation: (primary) =>
+      `系统在等 reconfirmation：${primary.reconfirmation.triggerId}。`,
+    summaryWhyReconfirmation:
+      '源文档、确认、架构、执行或 closeout carrier 过期时，必须先修复再继续后续心智模型。',
+    summaryWaitingReadiness: '系统在等 implementation readiness 通过。',
+    summaryWhyReadiness:
+      'readiness gate 未保持当前且通过时，implementation 和 story development 都必须阻塞。',
+    summaryWaitingDefault: (primary) => `第一安全动作记录位于 ${primary.currentMentalModel}。`,
+    summaryWhyDefault: '下一步必须服从当前心智模型和 RequirementRecord route。',
+    summaryAction: (primary) => `下一安全动作：${primary.nextSafeAction}。`,
+    sectionStatusSummary: '状态摘要',
+    sectionRecommendedNextSteps: '推荐下一步',
+    sectionActiveRequirementRecords: '可继续推进的需求记录',
+    sectionSixMentalModelPanorama: '六心智模型全景',
+    sectionRuntimeWorkflowGuidance: '运行时工作流指引',
+    sectionSeeAlsoBmadHelp: '另见：bmad-help',
+    recordSuffixFirstSafeAction: '第一安全动作',
+    fieldSourceTitle: '来源/标题',
+    fieldFirstSafeActionReason: '第一安全动作原因',
+    fieldSelectedByUser: '用户显式选择',
+    fieldRuntimeIndexPointer: 'runtime index 指针',
+    fieldRuntimeIndexPointerStatus: 'runtime index 指针状态',
+    fieldActivityState: '记录状态',
+    fieldCurrentMentalModel: '当前心智模型',
+    fieldSchemaModelStatus: 'schema 模型状态',
+    fieldDisplayState: '显示状态',
+    fieldBlockerSummary: '阻塞摘要',
+    fieldNextSafeAction: '下一安全动作',
+    fieldUpdatedAtCurrent: '更新时间/当前证据',
+    fieldCurrentAttemptHash: '当前 attempt/hash',
+    fieldCloseoutPage: '交付确认页',
+    fieldCloseoutRenderReport: '交付确认渲染报告',
+    fieldDeliveryCloseoutReportHash: '交付 closeout 报告 hash',
+    fieldExactConfirmationInstruction: '精确确认指令',
+    fieldUserFacingNextAction: '用户侧下一动作',
+    fieldTerminalCompletion: '终态完成',
+    boolYes: '是',
+    boolNo: '否',
+    modelQuestionLabel: '用户问题',
+    modelStatusLabel: '状态',
+    modelStatusSourceLabel: '证据来源',
+    routeBasisLabel: '路由依据',
+    routeBasisCurrent: '当前 RequirementRecord 模型',
+    routeBasisPending: '等待前序模型证据',
+    routeBasisTerminal: '只是终态事件，不是用户可执行动作',
+    currentStatusSuffix: '推断当前位置',
+    inventoryLabel: '记录清单',
+    inventoryLoadableLabel: '可加载记录',
+    inventoryCurrentActionableLabel: '可继续推进记录',
+    inventoryClosedLabel: '已关闭/历史记录',
+    hiddenCurrentActionableRecords: (count, budgetName) =>
+      `${count} 条额外可继续推进记录因 ${budgetName} 显示预算折叠`,
+    indexPointerWarning: (warning) =>
+      `${warning.recordId} 的 runtime index 指针状态是 ${warning.status}；sourceType=${warning.sourceType}，indexUpdatedAt=${warning.indexUpdatedAt}。它不会被当成用户选择，也不会被当成最新需求。`,
+    modelQuestions: {
+      requirement_confirmation: '到底要做什么、不做什么、由谁确认？',
+      architecture_confirmation: '哪些系统会被影响，架构风险是否已经确认？',
+      implementation_readiness: '现在进入实现是否安全？',
+      execution_closure: '每个 trace slice 是否都有当前证据并已关闭？',
+      audit_review: '审计、RCA 和 rerun 闭环是否已经关闭？',
+      delivery_confirmation: '工作能安全地称为完成、交付并关闭吗？',
+    },
+    runtimeWorkflowGuidance: [
+      '本页中“可继续推进”表示记录没有 terminal close，并且仍有安全 route、阻塞、验收等待、reconfirmation 或 current attempt 需要处理。',
+      'CSV manifest 只是显示投影；它们永远不会写入 RequirementRecord 控制状态。',
+      '`record_closed` 只是终态事件，不是用户可执行的主 route。',
+      '安全优先级高于 explicit selection：等待验收、重新确认、hash 过期、attempt 过期、交付阻塞和 readiness 阻塞都会优先生效。',
+      'Reconfirmation route 覆盖源文档 hash 漂移、确认不匹配、架构过期、执行语义缺口、交付确认页过期、验收请求过期和关闭后缺陷。',
+    ],
+    relatedWorkflow: '相关 upstream workflow/skill：bmad-help',
+    seeAlsoViewMode: 'View Mode: BMAD Upstream Workflow Panorama',
+    seeAlsoSwitch: '如需查看 BMAD 方法学全景和 catalog，运行 `bmad-speckit bmad-help`。',
+    recommendedActionDelivery:
+      '先打开 closeout confirmation page 并执行 confirm-closeout-acceptance，因为 delivery_confirmation 正在等待 controlled user acceptance。',
+    recommendedActionReadiness:
+      '先运行 implementation readiness gate，因为当前 route 必须等 readiness 保持当前且通过。',
+    recommendedActionReconfirmation:
+      '先修复并重新确认需求源，因为过期确认凭证会阻塞后续心智模型。',
+    recommendedActionDefault: (primary) =>
+      `先执行 ${primary.nextSafeAction}，因为 ${primary.currentMentalModel} 是当前 AI-TDD 控制位置。`,
+    recommendedGoal: (skill) => `只有第一安全动作的阻塞清除后才使用 ${skill}。`,
+    recommendedBmadHelp:
+      '只有需要 BMAD 方法学全景时才运行 `bmad-speckit bmad-help`，不要用它覆盖本页 runtime 安全路线。',
+    noActiveSeeing: [
+      '当前还没有可继续推进的需求记录。',
+      '这意味着系统还不知道要为哪个需求判断确认、架构、readiness、执行、审计或交付。',
+    ],
+    noActiveWaiting: [
+      '系统在等一个可确认的需求契约源文档和对应 RequirementRecord。',
+    ],
+    noActiveAction: [
+      '先创建或更新需求契约：requirements-contract-authoring author-confirmation-ready-source。',
+      '如果你只是想选 BMAD 方法学里的工作流，再看 bmad-help；如果你要继续当前需求执行，先补需求契约。',
+    ],
+    noActiveAvoid: [
+      '不要直接进入 implementation_readiness、story development 或 /goal packet 编译。',
+    ],
+    baseAvoid: [
+      '不要只按最新更新时间选择记录；安全优先级高于 explicit selection。',
+      '不要把 `record_closed` 当作可手动执行的主动作。',
+    ],
+    activeSeeing: (runtime, primary) => [
+      `你正在处理 ${runtime.inventory?.currentActionableRecords ?? runtime.activeRecords.length} 条可继续推进的需求记录。`,
+      `当前先看 ${primary.recordId}，因为它的安全优先级最高：${runtime.primaryBecause}。`,
+      `当前位置是 ${primary.currentMentalModel}，下一步必须按 Next Safe Action 走。`,
+    ],
+    waitingDelivery: (primary) => `第一安全动作记录 ${primary.recordId} 在等用户交付验收。`,
+    actionDelivery:
+      '先打开 closeout confirmation 页面，按 exact confirmation instruction 完成 confirm-closeout-acceptance。',
+    avoidDelivery:
+      '不要继续 implementation、audit dispatch 或关闭记录，直到 controlled closeout acceptance ingest 完成。',
+    waitingReconfirmation: (primary) =>
+      `第一安全动作记录 ${primary.recordId} 在等 reconfirmation：${primary.reconfirmation.triggerId}。`,
+    actionReconfirmation: (primary) =>
+      `先执行 ${primary.nextSafeAction}，刷新确认材料后再继续后续模型。`,
+    avoidReconfirmation: '不要从旧 packet 或旧确认 hash 继续执行。',
+    waitingReadiness: (primary) =>
+      `第一安全动作记录 ${primary.recordId} 在等 implementation readiness 修复或 gate 通过。`,
+    actionReadiness: (primary) =>
+      `先执行 ${primary.nextSafeAction}，不要直接进入 story development。`,
+    avoidReadiness: '不要把 upstream planning readiness 当成 governed runtime readiness。',
+    waitingDefault: (primary) =>
+      `第一安全动作记录 ${primary.recordId} 当前位于 ${primary.currentMentalModel}。`,
+    actionDefault: (primary) => `先执行 Next Safe Action：${primary.nextSafeAction}。`,
+    secondaryWaiting: (count) =>
+      `另外还有 ${count} 条额外的可继续推进记录；它们没有消失，但不是当前第一安全动作。`,
+    secondaryAvoid:
+      '不要并行推动多个可继续推进记录的实施路径，除非当前第一安全动作的阻塞已解除。',
+    seeAlso: [
+      '如果你要决定“当前这个需求下一步能不能继续”，看本页的 RequirementRecord、阻塞原因和 Next Safe Action。',
+      '如果你要决定“BMAD 方法学里该选哪个 workflow/agent”，运行 `bmad-speckit bmad-help` 或使用 skill `bmad-help`。',
+      '不要在两个入口之间混用控制权：runtime 安全动作以本页为准，BMAD upstream catalog 说明以 bmad-help 为准。',
+    ],
+  },
+};
 
 function parseArgs(argv) {
   const options = { projectRoot: process.cwd() };
@@ -25,9 +351,22 @@ function parseArgs(argv) {
     else if (arg === '--json') options.json = true;
     else if (arg === '--budget') options.budget = argv[++index];
     else if (arg.startsWith('--budget=')) options.budget = arg.slice('--budget='.length);
+    else if (arg === '--lang' || arg === '--locale') options.lang = argv[++index];
+    else if (arg.startsWith('--lang=')) options.lang = arg.slice('--lang='.length);
+    else if (arg.startsWith('--locale=')) options.lang = arg.slice('--locale='.length);
   }
   if (process.env.npm_config_json === 'true') options.json = true;
   return options;
+}
+
+function resolveLanguage(input) {
+  const value = String(input || process.env.BMAD_LANG || process.env.BMAD_LOCALE || '').toLowerCase();
+  if (/^zh|chinese|cn|hans|zh[-_]?cn/u.test(value)) return 'zh-CN';
+  return 'en';
+}
+
+function textBundle(language) {
+  return BMADS_TEXT[resolveLanguage(language)];
 }
 
 function packageAssetRoot() {
@@ -397,7 +736,7 @@ function resolveBmadHelpFiveLayerProgressState(input) {
   };
 }
 
-function buildNoActiveRequirementSurface() {
+function buildNoActiveRequirementSurface(labels = textBundle()) {
   return {
     source: 'no_active_requirement',
     nextAction: 'contract_authoring_required',
@@ -406,31 +745,23 @@ function buildNoActiveRequirementSurface() {
     sessionId: null,
     stageSummary: {
       currentMentalModelStatus: 'context_intake_blocked',
-      userFacingMessage: QUICK_START_MESSAGE,
+      userFacingMessage: labels.quickStartMessage,
       blockingReasons: ['no_active_requirement', 'contract_authoring_required'],
     },
   };
 }
 
-function resolveMainAgentOrchestrationSurface(projectRoot) {
-  const requirementIndex = readJson(
-    path.join(projectRoot, '_bmad-output', 'runtime', 'requirement-records', 'index.json')
-  );
-  const hasActiveRequirement =
-    Boolean(requirementIndex?.activeRequirementSetId) ||
-    Boolean(requirementIndex?.activeRecordId) ||
-    Boolean(requirementIndex?.currentRequirementSetId);
-  if (!hasActiveRequirement) return buildNoActiveRequirementSurface();
+function resolveMainAgentOrchestrationSurface(projectRoot, labels = textBundle()) {
+  const { records } = loadActiveRequirementRecords(projectRoot);
+  const hasActiveRequirement = records.length > 0;
+  if (!hasActiveRequirement) return buildNoActiveRequirementSurface(labels);
+  const primary = records[0];
   return {
     source: 'requirement_record',
     nextAction: 'inspect_requirement_record',
     ready: true,
     pendingPacketStatus: 'none',
-    sessionId: String(
-      requirementIndex.activeRequirementSetId ||
-        requirementIndex.activeRecordId ||
-        requirementIndex.currentRequirementSetId
-    ),
+    sessionId: primary.recordId,
     stageSummary: {
       currentMentalModelStatus: 'requirement_record_available',
       userFacingMessage: 'Active requirement record is available. Inspect the current record for next action.',
@@ -451,10 +782,12 @@ function buildBmadsOutput(projectRootInput = process.cwd(), buildOptions = {}) {
       ? path.resolve(projectRootInput.projectRoot || process.cwd())
       : path.resolve(projectRootInput);
   const options = typeof projectRootInput === 'object' ? projectRootInput : buildOptions;
+  const language = resolveLanguage(options.lang || options.language || options.locale);
+  const labels = textBundle(language);
   const assetRoot = resolveBmadAssetRoot(projectRoot, options.assetRoot);
   const runtime = loadRuntimeContract(assetRoot);
   const progress = resolveBmadHelpFiveLayerProgressState({ projectRoot, assetRoot });
-  const orchestration = resolveMainAgentOrchestrationSurface(projectRoot);
+  const orchestration = resolveMainAgentOrchestrationSurface(projectRoot, labels);
   const readiness = resolveReadinessStatus(projectRoot);
   const artifacts = collectUpstreamArtifacts(projectRoot);
   const aiTdd = resolveAiTddRuntimeDecision(projectRoot, {
@@ -478,6 +811,7 @@ function buildBmadsOutput(projectRootInput = process.cwd(), buildOptions = {}) {
     projectRoot,
     assetRoot,
     schemaVersion: runtime.schemaVersion,
+    language,
     entry: runtime.entry,
     contracts: runtime.contracts,
     contractStatus,
@@ -524,8 +858,8 @@ function buildBmadsOutput(projectRootInput = process.cwd(), buildOptions = {}) {
         ? {
             status: 'no_active_requirement',
             nextRequiredAction: 'contract_authoring_required',
-            message: QUICK_START_MESSAGE,
-            entries: QUICK_START_ENTRIES,
+            message: labels.quickStartMessage,
+            entries: labels.quickStartEntries,
           }
         : null,
     advisory: runtime.entry.advisory,
@@ -554,27 +888,32 @@ function renderArtifactGroup(label, artifacts) {
   ];
 }
 
-function renderAiTddActiveRecord(record, isPrimary, budget) {
+function renderAiTddActiveRecord(record, isPrimary, budget, labels) {
   const lines = [
-    `- recordId: ${record.recordId}${isPrimary ? ' (primary)' : ''}`,
-    `  source/title: ${record.sourceOrTitle}`,
-    `  current mental model: ${record.currentMentalModel}`,
-    `  schema model status: ${record.schemaModelStatus}`,
-    `  display state: ${record.displayState}`,
-    `  blocker summary: ${record.blockerSummary}`,
-    `  next safe action: ${record.nextSafeAction}`,
-    `  updatedAt/current: ${record.updatedAt}`,
+    `- recordId: ${record.recordId}${isPrimary ? ` (${labels.recordSuffixFirstSafeAction})` : ''}`,
+    `  ${labels.fieldSourceTitle}: ${record.sourceOrTitle}`,
+    `  ${labels.fieldFirstSafeActionReason}: ${record.primaryReasonToken}`,
+    `  ${labels.fieldSelectedByUser}: ${record.isExplicitSelection ? labels.boolYes : labels.boolNo}`,
+    `  ${labels.fieldRuntimeIndexPointer}: ${record.isIndexedActive ? labels.boolYes : labels.boolNo}`,
+    `  ${labels.fieldRuntimeIndexPointerStatus}: ${record.indexPointerStatus}`,
+    `  ${labels.fieldActivityState}: ${record.activityState}`,
+    `  ${labels.fieldCurrentMentalModel}: ${record.currentMentalModel}`,
+    `  ${labels.fieldSchemaModelStatus}: ${record.schemaModelStatus}`,
+    `  ${labels.fieldDisplayState}: ${record.displayState}`,
+    `  ${labels.fieldBlockerSummary}: ${record.blockerSummary}`,
+    `  ${labels.fieldNextSafeAction}: ${record.nextSafeAction}`,
+    `  ${labels.fieldUpdatedAtCurrent}: ${record.updatedAt}`,
   ];
-  if (record.currentAttemptId) lines.push(`  current attempt/hash: ${record.currentAttemptId}`);
-  else if (record.sourceDocumentHash) lines.push(`  current attempt/hash: ${record.sourceDocumentHash}`);
+  if (record.currentAttemptId) lines.push(`  ${labels.fieldCurrentAttemptHash}: ${record.currentAttemptId}`);
+  else if (record.sourceDocumentHash) lines.push(`  ${labels.fieldCurrentAttemptHash}: ${record.sourceDocumentHash}`);
   if (record.delivery.awaiting) {
-    lines.push(`  closeout page: ${record.delivery.pagePath}`);
-    lines.push(`  closeout render report: ${record.delivery.renderReportPath}`);
+    lines.push(`  ${labels.fieldCloseoutPage}: ${record.delivery.pagePath}`);
+    lines.push(`  ${labels.fieldCloseoutRenderReport}: ${record.delivery.renderReportPath}`);
     lines.push(
-      `  delivery closeout report hash: ${record.delivery.deliveryCloseoutReportHash || 'missing'}`
+      `  ${labels.fieldDeliveryCloseoutReportHash}: ${record.delivery.deliveryCloseoutReportHash || 'missing'}`
     );
-    lines.push(`  exact confirmation instruction: ${record.delivery.exactInstruction}`);
-    lines.push('  user-facing next action: confirm-closeout-acceptance');
+    lines.push(`  ${labels.fieldExactConfirmationInstruction}: ${record.delivery.exactInstruction}`);
+    lines.push(`  ${labels.fieldUserFacingNextAction}: confirm-closeout-acceptance`);
   }
   if (
     record.delivery.stalePage ||
@@ -583,7 +922,7 @@ function renderAiTddActiveRecord(record, isPrimary, budget) {
     record.delivery.missingAcceptanceRequest
   ) {
     lines.push(
-      '  terminal completion: blocked until current closeout page, attempt, hash, and acceptance request match'
+      `  ${labels.fieldTerminalCompletion}: blocked until current closeout page, attempt, hash, and acceptance request match`
     );
   }
   if (!isPrimary && budget.name === 'compact') {
@@ -592,9 +931,196 @@ function renderAiTddActiveRecord(record, isPrimary, budget) {
   return lines;
 }
 
+function humanDecisionCardFor(runtime, secondaryRecords, labels) {
+  const primary = runtime.primaryRecord;
+  if (!primary) {
+    return {
+      seeing: labels.noActiveSeeing,
+      waiting: labels.noActiveWaiting,
+      action: labels.noActiveAction,
+      avoid: labels.noActiveAvoid,
+    };
+  }
+
+  const waiting = [];
+  const action = [];
+  const avoid = [...labels.baseAvoid];
+  if (primary.delivery.awaiting || primary.displayState === 'awaiting_user_acceptance') {
+    waiting.push(labels.waitingDelivery(primary));
+    action.push(labels.actionDelivery);
+    avoid.push(labels.avoidDelivery);
+  } else if (primary.reconfirmation.required) {
+    waiting.push(labels.waitingReconfirmation(primary));
+    action.push(labels.actionReconfirmation(primary));
+    avoid.push(labels.avoidReconfirmation);
+  } else if (primary.primaryReasonToken === 'readiness_blocker') {
+    waiting.push(labels.waitingReadiness(primary));
+    action.push(labels.actionReadiness(primary));
+    avoid.push(labels.avoidReadiness);
+  } else {
+    waiting.push(labels.waitingDefault(primary));
+    action.push(labels.actionDefault(primary));
+  }
+  if (secondaryRecords.length > 0) {
+    waiting.push(labels.secondaryWaiting(secondaryRecords.length));
+    avoid.push(labels.secondaryAvoid);
+  }
+
+  return {
+    seeing: labels.activeSeeing(runtime, primary),
+    waiting,
+    action,
+    avoid,
+  };
+}
+
+function renderHumanDecisionCard(runtime, secondaryRecords, labels) {
+  const card = humanDecisionCardFor(runtime, secondaryRecords, labels);
+  const lines = ['## Decision Card', ''];
+  for (const [title, items] of [
+    [labels.decisionHeadings.seeing, card.seeing],
+    [labels.decisionHeadings.waiting, card.waiting],
+    [labels.decisionHeadings.action, card.action],
+    [labels.decisionHeadings.avoid, card.avoid],
+  ]) {
+    lines.push(title);
+    for (const item of items) lines.push(`- ${item}`);
+    lines.push('');
+  }
+  return lines;
+}
+
+function summaryCardFor(runtime, secondaryRecords, labels) {
+  const primary = runtime.primaryRecord;
+  if (!primary) {
+    return {
+      seeing: labels.summaryNoActiveSeeing(runtime),
+      waiting: labels.summaryNoActiveWaiting,
+      why: labels.summaryNoActiveWhy,
+      action: labels.summaryNoActiveAction,
+      avoid: labels.noActiveAvoid,
+    };
+  }
+
+  const avoid = [...labels.baseAvoid];
+  let waiting;
+  let why;
+  let action;
+  if (primary.delivery.awaiting || primary.displayState === 'awaiting_user_acceptance') {
+    waiting = labels.summaryWaitingDelivery;
+    why = labels.summaryWhyDelivery;
+    action = labels.summaryAction(primary);
+    avoid.push(labels.avoidDelivery);
+  } else if (primary.reconfirmation.required) {
+    waiting = labels.summaryWaitingReconfirmation(primary);
+    why = labels.summaryWhyReconfirmation;
+    action = labels.summaryAction(primary);
+    avoid.push(labels.avoidReconfirmation);
+  } else if (primary.primaryReasonToken === 'readiness_blocker') {
+    waiting = labels.summaryWaitingReadiness;
+    why = labels.summaryWhyReadiness;
+    action = labels.summaryAction(primary);
+    avoid.push(labels.avoidReadiness);
+  } else {
+    waiting = labels.summaryWaitingDefault(primary);
+    why = labels.summaryWhyDefault;
+    action = labels.summaryAction(primary);
+  }
+  if (secondaryRecords.length > 0) avoid.push(labels.secondaryAvoid);
+  return {
+    seeing: labels.summarySeeing(primary),
+    waiting,
+    why,
+    action,
+    avoid,
+  };
+}
+
+function renderStatusSummary(runtime, secondaryRecords, labels) {
+  const card = summaryCardFor(runtime, secondaryRecords, labels);
+  const lines = [`## ${labels.sectionStatusSummary}`, ''];
+  if (runtime.inventory) {
+    lines.push(
+      `${labels.inventoryLabel}: ${runtime.inventory.loadableRecords} ${labels.inventoryLoadableLabel}, ${runtime.inventory.currentActionableRecords} ${labels.inventoryCurrentActionableLabel}, ${runtime.inventory.closedOrHistoricalRecords} ${labels.inventoryClosedLabel}`
+    );
+  }
+  for (const warning of runtime.indexPointerWarnings || []) {
+    lines.push(`Warning: ${labels.indexPointerWarning(warning)}`);
+  }
+  lines.push(`${labels.decisionHeadings.seeing}: ${card.seeing}`);
+  lines.push(`${labels.decisionHeadings.waiting}: ${card.waiting}`);
+  lines.push(`${labels.decisionHeadings.why}: ${card.why}`);
+  lines.push(`${labels.decisionHeadings.action}: ${card.action}`);
+  lines.push(`${labels.decisionHeadings.avoid}:`);
+  for (const item of card.avoid) lines.push(`- ${item}`);
+  return lines;
+}
+
+function recommendedPrimaryAction(primary, labels) {
+  if (!primary) return labels.summaryNoActiveAction;
+  if (primary.delivery.awaiting || primary.displayState === 'awaiting_user_acceptance') {
+    return labels.recommendedActionDelivery;
+  }
+  if (primary.reconfirmation.required) return labels.recommendedActionReconfirmation;
+  if (
+    primary.primaryReasonToken === 'readiness_blocker' ||
+    primary.nextSafeAction === 'run_implementation_readiness_gate'
+  ) {
+    return labels.recommendedActionReadiness;
+  }
+  return labels.recommendedActionDefault(primary);
+}
+
+function renderRecommendedNextSteps(runtime, labels) {
+  const primary = runtime.primaryRecord;
+  return [
+    `## ${labels.sectionRecommendedNextSteps}`,
+    '',
+    `1. ${recommendedPrimaryAction(primary, labels)}`,
+    `2. ${labels.recommendedGoal(runtime.goalRoute.skill)}`,
+    `3. ${labels.recommendedBmadHelp}`,
+  ];
+}
+
+function modelStatusForRow(row, primary) {
+  if (!primary) return 'pending';
+  const evidence = primary.modelStatuses?.[row.modelId];
+  if (evidence?.isCurrent) return `current (${evidence.status}; ${evidence.source})`;
+  if (evidence?.status) return evidence.status;
+  const status = primary.rawRecord?.sixModelResults?.[row.modelId]?.status ||
+    primary.rawRecord?.sixModelResults?.[row.modelId];
+  if (typeof status === 'string') return status;
+  if (status && typeof status.status === 'string') return status.status;
+  if (row.modelId === 'delivery_confirmation' && primary.delivery.awaiting) {
+    return 'awaiting_user_acceptance';
+  }
+  return 'pending';
+}
+
+function modelStatusSourceForRow(row, primary) {
+  if (!primary) return 'no active RequirementRecord';
+  const evidence = primary.modelStatuses?.[row.modelId];
+  if (evidence?.source) return evidence.source;
+  if (primary.currentMentalModel === row.modelId) return 'current RequirementRecord model';
+  if (row.terminalEvent) return 'manifest terminal event';
+  return 'no model evidence found';
+}
+
+function routeBasisForModel(row, primary, labels) {
+  if (!primary) return labels.routeBasisPending;
+  if (primary.currentMentalModel === row.modelId) return labels.routeBasisCurrent;
+  if (row.terminalEvent) return labels.routeBasisTerminal;
+  return labels.routeBasisPending;
+}
+
+function modelQuestionForRow(row, labels) {
+  return labels.modelQuestions?.[row.modelId] || row.question;
+}
+
 function renderAiTddStatus(output) {
   const runtime = output.aiTdd;
   if (!runtime) return [];
+  const labels = textBundle(output.language);
   const budget = output.displayBudget || resolveDisplayBudget('route');
   const primary = runtime.primaryRecord;
   const activeRecords = runtime.activeRecords;
@@ -603,21 +1129,11 @@ function renderAiTddStatus(output) {
   const lines = [
     `View Mode: ${runtime.viewMode}`,
     '',
-    '## Status Summary',
+    ...renderStatusSummary(runtime, secondary, labels),
     '',
-    `Active records: ${activeRecords.length}`,
-    `Primary record: ${primary ? primary.recordId : 'none'}`,
-    `Primary because: ${runtime.primaryBecause}`,
-    `Next Safe Action: ${runtime.nextSafeAction}`,
-    `/goal route: ${runtime.goalRoute.skill} (${runtime.goalRoute.reason})`,
+    ...renderRecommendedNextSteps(runtime, labels),
     '',
-    '## Recommended Next Steps',
-    '',
-    `1. Follow Next Safe Action: \`${runtime.nextSafeAction}\``,
-    `2. /goal guidance: \`${runtime.goalRoute.skill}\``,
-    '3. If you need the upstream BMAD workflow catalog, run `bmad-speckit bmad-help`.',
-    '',
-    '## Active Requirement Records',
+    `## ${labels.sectionActiveRequirementRecords}`,
     '',
   ];
   if (!primary) {
@@ -626,20 +1142,27 @@ function renderAiTddStatus(output) {
       '- next safe action: requirements-contract-authoring author-confirmation-ready-source'
     );
   } else {
-    lines.push(...renderAiTddActiveRecord(primary, true, budget));
+    lines.push(...renderAiTddActiveRecord(primary, true, budget, labels));
     for (const record of visibleSecondary) {
-      lines.push(...renderAiTddActiveRecord(record, false, budget));
+      lines.push(...renderAiTddActiveRecord(record, false, budget, labels));
     }
     if (visibleSecondary.length < secondary.length) {
-      lines.push(`- ${secondary.length - visibleSecondary.length} secondary record(s) hidden by ${budget.name} budget`);
+      lines.push(
+        `- ${labels.hiddenCurrentActionableRecords(secondary.length - visibleSecondary.length, budget.name)}`
+      );
     }
   }
-  lines.push('', '## Six Mental Model Panorama', '');
+  lines.push('', `## ${labels.sectionSixMentalModelPanorama}`, '');
   const modelRows = applyLimit(runtime.manifests.sixModelManifest || [], budget.projectionRows);
-  for (const row of modelRows) {
-    const marker = primary && primary.currentMentalModel === row.modelId ? 'current' : 'pending';
+  const totalModels = runtime.manifests.sixModelManifest?.length || modelRows.length;
+  for (const [index, row] of modelRows.entries()) {
     lines.push(
-      `- ${row.sequence}. ${row.displayName} (${row.modelId}) - ${marker}; terminalEvent=${row.terminalEvent || 'none'}`
+      `- ${index + 1}/${totalModels}. ${row.displayName} (${row.modelId})`,
+      `  ${labels.modelQuestionLabel}: ${modelQuestionForRow(row, labels)}`,
+      `  ${labels.modelStatusLabel}: ${modelStatusForRow(row, primary)}`,
+      `  ${labels.modelStatusSourceLabel}: ${modelStatusSourceForRow(row, primary)}`,
+      `  ${labels.routeBasisLabel}: ${routeBasisForModel(row, primary, labels)}`,
+      `  terminalEvent: ${row.terminalEvent || 'none'}`
     );
   }
   if (modelRows.length < (runtime.manifests.sixModelManifest || []).length) {
@@ -647,21 +1170,20 @@ function renderAiTddStatus(output) {
   }
   lines.push(
     '',
-    '## Runtime Workflow Guidance',
+    `## ${labels.sectionRuntimeWorkflowGuidance}`,
     '',
-    '- CSV manifests are display projections only; they never write RequirementRecord control state.',
-    '- `record_closed` is terminal event state only, not a user-executable primary route.',
-    '- Safety priority outranks explicit user selection: awaiting acceptance, reconfirmation, stale hash, stale attempt, delivery blocker, and readiness blocker win.',
-    '- Reconfirmation routes cover source hash drift, confirmation mismatch, architecture stale state, execution semantic gap, stale closeout page, stale acceptance request, and post-close defect.',
+    ...labels.runtimeWorkflowGuidance.map((item) => `- ${item}`),
     '',
-    '## See also: bmad-help',
+    `## ${labels.sectionSeeAlsoBmadHelp}`,
     '',
-    'Run `bmad-speckit bmad-help` for the full BMAD Method workflow panorama and catalog.'
+    labels.seeAlsoViewMode,
+    labels.relatedWorkflow,
+    labels.seeAlsoSwitch
   );
   return lines;
 }
 
-function renderBmads(output) {
+function renderDiagnosticDetails(output) {
   const progress = output.progress;
   const route = output.currentRoute;
   const readiness = output.readiness;
@@ -670,13 +1192,7 @@ function renderBmads(output) {
   const quickStart = output.quickStart;
   const contractStatus = output.contractStatus;
   const advisory = output.advisory;
-  const aiTddStatus = renderAiTddStatus(output);
   const lines = [
-    '# BMADS Runtime Console',
-    '',
-  ];
-  if (aiTddStatus.length > 0) lines.push(...aiTddStatus, '');
-  lines.push(
     '## Project State',
     '',
     `Current: ${progress.currentLayer} / ${progress.currentStage}`,
@@ -705,7 +1221,7 @@ function renderBmads(output) {
     '',
     '## Current Route',
     '',
-  );
+  ];
   if (route) {
     lines.push(`Layer name: ${route.layerName}`);
     lines.push(`Governance stage: ${route.governanceStage}`);
@@ -778,6 +1294,19 @@ function renderBmads(output) {
     '',
     `${advisory.message} Command: \`${advisory.bmadHelpCommand}\`.`
   );
+  return lines;
+}
+
+function renderBmads(output) {
+  const aiTddStatus = renderAiTddStatus(output);
+  const lines = [
+    '# BMADS Runtime Console',
+    '',
+  ];
+  if (aiTddStatus.length > 0) lines.push(...aiTddStatus, '');
+  if (output.displayBudget?.name === 'full' || output.debug === true) {
+    lines.push(...renderDiagnosticDetails(output), '');
+  }
   return `${lines.join('\n')}\n`;
 }
 

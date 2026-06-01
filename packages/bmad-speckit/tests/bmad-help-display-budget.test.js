@@ -76,9 +76,9 @@ describe('AI-TDD display budget', () => {
       for (const budget of DISPLAY_BUDGETS) {
         const text = renderBmads(buildBmadsOutput({ projectRoot: root, budget }));
 
-        assert.match(text, /recordId: REQ-PRIMARY \(primary\)/);
-        assert.match(text, /Next Safe Action: confirm-closeout-acceptance/);
-        assert.match(text, /Primary because: awaiting_user_acceptance/);
+        assert.match(text, /recordId: REQ-PRIMARY \(first safe action\)/);
+        assert.match(text, /What to do now: Next safe action: confirm-closeout-acceptance\./);
+        assert.match(text, /Open the closeout confirmation page and run confirm-closeout-acceptance/);
       }
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
@@ -91,7 +91,7 @@ describe('AI-TDD display budget', () => {
       const compact = renderBmads(buildBmadsOutput({ projectRoot: root, budget: 'compact' }));
       const full = renderBmads(buildBmadsOutput({ projectRoot: root, budget: 'full' }));
 
-      assert.match(compact, /secondary record\(s\) hidden by compact budget/);
+      assert.match(compact, /additional current-actionable record\(s\) hidden by compact budget/);
       assert.match(full, /recordId: REQ-SECONDARY-1/);
       assert.match(full, /recordId: REQ-SECONDARY-2/);
       assert.ok(full.split(/\r?\n/).some((line) => line.length > 80));
