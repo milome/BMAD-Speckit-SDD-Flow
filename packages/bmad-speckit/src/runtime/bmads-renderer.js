@@ -447,7 +447,16 @@ function loadRuntimeContract(assetRoot) {
   const contractPath = path.join(assetRoot, '_bmad', '_config', 'bmads-runtime.yaml');
   const parsed = yaml.load(fs.readFileSync(contractPath, 'utf8'));
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    throw new Error('bmads-runtime.yaml must be a YAML object');
+    throw new Error(`${contractPath} must be a YAML object`);
+  }
+  if (!Array.isArray(parsed.layers)) {
+    throw new Error(`${contractPath} must define layers[]`);
+  }
+  if (!parsed.contracts || typeof parsed.contracts !== 'object' || Array.isArray(parsed.contracts)) {
+    throw new Error(`${contractPath} must define contracts{}`);
+  }
+  if (!parsed.entry || typeof parsed.entry !== 'object' || Array.isArray(parsed.entry)) {
+    throw new Error(`${contractPath} must define entry{}`);
   }
   return parsed;
 }
@@ -534,11 +543,16 @@ function resolveReadinessStatus(projectRoot) {
     };
   }
   const content = fs.readFileSync(reportPath, 'utf8');
+  const normalized = content.replace(/\r\n/g, '\n');
+  const hasNotReadyConclusion =
+    /\bNOT\s+READY\b/iu.test(normalized) ||
+    /Overall Readiness Status\s*\n+\s*\*\*NOT READY\*\*/iu.test(normalized);
   const hasReadyConclusion =
-    /\bREADY\b/iu.test(content) ||
-    /ready_clean/iu.test(content) ||
-    /repair_closed/iu.test(content) ||
-    /Overall Readiness Status\s*\n+\s*\*\*READY\*\*/iu.test(content);
+    !hasNotReadyConclusion &&
+    (/\bREADY\b/iu.test(normalized) ||
+      /ready_clean/iu.test(normalized) ||
+      /repair_closed/iu.test(normalized) ||
+      /Overall Readiness Status\s*\n+\s*\*\*READY\*\*/iu.test(normalized));
   if (!hasReadyConclusion) {
     return {
       status: 'missing',
@@ -569,15 +583,6 @@ function resolveReadinessStatus(projectRoot) {
     reportPath: toProjectRelative(projectRoot, reportPath),
     reason: 'Latest implementation-readiness report states READY / ready_clean / repair_closed.',
   };
-}
-
-function readJson(filePath) {
-  if (!fs.existsSync(filePath)) return null;
-  try {
-    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
-  } catch {
-    return null;
-  }
 }
 
 function outputRootForLayer(layerId) {
@@ -1022,22 +1027,6 @@ function humanDecisionCardFor(runtime, secondaryRecords, labels) {
   };
 }
 
-function renderHumanDecisionCard(runtime, secondaryRecords, labels) {
-  const card = humanDecisionCardFor(runtime, secondaryRecords, labels);
-  const lines = [schemaHeading(labels.headingSchema, 'decisionCard'), ''];
-  for (const [title, items] of [
-    [labels.decisionHeadings.seeing, card.seeing],
-    [labels.decisionHeadings.waiting, card.waiting],
-    [labels.decisionHeadings.action, card.action],
-    [labels.decisionHeadings.avoid, card.avoid],
-  ]) {
-    lines.push(title);
-    for (const item of items) lines.push(`- ${item}`);
-    lines.push('');
-  }
-  return lines;
-}
-
 function summaryCardFor(runtime, secondaryRecords, labels) {
   const primary = runtime.primaryRecord;
   if (!primary) {
@@ -1448,7 +1437,6 @@ function renderRecommendedNow(runtime, labels, language) {
 }
 
 function renderAvailableNextActions(runtime, labels, language) {
-  const zh = resolveLanguage(language) === 'zh-CN';
   return [
     schemaHeading(labels.headingSchema, 'availableNextActions'),
     '',

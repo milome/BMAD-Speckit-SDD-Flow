@@ -29,6 +29,11 @@ function normalizePath(value) {
   return String(value || '').replace(/\\/g, '/');
 }
 
+function isPathInside(parent, candidate) {
+  const relative = path.relative(parent, candidate);
+  return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
+}
+
 function unique(values) {
   return [...new Set(values.filter((value) => value != null && String(value).trim() !== ''))];
 }
@@ -39,10 +44,6 @@ function asArray(value) {
 
 function text(value) {
   return typeof value === 'string' && value.trim() !== '' ? value.trim() : '';
-}
-
-function truthy(value) {
-  return value === true || value === 'true' || value === 'pass' || value === 'passed';
 }
 
 function numericTimestamp(value) {
@@ -171,11 +172,13 @@ function classifyRecordActivity(record) {
 }
 
 function recordPathsFromIndex(projectRoot, index) {
-  const root = path.join(projectRoot, '_bmad-output', 'runtime', 'requirement-records');
+  const root = path.resolve(projectRoot, '_bmad-output', 'runtime', 'requirement-records');
   const paths = [];
   for (const item of [index?.active, ...asArray(index?.records)]) {
-    if (item?.recordPath) paths.push(path.join(projectRoot, normalizePath(item.recordPath)));
-    else if (item?.recordId) paths.push(path.join(root, String(item.recordId), 'requirement-record.json'));
+    if (item?.recordPath) {
+      const candidate = path.resolve(projectRoot, normalizePath(item.recordPath));
+      if (isPathInside(root, candidate)) paths.push(candidate);
+    } else if (item?.recordId) paths.push(path.join(root, String(item.recordId), 'requirement-record.json'));
     else if (item?.requirementSetId) {
       paths.push(path.join(root, String(item.requirementSetId), 'requirement-record.json'));
     }
@@ -415,7 +418,6 @@ function safetyReason(
   isExplicitSelection,
   isIndexedActive
 ) {
-  if (delivery.awaiting) return 'awaiting_user_acceptance';
   if (reconfirmation.required) return 'open_reconfirmation';
   if (delivery.hashMismatch || /hash_mismatch|stale_hash/iu.test(blockers.join(' '))) return 'stale_hash';
   if (delivery.staleAttempt || /stale_attempt/iu.test(blockers.join(' '))) return 'stale_attempt';
@@ -426,6 +428,7 @@ function safetyReason(
   ) {
     return 'delivery_closeout_blocker';
   }
+  if (delivery.awaiting) return 'awaiting_user_acceptance';
   if (modelStatus === 'blocked' || /readiness/iu.test(blockers.join(' '))) return 'readiness_blocker';
   if (isExplicitSelection) return 'explicit_user_selection';
   if (isIndexedActive) return 'indexed_active_record';
@@ -433,9 +436,12 @@ function safetyReason(
 }
 
 function nextSafeActionFor(input) {
-  if (input.delivery.awaiting) return 'confirm-closeout-acceptance';
   if (input.reconfirmation.required) return 'requirements-contract-authoring authoring-repair-preserve-existing';
+  if (input.reason === 'stale_hash' || input.reason === 'stale_attempt') {
+    return 'requirements-contract-authoring authoring-repair-preserve-existing';
+  }
   if (input.reason === 'delivery_closeout_blocker') return 'run_delivery_closeout';
+  if (input.delivery.awaiting) return 'confirm-closeout-acceptance';
   if (input.reason === 'readiness_blocker') return 'run_implementation_readiness_gate';
   if (input.currentMentalModel === 'requirement_confirmation') {
     return 'requirements-contract-authoring author-confirmation-ready-source';

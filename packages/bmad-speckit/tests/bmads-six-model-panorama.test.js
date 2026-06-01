@@ -283,10 +283,12 @@ describe('bmads Six Mental Models panorama', () => {
   });
 
   it('routes /goal back to current next safe action when reconfirmation is open', () => {
-    const record = implementationReadyRecord('REQ-RECONFIRM');
-    record.reconfirmation = {
+    const record = {
+      ...implementationReadyRecord('REQ-RECONFIRM'),
+      reconfirmation: {
       required: true,
       triggerId: 'SOURCE_SEMANTIC_HASH_CHANGED',
+      },
     };
     const root = makeRoot([record], 'REQ-RECONFIRM');
     try {
@@ -296,6 +298,72 @@ describe('bmads Six Mental Models panorama', () => {
       assert.match(text, /requirements-contract-authoring authoring-repair-preserve-existing/);
       assert.match(text, /source hash drift/);
       assert.match(text, /post-close defect/);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('ignores index recordPath values outside the runtime requirement-records tree', () => {
+    const root = makeRoot([implementationReadyRecord('REQ-SAFE-PATH')], 'REQ-SAFE-PATH');
+    try {
+      const recordsRoot = path.join(root, '_bmad-output', 'runtime', 'requirement-records');
+      const outside = path.join(root, 'outside-record.json');
+      fs.writeFileSync(
+        outside,
+        `${JSON.stringify(implementationReadyRecord('REQ-OUTSIDE-PATH'), null, 2)}\n`,
+        'utf8'
+      );
+      fs.writeFileSync(
+        path.join(recordsRoot, 'index.json'),
+        `${JSON.stringify(
+          {
+            active: {
+              recordId: 'REQ-OUTSIDE-PATH',
+              recordPath: '../outside-record.json',
+            },
+            records: [
+              {
+                recordId: 'REQ-SAFE-PATH',
+                recordPath:
+                  '_bmad-output/runtime/requirement-records/REQ-SAFE-PATH/requirement-record.json',
+              },
+            ],
+          },
+          null,
+          2
+        )}\n`,
+        'utf8'
+      );
+
+      const output = buildBmadsOutput({ projectRoot: root, budget: 'expanded' });
+
+      assert.equal(output.aiTdd.inventory.loadableRecords, 1);
+      assert.equal(output.aiTdd.activeRecords[0].recordId, 'REQ-SAFE-PATH');
+      assert.doesNotMatch(renderBmads(output), /REQ-OUTSIDE-PATH/);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('routes stale delivery blockers before closeout acceptance confirmation', () => {
+    const stale = {
+      ...awaitingCloseoutRecord('REQ-STALE-CLOSEOUT'),
+      blockers: ['stale_attempt'],
+      closeout: {
+        ...awaitingCloseoutRecord('REQ-STALE-CLOSEOUT').closeout,
+        staleAttempt: true,
+      },
+    };
+    const root = makeRoot([stale], 'REQ-STALE-CLOSEOUT');
+    try {
+      const output = buildBmadsOutput({ projectRoot: root, budget: 'expanded' });
+
+      assert.equal(output.aiTdd.primaryRecord.primaryReasonToken, 'stale_attempt');
+      assert.equal(
+        output.aiTdd.primaryRecord.nextSafeAction,
+        'requirements-contract-authoring authoring-repair-preserve-existing'
+      );
+      assert.notEqual(output.aiTdd.primaryRecord.nextSafeAction, 'confirm-closeout-acceptance');
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }

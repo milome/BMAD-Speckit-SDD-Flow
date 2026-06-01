@@ -4,22 +4,29 @@ import { describe, expect, it } from 'vitest';
 
 const ROOT = process.cwd();
 const SKILL_DIR = path.join(ROOT, '_bmad', 'skills', 'requirements-contract-authoring');
-const CODEX_SKILL_DIR = path.join(ROOT, '.codex', 'skills', 'requirements-contract-authoring');
+const SURFACE_SKILL_DIRS = [
+  SKILL_DIR,
+  path.join(ROOT, '.codex', 'skills', 'requirements-contract-authoring'),
+  path.join(ROOT, '.claude', 'skills', 'requirements-contract-authoring'),
+  path.join(ROOT, '.cursor', 'skills', 'requirements-contract-authoring'),
+  path.join(
+    ROOT,
+    'packages',
+    'bmad-speckit',
+    '_bmad',
+    'skills',
+    'requirements-contract-authoring'
+  ),
+];
 
 function readSkillFile(relativePath: string): string {
   return fs.readFileSync(path.join(SKILL_DIR, relativePath), 'utf8');
 }
 
 function readSkillSurface(relativePath: string): string[] {
-  const results = [fs.readFileSync(path.join(SKILL_DIR, relativePath), 'utf8')];
-
-  // Guard .codex read - only include if the directory exists
-  const codexPath = path.join(CODEX_SKILL_DIR, relativePath);
-  if (fs.existsSync(codexPath)) {
-    results.push(fs.readFileSync(codexPath, 'utf8'));
-  }
-
-  return results;
+  return SURFACE_SKILL_DIRS.filter((dir) => fs.existsSync(path.join(dir, relativePath))).map(
+    (dir) => fs.readFileSync(path.join(dir, relativePath), 'utf8')
+  );
 }
 
 describe('requirements-contract-authoring published contract', () => {
@@ -242,15 +249,17 @@ describe('requirements-contract-authoring published contract', () => {
   });
 
   it('documents that semantic checkpoints do not spawn subagents or perform audit reasoning', () => {
-    const workflow = readSkillFile(path.join('references', 'semantic-checkpoint-workflow.md'));
-
-    expect(workflow).toContain('The checkpoint runner does not spawn subagents');
-    expect(workflow).toContain('Checkpoint mode does not review, audit, reason over semantic gaps');
-    expect(workflow).toContain('run three-perspective analysis');
-    expect(workflow).toContain('perform Critical Auditor convergence');
-    expect(workflow).toContain('persists only source edits that were already materialized');
-    expect(workflow).toContain('human-readable status page to `stderr`');
-    expect(workflow).toContain('must not replace JSON `stdout`');
+    for (const workflow of readSkillSurface(
+      path.join('references', 'semantic-checkpoint-workflow.md')
+    )) {
+      expect(workflow).toContain('The checkpoint runner does not spawn subagents');
+      expect(workflow).toContain('Checkpoint mode does not review, audit, reason over semantic gaps');
+      expect(workflow).toContain('run three-perspective analysis');
+      expect(workflow).toContain('perform Critical Auditor convergence');
+      expect(workflow).toContain('persists only source edits that were already materialized');
+      expect(workflow).toContain('human-readable status page to `stderr`');
+      expect(workflow).toContain('must not replace JSON `stdout`');
+    }
   });
 
   it('requires authority-first fact collection and ID matrix design before authoring prose', () => {
@@ -409,6 +418,47 @@ describe('requirements-contract-authoring published contract', () => {
     expect(template).toContain('script: scripts/render-requirements-confirmation-html.ts');
     expect(template).toContain('scriptRef:');
     expect(template).toContain('scriptPath: "<skill-dir>/scripts/ingest-confirmation-event.js"');
+  });
+
+  it('publishes the large-document draft promotion protocol without consumer-root scripts', () => {
+    for (const skill of readSkillSurface('SKILL.md')) {
+      expect(skill).toContain('## Large Document Draft Promotion Protocol');
+      expect(skill).toContain('node <skill-dir>/scripts/promote-draft-large-doc.js');
+      expect(skill).toContain('--retry-receipt');
+      expect(skill).toContain('--preflight-only');
+      expect(skill).toContain('--dry-run');
+      expect(skill).toContain('normalize-draft-markdown.js');
+      expect(skill).toContain('generate-draft-manifest.js');
+      expect(skill).toContain('semantic_decision_required:expected_draft_gap_policy');
+      expect(skill).toContain('Do not add or use `--allow-expected-draft-gap`');
+      expect(skill).toContain('The write flow must work when the current project root has no `scripts` directory');
+    }
+  });
+
+  it('rejects unsafe consumer-facing command text for large document writes', () => {
+    const unsafeSamples = [
+      'node scripts/safe-write-large-doc.mjs --target docs/plan.md',
+      'node scripts/promote-draft-large-doc.js --draft draft.md --target docs/plan.md',
+      'pwsh.exe -Command "& { $content = @\\"# body\\"@; $content | node writer.cjs }"',
+      'node -e "require(\'node:fs\').writeFileSync(\'docs/plan.md\', body)"',
+      'Get-Content draft.md | Set-Content docs/plan.md',
+      'type draft.md >> docs/plan.md',
+    ];
+    const forbidden = /(?:^|\s)(?:node\s+scripts\/(?:safe-write-large-doc|promote-draft-large-doc)|pwsh(?:\.exe)?\s+-Command[\s\S]*(?:@["']|@\\["'])|node\s+-e|Set-Content|>>)/u;
+
+    for (const sample of unsafeSamples) {
+      expect(sample).toMatch(forbidden);
+    }
+
+    for (const skill of readSkillSurface('SKILL.md')) {
+      expect(skill).toContain('Do not instruct consumers to run `node scripts/safe-write-large-doc.mjs`');
+      const commandLines = skill
+        .split(/\r?\n/u)
+        .filter((line) => /^\s*(?:node|pwsh|pwsh\.exe|Get-Content|type)\b/u.test(line));
+      for (const line of commandLines) {
+        expect(line, line).not.toMatch(forbidden);
+      }
+    }
   });
 
   it('keeps skill resolver candidates aligned with supported host surfaces', () => {

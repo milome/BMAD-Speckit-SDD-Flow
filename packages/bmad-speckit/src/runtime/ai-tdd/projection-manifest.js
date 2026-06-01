@@ -68,6 +68,8 @@ const REQUIRED_HEADERS = {
     'allowedTaskType',
     'blockedIf',
     'userFacingPrompt',
+    'skill',
+    'mode',
     'canSuggestTransition',
     'canWriteControlState',
     'controlledIngestWritesState',
@@ -356,10 +358,7 @@ function validateControlledIngest(report, row, record) {
       )
     );
   }
-  if (
-    ('skill' in record || 'mode' in record) &&
-    (!String(record.skill || '').trim() || !String(record.mode || '').trim())
-  ) {
+  if (!String(record.skill || '').trim() || !String(record.mode || '').trim()) {
     report.errors.push(
       diagnostic(
         report.filePath,

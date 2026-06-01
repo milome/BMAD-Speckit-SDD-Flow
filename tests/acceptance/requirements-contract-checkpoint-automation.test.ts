@@ -121,7 +121,7 @@ function extractTargetModificationPaths() {
 
 function readCheckpointImplementationConfirmation(): Record<string, any> {
   const source = fs.readFileSync(checkpointRequirementDocPath(), 'utf8').replace(/\r\n/g, '\n');
-  const match = source.match(/(?:^|\n)implementationConfirmation:\n[\s\S]*?(?=\n## |\n# |$)/u);
+  const match = source.match(/(?:^|\n)implementationConfirmation:\n[\s\S]*?(?=\n#{1,6}\s|$)/u);
   if (!match) {
     throw new Error(
       'implementationConfirmation block not found in checkpoint automation source document'

@@ -62,7 +62,7 @@ function makeRuntimeRoot() {
   return root;
 }
 
-function runCli(args, cwd) {
+function runCli(args) {
   return execFileSync(process.execPath, [PACKAGE_CLI, ...args], {
     cwd: PROJECT_ROOT,
     encoding: 'utf8',

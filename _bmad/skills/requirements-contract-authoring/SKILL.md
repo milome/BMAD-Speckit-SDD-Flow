@@ -104,6 +104,33 @@ No safe-write helper, large-document replacement helper, manual rewrite, direct 
 
 If either condition is missing, stop before writing the source document and report `pre_write_scale_assessment_required`. Do not claim that checkpoint assessment is unnecessary merely because the agent can draft prose manually.
 
+## Large Document Draft Promotion Protocol
+
+For large source-document writes, PowerShell may launch Node commands only. PowerShell must not carry Markdown, YAML, JavaScript, Mermaid, or requirement bodies through here-string content transport, shell redirection, inline `node -e`, `Out-File`, `Set-Content`, `>>`, or long `pwsh.exe -Command` payloads.
+
+Use file-based UTF-8 drafts:
+
+1. Generate or update a draft file under a temporary or authoring directory, for example `<authoring-dir>/<source-name>.contract-draft.md`.
+2. Run the skill-local promotion command from the loaded skill directory:
+
+```bash
+node <skill-dir>/scripts/promote-draft-large-doc.js \
+  --draft <authoring-dir>/<source-name>.contract-draft.md \
+  --target <source-document.md> \
+  --require implementationConfirmation: \
+  --min-bytes <minimum-expected-bytes> \
+  --retry-receipt <authoring-dir>/large-doc-write-retry-receipt.json \
+  --json
+```
+
+The promotion command performs `normalize-draft-markdown.js`, `generate-draft-manifest.js`, lightweight preflight, reverse audit policy checks, timestamped backup creation, and UTF-8 target replacement. Use `--preflight-only` to validate syntax without reverse audit or target replacement. Use `--dry-run` to run promotion checks without replacing the target.
+
+The normalizer only repairs deterministic transport damage: LF/BOM normalization, single-backtick Mermaid fence damage, and unquoted colon-space YAML scalar values inside `implementationConfirmation:`. It must not invent requirements, evidence, status, hashes, confirmation text, or audit results.
+
+If a draft is syntactically valid but not confirmation-ready, the promotion command must stop before target replacement with `semantic_decision_required:expected_draft_gap_policy`. Do not add or use `--allow-expected-draft-gap`; the allowed non-confirmation-ready promotion policy is not defined.
+
+Do not instruct consumers to run `node scripts/safe-write-large-doc.mjs` or any consumer-root `scripts/...` writer for this skill. The write flow must work when the current project root has no `scripts` directory.
+
 - `author-confirmation-ready-source`: create or update the implementation source document with a complete inline `implementationConfirmation`, ID-bound views, artifact plan, evidence, failure paths, edge cases, trace rows, and applicable governance/runtime modules. This mode must first complete the pre-confirmation atomic decomposition loop; it must not directly write a long source document, must not directly write by chapter checkpoint, and single_pass also cannot skip the pre-confirmation atomic decomposition loop. Stop after draft quality checks unless the user already selected a confirmation language or explicitly asked to render.
 - `render-confirmation`: render the HTML confirmation page only after the user selected a confirmation language.
 - `ingest-confirmation`: ingest exact user confirmation text and hashes through the controlled confirm-scope path.

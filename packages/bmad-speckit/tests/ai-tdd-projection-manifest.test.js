@@ -114,7 +114,7 @@ describe('AI-TDD projection manifest parser', () => {
     const header = `${REQUIRED_HEADERS.actionMatrix.join(',')},extraColumn`;
     const file = tempCsv(
       'ai-tdd-six-model-action-matrix.csv',
-      `${header}\nTEST_ACTION,requirement_confirmation,not_established,new_unknown_state,new_unknown_condition,,new_unknown_alias,requirement_confirmation,none,new_unknown_blocker,Prompt,false,false,false,,ignored\n`
+      `${header}\nTEST_ACTION,requirement_confirmation,not_established,new_unknown_state,new_unknown_condition,,new_unknown_alias,requirement_confirmation,none,new_unknown_blocker,Prompt,,,false,false,false,,ignored\n`
     );
     const parsed = parseProjectionCsv(file, 'actionMatrix');
 
@@ -135,5 +135,18 @@ describe('AI-TDD projection manifest parser', () => {
     assert.ok(codes.includes('projection_control_write_forbidden'));
     assert.ok(codes.includes('controlled_ingest_projection_write_violation'));
     assert.ok(codes.includes('record_closed_primary_route_forbidden'));
+  });
+
+  it('fails closed when controlled ingest rows do not bind a skill and mode', () => {
+    const header = REQUIRED_HEADERS.skillRoutes.join(',');
+    const file = tempCsv(
+      'ai-tdd-six-model-skill-routes.csv',
+      `${header}\nBAD_ROUTE,delivery_confirmation,user_exact_closeout_phrase_and_hashes_match,,ingest-confirmation:confirm-closeout-acceptance,input,output,,confirm_closeout_acceptance,true,false,true,acceptance_request_missing_or_hash_mismatch,\n`
+    );
+    const parsed = parseProjectionCsv(file, 'skillRoutes');
+
+    assert.ok(
+      parsed.errors.some((error) => error.code === 'controlled_ingest_route_missing')
+    );
   });
 });

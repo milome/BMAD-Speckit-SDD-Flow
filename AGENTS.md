@@ -178,13 +178,13 @@ Hard rules:
 Required command for large document rewrites in this repository:
 
 ```powershell
-pwsh.exe -NoLogo -NoProfile -Command "& { node scripts/safe-write-large-doc.mjs --target <target> --content <draft> --require '<required heading>' --min-bytes <bytes> --json }"
+pwsh.exe -NoLogo -NoProfile -Command "& { node _bmad/skills/requirements-contract-authoring/scripts/promote-draft-large-doc.js --target <target> --draft <draft> --require '<required heading>' --min-bytes <bytes> --json }"
 ```
 
-Global Codex fallback command when the repository script is not available:
+Global Codex fallback command when the repository skill is not available:
 
 ```powershell
-pwsh.exe -NoLogo -NoProfile -Command "& { node C:/Users/milom/.codex/scripts/safe-write-large-doc.mjs --target <target> --content <draft> --require '<required heading>' --min-bytes <bytes> --json }"
+pwsh.exe -NoLogo -NoProfile -Command "& { node (Join-Path $env:USERPROFILE '.codex/skills/requirements-contract-authoring/scripts/promote-draft-large-doc.js') --target <target> --draft <draft> --require '<required heading>' --min-bytes <bytes> --json }"
 ```
 
 Do not use PowerShell redirection, `Out-File`, or `Set-Content` for large source/docs rewrites. Use Node `fs` with explicit `utf8` and preserve backups until the user accepts the result.

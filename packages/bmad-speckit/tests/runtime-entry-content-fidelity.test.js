@@ -157,11 +157,11 @@ describe('runtime entry content fidelity contract', () => {
       ]) {
         assert.match(panorama, new RegExp(fragment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
       }
-      assert.equal(countMatches(panorama, /^  Question: /gmu), 6);
-      assert.equal(countMatches(panorama, /^  Status: /gmu), 6);
-      assert.equal(countMatches(panorama, /^  Evidence source: /gmu), 6);
-      assert.equal(countMatches(panorama, /^  Route basis: /gmu), 6);
-      assert.equal(countMatches(panorama, /^  terminalEvent: /gmu), 6);
+      assert.equal(countMatches(panorama, /^ {2}Question: /gmu), 6);
+      assert.equal(countMatches(panorama, /^ {2}Status: /gmu), 6);
+      assert.equal(countMatches(panorama, /^ {2}Evidence source: /gmu), 6);
+      assert.equal(countMatches(panorama, /^ {2}Route basis: /gmu), 6);
+      assert.equal(countMatches(panorama, /^ {2}terminalEvent: /gmu), 6);
       assert.doesNotMatch(panorama, /current position is 2\/6/i);
       assert.doesNotMatch(text, /`record_closed`/u);
 
@@ -274,5 +274,30 @@ describe('runtime entry content fidelity contract', () => {
     }
     assert.doesNotMatch(text, /## Six Mental Model Panorama/);
     assert.doesNotMatch(text, /recordId: REQ-/);
+  });
+
+  it('does not treat NOT READY implementation-readiness reports as ready', () => {
+    const root = makeRuntimeRoot();
+    try {
+      const artifactRoot = path.join(root, '_bmad-output', 'planning-artifacts');
+      fs.mkdirSync(artifactRoot, { recursive: true });
+      fs.writeFileSync(
+        path.join(artifactRoot, 'implementation-readiness-report-2026-06-01.md'),
+        '# Implementation Readiness\n\nOverall Readiness Status\n\n**NOT READY**\n',
+        'utf8'
+      );
+
+      const text = runCli(['bmad-help', '--cwd', root]);
+
+      assert.match(text, /implementation-readiness \| evidence_present_refresh_if_scope_changed/);
+      assert.match(
+        text,
+        /Implementation-first recommendations require ready_clean or repair_closed readiness evidence/
+      );
+      assert.doesNotMatch(text, /implementation-readiness \| ready_clean/);
+      assert.doesNotMatch(text, /implementation-readiness \| repair_closed/);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
   });
 });

@@ -1,14 +1,15 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 
 const PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..');
 const PROJECT_SURFACES = ['.codex', '.claude', '.cursor'];
 const GLOBAL_SURFACES = [
-  'C:/Users/milom/.codex/skills',
-  'C:/Users/milom/.claude/skills',
-  'C:/Users/milom/.cursor/skills',
+  path.join(os.homedir(), '.codex', 'skills'),
+  path.join(os.homedir(), '.claude', 'skills'),
+  path.join(os.homedir(), '.cursor', 'skills'),
 ];
 const SOURCE_SKILLS = [
   path.join(PROJECT_ROOT, '_bmad', 'skills', 'bmad-speckit', 'SKILL.md'),
