@@ -5,6 +5,7 @@ const path = require('node:path');
 const Module = require('node:module');
 
 const root = path.resolve(__dirname, '..');
+const workspacePackageCli = 'packages/bmad-speckit/bin/bmad-speckit.js';
 
 const dependencyNodeModules = [
   path.join(root, 'node_modules', 'bmad-speckit', 'node_modules'),
@@ -23,7 +24,7 @@ if (dependencyNodeModules.length > 0) {
 
 const candidates = [
   path.join(root, 'node_modules', 'bmad-speckit', 'bin', 'bmad-speckit.js'),
-  path.join(root, 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js'),
+  path.join(root, workspacePackageCli),
 ];
 
 const cliEntry = candidates.find((candidate) => fs.existsSync(candidate));

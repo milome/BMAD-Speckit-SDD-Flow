@@ -32,7 +32,7 @@
     "main-agent:dual-host-pr-orchestrate": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-dual-host-pr-orchestrator.ts",
     "main-agent:delivery-truth-gate": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-delivery-truth-gate.ts",
     "main-agent:delivery-evidence-run": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-delivery-evidence-run.ts",
-    "bmads": "npx ts-node --project tsconfig.node.json --transpile-only scripts/bmads-renderer.ts",
+    "bmads": "node packages/bmad-speckit/bin/bmad-speckit.js bmads",
     "main-agent:bmad-help-five-layer-matrix": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-bmad-help-five-layer-matrix.ts",
     "main-agent:codex-worker": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-codex-worker-adapter.ts",
     "main-agent:development-journey-matrix": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-development-journey-matrix.ts",
@@ -191,5 +191,11 @@
     "bmad-speckit": "2.0.1",
     "js-yaml": "^4.1.1",
     "tsx": "4.20.6"
-  }
+  },
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "author": ""
 }

@@ -1,83 +1,8 @@
 /* eslint-disable no-console */
-import * as fs from 'node:fs';
-import * as path from 'node:path';
-
-type VisibleMode = 'state-prioritized' | 'all' | 'filtered';
-
-export interface WorkflowGuidance {
-  sourcePath: string;
-  routingRules: string[];
-  displayRules: string[];
-  officialExecutionPaths: string[];
-  additionalGuidance: string[];
-}
-
-export interface CatalogItem {
-  module: string;
-  phase: string;
-  name: string;
-  code: string;
-  sequence: number;
-  workflowFile: string;
-  command: string;
-  required: boolean;
-  agentName: string;
-  agentCommand: string;
-  agentDisplayName: string;
-  agentTitle: string;
-  options: string;
-  description: string;
-  outputLocation: string;
-  outputs: string;
-}
-
-export interface BmadHelpOutput {
-  recommendedActions: Array<{
-    code: string;
-    command: string;
-    name: string;
-    phase: string;
-    module: string;
-    recommendedSkill: string;
-    legacyCommand: string | null;
-    agent: string;
-    description: string;
-    outputLocation: string;
-    outputs: string;
-    reason: string;
-  }>;
-  diagnostic: {
-    taskPath: string;
-    flow: string;
-    sourceMode: string;
-    contextMaturity: 'low' | 'medium' | 'high';
-    complexity: 'low' | 'medium' | 'medium-high' | 'high';
-    implementationReadinessStatus: string;
-    module: string;
-    summary: string[];
-    evidenceFindings: string[];
-    gatingNotes: string[];
-    followUpQuestion: string | null;
-  };
-  catalog: {
-    modules: Record<string, CatalogItem[]>;
-    visibleMode: VisibleMode;
-    totalItems: number;
-  };
-  workflowGuidance: WorkflowGuidance;
-}
-
-interface RenderOptions {
-  projectRoot: string;
-  all?: boolean;
-  module?: string;
-  phase?: string;
-  json?: boolean;
-  workflowGuidance?: boolean;
-  rawWorkflow?: boolean;
-  debug?: boolean;
-  catalog?: boolean;
-}
+const fs = require('node:fs');
+const path = require('node:path');
+const { resolveDisplayBudget } = require('./ai-tdd/display-budget');
+const { resolveAiTddRuntimeDecision } = require('./ai-tdd/runtime-decision');
 
 const CATALOG_HEADERS = [
   'module',
@@ -96,10 +21,36 @@ const CATALOG_HEADERS = [
   'description',
   'output-location',
   'outputs',
-] as const;
+];
 
-function parseCsvLine(line: string): string[] {
-  const result: string[] = [];
+function packageAssetRoot() {
+  return path.resolve(__dirname, '..', '..');
+}
+
+function repoAssetRoot() {
+  return path.resolve(__dirname, '..', '..', '..', '..');
+}
+
+function hasBmadHelpAssets(assetRoot) {
+  return fs.existsSync(path.join(assetRoot, '_bmad', '_config', 'bmad-help.csv'));
+}
+
+function resolveBmadHelpAssetRoot(projectRoot, explicitAssetRoot) {
+  const candidates = [
+    explicitAssetRoot,
+    projectRoot,
+    packageAssetRoot(),
+    repoAssetRoot(),
+  ].filter(Boolean);
+  for (const candidate of candidates) {
+    const resolved = path.resolve(candidate);
+    if (hasBmadHelpAssets(resolved)) return resolved;
+  }
+  return path.resolve(explicitAssetRoot || projectRoot || packageAssetRoot());
+}
+
+function parseCsvLine(line) {
+  const result = [];
   let current = '';
   let inQuotes = false;
   for (let index = 0; index < line.length; index += 1) {
@@ -121,10 +72,10 @@ function parseCsvLine(line: string): string[] {
   return result;
 }
 
-function loadCatalog(projectRoot: string): CatalogItem[] {
-  const catalogPath = path.join(projectRoot, '_bmad', '_config', 'bmad-help.csv');
+function loadCatalog(assetRoot) {
+  const catalogPath = path.join(assetRoot, '_bmad', '_config', 'bmad-help.csv');
   const lines = fs.readFileSync(catalogPath, 'utf8').split(/\r?\n/u).filter(Boolean);
-  const header = parseCsvLine(lines[0] ?? '');
+  const header = parseCsvLine(lines[0] || '');
   for (const requiredHeader of CATALOG_HEADERS) {
     if (!header.includes(requiredHeader)) {
       throw new Error(`bmad-help catalog missing header: ${requiredHeader}`);
@@ -132,7 +83,7 @@ function loadCatalog(projectRoot: string): CatalogItem[] {
   }
   return lines.slice(1).map((line) => {
     const values = parseCsvLine(line);
-    const row = Object.fromEntries(header.map((key, index) => [key, values[index] ?? '']));
+    const row = Object.fromEntries(header.map((key, index) => [key, values[index] || '']));
     return {
       module: row.module,
       phase: row.phase,
@@ -154,18 +105,18 @@ function loadCatalog(projectRoot: string): CatalogItem[] {
   });
 }
 
-function groupCatalog(items: CatalogItem[]): Record<string, CatalogItem[]> {
-  return items.reduce<Record<string, CatalogItem[]>>((groups, item) => {
-    groups[item.module] ??= [];
-    groups[item.module]!.push(item);
+function groupCatalog(items) {
+  return items.reduce((groups, item) => {
+    groups[item.module] = groups[item.module] || [];
+    groups[item.module].push(item);
     return groups;
   }, {});
 }
 
-function workflowPath(projectRoot: string): string {
+function workflowPath(assetRoot) {
   const candidates = [
-    path.join(projectRoot, '_bmad', 'core', 'skills', 'bmad-help', 'workflow.md'),
-    path.join(projectRoot, '_bmad', 'skills', 'bmad-help', 'workflow.md'),
+    path.join(assetRoot, '_bmad', 'core', 'skills', 'bmad-help', 'workflow.md'),
+    path.join(assetRoot, '_bmad', 'skills', 'bmad-help', 'workflow.md'),
   ];
   const match = candidates.find((candidate) => fs.existsSync(candidate));
   if (!match) {
@@ -176,42 +127,42 @@ function workflowPath(projectRoot: string): string {
   return match;
 }
 
-export function loadRawBmadHelpWorkflow(projectRoot: string): string {
-  return fs.readFileSync(workflowPath(projectRoot), 'utf8');
+function loadRawBmadHelpWorkflow(assetRoot) {
+  return fs.readFileSync(workflowPath(assetRoot), 'utf8');
 }
 
-function helpTaskPath(projectRoot: string): string {
+function helpTaskPath(assetRoot) {
   const candidates = [
-    path.join(projectRoot, '_bmad', 'core', 'tasks', 'help.md'),
-    path.join(projectRoot, '_bmad', 'tasks', 'help.md'),
+    path.join(assetRoot, '_bmad', 'core', 'tasks', 'help.md'),
+    path.join(assetRoot, '_bmad', 'tasks', 'help.md'),
   ];
   const match = candidates.find((candidate) => fs.existsSync(candidate));
-  return match ? path.relative(projectRoot, match).replace(/\\/g, '/') : '_bmad/core/tasks/help.md';
+  return match ? path.relative(assetRoot, match).replace(/\\/g, '/') : '_bmad/core/tasks/help.md';
 }
 
-function extractSection(markdown: string, heading: string): string[] {
+function extractSection(markdown, heading) {
   const lines = markdown.split(/\r?\n/u);
   const start = lines.findIndex((line) => line.trim() === heading);
   if (start < 0) return [];
-  const headingLevel = heading.match(/^#+/u)?.[0].length ?? 2;
-  const result: string[] = [];
+  const headingLevel = (heading.match(/^#+/u) || ['##'])[0].length;
+  const result = [];
   for (let index = start + 1; index < lines.length; index += 1) {
     const line = lines[index];
     const match = line.match(/^(#+)\s+/u);
-    if (match && match[1]!.length <= headingLevel) break;
+    if (match && match[1].length <= headingLevel) break;
     const trimmed = line.trim();
     if (trimmed) result.push(trimmed);
   }
   return result;
 }
 
-function stripMarkdown(value: string): string {
+function stripMarkdown(value) {
   return value.replace(/\*\*/gu, '').replace(/`/gu, '').replace(/^-\s*/u, '').trim();
 }
 
-function unique(lines: string[]): string[] {
-  const seen = new Set<string>();
-  const result: string[] = [];
+function unique(lines) {
+  const seen = new Set();
+  const result = [];
   for (const line of lines) {
     const key = line.trim();
     if (!key || seen.has(key)) continue;
@@ -221,11 +172,11 @@ function unique(lines: string[]): string[] {
   return result;
 }
 
-function loadWorkflowGuidance(projectRoot: string): WorkflowGuidance {
-  const source = workflowPath(projectRoot);
+function loadWorkflowGuidance(assetRoot) {
+  const source = workflowPath(assetRoot);
   const markdown = fs.readFileSync(source, 'utf8');
   return {
-    sourcePath: path.relative(projectRoot, source).replace(/\\/g, '/'),
+    sourcePath: path.relative(assetRoot, source).replace(/\\/g, '/'),
     routingRules: extractSection(markdown, '## ROUTING RULES').map(stripMarkdown),
     displayRules: unique(
       [
@@ -245,21 +196,21 @@ function loadWorkflowGuidance(projectRoot: string): WorkflowGuidance {
   };
 }
 
-function readJson(filePath: string): Record<string, unknown> | null {
+function readJson(filePath) {
   if (!fs.existsSync(filePath)) return null;
   try {
-    return JSON.parse(fs.readFileSync(filePath, 'utf8')) as Record<string, unknown>;
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
   } catch {
     return null;
   }
 }
 
-function listFiles(root: string): string[] {
+function listFiles(root) {
   if (!fs.existsSync(root)) return [];
-  const result: string[] = [];
+  const result = [];
   const stack = [root];
   while (stack.length > 0) {
-    const current = stack.pop()!;
+    const current = stack.pop();
     for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
       const absolute = path.join(current, entry.name);
       if (entry.isDirectory()) stack.push(absolute);
@@ -269,10 +220,7 @@ function listFiles(root: string): string[] {
   return result;
 }
 
-function detectDiagnostic(
-  projectRoot: string,
-  recommendedActions: BmadHelpOutput['recommendedActions']
-): BmadHelpOutput['diagnostic'] {
+function detectDiagnostic(projectRoot, assetRoot, recommendedActions) {
   const runtimeContext = readJson(
     path.join(projectRoot, '_bmad-output', 'runtime', 'context', 'project.json')
   );
@@ -302,7 +250,7 @@ function detectDiagnostic(
     `implementation-readiness=${implementationReadinessStatus}`,
   ];
   return {
-    taskPath: helpTaskPath(projectRoot),
+    taskPath: helpTaskPath(assetRoot),
     flow,
     sourceMode:
       typeof runtimeContext?.sourceMode === 'string' ? runtimeContext.sourceMode : 'unknown',
@@ -325,23 +273,23 @@ function detectDiagnostic(
   };
 }
 
-function skillFor(item: CatalogItem): string {
+function skillFor(item) {
   if (item.workflowFile.startsWith('skill:')) return item.workflowFile.slice('skill:'.length);
   if (item.command) return item.command;
   return item.code;
 }
 
-function legacyCommandFor(item: CatalogItem): string | null {
+function legacyCommandFor(item) {
   if (item.workflowFile.startsWith('skill:') && item.command) return item.command;
   return null;
 }
 
-function agentFor(item: CatalogItem): string {
+function agentFor(item) {
   const display = item.agentDisplayName || item.agentName;
   return [display, item.agentTitle].filter(Boolean).join(' - ');
 }
 
-function chooseRecommended(catalog: CatalogItem[]): CatalogItem[] {
+function chooseRecommended(catalog) {
   const priority = [
     'bmad-bmm-correct-course',
     'bmad-bmm-sprint-status',
@@ -354,7 +302,7 @@ function chooseRecommended(catalog: CatalogItem[]): CatalogItem[] {
     'bmad-standalone-tasks',
     'bmad-bug-assistant',
   ];
-  const picked: CatalogItem[] = [];
+  const picked = [];
   for (const command of priority) {
     const found = catalog.find(
       (item) => item.command === command || item.workflowFile === `skill:${command}`
@@ -364,7 +312,7 @@ function chooseRecommended(catalog: CatalogItem[]): CatalogItem[] {
   return picked.slice(0, 7);
 }
 
-function actionFor(item: CatalogItem): BmadHelpOutput['recommendedActions'][number] {
+function actionFor(item) {
   return {
     code: item.code,
     command: item.command,
@@ -383,15 +331,9 @@ function actionFor(item: CatalogItem): BmadHelpOutput['recommendedActions'][numb
   };
 }
 
-function filterCatalog(input: {
-  catalog: CatalogItem[];
-  all?: boolean;
-  module?: string;
-  phase?: string;
-  recommended: CatalogItem[];
-}): { items: CatalogItem[]; visibleMode: VisibleMode } {
+function filterCatalog(input) {
   let items = input.catalog;
-  let visibleMode: VisibleMode = input.all ? 'all' : 'state-prioritized';
+  let visibleMode = input.all ? 'all' : 'state-prioritized';
   if (input.module) {
     items = items.filter((item) => item.module === input.module);
     visibleMode = 'filtered';
@@ -407,9 +349,10 @@ function filterCatalog(input: {
   return { items, visibleMode };
 }
 
-export function buildBmadHelpOutput(options: RenderOptions): BmadHelpOutput {
+function buildBmadHelpOutput(options) {
   const projectRoot = path.resolve(options.projectRoot);
-  const catalog = loadCatalog(projectRoot);
+  const assetRoot = resolveBmadHelpAssetRoot(projectRoot, options.assetRoot);
+  const catalog = loadCatalog(assetRoot);
   const recommendedItems = chooseRecommended(catalog);
   const recommendedActions = recommendedItems.map(actionFor);
   const filtered = filterCatalog({
@@ -421,17 +364,22 @@ export function buildBmadHelpOutput(options: RenderOptions): BmadHelpOutput {
   });
   return {
     recommendedActions,
-    diagnostic: detectDiagnostic(projectRoot, recommendedActions),
+    diagnostic: detectDiagnostic(projectRoot, assetRoot, recommendedActions),
+    runtimeCrossEntry: resolveAiTddRuntimeDecision(projectRoot, {
+      assetRoot,
+      displayBudget: options.budget,
+    }),
+    displayBudget: resolveDisplayBudget(options.budget, 'route'),
     catalog: {
       modules: groupCatalog(filtered.items),
       visibleMode: filtered.visibleMode,
       totalItems: filtered.items.length,
     },
-    workflowGuidance: loadWorkflowGuidance(projectRoot),
+    workflowGuidance: loadWorkflowGuidance(assetRoot),
   };
 }
 
-function formatAction(action: BmadHelpOutput['recommendedActions'][number], index: number): string {
+function formatAction(action, index) {
   const lines = [
     `${index + 1}. ${action.name} (${action.code})`,
     `Recommended skill: \`${action.recommendedSkill}\``,
@@ -444,7 +392,7 @@ function formatAction(action: BmadHelpOutput['recommendedActions'][number], inde
   return lines.join('\n');
 }
 
-function renderDiagnostic(output: BmadHelpOutput): string[] {
+function renderDiagnostic(output) {
   return [
     '## Status Summary',
     '',
@@ -467,7 +415,7 @@ function renderDiagnostic(output: BmadHelpOutput): string[] {
   ];
 }
 
-function renderCatalog(output: BmadHelpOutput): string[] {
+function renderCatalog(output) {
   const lines = [
     '## Catalog Reference',
     '',
@@ -484,7 +432,7 @@ function renderCatalog(output: BmadHelpOutput): string[] {
   return lines;
 }
 
-function renderWorkflowGuidance(guidance: WorkflowGuidance): string[] {
+function renderWorkflowGuidance(guidance) {
   const lines = [
     '## Upstream Workflow Guidance',
     '',
@@ -509,12 +457,32 @@ function renderWorkflowGuidance(guidance: WorkflowGuidance): string[] {
   return lines;
 }
 
-export function renderBmadHelp(
-  output: BmadHelpOutput,
-  options: { debug?: boolean; includeCatalog?: boolean } = {}
-): string {
-  const lines: string[] = ['# bmad-help', ''];
+function renderRuntimeCrossEntry(output) {
+  const runtime = output.runtimeCrossEntry;
+  if (!runtime || !runtime.primaryRecord || runtime.activeRecords.length === 0) return [];
+  const budget = output.displayBudget || resolveDisplayBudget('route');
+  const lines = [
+    '## Runtime Cross-Entry',
+    '',
+    `View Mode: ${runtime.viewMode}`,
+    `Primary record: ${runtime.primaryRecord.recordId}`,
+    `Primary route or skill: ${runtime.goalRoute.skill || runtime.nextSafeAction}`,
+    'Switch: run `bmad-speckit bmads` for the full governed AI-TDD runtime panorama; this page keeps BMAD Method workflow guidance as the owning output.',
+  ];
+  if (budget.name === 'expanded' || budget.name === 'full') {
+    lines.push(`Primary because: ${runtime.primaryBecause}`);
+  }
+  lines.push(
+    'Runtime precedence: RequirementRecord next safe action wins when upstream workflow guidance conflicts with governed runtime state.'
+  );
+  return lines;
+}
+
+function renderBmadHelp(output, options = {}) {
+  const lines = ['# bmad-help', ''];
   lines.push(...renderDiagnostic(output));
+  const runtimeCrossEntry = renderRuntimeCrossEntry(output);
+  if (runtimeCrossEntry.length > 0) lines.push('', ...runtimeCrossEntry);
   lines.push('', '## Recommended Next Steps', '');
   output.recommendedActions.forEach((action, index) => {
     lines.push(formatAction(action, index), '');
@@ -526,12 +494,12 @@ export function renderBmadHelp(
   return `${lines.join('\n')}\n`;
 }
 
-function parseArgs(argv: string[]): RenderOptions {
-  const options: RenderOptions = { projectRoot: process.cwd() };
-  const bareArgs: string[] = [];
+function parseArgs(argv) {
+  const options = { projectRoot: process.cwd() };
+  const bareArgs = [];
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
-    if (arg === '--cwd') options.projectRoot = argv[++index] ?? options.projectRoot;
+    if (arg === '--cwd') options.projectRoot = argv[++index] || options.projectRoot;
     else if (arg.startsWith('--cwd=')) options.projectRoot = arg.slice('--cwd='.length);
     else if (arg === '--all') options.all = true;
     else if (arg === '--module') options.module = argv[++index];
@@ -543,6 +511,8 @@ function parseArgs(argv: string[]): RenderOptions {
     else if (arg === '--raw-workflow') options.rawWorkflow = true;
     else if (arg === '--debug') options.debug = true;
     else if (arg === '--catalog') options.catalog = true;
+    else if (arg === '--budget') options.budget = argv[++index];
+    else if (arg.startsWith('--budget=')) options.budget = arg.slice('--budget='.length);
     else if (!arg.startsWith('-')) bareArgs.push(arg);
   }
   if (process.env.npm_config_json === 'true') options.json = true;
@@ -564,11 +534,13 @@ function parseArgs(argv: string[]): RenderOptions {
   return options;
 }
 
-export function mainBmadHelpRenderer(argv: string[] = process.argv.slice(2)): number {
+function mainBmadHelpRenderer(argv = process.argv.slice(2)) {
   try {
     const options = parseArgs(argv);
     if (options.rawWorkflow) {
-      process.stdout.write(`${loadRawBmadHelpWorkflow(path.resolve(options.projectRoot))}\n`);
+      const projectRoot = path.resolve(options.projectRoot);
+      const assetRoot = resolveBmadHelpAssetRoot(projectRoot, options.assetRoot);
+      process.stdout.write(`${loadRawBmadHelpWorkflow(assetRoot)}\n`);
       return 0;
     }
     const output = buildBmadHelpOutput(options);
@@ -591,6 +563,13 @@ export function mainBmadHelpRenderer(argv: string[] = process.argv.slice(2)): nu
     return 1;
   }
 }
+
+module.exports = {
+  buildBmadHelpOutput,
+  loadRawBmadHelpWorkflow,
+  mainBmadHelpRenderer,
+  renderBmadHelp,
+};
 
 if (require.main === module) {
   process.exitCode = mainBmadHelpRenderer();

@@ -26,13 +26,16 @@
 
 ## DUAL VIEW OUTPUT
 
-- **Governed Runtime Next Step first** - when an active runtime record exists, default output must show `Governed Runtime Next Step` before any upstream catalog details.
-- **BMAD Upstream Workflow Catalog on request** - when the user asks for BMAD upstream workflows, a menu, catalog, or upstream BMAD Method compatibility, also show `BMAD Upstream Workflow Catalog`.
+- **Preserve the BMAD Help owning output** - default `bmad-help` keeps the upstream BMAD Method structure: `Status Summary`, `Recommended Next Steps`, optional catalog/reference rows, and upstream workflow guidance.
+- **Short governed runtime cross-entry only** - when an active runtime record exists, add a compact `Runtime Cross-Entry` block with `bmads` / `bmad-speckit`, view mode, primary route or skill, and one switch sentence.
+- **Do not expand the runtime console** - `bmad-help` must not list every active RequirementRecord or render the full Six Mental Models panorama; that belongs to `bmad-speckit bmads`.
+- **BMAD Upstream Workflow Catalog on request** - when the user asks for BMAD upstream workflows, a menu, catalog, or upstream BMAD Method compatibility, also show the upstream catalog/reference rows.
 - **Catalog is informational under governed runtime** - the upstream catalog is informational unless no governed runtime state exists or the user explicitly chooses upstream planning artifact work.
 - **Catalog item status labels** - each upstream item must be labeled as `available`, `blocked by currentMentalModel`, `compatibility only`, or `replaced by project official skill`.
 - **Runtime readiness gate label** - when runtime state exists, `Check Implementation Readiness` maps to `governed_runtime_readiness_gate`, not directly to the upstream planning readiness workflow.
 - **No remediation execution** - `bmad-help` may explain that `readiness_auto_remediation` is the main Agent lane for blocked runtime readiness, but it must not trigger remediation.
 - **No mental model progression** - Only `main_agent_orchestration` and controlled ingest may progress the six mental model chain.
+- **Governed runtime precedence** - if upstream workflow guidance conflicts with RequirementRecord next safe action, state that the governed runtime next safe action takes precedence and point to `bmad-speckit bmads`.
 
 ## PRESENTATION PRIORITY
 

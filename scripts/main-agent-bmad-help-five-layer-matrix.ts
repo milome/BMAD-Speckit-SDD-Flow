@@ -441,7 +441,7 @@ function validateBmadHelpEntry(
     bmadHelpIsUpstreamOnly:
       !command.includes('RUN OR EMULATE') &&
       !command.includes('Project State Card') &&
-      command.includes('Do **not** call `scripts/bmad-help-renderer.ts`') &&
+      command.includes('Do **not** call any root `scripts/*` renderer') &&
       !workflow.includes('layer_1 -> layer_5') &&
       !catalog.includes('CX1') &&
       !catalog.includes('CX5'),

@@ -24,6 +24,11 @@ function loadCommand(modulePath, exportName) {
   return require(modulePath)[exportName];
 }
 
+function runRuntimeModule(modulePath, exportName, args) {
+  const exitCode = require(modulePath)[exportName](args);
+  process.exit(exitCode ?? 0);
+}
+
 function resolveRepoScript(scriptName) {
   const candidates = [
     path.resolve(__dirname, '..', '..', '..', 'scripts', scriptName),
@@ -564,12 +569,29 @@ program
   });
 
 program
+  .command('bmad-help')
+  .description('Render BMAD Method help guidance from the package runtime')
+  .allowUnknownOption(true)
+  .allowExcessArguments(true)
+  .action((command) =>
+    runRuntimeModule(
+      '../src/runtime/bmad-help-renderer.js',
+      'mainBmadHelpRenderer',
+      forwardedArgsFromCommand(command)
+    )
+  );
+
+program
   .command('bmads')
   .description('Render the BMAD-Speckit main-agent runtime console')
   .allowUnknownOption(true)
   .allowExcessArguments(true)
-  .action((_options, command) =>
-    runRepoScript('bmads-renderer.ts', forwardedArgsFromCommand(command))
+  .action((command) =>
+    runRuntimeModule(
+      '../src/runtime/bmads-renderer.js',
+      'mainBmadsRenderer',
+      forwardedArgsFromCommand(command)
+    )
   );
 
 program
@@ -586,8 +608,12 @@ program
   .description('Alias for bmads: render the BMAD-Speckit main-agent runtime console')
   .allowUnknownOption(true)
   .allowExcessArguments(true)
-  .action((_options, command) =>
-    runRepoScript('bmads-renderer.ts', forwardedArgsFromCommand(command))
+  .action((command) =>
+    runRuntimeModule(
+      '../src/runtime/bmads-renderer.js',
+      'mainBmadsRenderer',
+      forwardedArgsFromCommand(command)
+    )
   );
 
 program
