@@ -114,11 +114,17 @@ describe('shared goal contract renderer', () => {
   it('accepts a CRLF template when the profile contains the canonical template hash', () => {
     const lfTemplate = fs.readFileSync(TEMPLATE, 'utf8').replace(/\r\n/g, '\n');
     const crlfTemplate = lfTemplate.replace(/\n/g, '\r\n');
-    const profile = JSON.parse(fs.readFileSync(PROFILE, 'utf8'));
+    const baseProfile = JSON.parse(fs.readFileSync(PROFILE, 'utf8'));
     const { profileHashFor, templateHashFor } = loadProfileModule();
     const { renderGoalContract } = loadRenderer();
-    profile.templateHash = templateHashFor(lfTemplate);
-    profile.profileHash = profileHashFor(profile);
+    const profileDraft = {
+      ...baseProfile,
+      templateHash: templateHashFor(lfTemplate),
+    };
+    const profile = {
+      ...profileDraft,
+      profileHash: profileHashFor(profileDraft),
+    };
 
     const result = renderGoalContract({
       templateText: crlfTemplate,

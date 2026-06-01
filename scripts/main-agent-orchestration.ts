@@ -1578,6 +1578,14 @@ interface CriticalAuditorRoundResult {
 
 export interface MainAgentPreConfirmationDrilldownResult extends PreConfirmationDrilldownLaneState {
   ok: boolean;
+  selectedAuthoringLane?: 'author-confirmation-ready-source';
+  visibleAuthoringLaneMessage?: string;
+  status?: 'draft_updated_not_confirmation_ready';
+  changedSections?: string[];
+  currentBlockingReason?: string | null;
+  nextUserPrompt?: string | null;
+  nextRequiredAction?: string | null;
+  confirmationLanguage?: string | null;
   sourcePath: string;
   requirementSetId: string;
   recordId: string;
@@ -1944,7 +1952,7 @@ function buildPreConfirmationImplementationConfirmation(input: {
   sourcePath: string;
   recordId: string;
   requirementSetId: string;
-  language: string;
+  language: string | null;
   paths: PreConfirmationPaths;
   packetHash: string;
   semanticKernelHash: string;
@@ -2020,7 +2028,7 @@ function buildPreConfirmationImplementationConfirmation(input: {
     entryFlowClass: 'task_packet_entry',
     workflowAdapter: 'direct',
     contractAuthoringRequired: true,
-    confirmationLanguage: input.language,
+    confirmationLanguage: input.language ?? 'not_selected',
     confirmationProfile: 'implementation_confirmation',
     requiredViewPacks: ['currentTargetMap'],
     optionalViewPacks: [],
@@ -2581,10 +2589,6 @@ function writtenIdRangesFromConfirmation(confirmation: Record<string, unknown>):
 function nextSourceAuditCommand(root: string, sourcePath: string): string {
   const source = toRootRelativePath(root, sourcePath);
   const testCommand = 'npx vitest run tests/acceptance/main-agent-source-materialization-before-audit.test.ts; npx vitest run tests/acceptance/main-agent-authoring-repair-preserve-existing.test.ts';
-
-  if (process.platform === 'win32') {
-    return `pwsh.exe -NoLogo -NoProfile -Command "& { ${testCommand} }" # audits written source: ${source}`;
-  }
   return `${testCommand} # audits written source: ${source}`;
 }
 
@@ -5740,6 +5744,14 @@ function buildPreConfirmationResult(input: {
   receiptHash?: string | null;
   updatedSourceSections?: string[];
   blockingNextAction?: string | null;
+  selectedAuthoringLane?: 'author-confirmation-ready-source';
+  visibleAuthoringLaneMessage?: string;
+  status?: 'draft_updated_not_confirmation_ready';
+  changedSections?: string[];
+  currentBlockingReason?: string | null;
+  nextUserPrompt?: string | null;
+  nextRequiredAction?: string | null;
+  confirmationLanguage?: string | null;
 }): MainAgentPreConfirmationDrilldownResult {
   const issues = input.issues ?? [];
   const confirmable = input.substate === 'user_confirmable' && issues.length === 0;
@@ -5751,6 +5763,19 @@ function buildPreConfirmationResult(input: {
       : { ready: false, label: 'delivery_not_ready_before_controlled_ingest' };
   return {
     ok: confirmable,
+    selectedAuthoringLane: input.selectedAuthoringLane ?? 'author-confirmation-ready-source',
+    visibleAuthoringLaneMessage:
+      input.visibleAuthoringLaneMessage ??
+      `author-confirmation-ready-source lane selected for ${toRootRelativePath(
+        input.root,
+        input.sourcePath
+      )}`,
+    status: input.status,
+    changedSections: input.changedSections ?? input.updatedSourceSections ?? [],
+    currentBlockingReason: input.currentBlockingReason ?? null,
+    nextUserPrompt: input.nextUserPrompt ?? null,
+    nextRequiredAction: input.nextRequiredAction ?? null,
+    confirmationLanguage: input.confirmationLanguage ?? null,
     currentMentalModel: 'requirement_confirmation',
     lane: 'pre_confirmation_drilldown',
     substate: input.substate,
@@ -6004,29 +6029,7 @@ export function runMainAgentPreConfirmationDrilldown(
   const paths = preConfirmationPaths(root, identity.recordId, identity.requirementSetId);
   const createdAt = new Date().toISOString();
   const authoringStartedAt = Date.now();
-  const language = normalizeText(options.confirmationLanguage) || 'zh-CN';
-  const mustRequirements = resolveSourceMustRequirements(sourcePath);
-  if (mustRequirements.length === 0) {
-    const issue = preConfirmationIssue(
-      'controlled_must_candidates_missing',
-      'No explicit MUST: rows or inline implementationConfirmation.must[] entries were found; authoring must generate controlled MUST candidates before packet materialization.',
-      [toRootRelativePath(root, sourcePath), 'implementationConfirmation.must'],
-      'semantic_kernel_authoring'
-    );
-    return buildPreConfirmationResult({
-      root,
-      sourcePath,
-      recordId: identity.recordId,
-      requirementSetId: identity.requirementSetId,
-      paths,
-      substate: 'blocked_by_semantic_gap',
-      issues: [issue],
-      finalStandards: {
-        newSkillFlowEntersAtomicDecompositionLoopBeforeMaterialization: false,
-        mustDecompositionPacketSynchronizedBeforeMaterialization: false,
-      },
-    });
-  }
+  const language = normalizeText(options.confirmationLanguage) || null;
 
   if (normalizeText(options.mode) === 'single_pass') {
     const issue = preConfirmationIssue(
@@ -6080,6 +6083,30 @@ export function runMainAgentPreConfirmationDrilldown(
       substate: 'blocked_by_render_gate',
       issues: initialScaleAssessment.issues,
       finalStandards: { singlePassCannotSkipAtomicDecompositionLoop: true },
+    });
+  }
+
+  const mustRequirements = resolveSourceMustRequirements(sourcePath);
+  if (mustRequirements.length === 0) {
+    const issue = preConfirmationIssue(
+      'controlled_must_candidates_missing',
+      'No explicit MUST: rows or inline implementationConfirmation.must[] entries were found; authoring must generate controlled MUST candidates before packet materialization.',
+      [toRootRelativePath(root, sourcePath), 'implementationConfirmation.must'],
+      'semantic_kernel_authoring'
+    );
+    return buildPreConfirmationResult({
+      root,
+      sourcePath,
+      recordId: identity.recordId,
+      requirementSetId: identity.requirementSetId,
+      paths,
+      substate: 'blocked_by_semantic_gap',
+      issues: [issue],
+      confirmationLanguage: language,
+      finalStandards: {
+        newSkillFlowEntersAtomicDecompositionLoopBeforeMaterialization: false,
+        mustDecompositionPacketSynchronizedBeforeMaterialization: false,
+      },
     });
   }
 
@@ -6666,6 +6693,47 @@ export function runMainAgentPreConfirmationDrilldown(
       globalGateReport,
       sourceDocumentHash: finalMaterialized.sourceDocumentHash,
       implementationConfirmationHash: finalMaterialized.implementationConfirmationHash,
+      finalStandards: finalStandardsFromReports({
+        packet: finalPacket,
+        mustGateReport,
+        globalGateReport,
+        renderReport: null,
+        missingSurfaceProbe: null,
+        requirementRecord: null,
+      }),
+    });
+  }
+
+  if (!language) {
+    return buildPreConfirmationResult({
+      root,
+      sourcePath,
+      recordId: identity.recordId,
+      requirementSetId: identity.requirementSetId,
+      paths,
+      substate: 'pre_render_ready',
+      issues: [
+        preConfirmationIssue(
+          'language_required_before_render',
+          'Confirmation language is required before rendering the confirmation HTML.',
+          ['confirmationLanguage'],
+          'render_confirmation'
+        ),
+      ],
+      mustGateReport,
+      globalGateReport,
+      sourceDocumentHash: finalMaterialized.sourceDocumentHash,
+      implementationConfirmationHash: finalMaterialized.implementationConfirmationHash,
+      receiptPath: toRootRelativePath(root, finalMaterialization.receiptPath),
+      receiptHash: finalMaterialization.receipt.receiptHash,
+      updatedSourceSections: finalMaterialization.receipt.writtenIdRanges,
+      status: 'draft_updated_not_confirmation_ready',
+      changedSections: finalMaterialization.receipt.writtenIdRanges,
+      currentBlockingReason: 'confirmation_language_not_selected',
+      nextUserPrompt: '请选择确认页语言：中文 / English / 中英双语',
+      nextRequiredAction: 'select_confirmation_language_then_render_confirmation',
+      blockingNextAction: 'select_confirmation_language_then_render_confirmation',
+      confirmationLanguage: null,
       finalStandards: finalStandardsFromReports({
         packet: finalPacket,
         mustGateReport,
@@ -8474,6 +8542,8 @@ const MAIN_AGENT_CLI_ACTIONS = new Set([
   'confirmation-bookkeeping-repair',
   'pre-confirmation-drilldown',
   'pre_confirmation_drilldown',
+  'author-confirmation-ready-source',
+  'author_confirmation_ready_source',
   'authoring-repair',
   'authoring_repair',
   'controlled-readiness-audit',
@@ -11427,7 +11497,12 @@ export function mainMainAgentOrchestration(argv: string[]): number {
     }
   }
 
-  if (action === 'pre-confirmation-drilldown' || action === 'pre_confirmation_drilldown') {
+  if (
+    action === 'pre-confirmation-drilldown' ||
+    action === 'pre_confirmation_drilldown' ||
+    action === 'author-confirmation-ready-source' ||
+    action === 'author_confirmation_ready_source'
+  ) {
     try {
       const result = runMainAgentPreConfirmationDrilldown(root, {
         source: args.source,
@@ -11440,8 +11515,13 @@ export function mainMainAgentOrchestration(argv: string[]): number {
       process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
       return result.ok ? 0 : 1;
     } catch (error) {
+      const actionLabel =
+        action === 'author-confirmation-ready-source' ||
+        action === 'author_confirmation_ready_source'
+          ? 'author-confirmation-ready-source'
+          : 'pre-confirmation-drilldown';
       console.error(
-        `main-agent-orchestration pre-confirmation-drilldown: ${
+        `main-agent-orchestration ${actionLabel}: ${
           error instanceof Error ? error.message : String(error)
         }`
       );

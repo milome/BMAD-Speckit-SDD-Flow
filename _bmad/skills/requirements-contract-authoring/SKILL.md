@@ -70,6 +70,20 @@ If older project material says "requirements contract", treat it as a legacy ali
 
 ## Operating Modes
 
+## Intent Normalization
+
+User wording must be normalized before any authoring, repair, render, or audit route is selected.
+
+- `生成需求契约文档` routes to `author-confirmation-ready-source`.
+- `更新文档为详细需求契约文档` routes to `author-confirmation-ready-source`.
+- `补 implementationConfirmation` routes to `author-confirmation-ready-source` when the source document lacks inline `implementationConfirmation`.
+- `完善需求合同` routes to `author-confirmation-ready-source`.
+- A source document without inline `implementationConfirmation` MUST NOT route to `authoring-repair preserve-existing`.
+- A semantic update to an existing inline `implementationConfirmation` MUST enter the visible `author-confirmation-ready-source` lane first; after the source document is written, `authoring-repair preserve-existing` may audit the already materialized contract.
+- Confirmation language selection and confirmation HTML rendering are post-authoring steps. They must not be treated as entry prerequisites for `author-confirmation-ready-source`.
+- Missing confirmation language MUST remain `null` or `not_selected` until the user explicitly selects `zh-CN`, `en-US`, or `bilingual`.
+- Missing confirmation language MUST NOT skip lane selection, scale assessment, controlled MUST candidate detection, packet planning, or source materialization.
+
 Default to `author-confirmation-ready-source` when the user asks to generate a requirements contract document, requirement contract, or source document confirmation block.
 
 - `author-confirmation-ready-source`: create or update the implementation source document with a complete inline `implementationConfirmation`, ID-bound views, artifact plan, evidence, failure paths, edge cases, trace rows, and applicable governance/runtime modules. This mode must first complete the pre-confirmation atomic decomposition loop; it must not directly write a long source document, must not directly write by chapter checkpoint, and single_pass also cannot skip the pre-confirmation atomic decomposition loop. Stop after draft quality checks unless the user already selected a confirmation language or explicitly asked to render.

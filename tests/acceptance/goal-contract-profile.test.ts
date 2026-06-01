@@ -65,7 +65,7 @@ describe('shared goal contract profile', () => {
     expect(output.issues).toEqual([]);
     expect(output.templateHash).toMatch(/^sha256:[a-f0-9]{64}$/);
     expect(output.profileHash).toMatch(/^sha256:[a-f0-9]{64}$/);
-    expect(output.profileVersion).toBe('1.1.0');
+    expect(output.profileVersion).toBe('2.0.0');
   });
 
   it('uses one canonical template hash for LF, CRLF, and leading BOM template text', () => {
@@ -149,17 +149,28 @@ describe('shared goal contract profile', () => {
       const templatePath = path.join(tempDir, 'goal-execution-contract-template.md');
       const profilePath = path.join(tempDir, 'goal-contract-profile.json');
       const lockPath = path.join(tempDir, 'goal-contract-profile.lock.json');
-      const profile = readJson<Record<string, any>>(PROFILE);
-      const lock = readJson<Record<string, any>>(LOCK);
+      const baseProfile = readJson<Record<string, any>>(PROFILE);
+      const baseLock = readJson<Record<string, any>>(LOCK);
+      const templatePathRelative = profileModule.normalizeRepoPath(templatePath);
+      const templateHash = profileModule.templateHashFor(crlfTemplate);
 
       fs.writeFileSync(templatePath, crlfTemplate, 'utf8');
-      profile.templatePath = profileModule.normalizeRepoPath(templatePath);
-      profile.templateHash = profileModule.templateHashFor(crlfTemplate);
-      profile.profileHash = profileModule.profileHashFor(profile);
-      lock.templatePath = profile.templatePath;
-      lock.templateHash = profile.templateHash;
-      lock.profileHash = profile.profileHash;
-      lock.profileVersion = profile.profileVersion;
+      const profileDraft = {
+        ...baseProfile,
+        templatePath: templatePathRelative,
+        templateHash,
+      };
+      const profile = {
+        ...profileDraft,
+        profileHash: profileModule.profileHashFor(profileDraft),
+      };
+      const lock = {
+        ...baseLock,
+        templatePath: profile.templatePath,
+        templateHash: profile.templateHash,
+        profileHash: profile.profileHash,
+        profileVersion: profile.profileVersion,
+      };
       fs.writeFileSync(profilePath, `${JSON.stringify(profile, null, 2)}\n`, 'utf8');
       fs.writeFileSync(lockPath, `${JSON.stringify(lock, null, 2)}\n`, 'utf8');
 

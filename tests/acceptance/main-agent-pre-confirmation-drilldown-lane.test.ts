@@ -387,6 +387,32 @@ function cleanCriticalAuditorRound(input: any) {
   };
 }
 
+function captureMainAgentCli(args: string[]): {
+  exitCode: number;
+  stdout: string;
+  stderr: string;
+} {
+  const originalStdoutWrite = process.stdout.write.bind(process.stdout);
+  const originalStderrWrite = process.stderr.write.bind(process.stderr);
+  let stdout = '';
+  let stderr = '';
+  try {
+    (process.stdout.write as any) = (chunk: unknown) => {
+      stdout += String(chunk);
+      return true;
+    };
+    (process.stderr.write as any) = (chunk: unknown) => {
+      stderr += String(chunk);
+      return true;
+    };
+    const exitCode = mainMainAgentOrchestration(args);
+    return { exitCode, stdout, stderr };
+  } finally {
+    process.stdout.write = originalStdoutWrite as any;
+    process.stderr.write = originalStderrWrite as any;
+  }
+}
+
 describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', () => {
   it('drives a draft source to user_confirmable without leaving requirement_confirmation', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-pre-confirmation-'));
@@ -606,6 +632,48 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       expect(existsSync(paths.packet)).toBe(false);
       expect(existsSync(paths.receipt1)).toBe(false);
       expect(existsSync(paths.renderReport)).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('emits initial scale assessment before returning controlled_must_candidates_missing', () => {
+    const root = mkdtempSync(
+      path.join(os.tmpdir(), 'main-agent-pre-confirmation-missing-must-scale-')
+    );
+    try {
+      const source = writeDraftSourceWithoutMust(root);
+
+      const captured = captureMainAgentCli([
+        '--cwd',
+        root,
+        '--action',
+        'author-confirmation-ready-source',
+        '--source',
+        source,
+        '--record-id',
+        'REQ-PRE-CONFIRMATION-MISSING-MUST-SCALE',
+        '--requirement-set-id',
+        'REQSET-PRE-CONFIRMATION-MISSING-MUST-SCALE',
+      ]);
+
+      expect(captured.exitCode).toBe(1);
+      expect(captured.stderr).toContain('[requirements-contract-authoring] scale assessment started');
+      expect(captured.stderr).toContain('[requirements-contract-authoring] scale assessment result');
+      expect(captured.stdout).toContain('controlled_must_candidates_missing');
+
+      const parsed = JSON.parse(captured.stdout);
+      expect(parsed.selectedAuthoringLane).toBe('author-confirmation-ready-source');
+      expect(parsed.visibleAuthoringLaneMessage).toContain(
+        'author-confirmation-ready-source lane selected'
+      );
+      expect(parsed.confirmationLanguage).toBeNull();
+      expect(parsed.blockingIssues.map((issue: any) => issue.code)).toContain(
+        'controlled_must_candidates_missing'
+      );
+      expect(existsSync(artifacts(root, 'REQ-PRE-CONFIRMATION-MISSING-MUST-SCALE').html)).toBe(
+        false
+      );
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -1003,6 +1071,79 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       ]);
       expect(exitCode).toBe(1);
       expect(existsSync(artifacts(root, 'REQ-PRE-CONFIRMATION-CLI').renderReport)).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it.each(['author-confirmation-ready-source', 'author_confirmation_ready_source'])(
+    'exposes %s as the visible authoring lane action',
+    (action) => {
+      const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-authoring-lane-action-'));
+      try {
+        const source = writeDraftSourceWithoutMust(root);
+
+        const captured = captureMainAgentCli([
+          '--cwd',
+          root,
+          '--action',
+          action,
+          '--source',
+          source,
+          '--record-id',
+          `REQ-AUTHORING-LANE-${action.replace(/[^A-Z0-9]/giu, '-').toUpperCase()}`,
+          '--requirement-set-id',
+          `REQSET-AUTHORING-LANE-${action.replace(/[^A-Z0-9]/giu, '-').toUpperCase()}`,
+        ]);
+
+        expect(captured.exitCode).toBe(1);
+        const parsed = JSON.parse(captured.stdout);
+        expect(parsed.selectedAuthoringLane).toBe('author-confirmation-ready-source');
+        expect(parsed.visibleAuthoringLaneMessage).toContain(
+          'author-confirmation-ready-source lane selected'
+        );
+        expect(parsed.blockingIssues.map((issue: any) => issue.code)).toContain(
+          'controlled_must_candidates_missing'
+        );
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    }
+  );
+
+  it('blocks render on missing confirmation language after authoring materialization', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-authoring-language-boundary-'));
+    try {
+      const source = writeDraftSource(root);
+
+      const result = runMainAgentPreConfirmationDrilldown(root, {
+        source,
+        recordId: 'REQ-AUTHORING-LANGUAGE-BOUNDARY',
+        requirementSetId: 'REQSET-AUTHORING-LANGUAGE-BOUNDARY',
+        criticalAuditorRound: cleanCriticalAuditorRound,
+      });
+      const confirmation = readImplementationConfirmation(source);
+      const paths = artifacts(root, 'REQ-AUTHORING-LANGUAGE-BOUNDARY');
+
+      expect(result.substate).toBe('pre_render_ready');
+      expect(result.confirmability).toBe('blocked');
+      expect(result.status).toBe('draft_updated_not_confirmation_ready');
+      expect(result.confirmationLanguage).toBeNull();
+      expect(confirmation.confirmationLanguage).toBe('not_selected');
+      expect(result.currentBlockingReason).toBe('confirmation_language_not_selected');
+      expect(result.nextRequiredAction).toBe('select_confirmation_language_then_render_confirmation');
+      expect(result.nextUserPrompt).toBe('请选择确认页语言：中文 / English / 中英双语');
+      expect(result.changedSections.length).toBeGreaterThan(0);
+      expect(result.updatedSourceSections.length).toBeGreaterThan(0);
+      expect(result.blockingIssues.map((issue) => issue.code)).toContain(
+        'language_required_before_render'
+      );
+      expect(existsSync(paths.semanticKernel)).toBe(true);
+      expect(existsSync(paths.packet)).toBe(true);
+      expect(existsSync(paths.mustGate)).toBe(true);
+      expect(existsSync(paths.globalGate)).toBe(true);
+      expect(existsSync(paths.html)).toBe(false);
+      expect(existsSync(paths.renderReport)).toBe(false);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

@@ -3,7 +3,7 @@ import * as crypto from 'node:crypto';
 import os from 'node:os';
 import path from 'node:path';
 import * as yaml from 'js-yaml';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   SHORT_FEEDBACK_WINDOW_MS,
   SOURCE_MATERIALIZATION_RECEIPT_SCHEMA_VERSION,
@@ -219,7 +219,7 @@ function writeMaterializationReceipt(input: {
     writtenIdRanges: ['ACC-001', 'ART-001', 'CMD-001', 'EVD-001', 'TASK-001', 'TRACE-001'],
     draftStatus: input.draftStatus ?? 'confirmation_ready',
     nextAuditCommand:
-      'pwsh.exe -NoLogo -NoProfile -Command "& { npx vitest run tests/acceptance/main-agent-source-materialization-before-audit.test.ts; npx vitest run tests/acceptance/main-agent-authoring-repair-preserve-existing.test.ts }"',
+      'npx vitest run tests/acceptance/main-agent-source-materialization-before-audit.test.ts; npx vitest run tests/acceptance/main-agent-authoring-repair-preserve-existing.test.ts',
     createdAt: '2026-06-01T00:00:00.000Z',
     createdBy: 'main-agent-source-materialization',
     receiptHash: null,
@@ -334,7 +334,13 @@ describe('source materialization before deep audit', () => {
         ])
       );
       expect(receipt.draftStatus).toBe('confirmation_ready');
-      expect(receipt.nextAuditCommand).toContain('pwsh.exe -NoLogo -NoProfile -Command');
+      expect(receipt.nextAuditCommand).toContain(
+        'npx vitest run tests/acceptance/main-agent-source-materialization-before-audit.test.ts'
+      );
+      expect(receipt.nextAuditCommand).toContain(
+        'npx vitest run tests/acceptance/main-agent-authoring-repair-preserve-existing.test.ts'
+      );
+      expect(receipt.nextAuditCommand).not.toContain('pwsh.exe');
       expect(receipt.createdBy).toBe('main-agent-source-materialization');
       expect(Number.isFinite(Date.parse(receipt.createdAt))).toBe(true);
       expect(receipt.receiptHash).toBe(sha256Json({ ...receipt, receiptHash: null }));
@@ -446,13 +452,13 @@ describe('source materialization before deep audit', () => {
 
   it('writes draft_updated_not_confirmation_ready feedback before deep audit when the short feedback window expires', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'source-materialization-draft-window-'));
-    const originalNow = Date.now;
-    let calls = 0;
+    let nowSpy: ReturnType<typeof vi.spyOn> | null = null;
     try {
-      Date.now = () => {
-        calls += 1;
-        return calls === 1 ? 0 : SHORT_FEEDBACK_WINDOW_MS + 1;
-      };
+      vi.useFakeTimers();
+      nowSpy = vi
+        .spyOn(Date, 'now')
+        .mockReturnValueOnce(0)
+        .mockReturnValue(SHORT_FEEDBACK_WINDOW_MS + 1);
       const source = writeSourceWithoutConfirmation(root);
       const result = runMainAgentPreConfirmationDrilldown(root, {
         source,
@@ -473,7 +479,8 @@ describe('source materialization before deep audit', () => {
       expect(result.receiptHash).toBe(receipt.receiptHash);
       expect(existsSync(requestPath(root, 'REQ-SOURCE-MAT-DRAFT', 1))).toBe(false);
     } finally {
-      Date.now = originalNow;
+      nowSpy?.mockRestore();
+      vi.useRealTimers();
       rmSync(root, { recursive: true, force: true });
     }
   });

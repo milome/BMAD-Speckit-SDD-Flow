@@ -444,7 +444,7 @@ function writeSourceMaterializationReceipt(
     ],
     draftStatus: 'confirmation_ready',
     nextAuditCommand:
-      'pwsh.exe -NoLogo -NoProfile -Command "& { npx vitest run tests/acceptance/main-agent-source-materialization-before-audit.test.ts; npx vitest run tests/acceptance/main-agent-authoring-repair-preserve-existing.test.ts }"',
+      'npx vitest run tests/acceptance/main-agent-source-materialization-before-audit.test.ts; npx vitest run tests/acceptance/main-agent-authoring-repair-preserve-existing.test.ts',
     createdAt: '2026-06-01T00:00:00.000Z',
     createdBy: 'main-agent-source-materialization',
     receiptHash: null,

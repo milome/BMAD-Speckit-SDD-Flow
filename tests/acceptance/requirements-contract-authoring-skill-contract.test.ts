@@ -143,6 +143,35 @@ describe('requirements-contract-authoring published contract', () => {
     );
   });
 
+  it('normalizes requirements contract authoring intents into the visible authoring lane', () => {
+    for (const skill of readSkillSurface('SKILL.md')) {
+      expect(skill).toContain('## Intent Normalization');
+      expect(skill).toContain('`生成需求契约文档` routes to `author-confirmation-ready-source`');
+      expect(skill).toContain(
+        '`更新文档为详细需求契约文档` routes to `author-confirmation-ready-source`'
+      );
+      expect(skill).toContain(
+        '`补 implementationConfirmation` routes to `author-confirmation-ready-source`'
+      );
+      expect(skill).toContain('`完善需求合同` routes to `author-confirmation-ready-source`');
+      expect(skill).toContain(
+        'A source document without inline `implementationConfirmation` MUST NOT route to `authoring-repair preserve-existing`'
+      );
+      expect(skill).toContain(
+        'A semantic update to an existing inline `implementationConfirmation` MUST enter the visible `author-confirmation-ready-source` lane first'
+      );
+      expect(skill).toContain(
+        'Confirmation language selection and confirmation HTML rendering are post-authoring steps'
+      );
+      expect(skill).toContain(
+        'Missing confirmation language MUST remain `null` or `not_selected`'
+      );
+      expect(skill).toContain(
+        'Missing confirmation language MUST NOT skip lane selection, scale assessment, controlled MUST candidate detection, packet planning, or source materialization'
+      );
+    }
+  });
+
   it('requires source materialization before deep audit and keeps preserve-existing audit-only', () => {
     for (const skill of readSkillSurface('SKILL.md')) {
       expect(skill).toContain('source_materialization_before_deep_audit');
