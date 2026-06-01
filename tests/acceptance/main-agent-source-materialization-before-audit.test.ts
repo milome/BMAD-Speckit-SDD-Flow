@@ -349,6 +349,39 @@ describe('source materialization before deep audit', () => {
     }
   });
 
+  it('rejects unsafe requirement identifiers before deriving runtime write paths', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'source-materialization-safe-id-'));
+    const escaped = path.resolve(root, '..', 'escaped-requirement-records');
+    try {
+      const source = writeSourceWithoutConfirmation(root);
+
+      expect(() =>
+        runMainAgentPreConfirmationDrilldown(root, {
+          source,
+          recordId: 'REQ-SOURCE-MAT',
+          requirementSetId: '../escaped-requirement-records',
+          confirmationLanguage: 'zh-CN',
+          criticalAuditorRound: cleanCriticalAuditorRound,
+        })
+      ).toThrow(/requirementSetId must not contain path separators or traversal segments/u);
+      expect(existsSync(escaped)).toBe(false);
+
+      expect(() =>
+        runMainAgentPreConfirmationDrilldown(root, {
+          source,
+          recordId: '../escaped-requirement-records',
+          requirementSetId: 'REQSET-SOURCE-MAT',
+          confirmationLanguage: 'zh-CN',
+          criticalAuditorRound: cleanCriticalAuditorRound,
+        })
+      ).toThrow(/recordId must not contain path separators or traversal segments/u);
+      expect(existsSync(escaped)).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+      rmSync(escaped, { recursive: true, force: true });
+    }
+  });
+
   it('blocks deep audit request generation when receipt is missing, stale, draft, or inline confirmation is missing', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'source-materialization-guard-'));
     try {

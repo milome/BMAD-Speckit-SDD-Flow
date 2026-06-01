@@ -1684,7 +1684,21 @@ function preConfirmationIssue(
 }
 
 function sanitizeRequirementIdSegment(value: string): string {
-  return value.replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'pre-confirmation';
+  return value.replace(/[^A-Za-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '') || 'pre-confirmation';
+}
+
+function assertSafeRequirementIdPathSegment(label: string, value: string): void {
+  if (path.isAbsolute(value)) {
+    throw new Error(`${label} must not be absolute: ${value}`);
+  }
+  if (value.includes('..') || /[\\/]/u.test(value)) {
+    throw new Error(`${label} must not contain path separators or traversal segments: ${value}`);
+  }
+  if (!/^[A-Za-z0-9_-]+$/u.test(value)) {
+    throw new Error(
+      `${label} must contain only alphanumeric characters, hyphens, and underscores: ${value}`
+    );
+  }
 }
 
 function toRootRelativePath(root: string, filePath: string): string {
@@ -1713,6 +1727,8 @@ function derivePreConfirmationIdentity(
   ).toUpperCase();
   const recordId = normalizeText(options.recordId) || `REQ-${sourceStem}`;
   const requirementSetId = normalizeText(options.requirementSetId) || recordId;
+  assertSafeRequirementIdPathSegment('recordId', recordId);
+  assertSafeRequirementIdPathSegment('requirementSetId', requirementSetId);
   return { recordId, requirementSetId };
 }
 
@@ -1759,17 +1775,7 @@ function preConfirmationPaths(
 }
 
 function sourceMaterializationReceiptPath(root: string, requirementSetId: string): string {
-  // Validate requirementSetId to prevent path traversal
-  if (path.isAbsolute(requirementSetId)) {
-    throw new Error(`requirementSetId must not be absolute: ${requirementSetId}`);
-  }
-  if (requirementSetId.includes('..') || requirementSetId.includes(path.sep)) {
-    throw new Error(`requirementSetId must not contain path separators or traversal segments: ${requirementSetId}`);
-  }
-  if (!/^[A-Za-z0-9_-]+$/u.test(requirementSetId)) {
-    throw new Error(`requirementSetId must contain only alphanumeric characters, hyphens, and underscores: ${requirementSetId}`);
-  }
-
+  assertSafeRequirementIdPathSegment('requirementSetId', requirementSetId);
   return path.join(
     root,
     '_bmad-output',
