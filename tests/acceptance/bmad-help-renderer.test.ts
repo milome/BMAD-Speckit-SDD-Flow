@@ -148,21 +148,31 @@ describe('bmad-help and BMADS runtime boundary', () => {
     }
   });
 
-  it('renders BMADS runtime console from bmads-runtime.yaml and existing contracts', () => {
+  it('renders BMADS runtime console with the current runtime action panel by default', () => {
     const root = makeRoot();
     try {
       const output = buildBmadsOutput(root);
       const text = renderBmads(output);
 
       expect(text).toContain('# BMADS Runtime Console');
-      expect(text).toContain('## Project State');
-      expect(text).toContain('## Upstream BMAD Artifacts');
-      expect(text).toContain('Product briefs: missing');
-      expect(text).toContain('Governance source: orchestration-governance.contract.yaml');
-      expect(text).toContain('bmad-speckit confirm-scope');
-      expect(text).toContain('bmad-speckit main-agent:confirm-scope');
-      expect(text).toContain('bmad-speckit main-agent-orchestration --action inspect');
-      expect(text).toContain('Run bmad-help for full BMAD Method workflow guidance');
+      expect(text).toContain('## Status Summary');
+      expect(text).toContain('## Recommended Next Steps');
+      expect(text).toContain('## Available Next Actions');
+      expect(text).toContain('### Recommended Now');
+      expect(text).toContain('### Core Skills');
+      expect(text).toContain('## Current Actionable Requirement Records');
+      expect(text).toContain('## Six Mental Model Panorama');
+      expect(text).toContain('## Runtime Workflow Guidance');
+      expect(text).toContain('## See also: bmad-help');
+      expect(text).toContain('Available skill: `requirements-contract-authoring`');
+      expect(text).toContain('Typical action/lane: author-confirmation-ready-source');
+      expect(text).toContain('Skill: `goal-execution-contract-generator`');
+      expect(text).toContain('Runtime console: `bmad-speckit bmads`');
+      expect(text).toContain('BMAD workflow help: `bmad-speckit bmad-help`');
+      expect(text).toContain('record_closed is terminal event state only, not a user-executable route.');
+      expect(text).not.toContain('## Project State');
+      expect(text).not.toContain('## Upstream BMAD Artifacts');
+      expect(text).not.toContain('Product briefs: missing');
       expect(JSON.stringify(output)).toContain('"artifacts"');
       expect(JSON.stringify(output)).toContain(
         '_bmad/_config/orchestration-governance.contract.yaml'
@@ -174,23 +184,28 @@ describe('bmad-help and BMADS runtime boundary', () => {
     }
   });
 
-  it('renders Quick Start instead of architecture confirmation for empty active-requirement state', () => {
+  it('renders contract-authoring next action for empty active-requirement state', () => {
     const root = makeBootstrapOnlyRoot();
     try {
       const output = buildBmadsOutput(root);
       const text = renderBmads(output);
 
-      expect(text).toContain('## Quick Start');
-      expect(text).toContain('当前项目尚未创建需求契约');
-      expect(text).toContain('创建产品/功能需求契约');
-      expect(text).toContain('创建 Bugfix 需求契约');
-      expect(text).toContain('创建独立任务契约');
-      expect(text).toContain('导入已有需求文档');
-      expect(text).toContain('查看当前阻塞原因');
-      expect(text).toContain('Source: no_active_requirement');
-      expect(text).toContain('Next required action: contract_authoring_required');
+      expect(text).toContain('## Status Summary');
+      expect(text).toContain('There are 0 current-actionable requirement record(s) to continue.');
+      expect(text).toContain(
+        'The system is waiting for a confirmable requirement contract source and its RequirementRecord.'
+      );
+      expect(text).toContain(
+        'Next safe action: requirements-contract-authoring author-confirmation-ready-source.'
+      );
+      expect(text).toContain('## Available Next Actions');
+      expect(text).toContain('Available skill: `requirements-contract-authoring`');
+      expect(text).toContain('Typical action/lane: author-confirmation-ready-source');
+      expect(text).toContain('## Current Actionable Requirement Records');
+      expect(text).toContain('- none');
+      expect(text).not.toContain('## Quick Start');
       expect(text).not.toContain('architecture_confirmation(pass)');
-      expect(text).not.toContain('run_implementation_readiness_gate');
+      expect(text).not.toContain('Next safe action: run_implementation_readiness_gate');
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }
@@ -262,8 +277,9 @@ describe('bmad-help and BMADS runtime boundary', () => {
     }
   );
 
-  it('renders completed layer artifacts and blocks story assistant when readiness is not ready', () => {
+  it('renders completed layer artifacts in diagnostic mode and blocks story assistant when readiness is not ready', () => {
     const text = renderBmads({
+      debug: true,
       progress: {
         currentLayer: 'layer_3',
         currentStage: 'story_create',
