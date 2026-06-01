@@ -153,3 +153,38 @@ If the gate reports findings, stop normal implementation. Classify affected file
 ## 中断恢复
 
 技能执行中断时调用 `handoff`（详见其 SKILL.md）。
+
+## Large File Safe Write Protocol
+
+Mandatory when editing Markdown, YAML, CSV, TOML, README, AGENTS, requirements contracts, generated documentation, or any project text file that may be rewritten in large chunks.
+
+Trigger conditions:
+- The target file already exists and the intended change rewrites the whole file or a large section.
+- The new content is larger than about 8 KB, more than about 120 lines, or generated from a template/LLM output.
+- The target path is ignored by Git, untracked, or not protected by normal source control review.
+- The edit is running on Windows or through a streaming tool call that may be interrupted.
+
+Hard rules:
+- Never use `apply_patch Delete File` on an existing document unless the user explicitly asks to delete that file.
+- Never perform an existing-document rewrite as `Delete File` followed by `Add File`.
+- Use `apply_patch Update File` only for small, localized diffs where the existing file remains present after every step.
+- For large rewrites, first create and verify a timestamped backup before replacing the target.
+- Write new large content to a same-directory draft/temp file with Node `fs` and explicit `utf8`, then verify required headings/IDs, byte length, and SHA256 before replacement.
+- Replace only after verification, using a same-directory temp file and `fs.renameSync` or the repository safe-write script.
+- After replacement, read the target back and verify SHA256 plus key `rg` checks.
+- If any stream or tool call is interrupted, stop normal work and inspect target existence, target hash, backup hash, and temp files before continuing.
+- Do not claim encoding integrity passed when the encoding gate fails; record the exact failure as residual risk.
+
+Required command for large document rewrites in this repository:
+
+```powershell
+pwsh.exe -NoLogo -NoProfile -Command "& { node scripts/safe-write-large-doc.mjs --target <target> --content <draft> --require '<required heading>' --min-bytes <bytes> --json }"
+```
+
+Global Codex fallback command when the repository script is not available:
+
+```powershell
+pwsh.exe -NoLogo -NoProfile -Command "& { node C:/Users/milom/.codex/scripts/safe-write-large-doc.mjs --target <target> --content <draft> --require '<required heading>' --min-bytes <bytes> --json }"
+```
+
+Do not use PowerShell redirection, `Out-File`, or `Set-Content` for large source/docs rewrites. Use Node `fs` with explicit `utf8` and preserve backups until the user accepts the result.
