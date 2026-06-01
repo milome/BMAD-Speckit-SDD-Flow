@@ -13,6 +13,18 @@ This is an orchestration skill. Do not duplicate the full rules from `grill-with
 
 Run three independent review perspectives, make all edits in the main session, then send the updated diff back for re-review. Repeat until every perspective returns `No material issues found` or the loop reaches the iteration limit.
 
+## Main Agent Orchestration Control
+
+The Main Agent owns the full control loop. Subagents provide read-only findings only.
+
+- Main Agent dispatches each review round, names the three perspectives, and records the target file set, diff, or PR under review.
+- Main Agent requires every subagent to return findings to the main Agent; subagents must not patch files, stage files, commit files, run final verification, or declare completion.
+- Main Agent merges findings, deduplicates overlaps, decides whether each issue is accepted, rejected, or blocked by a user decision, and updates the disposition table.
+- Main Agent applies all allowed fixes in the main session after merging findings.
+- Main Agent resumes the loop after fixes by sending the updated diff and disposition table back to all three perspectives.
+- Main Agent halts the loop when a required user decision is unresolved, repository evidence contradicts the requested contract, three full review rounds have completed with remaining material issues, or every perspective returns `No material issues found`.
+- Main Agent performs the final verification commands, checks encoding integrity when text files changed, and writes the final response with round count, fixed issues, unresolved risks, and evidence.
+
 ## Scope
 
 Use for:

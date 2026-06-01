@@ -40,7 +40,10 @@ describe('readiness intent facade and bmad-help catalog contract', () => {
       const workflow = readRepoFile(path);
 
       expect(workflow).toContain('## DUAL VIEW OUTPUT');
-      expect(workflow).toContain('Governed Runtime Next Step');
+      expect(workflow).toMatch(/Governed runtime precedence/i);
+      expect(workflow).toContain('RequirementRecord next safe action');
+      expect(workflow).toContain('governed runtime next safe action takes precedence');
+      expect(workflow).toContain('bmad-speckit bmads');
       expect(workflow).toContain('BMAD Upstream Workflow Catalog');
       expect(workflow).toContain('available');
       expect(workflow).toContain('blocked by currentMentalModel');
