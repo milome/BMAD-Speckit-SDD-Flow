@@ -132,7 +132,8 @@ function semanticHashes(sourceText: string, confirmation: Record<string, unknown
 function writeLongGoalFixture(): { source: string; record: string } {
   const longObjective = `Execute long-goal fixture ${'with strict evidence and no truncation '.repeat(160)}until final pass or reconfirm_required.`;
   const original = fs.readFileSync(fixture.sourcePath, 'utf8');
-  const originalBlockText = extractConfirmationBlock(original);
+  const normalizedOriginal = original.replace(/\r\n/gu, '\n');
+  const originalBlockText = extractConfirmationBlock(normalizedOriginal);
   const parsedOriginal = yaml.load(originalBlockText) as {
     implementationConfirmation?: Record<string, any>;
   };
@@ -140,18 +141,33 @@ function writeLongGoalFixture(): { source: string; record: string } {
   if (!confirmation) throw new Error('missing parsed implementationConfirmation');
   const hostExecutionHints =
     confirmation.aiTddContractExecutionManifestProjection.hostExecutionHints;
-  hostExecutionHints.codexCapable.goalObjectiveTemplate = longObjective;
-  hostExecutionHints.codex.goalObjectiveTemplate = longObjective;
-  hostExecutionHints.claudeCode.goalObjectiveTemplate = longObjective;
+  hostExecutionHints.goalObjectiveTemplate = longObjective;
+  hostExecutionHints.codexCapable = {
+    ...(hostExecutionHints.codexCapable ?? {}),
+    goalObjectiveTemplate: longObjective,
+  };
+  hostExecutionHints.codex = {
+    ...(hostExecutionHints.codex ?? {}),
+    goalObjectiveTemplate: longObjective,
+  };
+  hostExecutionHints.claudeCode = {
+    ...(hostExecutionHints.claudeCode ?? {}),
+    goalObjectiveTemplate: longObjective,
+  };
   const replacementBlock = yaml.dump(
     { implementationConfirmation: confirmation },
     { lineWidth: 120 }
   );
-  const sourceText = original.replace(originalBlockText, replacementBlock.trimEnd());
+  const sourceText = normalizedOriginal.replace(originalBlockText, replacementBlock.trimEnd());
   const blockText = extractConfirmationBlock(sourceText);
   const parsed = yaml.load(blockText) as { implementationConfirmation?: Record<string, unknown> };
   const reparsedConfirmation = parsed.implementationConfirmation;
   if (!reparsedConfirmation) throw new Error('missing reparsed implementationConfirmation');
+  const reparsedHints = (reparsedConfirmation as Record<string, any>)
+    .aiTddContractExecutionManifestProjection.hostExecutionHints;
+  if (!String(reparsedHints?.codex?.goalObjectiveTemplate ?? '').includes(longObjective)) {
+    throw new Error('long goal objective fixture was not materialized into hostExecutionHints.codex');
+  }
   const source = path.join(tempDir, 'long-goal-source.md');
   fs.writeFileSync(source, sourceText, 'utf8');
   const hashes = semanticHashes(sourceText, reparsedConfirmation);

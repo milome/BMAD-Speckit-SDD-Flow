@@ -61,6 +61,10 @@ The checkpoint runner's `--until pre-render-ready` scope covers cp-00 through cp
 
 Checkpoint does not perform segmented reasoning. Checkpointing is only persistence, recovery, single-file commit, and receipt strategy. The atomic decomposition loop is where the author and Critical Auditor resolve semantic gaps.
 
+The checkpoint runner does not spawn subagents. Checkpoint mode does not review, audit, reason over semantic gaps, run three-perspective analysis, or perform Critical Auditor convergence. It persists only source edits that were already materialized by `authoring-repair`, pre-confirmation drilldown materialization, or an explicitly reviewed manual source edit.
+
+For `plan`, `status`, `run`, and `resume`, the checkpoint runner must print a human-readable status page to `stderr` unless `--quiet` is set. That status page must lead with what is happening now, why the runner stopped or continues, the next safe action, and then machine fields. The human-readable page must not replace JSON `stdout`.
+
 Checkpoint artifacts:
 
 - cp-00 writes or validates `semantic-kernel.json`.
@@ -181,6 +185,7 @@ node <skill-dir>/scripts/run_semantic_checkpoints.js \
 Required automation behavior:
 
 - Scale assessment is staged. `initial_assessment` runs before semantic artifact generation and may only produce provisional single-pass routing. `post_packet_assessment` runs after `semantic-kernel.json` and synchronized `must_decomposition_packet.json` exist. `post_materialization_assessment` runs after packet projections are materialized into inline `implementationConfirmation` and before pre-render readiness.
+- `initial_assessment` is a pre-write gate for every source-document write in `author-confirmation-ready-source`. A safe-write helper, large-document replacement helper, manual rewrite, direct `apply_patch`, Node `fs.writeFileSync`, or other write path must not start until a current `scale-assessment-initial.json` exists and the active session has emitted the visible `initial_assessment` trace to `stderr`. Missing artifact or missing visible trace must return `pre_write_scale_assessment_required` before any source mutation.
 - The authoring lane must write `scale-routing-decision.json`. The route decision is monotonic: a checkpoint decision cannot be downgraded by a later single-pass phase. `single_pass_final_allowed` requires all three assessments, current hashes, and packet/source reconciliation `pass`.
 - Scale assessment must be visible in the active session. When `assess_contract_authoring_scale.js` starts, it must print a human-readable trace to `stderr` that includes start, source/progress paths, collected signals, score breakdown, hard-trigger breakdown, and final decision. `stdout` must remain JSON-only so existing `--json` machine callers can parse it. `--quiet` is allowed only for explicitly silent machine calls.
 - `run_semantic_checkpoints.js` must print the same visible scale-assessment trace when it computes an assessment implicitly. If `--assessment <scale-assessment.json>` is supplied, it must consume that artifact instead of re-running and re-printing assessment.

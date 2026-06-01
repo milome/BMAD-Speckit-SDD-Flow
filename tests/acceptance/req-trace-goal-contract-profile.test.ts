@@ -107,6 +107,7 @@ function writeProfile(mutator: (profile: Record<string, any>) => Record<string, 
 describe('req-trace shared goal contract profile integration', () => {
   it('records shared template/profile/renderer audit in native /goal mode', () => {
     const result = runNativeGoal();
+    const profileVersion = JSON.parse(canonicalProfile).profileVersion;
 
     expect(result.status).toBe(0);
     const receipt = JSON.parse(
@@ -115,7 +116,7 @@ describe('req-trace shared goal contract profile integration', () => {
     const goalDocument = fs.readFileSync(path.join(result.outDir, 'goal_execution.md'), 'utf8');
     expect(receipt.goalContractTemplate).toMatchObject({
       templatePath: '_bmad/shared/goal-contract/goal-execution-contract-template.md',
-      profileVersion: '1.1.0',
+      profileVersion,
       rendererVersion: 'req-trace-goal-contract-renderer/v1',
       compatibilityDecision: 'pass',
       requiredSlotsPassed: true,
@@ -127,7 +128,7 @@ describe('req-trace shared goal contract profile integration', () => {
     });
     expect(receipt.goalContractTemplate.templateHash).toMatch(/^sha256:/);
     expect(receipt.goalContractTemplate.profileHash).toMatch(/^sha256:/);
-    expect(goalDocument).toContain('goalContractProfileVersion: 1.1.0');
+    expect(goalDocument).toContain(`goalContractProfileVersion: ${profileVersion}`);
     expect(goalDocument).toContain('goalContractProfileHash:');
     expect(goalDocument).toContain('model_packet.json is the machine-readable execution authority');
     expect(goalDocument).toContain('goal_execution.md is not execution authority');
@@ -163,7 +164,7 @@ describe('req-trace shared goal contract profile integration', () => {
   it('blocks unsupported profile major versions', () => {
     writeProfile((profile) => ({
       ...profile,
-      profileVersion: '2.0.0',
+      profileVersion: '2.0.1',
       compatibility: { ...profile.compatibility, supportedMajorVersions: [1] },
     }));
     const result = runNativeGoal();

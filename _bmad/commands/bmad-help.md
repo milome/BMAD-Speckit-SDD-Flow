@@ -15,7 +15,7 @@ Load and execute the bmad-help skill to analyze current state and recommend next
 4. **LOAD** `{project-root}/_bmad/_config/bmad-help.csv`
 5. Analyze real repository artifacts, runtime state, flow, contextMaturity, complexity, implementationReadinessStatus, module, phase, and artifacts before recommending next steps
 6. The first user-visible result must preserve the recommendation labels `recommended / blocked`, and use `rerouteRequired` when the current flow must be upgraded instead of executed directly
-7. Do **not** call `scripts/bmad-help-renderer.ts`; `/bmad-help` is an AI-host skill/task execution path, not a terminal renderer
+7. Do **not** call any root `scripts/*` renderer; `/bmad-help` is an AI-host skill/task execution path, and terminal rendering uses `bmad-speckit bmad-help`
 
 ## Trigger
 

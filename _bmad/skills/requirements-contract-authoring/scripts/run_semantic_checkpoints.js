@@ -574,6 +574,136 @@ function fail(code, message, extra = {}) {
   };
 }
 
+function checkpointDisplayName(checkpointId) {
+  const checkpoint = checkpointById(checkpointId);
+  return checkpoint ? `${checkpoint.id} ${checkpoint.name}` : checkpointId || 'none';
+}
+
+function checkpointProgressSummary(result = {}) {
+  const completedIds = Array.isArray(result.completedCheckpoints)
+    ? result.completedCheckpoints.map((item) => canonicalCheckpointId(item.checkpoint || item.id)).filter(Boolean)
+    : Array.isArray(result.progress?.checkpoints)
+      ? result.progress.checkpoints
+          .filter((item) => item.status === 'passed')
+          .map((item) => canonicalCheckpointId(item.id))
+      : Array.isArray(result.checkpoints)
+        ? result.checkpoints.filter((item) => item.status === 'passed').map((item) => canonicalCheckpointId(item.id))
+        : [];
+  return `${new Set(completedIds).size}/${CHECKPOINTS.length}`;
+}
+
+function blockingReasonFor(result = {}) {
+  return (
+    result.code ||
+    result.blockingReason ||
+    (Array.isArray(result.blockingReasons) ? result.blockingReasons[0] : null) ||
+    (Array.isArray(result.issues) ? result.issues[0]?.code : null) ||
+    'none'
+  );
+}
+
+function nextSafeActionFor(result = {}) {
+  return result.nextAction || result.semanticDrilldown?.nextAction || 'continue_checkpoint_flow';
+}
+
+function humanWhyFor(result = {}) {
+  const reason = blockingReasonFor(result);
+  if (reason === 'checkpoint_source_edit_missing') {
+    return [
+      'checkpoint 只负责保存已经写入源文档的内容，不会替代需求契约编写。',
+      '当前源文档还没有写入本 checkpoint 需要保存的内容；如果继续记录，会把没有写入的内容标记成已完成。',
+    ].join('\n');
+  }
+  if (reason === 'none') {
+    return '当前没有阻塞；runner 会继续按 checkpoint 顺序保存已经落盘的源文档变化。';
+  }
+  return `当前阻塞原因是 ${reason}。runner 会停止在这里，避免把不完整或未验证的状态记录成已完成。`;
+}
+
+function humanNextActionFor(result = {}) {
+  const action = nextSafeActionFor(result);
+  if (action === 'run_authoring_repair_preserve_existing') {
+    return '先由 authoring lane 更新源文档并刷新 materialization receipt，然后再继续 checkpoint。';
+  }
+  if (action === 'create_semantic_kernel') {
+    return '先生成 semantic-kernel.json，然后再继续后续 packet 和 checkpoint 步骤。';
+  }
+  if (action === 'create_or_sync_must_decomposition_packet') {
+    return '先生成或同步 must_decomposition_packet.json，然后再继续源文档落盘。';
+  }
+  if (action === 'run_packet_source_reconciliation') {
+    return '先运行 packet/source reconciliation，确认源文档与拆解包一致。';
+  }
+  return `执行 ${action}。`;
+}
+
+function currentCheckpointForHuman(mode, result = {}) {
+  if (result.failedCheckpoint) return result.failedCheckpoint;
+  if (result.nextCheckpoint) return result.nextCheckpoint;
+  if (result.checkpoint) return result.checkpoint;
+  if (result.progress?.next) return result.progress.next;
+  if (result.progress?.currentCheckpoint) return result.progress.currentCheckpoint;
+  if (Array.isArray(result.checkpoints)) {
+    return result.checkpoints.find((checkpoint) => checkpoint.status !== 'passed')?.id ?? null;
+  }
+  if (mode === 'run' || mode === 'resume') return result.completedCheckpoints?.at(-1)?.checkpoint ?? null;
+  return null;
+}
+
+function renderCheckpointHumanStatus({ mode, routeDecision = null, result }) {
+  const checkpointId = currentCheckpointForHuman(mode, result);
+  const route = routeDecision?.decision ?? result?.modeDecision ?? result?.decision ?? result?.status ?? 'checkpoint_required';
+  const completed = checkpointProgressSummary(result);
+  const blockingReason = blockingReasonFor(result);
+  const nextSafeAction = nextSafeActionFor(result);
+  const blocked = result?.ok === false || result?.status === 'blocked' || blockingReason !== 'none';
+  const summary = blocked
+    ? '暂停，不能伪造进度'
+    : mode === 'plan'
+      ? '这份文档需要分步完成'
+      : mode === 'status'
+        ? '当前分步落盘进度'
+        : '开始或继续分步保存';
+  const whyHeading = blocked ? '为什么停在这里：' : '为什么继续：';
+  const now =
+    mode === 'plan'
+      ? '正在规划分步落盘顺序。checkpoint 模式只负责把已经写入源文档的内容验证、提交并记录 receipt。'
+      : `系统当前定位到 ${checkpointDisplayName(checkpointId)}，已完成 ${completed} 个 checkpoint。`;
+  return [
+    `[需求契约] ${summary}`,
+    '',
+    '现在在做什么：',
+    now,
+    '',
+    whyHeading,
+    humanWhyFor(result),
+    '',
+    '下一安全动作：',
+    humanNextActionFor(result),
+    '',
+    '机器信息：',
+    `mode=${mode}`,
+    `route=${route}`,
+    `checkpoint=${checkpointDisplayName(checkpointId)}`,
+    `completed=${completed}`,
+    `blockingReason=${blockingReason}`,
+    `nextSafeAction=${nextSafeAction}`,
+    '',
+  ].join('\n');
+}
+
+function emitCheckpointHumanStatus(args, payload, routeDecisionValidation = null) {
+  if (args.quiet) return;
+  if (!['plan', 'status', 'run', 'resume'].includes(args.mode)) return;
+  process.stderr.write(
+    renderCheckpointHumanStatus({
+      mode: args.mode,
+      routeDecision: routeDecisionValidation?.routeDecision ?? null,
+      result: payload,
+    })
+  );
+}
+
 function ensureGitIdentity() {
   const email = git(['config', 'user.email']);
   const name = git(['config', 'user.name']);
@@ -1608,11 +1738,13 @@ function main(argv) {
   }
   if (args.mode === 'plan') {
     const plan = buildPlan({ sourcePath, assessment, progress });
+    emitCheckpointHumanStatus(args, plan, routeDecisionValidation);
     process.stdout.write(`${JSON.stringify(plan, null, 2)}\n`);
     return 0;
   }
   if (args.mode === 'status') {
     const status = resumeStatus({ sourcePath, progressPath });
+    emitCheckpointHumanStatus(args, status, routeDecisionValidation);
     process.stdout.write(`${JSON.stringify(status, null, 2)}\n`);
     return status.ok ? 0 : 1;
   }
@@ -1671,6 +1803,7 @@ function main(argv) {
           assessment,
           priorProgressOverride: status.progress ?? null,
         });
+    emitCheckpointHumanStatus(args, result, routeDecisionValidation);
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     return result.ok ? 0 : 1;
   }
@@ -1697,6 +1830,7 @@ function main(argv) {
       ...evidence,
     });
   }
+  emitCheckpointHumanStatus(args, result, routeDecisionValidation);
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
   return result.ok ? 0 : 1;
 }

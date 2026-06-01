@@ -27,6 +27,7 @@ English | [简体中文](README.zh-CN.md)
 - [Prerequisites](#prerequisites)
 - [Quick Start](#quick-start)
 - [Runtime Model](#runtime-model)
+- [Common Skills And Workflow Selection](#common-skills-and-workflow-selection)
 - [1.x Five-Layer Architecture](#1x-five-layer-architecture)
 - [AI-TDD Control Plane](#ai-tdd-control-plane)
 - [Six Mental Models](#six-mental-models)
@@ -113,6 +114,8 @@ Then switch to the AI host session and activate the Orchestrator Agent:
 $bmads
 ```
 
+Use `$bmad-help` for workflow routing only; it does not take root runtime authority.
+
 If you are installing from a CI artifact instead of npm registry, use the same verified off-repo path with the local tarball:
 
 ```bash
@@ -138,6 +141,14 @@ $bmad-speckit
 bmad-speckit
 ```
 
+For BMAD workflow routing help without root runtime takeover, use:
+
+```text
+$bmad-help
+```
+
+`$bmad-help` explains recommended next steps, but it is a read-model helper only. It does not activate the Orchestrator Agent, replace the active requirement record, replace `currentMentalModel`, or satisfy controlled gate evidence.
+
 After activation, the Orchestrator Agent takes root governed runtime authority for the current request. Its first responsibility is not implementation. It must inspect the active requirement, read the current requirement record, determine the current mental model, show progress, and recommend the next governed action.
 
 The Orchestrator Agent owns these decisions:
@@ -158,6 +169,40 @@ The accepted main-agent path is `inspect -> dispatch-plan -> closeout`: inspect 
 
 ---
 
+## Common Skills And Workflow Selection
+
+BMAD-Speckit-SDD-Flow installs a layered skill surface. The canonical core layer `_bmad/skills` contains 29 shared skills. During host installation, BMAD workflow, agent, core task, and host-specific overlay skills are expanded into the target host. The current host-expanded skill surface is 70 skills for Codex, 72 skills for Claude Code, and 72 skills for Cursor, with 72 unique skill names across all supported hosts.
+
+| Scope                         | Count | Meaning                                           |
+| ----------------------------- | ----- | ------------------------------------------------- |
+| Core shared layer             | 29    | Canonical shared skills in `_bmad/skills`.        |
+| Codex expanded surface        | 70    | Skills visible after installing into Codex.       |
+| Claude Code expanded surface  | 72    | Skills visible after installing into Claude Code. |
+| Cursor expanded surface       | 72    | Skills visible after installing into Cursor.      |
+| Cross-host unique skill names | 72    | Unique skill names across supported hosts.        |
+
+Use `$bmads` / `$bmad-speckit` as the normal governed runtime entry. Use `$bmad-help` when you need a state-aware workflow navigator for the BMAD 1.x workflow map or the 2.x governed runtime projection. `$bmad-help` is a read-model navigator: it does not progress mental models, does not execute remediation, and does not replace the active requirement record or controlled gates.
+
+| Skill | Use when | Primary output | Control role |
+| --- | --- | --- | --- |
+| `$bmads` / `$bmad-speckit`             | You need the governed runtime entry inside Codex, Claude Code, or Cursor. | Current requirement state, next governed action, and evidence gaps.    | Root Orchestrator Agent entry for the active requirement.            |
+| `$bmad-help`                           | You need the BMAD workflow map or are unsure what to run next.            | Recommended, blocked, or rerouteRequired path.                         | Read-model navigator only. It does not progress mental models.       |
+| `$requirements-contract-authoring`     | You need to create or update a confirmation-ready PRD, BUGFIX, TASKS, or story source document. | Inline `implementationConfirmation`, traceRows, evidence expectations, and confirmation HTML. | Prepares the source for user confirmation. It is not a separate authority. |
+| `$req-trace-matrix-prompt-generator`   | You need strict trace matrix prompts from a requirement source.            | Prompt-ready requirement trace matrix contract.                         | Produces trace authoring input; it does not close runtime gates.      |
+| `$goal-execution-contract-generator`   | You need a frozen execution contract for `/goal`.                         | Goal execution contract under `docs/plans`.                             | Produces the contract for `/goal`; it does not execute `/goal`.       |
+| `$grill-with-docs`                     | You need adversarial clarification against existing docs.                 | Grilling questions, contradictions, and evidence gaps.                  | Improves requirement clarity before confirmation or execution.        |
+| `$docs-review`                         | You need review of README, docs, or diff clarity, structure, and style.   | Documentation review findings.                                         | Optional companion skill. It is not part of the project install surface unless added. |
+| `$bmad-create-product-brief`           | You need to frame product intent before a PRD.                            | Product brief and discovery notes.                                     | 1.x upstream workflow input to the 2.x control plane.                |
+| `$bmad-create-prd`                     | You need a structured product requirements document.                      | PRD with goals, scope, and acceptance direction.                        | 1.x upstream requirements artifact that feeds requirement contracts.  |
+| `$bmad-create-architecture`            | You need architecture boundaries and technical decisions.                 | Architecture document and risk decisions.                              | 1.x upstream architecture artifact for later confirmation.           |
+| `$bmad-create-epics-and-stories`       | You need executable delivery slices from product and architecture scope.  | Epics, stories, and story context.                                     | 1.x planning output that can become controlled implementation input.  |
+| `$bmad-check-implementation-readiness` | You need to check PRD, UX, architecture, and story readiness.             | Readiness findings and missing prerequisites.                          | Pre-control-plane readiness support; runtime gates still decide.      |
+| `$bmad-story-assistant`                | You need the supported story execution path.                              | Story execution assistance and story-state guidance.                   | Official story path, preferred over relying on legacy dev-story alone. |
+| `$bmad-standalone-tasks`               | You need to execute standalone task documents.                            | Task execution result and evidence.                                    | Task-level support that must still respect active requirement gates.  |
+| `$bmad-bug-assistant`                  | You need a bugfix flow with root-cause analysis and fix planning.         | Bug report analysis, fix plan, and verification direction.             | Bugfix preparation path that can feed requirement confirmation.       |
+
+---
+
 ## 1.x Five-Layer Architecture
 
 The 1.x release line remains the delivery map that connects BMAD product discovery to Speckit implementation. It is still the easiest way to explain how product intent becomes audited, reviewable delivery.
@@ -174,7 +219,7 @@ The 1.x release line remains the delivery map that connects BMAD product discove
 | Layer 4: Speckit Workflow         | Run `specify -> plan -> GAPS -> tasks -> implement` for technical execution. | Specs, plans, gap analysis, tasks, code, and tests.          |
 | Layer 5: Closeout And Integration | Audit implementation, score evidence, and prepare reviewable delivery.       | Post-audit, scoring, PR, human review, and release evidence. |
 
-In the 2.0.0 release line, this five-layer architecture is not removed. It becomes the upstream delivery map that feeds the AI-TDD control plane: product and story artifacts become requirement-contract inputs, Speckit work becomes bounded execution packets, and delivery still closes only through controlled evidence gates.
+In the 2.x release line, this five-layer architecture is not removed. It becomes the upstream delivery map that feeds the AI-TDD control plane: product and story artifacts become requirement-contract inputs, Speckit work becomes bounded execution packets, and delivery still closes only through controlled evidence gates.
 
 ---
 
@@ -307,7 +352,7 @@ Delivery evidence is different from the CLI command-surface screenshot. It is th
 
 The 1.x release line BMAD + Speckit assets remain part of the compatibility surface: Product Brief, PRD, Architecture, Epic/Story, Speckit specify/plan/GAPS/tasks, implementation, audit, scoring, dashboard, Coach, and SFT extraction remain useful.
 
-The 2.0.0 release line now presents the five-layer architecture as the 1.x delivery map before introducing AI-TDD. Its primary authority is still the AI-TDD toolchain ecosystem and this control plane. 1.x artifacts are inputs and projections inside that control plane, not a replacement for requirement-contract authority.
+The 2.x release line now presents the five-layer architecture as the 1.x delivery map before introducing AI-TDD. Its primary authority is still the AI-TDD toolchain ecosystem and this control plane. 1.x artifacts are inputs and projections inside that control plane, not a replacement for requirement-contract authority.
 
 ---
 

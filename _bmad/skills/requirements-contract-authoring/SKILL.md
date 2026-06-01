@@ -50,6 +50,11 @@ If older project material says "requirements contract", treat it as a legacy ali
 - Every Critical Auditor round must consume a current deterministic gate dry-run before the request is written. The request must include the dry-run report path, dry-run hash, actionable blocker count, failed checks, reconciliation issue count, checked projection groups, and packet projection refs. If the dry-run exposes actionable blockers, a `no_new_*` response is forbidden unless `falsePositiveProofs[]` covers every blocker with machine-verifiable evidence.
 - Critical Auditor rounds must use fixed attack perspectives instead of repeating the same generic prompt: round 1 checks MUST atomicity, over-broad tasks, and missing decomposition; round 2 checks EVD / TRACE / ACC / E2E / FAIL / EDGE / artifact / command / AI-TDD projection materialization; round 3 checks stale hash, authority bypass, negative boundary, reconfirmation, and delivery-vs-confirmation confusion.
 - Critical Auditor responses are fail-closed. A no-new-gap response must include non-empty `reviewedProjectionRefs`, the current `gateDryRunHash`, the dry-run `reconciliationIssueCount`, all required `checkedProjectionGroups`, and `priorFindingsDisposition[]` entries classified only as `new`, `resolved`, `unchanged`, or `rejected`.
+- `pre_materialization_advisory_scan`: before source materialization, host-level multi-role or subagent work is allowed only as a short-window, read-only coverage suggestion pass. It MUST be labeled `purpose=pre_materialization_advisory_scan`, MUST emit or record `not_audit_evidence`, MUST NOT write audit artifacts, MUST NOT run as a loop, MUST NOT be called checkpoint, MUST NOT be called Critical Auditor, and MUST NOT count as convergence evidence.
+- When that advisory pass is offered in an interactive terminal, render the opt-in prompt to the current session's `stderr` immediately after the authoring lane banner and scale-assessment output, before any subagent spawn. The prompt is plain text, not a popup or file write, and it appears only once with a 10-second yes/no countdown. Skip it entirely in non-TTY, CI, `--json`, `--quiet`, or piped sessions; default to `No` on timeout. Only an explicit `Yes` may spawn exactly 3 read-only subagents, each labeled `purpose=pre_materialization_advisory_scan`; print compressed summaries from all 3, then merge them into a single revision suggestion. The prompt output is transient terminal state only and MUST NOT be treated as audit evidence, checkpoint evidence, or a loop.
+- `post_materialization_deep_audit`: after source materialization, deep audit work MUST be labeled separately from advisory work and MUST require the current source hash, inline `implementationConfirmation`, and source materialization receipt before request generation.
+- `critical_auditor_round`: Critical Auditor request generation MUST require the current gate dry-run hash, current source hash, current implementationConfirmation hash, and current packet hash.
+- `source_materialization_before_deep_audit`: `author-confirmation-ready-source` MUST write the source document before Critical Auditor, multi-subagent audit, `grill-with-docs`, or `docs-review` starts a deep review loop. Before this source materialization, only quick scan, atomic decomposition draft creation, packet generation, and source edit planning are allowed. `authoring-repair preserve-existing` MUST audit existing inline `implementationConfirmation` content only, MUST NOT create a new `implementationConfirmation` block, and `grill-with-docs` / `docs-review` MUST audit written files only instead of chat-only drafts.
 - If the source document, inline `implementationConfirmation`, semantic kernel, or packet hash changes, `authoring-repair` must automatically archive stale Critical Auditor requests, responses, receipts, and dry-run artifacts, then restart the three-round loop from round 1. Do not ask the user to manually delete or move stale audit artifacts.
 - If the user asks to update an existing implementation source document and the edit changes `implementationConfirmation.must[]`, `notDone[]`, `evidence[]`, `traceRows[]`, `acceptanceTests[]`, `requiredCommands[]`, `currentTargetMap`, `aiTddContractExecutionManifestProjection`, governance event semantics, controlled ingest semantics, or closeout semantics, the agent MUST run `main-agent-orchestration --action authoring-repair --mode preserve-existing --source <source> --json` before reporting completion, unless the user explicitly requested draft-only editing.
 - Draft-only output after a semantic source edit must be labeled exactly as not confirmation-ready:
@@ -69,7 +74,62 @@ If older project material says "requirements contract", treat it as a legacy ali
 
 ## Operating Modes
 
+## Intent Normalization
+
+User wording must be normalized before any authoring, repair, render, or audit route is selected.
+
+- `生成需求契约文档` routes to `author-confirmation-ready-source`.
+- `更新文档为详细需求契约文档` routes to `author-confirmation-ready-source`.
+- `补 implementationConfirmation` routes to `author-confirmation-ready-source` when the source document lacks inline `implementationConfirmation`.
+- `完善需求合同` routes to `author-confirmation-ready-source`.
+- A source document without inline `implementationConfirmation` MUST NOT route to `authoring-repair preserve-existing`.
+- A semantic update to an existing inline `implementationConfirmation` MUST enter the visible `author-confirmation-ready-source` lane first; after the source document is written, `authoring-repair preserve-existing` may audit the already materialized contract.
+- Confirmation language selection and confirmation HTML rendering are post-authoring steps. They must not be treated as entry prerequisites for `author-confirmation-ready-source`.
+- Missing confirmation language MUST remain `null` or `not_selected` until the user explicitly selects `zh-CN`, `en-US`, or `bilingual`.
+- Missing confirmation language MUST NOT skip lane selection, scale assessment, controlled MUST candidate detection, packet planning, or source materialization.
+
 Default to `author-confirmation-ready-source` when the user asks to generate a requirements contract document, requirement contract, or source document confirmation block.
+
+## Pre-Write Scale Assessment Gate
+
+Before any source-document write for `生成需求契约文档`, `更新文档为详细需求契约文档`, `补 implementationConfirmation`, `完善需求合同`, or any other `author-confirmation-ready-source` intent, the agent MUST first run one of these entry paths:
+
+- `node <skill-dir>/scripts/assess_contract_authoring_scale.js --source <source-document.md> --phase initial_assessment --out <authoring-dir>/scale-assessment-initial.json --routing-decision-out <authoring-dir>/scale-routing-decision.json --json`
+- `main-agent-orchestration --action author-confirmation-ready-source --source <source-document.md> ...`, only when that wrapper is available and will run the same `initial_assessment` before materializing source edits.
+
+No safe-write helper, large-document replacement helper, manual rewrite, direct `apply_patch`, Node `fs.writeFileSync`, or other source write may begin until both conditions are true:
+
+- A current `scale-assessment-initial.json` artifact exists for the target source document.
+- The active session has emitted the visible scale-assessment `stderr` trace for that `initial_assessment`, including start, collected signals, score breakdown, hard-trigger breakdown, and final routing decision.
+
+If either condition is missing, stop before writing the source document and report `pre_write_scale_assessment_required`. Do not claim that checkpoint assessment is unnecessary merely because the agent can draft prose manually.
+
+## Large Document Draft Promotion Protocol
+
+For large source-document writes, PowerShell may launch Node commands only. PowerShell must not carry Markdown, YAML, JavaScript, Mermaid, or requirement bodies through here-string content transport, shell redirection, inline `node -e`, `Out-File`, `Set-Content`, `>>`, or long `pwsh.exe -Command` payloads.
+
+Use file-based UTF-8 drafts:
+
+1. Generate or update a draft file under a temporary or authoring directory, for example `<authoring-dir>/<source-name>.contract-draft.md`.
+2. Run the skill-local promotion command from the loaded skill directory:
+
+```bash
+node <skill-dir>/scripts/promote-draft-large-doc.js \
+  --draft <authoring-dir>/<source-name>.contract-draft.md \
+  --target <source-document.md> \
+  --require implementationConfirmation: \
+  --min-bytes <minimum-expected-bytes> \
+  --retry-receipt <authoring-dir>/large-doc-write-retry-receipt.json \
+  --json
+```
+
+The promotion command performs `normalize-draft-markdown.js`, `generate-draft-manifest.js`, lightweight preflight, reverse audit policy checks, timestamped backup creation, and UTF-8 target replacement. Use `--preflight-only` to validate syntax without reverse audit or target replacement. Use `--dry-run` to run promotion checks without replacing the target.
+
+The normalizer only repairs deterministic transport damage: LF/BOM normalization, single-backtick Mermaid fence damage, and unquoted colon-space YAML scalar values inside `implementationConfirmation:`. It must not invent requirements, evidence, status, hashes, confirmation text, or audit results.
+
+If a draft is syntactically valid but not confirmation-ready, the promotion command must stop before target replacement with `semantic_decision_required:expected_draft_gap_policy`. Do not add or use `--allow-expected-draft-gap`; the allowed non-confirmation-ready promotion policy is not defined.
+
+Do not instruct consumers to run `node scripts/safe-write-large-doc.mjs` or any consumer-root `scripts/...` writer for this skill. The write flow must work when the current project root has no `scripts` directory.
 
 - `author-confirmation-ready-source`: create or update the implementation source document with a complete inline `implementationConfirmation`, ID-bound views, artifact plan, evidence, failure paths, edge cases, trace rows, and applicable governance/runtime modules. This mode must first complete the pre-confirmation atomic decomposition loop; it must not directly write a long source document, must not directly write by chapter checkpoint, and single_pass also cannot skip the pre-confirmation atomic decomposition loop. Stop after draft quality checks unless the user already selected a confirmation language or explicitly asked to render.
 - `render-confirmation`: render the HTML confirmation page only after the user selected a confirmation language.
@@ -514,7 +574,7 @@ Rules:
 
 Before rendering HTML, verify the source document against confirmation-page blocking rules:
 
-Run the pre-confirmation atomic decomposition loop first. This loop produces `semantic-kernel.json`, `must_decomposition_packet.json`, Critical Auditor requests/responses/receipts, per-round deterministic gate dry-run reports, packet/source reconciliation, and a deterministic pre-render MUST decomposition gate report. The loop is mandatory for both checkpoint and single_pass scale decisions.
+Run the pre-confirmation atomic decomposition workflow first. Its pre-materialization phase performs packet planning and source edit planning by producing `semantic-kernel.json` and synchronized `must_decomposition_packet.json`; this phase may use quick scan and `pre_materialization_advisory_scan` only as read-only, non-audit guidance. Its post-materialization phase performs auditor convergence by producing Critical Auditor requests/responses/receipts, per-round deterministic gate dry-run reports, packet/source reconciliation, and a deterministic pre-render MUST decomposition gate report. This workflow is mandatory for both checkpoint and single_pass scale decisions.
 
 Run the deterministic definition drilldown first:
 

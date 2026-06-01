@@ -2,9 +2,22 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
+import { createRequire } from 'node:module';
 import { describe, expect, it } from 'vitest';
-import { buildBmadHelpOutput, renderBmadHelp } from '../../scripts/bmad-help-renderer';
-import { buildBmadsOutput, renderBmads } from '../../scripts/bmads-renderer';
+
+const require = createRequire(import.meta.url);
+const { buildBmadHelpOutput, renderBmadHelp } = require(
+  '../../packages/bmad-speckit/src/runtime/bmad-help-renderer.js'
+) as {
+  buildBmadHelpOutput: (options: { projectRoot: string }) => Record<string, unknown>;
+  renderBmadHelp: (output: Record<string, unknown>) => string;
+};
+const { buildBmadsOutput, renderBmads } = require(
+  '../../packages/bmad-speckit/src/runtime/bmads-renderer.js'
+) as {
+  buildBmadsOutput: (projectRoot: string) => Record<string, unknown>;
+  renderBmads: (output: Record<string, unknown>) => string;
+};
 
 function makeRoot(): string {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'bmad-help-boundary-'));
@@ -89,7 +102,7 @@ describe('bmad-help and BMADS runtime boundary', () => {
       expect(content).toContain('_bmad/core/skills/bmad-help/SKILL.md');
       expect(content).toContain('_bmad/core/tasks/help.md');
       expect(content).toContain('READ AND EXECUTE');
-      expect(content).toContain('Do **not** call `scripts/bmad-help-renderer.ts`');
+      expect(content).toContain('Do **not** call any root `scripts/*` renderer');
       expect(content).not.toContain('Project State Card');
       expect(content).not.toContain('main-agent control');
     }
@@ -384,33 +397,37 @@ describe('bmad-help and BMADS runtime boundary', () => {
     }
   });
 
-  it('does not expose bmad-help as a terminal/package renderer and keeps bmads as the runtime console', () => {
+  it('exposes bmad-help and bmads through package runtime without root renderers', () => {
     const root = makeRoot();
     try {
-      const env = { ...process.env, TS_NODE_PROJECT: 'tsconfig.node.json' };
-      const bmadsCli = path.resolve('scripts', 'bmads-renderer.ts');
       const packageCli = path.resolve('packages', 'bmad-speckit', 'bin', 'bmad-speckit.js');
       const packageJson = JSON.parse(fs.readFileSync(path.resolve('package.json'), 'utf8')) as {
         scripts?: Record<string, string>;
       };
 
       expect(packageJson.scripts?.['bmad-help']).toBeUndefined();
+      expect(packageJson.scripts?.bmads).toBe(
+        'node packages/bmad-speckit/bin/bmad-speckit.js bmads'
+      );
+      expect(fs.existsSync(path.resolve('scripts', 'bmads-renderer.ts'))).toBe(false);
+      expect(fs.existsSync(path.resolve('scripts', 'bmad-help-renderer.ts'))).toBe(false);
 
       const packageHelp = execFileSync(process.execPath, [packageCli, '--help'], {
         cwd: path.resolve('.'),
         encoding: 'utf8',
       });
 
-      expect(packageHelp).not.toContain('  bmad-help ');
+      expect(packageHelp).toContain('  bmad-help ');
       expect(packageHelp).toContain('  bmads ');
       expect(packageHelp).toContain('  bmad-speckit ');
 
-      const bmads = execFileSync(
+      const packageBmadHelp = execFileSync(
         process.execPath,
-        ['-r', 'ts-node/register/transpile-only', bmadsCli, '--cwd', root],
-        { cwd: path.resolve('.'), encoding: 'utf8', env }
+        [packageCli, 'bmad-help', '--cwd', root],
+        { cwd: path.resolve('.'), encoding: 'utf8' }
       );
-      expect(bmads).toContain('# BMADS Runtime Console');
+      expect(packageBmadHelp).toContain('# bmad-help');
+      expect(packageBmadHelp).toContain('## Recommended Next Steps');
 
       const packageBmads = execFileSync(process.execPath, [packageCli, 'bmads', '--cwd', root], {
         cwd: path.resolve('.'),

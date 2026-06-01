@@ -104,7 +104,7 @@ jobs:
         continue-on-error: true
         run: npx vitest run
 
-      - name: BMAD SpeCKit tests
+      - name: BMAD SpecKit tests
         id: bmad_speckit
         continue-on-error: true
         run: npm run test:bmad-speckit
@@ -142,7 +142,7 @@ jobs:
           }
 
           check_step "Vitest suite" "${{ steps.vitest.outcome }}"
-          check_step "BMAD SpeCKit tests" "${{ steps.bmad_speckit.outcome }}"
+          check_step "BMAD SpecKit tests" "${{ steps.bmad_speckit.outcome }}"
           check_step "Main Agent release gate" "${{ steps.release_gate.outcome }}"
           check_step "Main Agent quality gate" "${{ steps.quality_gate.outcome }}"
           check_step "Main Agent chaos tests" "${{ steps.chaos.outcome }}"

@@ -7,6 +7,7 @@ import {
   rmSync,
   writeFileSync,
 } from 'node:fs';
+import * as crypto from 'node:crypto';
 import os from 'node:os';
 import path from 'node:path';
 import * as yaml from 'js-yaml';
@@ -191,6 +192,98 @@ function readJson(file: string): any {
   return JSON.parse(readFileSync(file, 'utf8'));
 }
 
+function stableStringify(value: unknown): string {
+  if (value === null || typeof value !== 'object') {
+    return JSON.stringify(value);
+  }
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableStringify(item)).join(',')}]`;
+  }
+  return `{${Object.keys(value as Record<string, unknown>)
+    .sort()
+    .map(
+      (key) => `${JSON.stringify(key)}:${stableStringify((value as Record<string, unknown>)[key])}`
+    )
+    .join(',')}}`;
+}
+
+function sha256Text(value: string): string {
+  return `sha256:${crypto.createHash('sha256').update(value, 'utf8').digest('hex')}`;
+}
+
+function sha256Json(value: unknown): string {
+  return sha256Text(stableStringify(value));
+}
+
+function semanticConfirmationForHash(
+  confirmation: Record<string, unknown>
+): Record<string, unknown> {
+  const bookkeeping = new Set([
+    'status',
+    'confirmedAt',
+    'confirmedBy',
+    'sourceDocumentHash',
+    'implementationConfirmationHash',
+    'reconfirmationRequest',
+    'confirmationRender',
+  ]);
+  return Object.fromEntries(Object.entries(confirmation).filter(([key]) => !bookkeeping.has(key)));
+}
+
+function currentSourceHashes(source: string): {
+  sourceDocumentHash: string;
+  implementationConfirmationHash: string;
+} {
+  const text = readFileSync(source, 'utf8');
+  const match = text.match(/^implementationConfirmation:\n[\s\S]*$/m);
+  expect(match, 'implementationConfirmation block').toBeTruthy();
+  const confirmation = (yaml.load(match![0]) as any).implementationConfirmation;
+  const semantic = semanticConfirmationForHash(confirmation);
+  const normalizedBlock = `implementationConfirmation:${stableStringify(semantic)}`;
+  return {
+    sourceDocumentHash: sha256Text(text.replace(match![0], normalizedBlock)),
+    implementationConfirmationHash: sha256Json(semantic),
+  };
+}
+
+function writeSourceMaterializationReceipt(
+  root: string,
+  source: string,
+  recordId: string,
+  requirementSetId: string
+): string {
+  const hashes = currentSourceHashes(source);
+  const receiptPath = path.join(
+    root,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    requirementSetId,
+    'authoring',
+    'source-materialization-receipt.json'
+  );
+  const receipt: Record<string, unknown> = {
+    schemaVersion: 'source-materialization-receipt/v1',
+    sourcePath: path.relative(root, source).replace(/\\/g, '/'),
+    requirementSetId,
+    recordId,
+    sourceDocumentHashBefore: hashes.sourceDocumentHash,
+    sourceDocumentHashAfter: hashes.sourceDocumentHash,
+    implementationConfirmationHash: hashes.implementationConfirmationHash,
+    writtenIdRanges: ['ACC-900', 'ART-900', 'CMD-900', 'EVD-900', 'TRACE-900'],
+    draftStatus: 'confirmation_ready',
+    nextAuditCommand:
+      'pwsh.exe -NoLogo -NoProfile -Command "& { npx vitest run tests/acceptance/main-agent-source-materialization-before-audit.test.ts }"',
+    createdAt: '2026-06-01T00:00:00.000Z',
+    createdBy: 'main-agent-source-materialization',
+    receiptHash: null,
+  };
+  receipt.receiptHash = sha256Json({ ...receipt, receiptHash: null });
+  mkdirSync(path.dirname(receiptPath), { recursive: true });
+  writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`, 'utf8');
+  return receiptPath;
+}
+
 function readImplementationConfirmation(source: string): any {
   const text = readFileSync(source, 'utf8');
   const match = text.match(/^implementationConfirmation:\n[\s\S]*$/m);
@@ -222,7 +315,7 @@ function expectArtifactContract(file: string, recordId: string): void {
   expect(artifact.inputRefs.length, `${file} inputRefs length`).toBeGreaterThan(0);
 }
 
-function artifacts(root: string, recordId: string) {
+function artifacts(root: string, recordId: string, requirementSetId = recordId) {
   const authoring = path.join(
     root,
     '_bmad-output',
@@ -257,6 +350,15 @@ function artifacts(root: string, recordId: string) {
     receipt3: path.join(authoring, 'critical-auditor-receipt-round-3.json'),
     reconciliation: path.join(authoring, 'must_packet_source_reconciliation_report.json'),
     progress: path.join(authoring, 'semantic-checkpoint-progress.json'),
+    sourceMaterializationReceipt: path.join(
+      root,
+      '_bmad-output',
+      'runtime',
+      'requirement-records',
+      requirementSetId,
+      'authoring',
+      'source-materialization-receipt.json'
+    ),
     mustGate: path.join(authoring, 'pre-render-must-decomposition-gate-report.json'),
     globalGate: path.join(authoring, 'pre-render-global-consistency-report.json'),
     html: path.join(confirmation, 'confirmation.html'),
@@ -285,6 +387,32 @@ function cleanCriticalAuditorRound(input: any) {
   };
 }
 
+function captureMainAgentCli(args: string[]): {
+  exitCode: number;
+  stdout: string;
+  stderr: string;
+} {
+  const originalStdoutWrite = process.stdout.write.bind(process.stdout);
+  const originalStderrWrite = process.stderr.write.bind(process.stderr);
+  let stdout = '';
+  let stderr = '';
+  try {
+    (process.stdout.write as any) = (chunk: unknown) => {
+      stdout += String(chunk);
+      return true;
+    };
+    (process.stderr.write as any) = (chunk: unknown) => {
+      stderr += String(chunk);
+      return true;
+    };
+    const exitCode = mainMainAgentOrchestration(args);
+    return { exitCode, stdout, stderr };
+  } finally {
+    process.stdout.write = originalStdoutWrite as any;
+    process.stderr.write = originalStderrWrite as any;
+  }
+}
+
 describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', () => {
   it('drives a draft source to user_confirmable without leaving requirement_confirmation', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-pre-confirmation-'));
@@ -299,7 +427,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
         criticalAuditorRound: cleanCriticalAuditorRound,
       });
 
-      const paths = artifacts(root, 'REQ-PRE-CONFIRMATION-E2E');
+      const paths = artifacts(root, 'REQ-PRE-CONFIRMATION-E2E', 'REQSET-PRE-CONFIRMATION-E2E');
       expect(result.currentMentalModel).toBe('requirement_confirmation');
       expect(result.lane).toBe('pre_confirmation_drilldown');
       expect(result.substate, JSON.stringify(result.blockingIssues, null, 2)).toBe(
@@ -307,6 +435,9 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       );
       expect(result.nextMentalModel).toBeNull();
       expect(result.deliveryReadiness.ready).toBe(false);
+      expect(result.receiptPath).toBe(
+        '_bmad-output/runtime/requirement-records/REQSET-PRE-CONFIRMATION-E2E/authoring/source-materialization-receipt.json'
+      );
       expect(result.finalStandards).toMatchObject({
         newSkillFlowEntersAtomicDecompositionLoopBeforeMaterialization: true,
         singlePassCannotSkipAtomicDecompositionLoop: true,
@@ -369,8 +500,20 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       const reconciliation = readJson(paths.reconciliation);
       const progress = readJson(paths.progress);
       const renderReport = readJson(paths.renderReport);
+      const sourceMaterializationReceipt = readJson(paths.sourceMaterializationReceipt);
       const html = readFileSync(paths.html, 'utf8');
 
+      expect(sourceMaterializationReceipt.schemaVersion).toBe('source-materialization-receipt/v1');
+      expect(sourceMaterializationReceipt.sourcePath).toBe('docs/requirements/source.md');
+      expect(sourceMaterializationReceipt.requirementSetId).toBe('REQSET-PRE-CONFIRMATION-E2E');
+      expect(sourceMaterializationReceipt.recordId).toBe('REQ-PRE-CONFIRMATION-E2E');
+      expect(sourceMaterializationReceipt.sourceDocumentHashAfter).toBe(result.sourceDocumentHash);
+      expect(sourceMaterializationReceipt.implementationConfirmationHash).toBe(
+        result.implementationConfirmationHash
+      );
+      expect(sourceMaterializationReceipt.draftStatus).toBe('confirmation_ready');
+      expect(sourceMaterializationReceipt.createdBy).toBe('main-agent-source-materialization');
+      expect(sourceMaterializationReceipt.receiptHash).toBe(result.receiptHash);
       expect(packet.status).toBe('synchronized');
       expect(initialAssessment.phase).toBe('initial_assessment');
       expect(initialAssessment.provisionalDecision).toBe('provisional_single_pass_allowed');
@@ -494,6 +637,56 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
     }
   });
 
+  it('emits initial scale assessment before returning controlled_must_candidates_missing', () => {
+    const root = mkdtempSync(
+      path.join(os.tmpdir(), 'main-agent-pre-confirmation-missing-must-scale-')
+    );
+    try {
+      const source = writeDraftSourceWithoutMust(root);
+
+      const captured = captureMainAgentCli([
+        '--cwd',
+        root,
+        '--action',
+        'author-confirmation-ready-source',
+        '--source',
+        source,
+        '--record-id',
+        'REQ-PRE-CONFIRMATION-MISSING-MUST-SCALE',
+        '--requirement-set-id',
+        'REQSET-PRE-CONFIRMATION-MISSING-MUST-SCALE',
+      ]);
+
+      expect(captured.exitCode).toBe(1);
+      expect(captured.stderr).toContain('[requirements-contract-authoring] scale assessment started');
+      expect(captured.stderr).toContain('[requirements-contract-authoring] scale assessment result');
+      expect(captured.stdout).toContain('controlled_must_candidates_missing');
+
+      const parsed = JSON.parse(captured.stdout);
+      expect(parsed.selectedAuthoringLane).toBe('author-confirmation-ready-source');
+      expect(parsed.advisoryScan).toMatchObject({
+        purpose: 'pre_materialization_advisory_scan',
+        evidenceClass: 'not_audit_evidence',
+        notAuditEvidence: true,
+        readOnly: true,
+        loopAllowed: false,
+        artifactWriteAllowed: false,
+      });
+      expect(parsed.visibleAuthoringLaneMessage).toContain(
+        'author-confirmation-ready-source lane selected'
+      );
+      expect(parsed.confirmationLanguage).toBeNull();
+      expect(parsed.blockingIssues.map((issue: any) => issue.code)).toContain(
+        'controlled_must_candidates_missing'
+      );
+      expect(existsSync(artifacts(root, 'REQ-PRE-CONFIRMATION-MISSING-MUST-SCALE').html)).toBe(
+        false
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('fails closed instead of synthesizing clean Critical Auditor receipts', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-pre-confirmation-no-auditor-'));
     try {
@@ -525,6 +718,12 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
     );
     try {
       const source = writeRichPreserveExistingRequirement(root);
+      writeSourceMaterializationReceipt(
+        root,
+        source,
+        'REQ-PRE-CONFIRMATION-PRESERVE-EXISTING',
+        'REQSET-PRE-CONFIRMATION-PRESERVE-EXISTING'
+      );
       const original = readFileSync(source, 'utf8');
 
       const result = runMainAgentAuthoringRepair(root, {
@@ -880,6 +1079,79 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       ]);
       expect(exitCode).toBe(1);
       expect(existsSync(artifacts(root, 'REQ-PRE-CONFIRMATION-CLI').renderReport)).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it.each(['author-confirmation-ready-source', 'author_confirmation_ready_source'])(
+    'exposes %s as the visible authoring lane action',
+    (action) => {
+      const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-authoring-lane-action-'));
+      try {
+        const source = writeDraftSourceWithoutMust(root);
+
+        const captured = captureMainAgentCli([
+          '--cwd',
+          root,
+          '--action',
+          action,
+          '--source',
+          source,
+          '--record-id',
+          `REQ-AUTHORING-LANE-${action.replace(/[^A-Z0-9]/giu, '-').toUpperCase()}`,
+          '--requirement-set-id',
+          `REQSET-AUTHORING-LANE-${action.replace(/[^A-Z0-9]/giu, '-').toUpperCase()}`,
+        ]);
+
+        expect(captured.exitCode).toBe(1);
+        const parsed = JSON.parse(captured.stdout);
+        expect(parsed.selectedAuthoringLane).toBe('author-confirmation-ready-source');
+        expect(parsed.visibleAuthoringLaneMessage).toContain(
+          'author-confirmation-ready-source lane selected'
+        );
+        expect(parsed.blockingIssues.map((issue: any) => issue.code)).toContain(
+          'controlled_must_candidates_missing'
+        );
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    }
+  );
+
+  it('blocks render on missing confirmation language after authoring materialization', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-authoring-language-boundary-'));
+    try {
+      const source = writeDraftSource(root);
+
+      const result = runMainAgentPreConfirmationDrilldown(root, {
+        source,
+        recordId: 'REQ-AUTHORING-LANGUAGE-BOUNDARY',
+        requirementSetId: 'REQSET-AUTHORING-LANGUAGE-BOUNDARY',
+        criticalAuditorRound: cleanCriticalAuditorRound,
+      });
+      const confirmation = readImplementationConfirmation(source);
+      const paths = artifacts(root, 'REQ-AUTHORING-LANGUAGE-BOUNDARY');
+
+      expect(result.substate).toBe('pre_render_ready');
+      expect(result.confirmability).toBe('blocked');
+      expect(result.status).toBe('draft_updated_not_confirmation_ready');
+      expect(result.confirmationLanguage).toBeNull();
+      expect(confirmation.confirmationLanguage).toBe('not_selected');
+      expect(result.currentBlockingReason).toBe('confirmation_language_not_selected');
+      expect(result.nextRequiredAction).toBe('select_confirmation_language_then_render_confirmation');
+      expect(result.nextUserPrompt).toBe('请选择确认页语言：中文 / English / 中英双语');
+      expect((result.changedSections ?? []).length).toBeGreaterThan(0);
+      expect((result.updatedSourceSections ?? []).length).toBeGreaterThan(0);
+      expect(result.blockingIssues.map((issue) => issue.code)).toContain(
+        'language_required_before_render'
+      );
+      expect(existsSync(paths.semanticKernel)).toBe(true);
+      expect(existsSync(paths.packet)).toBe(true);
+      expect(existsSync(paths.mustGate)).toBe(true);
+      expect(existsSync(paths.globalGate)).toBe(true);
+      expect(existsSync(paths.html)).toBe(false);
+      expect(existsSync(paths.renderReport)).toBe(false);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

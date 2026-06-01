@@ -24,6 +24,11 @@ function loadCommand(modulePath, exportName) {
   return require(modulePath)[exportName];
 }
 
+function runRuntimeModule(modulePath, exportName, args) {
+  const exitCode = require(modulePath)[exportName](args);
+  process.exit(exitCode ?? 0);
+}
+
 function resolveRepoScript(scriptName) {
   const candidates = [
     path.resolve(__dirname, '..', '..', '..', 'scripts', scriptName),
@@ -76,7 +81,15 @@ function runRepoScript(scriptName, args, options = {}) {
 }
 
 function forwardedArgsFromCommand(command) {
-  return Array.isArray(command?.args) ? [...command.args] : [];
+  const args = Array.isArray(command?.args) ? [...command.args] : [];
+  const options = typeof command?.opts === 'function' ? command.opts() : {};
+  for (const [key, value] of Object.entries(options)) {
+    if (value === undefined || value === false) continue;
+    const flag = `--${key.replace(/[A-Z]/g, (char) => `-${char.toLowerCase()}`)}`;
+    if (value === true) args.push(flag);
+    else args.push(flag, String(value));
+  }
+  return args;
 }
 
 // Show banner for init (including init --help) when in TTY
@@ -564,12 +577,44 @@ program
   });
 
 program
-  .command('bmads')
-  .description('Render the BMAD-Speckit main-agent runtime console')
+  .command('bmad-help')
+  .description('Render BMAD Method help guidance from the package runtime')
+  .option('--cwd <path>', 'Project root to inspect')
+  .option('--all', 'Show all available BMAD help details')
+  .option('--module <name>', 'Filter help by module')
+  .option('--phase <name>', 'Filter help by phase')
+  .option('--json', 'Print machine-readable JSON')
+  .option('--workflow-guidance', 'Include workflow guidance')
+  .option('--raw-workflow', 'Print raw workflow guidance')
+  .option('--debug', 'Include diagnostics')
+  .option('--catalog', 'Include catalog details')
+  .option('--budget <level>', 'Display budget: compact, route, expanded, or full')
   .allowUnknownOption(true)
   .allowExcessArguments(true)
   .action((_options, command) =>
-    runRepoScript('bmads-renderer.ts', forwardedArgsFromCommand(command))
+    runRuntimeModule(
+      '../src/runtime/bmad-help-renderer.js',
+      'mainBmadHelpRenderer',
+      forwardedArgsFromCommand(command)
+    )
+  );
+
+program
+  .command('bmads')
+  .description('Render the BMAD-Speckit main-agent runtime console')
+  .option('--cwd <path>', 'Project root to inspect')
+  .option('--json', 'Print machine-readable JSON')
+  .option('--budget <level>', 'Display budget: compact, route, expanded, or full')
+  .option('--lang <locale>', 'Output language, for example en or zh-CN')
+  .option('--locale <locale>', 'Alias for --lang')
+  .allowUnknownOption(true)
+  .allowExcessArguments(true)
+  .action((_options, command) =>
+    runRuntimeModule(
+      '../src/runtime/bmads-renderer.js',
+      'mainBmadsRenderer',
+      forwardedArgsFromCommand(command)
+    )
   );
 
 program
@@ -584,10 +629,19 @@ program
 program
   .command('bmad-speckit')
   .description('Alias for bmads: render the BMAD-Speckit main-agent runtime console')
+  .option('--cwd <path>', 'Project root to inspect')
+  .option('--json', 'Print machine-readable JSON')
+  .option('--budget <level>', 'Display budget: compact, route, expanded, or full')
+  .option('--lang <locale>', 'Output language, for example en or zh-CN')
+  .option('--locale <locale>', 'Alias for --lang')
   .allowUnknownOption(true)
   .allowExcessArguments(true)
   .action((_options, command) =>
-    runRepoScript('bmads-renderer.ts', forwardedArgsFromCommand(command))
+    runRuntimeModule(
+      '../src/runtime/bmads-renderer.js',
+      'mainBmadsRenderer',
+      forwardedArgsFromCommand(command)
+    )
   );
 
 program

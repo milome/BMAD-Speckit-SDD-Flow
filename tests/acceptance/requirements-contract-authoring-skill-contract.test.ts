@@ -4,9 +4,29 @@ import { describe, expect, it } from 'vitest';
 
 const ROOT = process.cwd();
 const SKILL_DIR = path.join(ROOT, '_bmad', 'skills', 'requirements-contract-authoring');
+const SURFACE_SKILL_DIRS = [
+  SKILL_DIR,
+  path.join(ROOT, '.codex', 'skills', 'requirements-contract-authoring'),
+  path.join(ROOT, '.claude', 'skills', 'requirements-contract-authoring'),
+  path.join(ROOT, '.cursor', 'skills', 'requirements-contract-authoring'),
+  path.join(
+    ROOT,
+    'packages',
+    'bmad-speckit',
+    '_bmad',
+    'skills',
+    'requirements-contract-authoring'
+  ),
+];
 
 function readSkillFile(relativePath: string): string {
   return fs.readFileSync(path.join(SKILL_DIR, relativePath), 'utf8');
+}
+
+function readSkillSurface(relativePath: string): string[] {
+  return SURFACE_SKILL_DIRS.filter((dir) => fs.existsSync(path.join(dir, relativePath))).map(
+    (dir) => fs.readFileSync(path.join(dir, relativePath), 'utf8')
+  );
 }
 
 describe('requirements-contract-authoring published contract', () => {
@@ -128,6 +148,118 @@ describe('requirements-contract-authoring published contract', () => {
     expect(skill).toContain(
       'ready to render a confirmation page with minimal or no renderer repair'
     );
+  });
+
+  it('normalizes requirements contract authoring intents into the visible authoring lane', () => {
+    for (const skill of readSkillSurface('SKILL.md')) {
+      expect(skill).toContain('## Intent Normalization');
+      expect(skill).toContain('`生成需求契约文档` routes to `author-confirmation-ready-source`');
+      expect(skill).toContain(
+        '`更新文档为详细需求契约文档` routes to `author-confirmation-ready-source`'
+      );
+      expect(skill).toContain(
+        '`补 implementationConfirmation` routes to `author-confirmation-ready-source`'
+      );
+      expect(skill).toContain('`完善需求合同` routes to `author-confirmation-ready-source`');
+      expect(skill).toContain(
+        'A source document without inline `implementationConfirmation` MUST NOT route to `authoring-repair preserve-existing`'
+      );
+      expect(skill).toContain(
+        'A semantic update to an existing inline `implementationConfirmation` MUST enter the visible `author-confirmation-ready-source` lane first'
+      );
+      expect(skill).toContain(
+        'Confirmation language selection and confirmation HTML rendering are post-authoring steps'
+      );
+      expect(skill).toContain(
+        'Missing confirmation language MUST remain `null` or `not_selected`'
+      );
+      expect(skill).toContain(
+        'Missing confirmation language MUST NOT skip lane selection, scale assessment, controlled MUST candidate detection, packet planning, or source materialization'
+      );
+    }
+  });
+
+  it('requires visible initial scale assessment before any source-document write', () => {
+    for (const skill of readSkillSurface('SKILL.md')) {
+      expect(skill).toContain('## Pre-Write Scale Assessment Gate');
+      expect(skill).toContain('Before any source-document write');
+      expect(skill).toContain('assess_contract_authoring_scale.js');
+      expect(skill).toContain('--phase initial_assessment');
+      expect(skill).toContain('scale-assessment-initial.json');
+      expect(skill).toContain('main-agent-orchestration --action author-confirmation-ready-source');
+      expect(skill).toContain('safe-write helper, large-document replacement helper');
+      expect(skill).toContain('visible scale-assessment `stderr` trace');
+      expect(skill).toContain('pre_write_scale_assessment_required');
+      expect(skill).toContain('Do not claim that checkpoint assessment is unnecessary');
+    }
+
+    for (const workflow of readSkillSurface(
+      path.join('references', 'semantic-checkpoint-workflow.md')
+    )) {
+      expect(workflow).toContain(
+        '`initial_assessment` is a pre-write gate for every source-document write in `author-confirmation-ready-source`'
+      );
+      expect(workflow).toContain('safe-write helper, large-document replacement helper');
+      expect(workflow).toContain('scale-assessment-initial.json');
+      expect(workflow).toContain('visible `initial_assessment` trace to `stderr`');
+      expect(workflow).toContain('pre_write_scale_assessment_required');
+    }
+  });
+
+  it('requires source materialization before deep audit and keeps preserve-existing audit-only', () => {
+    for (const skill of readSkillSurface('SKILL.md')) {
+      expect(skill).toContain('source_materialization_before_deep_audit');
+      expect(skill).toContain(
+        '`author-confirmation-ready-source` MUST write the source document before Critical Auditor, multi-subagent audit, `grill-with-docs`, or `docs-review` starts a deep review loop'
+      );
+      expect(skill).toContain(
+        'only quick scan, atomic decomposition draft creation, packet generation, and source edit planning are allowed'
+      );
+      expect(skill).toContain(
+        '`authoring-repair preserve-existing` MUST audit existing inline `implementationConfirmation` content only'
+      );
+      expect(skill).toContain('MUST NOT create a new `implementationConfirmation` block');
+      expect(skill).toContain(
+        '`grill-with-docs` / `docs-review` MUST audit written files only instead of chat-only drafts'
+      );
+    }
+  });
+
+  it('distinguishes pre-materialization advisory scans from deep audit and checkpoint evidence', () => {
+    for (const skill of readSkillSurface('SKILL.md')) {
+      expect(skill).toContain('pre_materialization_advisory_scan');
+      expect(skill).toContain('purpose=pre_materialization_advisory_scan');
+      expect(skill).toContain('not_audit_evidence');
+      expect(skill).toContain('MUST NOT write audit artifacts');
+      expect(skill).toContain('MUST NOT run as a loop');
+      expect(skill).toContain('MUST NOT be called checkpoint');
+      expect(skill).toContain('MUST NOT be called Critical Auditor');
+      expect(skill).toContain('MUST NOT count as convergence evidence');
+      expect(skill).toContain('post_materialization_deep_audit');
+      expect(skill).toContain('critical_auditor_round');
+    }
+  });
+
+  it('splits atomic decomposition into packet planning before materialization and auditor convergence after materialization', () => {
+    for (const skill of readSkillSurface('SKILL.md')) {
+      expect(skill).toContain('pre-materialization phase performs packet planning and source edit planning');
+      expect(skill).toContain('may use quick scan and `pre_materialization_advisory_scan` only as read-only, non-audit guidance');
+      expect(skill).toContain('post-materialization phase performs auditor convergence');
+    }
+  });
+
+  it('documents that semantic checkpoints do not spawn subagents or perform audit reasoning', () => {
+    for (const workflow of readSkillSurface(
+      path.join('references', 'semantic-checkpoint-workflow.md')
+    )) {
+      expect(workflow).toContain('The checkpoint runner does not spawn subagents');
+      expect(workflow).toContain('Checkpoint mode does not review, audit, reason over semantic gaps');
+      expect(workflow).toContain('run three-perspective analysis');
+      expect(workflow).toContain('perform Critical Auditor convergence');
+      expect(workflow).toContain('persists only source edits that were already materialized');
+      expect(workflow).toContain('human-readable status page to `stderr`');
+      expect(workflow).toContain('must not replace JSON `stdout`');
+    }
   });
 
   it('requires authority-first fact collection and ID matrix design before authoring prose', () => {
@@ -286,6 +418,47 @@ describe('requirements-contract-authoring published contract', () => {
     expect(template).toContain('script: scripts/render-requirements-confirmation-html.ts');
     expect(template).toContain('scriptRef:');
     expect(template).toContain('scriptPath: "<skill-dir>/scripts/ingest-confirmation-event.js"');
+  });
+
+  it('publishes the large-document draft promotion protocol without consumer-root scripts', () => {
+    for (const skill of readSkillSurface('SKILL.md')) {
+      expect(skill).toContain('## Large Document Draft Promotion Protocol');
+      expect(skill).toContain('node <skill-dir>/scripts/promote-draft-large-doc.js');
+      expect(skill).toContain('--retry-receipt');
+      expect(skill).toContain('--preflight-only');
+      expect(skill).toContain('--dry-run');
+      expect(skill).toContain('normalize-draft-markdown.js');
+      expect(skill).toContain('generate-draft-manifest.js');
+      expect(skill).toContain('semantic_decision_required:expected_draft_gap_policy');
+      expect(skill).toContain('Do not add or use `--allow-expected-draft-gap`');
+      expect(skill).toContain('The write flow must work when the current project root has no `scripts` directory');
+    }
+  });
+
+  it('rejects unsafe consumer-facing command text for large document writes', () => {
+    const unsafeSamples = [
+      'node scripts/safe-write-large-doc.mjs --target docs/plan.md',
+      'node scripts/promote-draft-large-doc.js --draft draft.md --target docs/plan.md',
+      'pwsh.exe -Command "& { $content = @\\"# body\\"@; $content | node writer.cjs }"',
+      'node -e "require(\'node:fs\').writeFileSync(\'docs/plan.md\', body)"',
+      'Get-Content draft.md | Set-Content docs/plan.md',
+      'type draft.md >> docs/plan.md',
+    ];
+    const forbidden = /(?:^|\s)(?:node\s+scripts\/(?:safe-write-large-doc|promote-draft-large-doc)|pwsh(?:\.exe)?\s+-Command[\s\S]*(?:@["']|@\\["'])|node\s+-e|Set-Content|>>)/u;
+
+    for (const sample of unsafeSamples) {
+      expect(sample).toMatch(forbidden);
+    }
+
+    for (const skill of readSkillSurface('SKILL.md')) {
+      expect(skill).toContain('Do not instruct consumers to run `node scripts/safe-write-large-doc.mjs`');
+      const commandLines = skill
+        .split(/\r?\n/u)
+        .filter((line) => /^\s*(?:node|pwsh|pwsh\.exe|Get-Content|type)\b/u.test(line));
+      for (const line of commandLines) {
+        expect(line, line).not.toMatch(forbidden);
+      }
+    }
   });
 
   it('keeps skill resolver candidates aligned with supported host surfaces', () => {

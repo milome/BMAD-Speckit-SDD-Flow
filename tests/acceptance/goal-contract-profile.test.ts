@@ -65,7 +65,31 @@ describe('shared goal contract profile', () => {
     expect(output.issues).toEqual([]);
     expect(output.templateHash).toMatch(/^sha256:[a-f0-9]{64}$/);
     expect(output.profileHash).toMatch(/^sha256:[a-f0-9]{64}$/);
-    expect(output.profileVersion).toBe('1.1.0');
+    expect(output.profileVersion).toBe('2.0.0');
+  });
+
+  it('uses one canonical template hash for LF, CRLF, and leading BOM template text', () => {
+    const profileModule = require(EXTRACT_SCRIPT) as {
+      canonicalTextForContractHash: (text: string) => string;
+      extractTemplateProfile: (text: string) => { templateHash: string };
+      sha256: (text: string) => string;
+      templateHashFor: (text: string) => string;
+    };
+    const lfTemplate = fs.readFileSync(TEMPLATE, 'utf8').replace(/\r\n/g, '\n');
+    const crlfTemplate = lfTemplate.replace(/\n/g, '\r\n');
+    const bomCrlfTemplate = `\uFEFF${crlfTemplate}`;
+
+    expect(profileModule.canonicalTextForContractHash(bomCrlfTemplate)).toBe(lfTemplate);
+    expect(profileModule.templateHashFor(lfTemplate)).toBe(
+      profileModule.templateHashFor(crlfTemplate)
+    );
+    expect(profileModule.templateHashFor(lfTemplate)).toBe(
+      profileModule.templateHashFor(bomCrlfTemplate)
+    );
+    expect(profileModule.extractTemplateProfile(lfTemplate).templateHash).toBe(
+      profileModule.extractTemplateProfile(crlfTemplate).templateHash
+    );
+    expect(profileModule.sha256(lfTemplate)).not.toBe(profileModule.sha256(crlfTemplate));
   });
 
   it('extracts required sections and slots from the Markdown template', () => {
@@ -102,6 +126,67 @@ describe('shared goal contract profile', () => {
     expect(output.slots.filter((slot) => slot.required).length).toBeGreaterThanOrEqual(12);
     expect(output.duplicateSlots).toEqual([]);
     expect(output.unclosedSlots).toEqual([]);
+  });
+
+  it('verifies a CRLF template path with canonical LF-normalized profile and lock hashes', () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'goal-profile-crlf-'));
+    try {
+      const profileModule = require(EXTRACT_SCRIPT) as {
+        normalizeRepoPath: (file: string) => string;
+        profileHashFor: (profile: Record<string, any>) => string;
+        templateHashFor: (text: string) => string;
+      };
+      const verifier = require(VERIFY_SCRIPT) as {
+        verifyGoalContractProfile: (input: {
+          templatePath: string;
+          profilePath: string;
+          lockPath: string;
+          checkSkillReference: boolean;
+        }) => { ok: boolean; issues: string[]; templateHash: string; profileHash: string };
+      };
+      const lfTemplate = fs.readFileSync(TEMPLATE, 'utf8').replace(/\r\n/g, '\n');
+      const crlfTemplate = lfTemplate.replace(/\n/g, '\r\n');
+      const templatePath = path.join(tempDir, 'goal-execution-contract-template.md');
+      const profilePath = path.join(tempDir, 'goal-contract-profile.json');
+      const lockPath = path.join(tempDir, 'goal-contract-profile.lock.json');
+      const baseProfile = readJson<Record<string, any>>(PROFILE);
+      const baseLock = readJson<Record<string, any>>(LOCK);
+      const templatePathRelative = profileModule.normalizeRepoPath(templatePath);
+      const templateHash = profileModule.templateHashFor(crlfTemplate);
+
+      fs.writeFileSync(templatePath, crlfTemplate, 'utf8');
+      const profileDraft = {
+        ...baseProfile,
+        templatePath: templatePathRelative,
+        templateHash,
+      };
+      const profile = {
+        ...profileDraft,
+        profileHash: profileModule.profileHashFor(profileDraft),
+      };
+      const lock = {
+        ...baseLock,
+        templatePath: profile.templatePath,
+        templateHash: profile.templateHash,
+        profileHash: profile.profileHash,
+        profileVersion: profile.profileVersion,
+      };
+      fs.writeFileSync(profilePath, `${JSON.stringify(profile, null, 2)}\n`, 'utf8');
+      fs.writeFileSync(lockPath, `${JSON.stringify(lock, null, 2)}\n`, 'utf8');
+
+      const result = verifier.verifyGoalContractProfile({
+        templatePath,
+        profilePath,
+        lockPath,
+        checkSkillReference: false,
+      });
+      expect(result.ok).toBe(true);
+      expect(result.issues).toEqual([]);
+      expect(result.templateHash).toBe(profileModule.templateHashFor(lfTemplate));
+      expect(result.templateHash).toBe(profileModule.templateHashFor(crlfTemplate));
+    } finally {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
   });
 
   it('keeps profile as a machine index rather than full Markdown prose', () => {

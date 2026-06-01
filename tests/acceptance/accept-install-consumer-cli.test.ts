@@ -118,6 +118,7 @@ describe('install to consumer ->CLI acceptance', () => {
       expect(existsSync(join(target, '.runtime-mcp'))).toBe(false);
       expect(existsSync(join(target, 'scripts', 'emit-runtime-policy.cjs'))).toBe(false);
       expect(existsSync(join(target, 'scripts', 'start-runtime-dashboard-server.cjs'))).toBe(false);
+      expect(existsSync(join(target, 'scripts'))).toBe(false);
       expect(
         existsSync(join(target, '_bmad-output', 'config', 'bmad-speckit-install-manifest.json'))
       ).toBe(true);
@@ -137,6 +138,40 @@ describe('install to consumer ->CLI acceptance', () => {
 
       const out = run('npx bmad-speckit check', target);
       expect(out).toMatch(/Check OK|OK/i);
+
+      const promoteScript = join(
+        target,
+        '.cursor',
+        'skills',
+        'requirements-contract-authoring',
+        'scripts',
+        'promote-draft-large-doc.js'
+      );
+      expect(existsSync(promoteScript)).toBe(true);
+      const draftPath = join(target, 'draft-requirements.md');
+      const targetPath = join(target, 'requirements.md');
+      writeFileSync(
+        draftPath,
+        [
+          '# Draft',
+          '',
+          'implementationConfirmation:',
+          '  status: draft',
+          '  must:',
+          '    - id: MUST-001',
+          '      text: "The consumer install can run the skill-local promotion preflight."',
+          '',
+        ].join('\n'),
+        'utf8'
+      );
+      const promotion = JSON.parse(
+        run(
+          `"${process.execPath}" "${promoteScript}" --draft "${draftPath}" --target "${targetPath}" --preflight-only --json`,
+          target
+        )
+      );
+      expect(promotion.ok).toBe(true);
+      expect(existsSync(join(target, 'scripts'))).toBe(false);
     } finally {
       cleanupTempDir(target);
     }
