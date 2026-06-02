@@ -220,7 +220,8 @@ describe('bmad-help and BMADS runtime boundary', () => {
     expect(cli).toContain(".command('confirm-scope')");
     expect(cli).toContain(".command('main-agent:confirm-scope')");
     expect(cli).toMatch(/'--action',\s*'confirm-scope'/u);
-    expect(cli).toContain("runRepoScript('main-agent-orchestration.ts'");
+    expect(cli).toContain("runRuntimeModule('../src/main-agent/index.js'");
+    expect(cli).not.toContain("runRepoScript('main-agent-orchestration.ts'");
   });
 
   it('forwards governed command argv from the Commander command object', () => {

@@ -3,13 +3,25 @@
  * Covers setup.ps1, setup.sh, npm install, init-to-root flows.
  * Runs in CI (ubuntu-latest).
  */
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { execSync } from 'node:child_process';
+import { basename, join } from 'node:path';
+import { execSync, spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 
 const PKG_ROOT = join(import.meta.dirname, '..', '..');
+const WAVE_ID = 'main-agent-migration-wave-1';
+const WAVE_DIR = join(PKG_ROOT, '.tmp', WAVE_ID);
+const INSTALL_MATRIX_DIR = join(WAVE_DIR, 'install-matrix');
 
 function cleanupTempDir(target: string): void {
   rmSync(target, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
@@ -23,6 +35,183 @@ function runRepoCli(args: string, cwd: string, env?: NodeJS.ProcessEnv): string 
   const cli = `"${process.execPath}" "${join(PKG_ROOT, 'scripts', 'bmad-speckit-cli.js')}" ${args}`;
   return run(cli, cwd, env);
 }
+
+function sha256(value: string): string {
+  return `sha256:${createHash('sha256').update(value).digest('hex')}`;
+}
+
+function ensureRuntimeProbe(target: string): { probePath: string; logPath: string } {
+  const probePath = join(target, 'runtime-dispatch-probe.cjs');
+  const logPath = join(target, 'runtime-dispatch-probe.ndjson');
+  writeFileSync(
+    probePath,
+    [
+      "const fs = require('node:fs');",
+      "const childProcess = require('node:child_process');",
+      "const logPath = process.env.BMAD_RUNTIME_PROBE_LOG;",
+      "const ROOT_SCRIPT_RE = /(^|[\\\\/])scripts[\\\\/]main-agent-orchestration\\.ts\\b/i;",
+      "const TSX_RE = /(^|[\\\\/])tsx(?:\\.cmd)?$|\\btsx\\b/i;",
+      "const TS_NODE_RE = /(^|[\\\\/])ts-node(?:\\.cmd)?$|\\bts-node\\b/i;",
+      'function stringify(value) {',
+      '  try { return JSON.stringify(value); } catch { return String(value); }',
+      '}',
+      'function flags(args) {',
+      '  const text = Array.isArray(args) ? args.map(stringify).join(" ") : stringify(args);',
+      '  return {',
+      '    usedRootScript: ROOT_SCRIPT_RE.test(text),',
+      '    usedTsx: TSX_RE.test(text),',
+      '    usedTsNode: TS_NODE_RE.test(text),',
+      '    text,',
+      '  };',
+      '}',
+      'function record(kind, args) {',
+      '  if (!logPath) return;',
+      '  const result = flags(args);',
+      '  if (!result.usedRootScript && !result.usedTsx && !result.usedTsNode) return;',
+      '  fs.appendFileSync(logPath, JSON.stringify({ kind, cwd: process.cwd(), ...result }) + "\\n", "utf8");',
+      '}',
+      'record("process.argv", process.argv);',
+      'for (const name of ["spawn", "spawnSync", "exec", "execSync", "execFile", "execFileSync"]) {',
+      '  const original = childProcess[name];',
+      '  if (typeof original !== "function") continue;',
+      '  childProcess[name] = function patchedChildProcess(...args) {',
+      '    record(`child_process.${name}`, args);',
+      '    return original.apply(this, args);',
+      '  };',
+      '}',
+      '',
+    ].join('\n'),
+    'utf8'
+  );
+  return { probePath, logPath };
+}
+
+function readProbeFlags(logPath: string): {
+  usedRootScript: boolean;
+  usedTsx: boolean;
+  usedTsNode: boolean;
+  probeHits: unknown[];
+} {
+  if (!existsSync(logPath)) {
+    return { usedRootScript: false, usedTsx: false, usedTsNode: false, probeHits: [] };
+  }
+  const probeHits = readFileSync(logPath, 'utf8')
+    .split(/\r?\n/)
+    .filter(Boolean)
+    .map((line) => JSON.parse(line));
+  return {
+    usedRootScript: probeHits.some((hit: any) => hit.usedRootScript),
+    usedTsx: probeHits.some((hit: any) => hit.usedTsx),
+    usedTsNode: probeHits.some((hit: any) => hit.usedTsNode),
+    probeHits,
+  };
+}
+
+function writeInstallEvidence(row: {
+  installMode: string;
+  commandId: string;
+  command: string;
+  exitCode: number;
+  stdout: string;
+  stderr: string;
+  usedRootScript: boolean;
+  usedTsx: boolean;
+  usedTsNode: boolean;
+  packagePath: string;
+  probeHits: unknown[];
+}): void {
+  mkdirSync(INSTALL_MATRIX_DIR, { recursive: true });
+  const filePath = join(INSTALL_MATRIX_DIR, `${row.installMode}-${row.commandId}.json`);
+  const evidence = {
+    installMode: row.installMode,
+    command: row.command,
+    exitCode: row.exitCode,
+    stdoutHash: sha256(row.stdout),
+    stderrHash: sha256(row.stderr),
+    usedRootScript: row.usedRootScript,
+    usedTsx: row.usedTsx,
+    usedTsNode: row.usedTsNode,
+    packagePath: row.packagePath,
+    probeHits: row.probeHits,
+  };
+  writeFileSync(filePath, `${JSON.stringify(evidence, null, 2)}\n`, 'utf8');
+}
+
+function runObservedCommand(
+  installMode: string,
+  commandId: string,
+  command: string,
+  target: string,
+  packagePath: string
+): string {
+  const { probePath, logPath } = ensureRuntimeProbe(target);
+  rmSync(logPath, { force: true });
+  const env = {
+    ...process.env,
+    BMAD_RUNTIME_PROBE_LOG: logPath,
+    NODE_OPTIONS: `${process.env.NODE_OPTIONS ? `${process.env.NODE_OPTIONS} ` : ''}--require=${probePath}`,
+    BMAD_SKIP_CONSUMER_MCP_INSTALL: '1',
+  };
+  const result = spawnSync(command, {
+    cwd: target,
+    encoding: 'utf8',
+    env,
+    shell: true,
+    maxBuffer: 20 * 1024 * 1024,
+  });
+  const stdout = String(result.stdout || '');
+  const stderr = String(result.stderr || '');
+  const flags = readProbeFlags(logPath);
+  writeInstallEvidence({
+    installMode,
+    commandId,
+    command,
+    exitCode: result.status ?? 1,
+    stdout,
+    stderr,
+    packagePath,
+    ...flags,
+  });
+
+  expect(result.status, `${command}\nSTDOUT:\n${stdout}\nSTDERR:\n${stderr}`).toBe(0);
+  expect(flags.usedRootScript, `${command} executed scripts/main-agent-orchestration.ts`).toBe(
+    false
+  );
+  expect(flags.usedTsx, `${command} executed tsx`).toBe(false);
+  expect(flags.usedTsNode, `${command} executed ts-node`).toBe(false);
+  return stdout;
+}
+
+function resolveInstalledPackagePath(target: string): string {
+  const candidates = [
+    join(target, 'node_modules', 'bmad-speckit-sdd-flow', 'node_modules', 'bmad-speckit'),
+    join(target, 'node_modules', 'bmad-speckit'),
+    join(target, 'node_modules', 'bmad-speckit-sdd-flow'),
+  ];
+  return candidates.find((candidate) => existsSync(candidate)) || 'unresolved';
+}
+
+function latestOrCreateWaveTarball(): string {
+  mkdirSync(WAVE_DIR, { recursive: true });
+  const tarballs = readdirSync(WAVE_DIR)
+    .filter((name) => name.endsWith('.tgz'))
+    .map((name) => join(WAVE_DIR, name))
+    .sort((left, right) => basename(right).localeCompare(basename(left)));
+  if (tarballs[0]) return tarballs[0];
+  run(`npm pack --pack-destination "${WAVE_DIR}"`, PKG_ROOT);
+  const created = readdirSync(WAVE_DIR)
+    .filter((name) => name.endsWith('.tgz'))
+    .map((name) => join(WAVE_DIR, name))
+    .sort((left, right) => basename(right).localeCompare(basename(left)));
+  if (!created[0]) throw new Error('npm pack did not produce a wave tarball');
+  return created[0];
+}
+
+const WAVE_RUNTIME_COMMANDS = [
+  { id: 'bmads', args: 'bmads --budget compact' },
+  { id: 'bmad-help', args: 'bmad-help --budget compact' },
+  { id: 'main-agent-inspect', args: 'main-agent inspect --json' },
+];
 
 describe('install to consumer ->CLI acceptance', () => {
   it('init-to-root deploy ->bmad-speckit check passes', () => {
@@ -497,4 +686,80 @@ describe('install to consumer ->CLI acceptance', () => {
       cleanupTempDir(target);
     }
   }, 90_000);
+
+  it('main-agent-migration-wave-1 install matrix uses package runtime without TypeScript dispatch', () => {
+    mkdirSync(INSTALL_MATRIX_DIR, { recursive: true });
+    const tarball = latestOrCreateWaveTarball();
+    const packageSpec = tarball.replace(/\\/g, '/');
+
+    const saveDev = mkdtempSync(join(tmpdir(), 'wave1-save-dev-'));
+    try {
+      writeFileSync(
+        join(saveDev, 'package.json'),
+        JSON.stringify({ name: 'wave1-save-dev', version: '1.0.0', private: true }),
+        'utf8'
+      );
+      run(`npm install --save-dev "${tarball}"`, saveDev, {
+        BMAD_SKIP_CONSUMER_MCP_INSTALL: '1',
+      });
+      const packagePath = resolveInstalledPackagePath(saveDev);
+      expect(packagePath).not.toBe('unresolved');
+      for (const row of WAVE_RUNTIME_COMMANDS) {
+        runObservedCommand(
+          'save-dev',
+          row.id,
+          `npx --no-install bmad-speckit ${row.args}`,
+          saveDev,
+          packagePath
+        );
+      }
+    } finally {
+      cleanupTempDir(saveDev);
+    }
+
+    const npxConsumer = mkdtempSync(join(tmpdir(), 'wave1-npx-package-'));
+    try {
+      writeFileSync(
+        join(npxConsumer, 'package.json'),
+        JSON.stringify({ name: 'wave1-npx-package', version: '1.0.0', private: true }),
+        'utf8'
+      );
+      for (const row of WAVE_RUNTIME_COMMANDS) {
+        runObservedCommand(
+          'npx-package',
+          row.id,
+          `npx --yes --package "${packageSpec}" bmad-speckit ${row.args}`,
+          npxConsumer,
+          packageSpec
+        );
+      }
+    } finally {
+      cleanupTempDir(npxConsumer);
+    }
+
+    const tgzConsumer = mkdtempSync(join(tmpdir(), 'wave1-tgz-'));
+    try {
+      writeFileSync(
+        join(tgzConsumer, 'package.json'),
+        JSON.stringify({ name: 'wave1-tgz', version: '1.0.0', private: true }),
+        'utf8'
+      );
+      run(`npm install --save-dev "${tarball}"`, tgzConsumer, {
+        BMAD_SKIP_CONSUMER_MCP_INSTALL: '1',
+      });
+      const packagePath = resolveInstalledPackagePath(tgzConsumer);
+      expect(packagePath).not.toBe('unresolved');
+      for (const row of WAVE_RUNTIME_COMMANDS) {
+        runObservedCommand(
+          'tgz',
+          row.id,
+          `npx --no-install bmad-speckit ${row.args}`,
+          tgzConsumer,
+          packagePath
+        );
+      }
+    } finally {
+      cleanupTempDir(tgzConsumer);
+    }
+  }, 600_000);
 });

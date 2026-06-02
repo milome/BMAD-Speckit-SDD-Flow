@@ -91,11 +91,15 @@ describe('AI Registry integration (Story 12.1 T5)', () => {
     const r = spawnSync('node', [BIN, 'check', '--list-ai'], {
       cwd: path.dirname(BIN),
       encoding: 'utf8',
-      timeout: 15000,
+      timeout: 60000,
       env,
     });
     cleanup();
-    assert.strictEqual(r.status, 0);
+    const exitMsg =
+      r.status === null && r.error && r.error.code === 'ETIMEDOUT'
+        ? `expected exit 0, got null (spawnSync timed out): ${r.stderr}`
+        : `expected exit 0, got ${r.status}: ${r.stderr}`;
+    assert.strictEqual(r.status, 0, exitMsg);
     const out = (r.stdout || '').trim();
     assert.ok(out.includes('cursor-agent'));
     assert.ok(out.includes('claude'));

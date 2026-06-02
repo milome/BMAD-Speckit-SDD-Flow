@@ -1,0 +1,95 @@
+registryVersion: 1
+registryKind: source_repo_script_migration_registry
+installSurface: excluded
+consumerRuntimeDependency: false
+
+allowedMigrationStrategies:
+  - package_runtime_module
+  - runtime_emit_cjs
+  - durable_helper_copy
+  - skill_local_helper
+  - test_helper_move
+  - repo_internal_reclassify
+  - public_cli_de_surface
+  - compatibility_alias
+  - deprecated_no_migration
+
+allowedMigrationStatuses:
+  - planned
+  - in_progress
+  - migrated
+  - caller_switched
+  - validated
+  - blocked
+  - superseded
+
+allowedValidationStatuses:
+  - pending
+  - partial
+  - passed
+  - failed
+  - blocked
+
+waves:
+  - waveId: script-migration-registry-bootstrap
+    title: Script migration registry bootstrap
+    contractPath: docs/plans/2026-06-02-script-migration-registry-goal-execution-plan.md
+    status: in_progress
+    startedAt: 2026-06-02T00:00:00+08:00
+    completedAt: null
+    entries:
+      - entryId: script-migration-registry
+        originalPath: repo-governance/script-migration-registry.yaml
+        originalPathStatus: retained
+        originalClassBeforeMigration: source_repo_governance
+        migrationStrategy: repo_internal_reclassify
+        migrationStatus: planned
+        targetPaths:
+          - repo-governance/script-migration-registry.yaml
+        publicCommandsBeforeMigration: []
+        publicCommandsAfterMigration: []
+        callerSwitchStatus: not_applicable
+        validationStatus: pending
+        evidenceRefs:
+          - repo-governance/script-migrations/script-migration-registry-bootstrap/evidence.json
+        oldPathDisposition: retained_source_repo_governance
+        deletionAllowed: false
+        deletionApprovalRef: null
+
+  - waveId: main-agent-migration-wave-1
+    title: Main Agent package runtime migration wave 1
+    contractPath: docs/plans/2026-06-02-main-agent-migration-wave-1-goal-execution-plan.md
+    status: validated
+    startedAt: 2026-06-02T00:00:00+08:00
+    completedAt: 2026-06-02T15:15:10+08:00
+    entries:
+      - entryId: main-agent-orchestration
+        originalPath: scripts/main-agent-orchestration.ts
+        originalPathStatus: retained
+        originalClassBeforeMigration: consumer_runtime_via_runRepoScript
+        migrationStrategy: package_runtime_module
+        migrationStatus: validated
+        targetPaths:
+          - packages/bmad-speckit/src/main-agent/index.js
+          - packages/bmad-speckit/src/main-agent/runtime.js
+          - packages/bmad-speckit/src/main-agent/actions/inspect.js
+          - packages/bmad-speckit/src/main-agent/actions/confirm-scope.js
+          - packages/bmad-speckit/src/main-agent/actions/dispatch-plan.js
+          - packages/bmad-speckit/src/main-agent/actions/run-loop.js
+          - packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs
+        publicCommandsBeforeMigration:
+          - bmad-speckit main-agent-orchestration
+          - bmad-speckit confirm-scope
+          - bmad-speckit main-agent:confirm-scope
+        publicCommandsAfterMigration:
+          - bmad-speckit main-agent inspect
+          - bmad-speckit main-agent confirm-scope
+          - bmad-speckit main-agent dispatch-plan
+          - bmad-speckit main-agent run-loop
+        callerSwitchStatus: switched
+        validationStatus: passed
+        evidenceRefs:
+          - repo-governance/script-migrations/main-agent-migration-wave-1/evidence.json
+        oldPathDisposition: retained_source_dev_only
+        deletionAllowed: false
+        deletionApprovalRef: null

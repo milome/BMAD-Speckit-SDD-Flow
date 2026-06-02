@@ -1,0 +1,12 @@
+{
+  "installMode": "save-dev",
+  "command": "npx --no-install bmad-speckit main-agent inspect --json",
+  "exitCode": 0,
+  "stdoutHash": "sha256:45b712ccbd51e7cc46e4a7aa3e715f12b4371b0aa4d9ae4dfb1d198feac0dea8",
+  "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "usedRootScript": false,
+  "usedTsx": false,
+  "usedTsNode": false,
+  "packagePath": "C:\\Users\\milom\\AppData\\Local\\Temp\\wave1-save-dev-oLHHSL\\node_modules\\bmad-speckit-sdd-flow\\node_modules\\bmad-speckit",
+  "probeHits": []
+}

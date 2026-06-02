@@ -25,8 +25,14 @@ function loadCommand(modulePath, exportName) {
 }
 
 function runRuntimeModule(modulePath, exportName, args) {
-  const exitCode = require(modulePath)[exportName](args);
-  process.exit(exitCode ?? 0);
+  Promise.resolve(require(modulePath)[exportName](args))
+    .then((exitCode) => {
+      process.exit(exitCode ?? 0);
+    })
+    .catch((error) => {
+      console.error(error instanceof Error ? error.message : String(error));
+      process.exit(1);
+    });
 }
 
 function resolveRepoScript(scriptName) {
@@ -650,7 +656,11 @@ program
   .allowUnknownOption(true)
   .allowExcessArguments(true)
   .action((_options, command) =>
-    runRepoScript('main-agent-orchestration.ts', forwardedArgsFromCommand(command))
+    runRuntimeModule(
+      '../src/main-agent/index.js',
+      'mainAgentRuntimeCommand',
+      ['--legacy-orchestration', ...forwardedArgsFromCommand(command)]
+    )
   );
 
 program
@@ -659,7 +669,7 @@ program
   .allowUnknownOption(true)
   .allowExcessArguments(true)
   .action((_options, command) =>
-    runRepoScript('main-agent-orchestration.ts', [
+    runRuntimeModule('../src/main-agent/index.js', 'mainAgentRuntimeCommand', [
       '--action',
       'confirm-scope',
       ...forwardedArgsFromCommand(command),
@@ -672,7 +682,7 @@ program
   .allowUnknownOption(true)
   .allowExcessArguments(true)
   .action((_options, command) =>
-    runRepoScript('main-agent-orchestration.ts', [
+    runRuntimeModule('../src/main-agent/index.js', 'mainAgentRuntimeCommand', [
       '--action',
       'confirm-scope',
       ...forwardedArgsFromCommand(command),
@@ -753,6 +763,22 @@ program
   .allowExcessArguments(true)
   .action((_options, command) =>
     runRepoScript('eval-questions-cli.ts', forwardedArgsFromCommand(command))
+  );
+
+program
+  .command('main-agent')
+  .argument('[action]')
+  .description('Run stable package-local Main Agent runtime actions')
+  .option('--cwd <path>', 'Project root to inspect')
+  .option('--json', 'Print machine-readable JSON')
+  .allowUnknownOption(true)
+  .allowExcessArguments(true)
+  .action((_action, _options, command) =>
+    runRuntimeModule(
+      '../src/main-agent/index.js',
+      'mainAgentRuntimeCommand',
+      forwardedArgsFromCommand(command)
+    )
   );
 
 program.parse();
