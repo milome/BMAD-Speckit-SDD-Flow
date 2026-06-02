@@ -5,7 +5,11 @@ const os = require('node:os');
 const path = require('node:path');
 
 const PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..');
-const PROJECT_SURFACES = ['.codex', '.claude', '.cursor'];
+const PROJECT_AI_SURFACES = [
+  { ai: 'codex', root: '.codex' },
+  { ai: 'claude', root: '.claude' },
+  { ai: 'cursor-agent', root: '.cursor' },
+];
 const GLOBAL_SURFACES = [
   path.join(os.homedir(), '.codex', 'skills'),
   path.join(os.homedir(), '.claude', 'skills'),
@@ -35,6 +39,27 @@ function assertStrictPassthroughRules(file) {
   assert.match(text, /Final: paste the renderer stdout exactly/);
 }
 
+function withPublishedProjectSurfaces(callback) {
+  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'runtime-entry-skills-'));
+  const SkillPublisher = require('../src/services/skill-publisher');
+  try {
+    for (const { ai } of PROJECT_AI_SURFACES) {
+      const result = SkillPublisher.publish(projectRoot, ai, {
+        bmadPath: path.join(PROJECT_ROOT, '_bmad'),
+      });
+      for (const skill of ['bmad-speckit', 'bmads', 'bmad-help']) {
+        assert.ok(
+          result.published.includes(skill),
+          `${ai} publish should include ${skill}; published=${result.published.join(',')}`
+        );
+      }
+    }
+    callback(projectRoot);
+  } finally {
+    fs.rmSync(projectRoot, { recursive: true, force: true });
+  }
+}
+
 describe('runtime entry skill passthrough contract', () => {
   it('source bmad-speckit, bmads, and bmad-help skills require strict stdout passthrough', () => {
     for (const file of SOURCE_SKILLS) {
@@ -42,13 +67,15 @@ describe('runtime entry skill passthrough contract', () => {
     }
   });
 
-  it('project Codex, Claude, and Cursor skill surfaces carry the same passthrough rules', () => {
-    for (const surface of PROJECT_SURFACES) {
-      for (const skill of ['bmad-speckit', 'bmads', 'bmad-help']) {
-        const file = path.join(PROJECT_ROOT, surface, 'skills', skill, 'SKILL.md');
-        assertStrictPassthroughRules(file);
+  it('published project Codex, Claude, and Cursor skill surfaces carry the same passthrough rules', () => {
+    withPublishedProjectSurfaces((projectRoot) => {
+      for (const { root } of PROJECT_AI_SURFACES) {
+        for (const skill of ['bmad-speckit', 'bmads', 'bmad-help']) {
+          const file = path.join(projectRoot, root, 'skills', skill, 'SKILL.md');
+          assertStrictPassthroughRules(file);
+        }
       }
-    }
+    });
   });
 
   it('global Codex, Claude, and Cursor skill surfaces carry the same passthrough rules when present', () => {
