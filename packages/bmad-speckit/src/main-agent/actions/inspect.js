@@ -139,6 +139,8 @@ function legacyInspectSurface(projectRoot, args = {}) {
   const sessionId = state?.sessionId || active?.requirementSetId || active?.recordId || null;
   const pendingPacketStatus = state?.pendingPacket?.status || (active ? 'ready_for_main_agent' : 'none');
   return {
+    action: 'inspect',
+    status: 'ok',
     source: state ? 'orchestration_state' : active ? 'requirement_record' : 'no_active_requirement',
     sessionId,
     orchestrationStatePath: latestState?.path
