@@ -53,7 +53,15 @@ describe('main-agent dist runtime facade', () => {
   it('supports covered actions with stable JSON envelopes', async () => {
     const root = makeConsumerRoot();
     try {
-      for (const action of ['inspect', 'confirm-scope', 'dispatch-plan', 'run-loop']) {
+      for (const action of [
+        'inspect',
+        'confirm-scope',
+        'dispatch-plan',
+        'run-loop',
+        'release-gate',
+        'quality-gate',
+        'delivery-truth-gate',
+      ]) {
         const args =
           action === 'confirm-scope'
             ? [action, '--cwd', root, '--source', 'requirements.md', '--json']

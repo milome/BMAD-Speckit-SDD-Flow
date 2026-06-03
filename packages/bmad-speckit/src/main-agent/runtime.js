@@ -6,11 +6,22 @@ const {
   legacyConfirmScopeAction,
 } = require('./actions/confirm-scope');
 const { dispatchPlanAction } = require('./actions/dispatch-plan');
+const { deliveryTruthGateAction } = require('./actions/delivery-truth-gate');
 const { hasRuntimeState, inspectRuntimeState, legacyInspectSurface } = require('./actions/inspect');
+const { qualityGateAction } = require('./actions/quality-gate');
+const { releaseGateAction } = require('./actions/release-gate');
 const { legacyRunLoopAction, runLoopAction } = require('./actions/run-loop');
 
 const SCHEMA_VERSION = 'main-agent-package-runtime/v1';
-const SUPPORTED_ACTIONS = new Set(['inspect', 'confirm-scope', 'dispatch-plan', 'run-loop']);
+const SUPPORTED_ACTIONS = new Set([
+  'inspect',
+  'confirm-scope',
+  'dispatch-plan',
+  'run-loop',
+  'release-gate',
+  'quality-gate',
+  'delivery-truth-gate',
+]);
 
 function normalizeAction(value) {
   return String(value || '').trim().replace(/_/g, '-');
@@ -155,6 +166,21 @@ async function runMainAgentRuntime(context) {
     const runtime = requireRuntimeState(context);
     if (!runtime.ok) return emitResponse(context, runtime.response);
     return emitResponse(context, envelope(context, 'ok', 0, runLoopAction(context, runtime.state)));
+  }
+
+  if (context.action === 'release-gate') {
+    return emitResponse(context, envelope(context, 'package_runtime_ready', 0, releaseGateAction(context)));
+  }
+
+  if (context.action === 'quality-gate') {
+    return emitResponse(context, envelope(context, 'package_runtime_ready', 0, qualityGateAction(context)));
+  }
+
+  if (context.action === 'delivery-truth-gate') {
+    return emitResponse(
+      context,
+      envelope(context, 'package_runtime_ready', 0, deliveryTruthGateAction(context))
+    );
   }
 }
 

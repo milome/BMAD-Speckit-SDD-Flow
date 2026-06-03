@@ -98,6 +98,24 @@ function forwardedArgsFromCommand(command) {
   return args;
 }
 
+function emitDeprecatedAlias(commandName, replacement, args) {
+  const json = args.includes('--json');
+  const payload = {
+    schemaVersion: 'bmad-speckit-deprecated-alias/v1',
+    command: commandName,
+    status: 'deprecated',
+    exitCode: 0,
+    replacement,
+  };
+  if (json) {
+    process.stdout.write(`${JSON.stringify(payload, null, 2)}\n`);
+  } else {
+    process.stdout.write(
+      `${commandName} is deprecated. Use ${replacement} or a source-repository maintenance workflow.\n`
+    );
+  }
+}
+
 // Show banner for init (including init --help) when in TTY
 if (process.argv.includes('init') && ttyUtils.isTTY()) {
   const { showBanner } = require('../src/commands/init');
@@ -625,11 +643,12 @@ program
 
 program
   .command('bmads-auto')
-  .description('Run the BMADS Auto governed orchestration CLI surface')
+  .description('Deprecated compatibility alias for BMADS Auto source-repository orchestration')
+  .option('--json', 'Print machine-readable deprecation status')
   .allowUnknownOption(true)
   .allowExcessArguments(true)
   .action((_options, command) =>
-    runRepoScript('bmads-auto-cli.ts', forwardedArgsFromCommand(command))
+    emitDeprecatedAlias('bmads-auto', 'bmads', forwardedArgsFromCommand(command))
   );
 
 program
@@ -693,11 +712,16 @@ program
 
 program
   .command('main-agent:bmad-help-five-layer-matrix')
-  .description('Run the diagnostic BMAD help five-layer matrix; use bmad-help for the stable user help renderer')
+  .description('Deprecated compatibility alias; use bmad-help for stable user help rendering')
+  .option('--json', 'Print machine-readable deprecation status')
   .allowUnknownOption(true)
   .allowExcessArguments(true)
   .action((_options, command) =>
-    runRepoScript('main-agent-bmad-help-five-layer-matrix.ts', forwardedArgsFromCommand(command))
+    emitDeprecatedAlias(
+      'main-agent:bmad-help-five-layer-matrix',
+      'bmad-help',
+      forwardedArgsFromCommand(command)
+    )
   );
 
 program
@@ -706,18 +730,24 @@ program
   .allowUnknownOption(true)
   .allowExcessArguments(true)
   .action((_options, command) =>
-    runRepoScript('main-agent-quality-gate.ts', forwardedArgsFromCommand(command), {
-      before: ['ensure-governance-user-story-mapping-fixture.js'],
-    })
+    runRuntimeModule('../dist/main-agent/index.js', 'mainAgentRuntimeCommand', [
+      'quality-gate',
+      ...forwardedArgsFromCommand(command),
+    ])
   );
 
 program
   .command('main-agent:host-matrix-pr-orchestrate')
-  .description('Run the BMAD multi-host host matrix PR orchestration CLI surface')
+  .description('Deprecated compatibility alias for source-repository host matrix orchestration')
+  .option('--json', 'Print machine-readable deprecation status')
   .allowUnknownOption(true)
   .allowExcessArguments(true)
   .action((_options, command) =>
-    runRepoScript('main-agent-host-matrix-pr-orchestrator.ts', forwardedArgsFromCommand(command))
+    emitDeprecatedAlias(
+      'main-agent:host-matrix-pr-orchestrate',
+      'main-agent run-loop',
+      forwardedArgsFromCommand(command)
+    )
   );
 
 program
@@ -726,9 +756,10 @@ program
   .allowUnknownOption(true)
   .allowExcessArguments(true)
   .action((_options, command) =>
-    runRepoScript('main-agent-release-gate.ts', forwardedArgsFromCommand(command), {
-      before: ['ensure-governance-user-story-mapping-fixture.js'],
-    })
+    runRuntimeModule('../dist/main-agent/index.js', 'mainAgentRuntimeCommand', [
+      'release-gate',
+      ...forwardedArgsFromCommand(command),
+    ])
   );
 
 program
@@ -737,7 +768,10 @@ program
   .allowUnknownOption(true)
   .allowExcessArguments(true)
   .action((_options, command) =>
-    runRepoScript('main-agent-delivery-truth-gate.ts', forwardedArgsFromCommand(command))
+    runRuntimeModule('../dist/main-agent/index.js', 'mainAgentRuntimeCommand', [
+      'delivery-truth-gate',
+      ...forwardedArgsFromCommand(command),
+    ])
   );
 
 program
@@ -746,7 +780,11 @@ program
   .allowUnknownOption(true)
   .allowExcessArguments(true)
   .action((_options, command) =>
-    runRepoScript('write-runtime-context.cjs', forwardedArgsFromCommand(command))
+    runRuntimeModule(
+      '../dist/main-agent/helpers/write-runtime-context.cjs',
+      'main',
+      forwardedArgsFromCommand(command)
+    )
   );
 
 program
@@ -755,16 +793,21 @@ program
   .allowUnknownOption(true)
   .allowExcessArguments(true)
   .action((_options, command) =>
-    runRepoScript('run-auditor-host.ts', forwardedArgsFromCommand(command))
+    runRuntimeModule(
+      '../dist/main-agent/auditor-host/run-auditor-host.cjs',
+      'main',
+      forwardedArgsFromCommand(command)
+    )
   );
 
 program
   .command('eval-questions')
-  .description('Run the BMAD evaluation question CLI surface')
+  .description('Deprecated compatibility alias for source-repository evaluation question tooling')
+  .option('--json', 'Print machine-readable deprecation status')
   .allowUnknownOption(true)
   .allowExcessArguments(true)
   .action((_options, command) =>
-    runRepoScript('eval-questions-cli.ts', forwardedArgsFromCommand(command))
+    emitDeprecatedAlias('eval-questions', 'source-repository evaluation workflow', forwardedArgsFromCommand(command))
   );
 
 program

@@ -1,0 +1,1693 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-wave-3.1-evidence/v1",
+  "waveId": "main-agent-runtime-migration-wave-3.1",
+  "contractPath": "docs/plans/2026-06-04-main-agent-runtime-migration-wave-3-1-goal-execution-plan.md",
+  "sourcePlanHash": "sha256:8499ef2f50f850a690d0aae3cf5191f661cf719b3517f4e87e3037602fc18a82",
+  "validatedAt": "2026-06-03T19:37:27.090Z",
+  "entries": [
+    {
+      "entryId": "main-agent-release-gate",
+      "originalPath": "scripts/main-agent-release-gate.ts",
+      "migrationStrategy": "package_runtime_module",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/release-gate.js",
+        "packages/bmad-speckit/dist/main-agent/actions/release-gate.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "publicCommandsAfterMigration": [
+        "bmad-speckit main-agent:release-gate",
+        "bmad-speckit main-agent release-gate"
+      ],
+      "commands": [
+        {
+          "commandId": "CMD-01",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { git status --short --branch }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:44ccc0cbc82faa50a073cf655f0c34472646229cfb055e9261f20435dfebc90c",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "## dev...origin/dev [ahead 1]\n M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.js\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speck",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-02",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:a278d284828625c7ccc2280ced1c6276442a6f9693d1d39d6836856b7d718d98",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "checkedFiles=3005 findings=0\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-03",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <candidate set check> }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:237ea3dd243d98cbcbd65a5342462776a569d269ef5b3024ccd824581d830f92",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "[\r\n  {\r\n    \"scriptPath\": \"scripts/main-agent-release-gate.ts\",\r\n    \"migrationStrategy\": \"package_runtime_module\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/main-agent-quality-gate.ts\",\r\n    \"migrationStrategy\": \"package_runtime_module\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/main-agent-delivery-truth-gate.ts\",\r\n    \"migrationStrategy\": \"package_runtime_module\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/run-auditor-host.ts\",\r\n    \"migrationStrategy\": \"runtime_emit_cjs\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/write-runtime-context.cjs\",\r\n    \"migrationStrategy\": \"durable_helper_copy\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/eval-questions-cli.ts\",\r\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-04",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { npm run test --prefix packages/bmad-speckit; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:b2165cb3faafb75179d98ab5596f3b6b2a31f9b7cc6bfd28c410a14a8cfcf18b",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 test\n> node scripts/run-node-tests.cjs\n\nTAP version 13\n# Subtest: ai-registry-builtin (Story 12.1 T2)\n    # Subtest: exports array of 22 entries\n    ok 1 - exports array of 22 entries\n      ---\n      duration_ms: 1.1181\n      type: 'test'\n      ...\n    # Subtest: each entry has id, name, description, configTemplate\n    ok 2 - each entry has id, name, description, configTemplate\n      ---\n      duration_ms: 0.3896\n      type: 'test'\n      ...\n    # Subtest: each configTemplate has subagentSupport\n    ok 3 - each configTemplate has subagentSupport\n      ---\n      duration_ms: 0.9928\n      type: 'test'\n      ...\n    # Subtest: opencode uses .opencode/command (spec-kit)\n    ok 4 - opencode uses .opencode/command (spec-kit)\n      ---\n      duration_ms: 0.2311\n      type: '",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-05",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { npm run build:main-agent-dist --prefix packages/bmad-speckit; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:998e5b89b942b52f446cffa16afb7ec9085c8442028b0e3286518d18751187a0",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 build:main-agent-dist\n> node scripts/build-main-agent-dist.cjs\n\nbuilt dist/main-agent files=11\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-06",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { `$pkg = Get-Content -Raw 'packages/bmad-speckit/package.json' | ConvertFrom-Json; `$pkg.files | ConvertTo-Json -Depth 4; if (@(`$pkg.files) -notcontains 'dist/') { exit 1 }; exit 0 }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:b5d5de675e590f3ceea36fd13b7bc9f6a21229aae3e3a4a51c061dbbda78b9b6",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "[\r\n  \"README.md\",\r\n  \"bin/\",\r\n  \"dist/\",\r\n  \"src/\",\r\n  \"tests/\",\r\n  \"test-nonempty/\",\r\n  \"_bmad/\",\r\n  \"node_modules/@bmad-speckit/\"\r\n]\r\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-07",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { rg <Wave 3.1 public runRepoScript seed scan>; exit }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-08",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <static no root TypeScript dispatch guard> }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-09",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node tools/script-migration/validate-registry.cjs; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:03e86d3a93b78396c78137de46ac5ecd960049e7c9b3b3792b5ac8b7abe51970",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "{\"status\":\"passed\",\"registryPath\":\"repo-governance/script-migration-registry.yaml\",\"packExclusion\":\"not_requested\",\"errors\":[]}\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-10",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node tools/script-migration/validate-main-agent-runtime-migration-wave-3-1.cjs; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:725b1085f6b5bbc78dadd1e51480dd2a5d4761a728cad12228871f6a097a8c6c",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.1\",\n  \"contractPath\": \"docs/plans/2026-06-04-main-agent-runtime-migration-wave-3-1-goal-execution-plan.md\",\n  \"errors\": []\n}\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-11",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <CLI smoke probes> }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-12",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node tools/script-migration/run-main-agent-wave-3-1-install-matrix.cjs; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:b25b722c26816379c7d95304c8214ac25b0569503ccc13c6999581bc8d2d2b6f",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.1\",\n  \"packageTarball\": \"repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/bmad-speckit-2.0.1.tgz\",\n  \"receipts\": [\n    \"repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/save-dev.json\",\n    \"repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/npx-package.json\",\n    \"repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/no-save.json\"\n  ],\n  \"errors\": []\n}\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-13",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { npx vitest run tests/acceptance/main-agent-runtime-migration-wave-3-1-contract.test.ts; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:ee7d1761545ed53b607154cfb4fc503e30c4269cffde7a139a87c99b26fa87d3",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n\u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m\n\n \u001b[32m✓\u001b[39m tests/acceptance/main-agent-runtime-migration-wave-3-1-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 351\u001b[2mms\u001b[22m\u001b[39m\n     \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs the Wave 3.1 migration validator successfully \u001b[33m 348\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m\n\u001b[2m   Start at \u001b[22m 03:37:01\n\u001b[2m   Duration \u001b[22m 993ms\u001b[2m (transform 36ms, setup 0ms, import 66ms, tests 351ms, environment 0ms)\u001b[22m\n\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-14",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <no root script deletion check> }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-15",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:a278d284828625c7ccc2280ced1c6276442a6f9693d1d39d6836856b7d718d98",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "checkedFiles=3005 findings=0\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-16",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { git status --short }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:014e33148317a6ac040f2d4cfda9cd2958f458808f65191dcbcd340ff8056d2c",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": " M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.js\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speckit/tests/main-agent-dist-runti",
+          "stderrPreview": ""
+        }
+      ],
+      "installMatrixEvidence": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/save-dev.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/npx-package.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/no-save.json"
+      ],
+      "result": "passed",
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "main-agent-quality-gate",
+      "originalPath": "scripts/main-agent-quality-gate.ts",
+      "migrationStrategy": "package_runtime_module",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/quality-gate.js",
+        "packages/bmad-speckit/dist/main-agent/actions/quality-gate.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "publicCommandsAfterMigration": [
+        "bmad-speckit main-agent:quality-gate",
+        "bmad-speckit main-agent quality-gate"
+      ],
+      "commands": [
+        {
+          "commandId": "CMD-01",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { git status --short --branch }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:44ccc0cbc82faa50a073cf655f0c34472646229cfb055e9261f20435dfebc90c",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "## dev...origin/dev [ahead 1]\n M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.js\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speck",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-02",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:a278d284828625c7ccc2280ced1c6276442a6f9693d1d39d6836856b7d718d98",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "checkedFiles=3005 findings=0\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-03",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <candidate set check> }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:237ea3dd243d98cbcbd65a5342462776a569d269ef5b3024ccd824581d830f92",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "[\r\n  {\r\n    \"scriptPath\": \"scripts/main-agent-release-gate.ts\",\r\n    \"migrationStrategy\": \"package_runtime_module\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/main-agent-quality-gate.ts\",\r\n    \"migrationStrategy\": \"package_runtime_module\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/main-agent-delivery-truth-gate.ts\",\r\n    \"migrationStrategy\": \"package_runtime_module\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/run-auditor-host.ts\",\r\n    \"migrationStrategy\": \"runtime_emit_cjs\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/write-runtime-context.cjs\",\r\n    \"migrationStrategy\": \"durable_helper_copy\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/eval-questions-cli.ts\",\r\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-04",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { npm run test --prefix packages/bmad-speckit; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:b2165cb3faafb75179d98ab5596f3b6b2a31f9b7cc6bfd28c410a14a8cfcf18b",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 test\n> node scripts/run-node-tests.cjs\n\nTAP version 13\n# Subtest: ai-registry-builtin (Story 12.1 T2)\n    # Subtest: exports array of 22 entries\n    ok 1 - exports array of 22 entries\n      ---\n      duration_ms: 1.1181\n      type: 'test'\n      ...\n    # Subtest: each entry has id, name, description, configTemplate\n    ok 2 - each entry has id, name, description, configTemplate\n      ---\n      duration_ms: 0.3896\n      type: 'test'\n      ...\n    # Subtest: each configTemplate has subagentSupport\n    ok 3 - each configTemplate has subagentSupport\n      ---\n      duration_ms: 0.9928\n      type: 'test'\n      ...\n    # Subtest: opencode uses .opencode/command (spec-kit)\n    ok 4 - opencode uses .opencode/command (spec-kit)\n      ---\n      duration_ms: 0.2311\n      type: '",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-05",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { npm run build:main-agent-dist --prefix packages/bmad-speckit; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:998e5b89b942b52f446cffa16afb7ec9085c8442028b0e3286518d18751187a0",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 build:main-agent-dist\n> node scripts/build-main-agent-dist.cjs\n\nbuilt dist/main-agent files=11\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-06",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { `$pkg = Get-Content -Raw 'packages/bmad-speckit/package.json' | ConvertFrom-Json; `$pkg.files | ConvertTo-Json -Depth 4; if (@(`$pkg.files) -notcontains 'dist/') { exit 1 }; exit 0 }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:b5d5de675e590f3ceea36fd13b7bc9f6a21229aae3e3a4a51c061dbbda78b9b6",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "[\r\n  \"README.md\",\r\n  \"bin/\",\r\n  \"dist/\",\r\n  \"src/\",\r\n  \"tests/\",\r\n  \"test-nonempty/\",\r\n  \"_bmad/\",\r\n  \"node_modules/@bmad-speckit/\"\r\n]\r\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-07",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { rg <Wave 3.1 public runRepoScript seed scan>; exit }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-08",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <static no root TypeScript dispatch guard> }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-09",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node tools/script-migration/validate-registry.cjs; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:03e86d3a93b78396c78137de46ac5ecd960049e7c9b3b3792b5ac8b7abe51970",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "{\"status\":\"passed\",\"registryPath\":\"repo-governance/script-migration-registry.yaml\",\"packExclusion\":\"not_requested\",\"errors\":[]}\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-10",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node tools/script-migration/validate-main-agent-runtime-migration-wave-3-1.cjs; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:725b1085f6b5bbc78dadd1e51480dd2a5d4761a728cad12228871f6a097a8c6c",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.1\",\n  \"contractPath\": \"docs/plans/2026-06-04-main-agent-runtime-migration-wave-3-1-goal-execution-plan.md\",\n  \"errors\": []\n}\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-11",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <CLI smoke probes> }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-12",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node tools/script-migration/run-main-agent-wave-3-1-install-matrix.cjs; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:b25b722c26816379c7d95304c8214ac25b0569503ccc13c6999581bc8d2d2b6f",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.1\",\n  \"packageTarball\": \"repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/bmad-speckit-2.0.1.tgz\",\n  \"receipts\": [\n    \"repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/save-dev.json\",\n    \"repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/npx-package.json\",\n    \"repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/no-save.json\"\n  ],\n  \"errors\": []\n}\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-13",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { npx vitest run tests/acceptance/main-agent-runtime-migration-wave-3-1-contract.test.ts; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:ee7d1761545ed53b607154cfb4fc503e30c4269cffde7a139a87c99b26fa87d3",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n\u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m\n\n \u001b[32m✓\u001b[39m tests/acceptance/main-agent-runtime-migration-wave-3-1-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 351\u001b[2mms\u001b[22m\u001b[39m\n     \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs the Wave 3.1 migration validator successfully \u001b[33m 348\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m\n\u001b[2m   Start at \u001b[22m 03:37:01\n\u001b[2m   Duration \u001b[22m 993ms\u001b[2m (transform 36ms, setup 0ms, import 66ms, tests 351ms, environment 0ms)\u001b[22m\n\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-14",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <no root script deletion check> }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-15",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:a278d284828625c7ccc2280ced1c6276442a6f9693d1d39d6836856b7d718d98",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "checkedFiles=3005 findings=0\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-16",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { git status --short }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:014e33148317a6ac040f2d4cfda9cd2958f458808f65191dcbcd340ff8056d2c",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": " M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.js\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speckit/tests/main-agent-dist-runti",
+          "stderrPreview": ""
+        }
+      ],
+      "installMatrixEvidence": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/save-dev.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/npx-package.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/no-save.json"
+      ],
+      "result": "passed",
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "main-agent-delivery-truth-gate",
+      "originalPath": "scripts/main-agent-delivery-truth-gate.ts",
+      "migrationStrategy": "package_runtime_module",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/delivery-truth-gate.js",
+        "packages/bmad-speckit/dist/main-agent/actions/delivery-truth-gate.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "publicCommandsAfterMigration": [
+        "bmad-speckit main-agent:delivery-truth-gate",
+        "bmad-speckit main-agent delivery-truth-gate"
+      ],
+      "commands": [
+        {
+          "commandId": "CMD-01",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { git status --short --branch }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:44ccc0cbc82faa50a073cf655f0c34472646229cfb055e9261f20435dfebc90c",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "## dev...origin/dev [ahead 1]\n M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.js\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speck",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-02",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:a278d284828625c7ccc2280ced1c6276442a6f9693d1d39d6836856b7d718d98",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "checkedFiles=3005 findings=0\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-03",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <candidate set check> }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:237ea3dd243d98cbcbd65a5342462776a569d269ef5b3024ccd824581d830f92",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "[\r\n  {\r\n    \"scriptPath\": \"scripts/main-agent-release-gate.ts\",\r\n    \"migrationStrategy\": \"package_runtime_module\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/main-agent-quality-gate.ts\",\r\n    \"migrationStrategy\": \"package_runtime_module\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/main-agent-delivery-truth-gate.ts\",\r\n    \"migrationStrategy\": \"package_runtime_module\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/run-auditor-host.ts\",\r\n    \"migrationStrategy\": \"runtime_emit_cjs\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/write-runtime-context.cjs\",\r\n    \"migrationStrategy\": \"durable_helper_copy\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/eval-questions-cli.ts\",\r\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-04",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { npm run test --prefix packages/bmad-speckit; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:b2165cb3faafb75179d98ab5596f3b6b2a31f9b7cc6bfd28c410a14a8cfcf18b",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 test\n> node scripts/run-node-tests.cjs\n\nTAP version 13\n# Subtest: ai-registry-builtin (Story 12.1 T2)\n    # Subtest: exports array of 22 entries\n    ok 1 - exports array of 22 entries\n      ---\n      duration_ms: 1.1181\n      type: 'test'\n      ...\n    # Subtest: each entry has id, name, description, configTemplate\n    ok 2 - each entry has id, name, description, configTemplate\n      ---\n      duration_ms: 0.3896\n      type: 'test'\n      ...\n    # Subtest: each configTemplate has subagentSupport\n    ok 3 - each configTemplate has subagentSupport\n      ---\n      duration_ms: 0.9928\n      type: 'test'\n      ...\n    # Subtest: opencode uses .opencode/command (spec-kit)\n    ok 4 - opencode uses .opencode/command (spec-kit)\n      ---\n      duration_ms: 0.2311\n      type: '",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-05",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { npm run build:main-agent-dist --prefix packages/bmad-speckit; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:998e5b89b942b52f446cffa16afb7ec9085c8442028b0e3286518d18751187a0",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 build:main-agent-dist\n> node scripts/build-main-agent-dist.cjs\n\nbuilt dist/main-agent files=11\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-06",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { `$pkg = Get-Content -Raw 'packages/bmad-speckit/package.json' | ConvertFrom-Json; `$pkg.files | ConvertTo-Json -Depth 4; if (@(`$pkg.files) -notcontains 'dist/') { exit 1 }; exit 0 }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:b5d5de675e590f3ceea36fd13b7bc9f6a21229aae3e3a4a51c061dbbda78b9b6",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "[\r\n  \"README.md\",\r\n  \"bin/\",\r\n  \"dist/\",\r\n  \"src/\",\r\n  \"tests/\",\r\n  \"test-nonempty/\",\r\n  \"_bmad/\",\r\n  \"node_modules/@bmad-speckit/\"\r\n]\r\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-07",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { rg <Wave 3.1 public runRepoScript seed scan>; exit }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-08",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <static no root TypeScript dispatch guard> }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-09",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node tools/script-migration/validate-registry.cjs; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:03e86d3a93b78396c78137de46ac5ecd960049e7c9b3b3792b5ac8b7abe51970",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "{\"status\":\"passed\",\"registryPath\":\"repo-governance/script-migration-registry.yaml\",\"packExclusion\":\"not_requested\",\"errors\":[]}\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-10",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node tools/script-migration/validate-main-agent-runtime-migration-wave-3-1.cjs; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:725b1085f6b5bbc78dadd1e51480dd2a5d4761a728cad12228871f6a097a8c6c",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.1\",\n  \"contractPath\": \"docs/plans/2026-06-04-main-agent-runtime-migration-wave-3-1-goal-execution-plan.md\",\n  \"errors\": []\n}\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-11",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <CLI smoke probes> }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-12",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node tools/script-migration/run-main-agent-wave-3-1-install-matrix.cjs; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:b25b722c26816379c7d95304c8214ac25b0569503ccc13c6999581bc8d2d2b6f",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.1\",\n  \"packageTarball\": \"repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/bmad-speckit-2.0.1.tgz\",\n  \"receipts\": [\n    \"repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/save-dev.json\",\n    \"repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/npx-package.json\",\n    \"repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/no-save.json\"\n  ],\n  \"errors\": []\n}\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-13",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { npx vitest run tests/acceptance/main-agent-runtime-migration-wave-3-1-contract.test.ts; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:ee7d1761545ed53b607154cfb4fc503e30c4269cffde7a139a87c99b26fa87d3",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n\u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m\n\n \u001b[32m✓\u001b[39m tests/acceptance/main-agent-runtime-migration-wave-3-1-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 351\u001b[2mms\u001b[22m\u001b[39m\n     \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs the Wave 3.1 migration validator successfully \u001b[33m 348\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m\n\u001b[2m   Start at \u001b[22m 03:37:01\n\u001b[2m   Duration \u001b[22m 993ms\u001b[2m (transform 36ms, setup 0ms, import 66ms, tests 351ms, environment 0ms)\u001b[22m\n\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-14",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <no root script deletion check> }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-15",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:a278d284828625c7ccc2280ced1c6276442a6f9693d1d39d6836856b7d718d98",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "checkedFiles=3005 findings=0\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-16",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { git status --short }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:014e33148317a6ac040f2d4cfda9cd2958f458808f65191dcbcd340ff8056d2c",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": " M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.js\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speckit/tests/main-agent-dist-runti",
+          "stderrPreview": ""
+        }
+      ],
+      "installMatrixEvidence": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/save-dev.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/npx-package.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/no-save.json"
+      ],
+      "result": "passed",
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "run-auditor-host",
+      "originalPath": "scripts/run-auditor-host.ts",
+      "migrationStrategy": "runtime_emit_cjs",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/auditor-host/run-auditor-host.cjs",
+        "packages/bmad-speckit/dist/main-agent/auditor-host/run-auditor-host.cjs",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "publicCommandsAfterMigration": [
+        "bmad-speckit run-auditor-host"
+      ],
+      "commands": [
+        {
+          "commandId": "CMD-01",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { git status --short --branch }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:44ccc0cbc82faa50a073cf655f0c34472646229cfb055e9261f20435dfebc90c",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "## dev...origin/dev [ahead 1]\n M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.js\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speck",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-02",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:a278d284828625c7ccc2280ced1c6276442a6f9693d1d39d6836856b7d718d98",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "checkedFiles=3005 findings=0\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-03",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <candidate set check> }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:237ea3dd243d98cbcbd65a5342462776a569d269ef5b3024ccd824581d830f92",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "[\r\n  {\r\n    \"scriptPath\": \"scripts/main-agent-release-gate.ts\",\r\n    \"migrationStrategy\": \"package_runtime_module\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/main-agent-quality-gate.ts\",\r\n    \"migrationStrategy\": \"package_runtime_module\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/main-agent-delivery-truth-gate.ts\",\r\n    \"migrationStrategy\": \"package_runtime_module\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/run-auditor-host.ts\",\r\n    \"migrationStrategy\": \"runtime_emit_cjs\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/write-runtime-context.cjs\",\r\n    \"migrationStrategy\": \"durable_helper_copy\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/eval-questions-cli.ts\",\r\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-04",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { npm run test --prefix packages/bmad-speckit; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:b2165cb3faafb75179d98ab5596f3b6b2a31f9b7cc6bfd28c410a14a8cfcf18b",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 test\n> node scripts/run-node-tests.cjs\n\nTAP version 13\n# Subtest: ai-registry-builtin (Story 12.1 T2)\n    # Subtest: exports array of 22 entries\n    ok 1 - exports array of 22 entries\n      ---\n      duration_ms: 1.1181\n      type: 'test'\n      ...\n    # Subtest: each entry has id, name, description, configTemplate\n    ok 2 - each entry has id, name, description, configTemplate\n      ---\n      duration_ms: 0.3896\n      type: 'test'\n      ...\n    # Subtest: each configTemplate has subagentSupport\n    ok 3 - each configTemplate has subagentSupport\n      ---\n      duration_ms: 0.9928\n      type: 'test'\n      ...\n    # Subtest: opencode uses .opencode/command (spec-kit)\n    ok 4 - opencode uses .opencode/command (spec-kit)\n      ---\n      duration_ms: 0.2311\n      type: '",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-05",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { npm run build:main-agent-dist --prefix packages/bmad-speckit; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:998e5b89b942b52f446cffa16afb7ec9085c8442028b0e3286518d18751187a0",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 build:main-agent-dist\n> node scripts/build-main-agent-dist.cjs\n\nbuilt dist/main-agent files=11\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-06",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { `$pkg = Get-Content -Raw 'packages/bmad-speckit/package.json' | ConvertFrom-Json; `$pkg.files | ConvertTo-Json -Depth 4; if (@(`$pkg.files) -notcontains 'dist/') { exit 1 }; exit 0 }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:b5d5de675e590f3ceea36fd13b7bc9f6a21229aae3e3a4a51c061dbbda78b9b6",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "[\r\n  \"README.md\",\r\n  \"bin/\",\r\n  \"dist/\",\r\n  \"src/\",\r\n  \"tests/\",\r\n  \"test-nonempty/\",\r\n  \"_bmad/\",\r\n  \"node_modules/@bmad-speckit/\"\r\n]\r\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-07",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { rg <Wave 3.1 public runRepoScript seed scan>; exit }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-08",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <static no root TypeScript dispatch guard> }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-09",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node tools/script-migration/validate-registry.cjs; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:03e86d3a93b78396c78137de46ac5ecd960049e7c9b3b3792b5ac8b7abe51970",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "{\"status\":\"passed\",\"registryPath\":\"repo-governance/script-migration-registry.yaml\",\"packExclusion\":\"not_requested\",\"errors\":[]}\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-10",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node tools/script-migration/validate-main-agent-runtime-migration-wave-3-1.cjs; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:725b1085f6b5bbc78dadd1e51480dd2a5d4761a728cad12228871f6a097a8c6c",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.1\",\n  \"contractPath\": \"docs/plans/2026-06-04-main-agent-runtime-migration-wave-3-1-goal-execution-plan.md\",\n  \"errors\": []\n}\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-11",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <CLI smoke probes> }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-12",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node tools/script-migration/run-main-agent-wave-3-1-install-matrix.cjs; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:b25b722c26816379c7d95304c8214ac25b0569503ccc13c6999581bc8d2d2b6f",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.1\",\n  \"packageTarball\": \"repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/bmad-speckit-2.0.1.tgz\",\n  \"receipts\": [\n    \"repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/save-dev.json\",\n    \"repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/npx-package.json\",\n    \"repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/no-save.json\"\n  ],\n  \"errors\": []\n}\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-13",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { npx vitest run tests/acceptance/main-agent-runtime-migration-wave-3-1-contract.test.ts; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:ee7d1761545ed53b607154cfb4fc503e30c4269cffde7a139a87c99b26fa87d3",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n\u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m\n\n \u001b[32m✓\u001b[39m tests/acceptance/main-agent-runtime-migration-wave-3-1-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 351\u001b[2mms\u001b[22m\u001b[39m\n     \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs the Wave 3.1 migration validator successfully \u001b[33m 348\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m\n\u001b[2m   Start at \u001b[22m 03:37:01\n\u001b[2m   Duration \u001b[22m 993ms\u001b[2m (transform 36ms, setup 0ms, import 66ms, tests 351ms, environment 0ms)\u001b[22m\n\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-14",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <no root script deletion check> }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-15",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:a278d284828625c7ccc2280ced1c6276442a6f9693d1d39d6836856b7d718d98",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "checkedFiles=3005 findings=0\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-16",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { git status --short }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:014e33148317a6ac040f2d4cfda9cd2958f458808f65191dcbcd340ff8056d2c",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": " M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.js\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speckit/tests/main-agent-dist-runti",
+          "stderrPreview": ""
+        }
+      ],
+      "installMatrixEvidence": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/save-dev.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/npx-package.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/no-save.json"
+      ],
+      "result": "passed",
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "write-runtime-context",
+      "originalPath": "scripts/write-runtime-context.cjs",
+      "migrationStrategy": "durable_helper_copy",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/write-runtime-context.cjs",
+        "packages/bmad-speckit/dist/main-agent/helpers/write-runtime-context.cjs",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "publicCommandsAfterMigration": [
+        "bmad-speckit write-runtime-context"
+      ],
+      "commands": [
+        {
+          "commandId": "CMD-01",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { git status --short --branch }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:44ccc0cbc82faa50a073cf655f0c34472646229cfb055e9261f20435dfebc90c",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "## dev...origin/dev [ahead 1]\n M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.js\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speck",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-02",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:a278d284828625c7ccc2280ced1c6276442a6f9693d1d39d6836856b7d718d98",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "checkedFiles=3005 findings=0\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-03",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <candidate set check> }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:237ea3dd243d98cbcbd65a5342462776a569d269ef5b3024ccd824581d830f92",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "[\r\n  {\r\n    \"scriptPath\": \"scripts/main-agent-release-gate.ts\",\r\n    \"migrationStrategy\": \"package_runtime_module\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/main-agent-quality-gate.ts\",\r\n    \"migrationStrategy\": \"package_runtime_module\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/main-agent-delivery-truth-gate.ts\",\r\n    \"migrationStrategy\": \"package_runtime_module\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/run-auditor-host.ts\",\r\n    \"migrationStrategy\": \"runtime_emit_cjs\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/write-runtime-context.cjs\",\r\n    \"migrationStrategy\": \"durable_helper_copy\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/eval-questions-cli.ts\",\r\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-04",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { npm run test --prefix packages/bmad-speckit; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:b2165cb3faafb75179d98ab5596f3b6b2a31f9b7cc6bfd28c410a14a8cfcf18b",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 test\n> node scripts/run-node-tests.cjs\n\nTAP version 13\n# Subtest: ai-registry-builtin (Story 12.1 T2)\n    # Subtest: exports array of 22 entries\n    ok 1 - exports array of 22 entries\n      ---\n      duration_ms: 1.1181\n      type: 'test'\n      ...\n    # Subtest: each entry has id, name, description, configTemplate\n    ok 2 - each entry has id, name, description, configTemplate\n      ---\n      duration_ms: 0.3896\n      type: 'test'\n      ...\n    # Subtest: each configTemplate has subagentSupport\n    ok 3 - each configTemplate has subagentSupport\n      ---\n      duration_ms: 0.9928\n      type: 'test'\n      ...\n    # Subtest: opencode uses .opencode/command (spec-kit)\n    ok 4 - opencode uses .opencode/command (spec-kit)\n      ---\n      duration_ms: 0.2311\n      type: '",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-05",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { npm run build:main-agent-dist --prefix packages/bmad-speckit; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:998e5b89b942b52f446cffa16afb7ec9085c8442028b0e3286518d18751187a0",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 build:main-agent-dist\n> node scripts/build-main-agent-dist.cjs\n\nbuilt dist/main-agent files=11\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-06",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { `$pkg = Get-Content -Raw 'packages/bmad-speckit/package.json' | ConvertFrom-Json; `$pkg.files | ConvertTo-Json -Depth 4; if (@(`$pkg.files) -notcontains 'dist/') { exit 1 }; exit 0 }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:b5d5de675e590f3ceea36fd13b7bc9f6a21229aae3e3a4a51c061dbbda78b9b6",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "[\r\n  \"README.md\",\r\n  \"bin/\",\r\n  \"dist/\",\r\n  \"src/\",\r\n  \"tests/\",\r\n  \"test-nonempty/\",\r\n  \"_bmad/\",\r\n  \"node_modules/@bmad-speckit/\"\r\n]\r\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-07",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { rg <Wave 3.1 public runRepoScript seed scan>; exit }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-08",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <static no root TypeScript dispatch guard> }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-09",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node tools/script-migration/validate-registry.cjs; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:03e86d3a93b78396c78137de46ac5ecd960049e7c9b3b3792b5ac8b7abe51970",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "{\"status\":\"passed\",\"registryPath\":\"repo-governance/script-migration-registry.yaml\",\"packExclusion\":\"not_requested\",\"errors\":[]}\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-10",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node tools/script-migration/validate-main-agent-runtime-migration-wave-3-1.cjs; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:725b1085f6b5bbc78dadd1e51480dd2a5d4761a728cad12228871f6a097a8c6c",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.1\",\n  \"contractPath\": \"docs/plans/2026-06-04-main-agent-runtime-migration-wave-3-1-goal-execution-plan.md\",\n  \"errors\": []\n}\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-11",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <CLI smoke probes> }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-12",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node tools/script-migration/run-main-agent-wave-3-1-install-matrix.cjs; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:b25b722c26816379c7d95304c8214ac25b0569503ccc13c6999581bc8d2d2b6f",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.1\",\n  \"packageTarball\": \"repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/bmad-speckit-2.0.1.tgz\",\n  \"receipts\": [\n    \"repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/save-dev.json\",\n    \"repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/npx-package.json\",\n    \"repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/no-save.json\"\n  ],\n  \"errors\": []\n}\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-13",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { npx vitest run tests/acceptance/main-agent-runtime-migration-wave-3-1-contract.test.ts; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:ee7d1761545ed53b607154cfb4fc503e30c4269cffde7a139a87c99b26fa87d3",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n\u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m\n\n \u001b[32m✓\u001b[39m tests/acceptance/main-agent-runtime-migration-wave-3-1-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 351\u001b[2mms\u001b[22m\u001b[39m\n     \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs the Wave 3.1 migration validator successfully \u001b[33m 348\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m\n\u001b[2m   Start at \u001b[22m 03:37:01\n\u001b[2m   Duration \u001b[22m 993ms\u001b[2m (transform 36ms, setup 0ms, import 66ms, tests 351ms, environment 0ms)\u001b[22m\n\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-14",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <no root script deletion check> }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-15",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:a278d284828625c7ccc2280ced1c6276442a6f9693d1d39d6836856b7d718d98",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "checkedFiles=3005 findings=0\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-16",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { git status --short }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:014e33148317a6ac040f2d4cfda9cd2958f458808f65191dcbcd340ff8056d2c",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": " M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.js\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speckit/tests/main-agent-dist-runti",
+          "stderrPreview": ""
+        }
+      ],
+      "installMatrixEvidence": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/save-dev.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/npx-package.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/no-save.json"
+      ],
+      "result": "passed",
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "eval-questions",
+      "originalPath": "scripts/eval-questions-cli.ts",
+      "migrationStrategy": "public_cli_de_surface",
+      "targetPaths": [
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "publicCommandsAfterMigration": [
+        "bmad-speckit eval-questions"
+      ],
+      "commands": [
+        {
+          "commandId": "CMD-01",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { git status --short --branch }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:44ccc0cbc82faa50a073cf655f0c34472646229cfb055e9261f20435dfebc90c",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "## dev...origin/dev [ahead 1]\n M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.js\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speck",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-02",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:a278d284828625c7ccc2280ced1c6276442a6f9693d1d39d6836856b7d718d98",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "checkedFiles=3005 findings=0\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-03",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <candidate set check> }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:237ea3dd243d98cbcbd65a5342462776a569d269ef5b3024ccd824581d830f92",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "[\r\n  {\r\n    \"scriptPath\": \"scripts/main-agent-release-gate.ts\",\r\n    \"migrationStrategy\": \"package_runtime_module\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/main-agent-quality-gate.ts\",\r\n    \"migrationStrategy\": \"package_runtime_module\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/main-agent-delivery-truth-gate.ts\",\r\n    \"migrationStrategy\": \"package_runtime_module\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/run-auditor-host.ts\",\r\n    \"migrationStrategy\": \"runtime_emit_cjs\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/write-runtime-context.cjs\",\r\n    \"migrationStrategy\": \"durable_helper_copy\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/eval-questions-cli.ts\",\r\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-04",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { npm run test --prefix packages/bmad-speckit; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:b2165cb3faafb75179d98ab5596f3b6b2a31f9b7cc6bfd28c410a14a8cfcf18b",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 test\n> node scripts/run-node-tests.cjs\n\nTAP version 13\n# Subtest: ai-registry-builtin (Story 12.1 T2)\n    # Subtest: exports array of 22 entries\n    ok 1 - exports array of 22 entries\n      ---\n      duration_ms: 1.1181\n      type: 'test'\n      ...\n    # Subtest: each entry has id, name, description, configTemplate\n    ok 2 - each entry has id, name, description, configTemplate\n      ---\n      duration_ms: 0.3896\n      type: 'test'\n      ...\n    # Subtest: each configTemplate has subagentSupport\n    ok 3 - each configTemplate has subagentSupport\n      ---\n      duration_ms: 0.9928\n      type: 'test'\n      ...\n    # Subtest: opencode uses .opencode/command (spec-kit)\n    ok 4 - opencode uses .opencode/command (spec-kit)\n      ---\n      duration_ms: 0.2311\n      type: '",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-05",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { npm run build:main-agent-dist --prefix packages/bmad-speckit; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:998e5b89b942b52f446cffa16afb7ec9085c8442028b0e3286518d18751187a0",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 build:main-agent-dist\n> node scripts/build-main-agent-dist.cjs\n\nbuilt dist/main-agent files=11\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-06",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { `$pkg = Get-Content -Raw 'packages/bmad-speckit/package.json' | ConvertFrom-Json; `$pkg.files | ConvertTo-Json -Depth 4; if (@(`$pkg.files) -notcontains 'dist/') { exit 1 }; exit 0 }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:b5d5de675e590f3ceea36fd13b7bc9f6a21229aae3e3a4a51c061dbbda78b9b6",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "[\r\n  \"README.md\",\r\n  \"bin/\",\r\n  \"dist/\",\r\n  \"src/\",\r\n  \"tests/\",\r\n  \"test-nonempty/\",\r\n  \"_bmad/\",\r\n  \"node_modules/@bmad-speckit/\"\r\n]\r\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-07",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { rg <Wave 3.1 public runRepoScript seed scan>; exit }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-08",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <static no root TypeScript dispatch guard> }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-09",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node tools/script-migration/validate-registry.cjs; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:03e86d3a93b78396c78137de46ac5ecd960049e7c9b3b3792b5ac8b7abe51970",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "{\"status\":\"passed\",\"registryPath\":\"repo-governance/script-migration-registry.yaml\",\"packExclusion\":\"not_requested\",\"errors\":[]}\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-10",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node tools/script-migration/validate-main-agent-runtime-migration-wave-3-1.cjs; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:725b1085f6b5bbc78dadd1e51480dd2a5d4761a728cad12228871f6a097a8c6c",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.1\",\n  \"contractPath\": \"docs/plans/2026-06-04-main-agent-runtime-migration-wave-3-1-goal-execution-plan.md\",\n  \"errors\": []\n}\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-11",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <CLI smoke probes> }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-12",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node tools/script-migration/run-main-agent-wave-3-1-install-matrix.cjs; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:b25b722c26816379c7d95304c8214ac25b0569503ccc13c6999581bc8d2d2b6f",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.1\",\n  \"packageTarball\": \"repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/bmad-speckit-2.0.1.tgz\",\n  \"receipts\": [\n    \"repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/save-dev.json\",\n    \"repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/npx-package.json\",\n    \"repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/no-save.json\"\n  ],\n  \"errors\": []\n}\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-13",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { npx vitest run tests/acceptance/main-agent-runtime-migration-wave-3-1-contract.test.ts; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:ee7d1761545ed53b607154cfb4fc503e30c4269cffde7a139a87c99b26fa87d3",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n\u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m\n\n \u001b[32m✓\u001b[39m tests/acceptance/main-agent-runtime-migration-wave-3-1-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 351\u001b[2mms\u001b[22m\u001b[39m\n     \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs the Wave 3.1 migration validator successfully \u001b[33m 348\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m\n\u001b[2m   Start at \u001b[22m 03:37:01\n\u001b[2m   Duration \u001b[22m 993ms\u001b[2m (transform 36ms, setup 0ms, import 66ms, tests 351ms, environment 0ms)\u001b[22m\n\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-14",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <no root script deletion check> }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-15",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:a278d284828625c7ccc2280ced1c6276442a6f9693d1d39d6836856b7d718d98",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "checkedFiles=3005 findings=0\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-16",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { git status --short }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:014e33148317a6ac040f2d4cfda9cd2958f458808f65191dcbcd340ff8056d2c",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": " M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.js\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speckit/tests/main-agent-dist-runti",
+          "stderrPreview": ""
+        }
+      ],
+      "installMatrixEvidence": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/save-dev.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/npx-package.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/no-save.json"
+      ],
+      "result": "passed",
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "main-agent-bmad-help-five-layer-matrix",
+      "originalPath": "scripts/main-agent-bmad-help-five-layer-matrix.ts",
+      "migrationStrategy": "public_cli_de_surface",
+      "targetPaths": [
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "publicCommandsAfterMigration": [
+        "bmad-speckit main-agent:bmad-help-five-layer-matrix"
+      ],
+      "commands": [
+        {
+          "commandId": "CMD-01",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { git status --short --branch }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:44ccc0cbc82faa50a073cf655f0c34472646229cfb055e9261f20435dfebc90c",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "## dev...origin/dev [ahead 1]\n M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.js\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speck",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-02",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:a278d284828625c7ccc2280ced1c6276442a6f9693d1d39d6836856b7d718d98",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "checkedFiles=3005 findings=0\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-03",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <candidate set check> }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:237ea3dd243d98cbcbd65a5342462776a569d269ef5b3024ccd824581d830f92",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "[\r\n  {\r\n    \"scriptPath\": \"scripts/main-agent-release-gate.ts\",\r\n    \"migrationStrategy\": \"package_runtime_module\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/main-agent-quality-gate.ts\",\r\n    \"migrationStrategy\": \"package_runtime_module\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/main-agent-delivery-truth-gate.ts\",\r\n    \"migrationStrategy\": \"package_runtime_module\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/run-auditor-host.ts\",\r\n    \"migrationStrategy\": \"runtime_emit_cjs\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/write-runtime-context.cjs\",\r\n    \"migrationStrategy\": \"durable_helper_copy\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/eval-questions-cli.ts\",\r\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-04",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { npm run test --prefix packages/bmad-speckit; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:b2165cb3faafb75179d98ab5596f3b6b2a31f9b7cc6bfd28c410a14a8cfcf18b",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 test\n> node scripts/run-node-tests.cjs\n\nTAP version 13\n# Subtest: ai-registry-builtin (Story 12.1 T2)\n    # Subtest: exports array of 22 entries\n    ok 1 - exports array of 22 entries\n      ---\n      duration_ms: 1.1181\n      type: 'test'\n      ...\n    # Subtest: each entry has id, name, description, configTemplate\n    ok 2 - each entry has id, name, description, configTemplate\n      ---\n      duration_ms: 0.3896\n      type: 'test'\n      ...\n    # Subtest: each configTemplate has subagentSupport\n    ok 3 - each configTemplate has subagentSupport\n      ---\n      duration_ms: 0.9928\n      type: 'test'\n      ...\n    # Subtest: opencode uses .opencode/command (spec-kit)\n    ok 4 - opencode uses .opencode/command (spec-kit)\n      ---\n      duration_ms: 0.2311\n      type: '",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-05",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { npm run build:main-agent-dist --prefix packages/bmad-speckit; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:998e5b89b942b52f446cffa16afb7ec9085c8442028b0e3286518d18751187a0",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 build:main-agent-dist\n> node scripts/build-main-agent-dist.cjs\n\nbuilt dist/main-agent files=11\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-06",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { `$pkg = Get-Content -Raw 'packages/bmad-speckit/package.json' | ConvertFrom-Json; `$pkg.files | ConvertTo-Json -Depth 4; if (@(`$pkg.files) -notcontains 'dist/') { exit 1 }; exit 0 }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:b5d5de675e590f3ceea36fd13b7bc9f6a21229aae3e3a4a51c061dbbda78b9b6",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "[\r\n  \"README.md\",\r\n  \"bin/\",\r\n  \"dist/\",\r\n  \"src/\",\r\n  \"tests/\",\r\n  \"test-nonempty/\",\r\n  \"_bmad/\",\r\n  \"node_modules/@bmad-speckit/\"\r\n]\r\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-07",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { rg <Wave 3.1 public runRepoScript seed scan>; exit }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-08",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <static no root TypeScript dispatch guard> }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-09",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node tools/script-migration/validate-registry.cjs; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:03e86d3a93b78396c78137de46ac5ecd960049e7c9b3b3792b5ac8b7abe51970",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "{\"status\":\"passed\",\"registryPath\":\"repo-governance/script-migration-registry.yaml\",\"packExclusion\":\"not_requested\",\"errors\":[]}\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-10",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node tools/script-migration/validate-main-agent-runtime-migration-wave-3-1.cjs; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:725b1085f6b5bbc78dadd1e51480dd2a5d4761a728cad12228871f6a097a8c6c",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.1\",\n  \"contractPath\": \"docs/plans/2026-06-04-main-agent-runtime-migration-wave-3-1-goal-execution-plan.md\",\n  \"errors\": []\n}\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-11",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <CLI smoke probes> }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-12",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node tools/script-migration/run-main-agent-wave-3-1-install-matrix.cjs; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:b25b722c26816379c7d95304c8214ac25b0569503ccc13c6999581bc8d2d2b6f",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.1\",\n  \"packageTarball\": \"repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/bmad-speckit-2.0.1.tgz\",\n  \"receipts\": [\n    \"repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/save-dev.json\",\n    \"repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/npx-package.json\",\n    \"repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/no-save.json\"\n  ],\n  \"errors\": []\n}\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-13",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { npx vitest run tests/acceptance/main-agent-runtime-migration-wave-3-1-contract.test.ts; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:ee7d1761545ed53b607154cfb4fc503e30c4269cffde7a139a87c99b26fa87d3",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n\u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m\n\n \u001b[32m✓\u001b[39m tests/acceptance/main-agent-runtime-migration-wave-3-1-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 351\u001b[2mms\u001b[22m\u001b[39m\n     \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs the Wave 3.1 migration validator successfully \u001b[33m 348\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m\n\u001b[2m   Start at \u001b[22m 03:37:01\n\u001b[2m   Duration \u001b[22m 993ms\u001b[2m (transform 36ms, setup 0ms, import 66ms, tests 351ms, environment 0ms)\u001b[22m\n\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-14",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <no root script deletion check> }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-15",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:a278d284828625c7ccc2280ced1c6276442a6f9693d1d39d6836856b7d718d98",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "checkedFiles=3005 findings=0\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-16",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { git status --short }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:014e33148317a6ac040f2d4cfda9cd2958f458808f65191dcbcd340ff8056d2c",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": " M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.js\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speckit/tests/main-agent-dist-runti",
+          "stderrPreview": ""
+        }
+      ],
+      "installMatrixEvidence": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/save-dev.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/npx-package.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/no-save.json"
+      ],
+      "result": "passed",
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "main-agent-host-matrix-pr-orchestrate",
+      "originalPath": "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+      "migrationStrategy": "public_cli_de_surface",
+      "targetPaths": [
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "publicCommandsAfterMigration": [
+        "bmad-speckit main-agent:host-matrix-pr-orchestrate"
+      ],
+      "commands": [
+        {
+          "commandId": "CMD-01",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { git status --short --branch }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:44ccc0cbc82faa50a073cf655f0c34472646229cfb055e9261f20435dfebc90c",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "## dev...origin/dev [ahead 1]\n M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.js\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speck",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-02",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:a278d284828625c7ccc2280ced1c6276442a6f9693d1d39d6836856b7d718d98",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "checkedFiles=3005 findings=0\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-03",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <candidate set check> }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:237ea3dd243d98cbcbd65a5342462776a569d269ef5b3024ccd824581d830f92",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "[\r\n  {\r\n    \"scriptPath\": \"scripts/main-agent-release-gate.ts\",\r\n    \"migrationStrategy\": \"package_runtime_module\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/main-agent-quality-gate.ts\",\r\n    \"migrationStrategy\": \"package_runtime_module\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/main-agent-delivery-truth-gate.ts\",\r\n    \"migrationStrategy\": \"package_runtime_module\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/run-auditor-host.ts\",\r\n    \"migrationStrategy\": \"runtime_emit_cjs\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/write-runtime-context.cjs\",\r\n    \"migrationStrategy\": \"durable_helper_copy\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/eval-questions-cli.ts\",\r\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-04",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { npm run test --prefix packages/bmad-speckit; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:b2165cb3faafb75179d98ab5596f3b6b2a31f9b7cc6bfd28c410a14a8cfcf18b",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 test\n> node scripts/run-node-tests.cjs\n\nTAP version 13\n# Subtest: ai-registry-builtin (Story 12.1 T2)\n    # Subtest: exports array of 22 entries\n    ok 1 - exports array of 22 entries\n      ---\n      duration_ms: 1.1181\n      type: 'test'\n      ...\n    # Subtest: each entry has id, name, description, configTemplate\n    ok 2 - each entry has id, name, description, configTemplate\n      ---\n      duration_ms: 0.3896\n      type: 'test'\n      ...\n    # Subtest: each configTemplate has subagentSupport\n    ok 3 - each configTemplate has subagentSupport\n      ---\n      duration_ms: 0.9928\n      type: 'test'\n      ...\n    # Subtest: opencode uses .opencode/command (spec-kit)\n    ok 4 - opencode uses .opencode/command (spec-kit)\n      ---\n      duration_ms: 0.2311\n      type: '",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-05",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { npm run build:main-agent-dist --prefix packages/bmad-speckit; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:998e5b89b942b52f446cffa16afb7ec9085c8442028b0e3286518d18751187a0",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 build:main-agent-dist\n> node scripts/build-main-agent-dist.cjs\n\nbuilt dist/main-agent files=11\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-06",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { `$pkg = Get-Content -Raw 'packages/bmad-speckit/package.json' | ConvertFrom-Json; `$pkg.files | ConvertTo-Json -Depth 4; if (@(`$pkg.files) -notcontains 'dist/') { exit 1 }; exit 0 }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:b5d5de675e590f3ceea36fd13b7bc9f6a21229aae3e3a4a51c061dbbda78b9b6",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "[\r\n  \"README.md\",\r\n  \"bin/\",\r\n  \"dist/\",\r\n  \"src/\",\r\n  \"tests/\",\r\n  \"test-nonempty/\",\r\n  \"_bmad/\",\r\n  \"node_modules/@bmad-speckit/\"\r\n]\r\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-07",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { rg <Wave 3.1 public runRepoScript seed scan>; exit }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-08",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <static no root TypeScript dispatch guard> }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-09",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node tools/script-migration/validate-registry.cjs; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:03e86d3a93b78396c78137de46ac5ecd960049e7c9b3b3792b5ac8b7abe51970",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "{\"status\":\"passed\",\"registryPath\":\"repo-governance/script-migration-registry.yaml\",\"packExclusion\":\"not_requested\",\"errors\":[]}\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-10",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node tools/script-migration/validate-main-agent-runtime-migration-wave-3-1.cjs; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:725b1085f6b5bbc78dadd1e51480dd2a5d4761a728cad12228871f6a097a8c6c",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.1\",\n  \"contractPath\": \"docs/plans/2026-06-04-main-agent-runtime-migration-wave-3-1-goal-execution-plan.md\",\n  \"errors\": []\n}\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-11",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <CLI smoke probes> }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-12",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node tools/script-migration/run-main-agent-wave-3-1-install-matrix.cjs; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:b25b722c26816379c7d95304c8214ac25b0569503ccc13c6999581bc8d2d2b6f",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.1\",\n  \"packageTarball\": \"repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/bmad-speckit-2.0.1.tgz\",\n  \"receipts\": [\n    \"repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/save-dev.json\",\n    \"repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/npx-package.json\",\n    \"repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/no-save.json\"\n  ],\n  \"errors\": []\n}\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-13",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { npx vitest run tests/acceptance/main-agent-runtime-migration-wave-3-1-contract.test.ts; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:ee7d1761545ed53b607154cfb4fc503e30c4269cffde7a139a87c99b26fa87d3",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n\u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m\n\n \u001b[32m✓\u001b[39m tests/acceptance/main-agent-runtime-migration-wave-3-1-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 351\u001b[2mms\u001b[22m\u001b[39m\n     \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs the Wave 3.1 migration validator successfully \u001b[33m 348\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m\n\u001b[2m   Start at \u001b[22m 03:37:01\n\u001b[2m   Duration \u001b[22m 993ms\u001b[2m (transform 36ms, setup 0ms, import 66ms, tests 351ms, environment 0ms)\u001b[22m\n\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-14",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <no root script deletion check> }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-15",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:a278d284828625c7ccc2280ced1c6276442a6f9693d1d39d6836856b7d718d98",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "checkedFiles=3005 findings=0\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-16",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { git status --short }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:014e33148317a6ac040f2d4cfda9cd2958f458808f65191dcbcd340ff8056d2c",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": " M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.js\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speckit/tests/main-agent-dist-runti",
+          "stderrPreview": ""
+        }
+      ],
+      "installMatrixEvidence": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/save-dev.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/npx-package.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/no-save.json"
+      ],
+      "result": "passed",
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "bmads-auto",
+      "originalPath": "scripts/bmads-auto-cli.ts",
+      "migrationStrategy": "public_cli_de_surface",
+      "targetPaths": [
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "publicCommandsAfterMigration": [
+        "bmad-speckit bmads-auto"
+      ],
+      "commands": [
+        {
+          "commandId": "CMD-01",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { git status --short --branch }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:44ccc0cbc82faa50a073cf655f0c34472646229cfb055e9261f20435dfebc90c",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "## dev...origin/dev [ahead 1]\n M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.js\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speck",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-02",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:a278d284828625c7ccc2280ced1c6276442a6f9693d1d39d6836856b7d718d98",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "checkedFiles=3005 findings=0\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-03",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <candidate set check> }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:237ea3dd243d98cbcbd65a5342462776a569d269ef5b3024ccd824581d830f92",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "[\r\n  {\r\n    \"scriptPath\": \"scripts/main-agent-release-gate.ts\",\r\n    \"migrationStrategy\": \"package_runtime_module\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/main-agent-quality-gate.ts\",\r\n    \"migrationStrategy\": \"package_runtime_module\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/main-agent-delivery-truth-gate.ts\",\r\n    \"migrationStrategy\": \"package_runtime_module\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/run-auditor-host.ts\",\r\n    \"migrationStrategy\": \"runtime_emit_cjs\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/write-runtime-context.cjs\",\r\n    \"migrationStrategy\": \"durable_helper_copy\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/eval-questions-cli.ts\",\r\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-04",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { npm run test --prefix packages/bmad-speckit; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:b2165cb3faafb75179d98ab5596f3b6b2a31f9b7cc6bfd28c410a14a8cfcf18b",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 test\n> node scripts/run-node-tests.cjs\n\nTAP version 13\n# Subtest: ai-registry-builtin (Story 12.1 T2)\n    # Subtest: exports array of 22 entries\n    ok 1 - exports array of 22 entries\n      ---\n      duration_ms: 1.1181\n      type: 'test'\n      ...\n    # Subtest: each entry has id, name, description, configTemplate\n    ok 2 - each entry has id, name, description, configTemplate\n      ---\n      duration_ms: 0.3896\n      type: 'test'\n      ...\n    # Subtest: each configTemplate has subagentSupport\n    ok 3 - each configTemplate has subagentSupport\n      ---\n      duration_ms: 0.9928\n      type: 'test'\n      ...\n    # Subtest: opencode uses .opencode/command (spec-kit)\n    ok 4 - opencode uses .opencode/command (spec-kit)\n      ---\n      duration_ms: 0.2311\n      type: '",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-05",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { npm run build:main-agent-dist --prefix packages/bmad-speckit; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:998e5b89b942b52f446cffa16afb7ec9085c8442028b0e3286518d18751187a0",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 build:main-agent-dist\n> node scripts/build-main-agent-dist.cjs\n\nbuilt dist/main-agent files=11\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-06",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { `$pkg = Get-Content -Raw 'packages/bmad-speckit/package.json' | ConvertFrom-Json; `$pkg.files | ConvertTo-Json -Depth 4; if (@(`$pkg.files) -notcontains 'dist/') { exit 1 }; exit 0 }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:b5d5de675e590f3ceea36fd13b7bc9f6a21229aae3e3a4a51c061dbbda78b9b6",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "[\r\n  \"README.md\",\r\n  \"bin/\",\r\n  \"dist/\",\r\n  \"src/\",\r\n  \"tests/\",\r\n  \"test-nonempty/\",\r\n  \"_bmad/\",\r\n  \"node_modules/@bmad-speckit/\"\r\n]\r\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-07",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { rg <Wave 3.1 public runRepoScript seed scan>; exit }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-08",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <static no root TypeScript dispatch guard> }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-09",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node tools/script-migration/validate-registry.cjs; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:03e86d3a93b78396c78137de46ac5ecd960049e7c9b3b3792b5ac8b7abe51970",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "{\"status\":\"passed\",\"registryPath\":\"repo-governance/script-migration-registry.yaml\",\"packExclusion\":\"not_requested\",\"errors\":[]}\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-10",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node tools/script-migration/validate-main-agent-runtime-migration-wave-3-1.cjs; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:725b1085f6b5bbc78dadd1e51480dd2a5d4761a728cad12228871f6a097a8c6c",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.1\",\n  \"contractPath\": \"docs/plans/2026-06-04-main-agent-runtime-migration-wave-3-1-goal-execution-plan.md\",\n  \"errors\": []\n}\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-11",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <CLI smoke probes> }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-12",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node tools/script-migration/run-main-agent-wave-3-1-install-matrix.cjs; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:b25b722c26816379c7d95304c8214ac25b0569503ccc13c6999581bc8d2d2b6f",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.1\",\n  \"packageTarball\": \"repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/bmad-speckit-2.0.1.tgz\",\n  \"receipts\": [\n    \"repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/save-dev.json\",\n    \"repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/npx-package.json\",\n    \"repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/no-save.json\"\n  ],\n  \"errors\": []\n}\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-13",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { npx vitest run tests/acceptance/main-agent-runtime-migration-wave-3-1-contract.test.ts; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:ee7d1761545ed53b607154cfb4fc503e30c4269cffde7a139a87c99b26fa87d3",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n\u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m\n\n \u001b[32m✓\u001b[39m tests/acceptance/main-agent-runtime-migration-wave-3-1-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 351\u001b[2mms\u001b[22m\u001b[39m\n     \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs the Wave 3.1 migration validator successfully \u001b[33m 348\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m\n\u001b[2m   Start at \u001b[22m 03:37:01\n\u001b[2m   Duration \u001b[22m 993ms\u001b[2m (transform 36ms, setup 0ms, import 66ms, tests 351ms, environment 0ms)\u001b[22m\n\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-14",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <no root script deletion check> }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-15",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js; exit `$LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:a278d284828625c7ccc2280ced1c6276442a6f9693d1d39d6836856b7d718d98",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "checkedFiles=3005 findings=0\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-16",
+          "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { git status --short }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:014e33148317a6ac040f2d4cfda9cd2958f458808f65191dcbcd340ff8056d2c",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": " M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.js\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speckit/tests/main-agent-dist-runti",
+          "stderrPreview": ""
+        }
+      ],
+      "installMatrixEvidence": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/save-dev.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/npx-package.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/no-save.json"
+      ],
+      "result": "passed",
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    }
+  ],
+  "commands": [
+    {
+      "commandId": "CMD-01",
+      "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { git status --short --branch }\"",
+      "exitCode": 0,
+      "stdoutHash": "sha256:44ccc0cbc82faa50a073cf655f0c34472646229cfb055e9261f20435dfebc90c",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "## dev...origin/dev [ahead 1]\n M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.js\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speck",
+      "stderrPreview": ""
+    },
+    {
+      "commandId": "CMD-02",
+      "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js }\"",
+      "exitCode": 0,
+      "stdoutHash": "sha256:a278d284828625c7ccc2280ced1c6276442a6f9693d1d39d6836856b7d718d98",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "checkedFiles=3005 findings=0\n",
+      "stderrPreview": ""
+    },
+    {
+      "commandId": "CMD-03",
+      "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <candidate set check> }\"",
+      "exitCode": 0,
+      "stdoutHash": "sha256:237ea3dd243d98cbcbd65a5342462776a569d269ef5b3024ccd824581d830f92",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "[\r\n  {\r\n    \"scriptPath\": \"scripts/main-agent-release-gate.ts\",\r\n    \"migrationStrategy\": \"package_runtime_module\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/main-agent-quality-gate.ts\",\r\n    \"migrationStrategy\": \"package_runtime_module\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/main-agent-delivery-truth-gate.ts\",\r\n    \"migrationStrategy\": \"package_runtime_module\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/run-auditor-host.ts\",\r\n    \"migrationStrategy\": \"runtime_emit_cjs\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/write-runtime-context.cjs\",\r\n    \"migrationStrategy\": \"durable_helper_copy\",\r\n    \"deletionAllowed\": false\r\n  },\r\n  {\r\n    \"scriptPath\": \"scripts/eval-questions-cli.ts\",\r\n",
+      "stderrPreview": ""
+    },
+    {
+      "commandId": "CMD-04",
+      "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { npm run test --prefix packages/bmad-speckit; exit `$LASTEXITCODE }\"",
+      "exitCode": 0,
+      "stdoutHash": "sha256:b2165cb3faafb75179d98ab5596f3b6b2a31f9b7cc6bfd28c410a14a8cfcf18b",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "\n> bmad-speckit@2.0.1 test\n> node scripts/run-node-tests.cjs\n\nTAP version 13\n# Subtest: ai-registry-builtin (Story 12.1 T2)\n    # Subtest: exports array of 22 entries\n    ok 1 - exports array of 22 entries\n      ---\n      duration_ms: 1.1181\n      type: 'test'\n      ...\n    # Subtest: each entry has id, name, description, configTemplate\n    ok 2 - each entry has id, name, description, configTemplate\n      ---\n      duration_ms: 0.3896\n      type: 'test'\n      ...\n    # Subtest: each configTemplate has subagentSupport\n    ok 3 - each configTemplate has subagentSupport\n      ---\n      duration_ms: 0.9928\n      type: 'test'\n      ...\n    # Subtest: opencode uses .opencode/command (spec-kit)\n    ok 4 - opencode uses .opencode/command (spec-kit)\n      ---\n      duration_ms: 0.2311\n      type: '",
+      "stderrPreview": ""
+    },
+    {
+      "commandId": "CMD-05",
+      "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { npm run build:main-agent-dist --prefix packages/bmad-speckit; exit `$LASTEXITCODE }\"",
+      "exitCode": 0,
+      "stdoutHash": "sha256:998e5b89b942b52f446cffa16afb7ec9085c8442028b0e3286518d18751187a0",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "\n> bmad-speckit@2.0.1 build:main-agent-dist\n> node scripts/build-main-agent-dist.cjs\n\nbuilt dist/main-agent files=11\n",
+      "stderrPreview": ""
+    },
+    {
+      "commandId": "CMD-06",
+      "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { `$pkg = Get-Content -Raw 'packages/bmad-speckit/package.json' | ConvertFrom-Json; `$pkg.files | ConvertTo-Json -Depth 4; if (@(`$pkg.files) -notcontains 'dist/') { exit 1 }; exit 0 }\"",
+      "exitCode": 0,
+      "stdoutHash": "sha256:b5d5de675e590f3ceea36fd13b7bc9f6a21229aae3e3a4a51c061dbbda78b9b6",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "[\r\n  \"README.md\",\r\n  \"bin/\",\r\n  \"dist/\",\r\n  \"src/\",\r\n  \"tests/\",\r\n  \"test-nonempty/\",\r\n  \"_bmad/\",\r\n  \"node_modules/@bmad-speckit/\"\r\n]\r\n",
+      "stderrPreview": ""
+    },
+    {
+      "commandId": "CMD-07",
+      "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { rg <Wave 3.1 public runRepoScript seed scan>; exit }\"",
+      "exitCode": 0,
+      "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "",
+      "stderrPreview": ""
+    },
+    {
+      "commandId": "CMD-08",
+      "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <static no root TypeScript dispatch guard> }\"",
+      "exitCode": 0,
+      "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "",
+      "stderrPreview": ""
+    },
+    {
+      "commandId": "CMD-09",
+      "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node tools/script-migration/validate-registry.cjs; exit `$LASTEXITCODE }\"",
+      "exitCode": 0,
+      "stdoutHash": "sha256:03e86d3a93b78396c78137de46ac5ecd960049e7c9b3b3792b5ac8b7abe51970",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "{\"status\":\"passed\",\"registryPath\":\"repo-governance/script-migration-registry.yaml\",\"packExclusion\":\"not_requested\",\"errors\":[]}\n",
+      "stderrPreview": ""
+    },
+    {
+      "commandId": "CMD-10",
+      "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node tools/script-migration/validate-main-agent-runtime-migration-wave-3-1.cjs; exit `$LASTEXITCODE }\"",
+      "exitCode": 0,
+      "stdoutHash": "sha256:725b1085f6b5bbc78dadd1e51480dd2a5d4761a728cad12228871f6a097a8c6c",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.1\",\n  \"contractPath\": \"docs/plans/2026-06-04-main-agent-runtime-migration-wave-3-1-goal-execution-plan.md\",\n  \"errors\": []\n}\n",
+      "stderrPreview": ""
+    },
+    {
+      "commandId": "CMD-11",
+      "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <CLI smoke probes> }\"",
+      "exitCode": 0,
+      "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "",
+      "stderrPreview": ""
+    },
+    {
+      "commandId": "CMD-12",
+      "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node tools/script-migration/run-main-agent-wave-3-1-install-matrix.cjs; exit `$LASTEXITCODE }\"",
+      "exitCode": 0,
+      "stdoutHash": "sha256:b25b722c26816379c7d95304c8214ac25b0569503ccc13c6999581bc8d2d2b6f",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.1\",\n  \"packageTarball\": \"repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/bmad-speckit-2.0.1.tgz\",\n  \"receipts\": [\n    \"repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/save-dev.json\",\n    \"repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/npx-package.json\",\n    \"repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/no-save.json\"\n  ],\n  \"errors\": []\n}\n",
+      "stderrPreview": ""
+    },
+    {
+      "commandId": "CMD-13",
+      "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { npx vitest run tests/acceptance/main-agent-runtime-migration-wave-3-1-contract.test.ts; exit `$LASTEXITCODE }\"",
+      "exitCode": 0,
+      "stdoutHash": "sha256:ee7d1761545ed53b607154cfb4fc503e30c4269cffde7a139a87c99b26fa87d3",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "\n\u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m\n\n \u001b[32m✓\u001b[39m tests/acceptance/main-agent-runtime-migration-wave-3-1-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 351\u001b[2mms\u001b[22m\u001b[39m\n     \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs the Wave 3.1 migration validator successfully \u001b[33m 348\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m\n\u001b[2m   Start at \u001b[22m 03:37:01\n\u001b[2m   Duration \u001b[22m 993ms\u001b[2m (transform 36ms, setup 0ms, import 66ms, tests 351ms, environment 0ms)\u001b[22m\n\n",
+      "stderrPreview": ""
+    },
+    {
+      "commandId": "CMD-14",
+      "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <no root script deletion check> }\"",
+      "exitCode": 0,
+      "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "",
+      "stderrPreview": ""
+    },
+    {
+      "commandId": "CMD-15",
+      "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js; exit `$LASTEXITCODE }\"",
+      "exitCode": 0,
+      "stdoutHash": "sha256:a278d284828625c7ccc2280ced1c6276442a6f9693d1d39d6836856b7d718d98",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "checkedFiles=3005 findings=0\n",
+      "stderrPreview": ""
+    },
+    {
+      "commandId": "CMD-16",
+      "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { git status --short }\"",
+      "exitCode": 0,
+      "stdoutHash": "sha256:014e33148317a6ac040f2d4cfda9cd2958f458808f65191dcbcd340ff8056d2c",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": " M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.js\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speckit/tests/main-agent-dist-runti",
+      "stderrPreview": ""
+    }
+  ],
+  "installMatrixEvidence": [
+    "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/save-dev.json",
+    "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/npx-package.json",
+    "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/no-save.json"
+  ],
+  "packageRuntimeModuleMigrations": [
+    "scripts/main-agent-release-gate.ts -> packages/bmad-speckit/src/main-agent/actions/release-gate.js",
+    "scripts/main-agent-quality-gate.ts -> packages/bmad-speckit/src/main-agent/actions/quality-gate.js",
+    "scripts/main-agent-delivery-truth-gate.ts -> packages/bmad-speckit/src/main-agent/actions/delivery-truth-gate.js"
+  ],
+  "runtimeEmitCjsMigrations": [
+    "scripts/run-auditor-host.ts -> packages/bmad-speckit/src/main-agent/auditor-host/run-auditor-host.cjs"
+  ],
+  "consumerInstalledHelperMigrations": [
+    "scripts/write-runtime-context.cjs -> packages/bmad-speckit/src/main-agent/helpers/write-runtime-context.cjs"
+  ],
+  "publicCliDeSurfaceMigrations": [
+    "scripts/eval-questions-cli.ts -> bmad-speckit eval-questions deprecated compatibility alias",
+    "scripts/main-agent-bmad-help-five-layer-matrix.ts -> bmad-speckit main-agent:bmad-help-five-layer-matrix deprecated compatibility alias",
+    "scripts/main-agent-host-matrix-pr-orchestrator.ts -> bmad-speckit main-agent:host-matrix-pr-orchestrate deprecated compatibility alias",
+    "scripts/bmads-auto-cli.ts -> bmad-speckit bmads-auto deprecated compatibility alias"
+  ],
+  "rootScriptsDeleted": false,
+  "rootScriptDeletionApproved": false,
+  "nextWaveRecommendation": "blocked_until_wave_3_1_acceptance_review_complete"
+}

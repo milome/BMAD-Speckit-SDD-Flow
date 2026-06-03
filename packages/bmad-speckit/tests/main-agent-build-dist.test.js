@@ -15,6 +15,11 @@ const EXPECTED_DIST_FILES = [
   'actions/confirm-scope.js',
   'actions/dispatch-plan.js',
   'actions/run-loop.js',
+  'actions/release-gate.js',
+  'actions/quality-gate.js',
+  'actions/delivery-truth-gate.js',
+  'auditor-host/run-auditor-host.cjs',
+  'helpers/write-runtime-context.cjs',
 ];
 
 describe('main-agent dist build', () => {

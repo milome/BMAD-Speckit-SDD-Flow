@@ -175,3 +175,210 @@ waves:
         oldPathDisposition: retained_source_repo_governance
         deletionAllowed: false
         deletionApprovalRef: null
+  - waveId: main-agent-runtime-migration-wave-3.1
+    title: Main Agent runtime migration wave 3.1
+    contractPath: docs/plans/2026-06-04-main-agent-runtime-migration-wave-3-1-goal-execution-plan.md
+    refinesWaveId: main-agent-runtime-closure-wave-3
+    status: validated
+    startedAt: '2026-06-04T00:00:00+08:00'
+    completedAt: '2026-06-03T19:37:27.100Z'
+    entries:
+      - entryId: main-agent-release-gate
+        refinesWaveId: main-agent-runtime-closure-wave-3
+        originalPath: scripts/main-agent-release-gate.ts
+        originalPathStatus: retained
+        originalClassBeforeMigration: consumer_runtime_public_cli
+        migrationStrategy: package_runtime_module
+        migrationStatus: validated
+        targetPaths:
+          - packages/bmad-speckit/src/main-agent/actions/release-gate.js
+          - packages/bmad-speckit/dist/main-agent/actions/release-gate.js
+          - packages/bmad-speckit/src/main-agent/runtime.js
+          - packages/bmad-speckit/dist/main-agent/runtime.js
+          - packages/bmad-speckit/bin/bmad-speckit.js
+        publicCommandsBeforeMigration:
+          - bmad-speckit main-agent:release-gate
+        publicCommandsAfterMigration:
+          - bmad-speckit main-agent:release-gate
+          - bmad-speckit main-agent release-gate
+        callerSwitchStatus: switched
+        validationStatus: passed
+        evidenceRefs:
+          - repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/evidence.json
+        oldPathDisposition: retained_source_dev_only
+        deletionAllowed: false
+        deletionApprovalRef: null
+      - entryId: main-agent-quality-gate
+        refinesWaveId: main-agent-runtime-closure-wave-3
+        originalPath: scripts/main-agent-quality-gate.ts
+        originalPathStatus: retained
+        originalClassBeforeMigration: consumer_runtime_public_cli
+        migrationStrategy: package_runtime_module
+        migrationStatus: validated
+        targetPaths:
+          - packages/bmad-speckit/src/main-agent/actions/quality-gate.js
+          - packages/bmad-speckit/dist/main-agent/actions/quality-gate.js
+          - packages/bmad-speckit/src/main-agent/runtime.js
+          - packages/bmad-speckit/dist/main-agent/runtime.js
+          - packages/bmad-speckit/bin/bmad-speckit.js
+        publicCommandsBeforeMigration:
+          - bmad-speckit main-agent:quality-gate
+        publicCommandsAfterMigration:
+          - bmad-speckit main-agent:quality-gate
+          - bmad-speckit main-agent quality-gate
+        callerSwitchStatus: switched
+        validationStatus: passed
+        evidenceRefs:
+          - repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/evidence.json
+        oldPathDisposition: retained_source_dev_only
+        deletionAllowed: false
+        deletionApprovalRef: null
+      - entryId: main-agent-delivery-truth-gate
+        refinesWaveId: main-agent-runtime-closure-wave-3
+        originalPath: scripts/main-agent-delivery-truth-gate.ts
+        originalPathStatus: retained
+        originalClassBeforeMigration: consumer_runtime_public_cli
+        migrationStrategy: package_runtime_module
+        migrationStatus: validated
+        targetPaths:
+          - packages/bmad-speckit/src/main-agent/actions/delivery-truth-gate.js
+          - packages/bmad-speckit/dist/main-agent/actions/delivery-truth-gate.js
+          - packages/bmad-speckit/src/main-agent/runtime.js
+          - packages/bmad-speckit/dist/main-agent/runtime.js
+          - packages/bmad-speckit/bin/bmad-speckit.js
+        publicCommandsBeforeMigration:
+          - bmad-speckit main-agent:delivery-truth-gate
+        publicCommandsAfterMigration:
+          - bmad-speckit main-agent:delivery-truth-gate
+          - bmad-speckit main-agent delivery-truth-gate
+        callerSwitchStatus: switched
+        validationStatus: passed
+        evidenceRefs:
+          - repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/evidence.json
+        oldPathDisposition: retained_source_dev_only
+        deletionAllowed: false
+        deletionApprovalRef: null
+      - entryId: run-auditor-host
+        refinesWaveId: main-agent-runtime-closure-wave-3
+        originalPath: scripts/run-auditor-host.ts
+        originalPathStatus: retained
+        originalClassBeforeMigration: consumer_runtime_public_cli
+        migrationStrategy: runtime_emit_cjs
+        migrationStatus: validated
+        targetPaths:
+          - packages/bmad-speckit/src/main-agent/auditor-host/run-auditor-host.cjs
+          - packages/bmad-speckit/dist/main-agent/auditor-host/run-auditor-host.cjs
+          - packages/bmad-speckit/bin/bmad-speckit.js
+        publicCommandsBeforeMigration:
+          - bmad-speckit run-auditor-host
+        publicCommandsAfterMigration:
+          - bmad-speckit run-auditor-host
+        callerSwitchStatus: switched
+        validationStatus: passed
+        evidenceRefs:
+          - repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/evidence.json
+        oldPathDisposition: retained_source_dev_only
+        deletionAllowed: false
+        deletionApprovalRef: null
+      - entryId: write-runtime-context
+        refinesWaveId: main-agent-runtime-closure-wave-3
+        originalPath: scripts/write-runtime-context.cjs
+        originalPathStatus: retained
+        originalClassBeforeMigration: durable_helper_candidate
+        migrationStrategy: durable_helper_copy
+        migrationStatus: validated
+        targetPaths:
+          - packages/bmad-speckit/src/main-agent/helpers/write-runtime-context.cjs
+          - packages/bmad-speckit/dist/main-agent/helpers/write-runtime-context.cjs
+          - packages/bmad-speckit/bin/bmad-speckit.js
+        publicCommandsBeforeMigration:
+          - bmad-speckit write-runtime-context
+        publicCommandsAfterMigration:
+          - bmad-speckit write-runtime-context
+        callerSwitchStatus: switched
+        validationStatus: passed
+        evidenceRefs:
+          - repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/evidence.json
+        oldPathDisposition: retained_source_dev_only
+        deletionAllowed: false
+        deletionApprovalRef: null
+      - entryId: eval-questions
+        refinesWaveId: main-agent-runtime-closure-wave-3
+        originalPath: scripts/eval-questions-cli.ts
+        originalPathStatus: retained
+        originalClassBeforeMigration: public_cli_de_surface_candidate
+        migrationStrategy: public_cli_de_surface
+        migrationStatus: validated
+        targetPaths:
+          - packages/bmad-speckit/bin/bmad-speckit.js
+        publicCommandsBeforeMigration:
+          - bmad-speckit eval-questions
+        publicCommandsAfterMigration:
+          - bmad-speckit eval-questions
+        callerSwitchStatus: switched
+        validationStatus: passed
+        evidenceRefs:
+          - repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/evidence.json
+        oldPathDisposition: retained_source_dev_only
+        deletionAllowed: false
+        deletionApprovalRef: null
+      - entryId: main-agent-bmad-help-five-layer-matrix
+        refinesWaveId: main-agent-runtime-closure-wave-3
+        originalPath: scripts/main-agent-bmad-help-five-layer-matrix.ts
+        originalPathStatus: retained
+        originalClassBeforeMigration: public_cli_de_surface_candidate
+        migrationStrategy: public_cli_de_surface
+        migrationStatus: validated
+        targetPaths:
+          - packages/bmad-speckit/bin/bmad-speckit.js
+        publicCommandsBeforeMigration:
+          - bmad-speckit main-agent:bmad-help-five-layer-matrix
+        publicCommandsAfterMigration:
+          - bmad-speckit main-agent:bmad-help-five-layer-matrix
+        callerSwitchStatus: switched
+        validationStatus: passed
+        evidenceRefs:
+          - repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/evidence.json
+        oldPathDisposition: retained_source_dev_only
+        deletionAllowed: false
+        deletionApprovalRef: null
+      - entryId: main-agent-host-matrix-pr-orchestrate
+        refinesWaveId: main-agent-runtime-closure-wave-3
+        originalPath: scripts/main-agent-host-matrix-pr-orchestrator.ts
+        originalPathStatus: retained
+        originalClassBeforeMigration: public_cli_de_surface_candidate
+        migrationStrategy: public_cli_de_surface
+        migrationStatus: validated
+        targetPaths:
+          - packages/bmad-speckit/bin/bmad-speckit.js
+        publicCommandsBeforeMigration:
+          - bmad-speckit main-agent:host-matrix-pr-orchestrate
+        publicCommandsAfterMigration:
+          - bmad-speckit main-agent:host-matrix-pr-orchestrate
+        callerSwitchStatus: switched
+        validationStatus: passed
+        evidenceRefs:
+          - repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/evidence.json
+        oldPathDisposition: retained_source_dev_only
+        deletionAllowed: false
+        deletionApprovalRef: null
+      - entryId: bmads-auto
+        refinesWaveId: main-agent-runtime-closure-wave-3
+        originalPath: scripts/bmads-auto-cli.ts
+        originalPathStatus: retained
+        originalClassBeforeMigration: deprecated_public_cli_de_surface_candidate
+        migrationStrategy: public_cli_de_surface
+        migrationStatus: validated
+        targetPaths:
+          - packages/bmad-speckit/bin/bmad-speckit.js
+        publicCommandsBeforeMigration:
+          - bmad-speckit bmads-auto
+        publicCommandsAfterMigration:
+          - bmad-speckit bmads-auto
+        callerSwitchStatus: switched
+        validationStatus: passed
+        evidenceRefs:
+          - repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/evidence.json
+        oldPathDisposition: retained_source_dev_only
+        deletionAllowed: false
+        deletionApprovalRef: null

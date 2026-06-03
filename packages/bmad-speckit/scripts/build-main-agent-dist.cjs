@@ -12,6 +12,11 @@ const files = [
   'actions/confirm-scope.js',
   'actions/dispatch-plan.js',
   'actions/run-loop.js',
+  'actions/release-gate.js',
+  'actions/quality-gate.js',
+  'actions/delivery-truth-gate.js',
+  'auditor-host/run-auditor-host.cjs',
+  'helpers/write-runtime-context.cjs',
 ];
 
 function copyRuntimeFile(relativePath) {
@@ -31,6 +36,5 @@ function copyRuntimeFile(relativePath) {
   fs.writeFileSync(target, text, 'utf8');
 }
 
-fs.rmSync(distRoot, { recursive: true, force: true });
 for (const file of files) copyRuntimeFile(file);
 process.stdout.write(`built dist/main-agent files=${files.length}\n`);
