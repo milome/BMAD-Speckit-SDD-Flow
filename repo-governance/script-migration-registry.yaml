@@ -98,16 +98,16 @@ waves:
     title: Main Agent source authority migration wave 2
     contractPath: docs/plans/2026-06-03-main-agent-source-authority-wave-2-goal-execution-plan.md
     refinesWaveId: main-agent-migration-wave-1
-    status: in_progress
+    status: validated
     startedAt: 2026-06-03T00:00:00+08:00
-    completedAt: null
+    completedAt: 2026-06-03T11:27:11+08:00
     entries:
       - entryId: main-agent-orchestration
         originalPath: scripts/main-agent-orchestration.ts
         originalPathStatus: retained
         originalClassBeforeMigration: package_runtime_source_authority_incomplete
         migrationStrategy: package_runtime_module
-        migrationStatus: planned
+        migrationStatus: validated
         targetPaths:
           - packages/bmad-speckit/src/main-agent/index.js
           - packages/bmad-speckit/src/main-agent/runtime.js
@@ -145,8 +145,8 @@ waves:
           - bmad-speckit main-agent-orchestration --action run-loop
           - bmad-speckit confirm-scope
           - bmad-speckit main-agent:confirm-scope
-        callerSwitchStatus: pending
-        validationStatus: pending
+        callerSwitchStatus: switched
+        validationStatus: passed
         evidenceRefs:
           - repo-governance/script-migrations/main-agent-source-authority-wave-2/evidence.json
         oldPathDisposition: retained_source_dev_only

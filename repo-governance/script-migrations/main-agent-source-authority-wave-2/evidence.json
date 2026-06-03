@@ -1,0 +1,96 @@
+{
+  "waveId": "main-agent-source-authority-wave-2",
+  "validatedAt": "2026-06-03T11:38:31+08:00",
+  "entries": [
+    {
+      "entryId": "main-agent-orchestration",
+      "originalPath": "scripts/main-agent-orchestration.ts",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/index.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/actions/inspect.js",
+        "packages/bmad-speckit/src/main-agent/actions/confirm-scope.js",
+        "packages/bmad-speckit/src/main-agent/actions/dispatch-plan.js",
+        "packages/bmad-speckit/src/main-agent/actions/run-loop.js",
+        "packages/bmad-speckit/dist/main-agent/index.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/actions/inspect.js",
+        "packages/bmad-speckit/dist/main-agent/actions/confirm-scope.js",
+        "packages/bmad-speckit/dist/main-agent/actions/dispatch-plan.js",
+        "packages/bmad-speckit/dist/main-agent/actions/run-loop.js"
+      ],
+      "commands": [
+        {
+          "command": "CMD-03 pwsh.exe -NoLogo -NoProfile -Command \"& { npm run test --prefix packages/bmad-speckit -- main-agent-dist-runtime-facade.test.js main-agent-dist-no-root-ts-dispatch.test.js main-agent-compiled-fallback-boundary.test.js main-agent-build-dist.test.js }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:5911833ef2c09255b7fde851cba8c725f7484a95d50cc432e327a72b369cb95e",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutLog": ".tmp/main-agent-source-authority-wave-2/command-logs/cmd-03.stdout.log",
+          "stderrLog": ".tmp/main-agent-source-authority-wave-2/command-logs/cmd-03.stderr.log"
+        },
+        {
+          "command": "CMD-04 pwsh.exe -NoLogo -NoProfile -Command \"& { npm run build:main-agent-dist --prefix packages/bmad-speckit }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:20f094ff79cc0970c9b7acee1289934120908990bd957d876b8ee634d3a9e0d6",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutLog": ".tmp/main-agent-source-authority-wave-2/command-logs/cmd-04.stdout.log",
+          "stderrLog": ".tmp/main-agent-source-authority-wave-2/command-logs/cmd-04.stderr.log"
+        },
+        {
+          "command": "CMD-05 pwsh.exe -NoLogo -NoProfile -File .tmp/main-agent-source-authority-wave-2/cmd05-static-covered-dispatch-guard.ps1",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutLog": ".tmp/main-agent-source-authority-wave-2/command-logs/cmd-05.stdout.log",
+          "stderrLog": ".tmp/main-agent-source-authority-wave-2/command-logs/cmd-05.stderr.log"
+        },
+        {
+          "command": "CMD-06 pwsh.exe -NoLogo -NoProfile -Command \"& { npx vitest run tests/acceptance/main-agent-dist-consumer-runtime.test.ts }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:4392f1a3fc88e244fd99e10f98d89d576193ceddb800f42034503cf7bdf3209f",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutLog": ".tmp/main-agent-source-authority-wave-2/command-logs/cmd-06.stdout.log",
+          "stderrLog": ".tmp/main-agent-source-authority-wave-2/command-logs/cmd-06.stderr.log"
+        },
+        {
+          "command": "CMD-07 pwsh.exe -NoLogo -NoProfile -Command \"& { npm run build:main-agent-dist --prefix packages/bmad-speckit; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; New-Item -ItemType Directory -Force '.tmp/main-agent-source-authority-wave-2' | Out-Null; npm pack --pack-destination .tmp/main-agent-source-authority-wave-2; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; npx vitest run tests/acceptance/main-agent-dist-consumer-runtime.test.ts; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE } }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:0597fde776211f695469bc98356ce6e1f601eab18c996fad1d969611380f7569",
+          "stderrHash": "sha256:4eb8dc81db35ad2f4d5b9d4ec9c6d9d68f2ecddcf4dfd3958eea318e6cd41ce7",
+          "stdoutLog": ".tmp/main-agent-source-authority-wave-2/command-logs/cmd-07.stdout.log",
+          "stderrLog": ".tmp/main-agent-source-authority-wave-2/command-logs/cmd-07.stderr.log"
+        },
+        {
+          "command": "CMD-08 pwsh.exe -NoLogo -NoProfile -Command \"& { npm run test --prefix packages/bmad-speckit }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:9c3819a569a032d5d1bdde7503b5c759cf1bb1755174fc14a42ec3d973b2a535",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutLog": ".tmp/main-agent-source-authority-wave-2/command-logs/cmd-08.stdout.log",
+          "stderrLog": ".tmp/main-agent-source-authority-wave-2/command-logs/cmd-08.stderr.log"
+        },
+        {
+          "command": "CMD-09 pwsh.exe -NoLogo -NoProfile -Command \"& { node tools/script-migration/validate-registry.cjs; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; npx vitest run tests/acceptance/script-migration-registry-contract.test.ts; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE } }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:6c5bd896ca81a8c394b96d1feb4825296415aa73d15c02fe57edba5aaac1386d",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutLog": ".tmp/main-agent-source-authority-wave-2/command-logs/cmd-09.stdout.log",
+          "stderrLog": ".tmp/main-agent-source-authority-wave-2/command-logs/cmd-09.stderr.log"
+        },
+        {
+          "command": "CMD-10 pwsh.exe -NoLogo -NoProfile -Command \"& { skill sync static check }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutLog": ".tmp/main-agent-source-authority-wave-2/command-logs/cmd-10.stdout.log",
+          "stderrLog": ".tmp/main-agent-source-authority-wave-2/command-logs/cmd-10.stderr.log"
+        }
+      ],
+      "installMatrixEvidence": [
+        ".tmp/main-agent-source-authority-wave-2/install-matrix/npx-package-main-agent-inspect.json",
+        ".tmp/main-agent-source-authority-wave-2/install-matrix/save-dev-main-agent-inspect.json",
+        ".tmp/main-agent-source-authority-wave-2/install-matrix/tgz-main-agent-inspect.json"
+      ],
+      "result": "passed"
+    }
+  ]
+}

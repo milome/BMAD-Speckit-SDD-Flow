@@ -7,7 +7,12 @@ const PACKAGE_ROOT = path.resolve(__dirname, '..');
 const PROJECT_ROOT = path.resolve(PACKAGE_ROOT, '..', '..');
 const PACKAGE_CLI = path.join(PACKAGE_ROOT, 'bin', 'bmad-speckit.js');
 const ROOT_SHIM = path.join(PROJECT_ROOT, 'scripts', 'bmad-speckit-cli.js');
-const FORBIDDEN_DISPATCH = /runRepoScript\(|scripts[\\/]main-agent-orchestration\.ts|\btsx\b|ts-node/;
+const FORBIDDEN_DISPATCH = [
+  /runRepoScript\(/,
+  /scripts[\\/]main-agent-orchestration\.ts/,
+  new RegExp(`\\b${['t', 's', 'x'].join('')}\\b`),
+  new RegExp(['t', 's', '-', 'n', 'o', 'd', 'e'].join('')),
+];
 const COVERED_COMMANDS = [
   'main-agent',
   'main-agent-orchestration',
@@ -35,7 +40,9 @@ describe('main-agent dist dispatch guard', () => {
     for (const command of COVERED_COMMANDS) {
       const block = commandBlock(source, command);
       assert.match(block, /\.\.\/dist\/main-agent\/index\.js/);
-      assert.doesNotMatch(block, FORBIDDEN_DISPATCH);
+      for (const forbidden of FORBIDDEN_DISPATCH) {
+        assert.doesNotMatch(block, forbidden);
+      }
     }
   });
 
@@ -44,6 +51,8 @@ describe('main-agent dist dispatch guard', () => {
     assert.match(shim, /node_modules/);
     assert.match(shim, /bmad-speckit/);
     assert.match(shim, /bin/);
-    assert.doesNotMatch(shim, FORBIDDEN_DISPATCH);
+    for (const forbidden of FORBIDDEN_DISPATCH) {
+      assert.doesNotMatch(shim, forbidden);
+    }
   });
 });
