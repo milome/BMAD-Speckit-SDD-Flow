@@ -657,7 +657,7 @@ program
   .allowExcessArguments(true)
   .action((_options, command) =>
     runRuntimeModule(
-      '../src/main-agent/index.js',
+      '../dist/main-agent/index.js',
       'mainAgentRuntimeCommand',
       ['--legacy-orchestration', ...forwardedArgsFromCommand(command)]
     )
@@ -669,7 +669,7 @@ program
   .allowUnknownOption(true)
   .allowExcessArguments(true)
   .action((_options, command) =>
-    runRuntimeModule('../src/main-agent/index.js', 'mainAgentRuntimeCommand', [
+    runRuntimeModule('../dist/main-agent/index.js', 'mainAgentRuntimeCommand', [
       '--action',
       'confirm-scope',
       ...forwardedArgsFromCommand(command),
@@ -682,7 +682,7 @@ program
   .allowUnknownOption(true)
   .allowExcessArguments(true)
   .action((_options, command) =>
-    runRuntimeModule('../src/main-agent/index.js', 'mainAgentRuntimeCommand', [
+    runRuntimeModule('../dist/main-agent/index.js', 'mainAgentRuntimeCommand', [
       '--action',
       'confirm-scope',
       ...forwardedArgsFromCommand(command),
@@ -775,7 +775,7 @@ program
   .allowExcessArguments(true)
   .action((_action, _options, command) =>
     runRuntimeModule(
-      '../src/main-agent/index.js',
+      '../dist/main-agent/index.js',
       'mainAgentRuntimeCommand',
       forwardedArgsFromCommand(command)
     )

@@ -93,3 +93,62 @@ waves:
         oldPathDisposition: retained_source_dev_only
         deletionAllowed: false
         deletionApprovalRef: null
+
+  - waveId: main-agent-source-authority-wave-2
+    title: Main Agent source authority migration wave 2
+    contractPath: docs/plans/2026-06-03-main-agent-source-authority-wave-2-goal-execution-plan.md
+    refinesWaveId: main-agent-migration-wave-1
+    status: in_progress
+    startedAt: 2026-06-03T00:00:00+08:00
+    completedAt: null
+    entries:
+      - entryId: main-agent-orchestration
+        originalPath: scripts/main-agent-orchestration.ts
+        originalPathStatus: retained
+        originalClassBeforeMigration: package_runtime_source_authority_incomplete
+        migrationStrategy: package_runtime_module
+        migrationStatus: planned
+        targetPaths:
+          - packages/bmad-speckit/src/main-agent/index.js
+          - packages/bmad-speckit/src/main-agent/runtime.js
+          - packages/bmad-speckit/src/main-agent/actions/inspect.js
+          - packages/bmad-speckit/src/main-agent/actions/confirm-scope.js
+          - packages/bmad-speckit/src/main-agent/actions/dispatch-plan.js
+          - packages/bmad-speckit/src/main-agent/actions/run-loop.js
+          - packages/bmad-speckit/dist/main-agent/index.js
+          - packages/bmad-speckit/dist/main-agent/runtime.js
+          - packages/bmad-speckit/dist/main-agent/actions/inspect.js
+          - packages/bmad-speckit/dist/main-agent/actions/confirm-scope.js
+          - packages/bmad-speckit/dist/main-agent/actions/dispatch-plan.js
+          - packages/bmad-speckit/dist/main-agent/actions/run-loop.js
+          - repo-governance/script-migrations/main-agent-source-authority-wave-2/evidence.json
+          - repo-governance/script-migrations/main-agent-source-authority-wave-2/summary.md
+        publicCommandsBeforeMigration:
+          - bmad-speckit main-agent inspect
+          - bmad-speckit main-agent confirm-scope
+          - bmad-speckit main-agent dispatch-plan
+          - bmad-speckit main-agent run-loop
+          - bmad-speckit main-agent-orchestration --action inspect
+          - bmad-speckit main-agent-orchestration --action confirm-scope
+          - bmad-speckit main-agent-orchestration --action dispatch-plan
+          - bmad-speckit main-agent-orchestration --action run-loop
+          - bmad-speckit confirm-scope
+          - bmad-speckit main-agent:confirm-scope
+        publicCommandsAfterMigration:
+          - bmad-speckit main-agent inspect
+          - bmad-speckit main-agent confirm-scope
+          - bmad-speckit main-agent dispatch-plan
+          - bmad-speckit main-agent run-loop
+          - bmad-speckit main-agent-orchestration --action inspect
+          - bmad-speckit main-agent-orchestration --action confirm-scope
+          - bmad-speckit main-agent-orchestration --action dispatch-plan
+          - bmad-speckit main-agent-orchestration --action run-loop
+          - bmad-speckit confirm-scope
+          - bmad-speckit main-agent:confirm-scope
+        callerSwitchStatus: pending
+        validationStatus: pending
+        evidenceRefs:
+          - repo-governance/script-migrations/main-agent-source-authority-wave-2/evidence.json
+        oldPathDisposition: retained_source_dev_only
+        deletionAllowed: false
+        deletionApprovalRef: null

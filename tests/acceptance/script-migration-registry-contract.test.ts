@@ -105,8 +105,10 @@ describe('script migration registry contract', () => {
     const registry = readRegistry();
     const bootstrapWave = getWave(registry, 'script-migration-registry-bootstrap');
     const mainAgentWave = getWave(registry, 'main-agent-migration-wave-1');
+    const mainAgentWave2 = getWave(registry, 'main-agent-source-authority-wave-2');
     expect(bootstrapWave).toBeTruthy();
     expect(mainAgentWave).toBeTruthy();
+    expect(mainAgentWave2).toBeTruthy();
 
     const registryEntry = getEntry(bootstrapWave, 'script-migration-registry');
     expect(registryEntry.originalClassBeforeMigration).toBe('source_repo_governance');
@@ -121,6 +123,19 @@ describe('script migration registry contract', () => {
     expect(mainAgentEntry.oldPathDisposition).toBe('retained_source_dev_only');
     expect(mainAgentEntry.deletionAllowed).toBe(false);
     expect(mainAgentEntry.deletionApprovalRef).toBeNull();
+
+    const wave2Entry = getEntry(mainAgentWave2, 'main-agent-orchestration');
+    expect(mainAgentWave2.refinesWaveId).toBe('main-agent-migration-wave-1');
+    expect(wave2Entry.originalPath).toBe('scripts/main-agent-orchestration.ts');
+    expect(wave2Entry.originalClassBeforeMigration).toBe(
+      'package_runtime_source_authority_incomplete'
+    );
+    expect(wave2Entry.migrationStrategy).toBe('package_runtime_module');
+    expect(wave2Entry.oldPathDisposition).toBe('retained_source_dev_only');
+    expect(wave2Entry.deletionAllowed).toBe(false);
+    expect(wave2Entry.deletionApprovalRef).toBeNull();
+    expect(wave2Entry.targetPaths).toContain('packages/bmad-speckit/src/main-agent/index.js');
+    expect(wave2Entry.targetPaths).toContain('packages/bmad-speckit/dist/main-agent/index.js');
   });
 
   it('allows pre-evidence bootstrap state only when no entry claims validated or passed', () => {
@@ -210,6 +225,53 @@ describe('script migration registry contract', () => {
     const result = runValidator(['--registry', fixturePath]);
     expect(result.status).not.toBe(0);
     expect(`${result.stdout}\n${result.stderr}`).toContain('deletionApprovalRef');
+  });
+
+  it('allows Wave 2 to refine Wave 1 for the same originalPath when explicitly declared', () => {
+    const registry = readRegistry();
+    const fixturePath = path.join(tempDir(), 'script-migration-registry.yaml');
+    writeYaml(fixturePath, registry);
+    const result = runValidator(['--registry', fixturePath]);
+    expect(result.status, result.stderr || result.stdout).toBe(0);
+    expect(result.stdout).toContain('"status":"passed"');
+  });
+
+  it('rejects an unrelated active wave conflict for the same originalPath', () => {
+    const registry = readRegistry();
+    registry.waves.push({
+      waveId: 'unrelated-main-agent-conflict',
+      title: 'Unrelated conflict fixture',
+      contractPath: 'docs/plans/fixture.md',
+      status: 'planned',
+      startedAt: '2026-06-03T00:00:00+08:00',
+      completedAt: null,
+      entries: [
+        {
+          entryId: 'main-agent-orchestration-conflict',
+          originalPath: 'scripts/main-agent-orchestration.ts',
+          originalPathStatus: 'retained',
+          originalClassBeforeMigration: 'fixture_conflict',
+          migrationStrategy: 'package_runtime_module',
+          migrationStatus: 'planned',
+          targetPaths: ['packages/bmad-speckit/src/conflicting-main-agent/index.js'],
+          publicCommandsBeforeMigration: [],
+          publicCommandsAfterMigration: [],
+          callerSwitchStatus: 'pending',
+          validationStatus: 'pending',
+          evidenceRefs: [],
+          oldPathDisposition: 'retained_source_dev_only',
+          deletionAllowed: false,
+          deletionApprovalRef: null,
+        },
+      ],
+    });
+    const fixturePath = path.join(tempDir(), 'script-migration-registry.yaml');
+    writeYaml(fixturePath, registry);
+    const result = runValidator(['--registry', fixturePath]);
+    expect(result.status).not.toBe(0);
+    expect(`${result.stdout}\n${result.stderr}`).toContain(
+      'conflicting active migration targetPaths'
+    );
   });
 
   it('passes the canonical registry validator once registry infrastructure exists', () => {

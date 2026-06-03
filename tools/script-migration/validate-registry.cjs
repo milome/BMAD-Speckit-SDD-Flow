@@ -120,6 +120,9 @@ function validateRegistry(registry, errors) {
     }
     if (waveIds.has(wave.waveId)) errors.push(`duplicate waveId: ${wave.waveId}`);
     waveIds.add(wave.waveId);
+    if (wave.refinesWaveId != null && !waveIds.has(wave.refinesWaveId)) {
+      errors.push(`wave ${wave.waveId} refines unknown or later waveId: ${wave.refinesWaveId}`);
+    }
     if (!WAVE_STATUSES.includes(wave.status)) errors.push(`invalid wave status for ${wave.waveId}: ${wave.status}`);
     if (!Array.isArray(wave.entries)) {
       errors.push(`wave ${wave.waveId} entries must be an array`);
@@ -167,18 +170,32 @@ function validateEntry(wave, entry, entryIds, activeOriginalPaths, errors) {
   if (ACTIVE_WAVE_STATUSES.has(wave.status)) {
     const targets = JSON.stringify(entry.targetPaths || []);
     const previous = activeOriginalPaths.get(entry.originalPath);
-    if (previous && previous !== targets) errors.push(`conflicting active migration targetPaths for ${entry.originalPath}`);
-    activeOriginalPaths.set(entry.originalPath, targets);
+    if (previous && previous.targets !== targets) {
+      const explicitlyRefinesPrevious =
+        wave.refinesWaveId === previous.waveId && entry.deletionAllowed === false;
+      if (!explicitlyRefinesPrevious) {
+        errors.push(`conflicting active migration targetPaths for ${entry.originalPath}`);
+      }
+    }
+    activeOriginalPaths.set(entry.originalPath, {
+      targets,
+      waveId: wave.waveId,
+    });
   }
 }
 
 function validateBootstrapContent(registry, errors) {
   const bootstrap = registry.waves.find((wave) => wave.waveId === 'script-migration-registry-bootstrap');
   const mainAgent = registry.waves.find((wave) => wave.waveId === 'main-agent-migration-wave-1');
+  const mainAgentWave2 = registry.waves.find((wave) => wave.waveId === 'main-agent-source-authority-wave-2');
   if (!bootstrap) errors.push('missing script-migration-registry-bootstrap wave');
   if (!mainAgent) errors.push('missing main-agent-migration-wave-1 wave');
+  if (!mainAgentWave2) errors.push('missing main-agent-source-authority-wave-2 wave');
   const registryEntry = bootstrap && bootstrap.entries.find((entry) => entry.entryId === 'script-migration-registry');
   const mainEntry = mainAgent && mainAgent.entries.find((entry) => entry.entryId === 'main-agent-orchestration');
+  const mainWave2Entry =
+    mainAgentWave2 &&
+    mainAgentWave2.entries.find((entry) => entry.entryId === 'main-agent-orchestration');
   if (!registryEntry) errors.push('missing script-migration-registry entry');
   if (!mainEntry) errors.push('missing main-agent-orchestration entry');
   if (registryEntry && registryEntry.originalClassBeforeMigration !== 'source_repo_governance') errors.push('script-migration-registry entry must be source_repo_governance');
@@ -190,6 +207,34 @@ function validateBootstrapContent(registry, errors) {
     if (mainEntry.validationStatus !== 'passed') errors.push('main-agent-orchestration validationStatus must be passed');
     if (mainEntry.oldPathDisposition !== 'retained_source_dev_only') errors.push('main-agent-orchestration oldPathDisposition must be retained_source_dev_only');
     if (mainEntry.deletionAllowed !== false) errors.push('main-agent-orchestration deletionAllowed must be false');
+  }
+  if (mainAgentWave2) {
+    if (mainAgentWave2.refinesWaveId !== 'main-agent-migration-wave-1') {
+      errors.push('main-agent-source-authority-wave-2 must refine main-agent-migration-wave-1');
+    }
+  }
+  if (mainWave2Entry) {
+    if (mainWave2Entry.originalPath !== 'scripts/main-agent-orchestration.ts') {
+      errors.push('main-agent-source-authority-wave-2 originalPath mismatch');
+    }
+    if (mainWave2Entry.originalClassBeforeMigration !== 'package_runtime_source_authority_incomplete') {
+      errors.push('main-agent-source-authority-wave-2 class must be package_runtime_source_authority_incomplete');
+    }
+    if (mainWave2Entry.migrationStrategy !== 'package_runtime_module') {
+      errors.push('main-agent-source-authority-wave-2 strategy mismatch');
+    }
+    if (mainWave2Entry.oldPathDisposition !== 'retained_source_dev_only') {
+      errors.push('main-agent-source-authority-wave-2 oldPathDisposition must be retained_source_dev_only');
+    }
+    if (mainWave2Entry.deletionAllowed !== false) {
+      errors.push('main-agent-source-authority-wave-2 deletionAllowed must be false');
+    }
+    if (mainWave2Entry.deletionApprovalRef !== null) {
+      errors.push('main-agent-source-authority-wave-2 deletionApprovalRef must be null');
+    }
+    if (!mainWave2Entry.targetPaths.some((target) => target.startsWith('packages/bmad-speckit/dist/main-agent/'))) {
+      errors.push('main-agent-source-authority-wave-2 must include dist main-agent targetPaths');
+    }
   }
 }
 

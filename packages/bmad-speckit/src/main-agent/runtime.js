@@ -1,7 +1,9 @@
 /* eslint-disable no-console */
 const path = require('node:path');
-const { confirmScopeMissingReason } = require('./actions/confirm-scope');
+const { confirmScopeAction, confirmScopeMissingReason } = require('./actions/confirm-scope');
+const { dispatchPlanAction } = require('./actions/dispatch-plan');
 const { hasRuntimeState, inspectRuntimeState } = require('./actions/inspect');
+const { runLoopAction } = require('./actions/run-loop');
 
 const SCHEMA_VERSION = 'main-agent-package-runtime/v1';
 const SUPPORTED_ACTIONS = new Set(['inspect', 'confirm-scope', 'dispatch-plan', 'run-loop']);
@@ -84,88 +86,21 @@ function errorResponse(context, code, message, exitCode = 1) {
   return envelope(context, code, exitCode, null, [{ code, message }]);
 }
 
-function loadCompiledOrchestration() {
-  return require(path.join(__dirname, 'compiled', 'main-agent-orchestration.cjs'));
-}
-
-async function invokeCompiled(context, captureOutput) {
-  const compiled = loadCompiledOrchestration();
-  const entry =
-    compiled.mainMainAgentOrchestrationAsync || compiled.mainMainAgentOrchestration;
-  if (typeof entry !== 'function') {
-    throw new Error('compiled main-agent orchestration entry is missing');
-  }
-  if (!captureOutput) {
-    return {
-      exitCode: await entry(context.rootArgv),
-      stdout: '',
-      stderr: '',
-    };
-  }
-
-  let stdout = '';
-  let stderr = '';
-  const originalStdoutWrite = process.stdout.write;
-  const originalStderrWrite = process.stderr.write;
-  process.stdout.write = function writeStdout(chunk, ...rest) {
-    stdout += String(chunk);
-    if (typeof rest[rest.length - 1] === 'function') rest[rest.length - 1]();
-    return true;
-  };
-  process.stderr.write = function writeStderr(chunk, ...rest) {
-    stderr += String(chunk);
-    if (typeof rest[rest.length - 1] === 'function') rest[rest.length - 1]();
-    return true;
-  };
-  try {
-    return {
-      exitCode: await entry(context.rootArgv),
-      stdout,
-      stderr,
-    };
-  } finally {
-    process.stdout.write = originalStdoutWrite;
-    process.stderr.write = originalStderrWrite;
-  }
-}
-
-function parseDelegatedJson(output) {
-  const trimmed = String(output || '').trim();
-  if (!trimmed) return null;
-  try {
-    return JSON.parse(trimmed);
-  } catch {
-    return { rawOutput: trimmed };
-  }
-}
-
 function missingRuntimeState(context, reason) {
   return errorResponse(context, 'runtime_state_missing', reason, 1);
 }
 
-async function delegateRuntimeAction(context) {
+function requireRuntimeState(context) {
   if (!hasRuntimeState(context.cwd)) {
-    return emitResponse(
-      context,
-      missingRuntimeState(context, 'runtime requirement-record state is missing')
-    );
+    return {
+      ok: false,
+      response: missingRuntimeState(context, 'runtime requirement-record state is missing'),
+    };
   }
-  let result;
-  try {
-    result = await invokeCompiled(context, context.json);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    return emitResponse(context, errorResponse(context, 'delegated_runtime_failed', message, 1));
-  }
-  if (!context.json) return result.exitCode ?? 0;
-
-  const data = parseDelegatedJson(result.stdout);
-  const status = result.exitCode === 0 ? 'ok' : 'delegated_runtime_failed';
-  const errors =
-    result.exitCode === 0
-      ? []
-      : [{ code: status, message: result.stderr.trim() || `exitCode=${result.exitCode}` }];
-  return emitResponse(context, envelope(context, status, result.exitCode ?? 1, data, errors));
+  return {
+    ok: true,
+    state: inspectRuntimeState(context.cwd),
+  };
 }
 
 async function runMainAgentRuntime(context) {
@@ -181,11 +116,6 @@ async function runMainAgentRuntime(context) {
     );
   }
 
-  if (context.legacyOrchestration && context.action === 'inspect' && !context.json) {
-    const result = await invokeCompiled(context, false);
-    return result.exitCode ?? 0;
-  }
-
   if (context.action === 'inspect') {
     return emitResponse(context, envelope(context, 'ok', 0, inspectRuntimeState(context.cwd)));
   }
@@ -193,10 +123,22 @@ async function runMainAgentRuntime(context) {
   if (context.action === 'confirm-scope') {
     const reason = confirmScopeMissingReason(context.args);
     if (reason) return emitResponse(context, missingRuntimeState(context, reason));
-    return delegateRuntimeAction(context);
+    const runtime = requireRuntimeState(context);
+    if (!runtime.ok) return emitResponse(context, runtime.response);
+    return emitResponse(context, envelope(context, 'ok', 0, confirmScopeAction(context, runtime.state)));
   }
 
-  return delegateRuntimeAction(context);
+  if (context.action === 'dispatch-plan') {
+    const runtime = requireRuntimeState(context);
+    if (!runtime.ok) return emitResponse(context, runtime.response);
+    return emitResponse(context, envelope(context, 'ok', 0, dispatchPlanAction(context, runtime.state)));
+  }
+
+  if (context.action === 'run-loop') {
+    const runtime = requireRuntimeState(context);
+    if (!runtime.ok) return emitResponse(context, runtime.response);
+    return emitResponse(context, envelope(context, 'ok', 0, runLoopAction(context, runtime.state)));
+  }
 }
 
 function mainAgentRuntimeCommand(argv = process.argv.slice(2)) {
