@@ -2,7 +2,6 @@ registryVersion: 1
 registryKind: source_repo_script_migration_registry
 installSurface: excluded
 consumerRuntimeDependency: false
-
 allowedMigrationStrategies:
   - package_runtime_module
   - runtime_emit_cjs
@@ -13,7 +12,6 @@ allowedMigrationStrategies:
   - public_cli_de_surface
   - compatibility_alias
   - deprecated_no_migration
-
 allowedMigrationStatuses:
   - planned
   - in_progress
@@ -22,20 +20,18 @@ allowedMigrationStatuses:
   - validated
   - blocked
   - superseded
-
 allowedValidationStatuses:
   - pending
   - partial
   - passed
   - failed
   - blocked
-
 waves:
   - waveId: script-migration-registry-bootstrap
     title: Script migration registry bootstrap
     contractPath: docs/plans/2026-06-02-script-migration-registry-goal-execution-plan.md
     status: in_progress
-    startedAt: 2026-06-02T00:00:00+08:00
+    startedAt: 2026-06-01T16:00:00.000Z
     completedAt: null
     entries:
       - entryId: script-migration-registry
@@ -55,13 +51,12 @@ waves:
         oldPathDisposition: retained_source_repo_governance
         deletionAllowed: false
         deletionApprovalRef: null
-
   - waveId: main-agent-migration-wave-1
     title: Main Agent package runtime migration wave 1
     contractPath: docs/plans/2026-06-02-main-agent-migration-wave-1-goal-execution-plan.md
     status: validated
-    startedAt: 2026-06-02T00:00:00+08:00
-    completedAt: 2026-06-02T15:15:10+08:00
+    startedAt: 2026-06-01T16:00:00.000Z
+    completedAt: 2026-06-02T07:15:10.000Z
     entries:
       - entryId: main-agent-orchestration
         originalPath: scripts/main-agent-orchestration.ts
@@ -93,14 +88,13 @@ waves:
         oldPathDisposition: retained_source_dev_only
         deletionAllowed: false
         deletionApprovalRef: null
-
   - waveId: main-agent-source-authority-wave-2
     title: Main Agent source authority migration wave 2
     contractPath: docs/plans/2026-06-03-main-agent-source-authority-wave-2-goal-execution-plan.md
     refinesWaveId: main-agent-migration-wave-1
     status: validated
-    startedAt: 2026-06-03T00:00:00+08:00
-    completedAt: 2026-06-03T11:27:11+08:00
+    startedAt: 2026-06-02T16:00:00.000Z
+    completedAt: 2026-06-03T03:27:11.000Z
     entries:
       - entryId: main-agent-orchestration
         originalPath: scripts/main-agent-orchestration.ts
@@ -150,5 +144,34 @@ waves:
         evidenceRefs:
           - repo-governance/script-migrations/main-agent-source-authority-wave-2/evidence.json
         oldPathDisposition: retained_source_dev_only
+        deletionAllowed: false
+        deletionApprovalRef: null
+  - waveId: main-agent-runtime-closure-wave-3
+    title: Main Agent runtime closure classification wave 3
+    contractPath: docs/plans/2026-06-03-main-agent-runtime-closure-wave-3-goal-execution-plan.md
+    status: validated
+    startedAt: '2026-06-03T17:14:21+08:00'
+    completedAt: '2026-06-03T17:01:43.020Z'
+    entries:
+      - entryId: main-agent-runtime-closure-inventory
+        originalPath: docs/plans/SCRIPT_MATRIX_2026-06-01-consumer-deployment-and-invocation.md
+        originalPathStatus: retained
+        originalClassBeforeMigration: source_repo_governance
+        migrationStrategy: repo_internal_reclassify
+        migrationStatus: validated
+        targetPaths:
+          - repo-governance/script-migrations/main-agent-runtime-closure-wave-3/closure-inventory.json
+          - repo-governance/script-migrations/main-agent-runtime-closure-wave-3/priority-matrix.md
+          - repo-governance/script-migrations/main-agent-runtime-closure-wave-3/evidence.json
+          - repo-governance/script-migrations/main-agent-runtime-closure-wave-3/summary.md
+          - tools/script-migration/validate-main-agent-runtime-closure.cjs
+          - tests/acceptance/main-agent-runtime-closure-wave-3-contract.test.ts
+        publicCommandsBeforeMigration: []
+        publicCommandsAfterMigration: []
+        callerSwitchStatus: not_applicable
+        validationStatus: passed
+        evidenceRefs:
+          - repo-governance/script-migrations/main-agent-runtime-closure-wave-3/evidence.json
+        oldPathDisposition: retained_source_repo_governance
         deletionAllowed: false
         deletionApprovalRef: null
