@@ -14,9 +14,6 @@
  * Exit codes are defined in constants/exit-codes.js.
  */
 const { program } = require('commander');
-const { spawnSync } = require('child_process');
-const fs = require('fs');
-const path = require('path');
 const pkg = require('../package.json');
 const ttyUtils = require('../src/utils/tty');
 
@@ -33,57 +30,6 @@ function runRuntimeModule(modulePath, exportName, args) {
       console.error(error instanceof Error ? error.message : String(error));
       process.exit(1);
     });
-}
-
-function resolveRepoScript(scriptName) {
-  const candidates = [
-    path.resolve(__dirname, '..', '..', '..', 'scripts', scriptName),
-    path.resolve(__dirname, '..', 'scripts', scriptName),
-    path.resolve(process.cwd(), 'node_modules', 'bmad-speckit-sdd-flow', 'scripts', scriptName),
-    path.resolve(process.cwd(), 'node_modules', 'bmad-speckit', 'scripts', scriptName),
-  ];
-  const scriptPath = candidates.find((candidate) => require('fs').existsSync(candidate));
-  if (!scriptPath) {
-    console.error(`bmad-speckit: cannot locate script ${scriptName}`);
-    process.exit(1);
-  }
-  return scriptPath;
-}
-
-function resolveTsxCli() {
-  const candidates = [
-    path.resolve(process.cwd(), 'node_modules', 'tsx', 'dist', 'cli.mjs'),
-    path.resolve(__dirname, '..', 'node_modules', 'tsx', 'dist', 'cli.mjs'),
-    path.resolve(__dirname, '..', '..', 'node_modules', 'tsx', 'dist', 'cli.mjs'),
-    path.resolve(__dirname, '..', '..', '..', 'node_modules', 'tsx', 'dist', 'cli.mjs'),
-    path.resolve(__dirname, '..', '..', '..', '..', 'tsx', 'dist', 'cli.mjs'),
-  ];
-  return candidates.find((candidate) => fs.existsSync(candidate));
-}
-
-function runScriptPath(scriptPath, args, options = {}) {
-  const tsxCli = scriptPath.endsWith('.ts') ? resolveTsxCli() : undefined;
-  const runner = scriptPath.endsWith('.ts')
-    ? tsxCli
-      ? [process.execPath, [tsxCli, scriptPath, ...args]]
-      : ['npx', ['--no-install', 'tsx', scriptPath, ...args]]
-    : [process.execPath, [scriptPath, ...args]];
-  return spawnSync(runner[0], runner[1], {
-    cwd: process.cwd(),
-    stdio: options.silent ? ['inherit', 'ignore', 'inherit'] : 'inherit',
-    shell: runner[0] === 'npx' && process.platform === 'win32',
-  });
-}
-
-function runRepoScript(scriptName, args, options = {}) {
-  for (const prerequisite of options.before ?? []) {
-    const result = runScriptPath(resolveRepoScript(prerequisite), [], { silent: true });
-    if ((result.status ?? (result.error ? 1 : 0)) !== 0) {
-      process.exit(result.status ?? 1);
-    }
-  }
-  const result = runScriptPath(resolveRepoScript(scriptName), args);
-  process.exit(result.status ?? (result.error ? 1 : 0));
 }
 
 function forwardedArgsFromCommand(command) {

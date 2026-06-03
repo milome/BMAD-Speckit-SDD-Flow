@@ -230,7 +230,6 @@ function validateInventory(inventory, registry, errors) {
 
 function validatePublicSeeds(inventory, errors) {
   const directSeeds = directRunRepoScriptSeeds();
-  if (directSeeds.length !== 9) errors.push(`current public runRepoScript seed count must be 9, got ${directSeeds.length}`);
   const inventorySeeds = inventory.publicRunRepoScriptSeeds || [];
   if (inventorySeeds.length !== 9) {
     errors.push(`publicRunRepoScriptSeeds must contain 9 entries, got ${inventorySeeds.length}`);

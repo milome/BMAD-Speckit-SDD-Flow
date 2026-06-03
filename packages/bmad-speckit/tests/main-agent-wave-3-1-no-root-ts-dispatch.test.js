@@ -18,6 +18,11 @@ const COMMAND_SCRIPT_PAIRS = [
   ['main-agent:host-matrix-pr-orchestrate', 'scripts/main-agent-host-matrix-pr-orchestrator.ts'],
   ['bmads-auto', 'scripts/bmads-auto-cli.ts'],
 ];
+const OPTIONAL_SOURCE_DEV_ROOT_FILES = new Set([
+  // bmads-auto is de-surfaced and intentionally ignored in CI; keep the dispatch
+  // guard without requiring a deprecated local-only source file to exist.
+  'scripts/bmads-auto-cli.ts',
+]);
 
 function commandBlock(source, command) {
   const start = source.indexOf(`.command('${command}'`);
@@ -51,6 +56,9 @@ describe('main-agent wave 3.1 public dispatch guard', () => {
   it('keeps original wave 3.1 root files retained for source-development history', () => {
     for (const [, originalScript] of COMMAND_SCRIPT_PAIRS) {
       const rootScript = path.join(PROJECT_ROOT, originalScript);
+      if (OPTIONAL_SOURCE_DEV_ROOT_FILES.has(originalScript) && !fs.existsSync(rootScript)) {
+        continue;
+      }
       assert.equal(fs.existsSync(rootScript), true, rootScript);
     }
   });

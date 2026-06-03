@@ -984,49 +984,6 @@ function renderAiTddActiveRecord(record, isPrimary, budget, labels) {
   return lines;
 }
 
-function humanDecisionCardFor(runtime, secondaryRecords, labels) {
-  const primary = runtime.primaryRecord;
-  if (!primary) {
-    return {
-      seeing: labels.noActiveSeeing,
-      waiting: labels.noActiveWaiting,
-      action: labels.noActiveAction,
-      avoid: labels.noActiveAvoid,
-    };
-  }
-
-  const waiting = [];
-  const action = [];
-  const avoid = [...labels.baseAvoid];
-  if (primary.delivery.awaiting || primary.displayState === 'awaiting_user_acceptance') {
-    waiting.push(labels.waitingDelivery(primary));
-    action.push(labels.actionDelivery);
-    avoid.push(labels.avoidDelivery);
-  } else if (primary.reconfirmation.required) {
-    waiting.push(labels.waitingReconfirmation(primary));
-    action.push(labels.actionReconfirmation(primary));
-    avoid.push(labels.avoidReconfirmation);
-  } else if (primary.primaryReasonToken === 'readiness_blocker') {
-    waiting.push(labels.waitingReadiness(primary));
-    action.push(labels.actionReadiness(primary));
-    avoid.push(labels.avoidReadiness);
-  } else {
-    waiting.push(labels.waitingDefault(primary));
-    action.push(labels.actionDefault(primary));
-  }
-  if (secondaryRecords.length > 0) {
-    waiting.push(labels.secondaryWaiting(secondaryRecords.length));
-    avoid.push(labels.secondaryAvoid);
-  }
-
-  return {
-    seeing: labels.activeSeeing(runtime, primary),
-    waiting,
-    action,
-    avoid,
-  };
-}
-
 function summaryCardFor(runtime, secondaryRecords, labels) {
   const primary = runtime.primaryRecord;
   if (!primary) {
