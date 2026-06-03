@@ -236,6 +236,28 @@ describe('script migration registry contract', () => {
     expect(result.stdout).toContain('"status":"passed"');
   });
 
+  it('allows source history only original paths without weakening retained path checks', () => {
+    const registry = readRegistry();
+    const wave = getWave(registry, 'main-agent-runtime-migration-wave-3.1');
+    const sourceHistoryEntry = getEntry(wave, 'bmads-auto');
+    expect(sourceHistoryEntry.originalPathStatus).toBe('source_history_only');
+    expect(sourceHistoryEntry.migrationStrategy).toBe('public_cli_de_surface');
+    expect(sourceHistoryEntry.deletionAllowed).toBe(false);
+
+    sourceHistoryEntry.originalPath = 'scripts/fixture-history-only-script-that-is-not-checked-out.ts';
+    const fixturePath = path.join(tempDir(), 'script-migration-registry.yaml');
+    writeYaml(fixturePath, registry);
+    const allowed = runValidator(['--registry', fixturePath]);
+    expect(allowed.status, allowed.stderr || allowed.stdout).toBe(0);
+
+    sourceHistoryEntry.originalPathStatus = 'retained';
+    const retainedFixturePath = path.join(tempDir(), 'script-migration-registry.yaml');
+    writeYaml(retainedFixturePath, registry);
+    const rejected = runValidator(['--registry', retainedFixturePath]);
+    expect(rejected.status).not.toBe(0);
+    expect(`${rejected.stdout}\n${rejected.stderr}`).toContain('originalPath missing');
+  });
+
   it('rejects an unrelated active wave conflict for the same originalPath', () => {
     const registry = readRegistry();
     registry.waves.push({

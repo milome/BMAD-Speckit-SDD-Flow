@@ -131,6 +131,7 @@ const EXPECTED = [
     candidateId: 'wave-3-1-09',
     entryId: 'bmads-auto',
     originalPath: 'scripts/bmads-auto-cli.ts',
+    originalPathStatus: 'source_history_only',
     strategy: 'public_cli_de_surface',
     sourceTargets: ['packages/bmad-speckit/bin/bmad-speckit.js'],
     distTargets: [],
@@ -191,6 +192,10 @@ function sha256File(filePath) {
 
 function hasOwn(object, field) {
   return Object.prototype.hasOwnProperty.call(object || {}, field);
+}
+
+function expectedOriginalPathStatus(expected) {
+  return expected.originalPathStatus || 'retained';
 }
 
 function listFiles(dir) {
@@ -269,7 +274,18 @@ function validateRegistry(registry, errors) {
     }
     if (entry.refinesWaveId !== REFINES_WAVE_ID) errors.push(`${expected.entryId} refinesWaveId mismatch`);
     if (entry.originalPath !== expected.originalPath) errors.push(`${expected.entryId} originalPath mismatch`);
-    if (entry.originalPathStatus !== 'retained') errors.push(`${expected.entryId} originalPathStatus must be retained`);
+    const originalPathStatus = expectedOriginalPathStatus(expected);
+    if (entry.originalPathStatus !== originalPathStatus) {
+      errors.push(`${expected.entryId} originalPathStatus must be ${originalPathStatus}`);
+    }
+    if (
+      originalPathStatus === 'source_history_only' &&
+      (entry.migrationStrategy !== 'public_cli_de_surface' ||
+        entry.deletionAllowed !== false ||
+        entry.oldPathDisposition !== 'retained_source_dev_only')
+    ) {
+      errors.push(`${expected.entryId} source_history_only requires de-surface, no deletion, and source-dev-only disposition`);
+    }
     if (entry.migrationStrategy !== expected.strategy) errors.push(`${expected.entryId} migrationStrategy mismatch`);
     if (entry.migrationStatus !== 'validated') errors.push(`${expected.entryId} migrationStatus must be validated`);
     if (entry.callerSwitchStatus !== 'switched') errors.push(`${expected.entryId} callerSwitchStatus must be switched`);
@@ -290,7 +306,10 @@ function validateRegistry(registry, errors) {
 
 function validateFiles(errors) {
   for (const expected of EXPECTED) {
-    if (!fs.existsSync(path.join(ROOT, expected.originalPath))) {
+    if (
+      expectedOriginalPathStatus(expected) !== 'source_history_only' &&
+      !fs.existsSync(path.join(ROOT, expected.originalPath))
+    ) {
       errors.push(`original root script missing: ${expected.originalPath}`);
     }
     for (const target of [...expected.sourceTargets, ...expected.distTargets]) {

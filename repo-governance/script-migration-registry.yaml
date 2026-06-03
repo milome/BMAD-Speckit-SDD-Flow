@@ -155,7 +155,7 @@ waves:
     entries:
       - entryId: main-agent-runtime-closure-inventory
         originalPath: docs/plans/SCRIPT_MATRIX_2026-06-01-consumer-deployment-and-invocation.md
-        originalPathStatus: retained
+        originalPathStatus: source_history_only
         originalClassBeforeMigration: source_repo_governance
         migrationStrategy: repo_internal_reclassify
         migrationStatus: validated
@@ -365,7 +365,7 @@ waves:
       - entryId: bmads-auto
         refinesWaveId: main-agent-runtime-closure-wave-3
         originalPath: scripts/bmads-auto-cli.ts
-        originalPathStatus: retained
+        originalPathStatus: source_history_only
         originalClassBeforeMigration: deprecated_public_cli_de_surface_candidate
         migrationStrategy: public_cli_de_surface
         migrationStatus: validated

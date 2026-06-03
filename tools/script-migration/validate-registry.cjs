@@ -13,6 +13,10 @@ const MIGRATION_STATUSES = ['planned', 'in_progress', 'migrated', 'caller_switch
 const VALIDATION_STATUSES = ['pending', 'partial', 'passed', 'failed', 'blocked'];
 const WAVE_STATUSES = ['planned', 'in_progress', 'validated', 'blocked', 'superseded'];
 const ACTIVE_WAVE_STATUSES = new Set(['planned', 'in_progress', 'validated']);
+const ORIGINAL_PATH_EXISTENCE_EXEMPT_STATUSES = new Set([
+  'deleted_after_approval',
+  'source_history_only',
+]);
 
 const REQUIRED_WAVE_FIELDS = ['waveId', 'title', 'contractPath', 'status', 'startedAt', 'completedAt', 'entries'];
 const REQUIRED_ENTRY_FIELDS = ['entryId', 'originalPath', 'originalPathStatus', 'originalClassBeforeMigration', 'migrationStrategy', 'migrationStatus', 'targetPaths', 'publicCommandsBeforeMigration', 'publicCommandsAfterMigration', 'callerSwitchStatus', 'validationStatus', 'evidenceRefs', 'oldPathDisposition', 'deletionAllowed', 'deletionApprovalRef'];
@@ -148,7 +152,7 @@ function validateEntry(wave, entry, entryIds, activeOriginalPaths, errors) {
   if (!STRATEGIES.includes(entry.migrationStrategy)) errors.push(`invalid migrationStrategy for ${entry.entryId}: ${entry.migrationStrategy}`);
   if (!MIGRATION_STATUSES.includes(entry.migrationStatus)) errors.push(`invalid migrationStatus for ${entry.entryId}: ${entry.migrationStatus}`);
   if (!VALIDATION_STATUSES.includes(entry.validationStatus)) errors.push(`invalid validationStatus for ${entry.entryId}: ${entry.validationStatus}`);
-  if (entry.originalPathStatus !== 'deleted_after_approval' && !fs.existsSync(path.join(ROOT, entry.originalPath || ''))) {
+  if (!ORIGINAL_PATH_EXISTENCE_EXEMPT_STATUSES.has(entry.originalPathStatus) && !fs.existsSync(path.join(ROOT, entry.originalPath || ''))) {
     errors.push(`originalPath missing for ${entry.entryId}: ${entry.originalPath}`);
   }
   if (entry.deletionAllowed === true && entry.deletionApprovalRef == null) {
