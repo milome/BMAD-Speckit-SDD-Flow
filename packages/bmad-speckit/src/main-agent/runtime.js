@@ -1,9 +1,13 @@
 /* eslint-disable no-console */
 const path = require('node:path');
-const { confirmScopeAction, confirmScopeMissingReason } = require('./actions/confirm-scope');
+const {
+  confirmScopeAction,
+  confirmScopeMissingReason,
+  legacyConfirmScopeAction,
+} = require('./actions/confirm-scope');
 const { dispatchPlanAction } = require('./actions/dispatch-plan');
-const { hasRuntimeState, inspectRuntimeState } = require('./actions/inspect');
-const { runLoopAction } = require('./actions/run-loop');
+const { hasRuntimeState, inspectRuntimeState, legacyInspectSurface } = require('./actions/inspect');
+const { legacyRunLoopAction, runLoopAction } = require('./actions/run-loop');
 
 const SCHEMA_VERSION = 'main-agent-package-runtime/v1';
 const SUPPORTED_ACTIONS = new Set(['inspect', 'confirm-scope', 'dispatch-plan', 'run-loop']);
@@ -82,6 +86,11 @@ function emitResponse(context, response) {
   return response.exitCode;
 }
 
+function emitLegacyResult(result) {
+  if (!result.suppressStdout) writeJson(result.payload ?? result);
+  return result.exitCode ?? (result.ok === false ? 1 : 0);
+}
+
 function errorResponse(context, code, message, exitCode = 1) {
   return envelope(context, code, exitCode, null, [{ code, message }]);
 }
@@ -117,12 +126,19 @@ async function runMainAgentRuntime(context) {
   }
 
   if (context.action === 'inspect') {
+    if (context.legacyOrchestration) {
+      return emitLegacyResult({
+        exitCode: 0,
+        payload: legacyInspectSurface(context.cwd, context.args),
+      });
+    }
     return emitResponse(context, envelope(context, 'ok', 0, inspectRuntimeState(context.cwd)));
   }
 
   if (context.action === 'confirm-scope') {
     const reason = confirmScopeMissingReason(context.args);
     if (reason) return emitResponse(context, missingRuntimeState(context, reason));
+    if (context.legacyOrchestration) return emitLegacyResult(legacyConfirmScopeAction(context));
     const runtime = requireRuntimeState(context);
     if (!runtime.ok) return emitResponse(context, runtime.response);
     return emitResponse(context, envelope(context, 'ok', 0, confirmScopeAction(context, runtime.state)));
@@ -135,6 +151,7 @@ async function runMainAgentRuntime(context) {
   }
 
   if (context.action === 'run-loop') {
+    if (context.legacyOrchestration) return emitLegacyResult(legacyRunLoopAction(context));
     const runtime = requireRuntimeState(context);
     if (!runtime.ok) return emitResponse(context, runtime.response);
     return emitResponse(context, envelope(context, 'ok', 0, runLoopAction(context, runtime.state)));

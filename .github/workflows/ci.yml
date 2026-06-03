@@ -99,6 +99,9 @@ jobs:
       - name: SpeCKit mirror sync test
         run: npm run test:speckit-mirror-sync
 
+      - name: Build Main Agent dist runtime
+        run: npm run build:main-agent-dist
+
       - name: Vitest suite
         id: vitest
         continue-on-error: true

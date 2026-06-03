@@ -670,6 +670,7 @@ program
   .allowExcessArguments(true)
   .action((_options, command) =>
     runRuntimeModule('../dist/main-agent/index.js', 'mainAgentRuntimeCommand', [
+      '--legacy-orchestration',
       '--action',
       'confirm-scope',
       ...forwardedArgsFromCommand(command),
@@ -683,6 +684,7 @@ program
   .allowExcessArguments(true)
   .action((_options, command) =>
     runRuntimeModule('../dist/main-agent/index.js', 'mainAgentRuntimeCommand', [
+      '--legacy-orchestration',
       '--action',
       'confirm-scope',
       ...forwardedArgsFromCommand(command),
