@@ -382,3 +382,522 @@ waves:
         oldPathDisposition: retained_source_dev_only
         deletionAllowed: false
         deletionApprovalRef: null
+  - waveId: main-agent-runtime-migration-wave-3.2
+    title: Main Agent runtime migration wave 3.2 classification closure
+    contractPath: docs/plans/2026-06-04-main-agent-runtime-migration-wave-3-2-goal-execution-plan.md
+    refinesWaveId: main-agent-runtime-migration-wave-3.1
+    status: validated
+    startedAt: '2026-06-04T00:00:00+08:00'
+    completedAt: '2026-06-04T10:00:44.337Z'
+    entries:
+      - entryId: main-agent-codex-worker-adapter
+        refinesWaveId: main-agent-runtime-closure-wave-3
+        originalPath: scripts/main-agent-codex-worker-adapter.ts
+        originalPathStatus: retained
+        originalClassBeforeMigration: unknown_requires_wave_3_2_classification
+        migrationStrategy: package_runtime_module
+        migrationStatus: planned
+        targetPaths:
+          - packages/bmad-speckit/src/main-agent/actions/codex-worker-adapter.js
+          - packages/bmad-speckit/dist/main-agent/actions/codex-worker-adapter.js
+        publicCommandsBeforeMigration:
+          - main-agent:codex-worker => npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-codex-worker-adapter.ts
+          - test:ci:codex => npm run init:codex && npm run test:governance-fixtures && npx vitest run tests/acceptance/main-agent-codex-agent-parity.test.ts tests/acceptance/main-agent-codex-worker-adapter-e2e.test.ts tests/acceptance/main-agent-run-loop-e2e.test.ts tests/acceptance/main-agent-unified-ingress-e2e.test.ts tests/acceptance/orchestration-dispatch-contract.test.ts tests/acceptance/e2e-host-matrix-real-codex-smoke.test.ts tests/acceptance/main-agent-release-gate-contract.test.ts tests/acceptance/main-agent-delivery-truth-gate.test.ts tests/acceptance/main-agent-quality-gate-thresholds.test.ts tests/acceptance/main-agent-bmad-help-five-layer-matrix-e2e.test.ts tests/acceptance/main-agent-codex-consumer-five-layer-e2e.test.ts tests/acceptance/main-agent-codex-asset-host-leakage.test.ts tests/acceptance/reviewer-projection-parity.test.ts tests/acceptance/accept-install-consumer-cli.test.ts
+        publicCommandsAfterMigration:
+          - bmad-speckit main-agent codex-worker-adapter
+        callerSwitchStatus: pending
+        validationStatus: pending
+        evidenceRefs:
+          - repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json
+        oldPathDisposition: retained_pending_migration
+        deletionAllowed: false
+        deletionApprovalRef: null
+      - entryId: main-agent-compiled-prompt-runner
+        refinesWaveId: main-agent-runtime-closure-wave-3
+        originalPath: scripts/main-agent-compiled-prompt-runner.ts
+        originalPathStatus: retained
+        originalClassBeforeMigration: unknown_requires_wave_3_2_classification
+        migrationStrategy: package_runtime_module
+        migrationStatus: planned
+        targetPaths:
+          - packages/bmad-speckit/src/main-agent/actions/compiled-prompt-runner.js
+          - packages/bmad-speckit/dist/main-agent/actions/compiled-prompt-runner.js
+        publicCommandsBeforeMigration:
+          []
+        publicCommandsAfterMigration:
+          - bmad-speckit main-agent compiled-prompt-runner
+        callerSwitchStatus: pending
+        validationStatus: pending
+        evidenceRefs:
+          - repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json
+        oldPathDisposition: retained_pending_migration
+        deletionAllowed: false
+        deletionApprovalRef: null
+      - entryId: main-agent-implementation-readiness-gate
+        refinesWaveId: main-agent-runtime-closure-wave-3
+        originalPath: scripts/main-agent-implementation-readiness-gate.ts
+        originalPathStatus: retained
+        originalClassBeforeMigration: unknown_requires_wave_3_2_classification
+        migrationStrategy: package_runtime_module
+        migrationStatus: planned
+        targetPaths:
+          - packages/bmad-speckit/src/main-agent/actions/implementation-readiness-gate.js
+          - packages/bmad-speckit/dist/main-agent/actions/implementation-readiness-gate.js
+        publicCommandsBeforeMigration:
+          []
+        publicCommandsAfterMigration:
+          - bmad-speckit main-agent implementation-readiness-gate
+        callerSwitchStatus: pending
+        validationStatus: pending
+        evidenceRefs:
+          - repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json
+        oldPathDisposition: retained_pending_migration
+        deletionAllowed: false
+        deletionApprovalRef: null
+      - entryId: main-agent-unified-ingress
+        refinesWaveId: main-agent-runtime-closure-wave-3
+        originalPath: scripts/main-agent-unified-ingress.ts
+        originalPathStatus: retained
+        originalClassBeforeMigration: unknown_requires_wave_3_2_classification
+        migrationStrategy: package_runtime_module
+        migrationStatus: planned
+        targetPaths:
+          - packages/bmad-speckit/src/main-agent/actions/unified-ingress.js
+          - packages/bmad-speckit/dist/main-agent/actions/unified-ingress.js
+        publicCommandsBeforeMigration:
+          - test:ci:codex => npm run init:codex && npm run test:governance-fixtures && npx vitest run tests/acceptance/main-agent-codex-agent-parity.test.ts tests/acceptance/main-agent-codex-worker-adapter-e2e.test.ts tests/acceptance/main-agent-run-loop-e2e.test.ts tests/acceptance/main-agent-unified-ingress-e2e.test.ts tests/acceptance/orchestration-dispatch-contract.test.ts tests/acceptance/e2e-host-matrix-real-codex-smoke.test.ts tests/acceptance/main-agent-release-gate-contract.test.ts tests/acceptance/main-agent-delivery-truth-gate.test.ts tests/acceptance/main-agent-quality-gate-thresholds.test.ts tests/acceptance/main-agent-bmad-help-five-layer-matrix-e2e.test.ts tests/acceptance/main-agent-codex-consumer-five-layer-e2e.test.ts tests/acceptance/main-agent-codex-asset-host-leakage.test.ts tests/acceptance/reviewer-projection-parity.test.ts tests/acceptance/accept-install-consumer-cli.test.ts
+        publicCommandsAfterMigration:
+          - bmad-speckit main-agent unified-ingress
+        callerSwitchStatus: pending
+        validationStatus: pending
+        evidenceRefs:
+          - repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json
+        oldPathDisposition: retained_pending_migration
+        deletionAllowed: false
+        deletionApprovalRef: null
+      - entryId: main-agent-delivery-closeout-gate
+        refinesWaveId: main-agent-runtime-closure-wave-3
+        originalPath: scripts/main-agent-delivery-closeout-gate.ts
+        originalPathStatus: retained
+        originalClassBeforeMigration: unknown_requires_wave_3_2_classification
+        migrationStrategy: package_runtime_module
+        migrationStatus: planned
+        targetPaths:
+          - packages/bmad-speckit/src/main-agent/actions/delivery-closeout-gate.js
+          - packages/bmad-speckit/dist/main-agent/actions/delivery-closeout-gate.js
+        publicCommandsBeforeMigration:
+          []
+        publicCommandsAfterMigration:
+          - bmad-speckit main-agent delivery-closeout-gate
+        callerSwitchStatus: pending
+        validationStatus: pending
+        evidenceRefs:
+          - repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json
+        oldPathDisposition: retained_pending_migration
+        deletionAllowed: false
+        deletionApprovalRef: null
+      - entryId: main-agent-execution-closure-gate
+        refinesWaveId: main-agent-runtime-closure-wave-3
+        originalPath: scripts/main-agent-execution-closure-gate.ts
+        originalPathStatus: retained
+        originalClassBeforeMigration: unknown_requires_wave_3_2_classification
+        migrationStrategy: repo_internal_reclassify
+        migrationStatus: planned
+        targetPaths:
+          []
+        publicCommandsBeforeMigration:
+          []
+        publicCommandsAfterMigration:
+          []
+        callerSwitchStatus: not_applicable
+        validationStatus: pending
+        evidenceRefs:
+          - repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json
+        oldPathDisposition: retained_source_dev_only
+        deletionAllowed: false
+        deletionApprovalRef: null
+      - entryId: main-agent-production-loop-ready-check
+        refinesWaveId: main-agent-runtime-closure-wave-3
+        originalPath: scripts/main-agent-production-loop-ready-check.ts
+        originalPathStatus: retained
+        originalClassBeforeMigration: unknown_requires_wave_3_2_classification
+        migrationStrategy: repo_internal_reclassify
+        migrationStatus: planned
+        targetPaths:
+          []
+        publicCommandsBeforeMigration:
+          []
+        publicCommandsAfterMigration:
+          []
+        callerSwitchStatus: not_applicable
+        validationStatus: pending
+        evidenceRefs:
+          - repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json
+        oldPathDisposition: retained_source_dev_only
+        deletionAllowed: false
+        deletionApprovalRef: null
+      - entryId: main-agent-scoring-gates-check
+        refinesWaveId: main-agent-runtime-closure-wave-3
+        originalPath: scripts/main-agent-scoring-gates-check.ts
+        originalPathStatus: retained
+        originalClassBeforeMigration: unknown_requires_wave_3_2_classification
+        migrationStrategy: repo_internal_reclassify
+        migrationStatus: planned
+        targetPaths:
+          []
+        publicCommandsBeforeMigration:
+          []
+        publicCommandsAfterMigration:
+          []
+        callerSwitchStatus: not_applicable
+        validationStatus: pending
+        evidenceRefs:
+          - repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json
+        oldPathDisposition: retained_source_dev_only
+        deletionAllowed: false
+        deletionApprovalRef: null
+      - entryId: main-agent-runtime-policy-snapshot-check
+        refinesWaveId: main-agent-runtime-closure-wave-3
+        originalPath: scripts/main-agent-runtime-policy-snapshot-check.ts
+        originalPathStatus: retained
+        originalClassBeforeMigration: unknown_requires_wave_3_2_classification
+        migrationStrategy: repo_internal_reclassify
+        migrationStatus: planned
+        targetPaths:
+          []
+        publicCommandsBeforeMigration:
+          []
+        publicCommandsAfterMigration:
+          []
+        callerSwitchStatus: not_applicable
+        validationStatus: pending
+        evidenceRefs:
+          - repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json
+        oldPathDisposition: retained_source_dev_only
+        deletionAllowed: false
+        deletionApprovalRef: null
+      - entryId: main-agent-trace-status-policy-check
+        refinesWaveId: main-agent-runtime-closure-wave-3
+        originalPath: scripts/main-agent-trace-status-policy-check.ts
+        originalPathStatus: retained
+        originalClassBeforeMigration: unknown_requires_wave_3_2_classification
+        migrationStrategy: repo_internal_reclassify
+        migrationStatus: planned
+        targetPaths:
+          []
+        publicCommandsBeforeMigration:
+          []
+        publicCommandsAfterMigration:
+          []
+        callerSwitchStatus: not_applicable
+        validationStatus: pending
+        evidenceRefs:
+          - repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json
+        oldPathDisposition: retained_source_dev_only
+        deletionAllowed: false
+        deletionApprovalRef: null
+      - entryId: main-agent-data-governance-gate
+        refinesWaveId: main-agent-runtime-closure-wave-3
+        originalPath: scripts/main-agent-data-governance-gate.ts
+        originalPathStatus: retained
+        originalClassBeforeMigration: unknown_requires_wave_3_2_classification
+        migrationStrategy: repo_internal_reclassify
+        migrationStatus: planned
+        targetPaths:
+          []
+        publicCommandsBeforeMigration:
+          []
+        publicCommandsAfterMigration:
+          []
+        callerSwitchStatus: not_applicable
+        validationStatus: pending
+        evidenceRefs:
+          - repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json
+        oldPathDisposition: retained_source_dev_only
+        deletionAllowed: false
+        deletionApprovalRef: null
+      - entryId: main-agent-dataset-release-gate
+        refinesWaveId: main-agent-runtime-closure-wave-3
+        originalPath: scripts/main-agent-dataset-release-gate.ts
+        originalPathStatus: retained
+        originalClassBeforeMigration: unknown_requires_wave_3_2_classification
+        migrationStrategy: repo_internal_reclassify
+        migrationStatus: planned
+        targetPaths:
+          []
+        publicCommandsBeforeMigration:
+          []
+        publicCommandsAfterMigration:
+          []
+        callerSwitchStatus: not_applicable
+        validationStatus: pending
+        evidenceRefs:
+          - repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json
+        oldPathDisposition: retained_source_dev_only
+        deletionAllowed: false
+        deletionApprovalRef: null
+      - entryId: main-agent-governed-data-products
+        refinesWaveId: main-agent-runtime-closure-wave-3
+        originalPath: scripts/main-agent-governed-data-products.ts
+        originalPathStatus: retained
+        originalClassBeforeMigration: unknown_requires_wave_3_2_classification
+        migrationStrategy: repo_internal_reclassify
+        migrationStatus: planned
+        targetPaths:
+          []
+        publicCommandsBeforeMigration:
+          []
+        publicCommandsAfterMigration:
+          []
+        callerSwitchStatus: not_applicable
+        validationStatus: pending
+        evidenceRefs:
+          - repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json
+        oldPathDisposition: retained_source_dev_only
+        deletionAllowed: false
+        deletionApprovalRef: null
+      - entryId: main-agent-functional-resume-check
+        refinesWaveId: main-agent-runtime-closure-wave-3
+        originalPath: scripts/main-agent-functional-resume-check.ts
+        originalPathStatus: retained
+        originalClassBeforeMigration: unknown_requires_wave_3_2_classification
+        migrationStrategy: repo_internal_reclassify
+        migrationStatus: planned
+        targetPaths:
+          []
+        publicCommandsBeforeMigration:
+          []
+        publicCommandsAfterMigration:
+          []
+        callerSwitchStatus: not_applicable
+        validationStatus: pending
+        evidenceRefs:
+          - repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json
+        oldPathDisposition: retained_source_dev_only
+        deletionAllowed: false
+        deletionApprovalRef: null
+      - entryId: main-agent-entryflow-traceability-check
+        refinesWaveId: main-agent-runtime-closure-wave-3
+        originalPath: scripts/main-agent-entryflow-traceability-check.ts
+        originalPathStatus: retained
+        originalClassBeforeMigration: unknown_requires_wave_3_2_classification
+        migrationStrategy: repo_internal_reclassify
+        migrationStatus: planned
+        targetPaths:
+          []
+        publicCommandsBeforeMigration:
+          []
+        publicCommandsAfterMigration:
+          []
+        callerSwitchStatus: not_applicable
+        validationStatus: pending
+        evidenceRefs:
+          - repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json
+        oldPathDisposition: retained_source_dev_only
+        deletionAllowed: false
+        deletionApprovalRef: null
+      - entryId: main-agent-control-plane-isolation-check
+        refinesWaveId: main-agent-runtime-closure-wave-3
+        originalPath: scripts/main-agent-control-plane-isolation-check.ts
+        originalPathStatus: retained
+        originalClassBeforeMigration: unknown_requires_wave_3_2_classification
+        migrationStrategy: repo_internal_reclassify
+        migrationStatus: planned
+        targetPaths:
+          []
+        publicCommandsBeforeMigration:
+          []
+        publicCommandsAfterMigration:
+          []
+        callerSwitchStatus: not_applicable
+        validationStatus: pending
+        evidenceRefs:
+          - repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json
+        oldPathDisposition: retained_source_dev_only
+        deletionAllowed: false
+        deletionApprovalRef: null
+      - entryId: main-agent-decision-field-check
+        refinesWaveId: main-agent-runtime-closure-wave-3
+        originalPath: scripts/main-agent-decision-field-check.ts
+        originalPathStatus: retained
+        originalClassBeforeMigration: unknown_requires_wave_3_2_classification
+        migrationStrategy: repo_internal_reclassify
+        migrationStatus: planned
+        targetPaths:
+          []
+        publicCommandsBeforeMigration:
+          []
+        publicCommandsAfterMigration:
+          []
+        callerSwitchStatus: not_applicable
+        validationStatus: pending
+        evidenceRefs:
+          - repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json
+        oldPathDisposition: retained_source_dev_only
+        deletionAllowed: false
+        deletionApprovalRef: null
+      - entryId: main-agent-ai-tdd-closeout-remediation-adapter
+        refinesWaveId: main-agent-runtime-closure-wave-3
+        originalPath: scripts/main-agent-ai-tdd-closeout-remediation-adapter.ts
+        originalPathStatus: retained
+        originalClassBeforeMigration: unknown_requires_wave_3_2_classification
+        migrationStrategy: repo_internal_reclassify
+        migrationStatus: planned
+        targetPaths:
+          []
+        publicCommandsBeforeMigration:
+          []
+        publicCommandsAfterMigration:
+          []
+        callerSwitchStatus: not_applicable
+        validationStatus: pending
+        evidenceRefs:
+          - repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json
+        oldPathDisposition: retained_source_dev_only
+        deletionAllowed: false
+        deletionApprovalRef: null
+      - entryId: main-agent-audit-review-gate
+        refinesWaveId: main-agent-runtime-closure-wave-3
+        originalPath: scripts/main-agent-audit-review-gate.ts
+        originalPathStatus: retained
+        originalClassBeforeMigration: unknown_requires_wave_3_2_classification
+        migrationStrategy: repo_internal_reclassify
+        migrationStatus: planned
+        targetPaths:
+          []
+        publicCommandsBeforeMigration:
+          []
+        publicCommandsAfterMigration:
+          []
+        callerSwitchStatus: not_applicable
+        validationStatus: pending
+        evidenceRefs:
+          - repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json
+        oldPathDisposition: retained_source_dev_only
+        deletionAllowed: false
+        deletionApprovalRef: null
+      - entryId: main-agent-bmad-artifact-hardcut
+        refinesWaveId: main-agent-runtime-closure-wave-3
+        originalPath: scripts/main-agent-bmad-artifact-hardcut.ts
+        originalPathStatus: retained
+        originalClassBeforeMigration: unknown_requires_wave_3_2_classification
+        migrationStrategy: repo_internal_reclassify
+        migrationStatus: planned
+        targetPaths:
+          []
+        publicCommandsBeforeMigration:
+          []
+        publicCommandsAfterMigration:
+          []
+        callerSwitchStatus: not_applicable
+        validationStatus: pending
+        evidenceRefs:
+          - repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json
+        oldPathDisposition: retained_source_dev_only
+        deletionAllowed: false
+        deletionApprovalRef: null
+      - entryId: main-agent-delivery-evidence-run
+        refinesWaveId: main-agent-runtime-closure-wave-3
+        originalPath: scripts/main-agent-delivery-evidence-run.ts
+        originalPathStatus: retained
+        originalClassBeforeMigration: unknown_requires_wave_3_2_classification
+        migrationStrategy: package_runtime_module
+        migrationStatus: planned
+        targetPaths:
+          - packages/bmad-speckit/src/main-agent/actions/delivery-evidence-run.js
+          - packages/bmad-speckit/dist/main-agent/actions/delivery-evidence-run.js
+        publicCommandsBeforeMigration:
+          - main-agent:delivery-evidence-run => npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-delivery-evidence-run.ts
+        publicCommandsAfterMigration:
+          - bmad-speckit main-agent delivery-evidence-run
+        callerSwitchStatus: pending
+        validationStatus: pending
+        evidenceRefs:
+          - repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json
+        oldPathDisposition: retained_pending_migration
+        deletionAllowed: false
+        deletionApprovalRef: null
+      - entryId: main-agent-soak-runner
+        refinesWaveId: main-agent-runtime-closure-wave-3
+        originalPath: scripts/main-agent-soak-runner.ts
+        originalPathStatus: retained
+        originalClassBeforeMigration: unknown_requires_wave_3_2_classification
+        migrationStrategy: package_runtime_module
+        migrationStatus: planned
+        targetPaths:
+          - packages/bmad-speckit/src/main-agent/actions/soak-runner.js
+          - packages/bmad-speckit/dist/main-agent/actions/soak-runner.js
+        publicCommandsBeforeMigration:
+          - main-agent:soak-contract => npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-soak-runner.ts --contract-8h
+          - main-agent:long-run-soak => npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-soak-runner.ts
+        publicCommandsAfterMigration:
+          - bmad-speckit main-agent soak-runner
+        callerSwitchStatus: pending
+        validationStatus: pending
+        evidenceRefs:
+          - repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json
+        oldPathDisposition: retained_pending_migration
+        deletionAllowed: false
+        deletionApprovalRef: null
+      - entryId: main-agent-development-journey-matrix
+        refinesWaveId: main-agent-runtime-closure-wave-3
+        originalPath: scripts/main-agent-development-journey-matrix.ts
+        originalPathStatus: retained
+        originalClassBeforeMigration: unknown_requires_wave_3_2_classification
+        migrationStrategy: repo_internal_reclassify
+        migrationStatus: planned
+        targetPaths:
+          []
+        publicCommandsBeforeMigration:
+          - main-agent:development-journey-matrix => npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-development-journey-matrix.ts
+        publicCommandsAfterMigration:
+          - npm run main-agent:development-journey-matrix
+        callerSwitchStatus: not_applicable
+        validationStatus: pending
+        evidenceRefs:
+          - repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json
+        oldPathDisposition: retained_source_dev_only
+        deletionAllowed: false
+        deletionApprovalRef: null
+      - entryId: main-agent-dual-host-pr-orchestrator
+        refinesWaveId: main-agent-runtime-closure-wave-3
+        originalPath: scripts/main-agent-dual-host-pr-orchestrator.ts
+        originalPathStatus: retained
+        originalClassBeforeMigration: unknown_requires_wave_3_2_classification
+        migrationStrategy: package_runtime_module
+        migrationStatus: planned
+        targetPaths:
+          - packages/bmad-speckit/src/main-agent/actions/dual-host-pr-orchestrator.js
+          - packages/bmad-speckit/dist/main-agent/actions/dual-host-pr-orchestrator.js
+        publicCommandsBeforeMigration:
+          - main-agent:dual-host-pr-orchestrate => npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-dual-host-pr-orchestrator.ts
+        publicCommandsAfterMigration:
+          - bmad-speckit main-agent dual-host-pr-orchestrator
+        callerSwitchStatus: pending
+        validationStatus: pending
+        evidenceRefs:
+          - repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json
+        oldPathDisposition: retained_pending_migration
+        deletionAllowed: false
+        deletionApprovalRef: null
+      - entryId: main-agent-chaos-scenarios
+        refinesWaveId: main-agent-runtime-closure-wave-3
+        originalPath: scripts/main-agent-chaos-scenarios.ts
+        originalPathStatus: retained
+        originalClassBeforeMigration: unknown_requires_wave_3_2_classification
+        migrationStrategy: package_runtime_module
+        migrationStatus: planned
+        targetPaths:
+          - packages/bmad-speckit/src/main-agent/actions/chaos-scenarios.js
+          - packages/bmad-speckit/dist/main-agent/actions/chaos-scenarios.js
+        publicCommandsBeforeMigration:
+          - test:main-agent-chaos => npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-chaos-scenarios.ts
+        publicCommandsAfterMigration:
+          - bmad-speckit main-agent chaos-scenarios
+        callerSwitchStatus: pending
+        validationStatus: pending
+        evidenceRefs:
+          - repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json
+        oldPathDisposition: retained_pending_migration
+        deletionAllowed: false
+        deletionApprovalRef: null

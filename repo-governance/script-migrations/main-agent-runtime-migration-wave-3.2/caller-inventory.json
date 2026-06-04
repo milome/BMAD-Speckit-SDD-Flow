@@ -1,0 +1,1322 @@
+{
+  "schemaVersion": "main-agent-wave-3-2-caller-inventory/v1",
+  "waveId": "main-agent-runtime-migration-wave-3.2",
+  "contractPath": "docs/plans/2026-06-04-main-agent-runtime-migration-wave-3-2-goal-execution-plan.md",
+  "generatedAt": "2026-06-04T00:00:00.000Z",
+  "validatedAt": "2026-06-04T00:00:00.000Z",
+  "rootMainAgentTotal": 31,
+  "settledEntriesExcludedFromWave3_2": 6,
+  "wave3_2TargetEntries": 25,
+  "entries": [
+    {
+      "entryId": "main-agent-codex-worker-adapter",
+      "originalPath": "scripts/main-agent-codex-worker-adapter.ts",
+      "originalExists": true,
+      "scope": "compiled_ingress",
+      "packageJsonScripts": [
+        "main-agent:codex-worker => npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-codex-worker-adapter.ts",
+        "test:ci:codex => npm run init:codex && npm run test:governance-fixtures && npx vitest run tests/acceptance/main-agent-codex-agent-parity.test.ts tests/acceptance/main-agent-codex-worker-adapter-e2e.test.ts tests/acceptance/main-agent-run-loop-e2e.test.ts tests/acceptance/main-agent-unified-ingress-e2e.test.ts tests/acceptance/orchestration-dispatch-contract.test.ts tests/acceptance/e2e-host-matrix-real-codex-smoke.test.ts tests/acceptance/main-agent-release-gate-contract.test.ts tests/acceptance/main-agent-delivery-truth-gate.test.ts tests/acceptance/main-agent-quality-gate-thresholds.test.ts tests/acceptance/main-agent-bmad-help-five-layer-matrix-e2e.test.ts tests/acceptance/main-agent-codex-consumer-five-layer-e2e.test.ts tests/acceptance/main-agent-codex-asset-host-leakage.test.ts tests/acceptance/reviewer-projection-parity.test.ts tests/acceptance/accept-install-consumer-cli.test.ts"
+      ],
+      "packageCliCommands": [],
+      "packageRuntimeRefs": [
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:21568:// scripts/main-agent-codex-worker-adapter.ts",
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:22597:// scripts/main-agent-codex-worker-adapter.ts",
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:23092:entry: \"main-agent-codex-worker-adapter\",",
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:23292:producer: \"main-agent-codex-worker-adapter\",",
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:23751:console.error(\"main-agent-codex-worker-adapter: --packetPath is required\");",
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:23794:return /(^|[\\\\/])main-agent-codex-worker-adapter(\\.[cm]?js|\\.ts)?$/iu.test(entry ?? \"\");"
+      ],
+      "installedSurfaceRefs": [
+        "_bmad/_config/hooks-owner-model-registry.yaml:683:- scripts/main-agent-codex-worker-adapter.ts",
+        "_bmad/_config/main-agent-quality-gate.thresholds.json:10:\"scripts/main-agent-codex-worker-adapter.ts\",",
+        "_bmad/_config/main-agent-quality-gate.thresholds.json:33:\"tests/acceptance/main-agent-codex-worker-adapter-e2e.test.ts\",",
+        "_bmad/_config/main-agent-quality-gate.thresholds.json:38:\"tests/acceptance/main-agent-codex-worker-adapter-e2e.test.ts\",",
+        "_bmad/_config/script-owner-model-registry.yaml:118:path: scripts/main-agent-codex-worker-adapter.ts",
+        ".claude/hooks/emit-runtime-policy.cjs:18939:// ../../scripts/main-agent-codex-worker-adapter.ts",
+        ".claude/hooks/emit-runtime-policy.cjs:19988:// ../../scripts/main-agent-codex-worker-adapter.ts",
+        ".claude/hooks/emit-runtime-policy.cjs:20483:entry: \"main-agent-codex-worker-adapter\",",
+        ".claude/hooks/emit-runtime-policy.cjs:20683:producer: \"main-agent-codex-worker-adapter\",",
+        ".claude/hooks/emit-runtime-policy.cjs:21142:console.error(\"main-agent-codex-worker-adapter: --packetPath is required\");",
+        ".claude/hooks/emit-runtime-policy.cjs:21185:return /(^|[\\\\/])main-agent-codex-worker-adapter(\\.[cm]?js|\\.ts)?$/iu.test(entry ?? \"\");",
+        ".claude/hooks/resolve-for-session.cjs:14329:// ../../scripts/main-agent-codex-worker-adapter.ts",
+        ".claude/hooks/resolve-for-session.cjs:15261:// ../../scripts/main-agent-codex-worker-adapter.ts",
+        ".claude/hooks/resolve-for-session.cjs:15492:entry: \"main-agent-codex-worker-adapter\",",
+        ".claude/hooks/resolve-for-session.cjs:15632:producer: \"main-agent-codex-worker-adapter\",",
+        ".claude/hooks/resolve-for-session.cjs:16035:console.error(\"main-agent-codex-worker-adapter: --packetPath is required\");",
+        ".claude/hooks/resolve-for-session.cjs:16076:return /(^|[\\\\/])main-agent-codex-worker-adapter(\\.[cm]?js|\\.ts)?$/iu.test(entry ?? \"\");",
+        ".cursor/hooks/emit-runtime-policy.cjs:18939:// ../../scripts/main-agent-codex-worker-adapter.ts",
+        ".cursor/hooks/emit-runtime-policy.cjs:19988:// ../../scripts/main-agent-codex-worker-adapter.ts",
+        ".cursor/hooks/emit-runtime-policy.cjs:20483:entry: \"main-agent-codex-worker-adapter\",",
+        ".cursor/hooks/emit-runtime-policy.cjs:20683:producer: \"main-agent-codex-worker-adapter\",",
+        ".cursor/hooks/emit-runtime-policy.cjs:21142:console.error(\"main-agent-codex-worker-adapter: --packetPath is required\");",
+        ".cursor/hooks/emit-runtime-policy.cjs:21185:return /(^|[\\\\/])main-agent-codex-worker-adapter(\\.[cm]?js|\\.ts)?$/iu.test(entry ?? \"\");",
+        ".cursor/hooks/resolve-for-session.cjs:14329:// ../../scripts/main-agent-codex-worker-adapter.ts",
+        ".cursor/hooks/resolve-for-session.cjs:15261:// ../../scripts/main-agent-codex-worker-adapter.ts",
+        ".cursor/hooks/resolve-for-session.cjs:15492:entry: \"main-agent-codex-worker-adapter\",",
+        ".cursor/hooks/resolve-for-session.cjs:15632:producer: \"main-agent-codex-worker-adapter\",",
+        ".cursor/hooks/resolve-for-session.cjs:16035:console.error(\"main-agent-codex-worker-adapter: --packetPath is required\");",
+        ".cursor/hooks/resolve-for-session.cjs:16076:return /(^|[\\\\/])main-agent-codex-worker-adapter(\\.[cm]?js|\\.ts)?$/iu.test(entry ?? \"\");",
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:21568:// scripts/main-agent-codex-worker-adapter.ts",
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:22597:// scripts/main-agent-codex-worker-adapter.ts",
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:23092:entry: \"main-agent-codex-worker-adapter\",",
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:23292:producer: \"main-agent-codex-worker-adapter\",",
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:23751:console.error(\"main-agent-codex-worker-adapter: --packetPath is required\");",
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:23794:return /(^|[\\\\/])main-agent-codex-worker-adapter(\\.[cm]?js|\\.ts)?$/iu.test(entry ?? \"\");"
+      ],
+      "acceptanceTestRefs": [
+        "tests/acceptance/main-agent-codex-worker-adapter-e2e.test.ts:11:import { main, runCodexWorkerAdapter } from '../../scripts/main-agent-codex-worker-adapter';",
+        "tests/acceptance/main-agent-codex-worker-adapter-e2e.test.ts:93:producer: 'tests/acceptance/main-agent-codex-worker-adapter-e2e',",
+        "tests/acceptance/main-agent-codex-worker-adapter-e2e.test.ts:572:entry: 'main-agent-codex-worker-adapter',",
+        "tests/acceptance/subagent-surface-inventory.test.ts:64:path: scripts/main-agent-codex-worker-adapter.ts",
+        "tests/acceptance/subagent-surface-inventory.test.ts:133:path.join(root, 'scripts', 'main-agent-codex-worker-adapter.ts'),",
+        "tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json:1096:\"scripts/main-agent-codex-worker-adapter.ts\",",
+        "tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json:4515:\"scripts/main-agent-codex-worker-adapter.ts\"",
+        "tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json:4527:\"scripts/main-agent-codex-worker-adapter.ts\",",
+        "tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json:5878:\"path\": \"scripts/main-agent-codex-worker-adapter.ts\",",
+        "tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json:6854:\"path\": \"scripts/main-agent-codex-worker-adapter.ts\","
+      ],
+      "sourceScriptRefs": [
+        "scripts/e2e-host-matrix-journey-runner.ts:11:import { runCodexWorkerAdapter } from './main-agent-codex-worker-adapter';",
+        "scripts/main-agent-orchestration.ts:60:import { runCodexWorkerAdapter } from './main-agent-codex-worker-adapter';",
+        "scripts/main-agent-orchestration.ts:85:import type { CodexWorkerAdapterReport } from './main-agent-codex-worker-adapter';",
+        "scripts/main-agent-release-gate.ts:11:import { runCodexWorkerAdapter } from './main-agent-codex-worker-adapter';",
+        "scripts/main-agent-release-gate.ts:410:'Codex worker adapter executes through main-agent-codex-worker-adapter in codex_exec mode.',",
+        "scripts/real-development-tick-worker.js:337:tsNodeArgs(path.join(BMAD_ROOT, 'scripts', 'main-agent-codex-worker-adapter.ts'), [",
+        "scripts/real-development-tick-worker.js:453:action: 'bmad-main-agent-codex-worker-adapter-dispatch-ingest-gate-tick',",
+        "scripts/subagent-surface-inventory.ts:57:'scripts/main-agent-codex-worker-adapter.ts',",
+        "scripts/subagent-surface-inventory.ts:416:if (filePath.includes('main-agent-codex-worker-adapter.ts')) return 'Codex worker adapter';"
+      ],
+      "docsRefsCount": 81,
+      "consumerReachability": "consumer_runtime_reachable",
+      "requiresPackaging": true,
+      "canBecomePackageModule": true,
+      "recommendedMigrationStrategy": "package_runtime_module",
+      "recommendedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/codex-worker-adapter.js",
+        "packages/bmad-speckit/dist/main-agent/actions/codex-worker-adapter.js"
+      ],
+      "minimumTests": [
+        "npm run test --prefix packages/bmad-speckit",
+        "npx vitest run tests/acceptance/main-agent-runtime-migration-wave-3-2-contract.test.ts",
+        "node tools/script-migration/validate-registry.cjs"
+      ],
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json"
+      ],
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/codex-worker-adapter.js",
+        "packages/bmad-speckit/dist/main-agent/actions/codex-worker-adapter.js"
+      ],
+      "commands": [
+        {
+          "command": "Wave 3.2 caller inventory classification for main-agent-codex-worker-adapter",
+          "exitCode": 0,
+          "stdoutHash": "sha256:classification-only",
+          "stderrHash": "sha256:classification-only"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "main-agent-compiled-prompt-runner",
+      "originalPath": "scripts/main-agent-compiled-prompt-runner.ts",
+      "originalExists": true,
+      "scope": "compiled_ingress",
+      "packageJsonScripts": [],
+      "packageCliCommands": [],
+      "packageRuntimeRefs": [
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:14820:// scripts/main-agent-compiled-prompt-runner.ts"
+      ],
+      "installedSurfaceRefs": [
+        ".claude/hooks/emit-runtime-policy.cjs:16504:// ../../scripts/main-agent-compiled-prompt-runner.ts",
+        ".cursor/hooks/emit-runtime-policy.cjs:16504:// ../../scripts/main-agent-compiled-prompt-runner.ts",
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:14820:// scripts/main-agent-compiled-prompt-runner.ts"
+      ],
+      "acceptanceTestRefs": [
+        "tests/acceptance/req-trace-main-agent-dispatch-integration.test.ts:9:} from '../../scripts/main-agent-compiled-prompt-runner';",
+        "tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json:1095:\"scripts/main-agent-compiled-prompt-runner.ts\",",
+        "tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json:4514:\"scripts/main-agent-compiled-prompt-runner.ts\",",
+        "tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json:5870:\"path\": \"scripts/main-agent-compiled-prompt-runner.ts\",",
+        "tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json:6842:\"path\": \"scripts/main-agent-compiled-prompt-runner.ts\","
+      ],
+      "sourceScriptRefs": [
+        "scripts/main-agent-orchestration.ts:25:import { runMainAgentCompiledPrompt } from './main-agent-compiled-prompt-runner';"
+      ],
+      "docsRefsCount": 18,
+      "consumerReachability": "consumer_runtime_reachable",
+      "requiresPackaging": true,
+      "canBecomePackageModule": true,
+      "recommendedMigrationStrategy": "package_runtime_module",
+      "recommendedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/compiled-prompt-runner.js",
+        "packages/bmad-speckit/dist/main-agent/actions/compiled-prompt-runner.js"
+      ],
+      "minimumTests": [
+        "npm run test --prefix packages/bmad-speckit",
+        "npx vitest run tests/acceptance/main-agent-runtime-migration-wave-3-2-contract.test.ts",
+        "node tools/script-migration/validate-registry.cjs"
+      ],
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json"
+      ],
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/compiled-prompt-runner.js",
+        "packages/bmad-speckit/dist/main-agent/actions/compiled-prompt-runner.js"
+      ],
+      "commands": [
+        {
+          "command": "Wave 3.2 caller inventory classification for main-agent-compiled-prompt-runner",
+          "exitCode": 0,
+          "stdoutHash": "sha256:classification-only",
+          "stderrHash": "sha256:classification-only"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "main-agent-implementation-readiness-gate",
+      "originalPath": "scripts/main-agent-implementation-readiness-gate.ts",
+      "originalExists": true,
+      "scope": "compiled_ingress",
+      "packageJsonScripts": [],
+      "packageCliCommands": [],
+      "packageRuntimeRefs": [
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:27479:// scripts/main-agent-implementation-readiness-gate.ts",
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:32158:// scripts/main-agent-implementation-readiness-gate.ts",
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:32160:return /(^|[\\\\/])main-agent-implementation-readiness-gate(\\.[cm]?js|\\.ts)?$/iu.test(entry ?? \"\");",
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:32658:\"Usage: main-agent-implementation-readiness-gate --requirement-record <json> [--source <requirement.md>] [--implementation-run-kind <first-implementation|rerun>] [--json]\"",
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:43910:\"main-agent-implementation-readiness-gate:rerun\""
+      ],
+      "installedSurfaceRefs": [
+        ".claude/hooks/emit-runtime-policy.cjs:25421:// ../../scripts/main-agent-implementation-readiness-gate.ts",
+        ".claude/hooks/emit-runtime-policy.cjs:30100:// ../../scripts/main-agent-implementation-readiness-gate.ts",
+        ".claude/hooks/emit-runtime-policy.cjs:30102:return /(^|[\\\\/])main-agent-implementation-readiness-gate(\\.[cm]?js|\\.ts)?$/iu.test(entry ?? \"\");",
+        ".claude/hooks/emit-runtime-policy.cjs:30600:\"Usage: main-agent-implementation-readiness-gate --requirement-record <json> [--source <requirement.md>] [--implementation-run-kind <first-implementation|rerun>] [--json]\"",
+        ".claude/hooks/emit-runtime-policy.cjs:41807:\"main-agent-implementation-readiness-gate:rerun\"",
+        ".cursor/hooks/emit-runtime-policy.cjs:25421:// ../../scripts/main-agent-implementation-readiness-gate.ts",
+        ".cursor/hooks/emit-runtime-policy.cjs:30100:// ../../scripts/main-agent-implementation-readiness-gate.ts",
+        ".cursor/hooks/emit-runtime-policy.cjs:30102:return /(^|[\\\\/])main-agent-implementation-readiness-gate(\\.[cm]?js|\\.ts)?$/iu.test(entry ?? \"\");",
+        ".cursor/hooks/emit-runtime-policy.cjs:30600:\"Usage: main-agent-implementation-readiness-gate --requirement-record <json> [--source <requirement.md>] [--implementation-run-kind <first-implementation|rerun>] [--json]\"",
+        ".cursor/hooks/emit-runtime-policy.cjs:41807:\"main-agent-implementation-readiness-gate:rerun\"",
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:27479:// scripts/main-agent-implementation-readiness-gate.ts",
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:32158:// scripts/main-agent-implementation-readiness-gate.ts",
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:32160:return /(^|[\\\\/])main-agent-implementation-readiness-gate(\\.[cm]?js|\\.ts)?$/iu.test(entry ?? \"\");",
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:32658:\"Usage: main-agent-implementation-readiness-gate --requirement-record <json> [--source <requirement.md>] [--implementation-run-kind <first-implementation|rerun>] [--json]\"",
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:43910:\"main-agent-implementation-readiness-gate:rerun\""
+      ],
+      "acceptanceTestRefs": [
+        "tests/acceptance/confirmation-projection-hash-policy.test.ts:9:import { mainImplementationReadinessGate } from '../../scripts/main-agent-implementation-readiness-gate';",
+        "tests/acceptance/generate-architecture-confirmation-artifact.test.ts:131:const targetPaths = JSON.stringify(['scripts/main-agent-implementation-readiness-gate.ts']);",
+        "tests/acceptance/main-agent-implementation-readiness-gate-record.test.ts:6:import { mainImplementationReadinessGate } from '../../scripts/main-agent-implementation-readiness-gate';",
+        "tests/acceptance/main-agent-implementation-readiness-gate-record.test.ts:259:path: 'scripts/main-agent-implementation-readiness-gate.ts',",
+        "tests/acceptance/main-agent-implementation-readiness-gate-record.test.ts:307:path: 'scripts/main-agent-implementation-readiness-gate.ts',",
+        "tests/acceptance/main-agent-implementation-readiness-gate-record.test.ts:315:targetPathOrField: 'scripts/main-agent-implementation-readiness-gate.ts',",
+        "tests/acceptance/main-agent-implementation-readiness-gate-record.test.ts:339:path: 'scripts/main-agent-implementation-readiness-gate.ts',",
+        "tests/acceptance/main-agent-orchestration-consumer.test.ts:26:import { mainImplementationReadinessGate } from '../../scripts/main-agent-implementation-readiness-gate';",
+        "tests/acceptance/main-agent-readiness-auto-remediation.test.ts:12:import { mainImplementationReadinessGate } from '../../scripts/main-agent-implementation-readiness-gate';",
+        "tests/acceptance/prepare-architecture-confirmation-page.test.ts:140:const targetPaths = JSON.stringify(['scripts/main-agent-implementation-readiness-gate.ts']);",
+        "tests/acceptance/render-architecture-confirmation-html.test.ts:50:'scripts/main-agent-implementation-readiness-gate.ts',",
+        "tests/acceptance/requirement-record-control-store-enforcement.test.ts:9:'scripts/main-agent-implementation-readiness-gate.ts',",
+        "tests/acceptance/requirements-contract-authoring-skill-contract.test.ts:472:'scripts/main-agent-implementation-readiness-gate.ts',",
+        "tests/acceptance/requirements-contract-checkpoint-automation.test.ts:2648:'scripts/main-agent-implementation-readiness-gate.ts',",
+        "tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json:900:\"tests/acceptance/main-agent-implementation-readiness-gate-record.test.ts\",",
+        "tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json:916:\"tests/acceptance/main-agent-implementation-readiness-gate-record.test.ts\",",
+        "tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json:932:\"tests/acceptance/main-agent-implementation-readiness-gate-record.test.ts\"",
+        "tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json:2393:\"file\": \"tests/acceptance/main-agent-implementation-readiness-gate-record.test.ts\",",
+        "tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json:4344:\"command\": \"npx vitest run tests/acceptance/main-agent-implementation-readiness-gate-record.test.ts\",",
+        "tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json:4347:\"files\": [\"tests/acceptance/main-agent-implementation-readiness-gate-record.test.ts\"],",
+        "tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json:4416:\"command\": \"rg -n -e 'architecture_confirmation_state_checked|implementation_readiness_check_recorded|readiness_baseline_activation_requested|closeout_recorded' -- scripts/main-agent-orchestration.ts tests/acceptance/main-agent-implementati",
+        "tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json:4421:\"tests/acceptance/main-agent-implementation-readiness-gate-record.test.ts\",",
+        "tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json:4575:\"command\": \"npx vitest run tests/acceptance/orchestration-dispatch-contract.test.ts tests/acceptance/auditor-host-runner.test.ts tests/acceptance/audit-scoring-convergence-policy.test.ts tests/acceptance/speckit-cli-audit-runner.test.ts tes",
+        "tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json:4583:\"tests/unit/main-agent-implementation-readiness-gate.test.ts\"",
+        "tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json:4725:\"files\": [\"tests/acceptance/main-agent-implementation-readiness-gate-record.test.ts\"],",
+        "tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json:4998:\"files\": [\"tests/acceptance/main-agent-implementation-readiness-gate-record.test.ts\"],",
+        "tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json:5574:\"path\": \"tests/acceptance/main-agent-implementation-readiness-gate-record.test.ts\",",
+        "tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json:5758:\"path\": \"tests/unit/main-agent-implementation-readiness-gate.test.ts\",",
+        "tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json:6398:\"path\": \"tests/acceptance/main-agent-implementation-readiness-gate-record.test.ts\",",
+        "tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json:6674:\"path\": \"tests/unit/main-agent-implementation-readiness-gate.test.ts\",",
+        "tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json:7035:\"command\": \"npx vitest run tests/acceptance/main-agent-implementation-readiness-gate-record.test.ts\",",
+        "tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json:7084:\"command\": \"rg -n -e 'architecture_confirmation_state_checked|implementation_readiness_check_recorded|readiness_baseline_activation_requested|closeout_recorded' -- scripts/main-agent-orchestration.ts tests/acceptance/main-agent-implementati",
+        "tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json:7168:\"command\": \"npx vitest run tests/acceptance/orchestration-dispatch-contract.test.ts tests/acceptance/auditor-host-runner.test.ts tests/acceptance/audit-scoring-convergence-policy.test.ts tests/acceptance/speckit-cli-audit-runner.test.ts tes",
+        "tests/fixtures/requirements/REQ-CHECKPOINT-AUTOMATION/source.requirement.md:42:path: scripts/main-agent-implementation-readiness-gate.ts",
+        "tests/unit/main-agent-implementation-readiness-gate.test.ts:5:import { mainImplementationReadinessGate } from '../../scripts/main-agent-implementation-readiness-gate';",
+        "tests/unit/readiness-score-writer-boundary.test.ts:6:'scripts/main-agent-implementation-readiness-gate.ts',"
+      ],
+      "sourceScriptRefs": [
+        "scripts/main-agent-orchestration.ts:79:import { mainImplementationReadinessGate } from './main-agent-implementation-readiness-gate';",
+        "scripts/main-agent-orchestration.ts:10883:'main-agent-implementation-readiness-gate:rerun',",
+        "scripts/record-main-agent-inspect-readiness-closure.ts:128:command: 'npx vitest run tests/unit/main-agent-implementation-readiness-gate*.test.ts',",
+        "scripts/record-main-agent-inspect-readiness-closure.ts:235:path: 'scripts/main-agent-implementation-readiness-gate.ts',",
+        "scripts/record-main-agent-inspect-readiness-closure.ts:236:contentHash: hashFile(root, 'scripts/main-agent-implementation-readiness-gate.ts'),",
+        "scripts/record-main-agent-inspect-readiness-closure.ts:281:path: 'tests/unit/main-agent-implementation-readiness-gate.test.ts',",
+        "scripts/record-main-agent-inspect-readiness-closure.ts:282:contentHash: hashFile(root, 'tests/unit/main-agent-implementation-readiness-gate.test.ts'),"
+      ],
+      "docsRefsCount": 76,
+      "consumerReachability": "consumer_runtime_reachable",
+      "requiresPackaging": true,
+      "canBecomePackageModule": true,
+      "recommendedMigrationStrategy": "package_runtime_module",
+      "recommendedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/implementation-readiness-gate.js",
+        "packages/bmad-speckit/dist/main-agent/actions/implementation-readiness-gate.js"
+      ],
+      "minimumTests": [
+        "npm run test --prefix packages/bmad-speckit",
+        "npx vitest run tests/acceptance/main-agent-runtime-migration-wave-3-2-contract.test.ts",
+        "node tools/script-migration/validate-registry.cjs"
+      ],
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json"
+      ],
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/implementation-readiness-gate.js",
+        "packages/bmad-speckit/dist/main-agent/actions/implementation-readiness-gate.js"
+      ],
+      "commands": [
+        {
+          "command": "Wave 3.2 caller inventory classification for main-agent-implementation-readiness-gate",
+          "exitCode": 0,
+          "stdoutHash": "sha256:classification-only",
+          "stderrHash": "sha256:classification-only"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "main-agent-unified-ingress",
+      "originalPath": "scripts/main-agent-unified-ingress.ts",
+      "originalExists": true,
+      "scope": "compiled_ingress",
+      "packageJsonScripts": [
+        "test:ci:codex => npm run init:codex && npm run test:governance-fixtures && npx vitest run tests/acceptance/main-agent-codex-agent-parity.test.ts tests/acceptance/main-agent-codex-worker-adapter-e2e.test.ts tests/acceptance/main-agent-run-loop-e2e.test.ts tests/acceptance/main-agent-unified-ingress-e2e.test.ts tests/acceptance/orchestration-dispatch-contract.test.ts tests/acceptance/e2e-host-matrix-real-codex-smoke.test.ts tests/acceptance/main-agent-release-gate-contract.test.ts tests/acceptance/main-agent-delivery-truth-gate.test.ts tests/acceptance/main-agent-quality-gate-thresholds.test.ts tests/acceptance/main-agent-bmad-help-five-layer-matrix-e2e.test.ts tests/acceptance/main-agent-codex-consumer-five-layer-e2e.test.ts tests/acceptance/main-agent-codex-asset-host-leakage.test.ts tests/acceptance/reviewer-projection-parity.test.ts tests/acceptance/accept-install-consumer-cli.test.ts"
+      ],
+      "packageCliCommands": [],
+      "packageRuntimeRefs": [],
+      "installedSurfaceRefs": [
+        "_bmad/_config/hooks-owner-model-registry.yaml:660:- scripts/main-agent-unified-ingress.ts",
+        "_bmad/_config/main-agent-quality-gate.thresholds.json:9:\"scripts/main-agent-unified-ingress.ts\",",
+        "_bmad/_config/main-agent-quality-gate.thresholds.json:34:\"tests/acceptance/main-agent-unified-ingress-e2e.test.ts\"",
+        "_bmad/_config/script-owner-model-registry.yaml:66:path: scripts/main-agent-unified-ingress.ts",
+        "_bmad/commands/bmad-speckit.md:15:4. Route execution through `main-agent-orchestration` / `main-agent-unified-ingress` for the active host.",
+        "_bmad/skills/bmad-speckit/SKILL.md:83:3. Normalize the host entry into the `main-agent-orchestration` control plane through `main-agent-unified-ingress` or the installed equivalent runtime controller.",
+        ".claude/commands/bmad-speckit.md:15:4. Route execution through `main-agent-orchestration` / `main-agent-unified-ingress` for the active host.",
+        ".claude/skills/bmad-speckit/SKILL.md:81:3. Normalize the host entry into the `main-agent-orchestration` control plane through `main-agent-unified-ingress` or the installed equivalent runtime controller.",
+        ".codex/commands/bmad-speckit.md:15:4. Route execution through `main-agent-orchestration` / `main-agent-unified-ingress` for the active host.",
+        ".codex/skills/bmad-speckit/SKILL.md:83:3. Normalize the host entry into the `main-agent-orchestration` control plane through `main-agent-unified-ingress` or the installed equivalent runtime controller.",
+        ".cursor/commands/bmad-speckit.md:15:4. Route execution through `main-agent-orchestration` / `main-agent-unified-ingress` for the active host.",
+        ".cursor/skills/bmad-speckit/SKILL.md:83:3. Normalize the host entry into the `main-agent-orchestration` control plane through `main-agent-unified-ingress` or the installed equivalent runtime controller."
+      ],
+      "acceptanceTestRefs": [
+        "tests/acceptance/main-agent-orchestration-consumer.test.ts:25:import { runUnifiedIngressAsync } from '../../scripts/main-agent-unified-ingress';",
+        "tests/acceptance/main-agent-unified-ingress-e2e.test.ts:8:} from '../../scripts/main-agent-unified-ingress';"
+      ],
+      "sourceScriptRefs": [
+        "scripts/main-agent-development-journey-matrix.ts:5:import { runUnifiedIngress, type MainAgentHostKind } from './main-agent-unified-ingress';"
+      ],
+      "docsRefsCount": 30,
+      "consumerReachability": "installed_surface_reachable",
+      "requiresPackaging": true,
+      "canBecomePackageModule": true,
+      "recommendedMigrationStrategy": "package_runtime_module",
+      "recommendedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/unified-ingress.js",
+        "packages/bmad-speckit/dist/main-agent/actions/unified-ingress.js"
+      ],
+      "minimumTests": [
+        "npm run test --prefix packages/bmad-speckit",
+        "npx vitest run tests/acceptance/main-agent-runtime-migration-wave-3-2-contract.test.ts",
+        "node tools/script-migration/validate-registry.cjs"
+      ],
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json"
+      ],
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/unified-ingress.js",
+        "packages/bmad-speckit/dist/main-agent/actions/unified-ingress.js"
+      ],
+      "commands": [
+        {
+          "command": "Wave 3.2 caller inventory classification for main-agent-unified-ingress",
+          "exitCode": 0,
+          "stdoutHash": "sha256:classification-only",
+          "stderrHash": "sha256:classification-only"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "main-agent-delivery-closeout-gate",
+      "originalPath": "scripts/main-agent-delivery-closeout-gate.ts",
+      "originalExists": true,
+      "scope": "governance_closeout",
+      "packageJsonScripts": [],
+      "packageCliCommands": [],
+      "packageRuntimeRefs": [],
+      "installedSurfaceRefs": [
+        "_bmad/_config/script-owner-model-registry.yaml:1144:path: scripts/main-agent-delivery-closeout-gate.ts"
+      ],
+      "acceptanceTestRefs": [
+        "tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts:6:import { mainDeliveryCloseoutGate } from '../../scripts/main-agent-delivery-closeout-gate';",
+        "tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts:187:producer: 'main-agent-delivery-closeout-gate-record.test',",
+        "tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts:458:producer: 'main-agent-delivery-closeout-gate-record.test',",
+        "tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts:503:producer: 'main-agent-delivery-closeout-gate-record.test',",
+        "tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts:589:producer: 'main-agent-delivery-closeout-gate-record.test',",
+        "tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts:620:producer: 'main-agent-delivery-closeout-gate-record.test',",
+        "tests/acceptance/main-agent-reconfirmation-runtime.test.ts:9:import { mainDeliveryCloseoutGate } from '../../scripts/main-agent-delivery-closeout-gate';",
+        "tests/acceptance/main-agent-scoring-gates-check.test.ts:8:import { mainDeliveryCloseoutGate } from '../../scripts/main-agent-delivery-closeout-gate';",
+        "tests/acceptance/parallel-mission-evidence-integration.test.ts:6:import { mainDeliveryCloseoutGate } from '../../scripts/main-agent-delivery-closeout-gate';",
+        "tests/acceptance/pre-rerun-anti-false-positive-gate.test.ts:50:'      - scriptOrConfigPath: scripts/main-agent-delivery-closeout-gate.ts',",
+        "tests/acceptance/render-requirements-confirmation-html.test.ts:433:path: \"scripts/main-agent-delivery-closeout-gate.ts\"",
+        "tests/acceptance/render-requirements-confirmation-html.test.ts:750:scriptPath: \"scripts/main-agent-delivery-closeout-gate.ts\"",
+        "tests/acceptance/render-requirements-confirmation-html.test.ts:852:command: \"node scripts/main-agent-delivery-closeout-gate.ts --record REQ-UPLOAD-001 --json\"",
+        "tests/acceptance/requirement-record-control-store-enforcement.test.ts:8:'scripts/main-agent-delivery-closeout-gate.ts',",
+        "tests/acceptance/requirements-contract-checkpoint-automation.test.ts:2649:'scripts/main-agent-delivery-closeout-gate.ts',",
+        "tests/acceptance/subagent-current-attempt-revalidation.test.ts:6:import { mainDeliveryCloseoutGate } from '../../scripts/main-agent-delivery-closeout-gate';",
+        "tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json:885:\"tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts\"",
+        "tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json:901:\"tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts\"",
+        "tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json:3202:\"pathOrField\": \"tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts\",",
+        "tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json:4353:\"command\": \"npx vitest run tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts\",",
+        "tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json:4356:\"files\": [\"tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts\"],",
+        "tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json:4416:\"command\": \"rg -n -e 'architecture_confirmation_state_checked|implementation_readiness_check_recorded|readiness_baseline_activation_requested|closeout_recorded' -- scripts/main-agent-orchestration.ts tests/acceptance/main-agent-implementati",
+        "tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json:4422:\"tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts\"",
+        "tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json:5351:\"pathOrField\": \"tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts\",",
+        "tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json:5582:\"path\": \"tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts\",",
+        "tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json:6410:\"path\": \"tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts\",",
+        "tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json:7042:\"command\": \"npx vitest run tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts\",",
+        "tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json:7084:\"command\": \"rg -n -e 'architecture_confirmation_state_checked|implementation_readiness_check_recorded|readiness_baseline_activation_requested|closeout_recorded' -- scripts/main-agent-orchestration.ts tests/acceptance/main-agent-implementati",
+        "tests/fixtures/requirements/REQ-CHECKPOINT-AUTOMATION/source.requirement.md:44:path: scripts/main-agent-delivery-closeout-gate.ts"
+      ],
+      "sourceScriptRefs": [
+        "scripts/trace-040-evidence-packet-generator.ts:166:'scripts/main-agent-delivery-closeout-gate.ts',"
+      ],
+      "docsRefsCount": 131,
+      "consumerReachability": "installed_surface_reachable",
+      "requiresPackaging": true,
+      "canBecomePackageModule": true,
+      "recommendedMigrationStrategy": "package_runtime_module",
+      "recommendedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/delivery-closeout-gate.js",
+        "packages/bmad-speckit/dist/main-agent/actions/delivery-closeout-gate.js"
+      ],
+      "minimumTests": [
+        "npm run test --prefix packages/bmad-speckit",
+        "npx vitest run tests/acceptance/main-agent-runtime-migration-wave-3-2-contract.test.ts",
+        "node tools/script-migration/validate-registry.cjs"
+      ],
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json"
+      ],
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/delivery-closeout-gate.js",
+        "packages/bmad-speckit/dist/main-agent/actions/delivery-closeout-gate.js"
+      ],
+      "commands": [
+        {
+          "command": "Wave 3.2 caller inventory classification for main-agent-delivery-closeout-gate",
+          "exitCode": 0,
+          "stdoutHash": "sha256:classification-only",
+          "stderrHash": "sha256:classification-only"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "main-agent-execution-closure-gate",
+      "originalPath": "scripts/main-agent-execution-closure-gate.ts",
+      "originalExists": true,
+      "scope": "governance_closeout",
+      "packageJsonScripts": [],
+      "packageCliCommands": [],
+      "packageRuntimeRefs": [],
+      "installedSurfaceRefs": [],
+      "acceptanceTestRefs": [
+        "tests/acceptance/main-agent-execution-closure-gate-record.test.ts:5:import { mainExecutionClosureGate } from '../../scripts/main-agent-execution-closure-gate';",
+        "tests/acceptance/main-agent-execution-closure-gate-record.test.ts:21:producer: 'main-agent-execution-closure-gate-record.test',",
+        "tests/acceptance/main-agent-reconfirmation-runtime.test.ts:10:import { mainExecutionClosureGate } from '../../scripts/main-agent-execution-closure-gate';"
+      ],
+      "sourceScriptRefs": [],
+      "docsRefsCount": 10,
+      "consumerReachability": "source_repo_only",
+      "requiresPackaging": false,
+      "canBecomePackageModule": false,
+      "recommendedMigrationStrategy": "repo_internal_reclassify",
+      "recommendedTargetPaths": [],
+      "minimumTests": [
+        "node tools/script-migration/validate-main-agent-wave-3-2.cjs",
+        "npx vitest run tests/acceptance/main-agent-runtime-migration-wave-3-2-contract.test.ts"
+      ],
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json"
+      ],
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "targetPaths": [],
+      "commands": [
+        {
+          "command": "Wave 3.2 caller inventory classification for main-agent-execution-closure-gate",
+          "exitCode": 0,
+          "stdoutHash": "sha256:classification-only",
+          "stderrHash": "sha256:classification-only"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "main-agent-production-loop-ready-check",
+      "originalPath": "scripts/main-agent-production-loop-ready-check.ts",
+      "originalExists": true,
+      "scope": "governance_closeout",
+      "packageJsonScripts": [],
+      "packageCliCommands": [],
+      "packageRuntimeRefs": [],
+      "installedSurfaceRefs": [],
+      "acceptanceTestRefs": [
+        "tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts:278:'scripts/main-agent-production-loop-ready-check.ts',",
+        "tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts:353:'scripts/main-agent-production-loop-ready-check.ts',",
+        "tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts:362:'tests/acceptance/main-agent-production-loop-ready-check.test.ts',",
+        "tests/acceptance/main-agent-production-loop-ready-check.test.ts:6:import { mainProductionLoopReadyCheck } from '../../scripts/main-agent-production-loop-ready-check';",
+        "tests/acceptance/main-agent-production-loop-ready-check.test.ts:56:producer: 'main-agent-production-loop-ready-check.test',",
+        "tests/acceptance/main-agent-production-loop-ready-check.test.ts:285:producer: 'main-agent-production-loop-ready-check.test',",
+        "tests/acceptance/requirement-record-schema.test.ts:268:producer: 'main-agent-production-loop-ready-check',"
+      ],
+      "sourceScriptRefs": [],
+      "docsRefsCount": 9,
+      "consumerReachability": "source_repo_only",
+      "requiresPackaging": false,
+      "canBecomePackageModule": false,
+      "recommendedMigrationStrategy": "repo_internal_reclassify",
+      "recommendedTargetPaths": [],
+      "minimumTests": [
+        "node tools/script-migration/validate-main-agent-wave-3-2.cjs",
+        "npx vitest run tests/acceptance/main-agent-runtime-migration-wave-3-2-contract.test.ts"
+      ],
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json"
+      ],
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "targetPaths": [],
+      "commands": [
+        {
+          "command": "Wave 3.2 caller inventory classification for main-agent-production-loop-ready-check",
+          "exitCode": 0,
+          "stdoutHash": "sha256:classification-only",
+          "stderrHash": "sha256:classification-only"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "main-agent-scoring-gates-check",
+      "originalPath": "scripts/main-agent-scoring-gates-check.ts",
+      "originalExists": true,
+      "scope": "governance_closeout",
+      "packageJsonScripts": [],
+      "packageCliCommands": [],
+      "packageRuntimeRefs": [],
+      "installedSurfaceRefs": [],
+      "acceptanceTestRefs": [
+        "tests/acceptance/main-agent-scoring-gates-check.test.ts:10:import { mainScoringGatesCheck } from '../../scripts/main-agent-scoring-gates-check';",
+        "tests/acceptance/main-agent-scoring-gates-check.test.ts:85:producer: 'main-agent-scoring-gates-check.test',",
+        "tests/acceptance/main-agent-scoring-gates-check.test.ts:236:'npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-scoring-gates-check.ts',",
+        "tests/acceptance/main-agent-scoring-gates-check.test.ts:258:'npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-scoring-gates-check.ts',",
+        "tests/acceptance/main-agent-scoring-gates-check.test.ts:495:'scripts/main-agent-scoring-gates-check.ts',",
+        "tests/acceptance/main-agent-scoring-gates-check.test.ts:500:'scripts/main-agent-scoring-gates-check.ts',",
+        "tests/acceptance/main-agent-scoring-gates-check.test.ts:509:command: 'npx vitest run tests/acceptance/main-agent-scoring-gates-check.test.ts',",
+        "tests/acceptance/main-agent-scoring-gates-check.test.ts:522:command: 'npx vitest run tests/acceptance/main-agent-scoring-gates-check.test.ts',"
+      ],
+      "sourceScriptRefs": [],
+      "docsRefsCount": 9,
+      "consumerReachability": "source_repo_only",
+      "requiresPackaging": false,
+      "canBecomePackageModule": false,
+      "recommendedMigrationStrategy": "repo_internal_reclassify",
+      "recommendedTargetPaths": [],
+      "minimumTests": [
+        "node tools/script-migration/validate-main-agent-wave-3-2.cjs",
+        "npx vitest run tests/acceptance/main-agent-runtime-migration-wave-3-2-contract.test.ts"
+      ],
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json"
+      ],
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "targetPaths": [],
+      "commands": [
+        {
+          "command": "Wave 3.2 caller inventory classification for main-agent-scoring-gates-check",
+          "exitCode": 0,
+          "stdoutHash": "sha256:classification-only",
+          "stderrHash": "sha256:classification-only"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "main-agent-runtime-policy-snapshot-check",
+      "originalPath": "scripts/main-agent-runtime-policy-snapshot-check.ts",
+      "originalExists": true,
+      "scope": "governance_closeout",
+      "packageJsonScripts": [],
+      "packageCliCommands": [],
+      "packageRuntimeRefs": [],
+      "installedSurfaceRefs": [],
+      "acceptanceTestRefs": [
+        "tests/acceptance/main-agent-runtime-policy-snapshot-check.test.ts:7:import { mainRuntimePolicySnapshotCheck } from '../../scripts/main-agent-runtime-policy-snapshot-check';",
+        "tests/acceptance/main-agent-runtime-policy-snapshot-check.test.ts:94:producer: 'main-agent-runtime-policy-snapshot-check.test',",
+        "tests/acceptance/main-agent-runtime-policy-snapshot-check.test.ts:241:filesChanged: ['scripts/main-agent-runtime-policy-snapshot-check.ts'],",
+        "tests/acceptance/main-agent-runtime-policy-snapshot-check.test.ts:243:filesChanged: ['scripts/main-agent-runtime-policy-snapshot-check.ts'],",
+        "tests/acceptance/main-agent-runtime-policy-snapshot-check.test.ts:253:'npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-runtime-policy-snapshot-check.ts',",
+        "tests/acceptance/main-agent-runtime-policy-snapshot-check.test.ts:269:'npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-runtime-policy-snapshot-check.ts',"
+      ],
+      "sourceScriptRefs": [],
+      "docsRefsCount": 7,
+      "consumerReachability": "source_repo_only",
+      "requiresPackaging": false,
+      "canBecomePackageModule": false,
+      "recommendedMigrationStrategy": "repo_internal_reclassify",
+      "recommendedTargetPaths": [],
+      "minimumTests": [
+        "node tools/script-migration/validate-main-agent-wave-3-2.cjs",
+        "npx vitest run tests/acceptance/main-agent-runtime-migration-wave-3-2-contract.test.ts"
+      ],
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json"
+      ],
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "targetPaths": [],
+      "commands": [
+        {
+          "command": "Wave 3.2 caller inventory classification for main-agent-runtime-policy-snapshot-check",
+          "exitCode": 0,
+          "stdoutHash": "sha256:classification-only",
+          "stderrHash": "sha256:classification-only"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "main-agent-trace-status-policy-check",
+      "originalPath": "scripts/main-agent-trace-status-policy-check.ts",
+      "originalExists": true,
+      "scope": "governance_closeout",
+      "packageJsonScripts": [],
+      "packageCliCommands": [],
+      "packageRuntimeRefs": [],
+      "installedSurfaceRefs": [],
+      "acceptanceTestRefs": [
+        "tests/acceptance/main-agent-trace-status-policy-check.test.ts:5:import { mainTraceStatusPolicyCheck } from '../../scripts/main-agent-trace-status-policy-check';"
+      ],
+      "sourceScriptRefs": [],
+      "docsRefsCount": 6,
+      "consumerReachability": "source_repo_only",
+      "requiresPackaging": false,
+      "canBecomePackageModule": false,
+      "recommendedMigrationStrategy": "repo_internal_reclassify",
+      "recommendedTargetPaths": [],
+      "minimumTests": [
+        "node tools/script-migration/validate-main-agent-wave-3-2.cjs",
+        "npx vitest run tests/acceptance/main-agent-runtime-migration-wave-3-2-contract.test.ts"
+      ],
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json"
+      ],
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "targetPaths": [],
+      "commands": [
+        {
+          "command": "Wave 3.2 caller inventory classification for main-agent-trace-status-policy-check",
+          "exitCode": 0,
+          "stdoutHash": "sha256:classification-only",
+          "stderrHash": "sha256:classification-only"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "main-agent-data-governance-gate",
+      "originalPath": "scripts/main-agent-data-governance-gate.ts",
+      "originalExists": true,
+      "scope": "governance_closeout",
+      "packageJsonScripts": [],
+      "packageCliCommands": [],
+      "packageRuntimeRefs": [],
+      "installedSurfaceRefs": [],
+      "acceptanceTestRefs": [
+        "tests/acceptance/main-agent-data-governance-gate.test.ts:5:import { mainDataGovernanceGate } from '../../scripts/main-agent-data-governance-gate';"
+      ],
+      "sourceScriptRefs": [],
+      "docsRefsCount": 7,
+      "consumerReachability": "source_repo_only",
+      "requiresPackaging": false,
+      "canBecomePackageModule": false,
+      "recommendedMigrationStrategy": "repo_internal_reclassify",
+      "recommendedTargetPaths": [],
+      "minimumTests": [
+        "node tools/script-migration/validate-main-agent-wave-3-2.cjs",
+        "npx vitest run tests/acceptance/main-agent-runtime-migration-wave-3-2-contract.test.ts"
+      ],
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json"
+      ],
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "targetPaths": [],
+      "commands": [
+        {
+          "command": "Wave 3.2 caller inventory classification for main-agent-data-governance-gate",
+          "exitCode": 0,
+          "stdoutHash": "sha256:classification-only",
+          "stderrHash": "sha256:classification-only"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "main-agent-dataset-release-gate",
+      "originalPath": "scripts/main-agent-dataset-release-gate.ts",
+      "originalExists": true,
+      "scope": "governance_closeout",
+      "packageJsonScripts": [],
+      "packageCliCommands": [],
+      "packageRuntimeRefs": [],
+      "installedSurfaceRefs": [],
+      "acceptanceTestRefs": [
+        "tests/acceptance/main-agent-dataset-release-gate.test.ts:6:import { mainDatasetReleaseGate } from '../../scripts/main-agent-dataset-release-gate';",
+        "tests/acceptance/main-agent-dataset-release-gate.test.ts:62:producer: 'main-agent-dataset-release-gate.test',",
+        "tests/acceptance/main-agent-dataset-release-gate.test.ts:192:producer: 'main-agent-dataset-release-gate.test',",
+        "tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts:279:'scripts/main-agent-dataset-release-gate.ts',",
+        "tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts:354:'scripts/main-agent-dataset-release-gate.ts',",
+        "tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts:363:'tests/acceptance/main-agent-dataset-release-gate.test.ts',"
+      ],
+      "sourceScriptRefs": [],
+      "docsRefsCount": 12,
+      "consumerReachability": "source_repo_only",
+      "requiresPackaging": false,
+      "canBecomePackageModule": false,
+      "recommendedMigrationStrategy": "repo_internal_reclassify",
+      "recommendedTargetPaths": [],
+      "minimumTests": [
+        "node tools/script-migration/validate-main-agent-wave-3-2.cjs",
+        "npx vitest run tests/acceptance/main-agent-runtime-migration-wave-3-2-contract.test.ts"
+      ],
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json"
+      ],
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "targetPaths": [],
+      "commands": [
+        {
+          "command": "Wave 3.2 caller inventory classification for main-agent-dataset-release-gate",
+          "exitCode": 0,
+          "stdoutHash": "sha256:classification-only",
+          "stderrHash": "sha256:classification-only"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "main-agent-governed-data-products",
+      "originalPath": "scripts/main-agent-governed-data-products.ts",
+      "originalExists": true,
+      "scope": "governance_closeout",
+      "packageJsonScripts": [],
+      "packageCliCommands": [],
+      "packageRuntimeRefs": [],
+      "installedSurfaceRefs": [],
+      "acceptanceTestRefs": [
+        "tests/acceptance/main-agent-governed-data-products.test.ts:6:import { mainGovernedDataProducts } from '../../scripts/main-agent-governed-data-products';",
+        "tests/acceptance/main-agent-governed-data-products.test.ts:95:producer: 'main-agent-governed-data-products.test',",
+        "tests/acceptance/requirement-record-control-store-enforcement.test.ts:39:const dataProducts = readProjectFile('scripts/main-agent-governed-data-products.ts');"
+      ],
+      "sourceScriptRefs": [],
+      "docsRefsCount": 10,
+      "consumerReachability": "source_repo_only",
+      "requiresPackaging": false,
+      "canBecomePackageModule": false,
+      "recommendedMigrationStrategy": "repo_internal_reclassify",
+      "recommendedTargetPaths": [],
+      "minimumTests": [
+        "node tools/script-migration/validate-main-agent-wave-3-2.cjs",
+        "npx vitest run tests/acceptance/main-agent-runtime-migration-wave-3-2-contract.test.ts"
+      ],
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json"
+      ],
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "targetPaths": [],
+      "commands": [
+        {
+          "command": "Wave 3.2 caller inventory classification for main-agent-governed-data-products",
+          "exitCode": 0,
+          "stdoutHash": "sha256:classification-only",
+          "stderrHash": "sha256:classification-only"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "main-agent-functional-resume-check",
+      "originalPath": "scripts/main-agent-functional-resume-check.ts",
+      "originalExists": true,
+      "scope": "governance_closeout",
+      "packageJsonScripts": [],
+      "packageCliCommands": [],
+      "packageRuntimeRefs": [],
+      "installedSurfaceRefs": [],
+      "acceptanceTestRefs": [
+        "tests/acceptance/main-agent-functional-resume-check.test.ts:6:import { mainFunctionalResumeCheck } from '../../scripts/main-agent-functional-resume-check';"
+      ],
+      "sourceScriptRefs": [],
+      "docsRefsCount": 11,
+      "consumerReachability": "source_repo_only",
+      "requiresPackaging": false,
+      "canBecomePackageModule": false,
+      "recommendedMigrationStrategy": "repo_internal_reclassify",
+      "recommendedTargetPaths": [],
+      "minimumTests": [
+        "node tools/script-migration/validate-main-agent-wave-3-2.cjs",
+        "npx vitest run tests/acceptance/main-agent-runtime-migration-wave-3-2-contract.test.ts"
+      ],
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json"
+      ],
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "targetPaths": [],
+      "commands": [
+        {
+          "command": "Wave 3.2 caller inventory classification for main-agent-functional-resume-check",
+          "exitCode": 0,
+          "stdoutHash": "sha256:classification-only",
+          "stderrHash": "sha256:classification-only"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "main-agent-entryflow-traceability-check",
+      "originalPath": "scripts/main-agent-entryflow-traceability-check.ts",
+      "originalExists": true,
+      "scope": "governance_closeout",
+      "packageJsonScripts": [],
+      "packageCliCommands": [],
+      "packageRuntimeRefs": [],
+      "installedSurfaceRefs": [],
+      "acceptanceTestRefs": [
+        "tests/acceptance/main-agent-entryflow-traceability-check.test.ts:5:import { mainEntryFlowTraceabilityCheck } from '../../scripts/main-agent-entryflow-traceability-check';",
+        "tests/acceptance/requirement-entry-flow-resolver.test.ts:6:import './main-agent-entryflow-traceability-check.test';"
+      ],
+      "sourceScriptRefs": [],
+      "docsRefsCount": 5,
+      "consumerReachability": "source_repo_only",
+      "requiresPackaging": false,
+      "canBecomePackageModule": false,
+      "recommendedMigrationStrategy": "repo_internal_reclassify",
+      "recommendedTargetPaths": [],
+      "minimumTests": [
+        "node tools/script-migration/validate-main-agent-wave-3-2.cjs",
+        "npx vitest run tests/acceptance/main-agent-runtime-migration-wave-3-2-contract.test.ts"
+      ],
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json"
+      ],
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "targetPaths": [],
+      "commands": [
+        {
+          "command": "Wave 3.2 caller inventory classification for main-agent-entryflow-traceability-check",
+          "exitCode": 0,
+          "stdoutHash": "sha256:classification-only",
+          "stderrHash": "sha256:classification-only"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "main-agent-control-plane-isolation-check",
+      "originalPath": "scripts/main-agent-control-plane-isolation-check.ts",
+      "originalExists": true,
+      "scope": "governance_closeout",
+      "packageJsonScripts": [],
+      "packageCliCommands": [],
+      "packageRuntimeRefs": [],
+      "installedSurfaceRefs": [],
+      "acceptanceTestRefs": [
+        "tests/acceptance/main-agent-control-plane-isolation-check.test.ts:5:import { mainControlPlaneIsolationCheck } from '../../scripts/main-agent-control-plane-isolation-check';",
+        "tests/acceptance/main-agent-control-plane-isolation-check.test.ts:28:producer: 'main-agent-control-plane-isolation-check.test',"
+      ],
+      "sourceScriptRefs": [],
+      "docsRefsCount": 5,
+      "consumerReachability": "source_repo_only",
+      "requiresPackaging": false,
+      "canBecomePackageModule": false,
+      "recommendedMigrationStrategy": "repo_internal_reclassify",
+      "recommendedTargetPaths": [],
+      "minimumTests": [
+        "node tools/script-migration/validate-main-agent-wave-3-2.cjs",
+        "npx vitest run tests/acceptance/main-agent-runtime-migration-wave-3-2-contract.test.ts"
+      ],
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json"
+      ],
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "targetPaths": [],
+      "commands": [
+        {
+          "command": "Wave 3.2 caller inventory classification for main-agent-control-plane-isolation-check",
+          "exitCode": 0,
+          "stdoutHash": "sha256:classification-only",
+          "stderrHash": "sha256:classification-only"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "main-agent-decision-field-check",
+      "originalPath": "scripts/main-agent-decision-field-check.ts",
+      "originalExists": true,
+      "scope": "governance_closeout",
+      "packageJsonScripts": [],
+      "packageCliCommands": [],
+      "packageRuntimeRefs": [],
+      "installedSurfaceRefs": [],
+      "acceptanceTestRefs": [
+        "tests/acceptance/main-agent-decision-field-check.test.ts:5:import { mainDecisionFieldCheck } from '../../scripts/main-agent-decision-field-check';"
+      ],
+      "sourceScriptRefs": [],
+      "docsRefsCount": 5,
+      "consumerReachability": "source_repo_only",
+      "requiresPackaging": false,
+      "canBecomePackageModule": false,
+      "recommendedMigrationStrategy": "repo_internal_reclassify",
+      "recommendedTargetPaths": [],
+      "minimumTests": [
+        "node tools/script-migration/validate-main-agent-wave-3-2.cjs",
+        "npx vitest run tests/acceptance/main-agent-runtime-migration-wave-3-2-contract.test.ts"
+      ],
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json"
+      ],
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "targetPaths": [],
+      "commands": [
+        {
+          "command": "Wave 3.2 caller inventory classification for main-agent-decision-field-check",
+          "exitCode": 0,
+          "stdoutHash": "sha256:classification-only",
+          "stderrHash": "sha256:classification-only"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "main-agent-ai-tdd-closeout-remediation-adapter",
+      "originalPath": "scripts/main-agent-ai-tdd-closeout-remediation-adapter.ts",
+      "originalExists": true,
+      "scope": "governance_closeout",
+      "packageJsonScripts": [],
+      "packageCliCommands": [],
+      "packageRuntimeRefs": [],
+      "installedSurfaceRefs": [],
+      "acceptanceTestRefs": [
+        "tests/acceptance/main-agent-ai-tdd-closeout-remediation-adapter.test.ts:5:const adapterPath = path.resolve('scripts/main-agent-ai-tdd-closeout-remediation-adapter.ts');",
+        "tests/acceptance/main-agent-ai-tdd-closeout-remediation-adapter.test.ts:12:return import('../../scripts/main-agent-ai-tdd-closeout-remediation-adapter');",
+        "tests/fixtures/requirements/REQ-AI-TDD-MANIFEST-CLOSEOUT-RUNNER/source.requirement.md:131:file: tests/acceptance/main-agent-ai-tdd-closeout-remediation-adapter.test.ts"
+      ],
+      "sourceScriptRefs": [],
+      "docsRefsCount": 29,
+      "consumerReachability": "source_repo_only",
+      "requiresPackaging": false,
+      "canBecomePackageModule": false,
+      "recommendedMigrationStrategy": "repo_internal_reclassify",
+      "recommendedTargetPaths": [],
+      "minimumTests": [
+        "node tools/script-migration/validate-main-agent-wave-3-2.cjs",
+        "npx vitest run tests/acceptance/main-agent-runtime-migration-wave-3-2-contract.test.ts"
+      ],
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json"
+      ],
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "targetPaths": [],
+      "commands": [
+        {
+          "command": "Wave 3.2 caller inventory classification for main-agent-ai-tdd-closeout-remediation-adapter",
+          "exitCode": 0,
+          "stdoutHash": "sha256:classification-only",
+          "stderrHash": "sha256:classification-only"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "main-agent-audit-review-gate",
+      "originalPath": "scripts/main-agent-audit-review-gate.ts",
+      "originalExists": true,
+      "scope": "governance_closeout",
+      "packageJsonScripts": [],
+      "packageCliCommands": [],
+      "packageRuntimeRefs": [],
+      "installedSurfaceRefs": [],
+      "acceptanceTestRefs": [
+        "tests/acceptance/main-agent-audit-review-gate-record.test.ts:10:import { mainAuditReviewGate } from '../../scripts/main-agent-audit-review-gate';",
+        "tests/acceptance/main-agent-reconfirmation-runtime.test.ts:8:import { mainAuditReviewGate } from '../../scripts/main-agent-audit-review-gate';"
+      ],
+      "sourceScriptRefs": [],
+      "docsRefsCount": 10,
+      "consumerReachability": "source_repo_only",
+      "requiresPackaging": false,
+      "canBecomePackageModule": false,
+      "recommendedMigrationStrategy": "repo_internal_reclassify",
+      "recommendedTargetPaths": [],
+      "minimumTests": [
+        "node tools/script-migration/validate-main-agent-wave-3-2.cjs",
+        "npx vitest run tests/acceptance/main-agent-runtime-migration-wave-3-2-contract.test.ts"
+      ],
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json"
+      ],
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "targetPaths": [],
+      "commands": [
+        {
+          "command": "Wave 3.2 caller inventory classification for main-agent-audit-review-gate",
+          "exitCode": 0,
+          "stdoutHash": "sha256:classification-only",
+          "stderrHash": "sha256:classification-only"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "main-agent-bmad-artifact-hardcut",
+      "originalPath": "scripts/main-agent-bmad-artifact-hardcut.ts",
+      "originalExists": true,
+      "scope": "governance_closeout",
+      "packageJsonScripts": [],
+      "packageCliCommands": [],
+      "packageRuntimeRefs": [],
+      "installedSurfaceRefs": [],
+      "acceptanceTestRefs": [
+        "tests/acceptance/main-agent-bmad-artifact-hardcut.test.ts:5:import { mainBmadArtifactHardcut } from '../../scripts/main-agent-bmad-artifact-hardcut';"
+      ],
+      "sourceScriptRefs": [],
+      "docsRefsCount": 5,
+      "consumerReachability": "source_repo_only",
+      "requiresPackaging": false,
+      "canBecomePackageModule": false,
+      "recommendedMigrationStrategy": "repo_internal_reclassify",
+      "recommendedTargetPaths": [],
+      "minimumTests": [
+        "node tools/script-migration/validate-main-agent-wave-3-2.cjs",
+        "npx vitest run tests/acceptance/main-agent-runtime-migration-wave-3-2-contract.test.ts"
+      ],
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json"
+      ],
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "targetPaths": [],
+      "commands": [
+        {
+          "command": "Wave 3.2 caller inventory classification for main-agent-bmad-artifact-hardcut",
+          "exitCode": 0,
+          "stdoutHash": "sha256:classification-only",
+          "stderrHash": "sha256:classification-only"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "main-agent-delivery-evidence-run",
+      "originalPath": "scripts/main-agent-delivery-evidence-run.ts",
+      "originalExists": true,
+      "scope": "source_repo_ci_journey",
+      "packageJsonScripts": [
+        "main-agent:delivery-evidence-run => npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-delivery-evidence-run.ts"
+      ],
+      "packageCliCommands": [],
+      "packageRuntimeRefs": [],
+      "installedSurfaceRefs": [
+        "_bmad/_config/script-owner-model-registry.yaml:767:path: scripts/main-agent-delivery-evidence-run.ts"
+      ],
+      "acceptanceTestRefs": [
+        "tests/acceptance/main-agent-delivery-evidence-run.test.ts:43:path.join(process.cwd(), 'scripts', 'main-agent-delivery-evidence-run.ts'),"
+      ],
+      "sourceScriptRefs": [],
+      "docsRefsCount": 11,
+      "consumerReachability": "installed_surface_reachable",
+      "requiresPackaging": true,
+      "canBecomePackageModule": true,
+      "recommendedMigrationStrategy": "package_runtime_module",
+      "recommendedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/delivery-evidence-run.js",
+        "packages/bmad-speckit/dist/main-agent/actions/delivery-evidence-run.js"
+      ],
+      "minimumTests": [
+        "npm run test --prefix packages/bmad-speckit",
+        "npx vitest run tests/acceptance/main-agent-runtime-migration-wave-3-2-contract.test.ts",
+        "node tools/script-migration/validate-registry.cjs"
+      ],
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json"
+      ],
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/delivery-evidence-run.js",
+        "packages/bmad-speckit/dist/main-agent/actions/delivery-evidence-run.js"
+      ],
+      "commands": [
+        {
+          "command": "Wave 3.2 caller inventory classification for main-agent-delivery-evidence-run",
+          "exitCode": 0,
+          "stdoutHash": "sha256:classification-only",
+          "stderrHash": "sha256:classification-only"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "main-agent-soak-runner",
+      "originalPath": "scripts/main-agent-soak-runner.ts",
+      "originalExists": true,
+      "scope": "source_repo_ci_journey",
+      "packageJsonScripts": [
+        "main-agent:soak-contract => npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-soak-runner.ts --contract-8h",
+        "main-agent:long-run-soak => npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-soak-runner.ts"
+      ],
+      "packageCliCommands": [],
+      "packageRuntimeRefs": [],
+      "installedSurfaceRefs": [
+        "_bmad/_config/script-owner-model-registry.yaml:783:path: scripts/main-agent-soak-runner.ts"
+      ],
+      "acceptanceTestRefs": [
+        "tests/acceptance/main-agent-long-run-soak-wall-clock.test.ts:6:import { evaluateSoakReport, runWallClockSoak } from '../../scripts/main-agent-soak-runner';",
+        "tests/acceptance/main-agent-long-run-soak-wall-clock.test.ts:139:path.join(process.cwd(), 'scripts', 'main-agent-soak-runner.ts'),",
+        "tests/acceptance/main-agent-long-run-soak-wall-clock.test.ts:168:path.join(process.cwd(), 'scripts', 'main-agent-soak-runner.ts'),",
+        "tests/acceptance/main-agent-soak-8h-contract.test.ts:5:} from '../../scripts/main-agent-soak-runner';"
+      ],
+      "sourceScriptRefs": [],
+      "docsRefsCount": 12,
+      "consumerReachability": "installed_surface_reachable",
+      "requiresPackaging": true,
+      "canBecomePackageModule": true,
+      "recommendedMigrationStrategy": "package_runtime_module",
+      "recommendedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/soak-runner.js",
+        "packages/bmad-speckit/dist/main-agent/actions/soak-runner.js"
+      ],
+      "minimumTests": [
+        "npm run test --prefix packages/bmad-speckit",
+        "npx vitest run tests/acceptance/main-agent-runtime-migration-wave-3-2-contract.test.ts",
+        "node tools/script-migration/validate-registry.cjs"
+      ],
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json"
+      ],
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/soak-runner.js",
+        "packages/bmad-speckit/dist/main-agent/actions/soak-runner.js"
+      ],
+      "commands": [
+        {
+          "command": "Wave 3.2 caller inventory classification for main-agent-soak-runner",
+          "exitCode": 0,
+          "stdoutHash": "sha256:classification-only",
+          "stderrHash": "sha256:classification-only"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "main-agent-development-journey-matrix",
+      "originalPath": "scripts/main-agent-development-journey-matrix.ts",
+      "originalExists": true,
+      "scope": "source_repo_ci_journey",
+      "packageJsonScripts": [
+        "main-agent:development-journey-matrix => npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-development-journey-matrix.ts"
+      ],
+      "packageCliCommands": [],
+      "packageRuntimeRefs": [],
+      "installedSurfaceRefs": [],
+      "acceptanceTestRefs": [
+        "tests/acceptance/main-agent-development-journey-matrix-e2e.test.ts:5:import { runDevelopmentJourneyMatrix } from '../../scripts/main-agent-development-journey-matrix';"
+      ],
+      "sourceScriptRefs": [],
+      "docsRefsCount": 7,
+      "consumerReachability": "source_repo_only",
+      "requiresPackaging": false,
+      "canBecomePackageModule": false,
+      "recommendedMigrationStrategy": "repo_internal_reclassify",
+      "recommendedTargetPaths": [],
+      "minimumTests": [
+        "node tools/script-migration/validate-main-agent-wave-3-2.cjs",
+        "npx vitest run tests/acceptance/main-agent-runtime-migration-wave-3-2-contract.test.ts"
+      ],
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json"
+      ],
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "targetPaths": [],
+      "commands": [
+        {
+          "command": "Wave 3.2 caller inventory classification for main-agent-development-journey-matrix",
+          "exitCode": 0,
+          "stdoutHash": "sha256:classification-only",
+          "stderrHash": "sha256:classification-only"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "main-agent-dual-host-pr-orchestrator",
+      "originalPath": "scripts/main-agent-dual-host-pr-orchestrator.ts",
+      "originalExists": true,
+      "scope": "source_repo_ci_journey",
+      "packageJsonScripts": [
+        "main-agent:dual-host-pr-orchestrate => npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-dual-host-pr-orchestrator.ts"
+      ],
+      "packageCliCommands": [],
+      "packageRuntimeRefs": [],
+      "installedSurfaceRefs": [
+        "_bmad/_config/script-owner-model-registry.yaml:815:path: scripts/main-agent-dual-host-pr-orchestrator.ts"
+      ],
+      "acceptanceTestRefs": [],
+      "sourceScriptRefs": [
+        "scripts/subagent-surface-inventory.ts:68:'scripts/main-agent-dual-host-pr-orchestrator.ts',"
+      ],
+      "docsRefsCount": 10,
+      "consumerReachability": "installed_surface_reachable",
+      "requiresPackaging": true,
+      "canBecomePackageModule": true,
+      "recommendedMigrationStrategy": "package_runtime_module",
+      "recommendedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/dual-host-pr-orchestrator.js",
+        "packages/bmad-speckit/dist/main-agent/actions/dual-host-pr-orchestrator.js"
+      ],
+      "minimumTests": [
+        "npm run test --prefix packages/bmad-speckit",
+        "npx vitest run tests/acceptance/main-agent-runtime-migration-wave-3-2-contract.test.ts",
+        "node tools/script-migration/validate-registry.cjs"
+      ],
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json"
+      ],
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/dual-host-pr-orchestrator.js",
+        "packages/bmad-speckit/dist/main-agent/actions/dual-host-pr-orchestrator.js"
+      ],
+      "commands": [
+        {
+          "command": "Wave 3.2 caller inventory classification for main-agent-dual-host-pr-orchestrator",
+          "exitCode": 0,
+          "stdoutHash": "sha256:classification-only",
+          "stderrHash": "sha256:classification-only"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "main-agent-chaos-scenarios",
+      "originalPath": "scripts/main-agent-chaos-scenarios.ts",
+      "originalExists": true,
+      "scope": "source_repo_ci_journey",
+      "packageJsonScripts": [
+        "test:main-agent-chaos => npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-chaos-scenarios.ts"
+      ],
+      "packageCliCommands": [],
+      "packageRuntimeRefs": [],
+      "installedSurfaceRefs": [
+        "_bmad/_config/main-agent-quality-gate.thresholds.json:14:\"scripts/main-agent-chaos-scenarios.ts\",",
+        "_bmad/_config/script-owner-model-registry.yaml:831:path: scripts/main-agent-chaos-scenarios.ts"
+      ],
+      "acceptanceTestRefs": [
+        "tests/acceptance/main-agent-chaos-recovery-e2e.test.ts:4:import { runChaosScenarios } from '../../scripts/main-agent-chaos-scenarios';"
+      ],
+      "sourceScriptRefs": [],
+      "docsRefsCount": 11,
+      "consumerReachability": "installed_surface_reachable",
+      "requiresPackaging": true,
+      "canBecomePackageModule": true,
+      "recommendedMigrationStrategy": "package_runtime_module",
+      "recommendedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/chaos-scenarios.js",
+        "packages/bmad-speckit/dist/main-agent/actions/chaos-scenarios.js"
+      ],
+      "minimumTests": [
+        "npm run test --prefix packages/bmad-speckit",
+        "npx vitest run tests/acceptance/main-agent-runtime-migration-wave-3-2-contract.test.ts",
+        "node tools/script-migration/validate-registry.cjs"
+      ],
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json"
+      ],
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/chaos-scenarios.js",
+        "packages/bmad-speckit/dist/main-agent/actions/chaos-scenarios.js"
+      ],
+      "commands": [
+        {
+          "command": "Wave 3.2 caller inventory classification for main-agent-chaos-scenarios",
+          "exitCode": 0,
+          "stdoutHash": "sha256:classification-only",
+          "stderrHash": "sha256:classification-only"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    }
+  ]
+}
