@@ -829,7 +829,7 @@ bmad-speckit confirm-scope \
   --json
 ```
 
-This entry must automatically call `scripts/main-agent-orchestration.ts --action confirm-scope`, which in turn calls the skill-local `confirm-requirements-scope.js`, which in turn calls `ingest-confirmation-event.js`, updates the source bookkeeping, writes the requirement-scoped `requirement-record.json`, appends the confirmation event log and artifact index, and returns the generated paths. `bmad-speckit main-agent:confirm-scope` remains a compatibility alias, but agents should not need to remember the lower-level wrapper during normal confirmation or orchestration. `render-requirements-confirmation-html.ts` remains read-only and must not absorb this responsibility.
+This entry must dispatch through the installed package runtime, equivalent to `bmad-speckit main-agent confirm-scope`, which then calls the skill-local `confirm-requirements-scope.js`, which in turn calls `ingest-confirmation-event.js`, updates the source bookkeeping, writes the requirement-scoped `requirement-record.json`, appends the confirmation event log and artifact index, and returns the generated paths. `bmad-speckit main-agent:confirm-scope` remains a compatibility alias, but agents should not need to remember the lower-level wrapper during normal confirmation or orchestration. Consumer-facing instructions must not route through root TypeScript orchestration scripts. `render-requirements-confirmation-html.ts` remains read-only and must not absorb this responsibility.
 
 If controlled ingest fails, the requirement remains unconfirmed for execution purposes even when the source document contains `status: user_confirmed`. Treat the failure as a blocker and do not generate a trace execution prompt.
 

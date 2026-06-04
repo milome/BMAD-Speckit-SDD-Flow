@@ -1,0 +1,4912 @@
+{
+  "generatedAt": "2026-06-02T02:00:33.186Z",
+  "base": "335f2c402010f2f912488d61575b5ce0c090513a",
+  "command": "git diff --name-status 335f2c402010f2f912488d61575b5ce0c090513a..HEAD -- scripts",
+  "counts": {
+    "byClassification": {
+      "consumer_runtime_migrate": 84,
+      "consumer_runtime_migrate_or_package_compiled_runtime": 3,
+      "pending_runtime_closure_review": 20,
+      "repo_internal_keep_or_skill_local_migrate": 1,
+      "removed_path_verify_callers_clean": 2,
+      "repo_internal_keep": 25,
+      "pending_classification": 5
+    },
+    "byStatus": {
+      "M": 122,
+      "A": 16,
+      "D": 2
+    },
+    "byRisk": {
+      "high": 81,
+      "medium": 30,
+      "low": 29
+    }
+  },
+  "consumerSeeds": [
+    "scripts/adaptive-intake-proof-gate.ts",
+    "scripts/ai-tdd-contract-gate.ts",
+    "scripts/analytics-sft-extract.ts",
+    "scripts/audit-scoring-convergence-policy.ts",
+    "scripts/coach-diagnose.ts",
+    "scripts/dashboard-generate.ts",
+    "scripts/emit-runtime-policy.ts",
+    "scripts/eval-questions-cli.ts",
+    "scripts/governance-execution-result-ingestor.ts",
+    "scripts/governance-host-dispatch-adapter.ts",
+    "scripts/governance-packet-dispatch-worker.ts",
+    "scripts/governance-packet-execution-store.ts",
+    "scripts/governance-packet-reconciler.ts",
+    "scripts/governance-provider-adapter.ts",
+    "scripts/governance-remediation-artifact.ts",
+    "scripts/governance-remediation-config.ts",
+    "scripts/governance-remediation-runner.ts",
+    "scripts/governance-stage-event-emitter.ts",
+    "scripts/i18n/print-resolved-audit-prompt.ts",
+    "scripts/i18n/resolve-audit-prompt-path.ts",
+    "scripts/ingest-architecture-confirmation.ts",
+    "scripts/init-to-root.js",
+    "scripts/live-smoke-main-agent-runtime.ts",
+    "scripts/main-agent-bmad-help-five-layer-matrix.ts",
+    "scripts/main-agent-chaos-scenarios.ts",
+    "scripts/main-agent-codex-worker-adapter.ts",
+    "scripts/main-agent-delivery-closeout-gate.ts",
+    "scripts/main-agent-delivery-evidence-run.ts",
+    "scripts/main-agent-delivery-truth-gate.ts",
+    "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+    "scripts/main-agent-orchestration.ts",
+    "scripts/main-agent-quality-gate.ts",
+    "scripts/main-agent-release-gate.ts",
+    "scripts/main-agent-soak-runner.ts",
+    "scripts/main-agent-unified-ingress.ts",
+    "scripts/model-governance-policy-filter.ts",
+    "scripts/orchestration-dispatch-contract.ts",
+    "scripts/orchestration-state.ts",
+    "scripts/parse-bmad-audit-result.ts",
+    "scripts/party-mode-runtime.ts",
+    "scripts/prompt-routing-governance.ts",
+    "scripts/resolve-active-requirement.ts",
+    "scripts/reviewer-registry.ts",
+    "scripts/reviewer-schema.ts",
+    "scripts/run-auditor-host.ts",
+    "scripts/runtime-governance.ts",
+    "scripts/sft-extract.ts",
+    "scripts/user-story-mapping.ts",
+    "scripts/write-runtime-context.cjs"
+  ],
+  "rows": [
+    {
+      "status": "M",
+      "file": "scripts/main-agent-orchestration.ts",
+      "added": "4176",
+      "deleted": "458",
+      "churn": 4634,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_direct_package_cli",
+      "target": "packages/bmad-speckit/src/... compiled package runtime or approved de-surface.",
+      "risk": "high",
+      "action": "Replace package CLI runRepoScript dispatch with package-relative JS/CJS runtime and add install-mode tests.",
+      "callers": "package CLI runRepoScript (3); npm scripts: main-agent-orchestration, main-agent:confirm-scope, main-agent:run-loop, main-agent:inspect, ...; installed_hook_surface:1; installed_skill_surface:1; installed_bmad_surface:2; tests:14; docs:4; scripts_source:5; importedBy scripts:6",
+      "directPackageCliRunRepoScript": [
+        "packages/bmad-speckit/bin/bmad-speckit.js:runRepoScript(main-agent-orchestration.ts)",
+        "packages/bmad-speckit/bin/bmad-speckit.js:runRepoScript(main-agent-orchestration.ts)",
+        "packages/bmad-speckit/bin/bmad-speckit.js:runRepoScript(main-agent-orchestration.ts)"
+      ],
+      "npmScripts": [
+        "main-agent-orchestration",
+        "main-agent:confirm-scope",
+        "main-agent:run-loop",
+        "main-agent:inspect",
+        "main-agent:dispatch-plan"
+      ],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/bmad-help-routing-state.ts",
+        "scripts/e2e-host-matrix-journey-runner.ts",
+        "scripts/main-agent-bmad-help-five-layer-matrix.ts",
+        "scripts/main-agent-codex-worker-adapter.ts",
+        "scripts/main-agent-soak-runner.ts",
+        "scripts/main-agent-unified-ingress.ts"
+      ],
+      "imports": [
+        "scripts/orchestration-dispatch-contract.ts",
+        "scripts/execution-discipline-profiles.ts",
+        "scripts/main-agent-compiled-prompt-runner.ts",
+        "scripts/execution-strategy-selection.ts",
+        "scripts/sdd-artifact-manifest.ts",
+        "scripts/orchestration-state.ts",
+        "scripts/runtime-context.ts",
+        "scripts/emit-runtime-policy.ts",
+        "scripts/runtime-context-registry.ts",
+        "scripts/adaptive-intake-governance-gate.ts",
+        "scripts/main-agent-codex-worker-adapter.ts",
+        "scripts/long-run-runtime-policy.ts",
+        "scripts/runtime-governance.ts",
+        "scripts/user-story-mapping.ts",
+        "scripts/continue-state-contract.ts",
+        "scripts/governance-remediation-config.ts",
+        "scripts/resolve-active-requirement.ts",
+        "scripts/controlled-readiness-audit-bridge.ts",
+        "scripts/requirement-record-control-store.ts",
+        "scripts/main-agent-implementation-readiness-gate.ts",
+        "scripts/ai-tdd-contract-gate.ts",
+        "scripts/run-required-commands-from-ai-tdd-manifest.ts",
+        "scripts/strict-closeout-proof-gate.ts",
+        "scripts/target-artifact-realization-gate.ts",
+        "scripts/runtime-scoring-data-path.ts",
+        "scripts/audit-triad-orchestrator.ts",
+        "scripts/critical-auditor-profile.ts",
+        "scripts/host-runtime-mode.ts",
+        "scripts/six-model-runtime-decision.ts",
+        "scripts/reconfirmation-runtime.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "installed_hook_surface": 1,
+        "installed_bmad_surface": 2,
+        "installed_skill_surface": 1,
+        "docs": 4,
+        "root_package_json": 1,
+        "package_cli": 1,
+        "scripts_source": 5,
+        "tests": 14
+      },
+      "topReferences": [
+        "installed_hook_surface:_bmad/_config/hooks-owner-model-registry.yaml",
+        "installed_bmad_surface:_bmad/_config/main-agent-quality-gate.thresholds.json",
+        "installed_bmad_surface:_bmad/_config/script-owner-model-registry.yaml",
+        "installed_skill_surface:_bmad/skills/requirements-contract-authoring/SKILL.md",
+        "docs:docs/ops/adaptive-intake-governance-report.md",
+        "docs:docs/ops/main-agent-capability-traceability-matrix.md",
+        "docs:docs/plans/2026-05-29-readiness-blocker-classifier-authority-boundary-goal-execution-plan.md",
+        "docs:docs/reference/sprint-epic-story-queue-sync-contract.md",
+        "root_package_json:package.json",
+        "package_cli:packages/bmad-speckit/bin/bmad-speckit.js",
+        "scripts_source:scripts/e2e-host-matrix-journey-runner.ts",
+        "scripts_source:scripts/main-agent-delivery-closeout-gate.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/main-agent-release-gate.ts",
+      "added": "88",
+      "deleted": "57",
+      "churn": 145,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_direct_package_cli",
+      "target": "packages/bmad-speckit/src/... compiled package runtime or approved de-surface.",
+      "risk": "high",
+      "action": "Replace package CLI runRepoScript dispatch with package-relative JS/CJS runtime and add install-mode tests.",
+      "callers": "package CLI runRepoScript (1); npm scripts: main-agent:release-gate; installed_bmad_surface:2; tests:2; docs:1; scripts_source:2",
+      "directPackageCliRunRepoScript": [
+        "packages/bmad-speckit/bin/bmad-speckit.js:runRepoScript(main-agent-release-gate.ts)"
+      ],
+      "npmScripts": [
+        "main-agent:release-gate"
+      ],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [
+        "scripts/evidence-provenance.ts",
+        "scripts/parallel-mission-control.ts",
+        "scripts/sprint-status-authorized-update.ts",
+        "scripts/main-agent-codex-worker-adapter.ts",
+        "scripts/orchestration-dispatch-contract.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "installed_bmad_surface": 2,
+        "docs": 1,
+        "root_package_json": 1,
+        "package_cli": 1,
+        "scripts_source": 2,
+        "tests": 2
+      },
+      "topReferences": [
+        "installed_bmad_surface:_bmad/_config/main-agent-quality-gate.thresholds.json",
+        "installed_bmad_surface:_bmad/_config/script-owner-model-registry.yaml",
+        "docs:docs/ops/main-agent-capability-traceability-matrix.md",
+        "root_package_json:package.json",
+        "package_cli:packages/bmad-speckit/bin/bmad-speckit.js",
+        "scripts_source:scripts/main-agent-delivery-evidence-run.ts",
+        "scripts_source:scripts/run-ci-release-gate-fixture.js",
+        "tests:tests/acceptance/main-agent-execution-audit-ledger.test.ts",
+        "tests:tests/acceptance/main-agent-release-gate-contract.test.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/run-auditor-host.ts",
+      "added": "61",
+      "deleted": "50",
+      "churn": 111,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_direct_package_cli",
+      "target": "packages/bmad-speckit/src/... compiled package runtime or approved de-surface.",
+      "risk": "high",
+      "action": "Replace package CLI runRepoScript dispatch with package-relative JS/CJS runtime and add install-mode tests.",
+      "callers": "package CLI runRepoScript (1); installed_skill_surface:20; installed_bmad_surface:9; runtime_emit_package:1; tests:2; docs:3; scripts_source:1; importedBy scripts:1",
+      "directPackageCliRunRepoScript": [
+        "packages/bmad-speckit/bin/bmad-speckit.js:runRepoScript(run-auditor-host.ts)"
+      ],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/speckit-cli.ts"
+      ],
+      "imports": [
+        "scripts/parse-bmad-audit-result.ts",
+        "scripts/auditor-post-actions.ts",
+        "scripts/reviewer-registry.ts",
+        "scripts/runtime-context-registry.ts",
+        "scripts/reviewer-schema.ts",
+        "scripts/continue-state-contract.ts",
+        "scripts/requirement-record-control-store.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": true,
+      "referenceCounts": {
+        "installed_bmad_surface": 9,
+        "installed_skill_surface": 20,
+        "docs": 3,
+        "package_cli": 1,
+        "runtime_emit_package": 1,
+        "scripts_source": 1,
+        "tests": 2
+      },
+      "topReferences": [
+        "installed_bmad_surface:_bmad/_config/script-owner-model-registry.yaml",
+        "installed_bmad_surface:_bmad/claude/agents/layers/bmad-layer4-speckit-gaps.md",
+        "installed_bmad_surface:_bmad/claude/agents/layers/bmad-layer4-speckit-plan.md",
+        "installed_bmad_surface:_bmad/claude/agents/layers/bmad-layer4-speckit-specify.md",
+        "installed_bmad_surface:_bmad/claude/agents/layers/bmad-layer4-speckit-tasks.md",
+        "installed_skill_surface:_bmad/claude/skills/bmad-bug-assistant/SKILL.en.md",
+        "installed_skill_surface:_bmad/claude/skills/bmad-story-assistant/SKILL.en.md",
+        "installed_skill_surface:_bmad/claude/skills/bmad-story-assistant/SKILL.md",
+        "installed_skill_surface:_bmad/claude/skills/bmad-story-assistant/SKILL.zh.md",
+        "installed_skill_surface:_bmad/claude/skills/speckit-workflow/SKILL.en.md",
+        "installed_skill_surface:_bmad/claude/skills/speckit-workflow/references/audit-prompts.en.md",
+        "installed_bmad_surface:_bmad/codex/agents/layers/bmad-layer4-speckit-gaps.toml"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+      "added": "69",
+      "deleted": "22",
+      "churn": 91,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_direct_package_cli",
+      "target": "packages/bmad-speckit/src/... compiled package runtime or approved de-surface.",
+      "risk": "high",
+      "action": "Replace package CLI runRepoScript dispatch with package-relative JS/CJS runtime and add install-mode tests.",
+      "callers": "package CLI runRepoScript (1); npm scripts: main-agent:host-matrix-pr-orchestrate; installed_bmad_surface:1; tests:1; docs:1; scripts_source:4; importedBy scripts:2",
+      "directPackageCliRunRepoScript": [
+        "packages/bmad-speckit/bin/bmad-speckit.js:runRepoScript(main-agent-host-matrix-pr-orchestrator.ts)"
+      ],
+      "npmScripts": [
+        "main-agent:host-matrix-pr-orchestrate"
+      ],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/main-agent-development-journey-matrix.ts",
+        "scripts/main-agent-dual-host-pr-orchestrator.ts"
+      ],
+      "imports": [
+        "scripts/parallel-mission-control.ts",
+        "scripts/evidence-provenance.ts",
+        "scripts/e2e-host-matrix-journey-runner.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "installed_bmad_surface": 1,
+        "docs": 1,
+        "root_package_json": 1,
+        "package_cli": 1,
+        "scripts_source": 4,
+        "tests": 1
+      },
+      "topReferences": [
+        "installed_bmad_surface:_bmad/_config/script-owner-model-registry.yaml",
+        "docs:docs/ops/main-agent-capability-traceability-matrix.md",
+        "root_package_json:package.json",
+        "package_cli:packages/bmad-speckit/bin/bmad-speckit.js",
+        "scripts_source:scripts/main-agent-delivery-evidence-run.ts",
+        "scripts_source:scripts/main-agent-dual-host-pr-orchestrator.ts",
+        "scripts_source:scripts/main-agent-release-gate.ts",
+        "scripts_source:scripts/subagent-surface-inventory.ts",
+        "tests:tests/acceptance/main-agent-host-matrix-pr-orchestration.test.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/main-agent-bmad-help-five-layer-matrix.ts",
+      "added": "64",
+      "deleted": "23",
+      "churn": 87,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_direct_package_cli",
+      "target": "packages/bmad-speckit/src/... compiled package runtime or approved de-surface.",
+      "risk": "high",
+      "action": "Replace package CLI runRepoScript dispatch with package-relative JS/CJS runtime and add install-mode tests.",
+      "callers": "package CLI runRepoScript (1); npm scripts: main-agent:bmad-help-five-layer-matrix; importedBy scripts:1",
+      "directPackageCliRunRepoScript": [
+        "packages/bmad-speckit/bin/bmad-speckit.js:runRepoScript(main-agent-bmad-help-five-layer-matrix.ts)"
+      ],
+      "npmScripts": [
+        "main-agent:bmad-help-five-layer-matrix"
+      ],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/main-agent-development-journey-matrix.ts"
+      ],
+      "imports": [
+        "scripts/bmad-config.ts",
+        "scripts/bmad-help-five-layer-progress-marker.ts",
+        "scripts/main-agent-orchestration.ts",
+        "scripts/runtime-context.ts",
+        "scripts/runtime-context-registry.ts",
+        "scripts/runtime-governance.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "root_package_json": 1,
+        "package_cli": 1
+      },
+      "topReferences": [
+        "root_package_json:package.json",
+        "package_cli:packages/bmad-speckit/bin/bmad-speckit.js"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/eval-questions-cli.ts",
+      "added": "21",
+      "deleted": "6",
+      "churn": 27,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_direct_package_cli",
+      "target": "packages/bmad-speckit/src/... compiled package runtime or approved de-surface.",
+      "risk": "medium",
+      "action": "Replace package CLI runRepoScript dispatch with package-relative JS/CJS runtime and add install-mode tests.",
+      "callers": "package CLI runRepoScript (1); npm scripts: eval-questions; docs:1; scripts_source:1",
+      "directPackageCliRunRepoScript": [
+        "packages/bmad-speckit/bin/bmad-speckit.js:runRepoScript(eval-questions-cli.ts)"
+      ],
+      "npmScripts": [
+        "eval-questions"
+      ],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "docs": 1,
+        "root_package_json": 1,
+        "package_cli": 1,
+        "other": 3,
+        "scripts_source": 1
+      },
+      "topReferences": [
+        "docs:docs/reference/source-code.md",
+        "root_package_json:package.json",
+        "package_cli:packages/bmad-speckit/bin/bmad-speckit.js",
+        "other:packages/scoring/eval-questions/EVAL_AGENT_BMAD_FLOW_IMPROVEMENT.md",
+        "other:packages/scoring/eval-questions/README.md",
+        "other:packages/scoring/eval-questions/__tests__/cli-integration.test.ts",
+        "scripts_source:scripts/README.md"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/main-agent-delivery-truth-gate.ts",
+      "added": "8",
+      "deleted": "7",
+      "churn": 15,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_direct_package_cli",
+      "target": "packages/bmad-speckit/src/... compiled package runtime or approved de-surface.",
+      "risk": "high",
+      "action": "Replace package CLI runRepoScript dispatch with package-relative JS/CJS runtime and add install-mode tests.",
+      "callers": "package CLI runRepoScript (1); npm scripts: main-agent:delivery-truth-gate; installed_bmad_surface:2; tests:1; docs:1; scripts_source:1",
+      "directPackageCliRunRepoScript": [
+        "packages/bmad-speckit/bin/bmad-speckit.js:runRepoScript(main-agent-delivery-truth-gate.ts)"
+      ],
+      "npmScripts": [
+        "main-agent:delivery-truth-gate"
+      ],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [
+        "scripts/parallel-mission-control.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "installed_bmad_surface": 2,
+        "docs": 1,
+        "root_package_json": 1,
+        "package_cli": 1,
+        "scripts_source": 1,
+        "tests": 1
+      },
+      "topReferences": [
+        "installed_bmad_surface:_bmad/_config/main-agent-quality-gate.thresholds.json",
+        "installed_bmad_surface:_bmad/_config/script-owner-model-registry.yaml",
+        "docs:docs/ops/main-agent-capability-traceability-matrix.md",
+        "root_package_json:package.json",
+        "package_cli:packages/bmad-speckit/bin/bmad-speckit.js",
+        "scripts_source:scripts/main-agent-delivery-evidence-run.ts",
+        "tests:tests/acceptance/main-agent-delivery-truth-gate.test.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/main-agent-quality-gate.ts",
+      "added": "11",
+      "deleted": "4",
+      "churn": 15,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_direct_package_cli",
+      "target": "packages/bmad-speckit/src/... compiled package runtime or approved de-surface.",
+      "risk": "high",
+      "action": "Replace package CLI runRepoScript dispatch with package-relative JS/CJS runtime and add install-mode tests.",
+      "callers": "package CLI runRepoScript (1); npm scripts: main-agent:quality-gate; installed_bmad_surface:2; tests:1; docs:1; scripts_source:1",
+      "directPackageCliRunRepoScript": [
+        "packages/bmad-speckit/bin/bmad-speckit.js:runRepoScript(main-agent-quality-gate.ts)"
+      ],
+      "npmScripts": [
+        "main-agent:quality-gate"
+      ],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [
+        "scripts/evidence-provenance.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "installed_bmad_surface": 2,
+        "docs": 1,
+        "root_package_json": 1,
+        "package_cli": 1,
+        "scripts_source": 1,
+        "tests": 1
+      },
+      "topReferences": [
+        "installed_bmad_surface:_bmad/_config/main-agent-quality-gate.thresholds.json",
+        "installed_bmad_surface:_bmad/_config/script-owner-model-registry.yaml",
+        "docs:docs/ops/main-agent-capability-traceability-matrix.md",
+        "root_package_json:package.json",
+        "package_cli:packages/bmad-speckit/bin/bmad-speckit.js",
+        "scripts_source:scripts/main-agent-release-gate.ts",
+        "tests:tests/acceptance/main-agent-quality-gate-thresholds.test.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/run-required-commands-from-ai-tdd-manifest.ts",
+      "added": "853",
+      "deleted": "39",
+      "churn": 892,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "tests:2; scripts_source:3; importedBy scripts:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/main-agent-orchestration.ts"
+      ],
+      "imports": [
+        "scripts/ai-tdd-contract-gate.ts",
+        "scripts/ingest-implementation-evidence.ts",
+        "scripts/target-artifact-realization-gate.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "scripts_source": 3,
+        "tests": 2
+      },
+      "topReferences": [
+        "scripts_source:scripts/final-closeout-evidence-runner.ts",
+        "scripts_source:scripts/main-agent-ai-tdd-closeout-remediation-adapter.ts",
+        "scripts_source:scripts/run-confirmed-final-required-commands.js",
+        "tests:tests/acceptance/run-required-commands-from-ai-tdd-manifest.test.ts",
+        "tests:tests/fixtures/requirements/REQ-AI-TDD-MANIFEST-CLOSEOUT-RUNNER/source.requirement.md"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/main-agent-delivery-closeout-gate.ts",
+      "added": "724",
+      "deleted": "38",
+      "churn": 762,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "installed_bmad_surface:1; tests:5; docs:1; scripts_source:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [
+        "scripts/architecture-confirmation-hash-recipe.ts",
+        "scripts/ai-tdd-contract-gate.ts",
+        "scripts/requirement-record-control-store.ts",
+        "scripts/strict-closeout-proof-gate.ts",
+        "scripts/target-artifact-realization-gate.ts",
+        "scripts/per-must-closure-evidence-index.ts",
+        "scripts/reconfirmation-runtime.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "installed_bmad_surface": 1,
+        "docs": 1,
+        "scripts_source": 1,
+        "tests": 5
+      },
+      "topReferences": [
+        "installed_bmad_surface:_bmad/_config/script-owner-model-registry.yaml",
+        "docs:docs/plans/2026-06-01-bmad-help-bmads-fusion-goal-execution-plan.md",
+        "scripts_source:scripts/trace-040-evidence-packet-generator.ts",
+        "tests:tests/acceptance/pre-rerun-anti-false-positive-gate.test.ts",
+        "tests:tests/acceptance/render-requirements-confirmation-html.test.ts",
+        "tests:tests/acceptance/requirement-record-control-store-enforcement.test.ts",
+        "tests:tests/acceptance/requirements-contract-checkpoint-automation.test.ts",
+        "tests:tests/fixtures/requirements/REQ-CHECKPOINT-AUTOMATION/source.requirement.md"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/target-artifact-realization-gate.ts",
+      "added": "634",
+      "deleted": "91",
+      "churn": 725,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "medium",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "tests:1; importedBy scripts:6",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/ai-tdd-contract-gate.ts",
+        "scripts/main-agent-delivery-closeout-gate.ts",
+        "scripts/main-agent-orchestration.ts",
+        "scripts/pre-rerun-anti-false-positive-gate.ts",
+        "scripts/run-required-commands-from-ai-tdd-manifest.ts",
+        "scripts/strict-closeout-proof-gate.ts"
+      ],
+      "imports": [
+        "scripts/requirement-record-control-store.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "tests": 1
+      },
+      "topReferences": [
+        "tests:tests/acceptance/requirements-contract-authoring-skill-contract.test.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/requirement-record-control-store.ts",
+      "added": "517",
+      "deleted": "83",
+      "churn": 600,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "tests:2; scripts_source:1; importedBy scripts:18",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/control-event-log-rebaseline.ts",
+        "scripts/controlled-ingest-atomic-committer.ts",
+        "scripts/controlled-readiness-audit-bridge.ts",
+        "scripts/execution-strategy-selection.ts",
+        "scripts/ingest-architecture-confirmation.ts",
+        "scripts/ingest-implementation-evidence.ts",
+        "scripts/initialize-six-model-requirement-confirmation.ts",
+        "scripts/main-agent-audit-review-gate.ts",
+        "scripts/main-agent-delivery-closeout-gate.ts",
+        "scripts/main-agent-execution-closure-gate.ts",
+        "scripts/main-agent-implementation-readiness-gate.ts",
+        "scripts/main-agent-orchestration.ts",
+        "scripts/reconfirmation-runtime.ts",
+        "scripts/record-main-agent-inspect-readiness-closure.ts",
+        "scripts/requirement-record-event-reducer.ts",
+        "scripts/run-auditor-host.ts",
+        "scripts/strict-command-resolution-preflight.ts",
+        "scripts/target-artifact-realization-gate.ts"
+      ],
+      "imports": [
+        "scripts/requirement-record-live-schema-gate.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "scripts_source": 1,
+        "tests": 2
+      },
+      "topReferences": [
+        "scripts_source:scripts/target-artifact-realization-gate.ts",
+        "tests:tests/acceptance/requirements-contract-checkpoint-automation.test.ts",
+        "tests:tests/fixtures/requirements/REQ-CHECKPOINT-AUTOMATION/source.requirement.md"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/main-agent-codex-worker-adapter.ts",
+      "added": "538",
+      "deleted": "43",
+      "churn": 581,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "npm scripts: main-agent:codex-worker; installed_hook_surface:1; installed_bmad_surface:2; tests:2; docs:1; scripts_source:2; importedBy scripts:3",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [
+        "main-agent:codex-worker"
+      ],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/e2e-host-matrix-journey-runner.ts",
+        "scripts/main-agent-orchestration.ts",
+        "scripts/main-agent-release-gate.ts"
+      ],
+      "imports": [
+        "scripts/orchestration-dispatch-contract.ts",
+        "scripts/bmad-config.ts",
+        "scripts/emit-runtime-policy.ts",
+        "scripts/runtime-governance.ts",
+        "scripts/stable-runtime-policy-json.ts",
+        "scripts/main-agent-orchestration.ts",
+        "scripts/governance-transport-envelope.ts",
+        "scripts/subagent-evidence-envelope.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "installed_hook_surface": 1,
+        "installed_bmad_surface": 2,
+        "docs": 1,
+        "root_package_json": 1,
+        "scripts_source": 2,
+        "tests": 2
+      },
+      "topReferences": [
+        "installed_hook_surface:_bmad/_config/hooks-owner-model-registry.yaml",
+        "installed_bmad_surface:_bmad/_config/main-agent-quality-gate.thresholds.json",
+        "installed_bmad_surface:_bmad/_config/script-owner-model-registry.yaml",
+        "docs:docs/ops/main-agent-capability-traceability-matrix.md",
+        "root_package_json:package.json",
+        "scripts_source:scripts/real-development-tick-worker.js",
+        "scripts_source:scripts/subagent-surface-inventory.ts",
+        "tests:tests/acceptance/subagent-surface-inventory.test.ts",
+        "tests:tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/ingest-implementation-evidence.ts",
+      "added": "366",
+      "deleted": "107",
+      "churn": 473,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "medium",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "tests:4; scripts_source:1; importedBy scripts:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/run-required-commands-from-ai-tdd-manifest.ts"
+      ],
+      "imports": [
+        "scripts/subagent-evidence-envelope.ts",
+        "scripts/requirement-record-control-store.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "scripts_source": 1,
+        "tests": 4
+      },
+      "topReferences": [
+        "scripts_source:scripts/run-confirmed-trace-slice.js",
+        "tests:tests/acceptance/implementation-evidence-ingest.test.ts",
+        "tests:tests/acceptance/main-agent-scoring-gates-check.test.ts",
+        "tests:tests/acceptance/render-requirements-confirmation-html.test.ts",
+        "tests:tests/acceptance/requirement-record-control-store-enforcement.test.ts"
+      ]
+    },
+    {
+      "status": "A",
+      "file": "scripts/per-must-closure-evidence-index.ts",
+      "added": "449",
+      "deleted": "0",
+      "churn": 449,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "medium",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "importedBy scripts:2",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/main-agent-delivery-closeout-gate.ts",
+        "scripts/main-agent-execution-closure-gate.ts"
+      ],
+      "imports": [],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {},
+      "topReferences": []
+    },
+    {
+      "status": "M",
+      "file": "scripts/ingest-architecture-confirmation.ts",
+      "added": "350",
+      "deleted": "55",
+      "churn": 405,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "medium",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "installed_skill_surface:1; tests:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [
+        "scripts/architecture-confirmation-hash-recipe.ts",
+        "scripts/requirement-record-control-store.ts",
+        "scripts/reconfirmation-runtime.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "installed_skill_surface": 1,
+        "tests": 1
+      },
+      "topReferences": [
+        "installed_skill_surface:_bmad/skills/requirements-contract-authoring/scripts/prepare-architecture-confirmation-page.ts",
+        "tests:tests/acceptance/requirement-record-control-store-enforcement.test.ts"
+      ]
+    },
+    {
+      "status": "A",
+      "file": "scripts/reconfirmation-runtime.ts",
+      "added": "404",
+      "deleted": "0",
+      "churn": 404,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "importedBy scripts:7",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/ingest-architecture-confirmation.ts",
+        "scripts/main-agent-audit-review-gate.ts",
+        "scripts/main-agent-delivery-closeout-gate.ts",
+        "scripts/main-agent-execution-closure-gate.ts",
+        "scripts/main-agent-implementation-readiness-gate.ts",
+        "scripts/main-agent-orchestration.ts",
+        "scripts/six-model-runtime-decision.ts"
+      ],
+      "imports": [
+        "scripts/requirement-record-control-store.ts",
+        "scripts/requirement-record-live-schema-gate.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {},
+      "topReferences": []
+    },
+    {
+      "status": "A",
+      "file": "scripts/audit-triad-orchestrator.ts",
+      "added": "387",
+      "deleted": "0",
+      "churn": 387,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "importedBy scripts:2",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/main-agent-audit-review-gate.ts",
+        "scripts/main-agent-orchestration.ts"
+      ],
+      "imports": [
+        "scripts/critical-auditor-profile.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {},
+      "topReferences": []
+    },
+    {
+      "status": "A",
+      "file": "scripts/main-agent-compiled-prompt-runner.ts",
+      "added": "387",
+      "deleted": "0",
+      "churn": 387,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "tests:1; importedBy scripts:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/main-agent-orchestration.ts"
+      ],
+      "imports": [
+        "scripts/orchestration-dispatch-contract.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "tests": 1
+      },
+      "topReferences": [
+        "tests:tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/orchestration-dispatch-contract.ts",
+      "added": "373",
+      "deleted": "9",
+      "churn": 382,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "installed_bmad_surface:3; tests:1; docs:1; scripts_source:2; importedBy scripts:11",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/audit-scoring-convergence-policy.ts",
+        "scripts/execution-discipline-profiles.ts",
+        "scripts/execution-strategy-selection.ts",
+        "scripts/host-runtime-mode.ts",
+        "scripts/main-agent-codex-worker-adapter.ts",
+        "scripts/main-agent-compiled-prompt-runner.ts",
+        "scripts/main-agent-orchestration.ts",
+        "scripts/main-agent-release-gate.ts",
+        "scripts/orchestration-state.ts",
+        "scripts/sdd-artifact-manifest.ts",
+        "scripts/subagent-evidence-envelope.ts"
+      ],
+      "imports": [],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "installed_bmad_surface": 3,
+        "docs": 1,
+        "scripts_source": 2,
+        "tests": 1
+      },
+      "topReferences": [
+        "installed_bmad_surface:_bmad/_config/bmads-runtime.yaml",
+        "installed_bmad_surface:_bmad/_config/script-owner-model-registry.yaml",
+        "installed_bmad_surface:_bmad/shared/critical-auditor-profile/critical-auditor-profile.json",
+        "docs:docs/ops/main-agent-capability-traceability-matrix.md",
+        "scripts_source:scripts/main-agent-bmad-help-five-layer-matrix.ts",
+        "scripts_source:scripts/subagent-surface-inventory.ts",
+        "tests:tests/acceptance/bmad-help-renderer.test.ts"
+      ]
+    },
+    {
+      "status": "A",
+      "file": "scripts/execution-strategy-selection.ts",
+      "added": "365",
+      "deleted": "0",
+      "churn": 365,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "importedBy scripts:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/main-agent-orchestration.ts"
+      ],
+      "imports": [
+        "scripts/orchestration-dispatch-contract.ts",
+        "scripts/requirement-record-control-store.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {},
+      "topReferences": []
+    },
+    {
+      "status": "A",
+      "file": "scripts/six-model-runtime-decision.ts",
+      "added": "364",
+      "deleted": "0",
+      "churn": 364,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "importedBy scripts:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/main-agent-orchestration.ts"
+      ],
+      "imports": [
+        "scripts/reconfirmation-runtime.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {},
+      "topReferences": []
+    },
+    {
+      "status": "A",
+      "file": "scripts/host-runtime-mode.ts",
+      "added": "356",
+      "deleted": "0",
+      "churn": 356,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "importedBy scripts:2",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/main-agent-orchestration.ts",
+        "scripts/supervised-worker-runtime.ts"
+      ],
+      "imports": [
+        "scripts/orchestration-dispatch-contract.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {},
+      "topReferences": []
+    },
+    {
+      "status": "M",
+      "file": "scripts/emit-runtime-policy.ts",
+      "added": "263",
+      "deleted": "27",
+      "churn": 290,
+      "exists": true,
+      "classification": "consumer_runtime_migrate_or_package_compiled_runtime",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "Package CLI/runtime must execute compiled package artifact; root TS may remain source only.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "npm scripts: emit-runtime-policy; installed_hook_surface:3; installed_skill_surface:9; installed_bmad_surface:1; runtime_emit_package:1; tests:2; docs:2; importedBy scripts:5",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [
+        "emit-runtime-policy"
+      ],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/assert-implementation-entry.ts",
+        "scripts/diagnose-bmad-state.ts",
+        "scripts/main-agent-codex-worker-adapter.ts",
+        "scripts/main-agent-orchestration.ts",
+        "scripts/write-runtime-policy-snapshot-and-recovery-context.ts"
+      ],
+      "imports": [
+        "scripts/runtime-governance.ts",
+        "scripts/bmad-config.ts",
+        "scripts/runtime-context-registry.ts",
+        "scripts/runtime-context.ts",
+        "scripts/resolve-active-requirement.ts",
+        "scripts/stable-runtime-policy-json.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": true,
+      "referenceCounts": {
+        "installed_bmad_surface": 1,
+        "installed_hook_surface": 3,
+        "installed_skill_surface": 9,
+        "docs": 2,
+        "root_package_json": 1,
+        "runtime_emit_package": 1,
+        "tests": 2
+      },
+      "topReferences": [
+        "installed_bmad_surface:_bmad/_config/script-owner-model-registry.yaml",
+        "installed_hook_surface:_bmad/claude/hooks/emit-runtime-policy-cli.cjs",
+        "installed_skill_surface:_bmad/claude/skills/speckit-workflow/SKILL.en.md",
+        "installed_skill_surface:_bmad/claude/skills/speckit-workflow/SKILL.md",
+        "installed_skill_surface:_bmad/claude/skills/speckit-workflow/SKILL.zh.md",
+        "installed_skill_surface:_bmad/codex/skills/speckit-workflow/SKILL.en.md",
+        "installed_skill_surface:_bmad/codex/skills/speckit-workflow/SKILL.md",
+        "installed_skill_surface:_bmad/codex/skills/speckit-workflow/SKILL.zh.md",
+        "installed_hook_surface:_bmad/cursor/hooks/README.md",
+        "installed_hook_surface:_bmad/cursor/hooks/emit-runtime-policy-cli.cjs",
+        "installed_skill_surface:_bmad/cursor/skills/speckit-workflow/SKILL.en.md",
+        "installed_skill_surface:_bmad/cursor/skills/speckit-workflow/SKILL.md"
+      ]
+    },
+    {
+      "status": "A",
+      "file": "scripts/sdd-artifact-manifest.ts",
+      "added": "275",
+      "deleted": "0",
+      "churn": 275,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "importedBy scripts:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/main-agent-orchestration.ts"
+      ],
+      "imports": [
+        "scripts/orchestration-dispatch-contract.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {},
+      "topReferences": []
+    },
+    {
+      "status": "M",
+      "file": "scripts/main-agent-implementation-readiness-gate.ts",
+      "added": "144",
+      "deleted": "79",
+      "churn": 223,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "tests:9; docs:1; scripts_source:1; importedBy scripts:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/main-agent-orchestration.ts"
+      ],
+      "imports": [
+        "scripts/architecture-confirmation-hash-recipe.ts",
+        "scripts/ai-tdd-contract-gate.ts",
+        "scripts/requirement-record-control-store.ts",
+        "scripts/reconfirmation-runtime.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "docs": 1,
+        "scripts_source": 1,
+        "tests": 9
+      },
+      "topReferences": [
+        "docs:docs/plans/2026-05-29-readiness-blocker-classifier-authority-boundary-goal-execution-plan.md",
+        "scripts_source:scripts/record-main-agent-inspect-readiness-closure.ts",
+        "tests:tests/acceptance/generate-architecture-confirmation-artifact.test.ts",
+        "tests:tests/acceptance/main-agent-implementation-readiness-gate-record.test.ts",
+        "tests:tests/acceptance/prepare-architecture-confirmation-page.test.ts",
+        "tests:tests/acceptance/render-architecture-confirmation-html.test.ts",
+        "tests:tests/acceptance/requirement-record-control-store-enforcement.test.ts",
+        "tests:tests/acceptance/requirements-contract-authoring-skill-contract.test.ts",
+        "tests:tests/acceptance/requirements-contract-checkpoint-automation.test.ts",
+        "tests:tests/fixtures/requirements/REQ-CHECKPOINT-AUTOMATION/source.requirement.md",
+        "tests:tests/unit/readiness-score-writer-boundary.test.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/governance-remediation-artifact.ts",
+      "added": "95",
+      "deleted": "109",
+      "churn": 204,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "installed_bmad_surface:1; importedBy scripts:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/governance-remediation-runner.ts"
+      ],
+      "imports": [
+        "scripts/prompt-routing-governance.ts",
+        "scripts/deferred-gap-governance.cjs",
+        "scripts/model-governance-hints-schema.ts",
+        "scripts/execution-intent-schema.ts",
+        "scripts/runtime-scoring-data-path.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "installed_bmad_surface": 1
+      },
+      "topReferences": [
+        "installed_bmad_surface:_bmad/_config/script-owner-model-registry.yaml"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/resolve-active-requirement.ts",
+      "added": "161",
+      "deleted": "42",
+      "churn": 203,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "npm scripts: resolve-active-requirement; installed_skill_surface:2; installed_bmad_surface:1; tests:1; scripts_source:1; importedBy scripts:3",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [
+        "resolve-active-requirement"
+      ],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/bmad-help-routing-state.ts",
+        "scripts/emit-runtime-policy.ts",
+        "scripts/main-agent-orchestration.ts"
+      ],
+      "imports": [
+        "scripts/bmad-config.ts",
+        "scripts/runtime-governance.ts",
+        "scripts/runtime-context.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "installed_bmad_surface": 1,
+        "installed_skill_surface": 2,
+        "root_package_json": 1,
+        "scripts_source": 1,
+        "tests": 1
+      },
+      "topReferences": [
+        "installed_bmad_surface:_bmad/_config/script-owner-model-registry.yaml",
+        "installed_skill_surface:_bmad/skills/requirements-contract-authoring/SKILL.md",
+        "installed_skill_surface:_bmad/skills/requirements-contract-authoring/references/contract-template.md",
+        "root_package_json:package.json",
+        "scripts_source:scripts/record-main-agent-inspect-readiness-closure.ts",
+        "tests:tests/acceptance/resolve-active-requirement.test.ts"
+      ]
+    },
+    {
+      "status": "A",
+      "file": "scripts/audit-scoring-convergence-policy.ts",
+      "added": "185",
+      "deleted": "0",
+      "churn": 185,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "installed_bmad_surface:1; tests:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [
+        "scripts/orchestration-dispatch-contract.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "installed_bmad_surface": 1,
+        "tests": 1
+      },
+      "topReferences": [
+        "installed_bmad_surface:_bmad/shared/critical-auditor-profile/critical-auditor-profile.json",
+        "tests:tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/main-agent-unified-ingress.ts",
+      "added": "109",
+      "deleted": "73",
+      "churn": 182,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "installed_hook_surface:1; installed_bmad_surface:2; docs:1; importedBy scripts:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/main-agent-development-journey-matrix.ts"
+      ],
+      "imports": [
+        "scripts/main-agent-orchestration.ts",
+        "scripts/orchestration-state.ts",
+        "scripts/runtime-governance.ts",
+        "scripts/governance-transport-envelope.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "installed_hook_surface": 1,
+        "installed_bmad_surface": 2,
+        "docs": 1
+      },
+      "topReferences": [
+        "installed_hook_surface:_bmad/_config/hooks-owner-model-registry.yaml",
+        "installed_bmad_surface:_bmad/_config/main-agent-quality-gate.thresholds.json",
+        "installed_bmad_surface:_bmad/_config/script-owner-model-registry.yaml",
+        "docs:docs/ops/main-agent-capability-traceability-matrix.md"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/strict-closeout-proof-gate.ts",
+      "added": "168",
+      "deleted": "11",
+      "churn": 179,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "tests:2; scripts_source:1; importedBy scripts:3",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/ai-tdd-contract-gate.ts",
+        "scripts/main-agent-delivery-closeout-gate.ts",
+        "scripts/main-agent-orchestration.ts"
+      ],
+      "imports": [
+        "scripts/target-artifact-realization-gate.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "scripts_source": 1,
+        "tests": 2
+      },
+      "topReferences": [
+        "scripts_source:scripts/trace-040-evidence-packet-generator.ts",
+        "tests:tests/acceptance/requirements-contract-checkpoint-automation.test.ts",
+        "tests:tests/fixtures/requirements/REQ-CHECKPOINT-AUTOMATION/source.requirement.md"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/controlled-readiness-audit-bridge.ts",
+      "added": "143",
+      "deleted": "32",
+      "churn": 175,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "tests:1; scripts_source:1; importedBy scripts:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/main-agent-orchestration.ts"
+      ],
+      "imports": [
+        "scripts/requirement-record-control-store.ts",
+        "scripts/runtime-scoring-data-path.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "scripts_source": 1,
+        "tests": 1
+      },
+      "topReferences": [
+        "scripts_source:scripts/record-main-agent-inspect-readiness-closure.ts",
+        "tests:tests/unit/readiness-score-writer-boundary.test.ts"
+      ]
+    },
+    {
+      "status": "A",
+      "file": "scripts/execution-discipline-profiles.ts",
+      "added": "148",
+      "deleted": "0",
+      "churn": 148,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "importedBy scripts:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/main-agent-orchestration.ts"
+      ],
+      "imports": [
+        "scripts/orchestration-dispatch-contract.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {},
+      "topReferences": []
+    },
+    {
+      "status": "M",
+      "file": "scripts/ai-tdd-contract-gate.ts",
+      "added": "120",
+      "deleted": "26",
+      "churn": 146,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "installed_skill_surface:1; installed_bmad_surface:1; tests:5; docs:1; importedBy scripts:5",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/main-agent-delivery-closeout-gate.ts",
+        "scripts/main-agent-implementation-readiness-gate.ts",
+        "scripts/main-agent-orchestration.ts",
+        "scripts/pre-rerun-anti-false-positive-gate.ts",
+        "scripts/run-required-commands-from-ai-tdd-manifest.ts"
+      ],
+      "imports": [
+        "scripts/target-artifact-realization-gate.ts",
+        "scripts/strict-closeout-proof-gate.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "installed_bmad_surface": 1,
+        "installed_skill_surface": 1,
+        "docs": 1,
+        "tests": 5
+      },
+      "topReferences": [
+        "installed_bmad_surface:_bmad/shared/contract-execution-manifest/README.md",
+        "installed_skill_surface:_bmad/skills/req-trace-matrix-prompt-generator/references/contract-execution-manifest/README.md",
+        "docs:docs/plans/2026-05-29-readiness-blocker-classifier-authority-boundary-goal-execution-plan.md",
+        "tests:tests/acceptance/ai-tdd-contract-gate.test.ts",
+        "tests:tests/acceptance/requirements-contract-authoring-skill-contract.test.ts",
+        "tests:tests/acceptance/requirements-contract-checkpoint-automation.test.ts",
+        "tests:tests/acceptance/target-artifact-realization-gate.test.ts",
+        "tests:tests/fixtures/requirements/REQ-CHECKPOINT-AUTOMATION/source.requirement.md"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/live-smoke-main-agent-runtime.ts",
+      "added": "91",
+      "deleted": "48",
+      "churn": 139,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "npm scripts: smoke:main-agent-runtime; installed_bmad_surface:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [
+        "smoke:main-agent-runtime"
+      ],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [
+        "scripts/runtime-context.ts",
+        "scripts/runtime-context-registry.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "installed_bmad_surface": 1,
+        "root_package_json": 1
+      },
+      "topReferences": [
+        "installed_bmad_surface:_bmad/_config/script-owner-model-registry.yaml",
+        "root_package_json:package.json"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/subagent-evidence-envelope.ts",
+      "added": "107",
+      "deleted": "31",
+      "churn": 138,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "medium",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "tests:1; importedBy scripts:4",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/ingest-implementation-evidence.ts",
+        "scripts/main-agent-codex-worker-adapter.ts",
+        "scripts/parallel-mission-control.ts",
+        "scripts/subagent-current-attempt-revalidation.ts"
+      ],
+      "imports": [
+        "scripts/orchestration-dispatch-contract.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "tests": 1
+      },
+      "topReferences": [
+        "tests:tests/acceptance/subagent-evidence-envelope.test.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/governance-transport-envelope.ts",
+      "added": "99",
+      "deleted": "34",
+      "churn": 133,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "importedBy scripts:3",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/governance-execution-result-ingestor.ts",
+        "scripts/main-agent-codex-worker-adapter.ts",
+        "scripts/main-agent-unified-ingress.ts"
+      ],
+      "imports": [],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {},
+      "topReferences": []
+    },
+    {
+      "status": "M",
+      "file": "scripts/governance-remediation-runner.ts",
+      "added": "58",
+      "deleted": "69",
+      "churn": 127,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "installed_bmad_surface:3; tests:4; scripts_source:1; importedBy scripts:9",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/bmad-runtime-worker.ts",
+        "scripts/governance-execution-result-ingestor.ts",
+        "scripts/governance-host-dispatch-adapter.ts",
+        "scripts/governance-packet-execution-store.ts",
+        "scripts/governance-provider-adapter.ts",
+        "scripts/governance-remediation-config.ts",
+        "scripts/governance-runtime-queue.ts",
+        "scripts/skill-inventory-provider.ts",
+        "scripts/skill-orchestration-audit.ts"
+      ],
+      "imports": [
+        "scripts/governance-remediation-artifact.ts",
+        "scripts/prompt-routing-governance.ts",
+        "scripts/governance-provider-adapter.ts",
+        "scripts/model-governance-hints-schema.ts",
+        "scripts/execution-intent-schema.ts",
+        "scripts/skill-inventory-provider.ts",
+        "scripts/runtime-context.ts",
+        "scripts/runtime-context-registry.ts",
+        "scripts/runtime-governance.ts",
+        "scripts/governance-remediation-config.ts",
+        "scripts/reviewer-registry.ts",
+        "scripts/runtime-scoring-data-path.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "installed_bmad_surface": 3,
+        "scripts_source": 1,
+        "tests": 4
+      },
+      "topReferences": [
+        "installed_bmad_surface:_bmad/_config/script-owner-model-registry.yaml",
+        "installed_bmad_surface:_bmad/bmm/workflows/3-solutioning/bmad-check-implementation-readiness/steps/step-06-final-assessment.md",
+        "installed_bmad_surface:_bmad/bmm/workflows/3-solutioning/check-implementation-readiness/steps/step-06-final-assessment.md",
+        "scripts_source:scripts/subagent-surface-inventory.ts",
+        "tests:tests/acceptance/accept-consumer-governance-zero-scripts.test.ts",
+        "tests:tests/acceptance/governance-remediation-runner.test.ts",
+        "tests:tests/acceptance/readiness-remediation-artifact-generation.test.ts",
+        "tests:tests/acceptance/readiness-remediation-artifact-wiring.test.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/governance-packet-reconciler.ts",
+      "added": "67",
+      "deleted": "44",
+      "churn": 111,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "installed_hook_surface:1; installed_bmad_surface:1; importedBy scripts:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/bmad-runtime-worker.ts"
+      ],
+      "imports": [
+        "scripts/governance-remediation-config.ts",
+        "scripts/governance-packet-execution-store.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "installed_hook_surface": 1,
+        "installed_bmad_surface": 1
+      },
+      "topReferences": [
+        "installed_hook_surface:_bmad/_config/hooks-owner-model-registry.yaml",
+        "installed_bmad_surface:_bmad/_config/script-owner-model-registry.yaml"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/bmad-help-routing-state.ts",
+      "added": "59",
+      "deleted": "44",
+      "churn": 103,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "medium",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "docs:1; importedBy scripts:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/bmad-config.ts"
+      ],
+      "imports": [
+        "scripts/governance-packet-execution-store.ts",
+        "scripts/runtime-governance.ts",
+        "scripts/bmad-config.ts",
+        "scripts/runtime-context-registry.ts",
+        "scripts/reviewer-registry.ts",
+        "scripts/main-agent-orchestration.ts",
+        "scripts/bmad-help-five-layer-progress-marker.ts",
+        "scripts/resolve-active-requirement.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "docs": 1
+      },
+      "topReferences": [
+        "docs:docs/reference/runtime-policy-emit-schema.md"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/parallel-mission-control.ts",
+      "added": "76",
+      "deleted": "23",
+      "churn": 99,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "medium",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "docs:3; scripts_source:1; importedBy scripts:3",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/main-agent-delivery-truth-gate.ts",
+        "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+        "scripts/main-agent-release-gate.ts"
+      ],
+      "imports": [
+        "scripts/subagent-evidence-envelope.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "docs": 3,
+        "scripts_source": 1
+      },
+      "topReferences": [
+        "docs:docs/ops/main-agent-capability-traceability-matrix.md",
+        "docs:docs/reference/parallel-mission-plan-contract.md",
+        "docs:docs/reference/pr-topology-contract.md",
+        "scripts_source:scripts/subagent-surface-inventory.ts"
+      ]
+    },
+    {
+      "status": "A",
+      "file": "scripts/critical-auditor-profile.ts",
+      "added": "96",
+      "deleted": "0",
+      "churn": 96,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "importedBy scripts:2",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/audit-triad-orchestrator.ts",
+        "scripts/main-agent-orchestration.ts"
+      ],
+      "imports": [],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {},
+      "topReferences": []
+    },
+    {
+      "status": "M",
+      "file": "scripts/orchestration-state.ts",
+      "added": "56",
+      "deleted": "35",
+      "churn": 91,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "installed_bmad_surface:1; tests:1; importedBy scripts:3",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/long-run-runtime-policy.ts",
+        "scripts/main-agent-orchestration.ts",
+        "scripts/main-agent-unified-ingress.ts"
+      ],
+      "imports": [
+        "scripts/orchestration-dispatch-contract.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "installed_bmad_surface": 1,
+        "tests": 1
+      },
+      "topReferences": [
+        "installed_bmad_surface:_bmad/_config/script-owner-model-registry.yaml",
+        "tests:tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/prompt-routing-governance.ts",
+      "added": "41",
+      "deleted": "47",
+      "churn": 88,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "installed_bmad_surface:1; importedBy scripts:3",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/governance-provider-adapter.ts",
+        "scripts/governance-remediation-artifact.ts",
+        "scripts/governance-remediation-runner.ts"
+      ],
+      "imports": [
+        "scripts/prompt-routing-hints-schema.ts",
+        "scripts/model-governance-hints-schema.ts",
+        "scripts/prompt-routing-hints.ts",
+        "scripts/execution-intent-schema.ts",
+        "scripts/model-governance-policy-filter.ts",
+        "scripts/reviewer-registry.ts",
+        "scripts/skill-semantic-features-config.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "installed_bmad_surface": 1
+      },
+      "topReferences": [
+        "installed_bmad_surface:_bmad/_config/script-owner-model-registry.yaml"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/governance-execution-result-ingestor.ts",
+      "added": "50",
+      "deleted": "37",
+      "churn": 87,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "installed_hook_surface:1; installed_bmad_surface:1; docs:1; importedBy scripts:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/bmad-runtime-worker.ts"
+      ],
+      "imports": [
+        "scripts/governance-remediation-config.ts",
+        "scripts/governance-packet-execution-store.ts",
+        "scripts/governance-remediation-runner.ts",
+        "scripts/governance-transport-envelope.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "installed_hook_surface": 1,
+        "installed_bmad_surface": 1,
+        "docs": 1
+      },
+      "topReferences": [
+        "installed_hook_surface:_bmad/_config/hooks-owner-model-registry.yaml",
+        "installed_bmad_surface:_bmad/_config/script-owner-model-registry.yaml",
+        "docs:docs/ops/main-agent-capability-traceability-matrix.md"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/party-mode-runtime.ts",
+      "added": "30",
+      "deleted": "17",
+      "churn": 47,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "medium",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "installed_bmad_surface:1; scripts_source:1; importedBy scripts:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/party-mode-gate-check.ts"
+      ],
+      "imports": [],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "installed_bmad_surface": 1,
+        "scripts_source": 1
+      },
+      "topReferences": [
+        "installed_bmad_surface:_bmad/_config/script-owner-model-registry.yaml",
+        "scripts_source:scripts/subagent-surface-inventory.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/governance-remediation-config.ts",
+      "added": "24",
+      "deleted": "22",
+      "churn": 46,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "installed_bmad_surface:1; docs:1; importedBy scripts:7",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/bmad-runtime-worker.ts",
+        "scripts/governance-execution-result-ingestor.ts",
+        "scripts/governance-host-dispatch-adapter.ts",
+        "scripts/governance-packet-dispatch-worker.ts",
+        "scripts/governance-packet-reconciler.ts",
+        "scripts/governance-remediation-runner.ts",
+        "scripts/main-agent-orchestration.ts"
+      ],
+      "imports": [
+        "scripts/governance-remediation-runner.ts",
+        "scripts/model-governance-hints-schema.ts",
+        "scripts/governance-provider-adapter.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "installed_bmad_surface": 1,
+        "docs": 1
+      },
+      "topReferences": [
+        "installed_bmad_surface:_bmad/_config/script-owner-model-registry.yaml",
+        "docs:docs/how-to/provider-configuration.md"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/governance-provider-adapter.ts",
+      "added": "25",
+      "deleted": "20",
+      "churn": 45,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "installed_bmad_surface:1; docs:1; importedBy scripts:2",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/governance-remediation-config.ts",
+        "scripts/governance-remediation-runner.ts"
+      ],
+      "imports": [
+        "scripts/model-governance-hint-resolver.ts",
+        "scripts/prompt-routing-governance.ts",
+        "scripts/execution-intent-schema.ts",
+        "scripts/model-governance-hints-schema.ts",
+        "scripts/skill-inventory-provider.ts",
+        "scripts/governance-remediation-runner.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "installed_bmad_surface": 1,
+        "docs": 1
+      },
+      "topReferences": [
+        "installed_bmad_surface:_bmad/_config/script-owner-model-registry.yaml",
+        "docs:docs/how-to/provider-configuration.md"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/user-story-mapping.ts",
+      "added": "37",
+      "deleted": "8",
+      "churn": 45,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "medium",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "installed_bmad_surface:1; importedBy scripts:3",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/adaptive-intake-governance-gate.ts",
+        "scripts/adaptive-intake-proof-gate.ts",
+        "scripts/main-agent-orchestration.ts"
+      ],
+      "imports": [
+        "scripts/runtime-context.ts",
+        "scripts/runtime-governance.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "installed_bmad_surface": 1
+      },
+      "topReferences": [
+        "installed_bmad_surface:_bmad/_config/script-owner-model-registry.yaml"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/dashboard-generate.ts",
+      "added": "25",
+      "deleted": "14",
+      "churn": 39,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "medium",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "installed_bmad_surface:1; package_bmad_speckit:1; docs:1; scripts_source:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "installed_bmad_surface": 1,
+        "docs": 1,
+        "package_bmad_speckit": 1,
+        "other": 3,
+        "scripts_source": 1
+      },
+      "topReferences": [
+        "installed_bmad_surface:_bmad/_config/script-owner-model-registry.yaml",
+        "docs:docs/reference/source-code.md",
+        "package_bmad_speckit:packages/bmad-speckit/src/commands/dashboard.js",
+        "other:packages/scoring/__tests__/integration/dashboard-epic-aggregate.test.ts",
+        "other:packages/scoring/__tests__/integration/dashboard-governance-routing.test.ts",
+        "other:packages/scoring/__tests__/integration/dashboard-runtime-snapshot.test.ts",
+        "scripts_source:scripts/README.md"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/governance-packet-dispatch-worker.ts",
+      "added": "14",
+      "deleted": "14",
+      "churn": 28,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "installed_bmad_surface:1; docs:1; scripts_source:1; importedBy scripts:2",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/bmad-runtime-worker.ts",
+        "scripts/governance-host-dispatch-adapter.ts"
+      ],
+      "imports": [
+        "scripts/governance-remediation-config.ts",
+        "scripts/governance-packet-execution-store.ts",
+        "scripts/governance-host-dispatch-adapter.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "installed_bmad_surface": 1,
+        "docs": 1,
+        "scripts_source": 1
+      },
+      "topReferences": [
+        "installed_bmad_surface:_bmad/_config/script-owner-model-registry.yaml",
+        "docs:docs/ops/main-agent-capability-traceability-matrix.md",
+        "scripts_source:scripts/subagent-surface-inventory.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/governance-host-dispatch-adapter.ts",
+      "added": "14",
+      "deleted": "13",
+      "churn": 27,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "installed_bmad_surface:1; scripts_source:1; importedBy scripts:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/governance-packet-dispatch-worker.ts"
+      ],
+      "imports": [
+        "scripts/governance-remediation-config.ts",
+        "scripts/governance-remediation-runner.ts",
+        "scripts/governance-packet-dispatch-worker.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "installed_bmad_surface": 1,
+        "scripts_source": 1
+      },
+      "topReferences": [
+        "installed_bmad_surface:_bmad/_config/script-owner-model-registry.yaml",
+        "scripts_source:scripts/subagent-surface-inventory.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/coach-diagnose.ts",
+      "added": "13",
+      "deleted": "13",
+      "churn": 26,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "medium",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "npm scripts: coach:diagnose; installed_skill_surface:3; package_bmad_speckit:1; docs:1; scripts_source:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [
+        "coach:diagnose"
+      ],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "installed_skill_surface": 3,
+        "docs": 1,
+        "root_package_json": 1,
+        "package_bmad_speckit": 1,
+        "other": 1,
+        "scripts_source": 1
+      },
+      "topReferences": [
+        "installed_skill_surface:_bmad/skills/bmad-eval-analytics/SKILL.en.md",
+        "installed_skill_surface:_bmad/skills/bmad-eval-analytics/SKILL.md",
+        "installed_skill_surface:_bmad/skills/bmad-eval-analytics/SKILL.zh.md",
+        "docs:docs/reference/source-code.md",
+        "root_package_json:package.json",
+        "package_bmad_speckit:packages/bmad-speckit/src/commands/coach.js",
+        "other:packages/scoring/coach/__tests__/coach-integration.test.ts",
+        "scripts_source:scripts/README.md"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/init-to-root.js",
+      "added": "23",
+      "deleted": "2",
+      "churn": 25,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "medium",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "package bin: bmad-speckit-init; npm scripts: postinstall, init, init:claude, init:cursor, ...; installed_hook_surface:1; installed_bmad_surface:2; package_bmad_speckit:1; tests:22; docs:8; scripts_source:3",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [
+        "postinstall",
+        "init",
+        "init:claude",
+        "init:cursor",
+        "init:codex"
+      ],
+      "packageBins": [
+        "bmad-speckit-init"
+      ],
+      "importedBy": [],
+      "imports": [],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "installed_bmad_surface": 2,
+        "installed_hook_surface": 1,
+        "docs": 8,
+        "root_package_json": 1,
+        "package_bmad_speckit": 1,
+        "scripts_source": 3,
+        "tests": 22
+      },
+      "topReferences": [
+        "installed_bmad_surface:_bmad/claude/i18n/README.md",
+        "installed_hook_surface:_bmad/cursor/hooks/README.md",
+        "installed_bmad_surface:_bmad/i18n/README.md",
+        "docs:docs/how-to/consumer-installation.md",
+        "docs:docs/how-to/cursor-only-demo-playbook.md",
+        "docs:docs/how-to/migration.md",
+        "docs:docs/how-to/runtime-governance-auto-inject-cursor-claude.md",
+        "docs:docs/how-to/runtime-mcp-installation.md",
+        "docs:docs/ops/2026-05-10-requirements-skills-release-sync-tasks.md",
+        "docs:docs/reference/source-code.md",
+        "docs:docs/tutorials/getting-started.md",
+        "root_package_json:package.json"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/requirement-record-live-schema-gate.ts",
+      "added": "18",
+      "deleted": "4",
+      "churn": 22,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "importedBy scripts:2",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/reconfirmation-runtime.ts",
+        "scripts/requirement-record-control-store.ts"
+      ],
+      "imports": [],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {},
+      "topReferences": []
+    },
+    {
+      "status": "M",
+      "file": "scripts/reviewer-schema.ts",
+      "added": "11",
+      "deleted": "9",
+      "churn": 20,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "installed_bmad_surface:1; importedBy scripts:3",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/reviewer-registry.ts",
+        "scripts/run-auditor-host.ts",
+        "scripts/speckit-cli.ts"
+      ],
+      "imports": [
+        "scripts/reviewer-contract.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "installed_bmad_surface": 1
+      },
+      "topReferences": [
+        "installed_bmad_surface:_bmad/shared/critical-auditor-profile/critical-auditor-profile.json"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/architecture-confirmation-hash-recipe.ts",
+      "added": "14",
+      "deleted": "5",
+      "churn": 19,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "medium",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "importedBy scripts:3",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/ingest-architecture-confirmation.ts",
+        "scripts/main-agent-delivery-closeout-gate.ts",
+        "scripts/main-agent-implementation-readiness-gate.ts"
+      ],
+      "imports": [],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {},
+      "topReferences": []
+    },
+    {
+      "status": "M",
+      "file": "scripts/runtime-context.ts",
+      "added": "5",
+      "deleted": "14",
+      "churn": 19,
+      "exists": true,
+      "classification": "consumer_runtime_migrate_or_package_compiled_runtime",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "Package CLI/runtime must execute compiled package artifact; root TS may remain source only.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "tests:2; importedBy scripts:12",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/bmad-runtime-worker.ts",
+        "scripts/e2e-host-matrix-journey-runner.ts",
+        "scripts/emit-runtime-policy.ts",
+        "scripts/governance-remediation-runner.ts",
+        "scripts/i18n/resolve-for-session-cli.ts",
+        "scripts/live-smoke-main-agent-runtime.ts",
+        "scripts/live-smoke-speckit-workflow.ts",
+        "scripts/main-agent-bmad-help-five-layer-matrix.ts",
+        "scripts/main-agent-development-journey-matrix.ts",
+        "scripts/main-agent-orchestration.ts",
+        "scripts/resolve-active-requirement.ts",
+        "scripts/user-story-mapping.ts"
+      ],
+      "imports": [
+        "scripts/runtime-governance.ts",
+        "scripts/bmad-config.ts",
+        "scripts/runtime-context-registry.ts",
+        "scripts/facilitator-runtime-definition.ts",
+        "scripts/reviewer-runtime-definition.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": true,
+      "referenceCounts": {
+        "tests": 2
+      },
+      "topReferences": [
+        "tests:tests/acceptance/accept-pack-bmad-speckit.test.ts",
+        "tests:tests/acceptance/speckit-cli-implement-ralph.test.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/execution-intent-schema.ts",
+      "added": "7",
+      "deleted": "10",
+      "churn": 17,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "importedBy scripts:6",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/governance-hook-types.ts",
+        "scripts/governance-provider-adapter.ts",
+        "scripts/governance-remediation-artifact.ts",
+        "scripts/governance-remediation-runner.ts",
+        "scripts/prompt-routing-governance.ts",
+        "scripts/skill-inventory-provider.ts"
+      ],
+      "imports": [
+        "scripts/reviewer-registry.ts",
+        "scripts/prompt-routing-hints-schema.ts",
+        "scripts/model-governance-hints-schema.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {},
+      "topReferences": []
+    },
+    {
+      "status": "M",
+      "file": "scripts/bmad-help-five-layer-progress-marker.ts",
+      "added": "14",
+      "deleted": "2",
+      "churn": 16,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "medium",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "importedBy scripts:2",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/bmad-help-routing-state.ts",
+        "scripts/main-agent-bmad-help-five-layer-matrix.ts"
+      ],
+      "imports": [],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {},
+      "topReferences": []
+    },
+    {
+      "status": "A",
+      "file": "scripts/runtime-scoring-data-path.ts",
+      "added": "13",
+      "deleted": "0",
+      "churn": 13,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "importedBy scripts:5",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/controlled-readiness-audit-bridge.ts",
+        "scripts/diagnose-bmad-state.ts",
+        "scripts/governance-remediation-artifact.ts",
+        "scripts/governance-remediation-runner.ts",
+        "scripts/main-agent-orchestration.ts"
+      ],
+      "imports": [],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {},
+      "topReferences": []
+    },
+    {
+      "status": "M",
+      "file": "scripts/runtime-governance.ts",
+      "added": "3",
+      "deleted": "9",
+      "churn": 12,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "installed_bmad_surface:3; docs:2; scripts_source:1; importedBy scripts:16",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/assert-implementation-entry.ts",
+        "scripts/bmad-config.ts",
+        "scripts/bmad-help-routing-state.ts",
+        "scripts/diagnose-bmad-state.ts",
+        "scripts/emit-runtime-policy.ts",
+        "scripts/governance-remediation-runner.ts",
+        "scripts/main-agent-bmad-help-five-layer-matrix.ts",
+        "scripts/main-agent-codex-worker-adapter.ts",
+        "scripts/main-agent-orchestration.ts",
+        "scripts/main-agent-soak-runner.ts",
+        "scripts/main-agent-unified-ingress.ts",
+        "scripts/resolve-active-requirement.ts",
+        "scripts/runtime-context-registry.ts",
+        "scripts/runtime-context.ts",
+        "scripts/runtime-governance-registry.ts",
+        "scripts/user-story-mapping.ts"
+      ],
+      "imports": [
+        "scripts/bmad-config.ts",
+        "scripts/runtime-governance-template-schema.ts",
+        "scripts/runtime-governance-registry.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "installed_bmad_surface": 3,
+        "docs": 2,
+        "scripts_source": 1
+      },
+      "topReferences": [
+        "installed_bmad_surface:_bmad/_config/runtime-granularity-stages.yaml",
+        "installed_bmad_surface:_bmad/_config/runtime-mandatory-gates.yaml",
+        "installed_bmad_surface:_bmad/_config/script-owner-model-registry.yaml",
+        "docs:docs/reference/runtime-governance-terms.md",
+        "docs:docs/reference/runtime-policy-emit-schema.md",
+        "scripts_source:scripts/bmad-config.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/i18n/resolve-audit-prompt-path.ts",
+      "added": "4",
+      "deleted": "7",
+      "churn": 11,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "installed_bmad_surface:2; importedBy scripts:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/i18n/print-resolved-audit-prompt.ts"
+      ],
+      "imports": [
+        "scripts/i18n/resolve-localized-markdown-path.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "installed_bmad_surface": 2
+      },
+      "topReferences": [
+        "installed_bmad_surface:_bmad/_config/AUDIT_PROMPTS_STRATEGY.md",
+        "installed_bmad_surface:_bmad/_config/code-reviewer-config.yaml"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/main-agent-delivery-evidence-run.ts",
+      "added": "7",
+      "deleted": "4",
+      "churn": 11,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "npm scripts: main-agent:delivery-evidence-run; installed_bmad_surface:1; tests:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [
+        "main-agent:delivery-evidence-run"
+      ],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [
+        "scripts/evidence-provenance.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "installed_bmad_surface": 1,
+        "root_package_json": 1,
+        "tests": 1
+      },
+      "topReferences": [
+        "installed_bmad_surface:_bmad/_config/script-owner-model-registry.yaml",
+        "root_package_json:package.json",
+        "tests:tests/acceptance/main-agent-delivery-evidence-run.test.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/facilitator-runtime-definition.ts",
+      "added": "5",
+      "deleted": "5",
+      "churn": 10,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "scripts_source:1; importedBy scripts:3",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/i18n/materialize-facilitator-definition.ts",
+        "scripts/i18n/resolve-for-session-cli.ts",
+        "scripts/runtime-context.ts"
+      ],
+      "imports": [
+        "scripts/reviewer-contract.ts",
+        "scripts/facilitator-registry.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "scripts_source": 1
+      },
+      "topReferences": [
+        "scripts_source:scripts/subagent-surface-inventory.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/main-agent-chaos-scenarios.ts",
+      "added": "8",
+      "deleted": "2",
+      "churn": 10,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "npm scripts: test:main-agent-chaos; installed_bmad_surface:2; docs:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [
+        "test:main-agent-chaos"
+      ],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "installed_bmad_surface": 2,
+        "docs": 1,
+        "root_package_json": 1
+      },
+      "topReferences": [
+        "installed_bmad_surface:_bmad/_config/main-agent-quality-gate.thresholds.json",
+        "installed_bmad_surface:_bmad/_config/script-owner-model-registry.yaml",
+        "docs:docs/ops/main-agent-capability-traceability-matrix.md",
+        "root_package_json:package.json"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/prompt-routing-hints.ts",
+      "added": "8",
+      "deleted": "2",
+      "churn": 10,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "medium",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "importedBy scripts:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/prompt-routing-governance.ts"
+      ],
+      "imports": [
+        "scripts/prompt-routing-hints-schema.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {},
+      "topReferences": []
+    },
+    {
+      "status": "M",
+      "file": "scripts/reviewer-contract.ts",
+      "added": "3",
+      "deleted": "6",
+      "churn": 9,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "importedBy scripts:7",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/facilitator-registry.ts",
+        "scripts/facilitator-runtime-definition.ts",
+        "scripts/reviewer-registry.ts",
+        "scripts/reviewer-rollout-gate.ts",
+        "scripts/reviewer-runtime-definition.ts",
+        "scripts/reviewer-schema.ts",
+        "scripts/reviewer-shared-core.ts"
+      ],
+      "imports": [],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {},
+      "topReferences": []
+    },
+    {
+      "status": "M",
+      "file": "scripts/main-agent-soak-runner.ts",
+      "added": "7",
+      "deleted": "1",
+      "churn": 8,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "npm scripts: main-agent:soak-contract, main-agent:long-run-soak; installed_bmad_surface:1; tests:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [
+        "main-agent:soak-contract",
+        "main-agent:long-run-soak"
+      ],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [
+        "scripts/main-agent-orchestration.ts",
+        "scripts/evidence-provenance.ts",
+        "scripts/runtime-governance.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "installed_bmad_surface": 1,
+        "root_package_json": 1,
+        "tests": 1
+      },
+      "topReferences": [
+        "installed_bmad_surface:_bmad/_config/script-owner-model-registry.yaml",
+        "root_package_json:package.json",
+        "tests:tests/acceptance/main-agent-long-run-soak-wall-clock.test.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/model-governance-policy-filter.ts",
+      "added": "4",
+      "deleted": "4",
+      "churn": 8,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "installed_bmad_surface:1; importedBy scripts:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/prompt-routing-governance.ts"
+      ],
+      "imports": [
+        "scripts/prompt-routing-hints-schema.ts",
+        "scripts/model-governance-hints-schema.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "installed_bmad_surface": 1
+      },
+      "topReferences": [
+        "installed_bmad_surface:_bmad/_config/script-owner-model-registry.yaml"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/skill-inventory-provider.ts",
+      "added": "2",
+      "deleted": "6",
+      "churn": 8,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "medium",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "importedBy scripts:3",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/governance-provider-adapter.ts",
+        "scripts/governance-remediation-runner.ts",
+        "scripts/skill-orchestration-audit.ts"
+      ],
+      "imports": [
+        "scripts/governance-remediation-runner.ts",
+        "scripts/execution-intent-schema.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {},
+      "topReferences": []
+    },
+    {
+      "status": "M",
+      "file": "scripts/long-run-runtime-policy.ts",
+      "added": "4",
+      "deleted": "3",
+      "churn": 7,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "tests:1; docs:2; importedBy scripts:2",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/main-agent-orchestration.ts",
+        "scripts/supervised-worker-runtime.ts"
+      ],
+      "imports": [
+        "scripts/orchestration-state.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "docs": 2,
+        "tests": 1
+      },
+      "topReferences": [
+        "docs:docs/ops/main-agent-capability-traceability-matrix.md",
+        "docs:docs/reference/runtime-longrun-policy.md",
+        "tests:tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/facilitator-registry.ts",
+      "added": "1",
+      "deleted": "5",
+      "churn": 6,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "medium",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "scripts_source:1; importedBy scripts:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/facilitator-runtime-definition.ts"
+      ],
+      "imports": [
+        "scripts/reviewer-contract.ts",
+        "scripts/i18n/party-mode-runtime-assets.ts",
+        "scripts/i18n/resolve-localized-markdown-path.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "scripts_source": 1
+      },
+      "topReferences": [
+        "scripts_source:scripts/subagent-surface-inventory.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/i18n/agent-display-names.ts",
+      "added": "5",
+      "deleted": "1",
+      "churn": 6,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "medium",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "importedBy scripts:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/i18n/party-mode-runtime-assets.ts"
+      ],
+      "imports": [
+        "scripts/i18n/agent-manifest.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {},
+      "topReferences": []
+    },
+    {
+      "status": "M",
+      "file": "scripts/parse-bmad-audit-result.ts",
+      "added": "5",
+      "deleted": "1",
+      "churn": 6,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "installed_bmad_surface:1; tests:1; importedBy scripts:2",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/run-auditor-host.ts",
+        "scripts/runtime-context-registry.ts"
+      ],
+      "imports": [],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "installed_bmad_surface": 1,
+        "tests": 1
+      },
+      "topReferences": [
+        "installed_bmad_surface:_bmad/claude/agents/bmad-master.md",
+        "tests:tests/acceptance/accept-layer4-e2e.test.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/governance-hook-types.ts",
+      "added": "1",
+      "deleted": "4",
+      "churn": 5,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "importedBy scripts:2",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/bmad-runtime-worker.ts",
+        "scripts/governance-stage-event-emitter.ts"
+      ],
+      "imports": [
+        "scripts/execution-intent-schema.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {},
+      "topReferences": []
+    },
+    {
+      "status": "M",
+      "file": "scripts/governance-packet-execution-store.ts",
+      "added": "4",
+      "deleted": "1",
+      "churn": 5,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "installed_bmad_surface:1; importedBy scripts:5",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/bmad-help-routing-state.ts",
+        "scripts/bmad-runtime-worker.ts",
+        "scripts/governance-execution-result-ingestor.ts",
+        "scripts/governance-packet-dispatch-worker.ts",
+        "scripts/governance-packet-reconciler.ts"
+      ],
+      "imports": [
+        "scripts/governance-remediation-runner.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "installed_bmad_surface": 1
+      },
+      "topReferences": [
+        "installed_bmad_surface:_bmad/_config/script-owner-model-registry.yaml"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/reviewer-registry.ts",
+      "added": "1",
+      "deleted": "4",
+      "churn": 5,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "installed_bmad_surface:2; scripts_source:1; importedBy scripts:8",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/bmad-help-routing-state.ts",
+        "scripts/bmad-runtime-worker.ts",
+        "scripts/diagnose-bmad-state.ts",
+        "scripts/execution-intent-schema.ts",
+        "scripts/governance-remediation-runner.ts",
+        "scripts/prompt-routing-governance.ts",
+        "scripts/run-auditor-host.ts",
+        "scripts/speckit-cli.ts"
+      ],
+      "imports": [
+        "scripts/reviewer-contract.ts",
+        "scripts/reviewer-schema.ts",
+        "scripts/reviewer-shared-core.ts",
+        "scripts/reviewer-rollout-gate.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "installed_bmad_surface": 2,
+        "scripts_source": 1
+      },
+      "topReferences": [
+        "installed_bmad_surface:_bmad/_config/code-reviewer-config.yaml",
+        "installed_bmad_surface:_bmad/_config/script-owner-model-registry.yaml",
+        "scripts_source:scripts/subagent-surface-inventory.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/adaptive-intake-proof-gate.ts",
+      "added": "1",
+      "deleted": "3",
+      "churn": 4,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "medium",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "npm scripts: main-agent:adaptive-intake-proof; installed_bmad_surface:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [
+        "main-agent:adaptive-intake-proof"
+      ],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [
+        "scripts/user-story-mapping.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "installed_bmad_surface": 1,
+        "root_package_json": 1
+      },
+      "topReferences": [
+        "installed_bmad_surface:_bmad/_config/script-owner-model-registry.yaml",
+        "root_package_json:package.json"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/continue-state-contract.ts",
+      "added": "1",
+      "deleted": "3",
+      "churn": 4,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "medium",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "importedBy scripts:2",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/main-agent-orchestration.ts",
+        "scripts/run-auditor-host.ts"
+      ],
+      "imports": [],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {},
+      "topReferences": []
+    },
+    {
+      "status": "M",
+      "file": "scripts/governance-stage-event-emitter.ts",
+      "added": "3",
+      "deleted": "1",
+      "churn": 4,
+      "exists": true,
+      "classification": "consumer_runtime_migrate_or_package_compiled_runtime",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "Package CLI/runtime must execute compiled package artifact; root TS may remain source only.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "installed_bmad_surface:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [
+        "scripts/governance-hook-types.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": true,
+      "referenceCounts": {
+        "installed_bmad_surface": 1
+      },
+      "topReferences": [
+        "installed_bmad_surface:_bmad/_config/script-owner-model-registry.yaml"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/i18n/print-resolved-audit-prompt.ts",
+      "added": "1",
+      "deleted": "3",
+      "churn": 4,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "npm scripts: audit-prompt:resolve; installed_bmad_surface:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [
+        "audit-prompt:resolve"
+      ],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [
+        "scripts/i18n/resolve-audit-prompt-path.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "installed_bmad_surface": 1,
+        "root_package_json": 1
+      },
+      "topReferences": [
+        "installed_bmad_surface:_bmad/_config/AUDIT_PROMPTS_STRATEGY.md",
+        "root_package_json:package.json"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/prompt-routing-hints-schema.ts",
+      "added": "3",
+      "deleted": "1",
+      "churn": 4,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "medium",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "importedBy scripts:6",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/execution-intent-schema.ts",
+        "scripts/model-governance-hints-schema.ts",
+        "scripts/model-governance-policy-filter.ts",
+        "scripts/prompt-routing-governance.ts",
+        "scripts/prompt-routing-hints.ts",
+        "scripts/skill-semantic-features-config.ts"
+      ],
+      "imports": [],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {},
+      "topReferences": []
+    },
+    {
+      "status": "M",
+      "file": "scripts/sft-extract.ts",
+      "added": "3",
+      "deleted": "1",
+      "churn": 4,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "medium",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "installed_skill_surface:3; installed_bmad_surface:1; package_bmad_speckit:1; docs:1; scripts_source:2",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "installed_bmad_surface": 1,
+        "installed_skill_surface": 3,
+        "docs": 1,
+        "package_bmad_speckit": 1,
+        "scripts_source": 2
+      },
+      "topReferences": [
+        "installed_bmad_surface:_bmad/_config/script-owner-model-registry.yaml",
+        "installed_skill_surface:_bmad/skills/bmad-eval-analytics/SKILL.en.md",
+        "installed_skill_surface:_bmad/skills/bmad-eval-analytics/SKILL.md",
+        "installed_skill_surface:_bmad/skills/bmad-eval-analytics/SKILL.zh.md",
+        "docs:docs/reference/source-code.md",
+        "package_bmad_speckit:packages/bmad-speckit/src/commands/sft-extract.js",
+        "scripts_source:scripts/README.md",
+        "scripts_source:scripts/analytics-sft-extract.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/sprint-status-authorized-update.ts",
+      "added": "3",
+      "deleted": "1",
+      "churn": 4,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "medium",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "docs:1; importedBy scripts:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/main-agent-release-gate.ts"
+      ],
+      "imports": [
+        "scripts/evidence-provenance.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "docs": 1
+      },
+      "topReferences": [
+        "docs:docs/ops/main-agent-capability-traceability-matrix.md"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/analytics-sft-extract.ts",
+      "added": "2",
+      "deleted": "1",
+      "churn": 3,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "medium",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "installed_bmad_surface:1; docs:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "installed_bmad_surface": 1,
+        "docs": 1
+      },
+      "topReferences": [
+        "installed_bmad_surface:_bmad/_config/script-owner-model-registry.yaml",
+        "docs:docs/reference/source-code.md"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/reviewer-runtime-definition.ts",
+      "added": "1",
+      "deleted": "1",
+      "churn": 2,
+      "exists": true,
+      "classification": "consumer_runtime_migrate",
+      "consumerReach": "yes_import_closure_or_installed_surface",
+      "target": "packages/bmad-speckit/src/... or durable installed runtime helper according to caller.",
+      "risk": "high",
+      "action": "Migrate with the consumer runtime closure or prove the consumer-executed artifact is compiled and package-relative.",
+      "callers": "importedBy scripts:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/runtime-context.ts"
+      ],
+      "imports": [
+        "scripts/reviewer-contract.ts"
+      ],
+      "inConsumerClosure": true,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {},
+      "topReferences": []
+    },
+    {
+      "status": "A",
+      "file": "scripts/main-agent-execution-closure-gate.ts",
+      "added": "598",
+      "deleted": "0",
+      "churn": 598,
+      "exists": true,
+      "classification": "pending_runtime_closure_review",
+      "consumerReach": "possible_main_agent_or_runtime_closure",
+      "target": "Probably packages/bmad-speckit/src/... unless proven source-dev-only or package-compiled-runtime.",
+      "risk": "high",
+      "action": "Do not mark internal yet. Prove whether Main Agent/six-model/auditor/worker/runtime closure reaches it before migration decision.",
+      "callers": "no direct current reference found by static scan",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [
+        "scripts/per-must-closure-evidence-index.ts",
+        "scripts/requirement-record-control-store.ts",
+        "scripts/reconfirmation-runtime.ts"
+      ],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {},
+      "topReferences": []
+    },
+    {
+      "status": "M",
+      "file": "scripts/main-agent-functional-resume-check.ts",
+      "added": "417",
+      "deleted": "85",
+      "churn": 502,
+      "exists": true,
+      "classification": "pending_runtime_closure_review",
+      "consumerReach": "possible_main_agent_or_runtime_closure",
+      "target": "Probably packages/bmad-speckit/src/... unless proven source-dev-only or package-compiled-runtime.",
+      "risk": "high",
+      "action": "Do not mark internal yet. Prove whether Main Agent/six-model/auditor/worker/runtime closure reaches it before migration decision.",
+      "callers": "no direct current reference found by static scan",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {},
+      "topReferences": []
+    },
+    {
+      "status": "A",
+      "file": "scripts/main-agent-audit-review-gate.ts",
+      "added": "453",
+      "deleted": "0",
+      "churn": 453,
+      "exists": true,
+      "classification": "pending_runtime_closure_review",
+      "consumerReach": "possible_main_agent_or_runtime_closure",
+      "target": "Probably packages/bmad-speckit/src/... unless proven source-dev-only or package-compiled-runtime.",
+      "risk": "high",
+      "action": "Do not mark internal yet. Prove whether Main Agent/six-model/auditor/worker/runtime closure reaches it before migration decision.",
+      "callers": "no direct current reference found by static scan",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [
+        "scripts/audit-triad-orchestrator.ts",
+        "scripts/requirement-record-control-store.ts",
+        "scripts/reconfirmation-runtime.ts"
+      ],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {},
+      "topReferences": []
+    },
+    {
+      "status": "M",
+      "file": "scripts/main-agent-governed-data-products.ts",
+      "added": "310",
+      "deleted": "39",
+      "churn": 349,
+      "exists": true,
+      "classification": "pending_runtime_closure_review",
+      "consumerReach": "possible_main_agent_or_runtime_closure",
+      "target": "Probably packages/bmad-speckit/src/... unless proven source-dev-only or package-compiled-runtime.",
+      "risk": "high",
+      "action": "Do not mark internal yet. Prove whether Main Agent/six-model/auditor/worker/runtime closure reaches it before migration decision.",
+      "callers": "tests:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "tests": 1
+      },
+      "topReferences": [
+        "tests:tests/acceptance/requirement-record-control-store-enforcement.test.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/main-agent-dataset-release-gate.ts",
+      "added": "233",
+      "deleted": "54",
+      "churn": 287,
+      "exists": true,
+      "classification": "pending_runtime_closure_review",
+      "consumerReach": "possible_main_agent_or_runtime_closure",
+      "target": "Probably packages/bmad-speckit/src/... unless proven source-dev-only or package-compiled-runtime.",
+      "risk": "high",
+      "action": "Do not mark internal yet. Prove whether Main Agent/six-model/auditor/worker/runtime closure reaches it before migration decision.",
+      "callers": "tests:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "tests": 1
+      },
+      "topReferences": [
+        "tests:tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts"
+      ]
+    },
+    {
+      "status": "A",
+      "file": "scripts/initialize-six-model-requirement-confirmation.ts",
+      "added": "250",
+      "deleted": "0",
+      "churn": 250,
+      "exists": true,
+      "classification": "pending_runtime_closure_review",
+      "consumerReach": "possible_main_agent_or_runtime_closure",
+      "target": "Probably packages/bmad-speckit/src/... unless proven source-dev-only or package-compiled-runtime.",
+      "risk": "high",
+      "action": "Do not mark internal yet. Prove whether Main Agent/six-model/auditor/worker/runtime closure reaches it before migration decision.",
+      "callers": "no direct current reference found by static scan",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [
+        "scripts/requirement-record-control-store.ts"
+      ],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {},
+      "topReferences": []
+    },
+    {
+      "status": "M",
+      "file": "scripts/main-agent-production-loop-ready-check.ts",
+      "added": "129",
+      "deleted": "46",
+      "churn": 175,
+      "exists": true,
+      "classification": "pending_runtime_closure_review",
+      "consumerReach": "possible_main_agent_or_runtime_closure",
+      "target": "Probably packages/bmad-speckit/src/... unless proven source-dev-only or package-compiled-runtime.",
+      "risk": "high",
+      "action": "Do not mark internal yet. Prove whether Main Agent/six-model/auditor/worker/runtime closure reaches it before migration decision.",
+      "callers": "tests:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "tests": 1
+      },
+      "topReferences": [
+        "tests:tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/main-agent-entryflow-traceability-check.ts",
+      "added": "111",
+      "deleted": "36",
+      "churn": 147,
+      "exists": true,
+      "classification": "pending_runtime_closure_review",
+      "consumerReach": "possible_main_agent_or_runtime_closure",
+      "target": "Probably packages/bmad-speckit/src/... unless proven source-dev-only or package-compiled-runtime.",
+      "risk": "high",
+      "action": "Do not mark internal yet. Prove whether Main Agent/six-model/auditor/worker/runtime closure reaches it before migration decision.",
+      "callers": "no direct current reference found by static scan",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {},
+      "topReferences": []
+    },
+    {
+      "status": "M",
+      "file": "scripts/main-agent-control-plane-isolation-check.ts",
+      "added": "107",
+      "deleted": "30",
+      "churn": 137,
+      "exists": true,
+      "classification": "pending_runtime_closure_review",
+      "consumerReach": "possible_main_agent_or_runtime_closure",
+      "target": "Probably packages/bmad-speckit/src/... unless proven source-dev-only or package-compiled-runtime.",
+      "risk": "high",
+      "action": "Do not mark internal yet. Prove whether Main Agent/six-model/auditor/worker/runtime closure reaches it before migration decision.",
+      "callers": "no direct current reference found by static scan",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {},
+      "topReferences": []
+    },
+    {
+      "status": "M",
+      "file": "scripts/main-agent-scoring-gates-check.ts",
+      "added": "93",
+      "deleted": "26",
+      "churn": 119,
+      "exists": true,
+      "classification": "pending_runtime_closure_review",
+      "consumerReach": "possible_main_agent_or_runtime_closure",
+      "target": "Probably packages/bmad-speckit/src/... unless proven source-dev-only or package-compiled-runtime.",
+      "risk": "high",
+      "action": "Do not mark internal yet. Prove whether Main Agent/six-model/auditor/worker/runtime closure reaches it before migration decision.",
+      "callers": "tests:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "tests": 1
+      },
+      "topReferences": [
+        "tests:tests/acceptance/main-agent-scoring-gates-check.test.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/main-agent-bmad-artifact-hardcut.ts",
+      "added": "89",
+      "deleted": "28",
+      "churn": 117,
+      "exists": true,
+      "classification": "pending_runtime_closure_review",
+      "consumerReach": "possible_main_agent_or_runtime_closure",
+      "target": "Probably packages/bmad-speckit/src/... unless proven source-dev-only or package-compiled-runtime.",
+      "risk": "high",
+      "action": "Do not mark internal yet. Prove whether Main Agent/six-model/auditor/worker/runtime closure reaches it before migration decision.",
+      "callers": "no direct current reference found by static scan",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {},
+      "topReferences": []
+    },
+    {
+      "status": "M",
+      "file": "scripts/main-agent-data-governance-gate.ts",
+      "added": "85",
+      "deleted": "19",
+      "churn": 104,
+      "exists": true,
+      "classification": "pending_runtime_closure_review",
+      "consumerReach": "possible_main_agent_or_runtime_closure",
+      "target": "Probably packages/bmad-speckit/src/... unless proven source-dev-only or package-compiled-runtime.",
+      "risk": "high",
+      "action": "Do not mark internal yet. Prove whether Main Agent/six-model/auditor/worker/runtime closure reaches it before migration decision.",
+      "callers": "no direct current reference found by static scan",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {},
+      "topReferences": []
+    },
+    {
+      "status": "M",
+      "file": "scripts/main-agent-runtime-policy-snapshot-check.ts",
+      "added": "74",
+      "deleted": "22",
+      "churn": 96,
+      "exists": true,
+      "classification": "pending_runtime_closure_review",
+      "consumerReach": "possible_main_agent_or_runtime_closure",
+      "target": "Probably packages/bmad-speckit/src/... unless proven source-dev-only or package-compiled-runtime.",
+      "risk": "high",
+      "action": "Do not mark internal yet. Prove whether Main Agent/six-model/auditor/worker/runtime closure reaches it before migration decision.",
+      "callers": "tests:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "tests": 1
+      },
+      "topReferences": [
+        "tests:tests/acceptance/main-agent-runtime-policy-snapshot-check.test.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/main-agent-trace-status-policy-check.ts",
+      "added": "57",
+      "deleted": "17",
+      "churn": 74,
+      "exists": true,
+      "classification": "pending_runtime_closure_review",
+      "consumerReach": "possible_main_agent_or_runtime_closure",
+      "target": "Probably packages/bmad-speckit/src/... unless proven source-dev-only or package-compiled-runtime.",
+      "risk": "high",
+      "action": "Do not mark internal yet. Prove whether Main Agent/six-model/auditor/worker/runtime closure reaches it before migration decision.",
+      "callers": "no direct current reference found by static scan",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {},
+      "topReferences": []
+    },
+    {
+      "status": "M",
+      "file": "scripts/main-agent-decision-field-check.ts",
+      "added": "22",
+      "deleted": "6",
+      "churn": 28,
+      "exists": true,
+      "classification": "pending_runtime_closure_review",
+      "consumerReach": "possible_main_agent_or_runtime_closure",
+      "target": "Probably packages/bmad-speckit/src/... unless proven source-dev-only or package-compiled-runtime.",
+      "risk": "high",
+      "action": "Do not mark internal yet. Prove whether Main Agent/six-model/auditor/worker/runtime closure reaches it before migration decision.",
+      "callers": "no direct current reference found by static scan",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {},
+      "topReferences": []
+    },
+    {
+      "status": "M",
+      "file": "scripts/skill-orchestration-audit.ts",
+      "added": "15",
+      "deleted": "12",
+      "churn": 27,
+      "exists": true,
+      "classification": "pending_runtime_closure_review",
+      "consumerReach": "possible_main_agent_or_runtime_closure",
+      "target": "Probably packages/bmad-speckit/src/... unless proven source-dev-only or package-compiled-runtime.",
+      "risk": "high",
+      "action": "Do not mark internal yet. Prove whether Main Agent/six-model/auditor/worker/runtime closure reaches it before migration decision.",
+      "callers": "no direct current reference found by static scan",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [
+        "scripts/skill-inventory-provider.ts",
+        "scripts/governance-remediation-runner.ts"
+      ],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {},
+      "topReferences": []
+    },
+    {
+      "status": "M",
+      "file": "scripts/write-runtime-policy-snapshot-and-recovery-context.ts",
+      "added": "18",
+      "deleted": "5",
+      "churn": 23,
+      "exists": true,
+      "classification": "pending_runtime_closure_review",
+      "consumerReach": "possible_main_agent_or_runtime_closure",
+      "target": "Probably packages/bmad-speckit/src/... unless proven source-dev-only or package-compiled-runtime.",
+      "risk": "high",
+      "action": "Do not mark internal yet. Prove whether Main Agent/six-model/auditor/worker/runtime closure reaches it before migration decision.",
+      "callers": "scripts_source:1; importedBy scripts:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/write-runtime-policy-snapshot-and-recovery-context.cjs"
+      ],
+      "imports": [
+        "scripts/emit-runtime-policy.ts"
+      ],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "scripts_source": 1
+      },
+      "topReferences": [
+        "scripts_source:scripts/write-runtime-policy-snapshot-and-recovery-context.cjs"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/main-agent-development-journey-matrix.ts",
+      "added": "7",
+      "deleted": "1",
+      "churn": 8,
+      "exists": true,
+      "classification": "pending_runtime_closure_review",
+      "consumerReach": "possible_main_agent_or_runtime_closure",
+      "target": "Probably packages/bmad-speckit/src/... unless proven source-dev-only or package-compiled-runtime.",
+      "risk": "high",
+      "action": "Do not mark internal yet. Prove whether Main Agent/six-model/auditor/worker/runtime closure reaches it before migration decision.",
+      "callers": "npm scripts: main-agent:development-journey-matrix",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [
+        "main-agent:development-journey-matrix"
+      ],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [
+        "scripts/main-agent-bmad-help-five-layer-matrix.ts",
+        "scripts/main-agent-unified-ingress.ts",
+        "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+        "scripts/runtime-context.ts",
+        "scripts/runtime-context-registry.ts"
+      ],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "root_package_json": 1
+      },
+      "topReferences": [
+        "root_package_json:package.json"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/verify-cursor-audit-granularity.ts",
+      "added": "7",
+      "deleted": "1",
+      "churn": 8,
+      "exists": true,
+      "classification": "pending_runtime_closure_review",
+      "consumerReach": "possible_source_dev_or_runtime_gate",
+      "target": "Prove source-dev-only or migrate to package runtime.",
+      "risk": "medium",
+      "action": "Do not expose to consumers; add source-dev-only proof or package migration.",
+      "callers": "npm scripts: verify:cursor-audit-granularity; tests:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [
+        "verify:cursor-audit-granularity"
+      ],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [
+        "scripts/bmad-config.ts"
+      ],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "root_package_json": 1,
+        "tests": 1
+      },
+      "topReferences": [
+        "root_package_json:package.json",
+        "tests:tests/acceptance/accept-cursor-regression-gate.test.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/requirement-record-schema-evolution.ts",
+      "added": "3",
+      "deleted": "1",
+      "churn": 4,
+      "exists": true,
+      "classification": "pending_runtime_closure_review",
+      "consumerReach": "possible_main_agent_or_runtime_closure",
+      "target": "Probably packages/bmad-speckit/src/... unless proven source-dev-only or package-compiled-runtime.",
+      "risk": "high",
+      "action": "Do not mark internal yet. Prove whether Main Agent/six-model/auditor/worker/runtime closure reaches it before migration decision.",
+      "callers": "scripts_source:2",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": true,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "scripts_source": 2
+      },
+      "topReferences": [
+        "scripts_source:scripts/strict-closeout-proof-gate.ts",
+        "scripts_source:scripts/trace-040-evidence-packet-generator.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/i18n/load-manifest.ts",
+      "added": "4",
+      "deleted": "1",
+      "churn": 5,
+      "exists": true,
+      "classification": "repo_internal_keep_or_skill_local_migrate",
+      "consumerReach": "no_direct_consumer_reference_found",
+      "target": "Root scripts for source i18n maintenance, or skill-local helper if a skill executes it after install.",
+      "risk": "low",
+      "action": "Keep as source-dev/i18n maintenance unless an installed skill/hook executes it; then move to caller-owned helper surface.",
+      "callers": "importedBy scripts:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [
+        "scripts/i18n/render-audit-block-cli.ts"
+      ],
+      "imports": [
+        "scripts/i18n/validate-template-manifest.ts"
+      ],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {},
+      "topReferences": []
+    },
+    {
+      "status": "D",
+      "file": "scripts/bmad-help-renderer.ts",
+      "added": "0",
+      "deleted": "557",
+      "churn": 557,
+      "exists": false,
+      "classification": "removed_path_verify_callers_clean",
+      "consumerReach": "possible_stale_references",
+      "target": "No migration target; verify former callers use package renderer/stable replacement.",
+      "risk": "medium",
+      "action": "Keep in ledger until stale references and package renderer replacement are proven clean. No deletion action is needed because file is already absent.",
+      "callers": "package_bmad_speckit:1; tests:1; docs:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "docs": 1,
+        "package_bmad_speckit": 1,
+        "tests": 1
+      },
+      "topReferences": [
+        "docs:docs/plans/2026-06-01-bmad-help-bmads-fusion-goal-execution-plan.md",
+        "package_bmad_speckit:packages/bmad-speckit/tests/bmad-help-entry-surface-contract.test.js",
+        "tests:tests/acceptance/bmad-help-renderer.test.ts"
+      ]
+    },
+    {
+      "status": "D",
+      "file": "scripts/bmads-renderer.ts",
+      "added": "0",
+      "deleted": "421",
+      "churn": 421,
+      "exists": false,
+      "classification": "removed_path_verify_callers_clean",
+      "consumerReach": "possible_stale_references",
+      "target": "No migration target; verify former callers use package renderer/stable replacement.",
+      "risk": "medium",
+      "action": "Keep in ledger until stale references and package renderer replacement are proven clean. No deletion action is needed because file is already absent.",
+      "callers": "package_bmad_speckit:1; tests:1; docs:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "docs": 1,
+        "package_bmad_speckit": 1,
+        "tests": 1
+      },
+      "topReferences": [
+        "docs:docs/plans/2026-06-01-bmad-help-bmads-fusion-goal-execution-plan.md",
+        "package_bmad_speckit:packages/bmad-speckit/tests/bmad-help-entry-surface-contract.test.js",
+        "tests:tests/acceptance/bmad-help-renderer.test.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/audit-stage-routing.ts",
+      "added": "108",
+      "deleted": "64",
+      "churn": 172,
+      "exists": true,
+      "classification": "repo_internal_keep",
+      "consumerReach": "repo_docs_tests_only",
+      "target": "Root scripts or tests/helpers depending on whether it is a real source-dev tool or test fixture.",
+      "risk": "low",
+      "action": "Keep under root scripts if source-dev tool; move to tests/helpers only if proven test-only.",
+      "callers": "docs:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "docs": 1
+      },
+      "topReferences": [
+        "docs:docs/sample/批判审计员审计过程示例报告.md"
+      ]
+    },
+    {
+      "status": "A",
+      "file": "scripts/supervised-worker-runtime.ts",
+      "added": "147",
+      "deleted": "0",
+      "churn": 147,
+      "exists": true,
+      "classification": "pending_classification",
+      "consumerReach": "no_direct_current_reference_found",
+      "target": "Needs owner review; likely package runtime or source-dev-only.",
+      "risk": "medium",
+      "action": "Inspect intended owner before any move/delete.",
+      "callers": "no direct current reference found by static scan",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [
+        "scripts/long-run-runtime-policy.ts",
+        "scripts/host-runtime-mode.ts"
+      ],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {},
+      "topReferences": []
+    },
+    {
+      "status": "M",
+      "file": "scripts/subagent-current-attempt-revalidation.ts",
+      "added": "102",
+      "deleted": "34",
+      "churn": 136,
+      "exists": true,
+      "classification": "repo_internal_keep",
+      "consumerReach": "repo_docs_tests_only",
+      "target": "Root scripts or tests/helpers depending on whether it is a real source-dev tool or test fixture.",
+      "risk": "low",
+      "action": "Keep under root scripts if source-dev tool; move to tests/helpers only if proven test-only.",
+      "callers": "tests:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [
+        "scripts/subagent-evidence-envelope.ts"
+      ],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "tests": 1
+      },
+      "topReferences": [
+        "tests:tests/acceptance/subagent-current-attempt-revalidation.test.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/subagent-surface-inventory.ts",
+      "added": "104",
+      "deleted": "32",
+      "churn": 136,
+      "exists": true,
+      "classification": "repo_internal_keep",
+      "consumerReach": "no_direct_current_reference_found",
+      "target": "Root scripts source-dev/internal unless future caller is found.",
+      "risk": "low",
+      "action": "Keep/reclassify; no deletion without explicit approval.",
+      "callers": "no direct current reference found by static scan",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {},
+      "topReferences": []
+    },
+    {
+      "status": "M",
+      "file": "scripts/speckit-cli.ts",
+      "added": "47",
+      "deleted": "45",
+      "churn": 92,
+      "exists": true,
+      "classification": "repo_internal_keep",
+      "consumerReach": "repo_docs_tests_only",
+      "target": "Root scripts or tests/helpers depending on whether it is a real source-dev tool or test fixture.",
+      "risk": "low",
+      "action": "Keep under root scripts if source-dev tool; move to tests/helpers only if proven test-only.",
+      "callers": "tests:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [
+        "scripts/reviewer-registry.ts",
+        "scripts/run-auditor-host.ts",
+        "scripts/reviewer-schema.ts",
+        "scripts/ralph-method/speckit-implement.ts",
+        "scripts/ralph-method/types.ts"
+      ],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "tests": 1
+      },
+      "topReferences": [
+        "tests:tests/acceptance/accept-claude-runtime-isolation.test.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/bmad-runtime-worker.ts",
+      "added": "53",
+      "deleted": "38",
+      "churn": 91,
+      "exists": true,
+      "classification": "repo_internal_keep",
+      "consumerReach": "repo_docs_tests_only",
+      "target": "Root scripts or tests/helpers depending on whether it is a real source-dev tool or test fixture.",
+      "risk": "low",
+      "action": "Keep under root scripts if source-dev tool; move to tests/helpers only if proven test-only.",
+      "callers": "tests:1; scripts_source:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [
+        "scripts/governance-remediation-config.ts",
+        "scripts/governance-packet-execution-store.ts",
+        "scripts/governance-packet-dispatch-worker.ts",
+        "scripts/governance-packet-reconciler.ts",
+        "scripts/governance-remediation-runner.ts",
+        "scripts/reviewer-registry.ts",
+        "scripts/governance-runtime-queue.ts",
+        "scripts/runtime-context.ts",
+        "scripts/governance-hook-types.ts",
+        "scripts/governance-execution-result-ingestor.ts"
+      ],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "scripts_source": 1,
+        "tests": 1
+      },
+      "topReferences": [
+        "scripts_source:scripts/subagent-surface-inventory.ts",
+        "tests:tests/acceptance/accept-runtime.test.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/trace-040-evidence-packet-generator.ts",
+      "added": "62",
+      "deleted": "16",
+      "churn": 78,
+      "exists": true,
+      "classification": "repo_internal_keep",
+      "consumerReach": "no_direct_current_reference_found",
+      "target": "Root scripts source-dev/internal unless future caller is found.",
+      "risk": "low",
+      "action": "Keep/reclassify; no deletion without explicit approval.",
+      "callers": "no direct current reference found by static scan",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {},
+      "topReferences": []
+    },
+    {
+      "status": "M",
+      "file": "scripts/strict-command-resolution-preflight.ts",
+      "added": "52",
+      "deleted": "12",
+      "churn": 64,
+      "exists": true,
+      "classification": "repo_internal_keep",
+      "consumerReach": "repo_docs_tests_only",
+      "target": "Root scripts or tests/helpers depending on whether it is a real source-dev tool or test fixture.",
+      "risk": "low",
+      "action": "Keep under root scripts if source-dev tool; move to tests/helpers only if proven test-only.",
+      "callers": "tests:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [
+        "scripts/requirement-record-control-store.ts"
+      ],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "tests": 1
+      },
+      "topReferences": [
+        "tests:tests/acceptance/requirements-contract-authoring-skill-contract.test.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/e2e-verify-paths.ts",
+      "added": "41",
+      "deleted": "17",
+      "churn": 58,
+      "exists": true,
+      "classification": "repo_internal_keep",
+      "consumerReach": "repo_docs_tests_only",
+      "target": "Root scripts or tests/helpers depending on whether it is a real source-dev tool or test fixture.",
+      "risk": "low",
+      "action": "Keep under root scripts if source-dev tool; move to tests/helpers only if proven test-only.",
+      "callers": "docs:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "docs": 1
+      },
+      "topReferences": [
+        "docs:docs/sample/批判审计员审计过程示例报告.md"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/dashboard-projection-mapping.ts",
+      "added": "34",
+      "deleted": "10",
+      "churn": 44,
+      "exists": true,
+      "classification": "repo_internal_keep",
+      "consumerReach": "no_direct_current_reference_found",
+      "target": "Root scripts source-dev/internal unless future caller is found.",
+      "risk": "low",
+      "action": "Keep/reclassify; no deletion without explicit approval.",
+      "callers": "no direct current reference found by static scan",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {},
+      "topReferences": []
+    },
+    {
+      "status": "M",
+      "file": "scripts/trace-closure-matrix.ts",
+      "added": "30",
+      "deleted": "8",
+      "churn": 38,
+      "exists": true,
+      "classification": "repo_internal_keep",
+      "consumerReach": "no_direct_current_reference_found",
+      "target": "Root scripts source-dev/internal unless future caller is found.",
+      "risk": "low",
+      "action": "Keep/reclassify; no deletion without explicit approval.",
+      "callers": "no direct current reference found by static scan",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {},
+      "topReferences": []
+    },
+    {
+      "status": "M",
+      "file": "scripts/verify-agent-files.ts",
+      "added": "27",
+      "deleted": "8",
+      "churn": 35,
+      "exists": true,
+      "classification": "repo_internal_keep",
+      "consumerReach": "repo_docs_tests_only",
+      "target": "Root scripts or tests/helpers depending on whether it is a real source-dev tool or test fixture.",
+      "risk": "low",
+      "action": "Keep under root scripts if source-dev tool; move to tests/helpers only if proven test-only.",
+      "callers": "docs:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "docs": 1
+      },
+      "topReferences": [
+        "docs:docs/sample/批判审计员审计过程示例报告.md"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/live-smoke-speckit-workflow.ts",
+      "added": "30",
+      "deleted": "4",
+      "churn": 34,
+      "exists": true,
+      "classification": "repo_internal_keep",
+      "consumerReach": "source_repo_npm_script_only",
+      "target": "Root scripts with manifest class repo_maintenance/source_dev/ci as applicable.",
+      "risk": "low",
+      "action": "Retain under root scripts with explicit non-consumer manifest class.",
+      "callers": "npm scripts: smoke:speckit-workflow; tests:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [
+        "smoke:speckit-workflow"
+      ],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [
+        "scripts/runtime-context.ts",
+        "scripts/runtime-context-registry.ts"
+      ],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "root_package_json": 1,
+        "tests": 1
+      },
+      "topReferences": [
+        "root_package_json:package.json",
+        "tests:tests/acceptance/speckit-workflow-live-smoke-contract.test.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/record-main-agent-inspect-readiness-closure.ts",
+      "added": "21",
+      "deleted": "7",
+      "churn": 28,
+      "exists": true,
+      "classification": "pending_classification",
+      "consumerReach": "no_direct_current_reference_found",
+      "target": "Needs owner review; likely package runtime or source-dev-only.",
+      "risk": "medium",
+      "action": "Inspect intended owner before any move/delete.",
+      "callers": "no direct current reference found by static scan",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [
+        "scripts/requirement-record-control-store.ts"
+      ],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {},
+      "topReferences": []
+    },
+    {
+      "status": "M",
+      "file": "scripts/diagnose-bmad-state.ts",
+      "added": "20",
+      "deleted": "7",
+      "churn": 27,
+      "exists": true,
+      "classification": "repo_internal_keep",
+      "consumerReach": "repo_docs_tests_only",
+      "target": "Root scripts or tests/helpers depending on whether it is a real source-dev tool or test fixture.",
+      "risk": "low",
+      "action": "Keep under root scripts if source-dev tool; move to tests/helpers only if proven test-only.",
+      "callers": "docs:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [
+        "scripts/emit-runtime-policy.ts",
+        "scripts/bmad-config.ts",
+        "scripts/reviewer-registry.ts",
+        "scripts/runtime-governance.ts",
+        "scripts/runtime-scoring-data-path.ts"
+      ],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "docs": 1
+      },
+      "topReferences": [
+        "docs:docs/sample/批判审计员审计过程示例报告.md"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/final-closeout-evidence-runner.ts",
+      "added": "19",
+      "deleted": "5",
+      "churn": 24,
+      "exists": true,
+      "classification": "repo_internal_keep",
+      "consumerReach": "repo_docs_tests_only",
+      "target": "Root scripts or tests/helpers depending on whether it is a real source-dev tool or test fixture.",
+      "risk": "low",
+      "action": "Keep under root scripts if source-dev tool; move to tests/helpers only if proven test-only.",
+      "callers": "tests:1; scripts_source:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "scripts_source": 1,
+        "tests": 1
+      },
+      "topReferences": [
+        "scripts_source:scripts/trace-040-evidence-packet-generator.ts",
+        "tests:tests/acceptance/run-required-commands-from-ai-tdd-manifest.test.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/control-event-log-rebaseline.ts",
+      "added": "18",
+      "deleted": "4",
+      "churn": 22,
+      "exists": true,
+      "classification": "repo_internal_keep",
+      "consumerReach": "repo_docs_tests_only",
+      "target": "Root scripts or tests/helpers depending on whether it is a real source-dev tool or test fixture.",
+      "risk": "low",
+      "action": "Keep under root scripts if source-dev tool; move to tests/helpers only if proven test-only.",
+      "callers": "scripts_source:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [
+        "scripts/requirement-record-control-store.ts"
+      ],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "scripts_source": 1
+      },
+      "topReferences": [
+        "scripts_source:scripts/trace-040-evidence-packet-generator.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/bmad-state-reader.ts",
+      "added": "14",
+      "deleted": "6",
+      "churn": 20,
+      "exists": true,
+      "classification": "repo_internal_keep",
+      "consumerReach": "repo_docs_tests_only",
+      "target": "Root scripts or tests/helpers depending on whether it is a real source-dev tool or test fixture.",
+      "risk": "low",
+      "action": "Keep under root scripts if source-dev tool; move to tests/helpers only if proven test-only.",
+      "callers": "docs:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "docs": 1
+      },
+      "topReferences": [
+        "docs:docs/sample/批判审计员审计过程示例报告.md"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/eval-question-generate.ts",
+      "added": "5",
+      "deleted": "9",
+      "churn": 14,
+      "exists": true,
+      "classification": "pending_classification",
+      "consumerReach": "unclear",
+      "target": "Needs import/call graph owner review before migration.",
+      "risk": "low",
+      "action": "Do not delete. Classify with owner and caller evidence first.",
+      "callers": "docs:1; scripts_source:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "docs": 1,
+        "other": 1,
+        "scripts_source": 1
+      },
+      "topReferences": [
+        "docs:docs/reference/source-code.md",
+        "other:packages/scoring/eval-questions/README.md",
+        "scripts_source:scripts/README.md"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/query-validate.ts",
+      "added": "5",
+      "deleted": "6",
+      "churn": 11,
+      "exists": true,
+      "classification": "repo_internal_keep",
+      "consumerReach": "repo_docs_tests_only",
+      "target": "Root scripts or tests/helpers depending on whether it is a real source-dev tool or test fixture.",
+      "risk": "low",
+      "action": "Keep under root scripts if source-dev tool; move to tests/helpers only if proven test-only.",
+      "callers": "docs:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "docs": 1
+      },
+      "topReferences": [
+        "docs:docs/reference/source-code.md"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/validate-single-source-whitelist.ts",
+      "added": "8",
+      "deleted": "2",
+      "churn": 10,
+      "exists": true,
+      "classification": "repo_internal_keep",
+      "consumerReach": "source_repo_npm_script_only",
+      "target": "Root scripts with manifest class repo_maintenance/source_dev/ci as applicable.",
+      "risk": "low",
+      "action": "Retain under root scripts with explicit non-consumer manifest class.",
+      "callers": "npm scripts: validate:single-source-whitelist",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [
+        "validate:single-source-whitelist"
+      ],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "root_package_json": 1
+      },
+      "topReferences": [
+        "root_package_json:package.json"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/analytics-prompt-optimize.ts",
+      "added": "7",
+      "deleted": "2",
+      "churn": 9,
+      "exists": true,
+      "classification": "repo_internal_keep",
+      "consumerReach": "repo_docs_tests_only",
+      "target": "Root scripts or tests/helpers depending on whether it is a real source-dev tool or test fixture.",
+      "risk": "low",
+      "action": "Keep under root scripts if source-dev tool; move to tests/helpers only if proven test-only.",
+      "callers": "docs:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "docs": 1
+      },
+      "topReferences": [
+        "docs:docs/reference/source-code.md"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/analytics-rule-suggest.ts",
+      "added": "7",
+      "deleted": "2",
+      "churn": 9,
+      "exists": true,
+      "classification": "repo_internal_keep",
+      "consumerReach": "repo_docs_tests_only",
+      "target": "Root scripts or tests/helpers depending on whether it is a real source-dev tool or test fixture.",
+      "risk": "low",
+      "action": "Keep under root scripts if source-dev tool; move to tests/helpers only if proven test-only.",
+      "callers": "docs:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "docs": 1
+      },
+      "topReferences": [
+        "docs:docs/reference/source-code.md"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/architecture-drift-check.ts",
+      "added": "6",
+      "deleted": "2",
+      "churn": 8,
+      "exists": true,
+      "classification": "repo_internal_keep",
+      "consumerReach": "source_repo_npm_script_only",
+      "target": "Root scripts with manifest class repo_maintenance/source_dev/ci as applicable.",
+      "risk": "low",
+      "action": "Retain under root scripts with explicit non-consumer manifest class.",
+      "callers": "npm scripts: main-agent:architecture-drift-check",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [
+        "main-agent:architecture-drift-check"
+      ],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "root_package_json": 1
+      },
+      "topReferences": [
+        "root_package_json:package.json"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/check-story-score-written.ts",
+      "added": "4",
+      "deleted": "4",
+      "churn": 8,
+      "exists": true,
+      "classification": "pending_classification",
+      "consumerReach": "unclear",
+      "target": "Needs import/call graph owner review before migration.",
+      "risk": "low",
+      "action": "Do not delete. Classify with owner and caller evidence first.",
+      "callers": "package_bmad_speckit:1; docs:1; scripts_source:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "docs": 1,
+        "package_bmad_speckit": 1,
+        "scripts_source": 1
+      },
+      "topReferences": [
+        "docs:docs/reference/source-code.md",
+        "package_bmad_speckit:packages/bmad-speckit/src/commands/check-score.js",
+        "scripts_source:scripts/README.md"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/create-second-story.ts",
+      "added": "4",
+      "deleted": "1",
+      "churn": 5,
+      "exists": true,
+      "classification": "repo_internal_keep",
+      "consumerReach": "no_direct_current_reference_found",
+      "target": "Root scripts source-dev/internal unless future caller is found.",
+      "risk": "low",
+      "action": "Keep/reclassify; no deletion without explicit approval.",
+      "callers": "no direct current reference found by static scan",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [
+        "scripts/bmad-state.ts"
+      ],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {},
+      "topReferences": []
+    },
+    {
+      "status": "M",
+      "file": "scripts/bmad-speckit-cli.js",
+      "added": "2",
+      "deleted": "1",
+      "churn": 3,
+      "exists": true,
+      "classification": "repo_internal_keep",
+      "consumerReach": "repo_docs_tests_only",
+      "target": "Root scripts or tests/helpers depending on whether it is a real source-dev tool or test fixture.",
+      "risk": "low",
+      "action": "Keep under root scripts if source-dev tool; move to tests/helpers only if proven test-only.",
+      "callers": "package bin: bmad-speckit; tests:1; docs:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [
+        "bmad-speckit"
+      ],
+      "importedBy": [],
+      "imports": [],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "docs": 1,
+        "root_package_json": 1,
+        "tests": 1
+      },
+      "topReferences": [
+        "docs:docs/plans/2026-06-01-bmad-help-bmads-fusion-goal-execution-plan.md",
+        "root_package_json:package.json",
+        "tests:tests/acceptance/accept-install-consumer-cli.test.ts"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/scores-summary.ts",
+      "added": "1",
+      "deleted": "2",
+      "churn": 3,
+      "exists": true,
+      "classification": "pending_classification",
+      "consumerReach": "unclear",
+      "target": "Needs import/call graph owner review before migration.",
+      "risk": "low",
+      "action": "Do not delete. Classify with owner and caller evidence first.",
+      "callers": "package_bmad_speckit:1; docs:1; scripts_source:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "docs": 1,
+        "package_bmad_speckit": 1,
+        "scripts_source": 1
+      },
+      "topReferences": [
+        "docs:docs/reference/source-code.md",
+        "package_bmad_speckit:packages/bmad-speckit/src/commands/scores.js",
+        "scripts_source:scripts/README.md"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/verify-score-auto-scoped-bundle.cjs",
+      "added": "1",
+      "deleted": "1",
+      "churn": 2,
+      "exists": true,
+      "classification": "repo_internal_keep",
+      "consumerReach": "repo_docs_tests_only",
+      "target": "Root scripts or tests/helpers depending on whether it is a real source-dev tool or test fixture.",
+      "risk": "low",
+      "action": "Keep under root scripts if source-dev tool; move to tests/helpers only if proven test-only.",
+      "callers": "scripts_source:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "scripts_source": 1
+      },
+      "topReferences": [
+        "scripts_source:scripts/README.md"
+      ]
+    },
+    {
+      "status": "M",
+      "file": "scripts/run-fresh-regression-matrix.ts",
+      "added": "0",
+      "deleted": "1",
+      "churn": 1,
+      "exists": true,
+      "classification": "repo_internal_keep",
+      "consumerReach": "source_repo_npm_script_only",
+      "target": "Root scripts with manifest class repo_maintenance/source_dev/ci as applicable.",
+      "risk": "low",
+      "action": "Retain under root scripts with explicit non-consumer manifest class.",
+      "callers": "npm scripts: test:fresh-regression; tests:1",
+      "directPackageCliRunRepoScript": [],
+      "npmScripts": [
+        "test:fresh-regression"
+      ],
+      "packageBins": [],
+      "importedBy": [],
+      "imports": [],
+      "inConsumerClosure": false,
+      "inMainAgentClosure": false,
+      "runtimeEmitHit": false,
+      "referenceCounts": {
+        "root_package_json": 1,
+        "tests": 1
+      },
+      "topReferences": [
+        "root_package_json:package.json",
+        "tests:tests/acceptance/fresh-regression-matrix.test.ts"
+      ]
+    }
+  ]
+}

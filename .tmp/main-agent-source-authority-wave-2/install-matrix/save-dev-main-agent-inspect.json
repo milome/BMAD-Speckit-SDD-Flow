@@ -1,0 +1,20 @@
+{
+  "installMode": "save-dev",
+  "commandId": "main-agent-inspect",
+  "command": "npx.cmd --no-install bmad-speckit main-agent inspect --json",
+  "packageSpec": "D:/Dev/BMAD-Speckit-SDD-Flow/.tmp/main-agent-source-authority-wave-2/bmad-speckit-sdd-flow-2.0.1.tgz",
+  "packagePath": "C:\\Users\\milom\\AppData\\Local\\Temp\\wave2-main-agent-save-dev-nvwa6y\\node_modules\\bmad-speckit-sdd-flow\\node_modules\\bmad-speckit",
+  "consumerRoot": "C:\\Users\\milom\\AppData\\Local\\Temp\\wave2-main-agent-save-dev-nvwa6y",
+  "exitCode": 0,
+  "stdoutHash": "sha256:8154164ef6c57e6f37a0ba073393cb3816e0841f27411e053478cc43da9526b1",
+  "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "schemaVersion": "main-agent-package-runtime/v1",
+  "action": "inspect",
+  "cwd": "C:\\Users\\milom\\AppData\\Local\\Temp\\wave2-main-agent-save-dev-nvwa6y",
+  "status": "ok",
+  "usedRootScript": false,
+  "usedTsx": false,
+  "usedTsNode": false,
+  "usedCompiledFallback": false,
+  "probeHits": []
+}

@@ -19,11 +19,13 @@ Required steps:
 2. Return the renderer stdout to the user as the final answer, line-for-line.
 3. Use the default budget unless the user explicitly requests `--budget full`, debug output, or another budget.
 
-Default runtime command in this repository:
+Default runtime command in consumer projects:
 
 ```powershell
-node packages/bmad-speckit/bin/bmad-speckit.js bmads
+npx --no-install bmad-speckit bmads
 ```
+
+On Windows PowerShell, if `npx` resolves to a blocked PowerShell shim, use `npx.cmd --no-install bmad-speckit bmads`.
 
 The default response must include the runtime page sections:
 

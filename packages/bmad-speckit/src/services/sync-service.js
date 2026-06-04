@@ -5,11 +5,15 @@
  */
 const fs = require('fs');
 const path = require('path');
+const Module = require('module');
 const { spawnSync } = require('child_process');
 const AIRegistry = require('./ai-registry');
 const {
   removeUnexpectedLegacyConsumerHookFiles,
 } = require('./install-surface-manifest');
+const {
+  normalizePlatformSkillFrontmatterFile,
+} = require('./platform-skill-frontmatter');
 
 /**
  * Recursively copy directory contents to dest.
@@ -28,6 +32,7 @@ function copyDirRecursive(src, dest) {
       copyDirRecursive(s, d);
     } else {
       fs.copyFileSync(s, d);
+      normalizePlatformSkillFrontmatterFile(d);
     }
   }
 }
@@ -74,7 +79,11 @@ function loadSpeckitMirrorTools(bmadRoot) {
   if (!fs.existsSync(helperPath)) {
     return null;
   }
-  return require(helperPath);
+  const helperModule = new Module(helperPath, module);
+  helperModule.filename = helperPath;
+  helperModule.paths = Module._nodeModulePaths(path.dirname(helperPath));
+  helperModule._compile(fs.readFileSync(helperPath, 'utf8'), helperPath);
+  return helperModule.exports;
 }
 
 /**
@@ -302,7 +311,9 @@ function copyDirStripPrefix(src, dest, prefix) {
       copyDirRecursive(s, path.join(dest, e.name));
     } else {
       const destName = e.name.startsWith(prefix) ? e.name.slice(prefix.length) : e.name;
-      fs.copyFileSync(s, path.join(dest, destName));
+      const target = path.join(dest, destName);
+      fs.copyFileSync(s, target);
+      normalizePlatformSkillFrontmatterFile(target);
     }
   }
 }

@@ -7,16 +7,14 @@
 
 ## 1. 前置条件
 
-| 条件       | 要求   | 说明                                         |
-| ---------- | ------ | -------------------------------------------- |
-| Node.js    | ≥18    | 运行 `init-to-root.js` 和 `bmad-speckit` CLI |
-| PowerShell | ≥7     | 运行 `check-prerequisites.ps1` 等脚本        |
-| Cursor IDE | 最新版 | 使用 skills、commands、rules                 |
-| Git        | ≥2.x   | worktree、分支管理                           |
+| 条件       | 要求   | 说明                                      |
+| ---------- | ------ | ----------------------------------------- |
+| Node.js    | ≥18    | 安装项目本地依赖并运行 `bmad-speckit` CLI |
+| PowerShell | ≥7     | 运行 Windows 复验脚本，可选但推荐         |
+| Cursor IDE | 最新版 | 使用 skills、commands、rules              |
+| Git        | ≥2.x   | worktree、分支管理                        |
 
-```powershell
-git clone <BMAD-Speckit-SDD-Flow-repo-url> D:\Dev\BMAD-Speckit-SDD-Flow
-```
+普通消费项目不需要 clone 本仓库。只有源码维护、安装器调试或本地未发布改动验证时，才需要 clone `BMAD-Speckit-SDD-Flow`。
 
 ---
 
@@ -24,200 +22,87 @@ git clone <BMAD-Speckit-SDD-Flow-repo-url> D:\Dev\BMAD-Speckit-SDD-Flow
 
 ### 2.0 安装方式对比与选择
 
-| 方式                    | 部署内容                     | 额外步骤               | 适用场景                                                                  |
-| ----------------------- | ---------------------------- | ---------------------- | ------------------------------------------------------------------------- |
-| **方式一 npx**          | 公开 root 包临时执行         | 无                     | 无 clone、无 PowerShell；注意：可能无本仓库最新定制（运行时治理、双语等） |
-| **方式二 setup.ps1**    | 本仓库 \_bmad 全量           | 全局 Skills + 自动校验 | **首选**：有 PowerShell 7 时，一键完整安装                                |
-| **方式三 npm install**  | 本仓库 \_bmad（postinstall） | 会创建 node_modules    | 需要本地 bmad-speckit 依赖的项目                                          |
-| **方式四 init-to-root** | 本仓库 \_bmad 全量           | 无；Skills 已在项目内  | 无 PowerShell、CI/CD、或只需部署到单项目时                                |
+普通消费项目的默认路径是“项目本地安装 + 显式 init”。这样可以把后续生成 skills 需要调用的 runtime 固定在消费项目的 `node_modules` 里。
 
-**setup.ps1 与 init-to-root 的关系**：setup.ps1 内部调用 init-to-root，并额外完成「全局 Skills 安装」和「安装验证」。单独使用 init-to-root 时，项目内 `.cursor/skills` 已有完整 skills，**项目可正常工作**；仅当希望其他未安装 BMAD 的项目也能用这些 skills 时，才需要手动复制到全局。
+| 方式                       | 是否推荐为长期 runtime | 会修改什么                               | 适用场景                                       |
+| -------------------------- | ---------------------- | ---------------------------------------- | ---------------------------------------------- |
+| registry 项目本地安装      | 是                     | `node_modules`、`package.json`、lockfile | 已发布版本的普通消费项目                       |
+| tgz 项目本地安装           | 是                     | `node_modules`、`package.json`、lockfile | 验证 CI artifact、release candidate 或 PR tgz  |
+| `npx --package` 临时执行   | 否                     | 不持久安装依赖                           | smoke test、一次性 bootstrap、CI artifact 快检 |
+| 源码仓库 `setup.ps1`       | 否                     | 取决于目标参数                           | 源码维护、安装器调试、本地未发布改动验证       |
+| 源码仓库 `init-to-root.js` | 否                     | 取决于目标参数                           | 源码维护、无 PowerShell 环境下的安装器调试     |
+| 全局安装                   | 否                     | 全局 npm prefix                          | 人工便利，不用于受治理项目验收                 |
 
-### 2.0A 最高优先级场景：另一台没有本仓库源码的机器
-
-如果你的最高优先级场景是：
-
-- 在**另一台机器**
-- **没有** `BMAD-Speckit-SDD-Flow` 仓库源码
-- 要给一个消费项目安装本仓库的定制能力
-
-那么文档里应优先遵循的，是**已验证的 off-repo 安装路径**：
-
-1. 从 GitHub Actions 的 `CI` workflow 下载 `package` job 产出的 artifact：`npm-packages-<commit-sha>`
-2. 解压 artifact，获取根包发布产物：`bmad-speckit-sdd-flow-<version>.tgz`
-3. 在消费项目根目录通过 `npx --package <tgz>` 临时执行 CLI，而不是把 tgz 持久化安装进项目依赖
-4. 先验证 `bmad-speckit version`
-5. 再验证 `bmad-speckit check`
-6. 最后执行 `bmad-speckit-init . --agent claude-code --full --no-package-json`
-7. 再执行 `bmad-speckit-init . --agent cursor --full --no-package-json`
-
-这组 artifact 当前会包含：
-
-- `bmad-speckit-sdd-flow-<version>.tgz`
-- `manifest.json`
-
-默认应优先使用 **根包 tgz**，也就是 `bmad-speckit-sdd-flow-<version>.tgz`。
-
-继续展开后，完整命令如下：
+### 2.1 推荐：registry 项目本地安装
 
 ```powershell
-cd D:\Dev\your-project
-npx --yes --package .\bmad-speckit-sdd-flow-<version>.tgz bmad-speckit version
-npx --yes --package .\bmad-speckit-sdd-flow-<version>.tgz bmad-speckit check
-npx --yes --package .\bmad-speckit-sdd-flow-<version>.tgz bmad-speckit-init . --agent claude-code --full --no-package-json
-npx --yes --package .\bmad-speckit-sdd-flow-<version>.tgz bmad-speckit-init . --agent cursor --full --no-package-json
+cd <consumer-root>
+npm install --save-dev --ignore-scripts bmad-speckit-sdd-flow@latest
+npm ls bmad-speckit-sdd-flow --depth=0
+node -e "const fs=require('node:fs'); const p=process.platform==='win32'?'node_modules/.bin/bmad-speckit.cmd':'node_modules/.bin/bmad-speckit'; if(!fs.existsSync(p)){console.error('missing project-local '+p); process.exit(1)} console.log('found '+p)"
+npx --no-install bmad-speckit init . --ai claude,cursor-agent,codex --yes --force
+npx --no-install bmad-speckit check
+npx --no-install bmad-speckit dashboard-status
+npx --no-install bmad-speckit bmads
 ```
 
-这条路径是**非侵入式安装**：
+`--ignore-scripts` 会把“依赖安装”和“安装面生成”拆开：先把包固定到项目本地，再显式选择要生成的 Claude Code、Cursor 或 Codex 安装面。如果不带该参数，当前根包的 `postinstall` 可能在你显式选择宿主前先写入默认安装面。
 
-- 不会把 `bmad-speckit-sdd-flow` 写入消费项目的 `package.json`
-- 不会重写消费项目的 `package-lock.json`
-- 只会把 BMAD install surface 部署到项目目录（如 `_bmad`、`.claude`、`.cursor`、`_bmad-output`）
+### 2.2 推荐：tgz 项目本地安装
 
-这条路径在仓库内有 acceptance 证据：
+如果你从 GitHub Actions 的 `package` job 下载了 `npm-packages-<commit-sha>` artifact，解压后优先选择根包：
 
-- `tests/acceptance/accept-root-package-bmad-speckit-bin.test.ts`
-- `tests/acceptance/accept-install-consumer-cli.test.ts`
+```text
+bmad-speckit-sdd-flow-<version>.tgz
+```
 
-**不要**把下面的“方式一 npx 免安装”理解为这条高优先级场景的默认答案。
-它只是上游 bootstrap 入口，不是本仓库定制 consumer 安装链的最高置信路径。
-
-### 2.0B 如何识别 CI artifact 里的正确安装包
-
-当你从 `npm-packages-<commit-sha>` 解压出多个文件时，按下面规则选：
-
-| 文件                                  | 用途                                   | 是否默认用于消费项目安装 |
-| ------------------------------------- | -------------------------------------- | ------------------------ |
-| `bmad-speckit-sdd-flow-<version>.tgz` | 根包，包含 consumer 安装主路径所需骨架 | **是**                   |
-| `manifest.json`                       | artifact 元数据，帮助核对版本与文件名  | 建议保留                 |
-
-如果你是“另一台没有本仓库源码的机器”这个场景，直接选择根包 tgz 即可。
-
-### 2.1 方式一：npx 免安装
-
-无需克隆源仓库，直接在目标项目中运行：
+在消费项目中运行：
 
 ```powershell
-cd D:\Dev\your-project
-npx --yes --package bmad-speckit-sdd-flow bmad-speckit init . --ai cursor-agent --yes
+cd <consumer-root>
+npm install --save-dev --ignore-scripts ./bmad-speckit-sdd-flow-<version>.tgz
+npm ls bmad-speckit-sdd-flow --depth=0
+node -e "const fs=require('node:fs'); const p=process.platform==='win32'?'node_modules/.bin/bmad-speckit.cmd':'node_modules/.bin/bmad-speckit'; if(!fs.existsSync(p)){console.error('missing project-local '+p); process.exit(1)} console.log('found '+p)"
+npx --no-install bmad-speckit version
+npx --no-install bmad-speckit init . --ai claude,cursor-agent,codex --yes --force
+npx --no-install bmad-speckit check
+npx --no-install bmad-speckit dashboard-status
+npx --no-install bmad-speckit bmads
 ```
 
-此方式应理解为**公开 root 包的快速初始化入口**。它是否包含本仓库当前所有定制能力，取决于 npm 上实际发布的包内容。
+这条路径会写入 `node_modules`、`package.json` 和 lockfile，适合在没有 clone 本仓库的机器上验证本地 CI artifact、release candidate 或当前 PR 打出的 tgz。
 
-**本文不把它当作“另一台没有本仓库源码的机器”的最高优先级默认方案。**
-
-这条路径的边界必须明确：
-
-- `npx --package bmad-speckit-sdd-flow bmad-speckit init` 是“公开 root 包快速初始化”入口
-- 它**不等价于**本仓库 `setup.ps1` / `init-to-root.js` 的完整定制部署
-- 如果你需要本仓库新增的 runtime governance 运行链细节，例如：
-  - `.claude/hooks/runtime-policy-inject.cjs`
-  - `.claude/hooks/pre-continue-check.cjs`
-  - `.cursor/hooks/runtime-policy-inject.cjs`
-  - `.cursor/hooks/pre-continue-check.cjs`
-  - `$bmad-speckit` / `/bmad-speckit` / `bmad-speckit` host-session activation with internal `inspect|dispatch-plan`
-  - 最新消费项目零-`scripts/` 治理链修复
-    则**不要只停留在 `npx init`**，必须改用方式二、三或四。
-
-> **注意**：`npx --package bmad-speckit-sdd-flow bmad-speckit init` 使用的是公开 root 包里的 bundled CLI。若需本仓库未发布的最新定制能力（运行时治理 hooks、双语 i18n 等），请使用方式二或方式四从本地 \_bmad 部署。
->
-> 若本仓库定制已发布到 npm（或自建 registry），`npx --package bmad-speckit-sdd-flow bmad-speckit init` 即可使用全部功能；当前建议方式二或方式四，是因为公开 npm 包可能尚未包含未发布改动。
-
-### 2.2 方式二：PowerShell 一键安装（推荐，有 PowerShell 时）
-
-需要 PowerShell ≥7，在 **BMAD-Speckit-SDD-Flow 源仓库根目录**执行：
+### 2.3 临时执行：`npx --package`
 
 ```powershell
-pwsh scripts/setup.ps1 -Target D:\Dev\your-project -Full
+cd <consumer-root>
+npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit init . --ai cursor-agent --yes --force
 ```
 
-该脚本自动完成：核心目录部署（含运行时治理 hooks、双语 i18n）+ `.cursor/` 同步 + 项目根 `specs/`（空目录）+ **全局 Skills 安装** + **安装验证**。验证本仓库定制能力（运行时治理、双语等）时优先用此方式。
+这条路径只适合一次性 CLI 执行、smoke test 或 CI artifact 检查。它不会把 `bmad-speckit-sdd-flow` 固定为项目本地依赖，因此生成后的 skills 如果后续调用 `npx --no-install bmad-speckit ...`，可能因为项目本地没有安装包而失败。
 
-### 2.3 方式三：npm 本地安装（仅限明确接受依赖持久化）
+### 2.4 源码维护者路径
+
+只有在你已经 clone 本仓库，并且正在维护安装器、调试本地未发布改动或做源码级验证时，才使用下面入口：
 
 ```powershell
-cd D:\Dev\your-project
-
-# 安装（postinstall 自动部署 _bmad、.cursor、package.json 等）
-npm install --save-dev D:\Dev\BMAD-Speckit-SDD-Flow
-
-# 若要生成 Claude Code 隔离运行时，显式执行
-node D:\Dev\BMAD-Speckit-SDD-Flow\scripts\init-to-root.js D:\Dev\your-project --agent claude-code
+git clone <BMAD-Speckit-SDD-Flow-repo-url> <repo-root>
+cd <repo-root>
+pwsh scripts/setup.ps1 -Target <consumer-root> -Full
 ```
 
-这条路径的本质是“把 BMAD 当成项目本地依赖安装进当前仓库”。因此 npm 的默认行为就是：
-
-- 写入 `package.json`
-- 重写 `package-lock.json`
-- 更新 `node_modules`
-
-对业务应用仓库来说，这属于**侵入式安装**。只有在你明确希望把 BMAD 固定为项目 devDependency 时，才应使用它。
-
-`postinstall` 脚本会**自动完成**：
-
-- `_bmad/` → `{项目根}/_bmad/`
-- `.cursor/` 同步（commands、rules、skills、agents）
-- `.specify/` 模板与脚本
-- `_bmad-output/config/` 空结构
-- `package.json` 中 `bmad-speckit` 依赖及 `check`、`speckit` 脚本
-
-但这里也要区分两层：
-
-1. `npm install --save-dev D:\Dev\BMAD-Speckit-SDD-Flow`
-   - 解决的是“把本仓库包安装到项目里”
-   - 你会得到 `npx bmad-speckit` / `npx bmad-speckit-init`
-   - 你会得到 `_bmad` 与默认 agent 的基础部署
-
-2. **如果你要确保 Claude / Cursor 两侧运行时 hooks 都是最新、完整、可执行的**
-   - 仍建议显式补跑：
+或：
 
 ```powershell
-cd D:\Dev\your-project
-npx bmad-speckit-init --agent claude-code
-npx bmad-speckit-init --agent cursor
+cd <repo-root>
+node scripts/init-to-root.js <consumer-root> --agent cursor --full
 ```
 
-原因：
+`setup.ps1` 和 `init-to-root.js` 是源仓库维护/调试入口，不是普通消费项目在另一台机器上的默认安装方式。
 
-- 这样可以把当前包内 `_bmad/runtime/hooks` 的共享 hook 资产，连同平台薄壳，一次性同步到项目的 `.claude/hooks` 与 `.cursor/hooks`
-- 对于 runtime governance，这一步是最稳妥的“安装后对齐动作”
-  - 该流程仍然满足“消费项目根目录不创建治理运行所需 `scripts/`”的约束；真正落地的是 `.claude/hooks/`、`.cursor/hooks/` 和 `_bmad/runtime/hooks/`
+### 2.5 安装后关键结果
 
-对于**没有本仓库源码的另一台机器**，如果你**明确接受**把根包持久化为项目依赖，才使用下面这条：
-
-```powershell
-cd D:\Dev\your-project
-npm install --save-dev .\bmad-speckit-sdd-flow-<version>.tgz
-npx bmad-speckit version
-npx bmad-speckit check
-npx bmad-speckit-init --agent claude-code
-npx bmad-speckit-init --agent cursor
-```
-
-这条 tgz 安装链属于**已验证路径**，但它是**持久化依赖模式**，不适合作为应用仓库默认方案。不要把它和上面的非侵入式 `npx --package <tgz>` 路径混为一谈。
-
-> **提示**：对于非 Node 项目，可使用 `--no-package-json` 标志跳过 `package.json` 创建：
->
-> ```powershell
-> node scripts/init-to-root.js D:\Dev\your-project --no-package-json
-> ```
-
-### 2.4 方式四：init-to-root 直接调用（无 PowerShell 时）
-
-在 **BMAD-Speckit-SDD-Flow 源仓库根目录**执行：
-
-```powershell
-git clone <BMAD-Speckit-SDD-Flow-repo-url> D:\Dev\BMAD-Speckit-SDD-Flow
-
-cd D:\Dev\BMAD-Speckit-SDD-Flow
-node scripts/init-to-root.js D:\Dev\your-project --agent cursor --full
-```
-
-**何时选用**：无法使用 PowerShell 7（如部分 CI 环境、WSL 纯 Node 脚本）、或只需部署到单个项目且不需要全局 Skills 时。
-
-**部署内容**：与 setup.ps1 相同的核心部署（\_bmad、.cursor、.claude、hooks、i18n、项目内 skills）。**项目内已有完整 skills**，打开该目标项目即可使用。若需 Skills 对其他项目全局可用，可参考 §3 手动复制到 `$env:USERPROFILE\.cursor\skills\`。安装后建议手动运行 `pwsh _bmad\speckit\scripts\powershell\check-prerequisites.ps1 -PathsOnly` 做校验。
-
-对于 runtime governance，`init-to-root.js` / `bmad-speckit-init` 的关键结果应当是：
+显式执行 `bmad-speckit init ...` 后，runtime governance 的关键结果应当是：
 
 - `_bmad/runtime/hooks/runtime-policy-inject-core.cjs`
 - `_bmad/runtime/hooks/pre-continue-check.cjs`
@@ -226,22 +111,23 @@ node scripts/init-to-root.js D:\Dev\your-project --agent cursor --full
 - `.cursor/hooks/runtime-policy-inject.cjs`
 - `.cursor/hooks/pre-continue-check.cjs`
 
-如果这些文件缺失，说明安装只做了“基础骨架”，还没有完成“最新 hooks 对齐”。此时直接补跑：
+如果这些文件缺失，说明依赖安装或宿主安装面生成不完整。此时在消费项目根目录补跑：
 
 ```powershell
-npx bmad-speckit-init --agent claude-code
-npx bmad-speckit-init --agent cursor
+npx --no-install bmad-speckit init . --ai claude,cursor-agent,codex --yes --force
 ```
 
-### 2.5 非交互式安装
+`bmad-speckit-init` 仍保留为兼容别名。新文档、生成后的 skills 和集成脚本应优先使用 `bmad-speckit init ...`。
+
+### 2.6 非交互式安装
 
 > 适用于：CI/CD 流水线、脚本化安装、批量部署、已知配置的快速安装。参考 [BMAD Method 非交互式安装](https://docs.bmad-method.org/how-to/non-interactive-installation/)。
 
-**说明**：`npx --package bmad-speckit-sdd-flow bmad-speckit init` 使用公开 root 包；`setup.ps1` 与 `init-to-root.js` 从本仓库的 `_bmad` 部署。若需 BMAD-Speckit-SDD-Flow 的最新定制内容，优先使用 setup.ps1 或 init-to-root.js。
+**说明**：受治理消费项目应先完成项目本地安装，再用 `npx --no-install bmad-speckit init ...` 非交互初始化。`npx --package` 只作为临时执行入口。
 
 #### bmad-speckit init 可用选项
 
-通过 `npx --package bmad-speckit-sdd-flow bmad-speckit init` 初始化时，可使用以下标志跳过交互：
+通过 `npx --no-install bmad-speckit init` 初始化时，可使用以下标志跳过交互：
 
 | 标志                    | 说明                              | 示例                                              |
 | ----------------------- | --------------------------------- | ------------------------------------------------- |
@@ -260,17 +146,22 @@ npx bmad-speckit-init --agent cursor
 **完全非交互示例**：
 
 ```powershell
-cd D:\Dev\your-project
-npx --yes --package bmad-speckit-sdd-flow bmad-speckit init . --ai cursor-agent --yes
+cd <consumer-root>
+npx --no-install bmad-speckit init . --ai claude,cursor-agent,codex --yes --force
 ```
 
 **CI/CD 流水线示例**（需先安装已发布根包或其 tgz 产物）：
 
 ```powershell
-npx --yes --package bmad-speckit-sdd-flow bmad-speckit init "${GITHUB_WORKSPACE}" --ai cursor-agent --modules bmm --yes --no-git
+npm install --save-dev --ignore-scripts bmad-speckit-sdd-flow@latest
+npm ls bmad-speckit-sdd-flow --depth=0
+node -e "const fs=require('node:fs'); const p=process.platform==='win32'?'node_modules/.bin/bmad-speckit.cmd':'node_modules/.bin/bmad-speckit'; if(!fs.existsSync(p)){console.error('missing project-local '+p); process.exit(1)} console.log('found '+p)"
+npx --no-install bmad-speckit init "${GITHUB_WORKSPACE}" --ai cursor-agent --modules bmm --yes --no-git
 ```
 
 #### setup.ps1 可用选项
+
+下面选项只适用于源码维护者路径。
 
 | 参数             | 说明                                    | 默认   |
 | ---------------- | --------------------------------------- | ------ |
@@ -281,10 +172,12 @@ npx --yes --package bmad-speckit-sdd-flow bmad-speckit init "${GITHUB_WORKSPACE}
 | `-DryRun`        | 仅输出计划，不执行                      | 否     |
 
 ```powershell
-pwsh scripts/setup.ps1 -Target D:\Dev\your-project -Agent cursor -Full
+pwsh scripts/setup.ps1 -Target <consumer-root> -Agent cursor -Full
 ```
 
 #### init-to-root.js 可用选项
+
+下面选项只适用于源码维护者路径。
 
 | 参数             | 说明                       |
 | ---------------- | -------------------------- |
@@ -293,16 +186,22 @@ pwsh scripts/setup.ps1 -Target D:\Dev\your-project -Agent cursor -Full
 | `--full`         | 完整部署                   |
 
 ```powershell
-node D:\Dev\BMAD-Speckit-SDD-Flow\scripts\init-to-root.js D:\Dev\your-project --agent cursor --full
+node <repo-root>\scripts\init-to-root.js <consumer-root> --agent cursor --full
 ```
 
 ---
 
-## 3. 全局 Skills 安装
+## 3. Skills 安装面
 
-全局 Skills 安装到 `%USERPROFILE%\.cursor\skills\`（Windows）或 `~/.cursor/skills/`（macOS/Linux）。
+普通消费项目不需要手动复制全局 Skills。推荐安装链已经通过：
 
-**必须安装的 Skills**（工作流核心依赖）：
+```powershell
+npx --no-install bmad-speckit init . --ai claude,cursor-agent,codex --yes --force
+```
+
+把所选宿主需要的 project-local skills、commands、hooks 和 `_bmad` 资产同步到当前项目。
+
+**应在项目内出现的核心 Skills**：
 
 | #   | Skill                            | 说明                                    |
 | --- | -------------------------------- | --------------------------------------- |
@@ -312,26 +211,9 @@ node D:\Dev\BMAD-Speckit-SDD-Flow\scripts\init-to-root.js D:\Dev\your-project --
 | 4   | **bmad-code-reviewer-lifecycle** | 审计→解析→scoring 写入                  |
 | 5   | **code-review**                  | 审计执行引擎                            |
 
-```powershell
-$SKILLS_ROOT = "$env:USERPROFILE\.cursor\skills"
-$required = @(
-    "speckit-workflow",
-    "bmad-story-assistant",
-    "bmad-bug-assistant",
-    "bmad-code-reviewer-lifecycle",
-    "code-review"
-)
-foreach ($skill in $required) {
-    $src = "D:\Dev\BMAD-Speckit-SDD-Flow\skills\$skill"
-    $dest = "$SKILLS_ROOT\$skill"
-    if (Test-Path $src) {
-        Copy-Item -Recurse -Force $src $dest
-        Write-Host "[OK] $skill -> $dest"
-    }
-}
-```
+如果你正在维护源码仓库，并且确实需要把 skills 安装到全局 Cursor skills 目录，可使用源码维护者路径中的 `setup.ps1`。不要把全局安装作为消费项目验收标准；消费项目验收应以项目内 `.cursor/skills`、`.claude`、`.codex/skills` 和 `_bmad` 安装面为准。
 
-**推荐安装的 Skills**：bmad-standalone-tasks、bmad-customization-backup、bmad-orchestrator、using-git-worktrees、ralph-method、auto-commit-utf8、git-push-monitor。注意：`bmad-standalone-tasks` 的“独立”仅表示文档作用域独立，不表示它绕过主 Agent 主链。
+**推荐 Skills**：bmad-standalone-tasks、bmad-customization-backup、bmad-orchestrator、using-git-worktrees、ralph-method、auto-commit-utf8、git-push-monitor。注意：`bmad-standalone-tasks` 的“独立”仅表示文档作用域独立，不表示它绕过主 Agent 主链。
 
 ---
 
@@ -340,8 +222,9 @@ foreach ($skill in $required) {
 在**目标项目根目录**执行：
 
 ```powershell
-cd D:\Dev\your-project
-pwsh _bmad\speckit\scripts\powershell\check-prerequisites.ps1 -PathsOnly
+cd <consumer-root>
+npm ls bmad-speckit-sdd-flow --depth=0
+node -e "const fs=require('node:fs'); const p=process.platform==='win32'?'node_modules/.bin/bmad-speckit.cmd':'node_modules/.bin/bmad-speckit'; if(!fs.existsSync(p)){console.error('missing project-local '+p); process.exit(1)} console.log('found '+p)"
 ```
 
 ### 4.1 最小复验命令列表
@@ -349,17 +232,22 @@ pwsh _bmad\speckit\scripts\powershell\check-prerequisites.ps1 -PathsOnly
 下面这组命令是当前推荐的**最小复验清单**。如果你完成安装后只想快速判断“是否真的可用”，至少跑完这组：
 
 ```powershell
-cd D:\Dev\your-project
+cd <consumer-root>
 
-# 1. 基础骨架检查
+# 1. 项目本地依赖和 CLI shim
+npm ls bmad-speckit-sdd-flow --depth=0
+node -e "const fs=require('node:fs'); const p=process.platform==='win32'?'node_modules/.bin/bmad-speckit.cmd':'node_modules/.bin/bmad-speckit'; if(!fs.existsSync(p)){console.error('missing project-local '+p); process.exit(1)} console.log('found '+p)"
+
+# 2. 显式生成目标宿主安装面
+npx --no-install bmad-speckit init . --ai claude,cursor-agent,codex --yes --force
+
+# 3. 基础骨架和 CLI 检查
 pwsh _bmad\speckit\scripts\powershell\check-prerequisites.ps1 -PathsOnly
+npx --no-install bmad-speckit check
 
-# 2. CLI 是否可解析
-npx bmad-speckit check
-
-# 3. 显式对齐 Claude / Cursor hooks（推荐）
-npx bmad-speckit-init --agent claude-code
-npx bmad-speckit-init --agent cursor
+# 4. 运行时入口检查
+npx --no-install bmad-speckit dashboard-status
+npx --no-install bmad-speckit bmads
 ```
 
 ### 4.2 Runtime Governance 专项复验
@@ -392,13 +280,13 @@ foreach ($path in $checks) {
 然后再验证宿主主控资产已安装。普通消费用户的默认激活方式是在当前 AI 宿主会话中输入 `$bmad-speckit`、`/bmad-speckit` 或 `bmad-speckit`；下面的 CLI 只用于安装验证、CI、debug 或 no-skill fallback：
 
 ```powershell
-npx bmad-speckit main-agent-orchestration --cwd . --action inspect
+npx --no-install bmad-speckit main-agent inspect --cwd . --json
 ```
 
 必要时：
 
 ```powershell
-npx bmad-speckit main-agent-orchestration --cwd . --action dispatch-plan
+npx --no-install bmad-speckit main-agent dispatch-plan --cwd . --json
 ```
 
 其中：
@@ -406,7 +294,7 @@ npx bmad-speckit main-agent-orchestration --cwd . --action dispatch-plan
 - `_bmad/runtime/hooks/*` 代表项目内共享运行时资产
 - `.claude/hooks/*` / `.cursor/hooks/*` 代表宿主真正执行的 hook 副本
 - `.claude/settings.json` / `.cursor/hooks.json` 代表宿主事件绑定是否存在
-- `$bmad-speckit` / `/bmad-speckit` / `bmad-speckit` 是 interactive 模式下的正式用户激活入口；`main-agent-orchestration` 是内部 control-plane action
+- `$bmad-speckit` / `/bmad-speckit` / `bmad-speckit` 是 interactive 模式下的正式用户激活入口；`main-agent inspect|dispatch-plan` 是 package-local control-plane 验证入口
 
 accepted runtime path 需要这样理解：
 
@@ -421,12 +309,12 @@ accepted runtime path 需要这样理解：
 `npx` 有两种常见含义，必须区分：
 
 1. `npx --package bmad-speckit-sdd-flow bmad-speckit init ...`
-   - 快速初始化
-   - 不保证带上本仓库所有最新定制
+   - 适合临时执行、smoke test 和一次性 bootstrap
+   - 不会把 runtime 依赖持久安装进消费项目
 
-2. `npm install --save-dev <本仓库>` 后再运行 `npx bmad-speckit-init --agent ...`
-   - 这是**本仓库定制能力**的推荐 npx 用法
-   - 能把当前包内最新 `_bmad/runtime/hooks` 同步到消费项目宿主目录
+2. `npm install --save-dev --ignore-scripts bmad-speckit-sdd-flow@latest` 后再运行 `npx --no-install bmad-speckit init ...`
+   - 这是**消费项目长期 runtime** 的推荐 npx 用法
+   - 能把当前包内最新 `_bmad/runtime/hooks`、宿主 hooks 和 skills 同步到消费项目宿主目录
 
 如果你的目标是“消费项目里真的验证主 Agent 主链能工作”，请采用第 2 种，并验证 `.claude/.cursor` 的 `runtime-policy-inject.cjs`、`pre-continue-check.cjs` 以及 `$bmad-speckit` / `/bmad-speckit` / `bmad-speckit` 宿主入口，而不是再追求 background worker 自动吃队列。
 
@@ -490,7 +378,7 @@ foreach ($path in $checks) {
 ## 5. 创建第一个 Feature（1 分钟）
 
 ```powershell
-cd D:\Dev\your-project
+cd <consumer-root>
 git checkout -b 001-my-first-feature
 ```
 
@@ -512,7 +400,7 @@ git checkout -b 001-my-first-feature
 
 **想体验 BMAD 全流程？** 在 Cursor 中依次运行 `/bmad-bmm-create-story`（输入 Epic 与 Story 编号）→ 审计通过 → `/bmad-bmm-dev-story`，将触发 Layer 4 嵌套 Speckit（specify → plan → tasks → implement）。
 
-**常用 Skills**（安装时已部署到全局，直接可用）：
+**常用 Skills**（通过项目本地 `bmad-speckit init ...` 安装到对应宿主 surface 后可用）：
 
 - **bmad-story-assistant**：Story 全流程（Create Story → Dev Story），对应命令 `/bmad-bmm-create-story`、`/bmad-bmm-dev-story`
 - **bmad-bug-assistant**：描述问题时自动进入 Party-Mode，产出 BUGFIX 文档并生成修复任务
@@ -521,14 +409,14 @@ git checkout -b 001-my-first-feature
 **Post-audit close-out / 诊断 CLI**（用于审计后的 close-out、Coach 诊断等；不是 interactive 主控入口）：
 
 ```bash
-npx ts-node scripts/run-auditor-host.ts --projectRoot <项目根目录> --stage <story|spec|plan|gaps|tasks|implement|bugfix|document> --artifactPath <被审产物> --reportPath <审计报告>
-npx bmad-speckit coach
-npx bmad-speckit dashboard
-npx bmad-speckit sft-extract
-npx bmad-speckit scores
+npx --no-install bmad-speckit run-auditor-host --projectRoot <项目根目录> --stage <story|spec|plan|gaps|tasks|implement|bugfix|document> --artifactPath <被审产物> --reportPath <审计报告>
+npx --no-install bmad-speckit coach
+npx --no-install bmad-speckit dashboard
+npx --no-install bmad-speckit sft-extract
+npx --no-install bmad-speckit scores
 ```
 
-> Legacy / maintenance 说明：这里保留 `runAuditorHost` 命令，是为了仓库内 close-out 调试、host-runner 验证和历史证据追溯；当前 accepted runtime path 仍然是用户通过 `$bmad-speckit` / `/bmad-speckit` / `bmad-speckit` 激活主控，主 Agent 回读受控 RequirementRecord 和六个心智模型状态，而不是把 `runAuditorHost` 当作主入口。
+> Legacy / maintenance 说明：root `scripts/run-auditor-host.ts` 只用于仓库内 close-out 调试、host-runner 验证和历史证据追溯；消费项目应使用 package-local `bmad-speckit run-auditor-host`。当前 accepted runtime path 仍然是用户通过 `$bmad-speckit` / `/bmad-speckit` / `bmad-speckit` 激活主控，主 Agent 回读受控 RequirementRecord 和六个心智模型状态，而不是把 `runAuditorHost` 当作主入口。
 
 **更多资源**：
 

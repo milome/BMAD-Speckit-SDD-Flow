@@ -1,0 +1,10 @@
+{
+  "id": "CMD-09",
+  "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node tools/script-migration/validate-registry.cjs; exit `$LASTEXITCODE }\"",
+  "executedAt": "2026-06-03T19:37:53.479Z",
+  "exitCode": 0,
+  "stdoutHash": "sha256:03e86d3a93b78396c78137de46ac5ecd960049e7c9b3b3792b5ac8b7abe51970",
+  "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout": "{\"status\":\"passed\",\"registryPath\":\"repo-governance/script-migration-registry.yaml\",\"packExclusion\":\"not_requested\",\"errors\":[]}\n",
+  "stderr": ""
+}

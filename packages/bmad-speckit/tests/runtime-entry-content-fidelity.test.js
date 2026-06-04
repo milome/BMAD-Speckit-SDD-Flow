@@ -256,24 +256,29 @@ describe('runtime entry content fidelity contract', () => {
   });
 
   it('preserves bmad-help owning workflow sections and code spans in renderer stdout', () => {
-    const text = runCli(['bmad-help']);
+    const root = makeRuntimeRoot();
+    try {
+      const text = runCli(['bmad-help', '--cwd', root]);
 
-    for (const fragment of [
-      '# bmad-help',
-      '## Status Summary',
-      '## Runtime Cross-Entry',
-      '## Recommended Next Steps',
-      '## Upstream Workflow Guidance',
-      '### Official Execution Paths',
-      '## See also: bmads',
-      '`bmad-speckit bmads`',
-      '`bmad-bmm-correct-course`',
-      '`bmad-bmm-sprint-status`',
-    ]) {
-      assert.match(text, new RegExp(fragment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+      for (const fragment of [
+        '# bmad-help',
+        '## Status Summary',
+        '## Runtime Cross-Entry',
+        '## Recommended Next Steps',
+        '## Upstream Workflow Guidance',
+        '### Official Execution Paths',
+        '## See also: bmads',
+        '`bmad-speckit bmads`',
+        '`bmad-bmm-correct-course`',
+        '`bmad-bmm-sprint-status`',
+      ]) {
+        assert.match(text, new RegExp(fragment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+      }
+      assert.doesNotMatch(text, /## Six Mental Model Panorama/);
+      assert.doesNotMatch(text, /recordId: REQ-/);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
     }
-    assert.doesNotMatch(text, /## Six Mental Model Panorama/);
-    assert.doesNotMatch(text, /recordId: REQ-/);
   });
 
   it('does not treat NOT READY implementation-readiness reports as ready', () => {

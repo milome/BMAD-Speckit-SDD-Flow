@@ -2,7 +2,7 @@
   "installMode": "npx-package",
   "command": "npx --yes --package \"D:/Dev/BMAD-Speckit-SDD-Flow/.tmp/main-agent-migration-wave-1/bmad-speckit-sdd-flow-2.0.1.tgz\" bmad-speckit main-agent inspect --json",
   "exitCode": 0,
-  "stdoutHash": "sha256:322a4e7a4680c110947f80db04a97911c98f218aeca7e6fa4e8fe6b29c9541f4",
+  "stdoutHash": "sha256:bf88e3ac506f2bea9a62cf25e78549109a38d68d3f6580b7b4de22bcea4446b0",
   "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
   "usedRootScript": false,
   "usedTsx": false,

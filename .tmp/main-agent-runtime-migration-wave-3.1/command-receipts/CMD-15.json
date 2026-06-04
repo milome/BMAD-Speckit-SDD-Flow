@@ -1,0 +1,10 @@
+{
+  "id": "CMD-15",
+  "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js; exit `$LASTEXITCODE }\"",
+  "executedAt": "2026-06-03T19:37:59.554Z",
+  "exitCode": 0,
+  "stdoutHash": "sha256:a278d284828625c7ccc2280ced1c6276442a6f9693d1d39d6836856b7d718d98",
+  "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout": "checkedFiles=3005 findings=0\n",
+  "stderr": ""
+}

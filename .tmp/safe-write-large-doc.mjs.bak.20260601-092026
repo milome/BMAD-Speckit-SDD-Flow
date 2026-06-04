@@ -1,0 +1,428 @@
+#!/usr/bin/env node
+import fs from "node:fs";
+import path from "node:path";
+import crypto from "node:crypto";
+
+const TEXT_FILE_EXTENSIONS = new Set([
+  ".adoc",
+  ".asciidoc",
+  ".astro",
+  ".bash",
+  ".bat",
+  ".c",
+  ".cc",
+  ".cfg",
+  ".clj",
+  ".cljs",
+  ".cmd",
+  ".conf",
+  ".cpp",
+  ".cs",
+  ".css",
+  ".cue",
+  ".cxx",
+  ".dart",
+  ".dockerfile",
+  ".editorconfig",
+  ".env",
+  ".example",
+  ".fish",
+  ".go",
+  ".graphql",
+  ".gql",
+  ".gradle",
+  ".groovy",
+  ".h",
+  ".hpp",
+  ".hs",
+  ".htm",
+  ".html",
+  ".ini",
+  ".java",
+  ".jinja",
+  ".jinja2",
+  ".jl",
+  ".js",
+  ".json",
+  ".json5",
+  ".jsonc",
+  ".jsonl",
+  ".jsx",
+  ".kt",
+  ".kts",
+  ".less",
+  ".liquid",
+  ".lua",
+  ".md",
+  ".mdx",
+  ".mjs",
+  ".mustache",
+  ".nix",
+  ".php",
+  ".pl",
+  ".proto",
+  ".ps1",
+  ".py",
+  ".r",
+  ".rb",
+  ".rs",
+  ".rst",
+  ".sass",
+  ".scala",
+  ".scss",
+  ".sh",
+  ".sql",
+  ".svelte",
+  ".swift",
+  ".toml",
+  ".ts",
+  ".tsx",
+  ".tsv",
+  ".txt",
+  ".vue",
+  ".xml",
+  ".yaml",
+  ".yml",
+  ".zsh",
+  ".cjs",
+]);
+
+const TEXT_FILE_BASENAMES = new Set([
+  ".env.example",
+  ".env.local.example",
+  ".gitattributes",
+  ".gitignore",
+  ".npmrc",
+  ".prettierignore",
+  ".prettierrc",
+  "agents.md",
+  "claude.md",
+  "dockerfile",
+  "gemini.md",
+  "makefile",
+  "readme",
+  "readme.md",
+]);
+
+const BINARY_FILE_EXTENSIONS = new Set([
+  ".7z",
+  ".avi",
+  ".bin",
+  ".bmp",
+  ".br",
+  ".bz2",
+  ".db",
+  ".dll",
+  ".doc",
+  ".docx",
+  ".dylib",
+  ".eot",
+  ".exe",
+  ".gif",
+  ".gz",
+  ".ico",
+  ".jar",
+  ".jpeg",
+  ".jpg",
+  ".lockb",
+  ".mov",
+  ".mp3",
+  ".mp4",
+  ".o",
+  ".onnx",
+  ".otf",
+  ".parquet",
+  ".pdf",
+  ".png",
+  ".pyc",
+  ".rar",
+  ".so",
+  ".sqlite",
+  ".sqlite3",
+  ".tar",
+  ".tiff",
+  ".ttf",
+  ".wasm",
+  ".wav",
+  ".webm",
+  ".webp",
+  ".woff",
+  ".woff2",
+  ".xls",
+  ".xlsx",
+  ".xz",
+  ".zip",
+  ".zst",
+]);
+
+function usage(exitCode = 0) {
+  const stream = exitCode === 0 ? process.stdout : process.stderr;
+  stream.write(`Usage:
+  node scripts/safe-write-large-doc.mjs --target <path> --content <draft-path> [options]
+  node scripts/safe-write-large-doc.mjs --target <path> --from-stdin [options]
+
+Options:
+  --backup-dir <path>        Directory for timestamped backups. Defaults to target directory.
+  --require <text>           Required literal text in the new content. Repeatable.
+  --min-bytes <number>       Minimum UTF-8 byte length for the new content.
+  --allow-extension <ext>    Treat an additional extension as text for this run. Repeatable.
+  --force-text               Allow an unknown extension after text safety checks.
+  --allow-create             Allow target creation when it does not exist.
+  --dry-run                  Validate and write temp draft, but do not replace target.
+  --json                     Emit machine-readable JSON.
+  --help                     Show this help.
+
+This script is for large Markdown/config/document rewrites. It backs up the target,
+writes a same-directory temp file with explicit utf8, validates, then renames it
+over the target. Do not use apply_patch Delete File + Add File for large rewrites.
+`);
+  process.exit(exitCode);
+}
+
+function parseArgs(argv) {
+  const args = {
+    target: "",
+    content: "",
+    fromStdin: false,
+    backupDir: "",
+    requiredTexts: [],
+    allowedExtensions: [],
+    minBytes: 0,
+    forceText: false,
+    allowCreate: false,
+    dryRun: false,
+    json: false,
+  };
+
+  for (let i = 0; i < argv.length; i += 1) {
+    const arg = argv[i];
+    if (arg === "--help" || arg === "-h") usage(0);
+    if (arg === "--from-stdin") {
+      args.fromStdin = true;
+      continue;
+    }
+    if (arg === "--allow-create") {
+      args.allowCreate = true;
+      continue;
+    }
+    if (arg === "--force-text") {
+      args.forceText = true;
+      continue;
+    }
+    if (arg === "--dry-run") {
+      args.dryRun = true;
+      continue;
+    }
+    if (arg === "--json") {
+      args.json = true;
+      continue;
+    }
+    if (["--target", "--content", "--backup-dir", "--require", "--min-bytes", "--allow-extension"].includes(arg)) {
+      const value = argv[i + 1];
+      if (!value || value.startsWith("--")) {
+        throw new Error(`missing value for ${arg}`);
+      }
+      i += 1;
+      if (arg === "--target") args.target = value;
+      if (arg === "--content") args.content = value;
+      if (arg === "--backup-dir") args.backupDir = value;
+      if (arg === "--require") args.requiredTexts.push(value);
+      if (arg === "--allow-extension") args.allowedExtensions.push(normalizeExtension(value));
+      if (arg === "--min-bytes") {
+        const parsed = Number(value);
+        if (!Number.isFinite(parsed) || parsed < 0) throw new Error("--min-bytes must be a non-negative number");
+        args.minBytes = parsed;
+      }
+      continue;
+    }
+    throw new Error(`unknown option ${arg}`);
+  }
+
+  if (!args.target) throw new Error("--target is required");
+  if (args.fromStdin && args.content) throw new Error("--from-stdin and --content are mutually exclusive");
+  if (!args.fromStdin && !args.content) throw new Error("--content or --from-stdin is required");
+  return args;
+}
+
+function readStdinUtf8() {
+  return fs.readFileSync(0, "utf8");
+}
+
+function sha256(textOrBuffer) {
+  return crypto.createHash("sha256").update(textOrBuffer).digest("hex").toUpperCase();
+}
+
+function normalizeExtension(value) {
+  const ext = value.trim().toLowerCase();
+  if (!ext) throw new Error("--allow-extension cannot be empty");
+  return ext.startsWith(".") ? ext : `.${ext}`;
+}
+
+function timestamp() {
+  const now = new Date();
+  const pad = (value) => String(value).padStart(2, "0");
+  return [
+    now.getFullYear(),
+    pad(now.getMonth() + 1),
+    pad(now.getDate()),
+    "-",
+    pad(now.getHours()),
+    pad(now.getMinutes()),
+    pad(now.getSeconds()),
+  ].join("");
+}
+
+function hasNulByte(value) {
+  return value.includes("\u0000");
+}
+
+function assertTextContentSafe(label, content) {
+  if (hasNulByte(content)) {
+    throw new Error(`${label} contains NUL bytes; refusing utf8 text replacement`);
+  }
+}
+
+function assertSafeTextTarget(targetPath, options) {
+  const ext = path.extname(targetPath).toLowerCase();
+  const base = path.basename(targetPath).toLowerCase();
+  if (BINARY_FILE_EXTENSIONS.has(ext)) {
+    throw new Error(`refusing to write known binary target extension ${ext}: ${targetPath}`);
+  }
+  if (TEXT_FILE_BASENAMES.has(base) || TEXT_FILE_EXTENSIONS.has(ext)) return;
+  if (options.allowedExtensions.has(ext)) return;
+  if (options.forceText) return;
+  const hint = ext
+    ? `pass --allow-extension ${ext} for this run, or --force-text after verifying it is UTF-8 text`
+    : "pass --force-text after verifying this extensionless file is UTF-8 text";
+  throw new Error(`unknown text target extension for ${targetPath}; ${hint}`);
+}
+
+function assertExistingTargetSafe(targetPath, options) {
+  if (!fs.existsSync(targetPath)) return;
+  const buffer = fs.readFileSync(targetPath);
+  if (buffer.includes(0)) {
+    throw new Error(`existing target contains NUL bytes; refusing utf8 text replacement: ${targetPath}`);
+  }
+  const text = buffer.toString("utf8");
+  if (!options.forceText && text.includes("\uFFFD")) {
+    throw new Error(
+      `existing target contains Unicode replacement characters; pass --force-text only if this is expected: ${targetPath}`,
+    );
+  }
+}
+
+function atomicWriteUtf8(targetPath, content, options) {
+  const targetAbsolute = path.resolve(targetPath);
+  assertSafeTextTarget(targetAbsolute, options);
+  assertTextContentSafe("new content", content);
+
+  const targetDir = path.dirname(targetAbsolute);
+  const targetBase = path.basename(targetAbsolute);
+  if (!fs.existsSync(targetDir)) throw new Error(`target directory does not exist: ${targetDir}`);
+
+  const targetExists = fs.existsSync(targetAbsolute);
+  if (!targetExists && !options.allowCreate) {
+    throw new Error(`target does not exist; pass --allow-create to create it: ${targetAbsolute}`);
+  }
+  if (targetExists && !fs.statSync(targetAbsolute).isFile()) {
+    throw new Error(`target is not a file: ${targetAbsolute}`);
+  }
+  assertExistingTargetSafe(targetAbsolute, options);
+
+  const originalText = targetExists ? fs.readFileSync(targetAbsolute, "utf8") : "";
+  const originalHash = targetExists ? sha256(originalText) : null;
+  const contentHash = sha256(content);
+  const contentBytes = Buffer.byteLength(content, "utf8");
+
+  if (contentBytes < options.minBytes) {
+    throw new Error(`new content is smaller than --min-bytes (${contentBytes} < ${options.minBytes})`);
+  }
+  for (const requiredText of options.requiredTexts) {
+    if (!content.includes(requiredText)) {
+      throw new Error(`new content is missing required text: ${requiredText}`);
+    }
+  }
+
+  let backupPath = null;
+  let backupHash = null;
+  if (targetExists) {
+    const backupDir = path.resolve(options.backupDir || targetDir);
+    fs.mkdirSync(backupDir, { recursive: true });
+    backupPath = path.join(backupDir, `${targetBase}.bak.${timestamp()}`);
+    fs.copyFileSync(targetAbsolute, backupPath);
+    backupHash = sha256(fs.readFileSync(backupPath, "utf8"));
+    if (backupHash !== originalHash) {
+      throw new Error(`backup hash mismatch: ${backupPath}`);
+    }
+  }
+
+  const tempPath = path.join(targetDir, `.${targetBase}.safe-write-${process.pid}-${Date.now()}.tmp`);
+  fs.writeFileSync(tempPath, content, { encoding: "utf8", flush: true });
+  const tempText = fs.readFileSync(tempPath, "utf8");
+  const tempHash = sha256(tempText);
+  if (tempHash !== contentHash) {
+    throw new Error(`temp hash mismatch: ${tempPath}`);
+  }
+
+  if (options.dryRun) {
+    fs.unlinkSync(tempPath);
+    return {
+      target: targetAbsolute,
+      created: !targetExists,
+      dryRun: true,
+      backupPath,
+      originalHash,
+      backupHash,
+      newHash: contentHash,
+      newBytes: contentBytes,
+    };
+  }
+
+  fs.renameSync(tempPath, targetAbsolute);
+  const finalText = fs.readFileSync(targetAbsolute, "utf8");
+  const finalHash = sha256(finalText);
+  if (finalHash !== contentHash) {
+    throw new Error(`final target hash mismatch after rename: ${targetAbsolute}`);
+  }
+
+  return {
+    target: targetAbsolute,
+    created: !targetExists,
+    dryRun: false,
+    backupPath,
+    originalHash,
+    backupHash,
+    newHash: contentHash,
+    newBytes: contentBytes,
+  };
+}
+
+function main() {
+  try {
+    const args = parseArgs(process.argv.slice(2));
+    const content = args.fromStdin ? readStdinUtf8() : fs.readFileSync(path.resolve(args.content), "utf8");
+    const result = atomicWriteUtf8(args.target, content, {
+      backupDir: args.backupDir,
+      requiredTexts: args.requiredTexts,
+      minBytes: args.minBytes,
+      allowCreate: args.allowCreate,
+      allowedExtensions: new Set(args.allowedExtensions),
+      forceText: args.forceText,
+      dryRun: args.dryRun,
+    });
+
+    if (args.json) {
+      process.stdout.write(`${JSON.stringify({ ok: true, ...result }, null, 2)}\n`);
+    } else {
+      process.stdout.write(`safe-write ok: ${result.target}\n`);
+      if (result.backupPath) process.stdout.write(`backup: ${result.backupPath}\n`);
+      process.stdout.write(`sha256: ${result.newHash}\n`);
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    process.stderr.write(`safe-write failed: ${message}\n`);
+    process.exitCode = 1;
+  }
+}
+
+main();

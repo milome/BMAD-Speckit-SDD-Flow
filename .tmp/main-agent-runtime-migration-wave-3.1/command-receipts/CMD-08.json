@@ -1,0 +1,10 @@
+{
+  "id": "CMD-08",
+  "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <static no root TypeScript dispatch guard> }\"",
+  "executedAt": "2026-06-03T19:35:41.354Z",
+  "exitCode": 0,
+  "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout": "",
+  "stderr": ""
+}

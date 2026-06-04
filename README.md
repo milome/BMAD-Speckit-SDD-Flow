@@ -86,27 +86,34 @@ This project is not the best fit when you only want:
 
 ## Prerequisites
 
-| Tool       | Version                           | Why it matters                                                        |
-| ---------- | --------------------------------- | --------------------------------------------------------------------- |
-| Node.js    | 22+                               | Required for the published CLI and package install surface.           |
-| npm        | 9+                                | Required for `npx --package`, local install, and workspace workflows. |
-| PowerShell | 7+ on Windows                     | Recommended for setup, verification, and runtime helper scripts.      |
-| Git        | 2.30+                             | Required for worktrees, branch workflows, and contribution flow.      |
-| AI host    | Codex, Claude Code CLI, or Cursor | Required for the normal `bmads` / `bmad-speckit` runtime entry.       |
+| Tool       | Version                           | Why it matters                                                                                              |
+| ---------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Node.js    | 22+                               | Required for the published CLI and package install surface.                                                 |
+| npm        | 9+                                | Required for project-local install, `npx --no-install`, temporary `npx --package`, and workspace workflows. |
+| PowerShell | 7+ on Windows                     | Recommended for setup, verification, and runtime helper scripts.                                            |
+| Git        | 2.30+                             | Required for worktrees, branch workflows, and contribution flow.                                            |
+| AI host    | Codex, Claude Code CLI, or Cursor | Required for the normal `bmads` / `bmad-speckit` runtime entry.                                             |
 
 ---
 
 ## Quick Start
 
-For most consumer projects, use the published package to install the workflow surface, then activate the Orchestrator Agent inside the AI host.
+For long-term use in a consumer project, install the package as a project-local dependency, then run `init` explicitly for the AI host you want. Generated skills call the project-local CLI through `npx --no-install`, so the package must exist in this project's `node_modules`.
 
 ```bash
-npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit version
-npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit-init . --agent claude-code --full --no-package-json
-npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit-init . --agent cursor --full --no-package-json
-npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit-init . --agent codex --full --no-package-json
-npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit check
+npm install --save-dev --ignore-scripts bmad-speckit-sdd-flow@latest
+npm ls bmad-speckit-sdd-flow --depth=0
+node -e "const fs=require('node:fs'); const p=process.platform==='win32'?'node_modules/.bin/bmad-speckit.cmd':'node_modules/.bin/bmad-speckit'; if(!fs.existsSync(p)){console.error('missing project-local '+p); process.exit(1)} console.log('found '+p)"
+npx --no-install bmad-speckit version
+npx --no-install bmad-speckit init . --ai codex --yes --force
+npx --no-install bmad-speckit check
+npx --no-install bmad-speckit dashboard-status
+npx --no-install bmad-speckit bmads
 ```
+
+To install all three common AI host surfaces in one pass, use `--ai claude,cursor-agent,codex` instead of `--ai codex`.
+
+The `--ignore-scripts` flag keeps dependency installation separate from install-surface generation. If you omit it, the current root package `postinstall` runs `scripts/init-to-root.js` and writes a default install surface before your explicit `bmad-speckit init ...` command.
 
 Then switch to the AI host session and activate the Orchestrator Agent:
 
@@ -116,15 +123,19 @@ $bmads
 
 Use `$bmad-help` for workflow routing only; it does not take root runtime authority.
 
-If you are installing from a CI artifact instead of npm registry, use the same verified off-repo path with the local tarball:
+If you are installing from a CI artifact instead of the npm registry, install the local tarball as a project dependency:
 
 ```bash
-npx --yes --package ./bmad-speckit-sdd-flow-<version>.tgz bmad-speckit version
-npx --yes --package ./bmad-speckit-sdd-flow-<version>.tgz bmad-speckit-init . --agent claude-code --full --no-package-json
-npx --yes --package ./bmad-speckit-sdd-flow-<version>.tgz bmad-speckit-init . --agent cursor --full --no-package-json
-npx --yes --package ./bmad-speckit-sdd-flow-<version>.tgz bmad-speckit-init . --agent codex --full --no-package-json
-npx --yes --package ./bmad-speckit-sdd-flow-<version>.tgz bmad-speckit check
+npm install --save-dev --ignore-scripts ./bmad-speckit-sdd-flow-<version>.tgz
+npm ls bmad-speckit-sdd-flow --depth=0
+node -e "const fs=require('node:fs'); const p=process.platform==='win32'?'node_modules/.bin/bmad-speckit.cmd':'node_modules/.bin/bmad-speckit'; if(!fs.existsSync(p)){console.error('missing project-local '+p); process.exit(1)} console.log('found '+p)"
+npx --no-install bmad-speckit init . --ai codex --yes --force
+npx --no-install bmad-speckit check
+npx --no-install bmad-speckit dashboard-status
+npx --no-install bmad-speckit bmads
 ```
+
+Use `npx --package` only for smoke tests, CI artifact checks, or one-time initialization. It does not persist the runtime in the consumer project, so generated skills may fail later unless you also install the package locally.
 
 ---
 
@@ -183,23 +194,23 @@ BMAD-Speckit-SDD-Flow installs a layered skill surface. The canonical core layer
 
 Use `$bmads` / `$bmad-speckit` as the normal governed runtime entry. Use `$bmad-help` when you need a state-aware workflow navigator for the BMAD 1.x workflow map or the 2.x governed runtime projection. `$bmad-help` is a read-model navigator: it does not progress mental models, does not execute remediation, and does not replace the active requirement record or controlled gates.
 
-| Skill | Use when | Primary output | Control role |
-| --- | --- | --- | --- |
-| `$bmads` / `$bmad-speckit`             | You need the governed runtime entry inside Codex, Claude Code, or Cursor. | Current requirement state, next governed action, and evidence gaps.    | Root Orchestrator Agent entry for the active requirement.            |
-| `$bmad-help`                           | You need the BMAD workflow map or are unsure what to run next.            | Recommended, blocked, or rerouteRequired path.                         | Read-model navigator only. It does not progress mental models.       |
-| `$requirements-contract-authoring`     | You need to create or update a confirmation-ready PRD, BUGFIX, TASKS, or story source document. | Inline `implementationConfirmation`, traceRows, evidence expectations, and confirmation HTML. | Prepares the source for user confirmation. It is not a separate authority. |
-| `$req-trace-matrix-prompt-generator`   | You need strict trace matrix prompts from a requirement source.            | Prompt-ready requirement trace matrix contract.                         | Produces trace authoring input; it does not close runtime gates.      |
-| `$goal-execution-contract-generator`   | You need a frozen execution contract for `/goal`.                         | Goal execution contract under `docs/plans`.                             | Produces the contract for `/goal`; it does not execute `/goal`.       |
-| `$grill-with-docs`                     | You need adversarial clarification against existing docs.                 | Grilling questions, contradictions, and evidence gaps.                  | Improves requirement clarity before confirmation or execution.        |
-| `$docs-review`                         | You need review of README, docs, or diff clarity, structure, and style.   | Documentation review findings.                                         | Optional companion skill. It is not part of the project install surface unless added. |
-| `$bmad-create-product-brief`           | You need to frame product intent before a PRD.                            | Product brief and discovery notes.                                     | 1.x upstream workflow input to the 2.x control plane.                |
-| `$bmad-create-prd`                     | You need a structured product requirements document.                      | PRD with goals, scope, and acceptance direction.                        | 1.x upstream requirements artifact that feeds requirement contracts.  |
-| `$bmad-create-architecture`            | You need architecture boundaries and technical decisions.                 | Architecture document and risk decisions.                              | 1.x upstream architecture artifact for later confirmation.           |
-| `$bmad-create-epics-and-stories`       | You need executable delivery slices from product and architecture scope.  | Epics, stories, and story context.                                     | 1.x planning output that can become controlled implementation input.  |
-| `$bmad-check-implementation-readiness` | You need to check PRD, UX, architecture, and story readiness.             | Readiness findings and missing prerequisites.                          | Pre-control-plane readiness support; runtime gates still decide.      |
-| `$bmad-story-assistant`                | You need the supported story execution path.                              | Story execution assistance and story-state guidance.                   | Official story path, preferred over relying on legacy dev-story alone. |
-| `$bmad-standalone-tasks`               | You need to execute standalone task documents.                            | Task execution result and evidence.                                    | Task-level support that must still respect active requirement gates.  |
-| `$bmad-bug-assistant`                  | You need a bugfix flow with root-cause analysis and fix planning.         | Bug report analysis, fix plan, and verification direction.             | Bugfix preparation path that can feed requirement confirmation.       |
+| Skill                                  | Use when                                                                                        | Primary output                                                                                | Control role                                                                          |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `$bmads` / `$bmad-speckit`             | You need the governed runtime entry inside Codex, Claude Code, or Cursor.                       | Current requirement state, next governed action, and evidence gaps.                           | Root Orchestrator Agent entry for the active requirement.                             |
+| `$bmad-help`                           | You need the BMAD workflow map or are unsure what to run next.                                  | Recommended, blocked, or rerouteRequired path.                                                | Read-model navigator only. It does not progress mental models.                        |
+| `$requirements-contract-authoring`     | You need to create or update a confirmation-ready PRD, BUGFIX, TASKS, or story source document. | Inline `implementationConfirmation`, traceRows, evidence expectations, and confirmation HTML. | Prepares the source for user confirmation. It is not a separate authority.            |
+| `$req-trace-matrix-prompt-generator`   | You need strict trace matrix prompts from a requirement source.                                 | Prompt-ready requirement trace matrix contract.                                               | Produces trace authoring input; it does not close runtime gates.                      |
+| `$goal-execution-contract-generator`   | You need a frozen execution contract for `/goal`.                                               | Goal execution contract under `docs/plans`.                                                   | Produces the contract for `/goal`; it does not execute `/goal`.                       |
+| `$grill-with-docs`                     | You need adversarial clarification against existing docs.                                       | Grilling questions, contradictions, and evidence gaps.                                        | Improves requirement clarity before confirmation or execution.                        |
+| `$docs-review`                         | You need review of README, docs, or diff clarity, structure, and style.                         | Documentation review findings.                                                                | Optional companion skill. It is not part of the project install surface unless added. |
+| `$bmad-create-product-brief`           | You need to frame product intent before a PRD.                                                  | Product brief and discovery notes.                                                            | 1.x upstream workflow input to the 2.x control plane.                                 |
+| `$bmad-create-prd`                     | You need a structured product requirements document.                                            | PRD with goals, scope, and acceptance direction.                                              | 1.x upstream requirements artifact that feeds requirement contracts.                  |
+| `$bmad-create-architecture`            | You need architecture boundaries and technical decisions.                                       | Architecture document and risk decisions.                                                     | 1.x upstream architecture artifact for later confirmation.                            |
+| `$bmad-create-epics-and-stories`       | You need executable delivery slices from product and architecture scope.                        | Epics, stories, and story context.                                                            | 1.x planning output that can become controlled implementation input.                  |
+| `$bmad-check-implementation-readiness` | You need to check PRD, UX, architecture, and story readiness.                                   | Readiness findings and missing prerequisites.                                                 | Pre-control-plane readiness support; runtime gates still decide.                      |
+| `$bmad-story-assistant`                | You need the supported story execution path.                                                    | Story execution assistance and story-state guidance.                                          | Official story path, preferred over relying on legacy dev-story alone.                |
+| `$bmad-standalone-tasks`               | You need to execute standalone task documents.                                                  | Task execution result and evidence.                                                           | Task-level support that must still respect active requirement gates.                  |
+| `$bmad-bug-assistant`                  | You need a bugfix flow with root-cause analysis and fix planning.                               | Bug report analysis, fix plan, and verification direction.                                    | Bugfix preparation path that can feed requirement confirmation.                       |
 
 ---
 
@@ -283,24 +294,26 @@ The Orchestrator Agent should block or reroute when Manifest completeness, trace
 
 ## CLI Installation And External Interfaces
 
-Install the workflow into a consumer project with the published npm package. These commands are for installation, validation, lifecycle operations, and external runtime views.
+Install the workflow into a consumer project with the published npm package. For stable generated-skill runtime, make the package a project-local dependency and run the CLI through `npx --no-install`.
 
 ```bash
-npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit --help
-npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit version
-npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit-init . --agent claude-code --full --no-package-json
-npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit-init . --agent cursor --full --no-package-json
-npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit-init . --agent codex --full --no-package-json
-npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit check
-npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit dashboard-status
+npm install --save-dev --ignore-scripts bmad-speckit-sdd-flow@latest
+npm ls bmad-speckit-sdd-flow --depth=0
+node -e "const fs=require('node:fs'); const p=process.platform==='win32'?'node_modules/.bin/bmad-speckit.cmd':'node_modules/.bin/bmad-speckit'; if(!fs.existsSync(p)){console.error('missing project-local '+p); process.exit(1)} console.log('found '+p)"
+npx --no-install bmad-speckit --help
+npx --no-install bmad-speckit version
+npx --no-install bmad-speckit init . --ai codex --yes --force
+npx --no-install bmad-speckit check
+npx --no-install bmad-speckit dashboard-status
+npx --no-install bmad-speckit bmads
 ```
 
-If you prefer a project dependency:
+Use `--ignore-scripts` for the clearest install flow: first install the package, then run `bmad-speckit init ...` explicitly for the AI host surfaces you want. If you omit `--ignore-scripts`, the current root package `postinstall` runs `scripts/init-to-root.js` during dependency installation and may write a default install surface before your explicit init command.
 
-```bash
-npm install --save-dev bmad-speckit-sdd-flow@latest
-npx bmad-speckit-init . --agent codex --full --no-package-json
-npx bmad-speckit check
+On Windows, use `npx.cmd` if your shell does not resolve the shim:
+
+```powershell
+npx.cmd --no-install bmad-speckit bmads
 ```
 
 The public CLI exposes these auxiliary surfaces:
@@ -312,6 +325,21 @@ The public CLI exposes these auxiliary surfaces:
 | Evidence and scoring  | `score`, `check-score`, `scores`, `dashboard`, `deferred-gap-audit`.                                               |
 | Data and feedback     | `coach`, `sft-extract`, `sft-preview`, `sft-validate`, `sft-bundle`, `feedback`.                                   |
 
+### Installation Matrix
+
+| Installation path                                                                                   | Use it for                                                                   | Project files changed                                                                                                                                         | Long-term generated-skill runtime                                                                                                                                                   |
+| --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm install --save-dev --ignore-scripts bmad-speckit-sdd-flow@latest`                              | Default for normal consumer projects.                                        | Writes `node_modules`, `package.json`, and the lockfile; skips package lifecycle scripts.                                                                     | Supported. Run explicit `npx --no-install bmad-speckit init ...`, then generated skills can call `npx --no-install bmad-speckit ...`.                                               |
+| `npm install --save-dev bmad-speckit-sdd-flow@latest`                                               | Convenience install only when you accept package `postinstall` side effects. | Writes `node_modules`, `package.json`, and the lockfile; the current `postinstall` may also write default install surfaces through `scripts/init-to-root.js`. | Supported only after you verify the local shim and rerun explicit `bmad-speckit init ...` for the desired AI host surfaces.                                                         |
+| `npm install --save-dev --ignore-scripts ./bmad-speckit-sdd-flow-<version>.tgz`                     | Verifying a CI artifact or release candidate in a real consumer project.     | Writes `node_modules`, `package.json`, and the lockfile; skips package lifecycle scripts.                                                                     | Supported, pinned to the tarball content. Run explicit init after installation.                                                                                                     |
+| `npm install --no-save --package-lock=false --ignore-scripts ./bmad-speckit-sdd-flow-<version>.tgz` | Temporary local artifact smoke tests.                                        | Writes `node_modules`; should not update `package.json` or the lockfile.                                                                                      | Temporary only. It works while `node_modules` remains, but it is not a durable project contract.                                                                                    |
+| `npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit ...`                                 | One-time CLI execution, smoke tests, and CI artifact checks.                 | Does not persist a project-local runtime dependency.                                                                                                          | Not supported for long-term skills. Generated skills may fail later because `npx --no-install` cannot find the package.                                                             |
+| Global install                                                                                      | Manual operator convenience outside a governed project.                      | Does not pin the runtime in the consumer project.                                                                                                             | Not recommended for project skills because the project does not control the runtime version. It can also hide a missing local install if verification only runs `npx --no-install`. |
+
+The stable generated-skill runtime contract is: call the public package CLI from a project-local install through `npx --no-install bmad-speckit ...`, not repository paths. New or migrated skills should not use `node packages/bmad-speckit/bin/bmad-speckit.js`, `scripts/*.ts`, `tsx`, or `ts-node` as consumer runtime commands. If legacy skill text still mentions root script commands, treat those references as migration debt, not the recommended consumer runtime.
+
+`bmad-speckit-init` remains a compatibility alias. Prefer `bmad-speckit init ...` for new README examples, generated skills, and integration scripts.
+
 ### Public CLI Surface
 
 The screenshot below shows the published npm CLI help surface for the current release. It is a quick reference for installation, lifecycle, runtime read models, scoring, Coach, and SFT tooling; it is not the daily Orchestrator Agent workflow.
@@ -322,12 +350,24 @@ The screenshot below shows the published npm CLI help surface for the current re
 
 ### Install Verification
 
-Recommended install verification commands for a consumer project:
+Recommended install verification commands for a consumer project. Run the `init` line for the AI host surface you expect before checking generated files:
 
 ```bash
-npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit version
-npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit check
-npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit dashboard-status
+npm ls bmad-speckit-sdd-flow --depth=0
+node -e "const fs=require('node:fs'); const p=process.platform==='win32'?'node_modules/.bin/bmad-speckit.cmd':'node_modules/.bin/bmad-speckit'; if(!fs.existsSync(p)){console.error('missing project-local '+p); process.exit(1)} console.log('found '+p)"
+npx --no-install bmad-speckit version
+npx --no-install bmad-speckit init . --ai codex --yes --force
+npx --no-install bmad-speckit check
+npx --no-install bmad-speckit dashboard-status
+npx --no-install bmad-speckit bmads
+```
+
+Do not treat `npx --no-install` alone as proof of a project-local runtime. First verify the dependency and local shim so a global executable cannot hide a missing or unpinned project install.
+
+If you initialize all common hosts with `--ai claude,cursor-agent,codex`, also check the expected host surfaces:
+
+```bash
+node -e "const fs=require('node:fs'); const paths=['_bmad-output/config/bmad-speckit-install-manifest.json','.codex/skills','.claude/hooks/runtime-policy-inject.cjs','.claude/hooks/pre-continue-check.cjs','.cursor/hooks/runtime-policy-inject.cjs','.cursor/hooks/pre-continue-check.cjs']; for (const p of paths){ if(!fs.existsSync(p)){ console.error('missing '+p); process.exit(1); } console.log('found '+p); }"
 ```
 
 Use the CLI to install and inspect. Use the host skill to let the Orchestrator Agent control the requirement flow.

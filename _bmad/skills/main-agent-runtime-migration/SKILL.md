@@ -19,7 +19,7 @@ Use this skill when migrating Main Agent consumer-visible commands away from roo
 
 - Source authority belongs under `packages/bmad-speckit/src/main-agent/**`.
 - Consumer runtime output belongs under `packages/bmad-speckit/dist/main-agent/**`.
-- Package CLI dispatch belongs in `packages/bmad-speckit/bin/bmad-speckit.js`.
+- Package CLI dispatch belongs to the installed package binary exposed as `bmad-speckit`; consumer projects should invoke it through `npx --no-install bmad-speckit ...` or an npm script.
 - Covered consumer commands must require package-local `../dist/main-agent/index.js`.
 - Root package shims may forward to the package CLI, but must not implement Main Agent behavior.
 - Compiled fallback may remain only as a bounded compatibility path for unmigrated legacy actions.
@@ -38,7 +38,7 @@ Use this skill when migrating Main Agent consumer-visible commands away from roo
 - Package runtime tests must not import root `scripts/*.ts`.
 - Package runtime tests must not require `tsx` or `ts-node`.
 - Acceptance tests belong in `tests/acceptance/*.test.ts` when they validate source-repo governance, CI, regression, or install matrix behavior.
-- Consumer-visible CLI tests must call the package CLI, not `node scripts/main-agent-orchestration.ts`.
+- Consumer-visible CLI tests must call the package CLI, not root TypeScript orchestration scripts.
 
 ## Evidence Requirements
 

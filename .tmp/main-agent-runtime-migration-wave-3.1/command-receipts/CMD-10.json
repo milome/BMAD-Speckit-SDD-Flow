@@ -1,0 +1,10 @@
+{
+  "id": "CMD-10",
+  "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node tools/script-migration/validate-main-agent-runtime-migration-wave-3-1.cjs; exit `$LASTEXITCODE }\"",
+  "executedAt": "2026-06-03T19:37:54.187Z",
+  "exitCode": 0,
+  "stdoutHash": "sha256:725b1085f6b5bbc78dadd1e51480dd2a5d4761a728cad12228871f6a097a8c6c",
+  "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout": "{\n  \"status\": \"passed\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.1\",\n  \"contractPath\": \"docs/plans/2026-06-04-main-agent-runtime-migration-wave-3-1-goal-execution-plan.md\",\n  \"errors\": []\n}\n",
+  "stderr": ""
+}

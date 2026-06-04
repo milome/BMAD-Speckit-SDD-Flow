@@ -15,11 +15,13 @@ This is the BMAD-Speckit main-agent runtime console. It reads `_bmad/_config/bma
 
 Do not answer this command by displaying this command file, explaining the alias, or compressing the result into a short summary.
 
-Render and return the BMADS runtime console. In this repository, use:
+Render and return the BMADS runtime console. In consumer projects, use:
 
 ```powershell
-node packages/bmad-speckit/bin/bmad-speckit.js bmads
+npx --no-install bmad-speckit bmads
 ```
+
+On Windows PowerShell, if `npx` resolves to a blocked PowerShell shim, use `npx.cmd --no-install bmad-speckit bmads`.
 
 The default command response must preserve these sections:
 

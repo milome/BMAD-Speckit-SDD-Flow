@@ -5,6 +5,9 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const AIRegistry = require('./ai-registry');
+const {
+  normalizePlatformSkillFrontmatterFile,
+} = require('./platform-skill-frontmatter');
 
 const SHARED_REF_PATTERN = /@\.\/\.\.\/_shared\/([^\s)]+)/g;
 
@@ -74,6 +77,7 @@ function copyDirRecursive(src, dest) {
     } else {
       if (!fs.existsSync(path.dirname(d))) fs.mkdirSync(path.dirname(d), { recursive: true });
       fs.copyFileSync(s, d);
+      normalizePlatformSkillFrontmatterFile(d);
     }
   }
   return copied;
@@ -119,6 +123,7 @@ function copyReferencedSharedFiles(skillSrc, skillDest) {
     const destFile = path.resolve(destSharedRoot, ...ref.split('/'));
     if (!fs.existsSync(path.dirname(destFile))) fs.mkdirSync(path.dirname(destFile), { recursive: true });
     fs.copyFileSync(srcFile, destFile);
+    normalizePlatformSkillFrontmatterFile(destFile);
   }
 }
 
