@@ -118,9 +118,14 @@ describe('requirements-contract-authoring published contract', () => {
       'Immediately after exact chat confirmation, the agent must run the high-level confirmation ingest action'
     );
     expect(skill).toContain('bmad-speckit confirm-scope');
+    expect(skill).toContain('bmad-speckit main-agent confirm-scope');
     expect(skill).toContain('bmad-speckit main-agent:confirm-scope');
-    expect(skill).toContain('main-agent-orchestration.ts');
-    expect(skill).toContain('--action confirm-scope');
+    expect(skill).toContain('installed package runtime');
+    expect(skill).toContain(
+      'Consumer-facing instructions must not route through root TypeScript orchestration scripts'
+    );
+    expect(skill).not.toContain('main-agent-orchestration.ts');
+    expect(skill).not.toContain('--action confirm-scope');
     expect(skill).toContain('confirm-requirements-scope.js');
     expect(template).toContain('bmad-speckit confirm-scope');
     expect(template).toContain(
