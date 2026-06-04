@@ -6,12 +6,16 @@ describe('how-to main-agent cleanup', () => {
     const doc = readFileSync('docs/how-to/consumer-installation.md', 'utf8');
 
     expect(doc).toContain('最高优先级：另一台没有本仓库源码的机器');
-    expect(doc).toContain('非侵入式安装');
-    expect(doc).toContain('main-agent-orchestration');
+    expect(doc).toContain('项目本地安装');
+    expect(doc).toContain('npx --no-install bmad-speckit main-agent inspect --cwd . --json');
+    expect(doc).toContain(
+      'npx --no-install bmad-speckit main-agent dispatch-plan --cwd . --json'
+    );
     expect(doc).toContain('runtime-policy-inject.cjs');
     expect(doc).toContain('pre-continue-check.cjs');
     expect(doc).toContain('安装校验或排障 fallback');
     expect(doc).toContain('不代表治理或 post-audit 主路径需要人工触发');
+    expect(doc).toContain('legacy action 或迁移过渡问题');
     expect(doc).not.toContain('background worker 自动吃队列');
   });
 
@@ -19,11 +23,11 @@ describe('how-to main-agent cleanup', () => {
     const cursor = readFileSync('docs/how-to/cursor-setup.md', 'utf8');
     const claude = readFileSync('docs/how-to/claude-code-setup.md', 'utf8');
 
-    expect(cursor).toContain('main-agent-orchestration');
+    expect(cursor).toContain('package-local `bmad-speckit main-agent inspect|dispatch-plan`');
     expect(cursor).toContain('runtime-policy-inject.cjs');
     expect(cursor).not.toContain('background worker started / skipped');
 
-    expect(claude).toContain('main-agent-orchestration');
+    expect(claude).toContain('package-local `bmad-speckit main-agent inspect|dispatch-plan`');
     expect(claude).toContain('runtime-policy-inject.cjs');
     expect(claude).not.toContain('background worker started / skipped');
   });

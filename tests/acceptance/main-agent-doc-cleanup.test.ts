@@ -5,7 +5,9 @@ describe('main-agent doc cleanup', () => {
   it('keeps getting-started on the accepted main-agent path', () => {
     const doc = readFileSync('docs/tutorials/getting-started.md', 'utf8');
 
-    expect(doc).toContain('main-agent-orchestration');
+    expect(doc).toContain('npx --no-install bmad-speckit main-agent inspect --cwd . --json');
+    expect(doc).toContain('npx --no-install bmad-speckit main-agent dispatch-plan --cwd . --json');
+    expect(doc).toContain('main-agent inspect|dispatch-plan');
     expect(doc).toContain('runtime-policy-inject.cjs');
     expect(doc).toContain('pre-continue-check.cjs');
     expect(doc).not.toContain(
