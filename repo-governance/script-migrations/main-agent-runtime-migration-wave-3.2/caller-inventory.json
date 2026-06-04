@@ -63,7 +63,7 @@
         "scripts/subagent-surface-inventory.ts:57:'scripts/main-agent-codex-worker-adapter.ts',",
         "scripts/subagent-surface-inventory.ts:416:if (filePath.includes('main-agent-codex-worker-adapter.ts')) return 'Codex worker adapter';"
       ],
-      "docsRefsCount": 87,
+      "docsRefsCount": 1,
       "consumerReachability": "consumer_runtime_reachable",
       "requiresPackaging": true,
       "canBecomePackageModule": true,
@@ -120,7 +120,7 @@
       "sourceScriptRefs": [
         "scripts/main-agent-orchestration.ts:25:import { runMainAgentCompiledPrompt } from './main-agent-compiled-prompt-runner';"
       ],
-      "docsRefsCount": 25,
+      "docsRefsCount": 0,
       "consumerReachability": "consumer_runtime_reachable",
       "requiresPackaging": true,
       "canBecomePackageModule": true,
@@ -222,7 +222,7 @@
         "scripts/record-main-agent-inspect-readiness-closure.ts:281:path: 'tests/unit/main-agent-implementation-readiness-gate.test.ts',",
         "scripts/record-main-agent-inspect-readiness-closure.ts:282:contentHash: hashFile(root, 'tests/unit/main-agent-implementation-readiness-gate.test.ts'),"
       ],
-      "docsRefsCount": 82,
+      "docsRefsCount": 7,
       "consumerReachability": "consumer_runtime_reachable",
       "requiresPackaging": true,
       "canBecomePackageModule": true,
@@ -282,7 +282,7 @@
       "sourceScriptRefs": [
         "scripts/main-agent-development-journey-matrix.ts:5:import { runUnifiedIngress, type MainAgentHostKind } from './main-agent-unified-ingress';"
       ],
-      "docsRefsCount": 36,
+      "docsRefsCount": 1,
       "consumerReachability": "installed_surface_reachable",
       "requiresPackaging": true,
       "canBecomePackageModule": true,
@@ -361,7 +361,7 @@
       "sourceScriptRefs": [
         "scripts/trace-040-evidence-packet-generator.ts:166:'scripts/main-agent-delivery-closeout-gate.ts',"
       ],
-      "docsRefsCount": 137,
+      "docsRefsCount": 10,
       "consumerReachability": "installed_surface_reachable",
       "requiresPackaging": true,
       "canBecomePackageModule": true,
@@ -410,7 +410,7 @@
         "tests/acceptance/main-agent-reconfirmation-runtime.test.ts:10:import { mainExecutionClosureGate } from '../../scripts/main-agent-execution-closure-gate';"
       ],
       "sourceScriptRefs": [],
-      "docsRefsCount": 12,
+      "docsRefsCount": 0,
       "consumerReachability": "source_repo_only",
       "requiresPackaging": false,
       "canBecomePackageModule": false,
@@ -456,7 +456,7 @@
         "tests/acceptance/requirement-record-schema.test.ts:268:producer: 'main-agent-production-loop-ready-check',"
       ],
       "sourceScriptRefs": [],
-      "docsRefsCount": 11,
+      "docsRefsCount": 0,
       "consumerReachability": "source_repo_only",
       "requiresPackaging": false,
       "canBecomePackageModule": false,
@@ -503,7 +503,7 @@
         "tests/acceptance/main-agent-scoring-gates-check.test.ts:522:command: 'npx vitest run tests/acceptance/main-agent-scoring-gates-check.test.ts',"
       ],
       "sourceScriptRefs": [],
-      "docsRefsCount": 11,
+      "docsRefsCount": 0,
       "consumerReachability": "source_repo_only",
       "requiresPackaging": false,
       "canBecomePackageModule": false,
@@ -548,7 +548,7 @@
         "tests/acceptance/main-agent-runtime-policy-snapshot-check.test.ts:269:'npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-runtime-policy-snapshot-check.ts',"
       ],
       "sourceScriptRefs": [],
-      "docsRefsCount": 9,
+      "docsRefsCount": 0,
       "consumerReachability": "source_repo_only",
       "requiresPackaging": false,
       "canBecomePackageModule": false,
@@ -588,7 +588,7 @@
         "tests/acceptance/main-agent-trace-status-policy-check.test.ts:5:import { mainTraceStatusPolicyCheck } from '../../scripts/main-agent-trace-status-policy-check';"
       ],
       "sourceScriptRefs": [],
-      "docsRefsCount": 8,
+      "docsRefsCount": 0,
       "consumerReachability": "source_repo_only",
       "requiresPackaging": false,
       "canBecomePackageModule": false,
@@ -628,7 +628,7 @@
         "tests/acceptance/main-agent-data-governance-gate.test.ts:5:import { mainDataGovernanceGate } from '../../scripts/main-agent-data-governance-gate';"
       ],
       "sourceScriptRefs": [],
-      "docsRefsCount": 9,
+      "docsRefsCount": 0,
       "consumerReachability": "source_repo_only",
       "requiresPackaging": false,
       "canBecomePackageModule": false,
@@ -673,7 +673,7 @@
         "tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts:363:'tests/acceptance/main-agent-dataset-release-gate.test.ts',"
       ],
       "sourceScriptRefs": [],
-      "docsRefsCount": 14,
+      "docsRefsCount": 0,
       "consumerReachability": "source_repo_only",
       "requiresPackaging": false,
       "canBecomePackageModule": false,
@@ -715,7 +715,7 @@
         "tests/acceptance/requirement-record-control-store-enforcement.test.ts:39:const dataProducts = readProjectFile('scripts/main-agent-governed-data-products.ts');"
       ],
       "sourceScriptRefs": [],
-      "docsRefsCount": 12,
+      "docsRefsCount": 0,
       "consumerReachability": "source_repo_only",
       "requiresPackaging": false,
       "canBecomePackageModule": false,
@@ -755,7 +755,7 @@
         "tests/acceptance/main-agent-functional-resume-check.test.ts:6:import { mainFunctionalResumeCheck } from '../../scripts/main-agent-functional-resume-check';"
       ],
       "sourceScriptRefs": [],
-      "docsRefsCount": 13,
+      "docsRefsCount": 0,
       "consumerReachability": "source_repo_only",
       "requiresPackaging": false,
       "canBecomePackageModule": false,
@@ -796,7 +796,7 @@
         "tests/acceptance/requirement-entry-flow-resolver.test.ts:6:import './main-agent-entryflow-traceability-check.test';"
       ],
       "sourceScriptRefs": [],
-      "docsRefsCount": 7,
+      "docsRefsCount": 0,
       "consumerReachability": "source_repo_only",
       "requiresPackaging": false,
       "canBecomePackageModule": false,
@@ -837,7 +837,7 @@
         "tests/acceptance/main-agent-control-plane-isolation-check.test.ts:28:producer: 'main-agent-control-plane-isolation-check.test',"
       ],
       "sourceScriptRefs": [],
-      "docsRefsCount": 7,
+      "docsRefsCount": 0,
       "consumerReachability": "source_repo_only",
       "requiresPackaging": false,
       "canBecomePackageModule": false,
@@ -877,7 +877,7 @@
         "tests/acceptance/main-agent-decision-field-check.test.ts:5:import { mainDecisionFieldCheck } from '../../scripts/main-agent-decision-field-check';"
       ],
       "sourceScriptRefs": [],
-      "docsRefsCount": 7,
+      "docsRefsCount": 0,
       "consumerReachability": "source_repo_only",
       "requiresPackaging": false,
       "canBecomePackageModule": false,
@@ -919,7 +919,7 @@
         "tests/fixtures/requirements/REQ-AI-TDD-MANIFEST-CLOSEOUT-RUNNER/source.requirement.md:131:file: tests/acceptance/main-agent-ai-tdd-closeout-remediation-adapter.test.ts"
       ],
       "sourceScriptRefs": [],
-      "docsRefsCount": 31,
+      "docsRefsCount": 0,
       "consumerReachability": "source_repo_only",
       "requiresPackaging": false,
       "canBecomePackageModule": false,
@@ -960,7 +960,7 @@
         "tests/acceptance/main-agent-reconfirmation-runtime.test.ts:8:import { mainAuditReviewGate } from '../../scripts/main-agent-audit-review-gate';"
       ],
       "sourceScriptRefs": [],
-      "docsRefsCount": 12,
+      "docsRefsCount": 0,
       "consumerReachability": "source_repo_only",
       "requiresPackaging": false,
       "canBecomePackageModule": false,
@@ -1000,7 +1000,7 @@
         "tests/acceptance/main-agent-bmad-artifact-hardcut.test.ts:5:import { mainBmadArtifactHardcut } from '../../scripts/main-agent-bmad-artifact-hardcut';"
       ],
       "sourceScriptRefs": [],
-      "docsRefsCount": 7,
+      "docsRefsCount": 0,
       "consumerReachability": "source_repo_only",
       "requiresPackaging": false,
       "canBecomePackageModule": false,
@@ -1045,7 +1045,7 @@
         "tests/acceptance/main-agent-delivery-evidence-run.test.ts:43:path.join(process.cwd(), 'scripts', 'main-agent-delivery-evidence-run.ts'),"
       ],
       "sourceScriptRefs": [],
-      "docsRefsCount": 17,
+      "docsRefsCount": 0,
       "consumerReachability": "installed_surface_reachable",
       "requiresPackaging": true,
       "canBecomePackageModule": true,
@@ -1101,7 +1101,7 @@
         "tests/acceptance/main-agent-soak-8h-contract.test.ts:5:} from '../../scripts/main-agent-soak-runner';"
       ],
       "sourceScriptRefs": [],
-      "docsRefsCount": 18,
+      "docsRefsCount": 0,
       "consumerReachability": "installed_surface_reachable",
       "requiresPackaging": true,
       "canBecomePackageModule": true,
@@ -1150,7 +1150,7 @@
         "tests/acceptance/main-agent-development-journey-matrix-e2e.test.ts:5:import { runDevelopmentJourneyMatrix } from '../../scripts/main-agent-development-journey-matrix';"
       ],
       "sourceScriptRefs": [],
-      "docsRefsCount": 9,
+      "docsRefsCount": 0,
       "consumerReachability": "source_repo_only",
       "requiresPackaging": false,
       "canBecomePackageModule": false,
@@ -1195,7 +1195,7 @@
       "sourceScriptRefs": [
         "scripts/subagent-surface-inventory.ts:68:'scripts/main-agent-dual-host-pr-orchestrator.ts',"
       ],
-      "docsRefsCount": 16,
+      "docsRefsCount": 0,
       "consumerReachability": "installed_surface_reachable",
       "requiresPackaging": true,
       "canBecomePackageModule": true,
@@ -1248,7 +1248,7 @@
         "tests/acceptance/main-agent-chaos-recovery-e2e.test.ts:4:import { runChaosScenarios } from '../../scripts/main-agent-chaos-scenarios';"
       ],
       "sourceScriptRefs": [],
-      "docsRefsCount": 17,
+      "docsRefsCount": 1,
       "consumerReachability": "installed_surface_reachable",
       "requiresPackaging": true,
       "canBecomePackageModule": true,

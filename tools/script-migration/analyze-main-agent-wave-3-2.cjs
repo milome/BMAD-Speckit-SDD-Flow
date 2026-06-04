@@ -3,6 +3,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const { spawnSync } = require('node:child_process');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const WAVE_ID = 'main-agent-runtime-migration-wave-3.2';
@@ -130,7 +131,19 @@ function walk(input) {
 }
 
 function collectSearchFiles() {
-  return [...new Set(SEARCH_ROOTS.flatMap(walk))].sort((left, right) => {
+  const tracked = spawnSync('git', ['ls-files', '--', ...SEARCH_ROOTS], {
+    cwd: ROOT,
+    encoding: 'utf8',
+  });
+  const files =
+    tracked.status === 0
+      ? tracked.stdout
+          .split(/\r?\n/u)
+          .filter(Boolean)
+          .map((rel) => path.join(ROOT, rel))
+          .filter((fullPath) => !shouldSkip(fullPath) && fs.existsSync(fullPath) && isTextFile(fullPath))
+      : SEARCH_ROOTS.flatMap(walk);
+  return [...new Set(files)].sort((left, right) => {
     const a = repoPath(left);
     const b = repoPath(right);
     if (a < b) return -1;
