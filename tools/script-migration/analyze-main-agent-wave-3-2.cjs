@@ -59,9 +59,6 @@ const SEARCH_ROOTS = [
   'packages',
   'tests',
   'scripts',
-  '.codex',
-  '.claude',
-  '.cursor',
   '_bmad',
   'docs',
 ];
