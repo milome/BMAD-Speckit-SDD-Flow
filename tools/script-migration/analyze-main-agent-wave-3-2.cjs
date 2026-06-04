@@ -103,6 +103,9 @@ function shouldSkip(fullPath) {
   if (rel.startsWith('packages/bmad-speckit/bin/')) {
     return true;
   }
+  if (rel.startsWith('packages/bmad-speckit/_bmad/')) {
+    return true;
+  }
   if (parts.some((part) => part === '.bak' || part.startsWith('.bak'))) return true;
   if (/\.(bak|backup|tmp|tgz|png|jpg|jpeg|gif|webp|ico|pdf|zip)$/iu.test(rel)) return true;
   return false;
