@@ -127,9 +127,13 @@ function walk(input) {
 }
 
 function collectSearchFiles() {
-  return [...new Set(SEARCH_ROOTS.flatMap(walk))].sort((left, right) =>
-    repoPath(left).localeCompare(repoPath(right))
-  );
+  return [...new Set(SEARCH_ROOTS.flatMap(walk))].sort((left, right) => {
+    const a = repoPath(left);
+    const b = repoPath(right);
+    if (a < b) return -1;
+    if (a > b) return 1;
+    return 0;
+  });
 }
 
 function lineHits(filePath, needles) {
