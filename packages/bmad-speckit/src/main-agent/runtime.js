@@ -1,16 +1,25 @@
 /* eslint-disable no-console */
 const path = require('node:path');
+const { chaosScenariosAction } = require('./actions/chaos-scenarios');
+const { codexWorkerAdapterAction } = require('./actions/codex-worker-adapter');
+const { compiledPromptRunnerAction } = require('./actions/compiled-prompt-runner');
 const {
   confirmScopeAction,
   confirmScopeMissingReason,
   legacyConfirmScopeAction,
 } = require('./actions/confirm-scope');
+const { deliveryCloseoutGateAction } = require('./actions/delivery-closeout-gate');
+const { deliveryEvidenceRunAction } = require('./actions/delivery-evidence-run');
 const { dispatchPlanAction } = require('./actions/dispatch-plan');
 const { deliveryTruthGateAction } = require('./actions/delivery-truth-gate');
+const { dualHostPrOrchestratorAction } = require('./actions/dual-host-pr-orchestrator');
+const { implementationReadinessGateAction } = require('./actions/implementation-readiness-gate');
 const { hasRuntimeState, inspectRuntimeState, legacyInspectSurface } = require('./actions/inspect');
 const { qualityGateAction } = require('./actions/quality-gate');
 const { releaseGateAction } = require('./actions/release-gate');
 const { legacyRunLoopAction, runLoopAction } = require('./actions/run-loop');
+const { soakRunnerAction } = require('./actions/soak-runner');
+const { unifiedIngressAction } = require('./actions/unified-ingress');
 
 const SCHEMA_VERSION = 'main-agent-package-runtime/v1';
 const SUPPORTED_ACTIONS = new Set([
@@ -21,6 +30,15 @@ const SUPPORTED_ACTIONS = new Set([
   'release-gate',
   'quality-gate',
   'delivery-truth-gate',
+  'codex-worker-adapter',
+  'compiled-prompt-runner',
+  'implementation-readiness-gate',
+  'unified-ingress',
+  'delivery-closeout-gate',
+  'delivery-evidence-run',
+  'soak-runner',
+  'dual-host-pr-orchestrator',
+  'chaos-scenarios',
 ]);
 
 function normalizeAction(value) {
@@ -181,6 +199,60 @@ async function runMainAgentRuntime(context) {
       context,
       envelope(context, 'package_runtime_ready', 0, deliveryTruthGateAction(context))
     );
+  }
+
+  if (context.action === 'codex-worker-adapter') {
+    return emitResponse(
+      context,
+      envelope(context, 'package_runtime_ready', 0, codexWorkerAdapterAction(context))
+    );
+  }
+
+  if (context.action === 'compiled-prompt-runner') {
+    return emitResponse(
+      context,
+      envelope(context, 'package_runtime_ready', 0, compiledPromptRunnerAction(context))
+    );
+  }
+
+  if (context.action === 'implementation-readiness-gate') {
+    return emitResponse(
+      context,
+      envelope(context, 'package_runtime_ready', 0, implementationReadinessGateAction(context))
+    );
+  }
+
+  if (context.action === 'unified-ingress') {
+    return emitResponse(context, envelope(context, 'package_runtime_ready', 0, unifiedIngressAction(context)));
+  }
+
+  if (context.action === 'delivery-closeout-gate') {
+    return emitResponse(
+      context,
+      envelope(context, 'package_runtime_ready', 0, deliveryCloseoutGateAction(context))
+    );
+  }
+
+  if (context.action === 'delivery-evidence-run') {
+    return emitResponse(
+      context,
+      envelope(context, 'package_runtime_ready', 0, deliveryEvidenceRunAction(context))
+    );
+  }
+
+  if (context.action === 'soak-runner') {
+    return emitResponse(context, envelope(context, 'package_runtime_ready', 0, soakRunnerAction(context)));
+  }
+
+  if (context.action === 'dual-host-pr-orchestrator') {
+    return emitResponse(
+      context,
+      envelope(context, 'package_runtime_ready', 0, dualHostPrOrchestratorAction(context))
+    );
+  }
+
+  if (context.action === 'chaos-scenarios') {
+    return emitResponse(context, envelope(context, 'package_runtime_ready', 0, chaosScenariosAction(context)));
   }
 }
 

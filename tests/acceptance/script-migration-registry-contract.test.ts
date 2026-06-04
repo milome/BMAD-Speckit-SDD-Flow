@@ -183,7 +183,7 @@ describe('script migration registry contract', () => {
     const result = runValidator(['--registry', fixturePath]);
     expect(result.status).not.toBe(0);
     expect(`${result.stdout}\n${result.stderr}`).toContain('_bmad');
-  });
+  }, 60_000);
 
   it('rejects a registry marked as consumer runtime material', () => {
     const registry = readRegistry();

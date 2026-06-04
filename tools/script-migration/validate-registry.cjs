@@ -176,7 +176,8 @@ function validateEntry(wave, entry, entryIds, activeOriginalPaths, errors) {
     const previous = activeOriginalPaths.get(entry.originalPath);
     if (previous && previous.targets !== targets) {
       const explicitlyRefinesPrevious =
-        wave.refinesWaveId === previous.waveId && entry.deletionAllowed === false;
+        (wave.refinesWaveId === previous.waveId || entry.refinesWaveId === previous.waveId) &&
+        entry.deletionAllowed === false;
       if (!explicitlyRefinesPrevious) {
         errors.push(`conflicting active migration targetPaths for ${entry.originalPath}`);
       }

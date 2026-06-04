@@ -41,7 +41,20 @@ describe('main-agent compiled fallback boundary', () => {
   it('does not enter compiled fallback for covered actions even when runtime state exists', async () => {
     const root = makeConsumerRoot();
     try {
-      for (const action of ['inspect', 'dispatch-plan', 'run-loop']) {
+      for (const action of [
+        'inspect',
+        'dispatch-plan',
+        'run-loop',
+        'codex-worker-adapter',
+        'compiled-prompt-runner',
+        'implementation-readiness-gate',
+        'unified-ingress',
+        'delivery-closeout-gate',
+        'delivery-evidence-run',
+        'soak-runner',
+        'dual-host-pr-orchestrator',
+        'chaos-scenarios',
+      ]) {
         const exitCode = await runWithoutCompiledFallback([action, '--cwd', root, '--json']);
         assert.equal(typeof exitCode, 'number');
       }

@@ -1,0 +1,166 @@
+{
+  "waveId": "main-agent-runtime-migration-wave-3.5",
+  "generatedAt": "2026-06-04T19:29:19.739Z",
+  "surfaces": {
+    ".codex/skills": {
+      "exists": true,
+      "skillFileCount": 73,
+      "invalidFrontmatterCount": 0,
+      "invalidFrontmatterPaths": []
+    },
+    ".claude/skills": {
+      "exists": true,
+      "skillFileCount": 72,
+      "invalidFrontmatterCount": 0,
+      "invalidFrontmatterPaths": []
+    },
+    ".cursor/skills": {
+      "exists": true,
+      "skillFileCount": 74,
+      "invalidFrontmatterCount": 0,
+      "invalidFrontmatterPaths": []
+    },
+    "_bmad/skills": {
+      "exists": true,
+      "skillFileCount": 32,
+      "invalidFrontmatterCount": 0,
+      "invalidFrontmatterPaths": []
+    },
+    "packages/bmad-speckit/_bmad/skills": {
+      "exists": false,
+      "skillFileCount": 0,
+      "invalidFrontmatterCount": 0,
+      "invalidFrontmatterPaths": []
+    }
+  },
+  "skills": {
+    "requirements-contract-authoring": {
+      ".codex/skills": {
+        "exists": true,
+        "frontmatterValid": true,
+        "contentHash": "sha256:e0e3af1b7bbd9858f040af86250de231ae15c9aafe05c50f3446987d8910cca1",
+        "sourceSurface": "generated_or_installed_surface"
+      },
+      ".claude/skills": {
+        "exists": true,
+        "frontmatterValid": true,
+        "contentHash": "sha256:01ecfaf786841e368a5c391a64888a1fbba1fedcf119125a7e5edc7b1fdd9df8",
+        "sourceSurface": "generated_or_installed_surface"
+      },
+      ".cursor/skills": {
+        "exists": true,
+        "frontmatterValid": true,
+        "contentHash": "sha256:e0e3af1b7bbd9858f040af86250de231ae15c9aafe05c50f3446987d8910cca1",
+        "sourceSurface": "generated_or_installed_surface"
+      },
+      "_bmad/skills": {
+        "exists": true,
+        "frontmatterValid": true,
+        "contentHash": "sha256:7031297407ddf5feec127b5923d305c3d2d5529aa86c13078f215af257145181",
+        "sourceSurface": "source"
+      },
+      "packages/bmad-speckit/_bmad/skills": {
+        "exists": false,
+        "frontmatterValid": false,
+        "contentHash": null,
+        "sourceSurface": "generated_or_installed_surface"
+      }
+    },
+    "bmad-code-reviewer-lifecycle": {
+      ".codex/skills": {
+        "exists": true,
+        "frontmatterValid": true,
+        "contentHash": "sha256:1f28e3536bd3c6b2d8a9031f95f1c85322c2fec85ccdec425ec50114ab1cfea4",
+        "sourceSurface": "generated_or_installed_surface"
+      },
+      ".claude/skills": {
+        "exists": true,
+        "frontmatterValid": true,
+        "contentHash": "sha256:58a320596a7f08587d2807857ad121fbb9c6295e3874c777fd4d1dd23dcb366b",
+        "sourceSurface": "generated_or_installed_surface"
+      },
+      ".cursor/skills": {
+        "exists": true,
+        "frontmatterValid": true,
+        "contentHash": "sha256:0f106ccbbe5702c54d8d0d700e1a057180e576f62616df6d55fa8d2f63b8ed60",
+        "sourceSurface": "generated_or_installed_surface"
+      },
+      "_bmad/skills": {
+        "exists": false,
+        "frontmatterValid": false,
+        "contentHash": null,
+        "sourceSurface": "source"
+      },
+      "packages/bmad-speckit/_bmad/skills": {
+        "exists": false,
+        "frontmatterValid": false,
+        "contentHash": null,
+        "sourceSurface": "generated_or_installed_surface"
+      }
+    },
+    "bmad-rca-helper": {
+      ".codex/skills": {
+        "exists": true,
+        "frontmatterValid": true,
+        "contentHash": "sha256:6064329af4bffd28278b2677866289a6bdc4232d33cb5c1054792fdb5f58366d",
+        "sourceSurface": "generated_or_installed_surface"
+      },
+      ".claude/skills": {
+        "exists": true,
+        "frontmatterValid": true,
+        "contentHash": "sha256:6798f81b0d254f8d7d9a52d5efe4019f1213fbbadb9c565a123e142ac5b43c2c",
+        "sourceSurface": "generated_or_installed_surface"
+      },
+      ".cursor/skills": {
+        "exists": true,
+        "frontmatterValid": true,
+        "contentHash": "sha256:d9f31cfb8b72970632b1a3d7366c8de181cc941fcee046c22ee06b540a4943e7",
+        "sourceSurface": "generated_or_installed_surface"
+      },
+      "_bmad/skills": {
+        "exists": false,
+        "frontmatterValid": false,
+        "contentHash": null,
+        "sourceSurface": "source"
+      },
+      "packages/bmad-speckit/_bmad/skills": {
+        "exists": false,
+        "frontmatterValid": false,
+        "contentHash": null,
+        "sourceSurface": "generated_or_installed_surface"
+      }
+    },
+    "bmad-standalone-tasks-doc-review": {
+      ".codex/skills": {
+        "exists": true,
+        "frontmatterValid": true,
+        "contentHash": "sha256:a51c0e7e1d8785b1ef62ae8e83db8bdf5a7c38a942acc6618c9bb419f713f67d",
+        "sourceSurface": "generated_or_installed_surface"
+      },
+      ".claude/skills": {
+        "exists": true,
+        "frontmatterValid": true,
+        "contentHash": "sha256:eb465c42dad1fe8e7390ca86b42d1198657da6c98f92fe2eaf26966d6dd130ad",
+        "sourceSurface": "generated_or_installed_surface"
+      },
+      ".cursor/skills": {
+        "exists": true,
+        "frontmatterValid": true,
+        "contentHash": "sha256:3146582b9b82eae9d5e596e842941f0217691f3a732a0966e4fc574f19a02a4e",
+        "sourceSurface": "generated_or_installed_surface"
+      },
+      "_bmad/skills": {
+        "exists": false,
+        "frontmatterValid": false,
+        "contentHash": null,
+        "sourceSurface": "source"
+      },
+      "packages/bmad-speckit/_bmad/skills": {
+        "exists": false,
+        "frontmatterValid": false,
+        "contentHash": null,
+        "sourceSurface": "generated_or_installed_surface"
+      }
+    }
+  }
+}

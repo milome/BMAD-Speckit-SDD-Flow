@@ -40,6 +40,16 @@ field_defaults:
 scripts:
   - scriptId: main_agent_orchestration
     path: scripts/main-agent-orchestration.ts
+    sourceRepoPath: "scripts/main-agent-orchestration.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: package_cli
+    consumerInvocation: "npx --no-install bmad-speckit main-agent inspect --json"
+    consumerRootPathRequired: false
+    packageRuntimeCommand: "npx --no-install bmad-speckit main-agent inspect --json"
+    installedHelperPath: null
+    consumerRuntimeAvailability: available_after_local_package_install
+    directNodeTsInvocationSupported: false
+    consumerEvidenceCommand: "npx --no-install bmad-speckit main-agent inspect --json"
     ownerModel: execution_closure
     secondaryModels:
       - delivery_confirmation
@@ -64,6 +74,16 @@ scripts:
     hookParityRequired: true
   - scriptId: main_agent_unified_ingress
     path: scripts/main-agent-unified-ingress.ts
+    sourceRepoPath: "scripts/main-agent-unified-ingress.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: package_cli
+    consumerInvocation: "npx --no-install bmad-speckit main-agent unified-ingress --json"
+    consumerRootPathRequired: false
+    packageRuntimeCommand: "npx --no-install bmad-speckit main-agent unified-ingress --json"
+    installedHelperPath: null
+    consumerRuntimeAvailability: available_after_local_package_install
+    directNodeTsInvocationSupported: false
+    consumerEvidenceCommand: "npx --no-install bmad-speckit main-agent unified-ingress --json"
     ownerModel: execution_closure
     secondaryModels: []
     stage: ingress
@@ -83,6 +103,15 @@ scripts:
     hookParityRequired: true
   - scriptId: orchestration_state
     path: scripts/orchestration-state.ts
+    sourceRepoPath: "scripts/orchestration-state.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: source_repo_only
+    consumerInvocation: null
+    consumerRootPathRequired: false
+    packageRuntimeCommand: null
+    installedHelperPath: null
+    consumerRuntimeAvailability: unavailable_in_consumer_project
+    directNodeTsInvocationSupported: false
     ownerModel: execution_closure
     secondaryModels: []
     stage: runtime_state
@@ -99,6 +128,15 @@ scripts:
     hookParityRequired: false
   - scriptId: orchestration_dispatch_contract
     path: scripts/orchestration-dispatch-contract.ts
+    sourceRepoPath: "scripts/orchestration-dispatch-contract.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: source_repo_only
+    consumerInvocation: null
+    consumerRootPathRequired: false
+    packageRuntimeCommand: null
+    installedHelperPath: null
+    consumerRuntimeAvailability: unavailable_in_consumer_project
+    directNodeTsInvocationSupported: false
     ownerModel: execution_closure
     secondaryModels: []
     stage: dispatch_contract
@@ -116,6 +154,16 @@ scripts:
     hookParityRequired: false
   - scriptId: main_agent_codex_worker_adapter
     path: scripts/main-agent-codex-worker-adapter.ts
+    sourceRepoPath: "scripts/main-agent-codex-worker-adapter.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: package_cli
+    consumerInvocation: "npx --no-install bmad-speckit main-agent codex-worker-adapter --json"
+    consumerRootPathRequired: false
+    packageRuntimeCommand: "npx --no-install bmad-speckit main-agent codex-worker-adapter --json"
+    installedHelperPath: null
+    consumerRuntimeAvailability: available_after_local_package_install
+    directNodeTsInvocationSupported: false
+    consumerEvidenceCommand: "npx --no-install bmad-speckit main-agent codex-worker-adapter --json"
     ownerModel: execution_closure
     secondaryModels: []
     stage: worker_execution
@@ -138,6 +186,15 @@ scripts:
     hookParityRequired: true
   - scriptId: runtime_governance
     path: scripts/runtime-governance.ts
+    sourceRepoPath: "scripts/runtime-governance.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: source_repo_only
+    consumerInvocation: null
+    consumerRootPathRequired: false
+    packageRuntimeCommand: null
+    installedHelperPath: null
+    consumerRuntimeAvailability: unavailable_in_consumer_project
+    directNodeTsInvocationSupported: false
     ownerModel: implementation_readiness
     secondaryModels:
       - architecture_confirmation
@@ -159,6 +216,15 @@ scripts:
     hookParityRequired: true
   - scriptId: runtime_governance_template_schema
     path: scripts/runtime-governance-template-schema.ts
+    sourceRepoPath: "scripts/runtime-governance-template-schema.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: source_repo_only
+    consumerInvocation: null
+    consumerRootPathRequired: false
+    packageRuntimeCommand: null
+    installedHelperPath: null
+    consumerRuntimeAvailability: unavailable_in_consumer_project
+    directNodeTsInvocationSupported: false
     ownerModel: architecture_confirmation
     secondaryModels: []
     stage: schema_validation
@@ -175,6 +241,15 @@ scripts:
     hookParityRequired: false
   - scriptId: runtime_governance_registry
     path: scripts/runtime-governance-registry.ts
+    sourceRepoPath: "scripts/runtime-governance-registry.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: source_repo_only
+    consumerInvocation: null
+    consumerRootPathRequired: false
+    packageRuntimeCommand: null
+    installedHelperPath: null
+    consumerRuntimeAvailability: unavailable_in_consumer_project
+    directNodeTsInvocationSupported: false
     ownerModel: architecture_confirmation
     secondaryModels: []
     stage: policy_extension
@@ -191,6 +266,15 @@ scripts:
     hookParityRequired: false
   - scriptId: resolve_active_requirement
     path: scripts/resolve-active-requirement.ts
+    sourceRepoPath: "scripts/resolve-active-requirement.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: source_repo_only
+    consumerInvocation: null
+    consumerRootPathRequired: false
+    packageRuntimeCommand: null
+    installedHelperPath: null
+    consumerRuntimeAvailability: unavailable_in_consumer_project
+    directNodeTsInvocationSupported: false
     ownerModel: execution_closure
     secondaryModels: []
     stage: active_requirement_resolution
@@ -210,6 +294,15 @@ scripts:
     hookParityRequired: false
   - scriptId: active_requirement_locator
     path: scripts/active-requirement-locator.ts
+    sourceRepoPath: "scripts/active-requirement-locator.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: source_repo_only
+    consumerInvocation: null
+    consumerRootPathRequired: false
+    packageRuntimeCommand: null
+    installedHelperPath: null
+    consumerRuntimeAvailability: unavailable_in_consumer_project
+    directNodeTsInvocationSupported: false
     ownerModel: execution_closure
     secondaryModels:
       - audit_review
@@ -247,6 +340,15 @@ scripts:
     hookParityRequired: false
   - scriptId: emit_runtime_policy
     path: scripts/emit-runtime-policy.ts
+    sourceRepoPath: "scripts/emit-runtime-policy.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: source_repo_only
+    consumerInvocation: null
+    consumerRootPathRequired: false
+    packageRuntimeCommand: null
+    installedHelperPath: null
+    consumerRuntimeAvailability: unavailable_in_consumer_project
+    directNodeTsInvocationSupported: false
     ownerModel: implementation_readiness
     secondaryModels:
       - architecture_confirmation
@@ -265,6 +367,15 @@ scripts:
     hookParityRequired: true
   - scriptId: assert_implementation_entry
     path: scripts/assert-implementation-entry.ts
+    sourceRepoPath: "scripts/assert-implementation-entry.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: source_repo_only
+    consumerInvocation: null
+    consumerRootPathRequired: false
+    packageRuntimeCommand: null
+    installedHelperPath: null
+    consumerRuntimeAvailability: unavailable_in_consumer_project
+    directNodeTsInvocationSupported: false
     ownerModel: implementation_readiness
     secondaryModels: []
     stage: implementation_entry_assertion
@@ -285,6 +396,15 @@ scripts:
     hookParityRequired: true
   - scriptId: user_story_mapping
     path: scripts/user-story-mapping.ts
+    sourceRepoPath: "scripts/user-story-mapping.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: source_repo_only
+    consumerInvocation: null
+    consumerRootPathRequired: false
+    packageRuntimeCommand: null
+    installedHelperPath: null
+    consumerRuntimeAvailability: unavailable_in_consumer_project
+    directNodeTsInvocationSupported: false
     ownerModel: requirement_confirmation
     secondaryModels:
       - execution_closure
@@ -304,6 +424,15 @@ scripts:
     hookParityRequired: false
   - scriptId: orchestration_governance_contract
     path: scripts/orchestration-governance-contract.ts
+    sourceRepoPath: "scripts/orchestration-governance-contract.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: source_repo_only
+    consumerInvocation: null
+    consumerRootPathRequired: false
+    packageRuntimeCommand: null
+    installedHelperPath: null
+    consumerRuntimeAvailability: unavailable_in_consumer_project
+    directNodeTsInvocationSupported: false
     ownerModel: requirement_confirmation
     secondaryModels:
       - architecture_confirmation
@@ -322,6 +451,15 @@ scripts:
     hookParityRequired: false
   - scriptId: adaptive_intake_governance_gate
     path: scripts/adaptive-intake-governance-gate.ts
+    sourceRepoPath: "scripts/adaptive-intake-governance-gate.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: source_repo_only
+    consumerInvocation: null
+    consumerRootPathRequired: false
+    packageRuntimeCommand: null
+    installedHelperPath: null
+    consumerRuntimeAvailability: unavailable_in_consumer_project
+    directNodeTsInvocationSupported: false
     ownerModel: requirement_confirmation
     secondaryModels:
       - implementation_readiness
@@ -343,6 +481,15 @@ scripts:
     hookParityRequired: false
   - scriptId: adaptive_intake_proof_gate
     path: scripts/adaptive-intake-proof-gate.ts
+    sourceRepoPath: "scripts/adaptive-intake-proof-gate.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: source_repo_only
+    consumerInvocation: null
+    consumerRootPathRequired: false
+    packageRuntimeCommand: null
+    installedHelperPath: null
+    consumerRuntimeAvailability: unavailable_in_consumer_project
+    directNodeTsInvocationSupported: false
     ownerModel: audit_review
     secondaryModels:
       - requirement_confirmation
@@ -362,6 +509,15 @@ scripts:
     hookParityRequired: false
   - scriptId: governance_runtime_queue
     path: scripts/governance-runtime-queue.ts
+    sourceRepoPath: "scripts/governance-runtime-queue.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: source_repo_only
+    consumerInvocation: null
+    consumerRootPathRequired: false
+    packageRuntimeCommand: null
+    installedHelperPath: null
+    consumerRuntimeAvailability: unavailable_in_consumer_project
+    directNodeTsInvocationSupported: false
     ownerModel: execution_closure
     secondaryModels:
       - audit_review
@@ -380,6 +536,15 @@ scripts:
     hookParityRequired: false
   - scriptId: governance_stage_event_emitter
     path: scripts/governance-stage-event-emitter.ts
+    sourceRepoPath: "scripts/governance-stage-event-emitter.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: source_repo_only
+    consumerInvocation: null
+    consumerRootPathRequired: false
+    packageRuntimeCommand: null
+    installedHelperPath: null
+    consumerRuntimeAvailability: unavailable_in_consumer_project
+    directNodeTsInvocationSupported: false
     ownerModel: audit_review
     secondaryModels:
       - execution_closure
@@ -398,6 +563,15 @@ scripts:
     hookParityRequired: false
   - scriptId: governance_remediation_runner
     path: scripts/governance-remediation-runner.ts
+    sourceRepoPath: "scripts/governance-remediation-runner.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: source_repo_only
+    consumerInvocation: null
+    consumerRootPathRequired: false
+    packageRuntimeCommand: null
+    installedHelperPath: null
+    consumerRuntimeAvailability: unavailable_in_consumer_project
+    directNodeTsInvocationSupported: false
     ownerModel: audit_review
     secondaryModels:
       - execution_closure
@@ -420,6 +594,15 @@ scripts:
     hookParityRequired: false
   - scriptId: governance_remediation_artifact
     path: scripts/governance-remediation-artifact.ts
+    sourceRepoPath: "scripts/governance-remediation-artifact.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: source_repo_only
+    consumerInvocation: null
+    consumerRootPathRequired: false
+    packageRuntimeCommand: null
+    installedHelperPath: null
+    consumerRuntimeAvailability: unavailable_in_consumer_project
+    directNodeTsInvocationSupported: false
     ownerModel: audit_review
     secondaryModels: []
     stage: remediation
@@ -437,6 +620,15 @@ scripts:
     hookParityRequired: false
   - scriptId: governance_remediation_config
     path: scripts/governance-remediation-config.ts
+    sourceRepoPath: "scripts/governance-remediation-config.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: source_repo_only
+    consumerInvocation: null
+    consumerRootPathRequired: false
+    packageRuntimeCommand: null
+    installedHelperPath: null
+    consumerRuntimeAvailability: unavailable_in_consumer_project
+    directNodeTsInvocationSupported: false
     ownerModel: audit_review
     secondaryModels:
       - execution_closure
@@ -454,6 +646,15 @@ scripts:
     hookParityRequired: false
   - scriptId: governance_packet_execution_store
     path: scripts/governance-packet-execution-store.ts
+    sourceRepoPath: "scripts/governance-packet-execution-store.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: source_repo_only
+    consumerInvocation: null
+    consumerRootPathRequired: false
+    packageRuntimeCommand: null
+    installedHelperPath: null
+    consumerRuntimeAvailability: unavailable_in_consumer_project
+    directNodeTsInvocationSupported: false
     ownerModel: execution_closure
     secondaryModels:
       - audit_review
@@ -472,6 +673,15 @@ scripts:
     hookParityRequired: false
   - scriptId: governance_packet_dispatch_worker
     path: scripts/governance-packet-dispatch-worker.ts
+    sourceRepoPath: "scripts/governance-packet-dispatch-worker.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: source_repo_only
+    consumerInvocation: null
+    consumerRootPathRequired: false
+    packageRuntimeCommand: null
+    installedHelperPath: null
+    consumerRuntimeAvailability: unavailable_in_consumer_project
+    directNodeTsInvocationSupported: false
     ownerModel: execution_closure
     secondaryModels: []
     stage: packet_dispatch
@@ -488,6 +698,15 @@ scripts:
     hookParityRequired: false
   - scriptId: governance_host_dispatch_adapter
     path: scripts/governance-host-dispatch-adapter.ts
+    sourceRepoPath: "scripts/governance-host-dispatch-adapter.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: source_repo_only
+    consumerInvocation: null
+    consumerRootPathRequired: false
+    packageRuntimeCommand: null
+    installedHelperPath: null
+    consumerRuntimeAvailability: unavailable_in_consumer_project
+    directNodeTsInvocationSupported: false
     ownerModel: execution_closure
     secondaryModels: []
     stage: host_dispatch
@@ -505,6 +724,15 @@ scripts:
     hookParityRequired: false
   - scriptId: governance_execution_result_ingestor
     path: scripts/governance-execution-result-ingestor.ts
+    sourceRepoPath: "scripts/governance-execution-result-ingestor.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: source_repo_only
+    consumerInvocation: null
+    consumerRootPathRequired: false
+    packageRuntimeCommand: null
+    installedHelperPath: null
+    consumerRuntimeAvailability: unavailable_in_consumer_project
+    directNodeTsInvocationSupported: false
     ownerModel: execution_closure
     secondaryModels:
       - audit_review
@@ -526,6 +754,15 @@ scripts:
     hookParityRequired: true
   - scriptId: governance_packet_reconciler
     path: scripts/governance-packet-reconciler.ts
+    sourceRepoPath: "scripts/governance-packet-reconciler.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: source_repo_only
+    consumerInvocation: null
+    consumerRootPathRequired: false
+    packageRuntimeCommand: null
+    installedHelperPath: null
+    consumerRuntimeAvailability: unavailable_in_consumer_project
+    directNodeTsInvocationSupported: false
     ownerModel: execution_closure
     secondaryModels:
       - audit_review
@@ -545,6 +782,15 @@ scripts:
     hookParityRequired: true
   - scriptId: prompt_routing_governance
     path: scripts/prompt-routing-governance.ts
+    sourceRepoPath: "scripts/prompt-routing-governance.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: source_repo_only
+    consumerInvocation: null
+    consumerRootPathRequired: false
+    packageRuntimeCommand: null
+    installedHelperPath: null
+    consumerRuntimeAvailability: unavailable_in_consumer_project
+    directNodeTsInvocationSupported: false
     ownerModel: audit_review
     secondaryModels: []
     stage: model_governance
@@ -563,6 +809,15 @@ scripts:
     hookParityRequired: false
   - scriptId: model_governance_hint_resolver
     path: scripts/model-governance-hint-resolver.ts
+    sourceRepoPath: "scripts/model-governance-hint-resolver.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: source_repo_only
+    consumerInvocation: null
+    consumerRootPathRequired: false
+    packageRuntimeCommand: null
+    installedHelperPath: null
+    consumerRuntimeAvailability: unavailable_in_consumer_project
+    directNodeTsInvocationSupported: false
     ownerModel: audit_review
     secondaryModels: []
     stage: model_governance
@@ -579,6 +834,15 @@ scripts:
     hookParityRequired: false
   - scriptId: model_governance_policy_filter
     path: scripts/model-governance-policy-filter.ts
+    sourceRepoPath: "scripts/model-governance-policy-filter.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: source_repo_only
+    consumerInvocation: null
+    consumerRootPathRequired: false
+    packageRuntimeCommand: null
+    installedHelperPath: null
+    consumerRuntimeAvailability: unavailable_in_consumer_project
+    directNodeTsInvocationSupported: false
     ownerModel: audit_review
     secondaryModels: []
     stage: model_governance
@@ -595,6 +859,15 @@ scripts:
     hookParityRequired: false
   - scriptId: governance_provider_adapter
     path: scripts/governance-provider-adapter.ts
+    sourceRepoPath: "scripts/governance-provider-adapter.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: source_repo_only
+    consumerInvocation: null
+    consumerRootPathRequired: false
+    packageRuntimeCommand: null
+    installedHelperPath: null
+    consumerRuntimeAvailability: unavailable_in_consumer_project
+    directNodeTsInvocationSupported: false
     ownerModel: audit_review
     secondaryModels: []
     stage: model_governance
@@ -611,6 +884,15 @@ scripts:
     hookParityRequired: false
   - scriptId: reviewer_registry
     path: scripts/reviewer-registry.ts
+    sourceRepoPath: "scripts/reviewer-registry.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: source_repo_only
+    consumerInvocation: null
+    consumerRootPathRequired: false
+    packageRuntimeCommand: null
+    installedHelperPath: null
+    consumerRuntimeAvailability: unavailable_in_consumer_project
+    directNodeTsInvocationSupported: false
     ownerModel: audit_review
     secondaryModels:
       - delivery_confirmation
@@ -631,6 +913,15 @@ scripts:
     hookParityRequired: false
   - scriptId: reviewer_rollout_gate
     path: scripts/reviewer-rollout-gate.ts
+    sourceRepoPath: "scripts/reviewer-rollout-gate.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: source_repo_only
+    consumerInvocation: null
+    consumerRootPathRequired: false
+    packageRuntimeCommand: null
+    installedHelperPath: null
+    consumerRuntimeAvailability: unavailable_in_consumer_project
+    directNodeTsInvocationSupported: false
     ownerModel: audit_review
     secondaryModels: []
     stage: reviewer_rollout
@@ -647,6 +938,15 @@ scripts:
     hookParityRequired: false
   - scriptId: run_auditor_host
     path: scripts/run-auditor-host.ts
+    sourceRepoPath: "scripts/run-auditor-host.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: source_repo_only
+    consumerInvocation: null
+    consumerRootPathRequired: false
+    packageRuntimeCommand: null
+    installedHelperPath: null
+    consumerRuntimeAvailability: unavailable_in_consumer_project
+    directNodeTsInvocationSupported: false
     ownerModel: audit_review
     secondaryModels:
       - implementation_readiness
@@ -673,6 +973,15 @@ scripts:
     hookParityRequired: false
   - scriptId: party_mode_runtime
     path: scripts/party-mode-runtime.ts
+    sourceRepoPath: "scripts/party-mode-runtime.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: source_repo_only
+    consumerInvocation: null
+    consumerRootPathRequired: false
+    packageRuntimeCommand: null
+    installedHelperPath: null
+    consumerRuntimeAvailability: unavailable_in_consumer_project
+    directNodeTsInvocationSupported: false
     ownerModel: audit_review
     secondaryModels:
       - requirement_confirmation
@@ -694,6 +1003,15 @@ scripts:
     hookParityRequired: false
   - scriptId: party_mode_gate_check
     path: scripts/party-mode-gate-check.ts
+    sourceRepoPath: "scripts/party-mode-gate-check.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: source_repo_only
+    consumerInvocation: null
+    consumerRootPathRequired: false
+    packageRuntimeCommand: null
+    installedHelperPath: null
+    consumerRuntimeAvailability: unavailable_in_consumer_project
+    directNodeTsInvocationSupported: false
     ownerModel: audit_review
     secondaryModels: []
     stage: party_mode
@@ -710,6 +1028,16 @@ scripts:
     hookParityRequired: false
   - scriptId: main_agent_quality_gate
     path: scripts/main-agent-quality-gate.ts
+    sourceRepoPath: "scripts/main-agent-quality-gate.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: package_cli
+    consumerInvocation: "npx --no-install bmad-speckit main-agent quality-gate --json"
+    consumerRootPathRequired: false
+    packageRuntimeCommand: "npx --no-install bmad-speckit main-agent quality-gate --json"
+    installedHelperPath: null
+    consumerRuntimeAvailability: available_after_local_package_install
+    directNodeTsInvocationSupported: false
+    consumerEvidenceCommand: "npx --no-install bmad-speckit main-agent quality-gate --json"
     ownerModel: delivery_confirmation
     secondaryModels: []
     stage: quality_check
@@ -727,6 +1055,16 @@ scripts:
     hookParityRequired: false
   - scriptId: main_agent_release_gate
     path: scripts/main-agent-release-gate.ts
+    sourceRepoPath: "scripts/main-agent-release-gate.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: package_cli
+    consumerInvocation: "npx --no-install bmad-speckit main-agent release-gate --json"
+    consumerRootPathRequired: false
+    packageRuntimeCommand: "npx --no-install bmad-speckit main-agent release-gate --json"
+    installedHelperPath: null
+    consumerRuntimeAvailability: available_after_local_package_install
+    directNodeTsInvocationSupported: false
+    consumerEvidenceCommand: "npx --no-install bmad-speckit main-agent release-gate --json"
     ownerModel: delivery_confirmation
     secondaryModels: []
     stage: release_check
@@ -745,6 +1083,16 @@ scripts:
     hookParityRequired: false
   - scriptId: main_agent_delivery_truth_gate
     path: scripts/main-agent-delivery-truth-gate.ts
+    sourceRepoPath: "scripts/main-agent-delivery-truth-gate.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: package_cli
+    consumerInvocation: "npx --no-install bmad-speckit main-agent delivery-truth-gate --json"
+    consumerRootPathRequired: false
+    packageRuntimeCommand: "npx --no-install bmad-speckit main-agent delivery-truth-gate --json"
+    installedHelperPath: null
+    consumerRuntimeAvailability: available_after_local_package_install
+    directNodeTsInvocationSupported: false
+    consumerEvidenceCommand: "npx --no-install bmad-speckit main-agent delivery-truth-gate --json"
     ownerModel: delivery_confirmation
     secondaryModels: []
     stage: delivery_truth_check
@@ -765,6 +1113,16 @@ scripts:
     hookParityRequired: false
   - scriptId: main_agent_delivery_evidence_run
     path: scripts/main-agent-delivery-evidence-run.ts
+    sourceRepoPath: "scripts/main-agent-delivery-evidence-run.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: package_cli
+    consumerInvocation: "npx --no-install bmad-speckit main-agent delivery-evidence-run --json"
+    consumerRootPathRequired: false
+    packageRuntimeCommand: "npx --no-install bmad-speckit main-agent delivery-evidence-run --json"
+    installedHelperPath: null
+    consumerRuntimeAvailability: available_after_local_package_install
+    directNodeTsInvocationSupported: false
+    consumerEvidenceCommand: "npx --no-install bmad-speckit main-agent delivery-evidence-run --json"
     ownerModel: delivery_confirmation
     secondaryModels: []
     stage: delivery_evidence_collection
@@ -781,6 +1139,16 @@ scripts:
     hookParityRequired: false
   - scriptId: main_agent_soak_runner
     path: scripts/main-agent-soak-runner.ts
+    sourceRepoPath: "scripts/main-agent-soak-runner.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: package_cli
+    consumerInvocation: "npx --no-install bmad-speckit main-agent soak-runner --json"
+    consumerRootPathRequired: false
+    packageRuntimeCommand: "npx --no-install bmad-speckit main-agent soak-runner --json"
+    installedHelperPath: null
+    consumerRuntimeAvailability: available_after_local_package_install
+    directNodeTsInvocationSupported: false
+    consumerEvidenceCommand: "npx --no-install bmad-speckit main-agent soak-runner --json"
     ownerModel: delivery_confirmation
     secondaryModels: []
     stage: soak
@@ -797,6 +1165,15 @@ scripts:
     hookParityRequired: false
   - scriptId: main_agent_host_matrix_pr_orchestrator
     path: scripts/main-agent-host-matrix-pr-orchestrator.ts
+    sourceRepoPath: "scripts/main-agent-host-matrix-pr-orchestrator.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: source_repo_only
+    consumerInvocation: null
+    consumerRootPathRequired: false
+    packageRuntimeCommand: null
+    installedHelperPath: null
+    consumerRuntimeAvailability: unavailable_in_consumer_project
+    directNodeTsInvocationSupported: false
     ownerModel: delivery_confirmation
     secondaryModels: []
     stage: host_matrix
@@ -813,6 +1190,16 @@ scripts:
     hookParityRequired: false
   - scriptId: main_agent_dual_host_pr_orchestrator
     path: scripts/main-agent-dual-host-pr-orchestrator.ts
+    sourceRepoPath: "scripts/main-agent-dual-host-pr-orchestrator.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: package_cli
+    consumerInvocation: "npx --no-install bmad-speckit main-agent dual-host-pr-orchestrator --json"
+    consumerRootPathRequired: false
+    packageRuntimeCommand: "npx --no-install bmad-speckit main-agent dual-host-pr-orchestrator --json"
+    installedHelperPath: null
+    consumerRuntimeAvailability: available_after_local_package_install
+    directNodeTsInvocationSupported: false
+    consumerEvidenceCommand: "npx --no-install bmad-speckit main-agent dual-host-pr-orchestrator --json"
     ownerModel: delivery_confirmation
     secondaryModels: []
     stage: host_matrix_validation
@@ -829,6 +1216,16 @@ scripts:
     hookParityRequired: false
   - scriptId: main_agent_chaos_scenarios
     path: scripts/main-agent-chaos-scenarios.ts
+    sourceRepoPath: "scripts/main-agent-chaos-scenarios.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: package_cli
+    consumerInvocation: "npx --no-install bmad-speckit main-agent chaos-scenarios --json"
+    consumerRootPathRequired: false
+    packageRuntimeCommand: "npx --no-install bmad-speckit main-agent chaos-scenarios --json"
+    installedHelperPath: null
+    consumerRuntimeAvailability: available_after_local_package_install
+    directNodeTsInvocationSupported: false
+    consumerEvidenceCommand: "npx --no-install bmad-speckit main-agent chaos-scenarios --json"
     ownerModel: delivery_confirmation
     secondaryModels: []
     stage: chaos_validation
@@ -845,6 +1242,15 @@ scripts:
     hookParityRequired: false
   - scriptId: live_smoke_main_agent_runtime
     path: scripts/live-smoke-main-agent-runtime.ts
+    sourceRepoPath: "scripts/live-smoke-main-agent-runtime.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: source_repo_only
+    consumerInvocation: null
+    consumerRootPathRequired: false
+    packageRuntimeCommand: null
+    installedHelperPath: null
+    consumerRuntimeAvailability: unavailable_in_consumer_project
+    directNodeTsInvocationSupported: false
     ownerModel: delivery_confirmation
     secondaryModels: []
     stage: live_smoke
@@ -879,6 +1285,15 @@ scripts:
     hookParityRequired: true
   - scriptId: dashboard_generate
     path: scripts/dashboard-generate.ts
+    sourceRepoPath: "scripts/dashboard-generate.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: source_repo_only
+    consumerInvocation: null
+    consumerRootPathRequired: false
+    packageRuntimeCommand: null
+    installedHelperPath: null
+    consumerRuntimeAvailability: unavailable_in_consumer_project
+    directNodeTsInvocationSupported: false
     ownerModel: delivery_confirmation
     secondaryModels:
       - audit_review
@@ -963,6 +1378,15 @@ scripts:
     hookParityRequired: false
   - scriptId: sft_extract
     path: scripts/sft-extract.ts
+    sourceRepoPath: "scripts/sft-extract.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: source_repo_only
+    consumerInvocation: null
+    consumerRootPathRequired: false
+    packageRuntimeCommand: null
+    installedHelperPath: null
+    consumerRuntimeAvailability: unavailable_in_consumer_project
+    directNodeTsInvocationSupported: false
     ownerModel: audit_review
     secondaryModels:
       - delivery_confirmation
@@ -994,6 +1418,15 @@ scripts:
       replacementBehavior: Export only governed canonical samples that passed sample routing, redaction, contamination, and split checks.
   - scriptId: analytics_sft_extract
     path: scripts/analytics-sft-extract.ts
+    sourceRepoPath: "scripts/analytics-sft-extract.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: source_repo_only
+    consumerInvocation: null
+    consumerRootPathRequired: false
+    packageRuntimeCommand: null
+    installedHelperPath: null
+    consumerRuntimeAvailability: unavailable_in_consumer_project
+    directNodeTsInvocationSupported: false
     ownerModel: audit_review
     secondaryModels: []
     stage: governed_sft_analytics_export
@@ -1022,6 +1455,15 @@ scripts:
       replacementBehavior: Build analytics reports from requirement records and governed canonical samples, not raw score records.
   - scriptId: parse_and_write_score
     path: scripts/parse-and-write-score.ts
+    sourceRepoPath: "scripts/parse-and-write-score.ts"
+    sourcePathKind: source_repo_provenance
+    consumerInvocationKind: source_repo_only
+    consumerInvocation: null
+    consumerRootPathRequired: false
+    packageRuntimeCommand: null
+    installedHelperPath: null
+    consumerRuntimeAvailability: unavailable_in_consumer_project
+    directNodeTsInvocationSupported: false
     ownerModel: audit_review
     secondaryModels:
       - delivery_confirmation

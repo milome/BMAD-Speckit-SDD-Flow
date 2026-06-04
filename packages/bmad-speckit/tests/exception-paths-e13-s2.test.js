@@ -34,7 +34,7 @@ function runCheck(cwd) {
     return spawnSync(process.execPath, [BIN, 'check'], {
       cwd,
       encoding: 'utf8',
-      timeout: 15000,
+      timeout: INIT_SPAWN_TIMEOUT_MS,
       env,
     });
   } finally {
@@ -106,7 +106,7 @@ describe('E13-S2 T6.3: exit code 3 (network/template, --offline hint)', () => {
     const r = spawnSync('node', [helper, tmpDir], {
       cwd: ROOT,
       encoding: 'utf8',
-      timeout: 10000,
+      timeout: INIT_SPAWN_TIMEOUT_MS,
       env: { ...process.env, BMAD_TEST_OFFLINE_ONLY: '1' },
     });
     try { fs.rmSync(tmpDir, { recursive: true }); } catch (_) {}

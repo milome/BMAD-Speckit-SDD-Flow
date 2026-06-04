@@ -1,0 +1,48 @@
+{
+  "waveId": "main-agent-runtime-migration-wave-3.5",
+  "generatedAt": "2026-06-04T19:29:19.738Z",
+  "entries": [
+    {
+      "originalPath": "_bmad/skills/req-trace-matrix-prompt-generator/scripts/generate_prompt.js",
+      "hardenedPath": "_bmad/skills/req-trace-matrix-prompt-generator/scripts/generate_prompt.js",
+      "hardeningRoute": "local_commonjs_package_boundary",
+      "boundaryPath": "_bmad/skills/req-trace-matrix-prompt-generator/scripts/package.json",
+      "reason": "Existing generated and skill documentation references use .js helper entrypoints; a local CommonJS package boundary hardens the route without broad generated-surface churn.",
+      "typeModuleProbe": {
+        "moduleTypeSafe": true,
+        "forbiddenMarkers": [
+          "ERR_REQUIRE_ESM",
+          "ERR_UNSUPPORTED_NODE_MODULES_TYPE_STRIPPING"
+        ]
+      }
+    },
+    {
+      "originalPath": "_bmad/skills/req-trace-matrix-prompt-generator/scripts/load-js-yaml.js",
+      "hardenedPath": "_bmad/skills/req-trace-matrix-prompt-generator/scripts/load-js-yaml.js",
+      "hardeningRoute": "local_commonjs_package_boundary",
+      "boundaryPath": "_bmad/skills/req-trace-matrix-prompt-generator/scripts/package.json",
+      "reason": "Existing generated and skill documentation references use .js helper entrypoints; a local CommonJS package boundary hardens the route without broad generated-surface churn.",
+      "typeModuleProbe": {
+        "moduleTypeSafe": true,
+        "forbiddenMarkers": [
+          "ERR_REQUIRE_ESM",
+          "ERR_UNSUPPORTED_NODE_MODULES_TYPE_STRIPPING"
+        ]
+      }
+    },
+    {
+      "originalPath": "_bmad/skills/goal-execution-contract-generator/scripts/check-docs-review-dependency.js",
+      "hardenedPath": "_bmad/skills/goal-execution-contract-generator/scripts/check-docs-review-dependency.js",
+      "hardeningRoute": "local_commonjs_package_boundary",
+      "boundaryPath": "_bmad/skills/goal-execution-contract-generator/scripts/package.json",
+      "reason": "Existing generated and skill documentation references use .js helper entrypoints; a local CommonJS package boundary hardens the route without broad generated-surface churn.",
+      "typeModuleProbe": {
+        "moduleTypeSafe": true,
+        "forbiddenMarkers": [
+          "ERR_REQUIRE_ESM",
+          "ERR_UNSUPPORTED_NODE_MODULES_TYPE_STRIPPING"
+        ]
+      }
+    }
+  ]
+}

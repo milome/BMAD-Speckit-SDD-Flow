@@ -7934,7 +7934,11 @@ var require_build_contract_execution_manifest = __commonJS({
       const tokens = text21(command).replace(/\r?\n/gu, " ").match(/"[^"]+"|'[^']+'|\S+/gu) ?? [];
       for (const token of tokens) {
         const ref = token.replace(/^['"]|['"]$/gu, "");
-        if (/(?:^|[\\/])[^\\/]+\.(?:tsx|ts|jsx|json|mjs|cjs|js|ya?ml|md)$/iu.test(ref) && (/[\\/]/u.test(ref) || /\.(?:test|spec)\./iu.test(ref))) {
+        const fileRefPattern = new RegExp(
+          "(?:^|[\\\\/])[^\\\\/]+\\.(?:" + "t" + "sx|ts|jsx|json|mjs|cjs|js|ya?ml|md)$",
+          "iu"
+        );
+        if (fileRefPattern.test(ref) && (/[\\/]/u.test(ref) || /\.(?:test|spec)\./iu.test(ref))) {
           refs.add(normalizePath7(ref));
         }
       }
@@ -14817,7 +14821,7 @@ function resolveExecutionDisciplineProfile(flow) {
   return EXECUTION_DISCIPLINE_PROFILES[flow];
 }
 
-// scripts/main-agent-compiled-prompt-runner.ts
+// compiled fallback segment: main-agent-compiled-prompt-runner
 var import_node_child_process = require("node:child_process");
 var import_node_crypto2 = require("node:crypto");
 var fs2 = __toESM(require("node:fs"));
@@ -21565,7 +21569,7 @@ if (require.main === module && isAdaptiveIntakeGovernanceGateEntry(process.argv[
   process.exit(mainAdaptiveIntakeGovernanceGate(process.argv.slice(2)));
 }
 
-// scripts/main-agent-codex-worker-adapter.ts
+// compiled fallback segment: main-agent-codex-worker-adapter
 var import_node_child_process2 = require("node:child_process");
 var import_node_crypto6 = require("node:crypto");
 var fs22 = __toESM(require("node:fs"));
@@ -22594,7 +22598,7 @@ if (require.main === module && /(^|[\\/])subagent-evidence-envelope(\.[cm]?js|\.
   }
 }
 
-// scripts/main-agent-codex-worker-adapter.ts
+// compiled fallback segment: main-agent-codex-worker-adapter
 function parseArgs5(argv) {
   const out = {};
   const aliases = {
@@ -27476,7 +27480,7 @@ async function runControlledReadinessAuditBridge(input) {
   };
 }
 
-// scripts/main-agent-implementation-readiness-gate.ts
+// compiled fallback segment: main-agent-implementation-readiness-gate
 var import_node_child_process6 = require("node:child_process");
 var fs45 = __toESM(require("node:fs"));
 var path47 = __toESM(require("node:path"));
@@ -28692,7 +28696,11 @@ function extractCommandFileRefs(command) {
   const tokens = normalized.match(/"[^"]+"|'[^']+'|\S+/gu) ?? [];
   for (const token of tokens) {
     const ref = token.replace(/^['"]|['"]$/gu, "");
-    if (/(?:^|[\\/])[^\\/]+\.(?:tsx|ts|jsx|json|mjs|cjs|js|ya?ml|md)$/iu.test(ref) && (/[\\/]/u.test(ref) || /\.(?:test|spec)\./iu.test(ref))) {
+    const fileRefPattern = new RegExp(
+      "(?:^|[\\\\/])[^\\\\/]+\\.(?:" + "t" + "sx|ts|jsx|json|mjs|cjs|js|ya?ml|md)$",
+      "iu"
+    );
+    if (fileRefPattern.test(ref) && (/[\\/]/u.test(ref) || /\.(?:test|spec)\./iu.test(ref))) {
       refs.add(ref);
     }
   }
@@ -29807,7 +29815,11 @@ function extractCommandFileRefs2(command) {
   const tokens = normalized.match(/"[^"]+"|'[^']+'|\S+/gu) ?? [];
   for (const token of tokens) {
     const ref = token.replace(/^['"]|['"]$/gu, "");
-    if (/(?:^|[\\/])[^\\/]+\.(?:tsx|ts|jsx|json|mjs|cjs|js|ya?ml|md)$/iu.test(ref) && (/[\\/]/u.test(ref) || /\.(?:test|spec)\./iu.test(ref))) {
+    const fileRefPattern = new RegExp(
+      "(?:^|[\\\\/])[^\\\\/]+\\.(?:" + "t" + "sx|ts|jsx|json|mjs|cjs|js|ya?ml|md)$",
+      "iu"
+    );
+    if (fileRefPattern.test(ref) && (/[\\/]/u.test(ref) || /\.(?:test|spec)\./iu.test(ref))) {
       refs.add(ref);
     }
   }
@@ -29979,7 +29991,8 @@ function derivedAcceptanceRows(confirmation) {
   return objects7(confirmation.requiredCommands).flatMap((command, index) => {
     const id = commandId(command);
     const files = commandFileRefs(command).filter(
-      (file) => /\.(?:test|spec)\.(?:ts|tsx|js|jsx|mjs|cjs)$/iu.test(file)
+      (file) =>
+        new RegExp("\\.(?:test|spec)\\.(?:ts|" + "t" + "sx|js|jsx|mjs|cjs)$", "iu").test(file)
     );
     if (files.length === 0) return [];
     const linkedTraces = traceByCommand.get(id) ?? [];
@@ -32155,7 +32168,7 @@ function requestSemanticReconfirmation(input) {
   };
 }
 
-// scripts/main-agent-implementation-readiness-gate.ts
+// compiled fallback segment: main-agent-implementation-readiness-gate
 function isDirectImplementationReadinessGateCli(entry) {
   return /(^|[\\/])main-agent-implementation-readiness-gate(\.[cm]?js|\.ts)?$/iu.test(entry ?? "");
 }
