@@ -96,6 +96,9 @@ jobs:
       - name: Init Claude surface
         run: npm run init:claude
 
+      - name: Init Codex surface
+        run: npm run init:codex
+
       - name: SpeCKit mirror sync test
         run: npm run test:speckit-mirror-sync
 

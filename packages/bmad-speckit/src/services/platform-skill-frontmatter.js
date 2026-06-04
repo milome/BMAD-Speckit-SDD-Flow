@@ -3,6 +3,14 @@ const path = require('path');
 
 const PLATFORM_SKILLS_DIRS = ['.codex/skills', '.claude/skills', '.cursor/skills'];
 
+function isCodexSkillFile(filePath) {
+  const portablePath = String(filePath || '').replace(/\\/g, '/');
+  return (
+    path.basename(filePath) === 'SKILL.md' &&
+    (portablePath.includes('/.codex/skills/') || portablePath.startsWith('.codex/skills/'))
+  );
+}
+
 function isPlatformSkillFile(filePath) {
   const portablePath = String(filePath || '').replace(/\\/g, '/');
   return (
@@ -13,9 +21,21 @@ function isPlatformSkillFile(filePath) {
   );
 }
 
+function hasRequiredFrontmatter(raw) {
+  const lines = String(raw || '').split(/\r?\n/u);
+  if (lines[0] !== '---') return false;
+  const endIndex = lines.findIndex((line, index) => index > 0 && line.trim() === '---');
+  if (endIndex < 0) return false;
+  const frontmatter = lines.slice(1, endIndex).join('\n');
+  return /^name:\s*.+$/mu.test(frontmatter) && /^description:\s*.+$/mu.test(frontmatter);
+}
+
 function normalizePlatformSkillFrontmatterContent(raw, skillName) {
   const source = String(raw || '').replace(/^\uFEFF/u, '');
   const withoutPolicy = source.replace(/^<!--\s*BLOCK_LABEL_POLICY=[^>]*-->\s*\r?\n?/u, '');
+  if (hasRequiredFrontmatter(withoutPolicy)) {
+    return withoutPolicy;
+  }
   let frontmatter = '';
   let body = withoutPolicy;
   const lines = withoutPolicy.split(/\r?\n/u);
@@ -56,7 +76,8 @@ function normalizePlatformSkillFrontmatterContent(raw, skillName) {
 function normalizePlatformSkillFrontmatterFile(filePath) {
   if (!isPlatformSkillFile(filePath) || !fs.existsSync(filePath)) return false;
   const raw = fs.readFileSync(filePath, 'utf8');
-  const normalized = normalizePlatformSkillFrontmatterContent(raw, path.basename(path.dirname(filePath)));
+  const normalizedContent = normalizePlatformSkillFrontmatterContent(raw, path.basename(path.dirname(filePath)));
+  const normalized = isCodexSkillFile(filePath) ? normalizedContent.replace(/\r\n/gu, '\n') : normalizedContent;
   if (normalized === raw) return false;
   fs.writeFileSync(filePath, normalized, 'utf8');
   return true;
