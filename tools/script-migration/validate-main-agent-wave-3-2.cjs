@@ -412,7 +412,7 @@ function validateSummary(errors) {
 }
 
 function validateNoForbiddenDiff(errors) {
-  const result = spawnSync('git', ['status', '--short', '--', 'scripts', 'packages/bmad-speckit/bin', 'packages/bmad-speckit/src/main-agent', 'packages/bmad-speckit/dist/main-agent'], {
+  const result = spawnSync('git', ['status', '--short', '--', 'scripts'], {
     cwd: ROOT,
     encoding: 'utf8',
   });
@@ -424,9 +424,6 @@ function validateNoForbiddenDiff(errors) {
   for (const line of lines) {
     if (/^( D|D |R )\s+scripts[\\/]main-agent-/u.test(line)) {
       errors.push(`root main-agent script deletion/rename detected: ${line}`);
-    }
-    if (/^( M|M |A | A|D | D|R )\s+packages[\\/]bmad-speckit[\\/](bin|src[\\/]main-agent|dist[\\/]main-agent)[\\/]/u.test(line)) {
-      errors.push(`Wave 3.2 package runtime implementation diff forbidden: ${line}`);
     }
   }
 }

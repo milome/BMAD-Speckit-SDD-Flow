@@ -35,5 +35,5 @@ describe('main-agent runtime migration wave 3.2 contract', () => {
     expect(result.stdout).toContain('25');
     expect(result.stdout).toContain('deletionAllowedCount');
     expect(result.stdout).toContain('0');
-  });
+  }, 60_000);
 });

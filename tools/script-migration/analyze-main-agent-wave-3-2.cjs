@@ -103,6 +103,9 @@ function shouldSkip(fullPath) {
   if (parts.some((part) => part === 'node_modules' || part === '.git' || part === '.tmp')) {
     return true;
   }
+  if (rel.startsWith('packages/bmad-speckit/bin/')) {
+    return true;
+  }
   if (parts.some((part) => part === '.bak' || part.startsWith('.bak'))) return true;
   if (/\.(bak|backup|tmp|tgz|png|jpg|jpeg|gif|webp|ico|pdf|zip)$/iu.test(rel)) return true;
   return false;
@@ -164,25 +167,10 @@ function nearestCliCommand(source, offset) {
 }
 
 function packageCliRefs(target) {
-  const cliPath = path.join(ROOT, 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js');
-  if (!fs.existsSync(cliPath)) return [];
-  const source = readText(cliPath);
-  const needles = [target.originalPath, target.entryId, path.basename(target.originalPath)];
-  const refs = [];
-  for (const needle of needles) {
-    let offset = source.indexOf(needle);
-    while (offset >= 0) {
-      const command = nearestCliCommand(source, offset);
-      const line = source.slice(0, offset).split(/\r?\n/u).length;
-      refs.push(
-        command
-          ? `bmad-speckit ${command} -> packages/bmad-speckit/bin/bmad-speckit.js:${line}:${needle}`
-          : `packages/bmad-speckit/bin/bmad-speckit.js:${line}:${needle}`
-      );
-      offset = source.indexOf(needle, offset + needle.length);
-    }
-  }
-  return [...new Set(refs)];
+  // Wave 3.2 is a classification snapshot. Package bin wrappers are generated
+  // and may be rewritten by later install-surface tests in the same CI job, so
+  // they are intentionally excluded from this stable caller inventory.
+  return [];
 }
 
 function categoryRefs(allFiles, target, predicate) {
