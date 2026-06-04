@@ -19,19 +19,20 @@
       ],
       "packageCliCommands": [],
       "packageRuntimeRefs": [
-        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:21568:// scripts/main-agent-codex-worker-adapter.ts",
-        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:22597:// scripts/main-agent-codex-worker-adapter.ts",
-        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:23092:entry: \"main-agent-codex-worker-adapter\",",
-        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:23292:producer: \"main-agent-codex-worker-adapter\",",
-        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:23751:console.error(\"main-agent-codex-worker-adapter: --packetPath is required\");",
-        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:23794:return /(^|[\\\\/])main-agent-codex-worker-adapter(\\.[cm]?js|\\.ts)?$/iu.test(entry ?? \"\");"
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:21572:// compiled fallback segment: main-agent-codex-worker-adapter",
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:22601:// compiled fallback segment: main-agent-codex-worker-adapter",
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:23096:entry: \"main-agent-codex-worker-adapter\",",
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:23296:producer: \"main-agent-codex-worker-adapter\",",
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:23755:console.error(\"main-agent-codex-worker-adapter: --packetPath is required\");",
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:23798:return /(^|[\\\\/])main-agent-codex-worker-adapter(\\.[cm]?js|\\.ts)?$/iu.test(entry ?? \"\");"
       ],
       "installedSurfaceRefs": [
         "_bmad/_config/hooks-owner-model-registry.yaml:683:- scripts/main-agent-codex-worker-adapter.ts",
         "_bmad/_config/main-agent-quality-gate.thresholds.json:10:\"scripts/main-agent-codex-worker-adapter.ts\",",
         "_bmad/_config/main-agent-quality-gate.thresholds.json:33:\"tests/acceptance/main-agent-codex-worker-adapter-e2e.test.ts\",",
         "_bmad/_config/main-agent-quality-gate.thresholds.json:38:\"tests/acceptance/main-agent-codex-worker-adapter-e2e.test.ts\",",
-        "_bmad/_config/script-owner-model-registry.yaml:118:path: scripts/main-agent-codex-worker-adapter.ts",
+        "_bmad/_config/script-owner-model-registry.yaml:156:path: scripts/main-agent-codex-worker-adapter.ts",
+        "_bmad/_config/script-owner-model-registry.yaml:157:sourceRepoPath: \"scripts/main-agent-codex-worker-adapter.ts\"",
         ".claude/hooks/emit-runtime-policy.cjs:18939:// ../../scripts/main-agent-codex-worker-adapter.ts",
         ".claude/hooks/emit-runtime-policy.cjs:19988:// ../../scripts/main-agent-codex-worker-adapter.ts",
         ".claude/hooks/emit-runtime-policy.cjs:20483:entry: \"main-agent-codex-worker-adapter\",",
@@ -56,12 +57,12 @@
         ".cursor/hooks/resolve-for-session.cjs:15632:producer: \"main-agent-codex-worker-adapter\",",
         ".cursor/hooks/resolve-for-session.cjs:16035:console.error(\"main-agent-codex-worker-adapter: --packetPath is required\");",
         ".cursor/hooks/resolve-for-session.cjs:16076:return /(^|[\\\\/])main-agent-codex-worker-adapter(\\.[cm]?js|\\.ts)?$/iu.test(entry ?? \"\");",
-        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:21568:// scripts/main-agent-codex-worker-adapter.ts",
-        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:22597:// scripts/main-agent-codex-worker-adapter.ts",
-        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:23092:entry: \"main-agent-codex-worker-adapter\",",
-        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:23292:producer: \"main-agent-codex-worker-adapter\",",
-        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:23751:console.error(\"main-agent-codex-worker-adapter: --packetPath is required\");",
-        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:23794:return /(^|[\\\\/])main-agent-codex-worker-adapter(\\.[cm]?js|\\.ts)?$/iu.test(entry ?? \"\");"
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:21572:// compiled fallback segment: main-agent-codex-worker-adapter",
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:22601:// compiled fallback segment: main-agent-codex-worker-adapter",
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:23096:entry: \"main-agent-codex-worker-adapter\",",
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:23296:producer: \"main-agent-codex-worker-adapter\",",
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:23755:console.error(\"main-agent-codex-worker-adapter: --packetPath is required\");",
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:23798:return /(^|[\\\\/])main-agent-codex-worker-adapter(\\.[cm]?js|\\.ts)?$/iu.test(entry ?? \"\");"
       ],
       "acceptanceTestRefs": [
         "tests/acceptance/main-agent-codex-worker-adapter-e2e.test.ts:11:import { main, runCodexWorkerAdapter } from '../../scripts/main-agent-codex-worker-adapter';",
@@ -86,7 +87,7 @@
         "scripts/subagent-surface-inventory.ts:57:'scripts/main-agent-codex-worker-adapter.ts',",
         "scripts/subagent-surface-inventory.ts:416:if (filePath.includes('main-agent-codex-worker-adapter.ts')) return 'Codex worker adapter';"
       ],
-      "docsRefsCount": 81,
+      "docsRefsCount": 87,
       "consumerReachability": "consumer_runtime_reachable",
       "requiresPackaging": true,
       "canBecomePackageModule": true,
@@ -128,12 +129,12 @@
       "packageJsonScripts": [],
       "packageCliCommands": [],
       "packageRuntimeRefs": [
-        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:14820:// scripts/main-agent-compiled-prompt-runner.ts"
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:14824:// compiled fallback segment: main-agent-compiled-prompt-runner"
       ],
       "installedSurfaceRefs": [
         ".claude/hooks/emit-runtime-policy.cjs:16504:// ../../scripts/main-agent-compiled-prompt-runner.ts",
         ".cursor/hooks/emit-runtime-policy.cjs:16504:// ../../scripts/main-agent-compiled-prompt-runner.ts",
-        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:14820:// scripts/main-agent-compiled-prompt-runner.ts"
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:14824:// compiled fallback segment: main-agent-compiled-prompt-runner"
       ],
       "acceptanceTestRefs": [
         "tests/acceptance/req-trace-main-agent-dispatch-integration.test.ts:9:} from '../../scripts/main-agent-compiled-prompt-runner';",
@@ -145,7 +146,7 @@
       "sourceScriptRefs": [
         "scripts/main-agent-orchestration.ts:25:import { runMainAgentCompiledPrompt } from './main-agent-compiled-prompt-runner';"
       ],
-      "docsRefsCount": 18,
+      "docsRefsCount": 25,
       "consumerReachability": "consumer_runtime_reachable",
       "requiresPackaging": true,
       "canBecomePackageModule": true,
@@ -187,11 +188,11 @@
       "packageJsonScripts": [],
       "packageCliCommands": [],
       "packageRuntimeRefs": [
-        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:27479:// scripts/main-agent-implementation-readiness-gate.ts",
-        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:32158:// scripts/main-agent-implementation-readiness-gate.ts",
-        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:32160:return /(^|[\\\\/])main-agent-implementation-readiness-gate(\\.[cm]?js|\\.ts)?$/iu.test(entry ?? \"\");",
-        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:32658:\"Usage: main-agent-implementation-readiness-gate --requirement-record <json> [--source <requirement.md>] [--implementation-run-kind <first-implementation|rerun>] [--json]\"",
-        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:43910:\"main-agent-implementation-readiness-gate:rerun\""
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:27483:// compiled fallback segment: main-agent-implementation-readiness-gate",
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:32171:// compiled fallback segment: main-agent-implementation-readiness-gate",
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:32173:return /(^|[\\\\/])main-agent-implementation-readiness-gate(\\.[cm]?js|\\.ts)?$/iu.test(entry ?? \"\");",
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:32671:\"Usage: main-agent-implementation-readiness-gate --requirement-record <json> [--source <requirement.md>] [--implementation-run-kind <first-implementation|rerun>] [--json]\"",
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:43923:\"main-agent-implementation-readiness-gate:rerun\""
       ],
       "installedSurfaceRefs": [
         ".claude/hooks/emit-runtime-policy.cjs:25421:// ../../scripts/main-agent-implementation-readiness-gate.ts",
@@ -204,11 +205,11 @@
         ".cursor/hooks/emit-runtime-policy.cjs:30102:return /(^|[\\\\/])main-agent-implementation-readiness-gate(\\.[cm]?js|\\.ts)?$/iu.test(entry ?? \"\");",
         ".cursor/hooks/emit-runtime-policy.cjs:30600:\"Usage: main-agent-implementation-readiness-gate --requirement-record <json> [--source <requirement.md>] [--implementation-run-kind <first-implementation|rerun>] [--json]\"",
         ".cursor/hooks/emit-runtime-policy.cjs:41807:\"main-agent-implementation-readiness-gate:rerun\"",
-        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:27479:// scripts/main-agent-implementation-readiness-gate.ts",
-        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:32158:// scripts/main-agent-implementation-readiness-gate.ts",
-        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:32160:return /(^|[\\\\/])main-agent-implementation-readiness-gate(\\.[cm]?js|\\.ts)?$/iu.test(entry ?? \"\");",
-        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:32658:\"Usage: main-agent-implementation-readiness-gate --requirement-record <json> [--source <requirement.md>] [--implementation-run-kind <first-implementation|rerun>] [--json]\"",
-        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:43910:\"main-agent-implementation-readiness-gate:rerun\""
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:27483:// compiled fallback segment: main-agent-implementation-readiness-gate",
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:32171:// compiled fallback segment: main-agent-implementation-readiness-gate",
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:32173:return /(^|[\\\\/])main-agent-implementation-readiness-gate(\\.[cm]?js|\\.ts)?$/iu.test(entry ?? \"\");",
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:32671:\"Usage: main-agent-implementation-readiness-gate --requirement-record <json> [--source <requirement.md>] [--implementation-run-kind <first-implementation|rerun>] [--json]\"",
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs:43923:\"main-agent-implementation-readiness-gate:rerun\""
       ],
       "acceptanceTestRefs": [
         "tests/acceptance/confirmation-projection-hash-policy.test.ts:9:import { mainImplementationReadinessGate } from '../../scripts/main-agent-implementation-readiness-gate';",
@@ -257,7 +258,7 @@
         "scripts/record-main-agent-inspect-readiness-closure.ts:281:path: 'tests/unit/main-agent-implementation-readiness-gate.test.ts',",
         "scripts/record-main-agent-inspect-readiness-closure.ts:282:contentHash: hashFile(root, 'tests/unit/main-agent-implementation-readiness-gate.test.ts'),"
       ],
-      "docsRefsCount": 76,
+      "docsRefsCount": 82,
       "consumerReachability": "consumer_runtime_reachable",
       "requiresPackaging": true,
       "canBecomePackageModule": true,
@@ -305,11 +306,12 @@
         "_bmad/_config/hooks-owner-model-registry.yaml:660:- scripts/main-agent-unified-ingress.ts",
         "_bmad/_config/main-agent-quality-gate.thresholds.json:9:\"scripts/main-agent-unified-ingress.ts\",",
         "_bmad/_config/main-agent-quality-gate.thresholds.json:34:\"tests/acceptance/main-agent-unified-ingress-e2e.test.ts\"",
-        "_bmad/_config/script-owner-model-registry.yaml:66:path: scripts/main-agent-unified-ingress.ts",
+        "_bmad/_config/script-owner-model-registry.yaml:76:path: scripts/main-agent-unified-ingress.ts",
+        "_bmad/_config/script-owner-model-registry.yaml:77:sourceRepoPath: \"scripts/main-agent-unified-ingress.ts\"",
         "_bmad/commands/bmad-speckit.md:15:4. Route execution through `main-agent-orchestration` / `main-agent-unified-ingress` for the active host.",
         "_bmad/skills/bmad-speckit/SKILL.md:83:3. Normalize the host entry into the `main-agent-orchestration` control plane through `main-agent-unified-ingress` or the installed equivalent runtime controller.",
         ".claude/commands/bmad-speckit.md:15:4. Route execution through `main-agent-orchestration` / `main-agent-unified-ingress` for the active host.",
-        ".claude/skills/bmad-speckit/SKILL.md:81:3. Normalize the host entry into the `main-agent-orchestration` control plane through `main-agent-unified-ingress` or the installed equivalent runtime controller.",
+        ".claude/skills/bmad-speckit/SKILL.md:83:3. Normalize the host entry into the `main-agent-orchestration` control plane through `main-agent-unified-ingress` or the installed equivalent runtime controller.",
         ".codex/commands/bmad-speckit.md:15:4. Route execution through `main-agent-orchestration` / `main-agent-unified-ingress` for the active host.",
         ".codex/skills/bmad-speckit/SKILL.md:83:3. Normalize the host entry into the `main-agent-orchestration` control plane through `main-agent-unified-ingress` or the installed equivalent runtime controller.",
         ".cursor/commands/bmad-speckit.md:15:4. Route execution through `main-agent-orchestration` / `main-agent-unified-ingress` for the active host.",
@@ -322,7 +324,7 @@
       "sourceScriptRefs": [
         "scripts/main-agent-development-journey-matrix.ts:5:import { runUnifiedIngress, type MainAgentHostKind } from './main-agent-unified-ingress';"
       ],
-      "docsRefsCount": 30,
+      "docsRefsCount": 36,
       "consumerReachability": "installed_surface_reachable",
       "requiresPackaging": true,
       "canBecomePackageModule": true,
@@ -365,7 +367,7 @@
       "packageCliCommands": [],
       "packageRuntimeRefs": [],
       "installedSurfaceRefs": [
-        "_bmad/_config/script-owner-model-registry.yaml:1144:path: scripts/main-agent-delivery-closeout-gate.ts"
+        "_bmad/_config/script-owner-model-registry.yaml:1586:path: scripts/main-agent-delivery-closeout-gate.ts"
       ],
       "acceptanceTestRefs": [
         "tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts:6:import { mainDeliveryCloseoutGate } from '../../scripts/main-agent-delivery-closeout-gate';",
@@ -401,7 +403,7 @@
       "sourceScriptRefs": [
         "scripts/trace-040-evidence-packet-generator.ts:166:'scripts/main-agent-delivery-closeout-gate.ts',"
       ],
-      "docsRefsCount": 131,
+      "docsRefsCount": 137,
       "consumerReachability": "installed_surface_reachable",
       "requiresPackaging": true,
       "canBecomePackageModule": true,
@@ -450,7 +452,7 @@
         "tests/acceptance/main-agent-reconfirmation-runtime.test.ts:10:import { mainExecutionClosureGate } from '../../scripts/main-agent-execution-closure-gate';"
       ],
       "sourceScriptRefs": [],
-      "docsRefsCount": 10,
+      "docsRefsCount": 12,
       "consumerReachability": "source_repo_only",
       "requiresPackaging": false,
       "canBecomePackageModule": false,
@@ -496,7 +498,7 @@
         "tests/acceptance/requirement-record-schema.test.ts:268:producer: 'main-agent-production-loop-ready-check',"
       ],
       "sourceScriptRefs": [],
-      "docsRefsCount": 9,
+      "docsRefsCount": 11,
       "consumerReachability": "source_repo_only",
       "requiresPackaging": false,
       "canBecomePackageModule": false,
@@ -543,7 +545,7 @@
         "tests/acceptance/main-agent-scoring-gates-check.test.ts:522:command: 'npx vitest run tests/acceptance/main-agent-scoring-gates-check.test.ts',"
       ],
       "sourceScriptRefs": [],
-      "docsRefsCount": 9,
+      "docsRefsCount": 11,
       "consumerReachability": "source_repo_only",
       "requiresPackaging": false,
       "canBecomePackageModule": false,
@@ -588,7 +590,7 @@
         "tests/acceptance/main-agent-runtime-policy-snapshot-check.test.ts:269:'npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-runtime-policy-snapshot-check.ts',"
       ],
       "sourceScriptRefs": [],
-      "docsRefsCount": 7,
+      "docsRefsCount": 9,
       "consumerReachability": "source_repo_only",
       "requiresPackaging": false,
       "canBecomePackageModule": false,
@@ -628,7 +630,7 @@
         "tests/acceptance/main-agent-trace-status-policy-check.test.ts:5:import { mainTraceStatusPolicyCheck } from '../../scripts/main-agent-trace-status-policy-check';"
       ],
       "sourceScriptRefs": [],
-      "docsRefsCount": 6,
+      "docsRefsCount": 8,
       "consumerReachability": "source_repo_only",
       "requiresPackaging": false,
       "canBecomePackageModule": false,
@@ -668,7 +670,7 @@
         "tests/acceptance/main-agent-data-governance-gate.test.ts:5:import { mainDataGovernanceGate } from '../../scripts/main-agent-data-governance-gate';"
       ],
       "sourceScriptRefs": [],
-      "docsRefsCount": 7,
+      "docsRefsCount": 9,
       "consumerReachability": "source_repo_only",
       "requiresPackaging": false,
       "canBecomePackageModule": false,
@@ -713,7 +715,7 @@
         "tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts:363:'tests/acceptance/main-agent-dataset-release-gate.test.ts',"
       ],
       "sourceScriptRefs": [],
-      "docsRefsCount": 12,
+      "docsRefsCount": 14,
       "consumerReachability": "source_repo_only",
       "requiresPackaging": false,
       "canBecomePackageModule": false,
@@ -755,7 +757,7 @@
         "tests/acceptance/requirement-record-control-store-enforcement.test.ts:39:const dataProducts = readProjectFile('scripts/main-agent-governed-data-products.ts');"
       ],
       "sourceScriptRefs": [],
-      "docsRefsCount": 10,
+      "docsRefsCount": 12,
       "consumerReachability": "source_repo_only",
       "requiresPackaging": false,
       "canBecomePackageModule": false,
@@ -795,7 +797,7 @@
         "tests/acceptance/main-agent-functional-resume-check.test.ts:6:import { mainFunctionalResumeCheck } from '../../scripts/main-agent-functional-resume-check';"
       ],
       "sourceScriptRefs": [],
-      "docsRefsCount": 11,
+      "docsRefsCount": 13,
       "consumerReachability": "source_repo_only",
       "requiresPackaging": false,
       "canBecomePackageModule": false,
@@ -836,7 +838,7 @@
         "tests/acceptance/requirement-entry-flow-resolver.test.ts:6:import './main-agent-entryflow-traceability-check.test';"
       ],
       "sourceScriptRefs": [],
-      "docsRefsCount": 5,
+      "docsRefsCount": 7,
       "consumerReachability": "source_repo_only",
       "requiresPackaging": false,
       "canBecomePackageModule": false,
@@ -877,7 +879,7 @@
         "tests/acceptance/main-agent-control-plane-isolation-check.test.ts:28:producer: 'main-agent-control-plane-isolation-check.test',"
       ],
       "sourceScriptRefs": [],
-      "docsRefsCount": 5,
+      "docsRefsCount": 7,
       "consumerReachability": "source_repo_only",
       "requiresPackaging": false,
       "canBecomePackageModule": false,
@@ -917,7 +919,7 @@
         "tests/acceptance/main-agent-decision-field-check.test.ts:5:import { mainDecisionFieldCheck } from '../../scripts/main-agent-decision-field-check';"
       ],
       "sourceScriptRefs": [],
-      "docsRefsCount": 5,
+      "docsRefsCount": 7,
       "consumerReachability": "source_repo_only",
       "requiresPackaging": false,
       "canBecomePackageModule": false,
@@ -959,7 +961,7 @@
         "tests/fixtures/requirements/REQ-AI-TDD-MANIFEST-CLOSEOUT-RUNNER/source.requirement.md:131:file: tests/acceptance/main-agent-ai-tdd-closeout-remediation-adapter.test.ts"
       ],
       "sourceScriptRefs": [],
-      "docsRefsCount": 29,
+      "docsRefsCount": 31,
       "consumerReachability": "source_repo_only",
       "requiresPackaging": false,
       "canBecomePackageModule": false,
@@ -1000,7 +1002,7 @@
         "tests/acceptance/main-agent-reconfirmation-runtime.test.ts:8:import { mainAuditReviewGate } from '../../scripts/main-agent-audit-review-gate';"
       ],
       "sourceScriptRefs": [],
-      "docsRefsCount": 10,
+      "docsRefsCount": 12,
       "consumerReachability": "source_repo_only",
       "requiresPackaging": false,
       "canBecomePackageModule": false,
@@ -1040,7 +1042,7 @@
         "tests/acceptance/main-agent-bmad-artifact-hardcut.test.ts:5:import { mainBmadArtifactHardcut } from '../../scripts/main-agent-bmad-artifact-hardcut';"
       ],
       "sourceScriptRefs": [],
-      "docsRefsCount": 5,
+      "docsRefsCount": 7,
       "consumerReachability": "source_repo_only",
       "requiresPackaging": false,
       "canBecomePackageModule": false,
@@ -1078,13 +1080,14 @@
       "packageCliCommands": [],
       "packageRuntimeRefs": [],
       "installedSurfaceRefs": [
-        "_bmad/_config/script-owner-model-registry.yaml:767:path: scripts/main-agent-delivery-evidence-run.ts"
+        "_bmad/_config/script-owner-model-registry.yaml:1115:path: scripts/main-agent-delivery-evidence-run.ts",
+        "_bmad/_config/script-owner-model-registry.yaml:1116:sourceRepoPath: \"scripts/main-agent-delivery-evidence-run.ts\""
       ],
       "acceptanceTestRefs": [
         "tests/acceptance/main-agent-delivery-evidence-run.test.ts:43:path.join(process.cwd(), 'scripts', 'main-agent-delivery-evidence-run.ts'),"
       ],
       "sourceScriptRefs": [],
-      "docsRefsCount": 11,
+      "docsRefsCount": 17,
       "consumerReachability": "installed_surface_reachable",
       "requiresPackaging": true,
       "canBecomePackageModule": true,
@@ -1130,7 +1133,8 @@
       "packageCliCommands": [],
       "packageRuntimeRefs": [],
       "installedSurfaceRefs": [
-        "_bmad/_config/script-owner-model-registry.yaml:783:path: scripts/main-agent-soak-runner.ts"
+        "_bmad/_config/script-owner-model-registry.yaml:1141:path: scripts/main-agent-soak-runner.ts",
+        "_bmad/_config/script-owner-model-registry.yaml:1142:sourceRepoPath: \"scripts/main-agent-soak-runner.ts\""
       ],
       "acceptanceTestRefs": [
         "tests/acceptance/main-agent-long-run-soak-wall-clock.test.ts:6:import { evaluateSoakReport, runWallClockSoak } from '../../scripts/main-agent-soak-runner';",
@@ -1139,7 +1143,7 @@
         "tests/acceptance/main-agent-soak-8h-contract.test.ts:5:} from '../../scripts/main-agent-soak-runner';"
       ],
       "sourceScriptRefs": [],
-      "docsRefsCount": 12,
+      "docsRefsCount": 18,
       "consumerReachability": "installed_surface_reachable",
       "requiresPackaging": true,
       "canBecomePackageModule": true,
@@ -1188,7 +1192,7 @@
         "tests/acceptance/main-agent-development-journey-matrix-e2e.test.ts:5:import { runDevelopmentJourneyMatrix } from '../../scripts/main-agent-development-journey-matrix';"
       ],
       "sourceScriptRefs": [],
-      "docsRefsCount": 7,
+      "docsRefsCount": 9,
       "consumerReachability": "source_repo_only",
       "requiresPackaging": false,
       "canBecomePackageModule": false,
@@ -1226,13 +1230,14 @@
       "packageCliCommands": [],
       "packageRuntimeRefs": [],
       "installedSurfaceRefs": [
-        "_bmad/_config/script-owner-model-registry.yaml:815:path: scripts/main-agent-dual-host-pr-orchestrator.ts"
+        "_bmad/_config/script-owner-model-registry.yaml:1192:path: scripts/main-agent-dual-host-pr-orchestrator.ts",
+        "_bmad/_config/script-owner-model-registry.yaml:1193:sourceRepoPath: \"scripts/main-agent-dual-host-pr-orchestrator.ts\""
       ],
       "acceptanceTestRefs": [],
       "sourceScriptRefs": [
         "scripts/subagent-surface-inventory.ts:68:'scripts/main-agent-dual-host-pr-orchestrator.ts',"
       ],
-      "docsRefsCount": 10,
+      "docsRefsCount": 16,
       "consumerReachability": "installed_surface_reachable",
       "requiresPackaging": true,
       "canBecomePackageModule": true,
@@ -1278,13 +1283,14 @@
       "packageRuntimeRefs": [],
       "installedSurfaceRefs": [
         "_bmad/_config/main-agent-quality-gate.thresholds.json:14:\"scripts/main-agent-chaos-scenarios.ts\",",
-        "_bmad/_config/script-owner-model-registry.yaml:831:path: scripts/main-agent-chaos-scenarios.ts"
+        "_bmad/_config/script-owner-model-registry.yaml:1218:path: scripts/main-agent-chaos-scenarios.ts",
+        "_bmad/_config/script-owner-model-registry.yaml:1219:sourceRepoPath: \"scripts/main-agent-chaos-scenarios.ts\""
       ],
       "acceptanceTestRefs": [
         "tests/acceptance/main-agent-chaos-recovery-e2e.test.ts:4:import { runChaosScenarios } from '../../scripts/main-agent-chaos-scenarios';"
       ],
       "sourceScriptRefs": [],
-      "docsRefsCount": 11,
+      "docsRefsCount": 17,
       "consumerReachability": "installed_surface_reachable",
       "requiresPackaging": true,
       "canBecomePackageModule": true,
