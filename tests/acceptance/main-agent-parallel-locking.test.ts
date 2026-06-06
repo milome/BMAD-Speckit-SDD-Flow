@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildParallelMissionPlan } from '../../scripts/parallel-mission-control';
+import { buildParallelMissionPlan } from '../../packages/bmad-speckit/src/main-agent/runtime/parallel-mission-control.js';
 
 describe('main-agent parallel locking', () => {
   it('serializes overlapping write scopes and blocks protected write paths', () => {

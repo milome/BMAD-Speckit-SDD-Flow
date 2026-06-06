@@ -1,0 +1,48 @@
+{
+  "schemaVersion": "main-agent-p1-p4-install-matrix/v1",
+  "contractPath": "docs/plans/2026-06-05-main-agent-p1-p4-runtime-migration-goal-execution-plan.md",
+  "installMode": "npx-package",
+  "packageSpec": "D:/Dev/BMAD-Speckit-SDD-Flow/repo-governance/script-migrations/main-agent-p1-p4-runtime-migration/bmad-speckit-2.0.1.tgz",
+  "packagePath": "transient-npx-package",
+  "consumerRoot": "C:/Users/milom/AppData/Local/Temp/main-agent-p1-p4-npx-package-qUL8Hp",
+  "runtimeActionCount": 51,
+  "runtimeActionCommandCount": 1,
+  "runtimeActionCoverage": "tarball_file_manifest_plus_representative_cli_probe",
+  "durableHelperCount": 14,
+  "durableHelperCoverage": "tarball_file_manifest",
+  "p3DeterministicExclusionCount": 17,
+  "commandCount": 1,
+  "usedRootScript": false,
+  "usedTsx": false,
+  "usedTsNode": false,
+  "usedCompiledFallback": false,
+  "generatedSurfaceScan": {
+    "scannedRoots": [],
+    "scannedFiles": [],
+    "findings": []
+  },
+  "packedRuntimeMissing": [],
+  "packedHelperMissing": [],
+  "commands": [
+    {
+      "commandId": "live-smoke-main-agent-runtime",
+      "command": "npx.cmd --yes --package D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-p1-p4-runtime-migration\\bmad-speckit-2.0.1.tgz bmad-speckit main-agent live-smoke-main-agent-runtime --json",
+      "exitCode": 0,
+      "stdoutHash": "sha256:b3595208466f19957cfbb21393a5b62052df42c485e52c8335571af2fc0b4202",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "{\n  \"schemaVersion\": \"main-agent-package-runtime/v1\",\n  \"action\": \"live-smoke-main-agent-runtime\",\n  \"cwd\": \"C:\\\\Users\\\\milom\\\\AppData\\\\Local\\\\Temp\\\\main-agent-p1-p4-npx-package-qUL8Hp\",\n  \"status\": \"package_runtime_ready\",\n  \"exitCode\": 0,\n  \"errors\": [],\n  \"data\": {\n    \"report\": {\n      \"reportType\": \"main_agent_live_smoke_main_agent_runtime_package_runtime\",\n      \"generatedAt\": \"2026-06-05T06:24:09.833Z\",\n      \"action\": \"live-smoke-main-agent-runtime\",\n      \"cwd\": \"C:\\\\Users\\\\milom\\\\AppData\\\\Local\\\\Temp\\\\main-agent-p1-p4-npx-package-qUL8Hp\",\n      \"mode\": \"package_runtime_module\",\n     ",
+      "stderrPreview": "",
+      "entryId": "live-smoke-main-agent-runtime",
+      "waveId": "main-agent-runtime-migration-wave-3.6",
+      "originalPath": "scripts/live-smoke-main-agent-runtime.ts",
+      "action": "live-smoke-main-agent-runtime",
+      "usedRootScript": false,
+      "usedTsx": false,
+      "usedTsNode": false,
+      "usedCompiledFallback": false,
+      "parsedStatus": "package_runtime_ready",
+      "probeHits": []
+    }
+  ],
+  "result": "passed"
+}

@@ -1,0 +1,327 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-candidate-manifest/v1",
+  "waveId": "main-agent-runtime-migration-wave-3.7",
+  "title": "Wave 3.7 P2 package runtime closure",
+  "contractPath": "docs/plans/2026-06-05-main-agent-p1-p4-runtime-migration-goal-execution-plan.md",
+  "refinesWaveId": "main-agent-runtime-migration-wave-3.6",
+  "sourcePriorityMatrixPath": "repo-governance/script-migrations/main-agent-runtime-closure-wave-3/priority-matrix.md",
+  "registryPath": "repo-governance/script-migration-registry.yaml",
+  "evidencePath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.7/evidence.json",
+  "summaryPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.7/summary.md",
+  "selection": {
+    "priority": "P2",
+    "matrixTotal": 8,
+    "alreadyValidated": 0,
+    "remaining": 8,
+    "selectionRule": "Include every P2 priority-matrix row that does not have a registry row with the same originalPath and validationStatus=passed."
+  },
+  "status": "manifest_locked",
+  "deletionAllowed": false,
+  "deletionApprovalRef": null,
+  "entries": [
+    {
+      "entryId": "initialize-six-model-requirement-confirmation",
+      "priority": "P2",
+      "originalPath": "scripts/initialize-six-model-requirement-confirmation.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "migrationStrategy": "package_runtime_module",
+      "migrationStatus": "planned",
+      "actionSlug": "initialize-six-model-requirement-confirmation",
+      "targetSourcePaths": [
+        "packages/bmad-speckit/src/main-agent/actions/initialize-six-model-requirement-confirmation.js"
+      ],
+      "targetDistPaths": [
+        "packages/bmad-speckit/dist/main-agent/actions/initialize-six-model-requirement-confirmation.js"
+      ],
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/initialize-six-model-requirement-confirmation.js",
+        "packages/bmad-speckit/dist/main-agent/actions/initialize-six-model-requirement-confirmation.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/initialize-six-model-requirement-confirmation.ts"
+      ],
+      "publicCommandsAfterMigration": [
+        "bmad-speckit main-agent initialize-six-model-requirement-confirmation"
+      ],
+      "callerSwitchRequired": true,
+      "callerSwitchStatus": "pending",
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.7/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_migration",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "reconfirmation-runtime",
+      "priority": "P2",
+      "originalPath": "scripts/reconfirmation-runtime.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "migrationStrategy": "package_runtime_module",
+      "migrationStatus": "planned",
+      "actionSlug": "reconfirmation-runtime",
+      "targetSourcePaths": [
+        "packages/bmad-speckit/src/main-agent/actions/reconfirmation-runtime.js"
+      ],
+      "targetDistPaths": [
+        "packages/bmad-speckit/dist/main-agent/actions/reconfirmation-runtime.js"
+      ],
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/reconfirmation-runtime.js",
+        "packages/bmad-speckit/dist/main-agent/actions/reconfirmation-runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/reconfirmation-runtime.ts"
+      ],
+      "publicCommandsAfterMigration": [
+        "bmad-speckit main-agent reconfirmation-runtime"
+      ],
+      "callerSwitchRequired": true,
+      "callerSwitchStatus": "pending",
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.7/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_migration",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "requirement-record-control-store",
+      "priority": "P2",
+      "originalPath": "scripts/requirement-record-control-store.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "migrationStrategy": "package_runtime_module",
+      "migrationStatus": "planned",
+      "actionSlug": "requirement-record-control-store",
+      "targetSourcePaths": [
+        "packages/bmad-speckit/src/main-agent/actions/requirement-record-control-store.js"
+      ],
+      "targetDistPaths": [
+        "packages/bmad-speckit/dist/main-agent/actions/requirement-record-control-store.js"
+      ],
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/requirement-record-control-store.js",
+        "packages/bmad-speckit/dist/main-agent/actions/requirement-record-control-store.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/requirement-record-control-store.ts"
+      ],
+      "publicCommandsAfterMigration": [
+        "bmad-speckit main-agent requirement-record-control-store"
+      ],
+      "callerSwitchRequired": true,
+      "callerSwitchStatus": "pending",
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.7/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_migration",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "requirement-record-live-schema-gate",
+      "priority": "P2",
+      "originalPath": "scripts/requirement-record-live-schema-gate.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "migrationStrategy": "package_runtime_module",
+      "migrationStatus": "planned",
+      "actionSlug": "requirement-record-live-schema-gate",
+      "targetSourcePaths": [
+        "packages/bmad-speckit/src/main-agent/actions/requirement-record-live-schema-gate.js"
+      ],
+      "targetDistPaths": [
+        "packages/bmad-speckit/dist/main-agent/actions/requirement-record-live-schema-gate.js"
+      ],
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/requirement-record-live-schema-gate.js",
+        "packages/bmad-speckit/dist/main-agent/actions/requirement-record-live-schema-gate.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/requirement-record-live-schema-gate.ts"
+      ],
+      "publicCommandsAfterMigration": [
+        "bmad-speckit main-agent requirement-record-live-schema-gate"
+      ],
+      "callerSwitchRequired": true,
+      "callerSwitchStatus": "pending",
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.7/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_migration",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "requirement-record-schema-evolution",
+      "priority": "P2",
+      "originalPath": "scripts/requirement-record-schema-evolution.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "migrationStrategy": "package_runtime_module",
+      "migrationStatus": "planned",
+      "actionSlug": "requirement-record-schema-evolution",
+      "targetSourcePaths": [
+        "packages/bmad-speckit/src/main-agent/actions/requirement-record-schema-evolution.js"
+      ],
+      "targetDistPaths": [
+        "packages/bmad-speckit/dist/main-agent/actions/requirement-record-schema-evolution.js"
+      ],
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/requirement-record-schema-evolution.js",
+        "packages/bmad-speckit/dist/main-agent/actions/requirement-record-schema-evolution.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/requirement-record-schema-evolution.ts"
+      ],
+      "publicCommandsAfterMigration": [
+        "bmad-speckit main-agent requirement-record-schema-evolution"
+      ],
+      "callerSwitchRequired": true,
+      "callerSwitchStatus": "pending",
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.7/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_migration",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "resolve-active-requirement",
+      "priority": "P2",
+      "originalPath": "scripts/resolve-active-requirement.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "migrationStrategy": "package_runtime_module",
+      "migrationStatus": "planned",
+      "actionSlug": "resolve-active-requirement",
+      "targetSourcePaths": [
+        "packages/bmad-speckit/src/main-agent/actions/resolve-active-requirement.js"
+      ],
+      "targetDistPaths": [
+        "packages/bmad-speckit/dist/main-agent/actions/resolve-active-requirement.js"
+      ],
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/resolve-active-requirement.js",
+        "packages/bmad-speckit/dist/main-agent/actions/resolve-active-requirement.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/resolve-active-requirement.ts"
+      ],
+      "publicCommandsAfterMigration": [
+        "bmad-speckit main-agent resolve-active-requirement"
+      ],
+      "callerSwitchRequired": true,
+      "callerSwitchStatus": "pending",
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.7/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_migration",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "runtime-scoring-data-path",
+      "priority": "P2",
+      "originalPath": "scripts/runtime-scoring-data-path.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "migrationStrategy": "package_runtime_module",
+      "migrationStatus": "planned",
+      "actionSlug": "runtime-scoring-data-path",
+      "targetSourcePaths": [
+        "packages/bmad-speckit/src/main-agent/actions/runtime-scoring-data-path.js"
+      ],
+      "targetDistPaths": [
+        "packages/bmad-speckit/dist/main-agent/actions/runtime-scoring-data-path.js"
+      ],
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/runtime-scoring-data-path.js",
+        "packages/bmad-speckit/dist/main-agent/actions/runtime-scoring-data-path.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/runtime-scoring-data-path.ts"
+      ],
+      "publicCommandsAfterMigration": [
+        "bmad-speckit main-agent runtime-scoring-data-path"
+      ],
+      "callerSwitchRequired": true,
+      "callerSwitchStatus": "pending",
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.7/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_migration",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "six-model-runtime-decision",
+      "priority": "P2",
+      "originalPath": "scripts/six-model-runtime-decision.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "migrationStrategy": "package_runtime_module",
+      "migrationStatus": "planned",
+      "actionSlug": "six-model-runtime-decision",
+      "targetSourcePaths": [
+        "packages/bmad-speckit/src/main-agent/actions/six-model-runtime-decision.js"
+      ],
+      "targetDistPaths": [
+        "packages/bmad-speckit/dist/main-agent/actions/six-model-runtime-decision.js"
+      ],
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/six-model-runtime-decision.js",
+        "packages/bmad-speckit/dist/main-agent/actions/six-model-runtime-decision.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/six-model-runtime-decision.ts"
+      ],
+      "publicCommandsAfterMigration": [
+        "bmad-speckit main-agent six-model-runtime-decision"
+      ],
+      "callerSwitchRequired": true,
+      "callerSwitchStatus": "pending",
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.7/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_migration",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    }
+  ]
+}

@@ -1,0 +1,215 @@
+{
+  "waveId": "main-agent-runtime-migration-wave-3.11",
+  "generatedAt": "2026-06-06T02:01:38.498Z",
+  "sourceInventoryRef": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/source-inventory.json",
+  "entries": [
+    {
+      "originalPath": "scripts/host-runtime-mode.ts",
+      "baselineSha256": "sha256:b57a9df3949f134f22db48b1fcd04b9dd4e3d3d3b17a25d92c7649971239809f",
+      "currentSha256": "sha256:b57a9df3949f134f22db48b1fcd04b9dd4e3d3d3b17a25d92c7649971239809f",
+      "worktreeStatus": "",
+      "contentChanged": false,
+      "behaviorProofStatus": "unchanged",
+      "acceptedCommandIds": [],
+      "evidenceRefs": [],
+      "preservedBehavior": {
+        "arguments": true,
+        "outputShape": true,
+        "exitCodeSemantics": true,
+        "errorNames": true
+      }
+    },
+    {
+      "originalPath": "scripts/supervised-worker-runtime.ts",
+      "baselineSha256": "sha256:bbc6280ca332b9a9a818f72c486ebed7e621cafb3878c0ce2d13bbe6c8095c20",
+      "currentSha256": "sha256:bbc6280ca332b9a9a818f72c486ebed7e621cafb3878c0ce2d13bbe6c8095c20",
+      "worktreeStatus": "",
+      "contentChanged": false,
+      "behaviorProofStatus": "unchanged",
+      "acceptedCommandIds": [],
+      "evidenceRefs": [],
+      "preservedBehavior": {
+        "arguments": true,
+        "outputShape": true,
+        "exitCodeSemantics": true,
+        "errorNames": true
+      }
+    },
+    {
+      "originalPath": "scripts/diagnose-bmad-state.ts",
+      "baselineSha256": "sha256:96b84274cc576c5b76a692da1efbe2285082038d5a0cbeb78c42ebcc0d6449c7",
+      "currentSha256": "sha256:96b84274cc576c5b76a692da1efbe2285082038d5a0cbeb78c42ebcc0d6449c7",
+      "worktreeStatus": "",
+      "contentChanged": false,
+      "behaviorProofStatus": "unchanged",
+      "acceptedCommandIds": [],
+      "evidenceRefs": [],
+      "preservedBehavior": {
+        "arguments": true,
+        "outputShape": true,
+        "exitCodeSemantics": true,
+        "errorNames": true
+      }
+    },
+    {
+      "originalPath": "scripts/parallel-mission-control.ts",
+      "baselineSha256": "sha256:161d16d14159ec9b4068cb98ded1c684448c62686475c453198f5fac632177d5",
+      "currentSha256": "sha256:161d16d14159ec9b4068cb98ded1c684448c62686475c453198f5fac632177d5",
+      "worktreeStatus": "",
+      "contentChanged": false,
+      "behaviorProofStatus": "unchanged",
+      "acceptedCommandIds": [],
+      "evidenceRefs": [],
+      "preservedBehavior": {
+        "arguments": true,
+        "outputShape": true,
+        "exitCodeSemantics": true,
+        "errorNames": true
+      }
+    },
+    {
+      "originalPath": "scripts/bmad-state-reader.ts",
+      "baselineSha256": "sha256:8ba3dd62ed945ebc16485acbef35820b871654884d35ae156524158cfe35f32e",
+      "currentSha256": "sha256:8ba3dd62ed945ebc16485acbef35820b871654884d35ae156524158cfe35f32e",
+      "worktreeStatus": "",
+      "contentChanged": false,
+      "behaviorProofStatus": "unchanged",
+      "acceptedCommandIds": [],
+      "evidenceRefs": [],
+      "preservedBehavior": {
+        "arguments": true,
+        "outputShape": true,
+        "exitCodeSemantics": true,
+        "errorNames": true
+      }
+    },
+    {
+      "originalPath": "scripts/e2e-verify-paths.ts",
+      "baselineSha256": "sha256:01b230ffc02255351bd8ae638271b92f4da7287c0e932ddd9d6237baae9b1dc0",
+      "currentSha256": "sha256:01b230ffc02255351bd8ae638271b92f4da7287c0e932ddd9d6237baae9b1dc0",
+      "worktreeStatus": "",
+      "contentChanged": false,
+      "behaviorProofStatus": "unchanged",
+      "acceptedCommandIds": [],
+      "evidenceRefs": [],
+      "preservedBehavior": {
+        "arguments": true,
+        "outputShape": true,
+        "exitCodeSemantics": true,
+        "errorNames": true
+      }
+    },
+    {
+      "originalPath": "scripts/query-validate.ts",
+      "baselineSha256": "sha256:61e837c184b48dceac96042621118885216db7028166a8e88849c514e4d2f114",
+      "currentSha256": "sha256:61e837c184b48dceac96042621118885216db7028166a8e88849c514e4d2f114",
+      "worktreeStatus": "",
+      "contentChanged": false,
+      "behaviorProofStatus": "unchanged",
+      "acceptedCommandIds": [],
+      "evidenceRefs": [],
+      "preservedBehavior": {
+        "arguments": true,
+        "outputShape": true,
+        "exitCodeSemantics": true,
+        "errorNames": true
+      }
+    },
+    {
+      "originalPath": "scripts/runtime-step-state.ts",
+      "baselineSha256": "sha256:b83d91a0d9ce22cb4e2d8833f9cbe287c86cdee685550f64b2169ff65ccc6621",
+      "currentSha256": "sha256:b83d91a0d9ce22cb4e2d8833f9cbe287c86cdee685550f64b2169ff65ccc6621",
+      "worktreeStatus": "",
+      "contentChanged": false,
+      "behaviorProofStatus": "unchanged",
+      "acceptedCommandIds": [],
+      "evidenceRefs": [],
+      "preservedBehavior": {
+        "arguments": true,
+        "outputShape": true,
+        "exitCodeSemantics": true,
+        "errorNames": true
+      }
+    },
+    {
+      "originalPath": "scripts/verify-agent-files.ts",
+      "baselineSha256": "sha256:3c3cd0860d1b4db7fb75a3954d86b1e3a707a1e0d9946899feffabb73b2160ec",
+      "currentSha256": "sha256:3c3cd0860d1b4db7fb75a3954d86b1e3a707a1e0d9946899feffabb73b2160ec",
+      "worktreeStatus": "",
+      "contentChanged": false,
+      "behaviorProofStatus": "unchanged",
+      "acceptedCommandIds": [],
+      "evidenceRefs": [],
+      "preservedBehavior": {
+        "arguments": true,
+        "outputShape": true,
+        "exitCodeSemantics": true,
+        "errorNames": true
+      }
+    },
+    {
+      "originalPath": "scripts/eval-question-generate.ts",
+      "baselineSha256": "sha256:4acfedacea9b5313c3b0455f662b3a234fae94aa651f7bdfe6937ed79981a209",
+      "currentSha256": "sha256:4acfedacea9b5313c3b0455f662b3a234fae94aa651f7bdfe6937ed79981a209",
+      "worktreeStatus": "",
+      "contentChanged": false,
+      "behaviorProofStatus": "unchanged",
+      "acceptedCommandIds": [],
+      "evidenceRefs": [],
+      "preservedBehavior": {
+        "arguments": true,
+        "outputShape": true,
+        "exitCodeSemantics": true,
+        "errorNames": true
+      }
+    },
+    {
+      "originalPath": "scripts/check-story-score-written.ts",
+      "baselineSha256": "sha256:478d536e64fdaf172a12670c795d54c567971881c93495125a0725de47e106f9",
+      "currentSha256": "sha256:478d536e64fdaf172a12670c795d54c567971881c93495125a0725de47e106f9",
+      "worktreeStatus": "",
+      "contentChanged": false,
+      "behaviorProofStatus": "unchanged",
+      "acceptedCommandIds": [],
+      "evidenceRefs": [],
+      "preservedBehavior": {
+        "arguments": true,
+        "outputShape": true,
+        "exitCodeSemantics": true,
+        "errorNames": true
+      }
+    },
+    {
+      "originalPath": "scripts/create-second-story.ts",
+      "baselineSha256": "sha256:df3f682364edc2f51c809348a702d1f9b9eab36ed07907fed1e727e09f160f57",
+      "currentSha256": "sha256:df3f682364edc2f51c809348a702d1f9b9eab36ed07907fed1e727e09f160f57",
+      "worktreeStatus": "",
+      "contentChanged": false,
+      "behaviorProofStatus": "unchanged",
+      "acceptedCommandIds": [],
+      "evidenceRefs": [],
+      "preservedBehavior": {
+        "arguments": true,
+        "outputShape": true,
+        "exitCodeSemantics": true,
+        "errorNames": true
+      }
+    },
+    {
+      "originalPath": "scripts/verify-score-auto-scoped-bundle.cjs",
+      "baselineSha256": "sha256:112357b89cacb5c4f37a6e07b80c844c5d9ca2246d1af376dc88bcb9bc76f38e",
+      "currentSha256": "sha256:112357b89cacb5c4f37a6e07b80c844c5d9ca2246d1af376dc88bcb9bc76f38e",
+      "worktreeStatus": "",
+      "contentChanged": false,
+      "behaviorProofStatus": "unchanged",
+      "acceptedCommandIds": [],
+      "evidenceRefs": [],
+      "preservedBehavior": {
+        "arguments": true,
+        "outputShape": true,
+        "exitCodeSemantics": true,
+        "errorNames": true
+      }
+    }
+  ]
+}

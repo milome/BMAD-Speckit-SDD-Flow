@@ -1,0 +1,129 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-wave-3.12-install-matrix/v1",
+  "waveId": "main-agent-runtime-migration-wave-3.12",
+  "status": "passed",
+  "startedAt": "2026-06-06T12:19:21.321Z",
+  "completedAt": "2026-06-06T12:19:22.231Z",
+  "ledgerPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/migration-ledger.json",
+  "queueHash": "sha256:202c3a2f3305b084771c42dc5b385f4e82255475db7d994fa97d71a38b1617ea",
+  "packageCwd": "packages/bmad-speckit",
+  "installSandboxRoot": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/install-sandbox",
+  "categoryCoverage": {
+    "consumer_runtime_reachable": [
+      "analytics-sft-extract-ts"
+    ],
+    "package_runtime_helper": [
+      "architecture-confirmation-hash-recipe-ts"
+    ],
+    "public_cli": [
+      "architecture-drift-check-ts"
+    ]
+  },
+  "modes": [
+    {
+      "mode": "installed-package-runtime-action-probe",
+      "status": "passed",
+      "commandRows": [
+        {
+          "command": "d:\\nvm4w\\nodejs\\node.exe -e require('bmad-speckit/dist/main-agent/index.js'); console.log('probe passed')",
+          "cwd": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/install-sandbox/runtime-action",
+          "exitCode": 0,
+          "stdoutHash": "sha256:8ab4749481e2b94a8bee2e2f7f1efb25c0692ee6a22d822da4b5d11c8d3ea110",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "probe passed\n",
+          "stderrPreview": "",
+          "startedAt": "2026-06-06T12:19:21.496Z",
+          "completedAt": "2026-06-06T12:19:21.610Z",
+          "status": "passed"
+        }
+      ],
+      "rows": [
+        {
+          "rowId": "analytics-sft-extract-ts",
+          "category": "consumer_runtime_reachable",
+          "status": "passed",
+          "installSandboxPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/install-sandbox/runtime-action",
+          "probeTarget": "bmad-speckit/dist/main-agent/index.js",
+          "usedRootScript": false,
+          "usedTsx": false,
+          "usedTsNode": false,
+          "usedCompiledFallback": false,
+          "command": "d:\\nvm4w\\nodejs\\node.exe -e require('bmad-speckit/dist/main-agent/index.js'); console.log('probe passed')",
+          "exitCode": 0,
+          "stdoutHash": "sha256:8ab4749481e2b94a8bee2e2f7f1efb25c0692ee6a22d822da4b5d11c8d3ea110",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ]
+    },
+    {
+      "mode": "installed-package-helper-probe",
+      "status": "passed",
+      "commandRows": [
+        {
+          "command": "d:\\nvm4w\\nodejs\\node.exe -e require(\"bmad-speckit/src/main-agent/helpers/architecture-confirmation-hash-recipe.js\"); console.log('probe passed')",
+          "cwd": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/install-sandbox/package-helper",
+          "exitCode": 0,
+          "stdoutHash": "sha256:8ab4749481e2b94a8bee2e2f7f1efb25c0692ee6a22d822da4b5d11c8d3ea110",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "probe passed\n",
+          "stderrPreview": "",
+          "startedAt": "2026-06-06T12:19:21.796Z",
+          "completedAt": "2026-06-06T12:19:21.906Z",
+          "status": "passed"
+        }
+      ],
+      "rows": [
+        {
+          "rowId": "architecture-confirmation-hash-recipe-ts",
+          "category": "package_runtime_helper",
+          "status": "passed",
+          "installSandboxPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/install-sandbox/package-helper",
+          "probeTarget": "bmad-speckit/src/main-agent/helpers/architecture-confirmation-hash-recipe.js",
+          "usedRootScript": false,
+          "usedTsx": false,
+          "usedTsNode": false,
+          "usedCompiledFallback": false,
+          "command": "d:\\nvm4w\\nodejs\\node.exe -e require(\"bmad-speckit/src/main-agent/helpers/architecture-confirmation-hash-recipe.js\"); console.log('probe passed')",
+          "exitCode": 0,
+          "stdoutHash": "sha256:8ab4749481e2b94a8bee2e2f7f1efb25c0692ee6a22d822da4b5d11c8d3ea110",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ]
+    },
+    {
+      "mode": "installed-package-cli-probe",
+      "status": "passed",
+      "commandRows": [
+        {
+          "command": "d:\\nvm4w\\nodejs\\node.exe D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-3.12\\install-sandbox\\package-cli\\node_modules\\bmad-speckit\\bin\\bmad-speckit.js architecture-drift-check --help",
+          "cwd": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/install-sandbox/package-cli",
+          "exitCode": 0,
+          "stdoutHash": "sha256:7588a9fe8a4540b8c2ebaa4334666a0a7e4aa8eb6958333809a432a0488f41ba",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "Usage: bmad-speckit architecture-drift-check [options]\n\nRun the package architecture drift check surface\n\nOptions:\n  --json      Print machine-readable JSON\n  -h, --help  display help for command\n",
+          "stderrPreview": "",
+          "startedAt": "2026-06-06T12:19:22.103Z",
+          "completedAt": "2026-06-06T12:19:22.231Z",
+          "status": "passed"
+        }
+      ],
+      "rows": [
+        {
+          "rowId": "architecture-drift-check-ts",
+          "category": "public_cli",
+          "status": "passed",
+          "installSandboxPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/install-sandbox/package-cli",
+          "probeTarget": "bmad-speckit architecture-drift-check --help",
+          "usedRootScript": false,
+          "usedTsx": false,
+          "usedTsNode": false,
+          "usedCompiledFallback": false,
+          "command": "d:\\nvm4w\\nodejs\\node.exe D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-3.12\\install-sandbox\\package-cli\\node_modules\\bmad-speckit\\bin\\bmad-speckit.js architecture-drift-check --help",
+          "exitCode": 0,
+          "stdoutHash": "sha256:7588a9fe8a4540b8c2ebaa4334666a0a7e4aa8eb6958333809a432a0488f41ba",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ]
+    }
+  ]
+}

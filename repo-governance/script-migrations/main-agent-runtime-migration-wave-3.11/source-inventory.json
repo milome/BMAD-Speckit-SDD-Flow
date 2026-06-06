@@ -1,0 +1,160 @@
+{
+  "waveId": "main-agent-runtime-migration-wave-3.11",
+  "generatedAt": "2026-06-05T22:58:32.605Z",
+  "entries": [
+    {
+      "originalPath": "scripts/host-runtime-mode.ts",
+      "auditSemanticClassification": "package_runtime_module",
+      "migrationStrategy": "package_runtime_module",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.js",
+        "packages/bmad-speckit/dist/main-agent/runtime/host-runtime-mode.js"
+      ],
+      "originalPathSha256": "sha256:b57a9df3949f134f22db48b1fcd04b9dd4e3d3d3b17a25d92c7649971239809f",
+      "retainedRootPath": true,
+      "deletionAllowed": false
+    },
+    {
+      "originalPath": "scripts/supervised-worker-runtime.ts",
+      "auditSemanticClassification": "package_runtime_module",
+      "migrationStrategy": "package_runtime_module",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/runtime/supervised-worker-runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime/supervised-worker-runtime.js"
+      ],
+      "originalPathSha256": "sha256:bbc6280ca332b9a9a818f72c486ebed7e621cafb3878c0ce2d13bbe6c8095c20",
+      "retainedRootPath": true,
+      "deletionAllowed": false
+    },
+    {
+      "originalPath": "scripts/diagnose-bmad-state.ts",
+      "auditSemanticClassification": "package_runtime_module",
+      "migrationStrategy": "package_runtime_module",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/runtime/diagnose-bmad-state.js",
+        "packages/bmad-speckit/dist/main-agent/runtime/diagnose-bmad-state.js"
+      ],
+      "originalPathSha256": "sha256:96b84274cc576c5b76a692da1efbe2285082038d5a0cbeb78c42ebcc0d6449c7",
+      "retainedRootPath": true,
+      "deletionAllowed": false
+    },
+    {
+      "originalPath": "scripts/parallel-mission-control.ts",
+      "auditSemanticClassification": "package_runtime_module",
+      "migrationStrategy": "package_runtime_module",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/runtime/parallel-mission-control.js",
+        "packages/bmad-speckit/dist/main-agent/runtime/parallel-mission-control.js"
+      ],
+      "originalPathSha256": "sha256:161d16d14159ec9b4068cb98ded1c684448c62686475c453198f5fac632177d5",
+      "retainedRootPath": true,
+      "deletionAllowed": false
+    },
+    {
+      "originalPath": "scripts/bmad-state-reader.ts",
+      "auditSemanticClassification": "package_local_helper",
+      "migrationStrategy": "durable_helper_copy",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/bmad-state-reader.js",
+        "packages/bmad-speckit/dist/main-agent/helpers/bmad-state-reader.js"
+      ],
+      "originalPathSha256": "sha256:8ba3dd62ed945ebc16485acbef35820b871654884d35ae156524158cfe35f32e",
+      "retainedRootPath": true,
+      "deletionAllowed": false
+    },
+    {
+      "originalPath": "scripts/e2e-verify-paths.ts",
+      "auditSemanticClassification": "package_local_helper",
+      "migrationStrategy": "durable_helper_copy",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/e2e-verify-paths.js",
+        "packages/bmad-speckit/dist/main-agent/helpers/e2e-verify-paths.js"
+      ],
+      "originalPathSha256": "sha256:01b230ffc02255351bd8ae638271b92f4da7287c0e932ddd9d6237baae9b1dc0",
+      "retainedRootPath": true,
+      "deletionAllowed": false
+    },
+    {
+      "originalPath": "scripts/query-validate.ts",
+      "auditSemanticClassification": "package_local_helper",
+      "migrationStrategy": "durable_helper_copy",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/query-validate.js",
+        "packages/bmad-speckit/dist/main-agent/helpers/query-validate.js"
+      ],
+      "originalPathSha256": "sha256:61e837c184b48dceac96042621118885216db7028166a8e88849c514e4d2f114",
+      "retainedRootPath": true,
+      "deletionAllowed": false
+    },
+    {
+      "originalPath": "scripts/runtime-step-state.ts",
+      "auditSemanticClassification": "package_local_helper",
+      "migrationStrategy": "durable_helper_copy",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/runtime-step-state.js",
+        "packages/bmad-speckit/dist/main-agent/helpers/runtime-step-state.js"
+      ],
+      "originalPathSha256": "sha256:b83d91a0d9ce22cb4e2d8833f9cbe287c86cdee685550f64b2169ff65ccc6621",
+      "retainedRootPath": true,
+      "deletionAllowed": false
+    },
+    {
+      "originalPath": "scripts/verify-agent-files.ts",
+      "auditSemanticClassification": "package_local_helper",
+      "migrationStrategy": "durable_helper_copy",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/verify-agent-files.js",
+        "packages/bmad-speckit/dist/main-agent/helpers/verify-agent-files.js"
+      ],
+      "originalPathSha256": "sha256:3c3cd0860d1b4db7fb75a3954d86b1e3a707a1e0d9946899feffabb73b2160ec",
+      "retainedRootPath": true,
+      "deletionAllowed": false
+    },
+    {
+      "originalPath": "scripts/eval-question-generate.ts",
+      "auditSemanticClassification": "public_cli_package_action",
+      "migrationStrategy": "public_cli_de_surface",
+      "targetPaths": [
+        "packages/bmad-speckit/bin/bmad-speckit.js",
+        "packages/bmad-speckit/src/commands/eval-question-generate.js"
+      ],
+      "originalPathSha256": "sha256:4acfedacea9b5313c3b0455f662b3a234fae94aa651f7bdfe6937ed79981a209",
+      "retainedRootPath": true,
+      "deletionAllowed": false
+    },
+    {
+      "originalPath": "scripts/check-story-score-written.ts",
+      "auditSemanticClassification": "public_cli_package_action_existing_root_legacy",
+      "migrationStrategy": "public_cli_de_surface",
+      "targetPaths": [
+        "packages/bmad-speckit/bin/bmad-speckit.js",
+        "packages/bmad-speckit/src/commands/check-score.js"
+      ],
+      "originalPathSha256": "sha256:478d536e64fdaf172a12670c795d54c567971881c93495125a0725de47e106f9",
+      "retainedRootPath": true,
+      "deletionAllowed": false
+    },
+    {
+      "originalPath": "scripts/create-second-story.ts",
+      "auditSemanticClassification": "repo_internal_test_seed_only",
+      "migrationStrategy": "repo_internal_reclassify",
+      "targetPaths": [
+        "scripts/create-second-story.ts"
+      ],
+      "originalPathSha256": "sha256:df3f682364edc2f51c809348a702d1f9b9eab36ed07907fed1e727e09f160f57",
+      "retainedRootPath": true,
+      "deletionAllowed": false
+    },
+    {
+      "originalPath": "scripts/verify-score-auto-scoped-bundle.cjs",
+      "auditSemanticClassification": "repo_internal_verification_harness",
+      "migrationStrategy": "repo_internal_reclassify",
+      "targetPaths": [
+        "scripts/verify-score-auto-scoped-bundle.cjs"
+      ],
+      "originalPathSha256": "sha256:112357b89cacb5c4f37a6e07b80c844c5d9ca2246d1af376dc88bcb9bc76f38e",
+      "retainedRootPath": true,
+      "deletionAllowed": false
+    }
+  ]
+}

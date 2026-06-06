@@ -1,0 +1,1164 @@
+{
+  "schemaVersion": "main-agent-runtime-classification-compression/v1",
+  "waveId": "main-agent-runtime-migration-wave-3.8",
+  "contractPath": "docs/plans/2026-06-05-main-agent-p1-p4-runtime-migration-goal-execution-plan.md",
+  "sourcePriorityMatrixPath": "repo-governance/script-migrations/main-agent-runtime-closure-wave-3/priority-matrix.md",
+  "candidateManifestPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/candidate-manifest.json",
+  "selectedPackageRuntimeCount": 21,
+  "deterministicExclusionCount": 17,
+  "deletionAllowed": false,
+  "entries": [
+    {
+      "entryId": "adaptive-intake-governance-gate",
+      "priority": "P3",
+      "originalPath": "scripts/adaptive-intake-governance-gate.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "package_runtime_module",
+      "selectedRoute": "package_runtime_module",
+      "reason": "direct CLI entrypoint gates adaptive intake candidates",
+      "actionSlug": "adaptive-intake-governance-gate",
+      "directCallerEvidence": "direct CLI entrypoint or root package command was detected during Wave 3.8 classification scan",
+      "consumerReachability": "covered by bmad-speckit main-agent adaptive-intake-governance-gate",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/adaptive-intake-governance-gate.js",
+        "packages/bmad-speckit/dist/main-agent/actions/adaptive-intake-governance-gate.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/adaptive-intake-governance-gate.ts"
+      ],
+      "publicCommandsAfterMigration": [
+        "bmad-speckit main-agent adaptive-intake-governance-gate"
+      ],
+      "callerSwitchRequired": true,
+      "callerSwitchStatus": "switched",
+      "validationStatus": "passed",
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "adaptive-intake-proof-gate",
+      "priority": "P3",
+      "originalPath": "scripts/adaptive-intake-proof-gate.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "package_runtime_module",
+      "selectedRoute": "package_runtime_module",
+      "reason": "root package command and direct CLI fixture entrypoint",
+      "actionSlug": "adaptive-intake-proof-gate",
+      "directCallerEvidence": "direct CLI entrypoint or root package command was detected during Wave 3.8 classification scan",
+      "consumerReachability": "covered by bmad-speckit main-agent adaptive-intake-proof-gate",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/adaptive-intake-proof-gate.js",
+        "packages/bmad-speckit/dist/main-agent/actions/adaptive-intake-proof-gate.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/adaptive-intake-proof-gate.ts"
+      ],
+      "publicCommandsAfterMigration": [
+        "bmad-speckit main-agent adaptive-intake-proof-gate"
+      ],
+      "callerSwitchRequired": true,
+      "callerSwitchStatus": "switched",
+      "validationStatus": "passed",
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "ai-tdd-contract-gate",
+      "priority": "P3",
+      "originalPath": "scripts/ai-tdd-contract-gate.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "package_runtime_module",
+      "selectedRoute": "package_runtime_module",
+      "reason": "direct CLI contract gate entrypoint",
+      "actionSlug": "ai-tdd-contract-gate",
+      "directCallerEvidence": "direct CLI entrypoint or root package command was detected during Wave 3.8 classification scan",
+      "consumerReachability": "covered by bmad-speckit main-agent ai-tdd-contract-gate",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/ai-tdd-contract-gate.js",
+        "packages/bmad-speckit/dist/main-agent/actions/ai-tdd-contract-gate.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/ai-tdd-contract-gate.ts"
+      ],
+      "publicCommandsAfterMigration": [
+        "bmad-speckit main-agent ai-tdd-contract-gate"
+      ],
+      "callerSwitchRequired": true,
+      "callerSwitchStatus": "switched",
+      "validationStatus": "passed",
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "audit-scoring-convergence-policy",
+      "priority": "P3",
+      "originalPath": "scripts/audit-scoring-convergence-policy.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "repo_internal_reclassify",
+      "selectedRoute": "repo_internal_reclassify",
+      "reason": "policy library with no direct consumer CLI entrypoint",
+      "actionSlug": "audit-scoring-convergence-policy",
+      "directCallerEvidence": "no direct consumer-safe CLI entrypoint selected during Wave 3.8 classification scan",
+      "consumerReachability": "not exposed as a consumer package CLI action",
+      "targetPaths": [
+        "scripts/audit-scoring-convergence-policy.ts"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/audit-scoring-convergence-policy.ts"
+      ],
+      "publicCommandsAfterMigration": [],
+      "callerSwitchRequired": false,
+      "callerSwitchStatus": "not_applicable",
+      "validationStatus": "passed",
+      "oldPathDisposition": "retained_source_repo_internal",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "audit-stage-routing",
+      "priority": "P3",
+      "originalPath": "scripts/audit-stage-routing.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "package_runtime_module",
+      "selectedRoute": "package_runtime_module",
+      "reason": "direct CLI audit-stage routing report entrypoint",
+      "actionSlug": "audit-stage-routing",
+      "directCallerEvidence": "direct CLI entrypoint or root package command was detected during Wave 3.8 classification scan",
+      "consumerReachability": "covered by bmad-speckit main-agent audit-stage-routing",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/audit-stage-routing.js",
+        "packages/bmad-speckit/dist/main-agent/actions/audit-stage-routing.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/audit-stage-routing.ts"
+      ],
+      "publicCommandsAfterMigration": [
+        "bmad-speckit main-agent audit-stage-routing"
+      ],
+      "callerSwitchRequired": true,
+      "callerSwitchStatus": "switched",
+      "validationStatus": "passed",
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "audit-triad-orchestrator",
+      "priority": "P3",
+      "originalPath": "scripts/audit-triad-orchestrator.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "repo_internal_reclassify",
+      "selectedRoute": "repo_internal_reclassify",
+      "reason": "audit orchestration library functions without direct CLI dispatch",
+      "actionSlug": "audit-triad-orchestrator",
+      "directCallerEvidence": "no direct consumer-safe CLI entrypoint selected during Wave 3.8 classification scan",
+      "consumerReachability": "not exposed as a consumer package CLI action",
+      "targetPaths": [
+        "scripts/audit-triad-orchestrator.ts"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/audit-triad-orchestrator.ts"
+      ],
+      "publicCommandsAfterMigration": [],
+      "callerSwitchRequired": false,
+      "callerSwitchStatus": "not_applicable",
+      "validationStatus": "passed",
+      "oldPathDisposition": "retained_source_repo_internal",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "auditor-post-actions",
+      "priority": "P3",
+      "originalPath": "scripts/auditor-post-actions.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "package_runtime_module",
+      "selectedRoute": "package_runtime_module",
+      "reason": "direct CLI auditor post-action entrypoint",
+      "actionSlug": "auditor-post-actions",
+      "directCallerEvidence": "direct CLI entrypoint or root package command was detected during Wave 3.8 classification scan",
+      "consumerReachability": "covered by bmad-speckit main-agent auditor-post-actions",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/auditor-post-actions.js",
+        "packages/bmad-speckit/dist/main-agent/actions/auditor-post-actions.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/auditor-post-actions.ts"
+      ],
+      "publicCommandsAfterMigration": [
+        "bmad-speckit main-agent auditor-post-actions"
+      ],
+      "callerSwitchRequired": true,
+      "callerSwitchStatus": "switched",
+      "validationStatus": "passed",
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "auditor-spec",
+      "priority": "P3",
+      "originalPath": "scripts/auditor-spec.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "package_runtime_module",
+      "selectedRoute": "package_runtime_module",
+      "reason": "direct CLI spec auditor entrypoint",
+      "actionSlug": "auditor-spec",
+      "directCallerEvidence": "direct CLI entrypoint or root package command was detected during Wave 3.8 classification scan",
+      "consumerReachability": "covered by bmad-speckit main-agent auditor-spec",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/auditor-spec.js",
+        "packages/bmad-speckit/dist/main-agent/actions/auditor-spec.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/auditor-spec.ts"
+      ],
+      "publicCommandsAfterMigration": [
+        "bmad-speckit main-agent auditor-spec"
+      ],
+      "callerSwitchRequired": true,
+      "callerSwitchStatus": "switched",
+      "validationStatus": "passed",
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "bmad-runtime-worker",
+      "priority": "P3",
+      "originalPath": "scripts/bmad-runtime-worker.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "package_runtime_module",
+      "selectedRoute": "package_runtime_module",
+      "reason": "direct worker entrypoint for runtime queue processing",
+      "actionSlug": "bmad-runtime-worker",
+      "directCallerEvidence": "direct CLI entrypoint or root package command was detected during Wave 3.8 classification scan",
+      "consumerReachability": "covered by bmad-speckit main-agent bmad-runtime-worker",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/bmad-runtime-worker.js",
+        "packages/bmad-speckit/dist/main-agent/actions/bmad-runtime-worker.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/bmad-runtime-worker.ts"
+      ],
+      "publicCommandsAfterMigration": [
+        "bmad-speckit main-agent bmad-runtime-worker"
+      ],
+      "callerSwitchRequired": true,
+      "callerSwitchStatus": "switched",
+      "validationStatus": "passed",
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "controlled-readiness-audit-bridge",
+      "priority": "P3",
+      "originalPath": "scripts/controlled-readiness-audit-bridge.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "repo_internal_reclassify",
+      "selectedRoute": "repo_internal_reclassify",
+      "reason": "controlled writer bridge library invoked by source runtime",
+      "actionSlug": "controlled-readiness-audit-bridge",
+      "directCallerEvidence": "no direct consumer-safe CLI entrypoint selected during Wave 3.8 classification scan",
+      "consumerReachability": "not exposed as a consumer package CLI action",
+      "targetPaths": [
+        "scripts/controlled-readiness-audit-bridge.ts"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/controlled-readiness-audit-bridge.ts"
+      ],
+      "publicCommandsAfterMigration": [],
+      "callerSwitchRequired": false,
+      "callerSwitchStatus": "not_applicable",
+      "validationStatus": "passed",
+      "oldPathDisposition": "retained_source_repo_internal",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "critical-auditor-profile",
+      "priority": "P3",
+      "originalPath": "scripts/critical-auditor-profile.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "repo_internal_reclassify",
+      "selectedRoute": "repo_internal_reclassify",
+      "reason": "profile resolver library with no package CLI surface",
+      "actionSlug": "critical-auditor-profile",
+      "directCallerEvidence": "no direct consumer-safe CLI entrypoint selected during Wave 3.8 classification scan",
+      "consumerReachability": "not exposed as a consumer package CLI action",
+      "targetPaths": [
+        "scripts/critical-auditor-profile.ts"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/critical-auditor-profile.ts"
+      ],
+      "publicCommandsAfterMigration": [],
+      "callerSwitchRequired": false,
+      "callerSwitchStatus": "not_applicable",
+      "validationStatus": "passed",
+      "oldPathDisposition": "retained_source_repo_internal",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "e2e-dual-host-journey-runner",
+      "priority": "P3",
+      "originalPath": "scripts/e2e-dual-host-journey-runner.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "package_runtime_module",
+      "selectedRoute": "package_runtime_module",
+      "reason": "root package e2e dual-host journey command",
+      "actionSlug": "e2e-dual-host-journey-runner",
+      "directCallerEvidence": "direct CLI entrypoint or root package command was detected during Wave 3.8 classification scan",
+      "consumerReachability": "covered by bmad-speckit main-agent e2e-dual-host-journey-runner",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/e2e-dual-host-journey-runner.js",
+        "packages/bmad-speckit/dist/main-agent/actions/e2e-dual-host-journey-runner.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/e2e-dual-host-journey-runner.ts"
+      ],
+      "publicCommandsAfterMigration": [
+        "bmad-speckit main-agent e2e-dual-host-journey-runner"
+      ],
+      "callerSwitchRequired": true,
+      "callerSwitchStatus": "switched",
+      "validationStatus": "passed",
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "e2e-host-matrix-journey-runner",
+      "priority": "P3",
+      "originalPath": "scripts/e2e-host-matrix-journey-runner.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "package_runtime_module",
+      "selectedRoute": "package_runtime_module",
+      "reason": "root package e2e host matrix journey command",
+      "actionSlug": "e2e-host-matrix-journey-runner",
+      "directCallerEvidence": "direct CLI entrypoint or root package command was detected during Wave 3.8 classification scan",
+      "consumerReachability": "covered by bmad-speckit main-agent e2e-host-matrix-journey-runner",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/e2e-host-matrix-journey-runner.js",
+        "packages/bmad-speckit/dist/main-agent/actions/e2e-host-matrix-journey-runner.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/e2e-host-matrix-journey-runner.ts"
+      ],
+      "publicCommandsAfterMigration": [
+        "bmad-speckit main-agent e2e-host-matrix-journey-runner"
+      ],
+      "callerSwitchRequired": true,
+      "callerSwitchStatus": "switched",
+      "validationStatus": "passed",
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "final-closeout-evidence-runner",
+      "priority": "P3",
+      "originalPath": "scripts/final-closeout-evidence-runner.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "package_runtime_module",
+      "selectedRoute": "package_runtime_module",
+      "reason": "direct final closeout evidence CLI entrypoint",
+      "actionSlug": "final-closeout-evidence-runner",
+      "directCallerEvidence": "direct CLI entrypoint or root package command was detected during Wave 3.8 classification scan",
+      "consumerReachability": "covered by bmad-speckit main-agent final-closeout-evidence-runner",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/final-closeout-evidence-runner.js",
+        "packages/bmad-speckit/dist/main-agent/actions/final-closeout-evidence-runner.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/final-closeout-evidence-runner.ts"
+      ],
+      "publicCommandsAfterMigration": [
+        "bmad-speckit main-agent final-closeout-evidence-runner"
+      ],
+      "callerSwitchRequired": true,
+      "callerSwitchStatus": "switched",
+      "validationStatus": "passed",
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "governance-host-dispatch-adapter",
+      "priority": "P3",
+      "originalPath": "scripts/governance-host-dispatch-adapter.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "repo_internal_reclassify",
+      "selectedRoute": "repo_internal_reclassify",
+      "reason": "host dispatch adapter library with no direct CLI entrypoint",
+      "actionSlug": "governance-host-dispatch-adapter",
+      "directCallerEvidence": "no direct consumer-safe CLI entrypoint selected during Wave 3.8 classification scan",
+      "consumerReachability": "not exposed as a consumer package CLI action",
+      "targetPaths": [
+        "scripts/governance-host-dispatch-adapter.ts"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/governance-host-dispatch-adapter.ts"
+      ],
+      "publicCommandsAfterMigration": [],
+      "callerSwitchRequired": false,
+      "callerSwitchStatus": "not_applicable",
+      "validationStatus": "passed",
+      "oldPathDisposition": "retained_source_repo_internal",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "governance-packet-dispatch-worker",
+      "priority": "P3",
+      "originalPath": "scripts/governance-packet-dispatch-worker.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "package_runtime_module",
+      "selectedRoute": "package_runtime_module",
+      "reason": "direct governance packet dispatch worker entrypoint",
+      "actionSlug": "governance-packet-dispatch-worker",
+      "directCallerEvidence": "direct CLI entrypoint or root package command was detected during Wave 3.8 classification scan",
+      "consumerReachability": "covered by bmad-speckit main-agent governance-packet-dispatch-worker",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/governance-packet-dispatch-worker.js",
+        "packages/bmad-speckit/dist/main-agent/actions/governance-packet-dispatch-worker.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/governance-packet-dispatch-worker.ts"
+      ],
+      "publicCommandsAfterMigration": [
+        "bmad-speckit main-agent governance-packet-dispatch-worker"
+      ],
+      "callerSwitchRequired": true,
+      "callerSwitchStatus": "switched",
+      "validationStatus": "passed",
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "host-runtime-mode",
+      "priority": "P3",
+      "originalPath": "scripts/host-runtime-mode.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "repo_internal_reclassify",
+      "selectedRoute": "repo_internal_reclassify",
+      "reason": "runtime mode decision helper with no direct CLI entrypoint",
+      "actionSlug": "host-runtime-mode",
+      "directCallerEvidence": "no direct consumer-safe CLI entrypoint selected during Wave 3.8 classification scan",
+      "consumerReachability": "not exposed as a consumer package CLI action",
+      "targetPaths": [
+        "scripts/host-runtime-mode.ts"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/host-runtime-mode.ts"
+      ],
+      "publicCommandsAfterMigration": [],
+      "callerSwitchRequired": false,
+      "callerSwitchStatus": "not_applicable",
+      "validationStatus": "passed",
+      "oldPathDisposition": "retained_source_repo_internal",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "print-resolved-audit-prompt",
+      "priority": "P3",
+      "originalPath": "scripts/i18n/print-resolved-audit-prompt.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "package_runtime_module",
+      "selectedRoute": "package_runtime_module",
+      "reason": "root package audit prompt resolution command",
+      "actionSlug": "print-resolved-audit-prompt",
+      "directCallerEvidence": "direct CLI entrypoint or root package command was detected during Wave 3.8 classification scan",
+      "consumerReachability": "covered by bmad-speckit main-agent print-resolved-audit-prompt",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/print-resolved-audit-prompt.js",
+        "packages/bmad-speckit/dist/main-agent/actions/print-resolved-audit-prompt.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/i18n/print-resolved-audit-prompt.ts"
+      ],
+      "publicCommandsAfterMigration": [
+        "bmad-speckit main-agent print-resolved-audit-prompt"
+      ],
+      "callerSwitchRequired": true,
+      "callerSwitchStatus": "switched",
+      "validationStatus": "passed",
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "render-audit-block-cli",
+      "priority": "P3",
+      "originalPath": "scripts/i18n/render-audit-block-cli.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "package_runtime_module",
+      "selectedRoute": "package_runtime_module",
+      "reason": "direct audit block render CLI entrypoint",
+      "actionSlug": "render-audit-block-cli",
+      "directCallerEvidence": "direct CLI entrypoint or root package command was detected during Wave 3.8 classification scan",
+      "consumerReachability": "covered by bmad-speckit main-agent render-audit-block-cli",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/render-audit-block-cli.js",
+        "packages/bmad-speckit/dist/main-agent/actions/render-audit-block-cli.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/i18n/render-audit-block-cli.ts"
+      ],
+      "publicCommandsAfterMigration": [
+        "bmad-speckit main-agent render-audit-block-cli"
+      ],
+      "callerSwitchRequired": true,
+      "callerSwitchStatus": "switched",
+      "validationStatus": "passed",
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "resolve-audit-prompt-path",
+      "priority": "P3",
+      "originalPath": "scripts/i18n/resolve-audit-prompt-path.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "repo_internal_reclassify",
+      "selectedRoute": "repo_internal_reclassify",
+      "reason": "i18n resolver library used by runtime surfaces",
+      "actionSlug": "resolve-audit-prompt-path",
+      "directCallerEvidence": "no direct consumer-safe CLI entrypoint selected during Wave 3.8 classification scan",
+      "consumerReachability": "not exposed as a consumer package CLI action",
+      "targetPaths": [
+        "scripts/i18n/resolve-audit-prompt-path.ts"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/i18n/resolve-audit-prompt-path.ts"
+      ],
+      "publicCommandsAfterMigration": [],
+      "callerSwitchRequired": false,
+      "callerSwitchStatus": "not_applicable",
+      "validationStatus": "passed",
+      "oldPathDisposition": "retained_source_repo_internal",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "ingest-implementation-evidence",
+      "priority": "P3",
+      "originalPath": "scripts/ingest-implementation-evidence.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "package_runtime_module",
+      "selectedRoute": "package_runtime_module",
+      "reason": "direct implementation evidence ingest CLI entrypoint",
+      "actionSlug": "ingest-implementation-evidence",
+      "directCallerEvidence": "direct CLI entrypoint or root package command was detected during Wave 3.8 classification scan",
+      "consumerReachability": "covered by bmad-speckit main-agent ingest-implementation-evidence",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/ingest-implementation-evidence.js",
+        "packages/bmad-speckit/dist/main-agent/actions/ingest-implementation-evidence.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/ingest-implementation-evidence.ts"
+      ],
+      "publicCommandsAfterMigration": [
+        "bmad-speckit main-agent ingest-implementation-evidence"
+      ],
+      "callerSwitchRequired": true,
+      "callerSwitchStatus": "switched",
+      "validationStatus": "passed",
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "parse-bmad-audit-result",
+      "priority": "P3",
+      "originalPath": "scripts/parse-bmad-audit-result.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "repo_internal_reclassify",
+      "selectedRoute": "repo_internal_reclassify",
+      "reason": "audit parser library with no direct CLI entrypoint",
+      "actionSlug": "parse-bmad-audit-result",
+      "directCallerEvidence": "no direct consumer-safe CLI entrypoint selected during Wave 3.8 classification scan",
+      "consumerReachability": "not exposed as a consumer package CLI action",
+      "targetPaths": [
+        "scripts/parse-bmad-audit-result.ts"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/parse-bmad-audit-result.ts"
+      ],
+      "publicCommandsAfterMigration": [],
+      "callerSwitchRequired": false,
+      "callerSwitchStatus": "not_applicable",
+      "validationStatus": "passed",
+      "oldPathDisposition": "retained_source_repo_internal",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "party-mode-gate-check",
+      "priority": "P3",
+      "originalPath": "scripts/party-mode-gate-check.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "deprecated_no_migration",
+      "selectedRoute": "deprecated_no_migration",
+      "reason": "repo-source debugging wrapper; installed party-mode runtime must not require project-root scripts",
+      "actionSlug": "party-mode-gate-check",
+      "directCallerEvidence": "no direct consumer-safe CLI entrypoint selected during Wave 3.8 classification scan",
+      "consumerReachability": "not exposed as a consumer package CLI action",
+      "targetPaths": [
+        "scripts/party-mode-gate-check.ts"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/party-mode-gate-check.ts"
+      ],
+      "publicCommandsAfterMigration": [],
+      "callerSwitchRequired": false,
+      "callerSwitchStatus": "not_applicable",
+      "validationStatus": "passed",
+      "oldPathDisposition": "retained_source_repo_internal",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "per-must-closure-evidence-index",
+      "priority": "P3",
+      "originalPath": "scripts/per-must-closure-evidence-index.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "package_runtime_module",
+      "selectedRoute": "package_runtime_module",
+      "reason": "direct per-MUST closure evidence CLI entrypoint",
+      "actionSlug": "per-must-closure-evidence-index",
+      "directCallerEvidence": "direct CLI entrypoint or root package command was detected during Wave 3.8 classification scan",
+      "consumerReachability": "covered by bmad-speckit main-agent per-must-closure-evidence-index",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/per-must-closure-evidence-index.js",
+        "packages/bmad-speckit/dist/main-agent/actions/per-must-closure-evidence-index.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/per-must-closure-evidence-index.ts"
+      ],
+      "publicCommandsAfterMigration": [
+        "bmad-speckit main-agent per-must-closure-evidence-index"
+      ],
+      "callerSwitchRequired": true,
+      "callerSwitchStatus": "switched",
+      "validationStatus": "passed",
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "pre-rerun-anti-false-positive-gate",
+      "priority": "P3",
+      "originalPath": "scripts/pre-rerun-anti-false-positive-gate.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "package_runtime_module",
+      "selectedRoute": "package_runtime_module",
+      "reason": "direct pre-rerun anti-false-positive gate CLI entrypoint",
+      "actionSlug": "pre-rerun-anti-false-positive-gate",
+      "directCallerEvidence": "direct CLI entrypoint or root package command was detected during Wave 3.8 classification scan",
+      "consumerReachability": "covered by bmad-speckit main-agent pre-rerun-anti-false-positive-gate",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/pre-rerun-anti-false-positive-gate.js",
+        "packages/bmad-speckit/dist/main-agent/actions/pre-rerun-anti-false-positive-gate.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/pre-rerun-anti-false-positive-gate.ts"
+      ],
+      "publicCommandsAfterMigration": [
+        "bmad-speckit main-agent pre-rerun-anti-false-positive-gate"
+      ],
+      "callerSwitchRequired": true,
+      "callerSwitchStatus": "switched",
+      "validationStatus": "passed",
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "reviewer-contract",
+      "priority": "P3",
+      "originalPath": "scripts/reviewer-contract.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "repo_internal_reclassify",
+      "selectedRoute": "repo_internal_reclassify",
+      "reason": "reviewer contract constants and type definitions",
+      "actionSlug": "reviewer-contract",
+      "directCallerEvidence": "no direct consumer-safe CLI entrypoint selected during Wave 3.8 classification scan",
+      "consumerReachability": "not exposed as a consumer package CLI action",
+      "targetPaths": [
+        "scripts/reviewer-contract.ts"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/reviewer-contract.ts"
+      ],
+      "publicCommandsAfterMigration": [],
+      "callerSwitchRequired": false,
+      "callerSwitchStatus": "not_applicable",
+      "validationStatus": "passed",
+      "oldPathDisposition": "retained_source_repo_internal",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "reviewer-registry",
+      "priority": "P3",
+      "originalPath": "scripts/reviewer-registry.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "repo_internal_reclassify",
+      "selectedRoute": "repo_internal_reclassify",
+      "reason": "reviewer registry data and lookup library",
+      "actionSlug": "reviewer-registry",
+      "directCallerEvidence": "no direct consumer-safe CLI entrypoint selected during Wave 3.8 classification scan",
+      "consumerReachability": "not exposed as a consumer package CLI action",
+      "targetPaths": [
+        "scripts/reviewer-registry.ts"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/reviewer-registry.ts"
+      ],
+      "publicCommandsAfterMigration": [],
+      "callerSwitchRequired": false,
+      "callerSwitchStatus": "not_applicable",
+      "validationStatus": "passed",
+      "oldPathDisposition": "retained_source_repo_internal",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "reviewer-rollout-gate",
+      "priority": "P3",
+      "originalPath": "scripts/reviewer-rollout-gate.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "repo_internal_reclassify",
+      "selectedRoute": "repo_internal_reclassify",
+      "reason": "reviewer rollout gate library with no direct CLI entrypoint",
+      "actionSlug": "reviewer-rollout-gate",
+      "directCallerEvidence": "no direct consumer-safe CLI entrypoint selected during Wave 3.8 classification scan",
+      "consumerReachability": "not exposed as a consumer package CLI action",
+      "targetPaths": [
+        "scripts/reviewer-rollout-gate.ts"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/reviewer-rollout-gate.ts"
+      ],
+      "publicCommandsAfterMigration": [],
+      "callerSwitchRequired": false,
+      "callerSwitchStatus": "not_applicable",
+      "validationStatus": "passed",
+      "oldPathDisposition": "retained_source_repo_internal",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "reviewer-runtime-definition",
+      "priority": "P3",
+      "originalPath": "scripts/reviewer-runtime-definition.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "repo_internal_reclassify",
+      "selectedRoute": "repo_internal_reclassify",
+      "reason": "reviewer runtime definition materializer helper",
+      "actionSlug": "reviewer-runtime-definition",
+      "directCallerEvidence": "no direct consumer-safe CLI entrypoint selected during Wave 3.8 classification scan",
+      "consumerReachability": "not exposed as a consumer package CLI action",
+      "targetPaths": [
+        "scripts/reviewer-runtime-definition.ts"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/reviewer-runtime-definition.ts"
+      ],
+      "publicCommandsAfterMigration": [],
+      "callerSwitchRequired": false,
+      "callerSwitchStatus": "not_applicable",
+      "validationStatus": "passed",
+      "oldPathDisposition": "retained_source_repo_internal",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "reviewer-schema",
+      "priority": "P3",
+      "originalPath": "scripts/reviewer-schema.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "repo_internal_reclassify",
+      "selectedRoute": "repo_internal_reclassify",
+      "reason": "reviewer schema constants and validators",
+      "actionSlug": "reviewer-schema",
+      "directCallerEvidence": "no direct consumer-safe CLI entrypoint selected during Wave 3.8 classification scan",
+      "consumerReachability": "not exposed as a consumer package CLI action",
+      "targetPaths": [
+        "scripts/reviewer-schema.ts"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/reviewer-schema.ts"
+      ],
+      "publicCommandsAfterMigration": [],
+      "callerSwitchRequired": false,
+      "callerSwitchStatus": "not_applicable",
+      "validationStatus": "passed",
+      "oldPathDisposition": "retained_source_repo_internal",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "run-ci-release-gate-fixture",
+      "priority": "P3",
+      "originalPath": "scripts/run-ci-release-gate-fixture.js",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "deprecated_no_migration",
+      "selectedRoute": "deprecated_no_migration",
+      "reason": "source-repository CI fixture command, not a consumer runtime command",
+      "actionSlug": "run-ci-release-gate-fixture",
+      "directCallerEvidence": "no direct consumer-safe CLI entrypoint selected during Wave 3.8 classification scan",
+      "consumerReachability": "not exposed as a consumer package CLI action",
+      "targetPaths": [
+        "scripts/run-ci-release-gate-fixture.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/run-ci-release-gate-fixture.js"
+      ],
+      "publicCommandsAfterMigration": [],
+      "callerSwitchRequired": false,
+      "callerSwitchStatus": "not_applicable",
+      "validationStatus": "passed",
+      "oldPathDisposition": "retained_source_repo_internal",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "strict-closeout-proof-gate",
+      "priority": "P3",
+      "originalPath": "scripts/strict-closeout-proof-gate.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "package_runtime_module",
+      "selectedRoute": "package_runtime_module",
+      "reason": "direct strict closeout proof gate CLI entrypoint",
+      "actionSlug": "strict-closeout-proof-gate",
+      "directCallerEvidence": "direct CLI entrypoint or root package command was detected during Wave 3.8 classification scan",
+      "consumerReachability": "covered by bmad-speckit main-agent strict-closeout-proof-gate",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/strict-closeout-proof-gate.js",
+        "packages/bmad-speckit/dist/main-agent/actions/strict-closeout-proof-gate.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/strict-closeout-proof-gate.ts"
+      ],
+      "publicCommandsAfterMigration": [
+        "bmad-speckit main-agent strict-closeout-proof-gate"
+      ],
+      "callerSwitchRequired": true,
+      "callerSwitchStatus": "switched",
+      "validationStatus": "passed",
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "subagent-evidence-envelope",
+      "priority": "P3",
+      "originalPath": "scripts/subagent-evidence-envelope.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "repo_internal_reclassify",
+      "selectedRoute": "repo_internal_reclassify",
+      "reason": "subagent evidence schema and validator library",
+      "actionSlug": "subagent-evidence-envelope",
+      "directCallerEvidence": "no direct consumer-safe CLI entrypoint selected during Wave 3.8 classification scan",
+      "consumerReachability": "not exposed as a consumer package CLI action",
+      "targetPaths": [
+        "scripts/subagent-evidence-envelope.ts"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/subagent-evidence-envelope.ts"
+      ],
+      "publicCommandsAfterMigration": [],
+      "callerSwitchRequired": false,
+      "callerSwitchStatus": "not_applicable",
+      "validationStatus": "passed",
+      "oldPathDisposition": "retained_source_repo_internal",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "supervised-worker-runtime",
+      "priority": "P3",
+      "originalPath": "scripts/supervised-worker-runtime.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "repo_internal_reclassify",
+      "selectedRoute": "repo_internal_reclassify",
+      "reason": "supervised worker helper library with no direct CLI entrypoint",
+      "actionSlug": "supervised-worker-runtime",
+      "directCallerEvidence": "no direct consumer-safe CLI entrypoint selected during Wave 3.8 classification scan",
+      "consumerReachability": "not exposed as a consumer package CLI action",
+      "targetPaths": [
+        "scripts/supervised-worker-runtime.ts"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/supervised-worker-runtime.ts"
+      ],
+      "publicCommandsAfterMigration": [],
+      "callerSwitchRequired": false,
+      "callerSwitchStatus": "not_applicable",
+      "validationStatus": "passed",
+      "oldPathDisposition": "retained_source_repo_internal",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "target-artifact-realization-gate",
+      "priority": "P3",
+      "originalPath": "scripts/target-artifact-realization-gate.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "package_runtime_module",
+      "selectedRoute": "package_runtime_module",
+      "reason": "direct target artifact realization gate CLI entrypoint",
+      "actionSlug": "target-artifact-realization-gate",
+      "directCallerEvidence": "direct CLI entrypoint or root package command was detected during Wave 3.8 classification scan",
+      "consumerReachability": "covered by bmad-speckit main-agent target-artifact-realization-gate",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/target-artifact-realization-gate.js",
+        "packages/bmad-speckit/dist/main-agent/actions/target-artifact-realization-gate.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/target-artifact-realization-gate.ts"
+      ],
+      "publicCommandsAfterMigration": [
+        "bmad-speckit main-agent target-artifact-realization-gate"
+      ],
+      "callerSwitchRequired": true,
+      "callerSwitchStatus": "switched",
+      "validationStatus": "passed",
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "trace-040-evidence-packet-generator",
+      "priority": "P3",
+      "originalPath": "scripts/trace-040-evidence-packet-generator.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "package_runtime_module",
+      "selectedRoute": "package_runtime_module",
+      "reason": "direct TRACE-040 evidence packet generator CLI entrypoint",
+      "actionSlug": "trace-040-evidence-packet-generator",
+      "directCallerEvidence": "direct CLI entrypoint or root package command was detected during Wave 3.8 classification scan",
+      "consumerReachability": "covered by bmad-speckit main-agent trace-040-evidence-packet-generator",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/trace-040-evidence-packet-generator.js",
+        "packages/bmad-speckit/dist/main-agent/actions/trace-040-evidence-packet-generator.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/trace-040-evidence-packet-generator.ts"
+      ],
+      "publicCommandsAfterMigration": [
+        "bmad-speckit main-agent trace-040-evidence-packet-generator"
+      ],
+      "callerSwitchRequired": true,
+      "callerSwitchStatus": "switched",
+      "validationStatus": "passed",
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "update-runtime-audit-index",
+      "priority": "P3",
+      "originalPath": "scripts/update-runtime-audit-index.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "package_runtime_module",
+      "selectedRoute": "package_runtime_module",
+      "reason": "direct runtime audit index update CLI entrypoint",
+      "actionSlug": "update-runtime-audit-index",
+      "directCallerEvidence": "direct CLI entrypoint or root package command was detected during Wave 3.8 classification scan",
+      "consumerReachability": "covered by bmad-speckit main-agent update-runtime-audit-index",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/update-runtime-audit-index.js",
+        "packages/bmad-speckit/dist/main-agent/actions/update-runtime-audit-index.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/update-runtime-audit-index.ts"
+      ],
+      "publicCommandsAfterMigration": [
+        "bmad-speckit main-agent update-runtime-audit-index"
+      ],
+      "callerSwitchRequired": true,
+      "callerSwitchStatus": "switched",
+      "validationStatus": "passed",
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "verify-cursor-audit-granularity",
+      "priority": "P3",
+      "originalPath": "scripts/verify-cursor-audit-granularity.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "package_runtime_module",
+      "selectedRoute": "package_runtime_module",
+      "reason": "root package cursor audit granularity verification command",
+      "actionSlug": "verify-cursor-audit-granularity",
+      "directCallerEvidence": "direct CLI entrypoint or root package command was detected during Wave 3.8 classification scan",
+      "consumerReachability": "covered by bmad-speckit main-agent verify-cursor-audit-granularity",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/verify-cursor-audit-granularity.js",
+        "packages/bmad-speckit/dist/main-agent/actions/verify-cursor-audit-granularity.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/verify-cursor-audit-granularity.ts"
+      ],
+      "publicCommandsAfterMigration": [
+        "bmad-speckit main-agent verify-cursor-audit-granularity"
+      ],
+      "callerSwitchRequired": true,
+      "callerSwitchStatus": "switched",
+      "validationStatus": "passed",
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    }
+  ]
+}

@@ -37,6 +37,48 @@ function createBmadSource(root) {
   return root;
 }
 
+function createCodexBmadSource(root) {
+  createBmadSource(root);
+
+  mkdirp(path.join(root, '_config'));
+  for (const name of [
+    'bmads-runtime.yaml',
+    'orchestration-governance.contract.yaml',
+    'stage-mapping.yaml',
+  ]) {
+    fs.writeFileSync(path.join(root, '_config', name), `${name}: true\n`, 'utf8');
+  }
+
+  mkdirp(path.join(root, 'codex', 'agents'));
+  mkdirp(path.join(root, 'codex', 'protocols'));
+  mkdirp(path.join(root, 'codex', 'skills'));
+  mkdirp(path.join(root, 'i18n'));
+  fs.writeFileSync(path.join(root, 'codex', 'agents', 'agent.toml'), 'name = "agent"\n', 'utf8');
+  for (const protocol of ['audit-result-schema.md', 'handoff-schema.md', 'commit-protocol.md']) {
+    fs.writeFileSync(path.join(root, 'codex', 'protocols', protocol), `# ${protocol}\n`, 'utf8');
+  }
+  fs.writeFileSync(path.join(root, 'i18n', 'README.md'), '# i18n\n', 'utf8');
+
+  for (const skill of [
+    'speckit-workflow',
+    'bmad-story-assistant',
+    'bmad-standalone-tasks',
+    'bmad-standalone-tasks-doc-review',
+    'bmad-rca-helper',
+    'bmad-code-reviewer-lifecycle',
+  ]) {
+    const skillDir = path.join(root, 'skills', skill);
+    mkdirp(skillDir);
+    fs.writeFileSync(
+      path.join(skillDir, 'SKILL.md'),
+      `---\nname: ${skill}\ndescription: Test ${skill}\n---\n\n# ${skill}\n`,
+      'utf8'
+    );
+  }
+
+  return root;
+}
+
 describe('SyncService (Story 12.2 T1)', () => {
   const tmpRoot = path.join(os.tmpdir(), `bmad-speckit-sync-${Date.now()}`);
 
@@ -231,5 +273,59 @@ describe('SyncService (Story 12.2 T1)', () => {
     const cmdDir = path.join(projectRoot, '.cursor', 'commands');
     assert.ok(fs.existsSync(cmdDir), '.cursor/commands should exist from bmadPath');
     assert.ok(fs.existsSync(path.join(cmdDir, 'test.cmd')), 'commands from bmadPath/_bmad/commands/');
+  });
+
+  it('T1.8 codex bmadPath: deploys i18n and README without copying project-root _bmad', () => {
+    const bmadPath = path.join(tmpRoot, 'codex-bmad-shared');
+    createCodexBmadSource(bmadPath);
+
+    const projectRoot = path.join(tmpRoot, 't1_8_codex_bmadpath');
+    mkdirp(projectRoot);
+
+    const SyncService = require('../src/services/sync-service');
+    SyncService.syncCommandsRulesConfig(projectRoot, 'codex', { bmadPath });
+
+    assert.ok(fs.existsSync(path.join(projectRoot, '.codex', 'i18n')), '.codex/i18n should be deployed');
+    assert.ok(fs.existsSync(path.join(projectRoot, '.codex', 'README.md')), '.codex/README.md should be deployed');
+    assert.ok(!fs.existsSync(path.join(projectRoot, '_bmad')), 'bmadPath mode must not copy root _bmad');
+  });
+
+  it('T1.9 codex bmadPath: check validates runtime _config from bmadPath', () => {
+    const bmadPath = path.join(tmpRoot, 'codex-bmad-check-shared');
+    createCodexBmadSource(bmadPath);
+
+    const projectRoot = path.join(tmpRoot, 't1_9_codex_bmadpath_check');
+    mkdirp(projectRoot);
+    mkdirp(path.join(projectRoot, '_bmad-output', 'config'));
+    fs.writeFileSync(
+      path.join(projectRoot, '_bmad-output', 'config', 'bmad-speckit.json'),
+      JSON.stringify({ selectedAI: 'codex', bmadPath }, null, 2),
+      'utf8'
+    );
+    fs.writeFileSync(
+      path.join(projectRoot, '_bmad-output', 'config', 'bmad-speckit-install-manifest.json'),
+      JSON.stringify(
+        {
+          installed_tools: ['codex'],
+          managed_surface: [
+            { path: '.codex/commands/test.cmd' },
+            { path: '.codex/protocols/audit-result-schema.md' },
+          ],
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+
+    const SyncService = require('../src/services/sync-service');
+    SyncService.syncCommandsRulesConfig(projectRoot, 'codex', { bmadPath });
+
+    const { validateSelectedAITargets } = require('../src/commands/check');
+    const result = validateSelectedAITargets(projectRoot, 'codex');
+
+    assert.deepStrictEqual(result.missing, []);
+    assert.strictEqual(result.valid, true);
+    assert.ok(!fs.existsSync(path.join(projectRoot, '_bmad')), 'check must not require project-root _bmad in bmadPath mode');
   });
 });

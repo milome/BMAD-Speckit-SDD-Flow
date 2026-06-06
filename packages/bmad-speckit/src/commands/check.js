@@ -172,12 +172,17 @@ function validateSelectedAITargets(cwd, selectedAI) {
     }
   };
   const requireBmadsRuntimeContract = () => {
-    for (const relPath of [
-      '_bmad/_config/bmads-runtime.yaml',
-      '_bmad/_config/orchestration-governance.contract.yaml',
-      '_bmad/_config/stage-mapping.yaml',
+    const bmadPath = getProjectBmadPath(cwd);
+    const root = bmadPath ? path.resolve(cwd, bmadPath) : path.join(cwd, '_bmad');
+    for (const name of [
+      'bmads-runtime.yaml',
+      'orchestration-governance.contract.yaml',
+      'stage-mapping.yaml',
     ]) {
-      if (!hasFile(relPath)) missing.push(relPath);
+      const fullPath = path.join(root, '_config', name);
+      if (!fs.existsSync(fullPath) || !fs.statSync(fullPath).isFile()) {
+        missing.push(bmadPath ? `bmadPath/_config/${name}` : `_bmad/_config/${name}`);
+      }
     }
   };
 

@@ -138,6 +138,7 @@ function validateRegistry(registry, errors) {
     }
   }
   validateBootstrapContent(registry, errors);
+  validatePhysicalScriptClosure(registry, errors);
 }
 
 function validateEntry(wave, entry, entryIds, activeOriginalPaths, errors) {
@@ -186,6 +187,41 @@ function validateEntry(wave, entry, entryIds, activeOriginalPaths, errors) {
       targets,
       waveId: wave.waveId,
     });
+  }
+}
+
+function listPhysicalScripts() {
+  const result = spawnSync('rg', ['--files', 'scripts'], {
+    cwd: ROOT,
+    encoding: 'utf8',
+    shell: process.platform === 'win32',
+  });
+  if (result.status === 0) {
+    return result.stdout
+      .split(/\r?\n/)
+      .map((line) => line.trim().replace(/\\/g, '/'))
+      .filter(Boolean)
+      .sort();
+  }
+  return listFiles(path.join(ROOT, 'scripts'))
+    .map((filePath) => relativeToRoot(filePath))
+    .sort();
+}
+
+function validatePhysicalScriptClosure(registry, errors) {
+  if (!Array.isArray(registry.waves)) return;
+  const registeredScripts = new Set();
+  for (const wave of registry.waves) {
+    for (const entry of wave.entries || []) {
+      const originalPath = String(entry.originalPath || '').replace(/\\/g, '/');
+      if (originalPath.startsWith('scripts/')) registeredScripts.add(originalPath);
+    }
+  }
+  const missing = listPhysicalScripts().filter((scriptPath) => !registeredScripts.has(scriptPath));
+  if (missing.length > 0) {
+    errors.push(
+      `physical scripts closure incomplete: ${missing.length} scripts are missing registry entries: ${missing.join(', ')}`
+    );
   }
 }
 

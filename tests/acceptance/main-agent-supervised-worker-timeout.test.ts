@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import {
   appendTaskProgress,
   evaluateSupervisedWorker,
-} from '../../scripts/supervised-worker-runtime';
+} from '../../packages/bmad-speckit/src/main-agent/runtime/supervised-worker-runtime.js';
 import {
   cleanupRequirementWorkspace,
   materializeRequirementFixture,

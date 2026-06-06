@@ -1,0 +1,20 @@
+{
+  "waveId": "main-agent-runtime-migration-wave-3.11",
+  "generatedAt": "2026-06-05T22:58:32.605Z",
+  "entries": [
+    {
+      "originalPath": "scripts/create-second-story.ts",
+      "currentClassification": "repo_internal_test_seed_only",
+      "reason": "Narrow source repository test seed only; no package CLI, package runtime, install surface, or generated command consumes it.",
+      "consumerReachable": false,
+      "packageSurfaceConsumed": false
+    },
+    {
+      "originalPath": "scripts/verify-score-auto-scoped-bundle.cjs",
+      "currentClassification": "repo_internal_verification_harness",
+      "reason": "Narrow source repository verification harness; no package CLI, package runtime, install surface, or generated command consumes it.",
+      "consumerReachable": false,
+      "packageSurfaceConsumed": false
+    }
+  ]
+}

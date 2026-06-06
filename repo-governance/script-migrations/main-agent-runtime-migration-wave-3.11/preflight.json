@@ -1,0 +1,33 @@
+{
+  "waveId": "main-agent-runtime-migration-wave-3.11",
+  "startedAt": "2026-06-05T22:58:32.639Z",
+  "completedAt": "2026-06-05T22:58:33.231Z",
+  "gitStatusShortHash": "sha256:c5424d94f8ffc9e51b0d9cf72186ba4161b773220994f35b444d5c98fd02cdfd",
+  "sourceInventoryHash": "sha256:64c6270a3d9c887eeac1d578cf2160f1c6b9f29566c43f00bc701b20fd91bf81",
+  "commands": [
+    {
+      "command": "git status --short --branch",
+      "cwd": "D:\\Dev\\BMAD-Speckit-SDD-Flow",
+      "exitCode": 0,
+      "stdoutHash": "sha256:c5424d94f8ffc9e51b0d9cf72186ba4161b773220994f35b444d5c98fd02cdfd",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "startedAt": "2026-06-05T22:58:32.639Z",
+      "completedAt": "2026-06-05T22:58:32.717Z",
+      "stdoutPreview": "## dev...origin/dev\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.js\n M packages/bmad-speckit/src/services/platform-skill-frontmatter.js\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/scoring/package.json\n M repo-governance/script-migration-registry.yaml\n M tests/acceptance/diagnose-bmad-state-reviewer-projection.test.ts\n M tests/acceptance/main-agent-delivery-truth-gate.test.ts\n M tests/acceptance/main-agent-host-runtime-mode.test.ts\n M tests/acceptance/main-agent-parallel-locking.test.ts\n M tests/acceptance/main-agent-pr-topology.test.ts\n M tests/acceptance/main-agent-supervised-worker-timeout.test.ts\n M tests/acceptance/parallel-mission-evidence-integration.test.ts\n?? packages/bmad-speckit/src/commands/eval-question-generate.js\n?? packages/bmad-speckit/src/main-agent/actions/adaptive-intake-governance-gate.js\n?? packages/bmad-speckit/src/main-agent/actions/adaptive-intake-proof-gate.js\n?? packages/bmad-speckit/src/main-agent/actions/ai-tdd-closeout-remediation-adapter.js\n?? packages/bmad-speckit/src/main-agent/actions/ai-tdd-contract-gate.js\n?? packages/bmad-speckit/src/main-agent/actions/audit-review-gate.js\n?? packages/bmad-speckit/src/main-agent/actions/audit-stage-routing.js\n?? packages/bmad-speckit/src/main-agent/actions/auditor-post-actions.js\n?? packages/bmad-speckit/src/main-agent/actions/auditor-spec.js\n?? packages/bmad-speckit/src/main-agent/actions/bmad-artifact-hardcut.js\n?? packages/bmad-speckit/src/main-agent/actions/bmad-runtime-worker.js\n?? packages/bmad-speckit/src/main-agent/actions/control-plane-isolation-check.js\n?? packages/bmad-speckit/src/main-agent/actions/data-governance-gate.js\n?? packages/bmad-speckit/src/main-agent/actions/dataset-release-gate.js\n?? packages/bmad-speckit/src/main-agent/actions/decision-field-check.js\n?? packages/bmad-speckit/src/main-agent/actions/development-journey-matrix.js\n?? packages/bmad-speckit/src/main-agent/actions/e2e-dual-host-journey-runner.js\n?? packages/bmad-speckit/src/main-agent/actions/e2e-host-matrix-journey-runner.js\n?? packages/bmad-speckit/src/main-agent/actions/entryflow-traceability-check.js\n?? packages/bmad-speckit/src/main-agent/actions/execution-closure-gate.js\n?? packages/bmad-speckit/src/main-agent/actions/final-closeout-evidence-runner.js\n?? packages/bmad-speckit/src/main-agent/actions/functional-resume-check.js\n?? packages/bmad-speckit/src/main-agent/actions/governance-packet-dispatch-worker.js\n?? packages/bmad-speckit/src/main-agent/actions/governed-data-products.js\n?? packages/bmad-speckit/src/main-agent/actions/ingest-implementation-evidence.js\n?? packages/bmad-speckit/src/main-agent/actions/initialize-six-model-requirement-confirmation.js\n?? packages/bmad-speckit/src/main-agent/actions/live-smoke-main-agent-runtime.js\n?? packages/bmad-speckit/src/main-agent/actions/orchestration-dispatch-contract.js\n?? packages/bmad-speckit/src/main-agent/actions/orchestration-governance-contract.js\n?? packages/bmad-speckit/src/main-agent/actions/orchestration-state.js\n?? packages/bmad-speckit/src/main-agent/actions/package-runtime-report.js\n?? packages/bmad-speckit/src/main-agent/actions/per-must-closure-evidence-index.js\n?? packages/bmad-speckit/src/main-agent/actions/pre-rerun-anti-false-positive-gate.js\n?? packages/bmad-speckit/src/main-agent/actions/print-resolved-audit-prompt.js\n?? packages/bmad-speckit/src/main-agent/actions/production-loop-ready-check.js\n?? packages/bmad-speckit/src/main-agent/actions/reconfirmation-runtime.js\n?? packages/bmad-speckit/src/main-agent/actions/record-main-agent-inspect-readiness-closure.js\n?? packages/bmad-speckit/src/main-agent/actions/render-audit-block-cli.js\n?? packages/bmad-speckit/src/main-agent/actions/requirement-record-control-store.js\n?? packages/bmad-speckit/src/main-agent/actions/requirement-record-live-schema-gate.js\n?? packages/bmad-speckit/src/main-agent/actions/requirement-record",
+      "stderrPreview": "",
+      "status": "passed"
+    },
+    {
+      "command": "node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js",
+      "cwd": "D:\\Dev\\BMAD-Speckit-SDD-Flow",
+      "exitCode": 0,
+      "stdoutHash": "sha256:95f01b2c1cc4ffc06efb93fe2085a8d1de849fa2b67761560514bce7dbc6e21b",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "startedAt": "2026-06-05T22:58:32.717Z",
+      "completedAt": "2026-06-05T22:58:33.231Z",
+      "stdoutPreview": "checkedFiles=3037 findings=0\n",
+      "stderrPreview": "",
+      "status": "passed"
+    }
+  ]
+}

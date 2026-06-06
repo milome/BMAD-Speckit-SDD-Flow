@@ -62,6 +62,32 @@ function emitDeprecatedAlias(commandName, replacement, args) {
   }
 }
 
+function runCommandPromise(commandName, result) {
+  return Promise.resolve(result)
+    .then((exitCode) => {
+      if (typeof exitCode === 'number') process.exitCode = exitCode;
+    })
+    .catch((error) => {
+      console.error(error instanceof Error ? error.message : String(error));
+      process.exitCode = 1;
+    });
+}
+
+function registerWave312PublicCommand(commandName, exportName, description) {
+  program
+    .command(commandName)
+    .description(description)
+    .option('--json', 'Print machine-readable JSON')
+    .allowUnknownOption(true)
+    .allowExcessArguments(true)
+    .action((opts, command) =>
+      runCommandPromise(
+        commandName,
+        loadCommand(`../src/commands/${commandName}`, exportName)(opts, forwardedArgsFromCommand(command))
+      )
+    );
+}
+
 // Show banner for init (including init --help) when in TTY
 if (process.argv.includes('init') && ttyUtils.isTTY()) {
   const { showBanner } = require('../src/commands/init');
@@ -71,6 +97,7 @@ if (process.argv.includes('init') && ttyUtils.isTTY()) {
 program
   .name('bmad-speckit')
   .version(pkg.version)
+  .enablePositionalOptions()
   .description('BMAD-Speckit: init, check, version, upgrade, uninstall, config, feedback');
 
 program
@@ -284,6 +311,22 @@ program
   .option('--dataPath <path>', 'Scoring data directory')
   .option('--stage <stage>', 'Stage filter (story|implement)')
   .action((opts) => loadCommand('../src/commands/check-score', 'checkScoreCommand')(opts));
+
+program
+  .command('eval-question-generate')
+  .description('Generate eval question templates from coach diagnosis output')
+  .option('--run-id <id>', 'Run ID')
+  .option('--input <path>', 'Coach diagnosis JSON input path')
+  .option('--version <version>', 'Eval question version directory', 'v1')
+  .option('--outputDir <path>', 'Output directory')
+  .option('--output-dir <path>', 'Output directory')
+  .option('--dataPath <path>', 'Scoring data directory for --run-id compatibility')
+  .allowUnknownOption(false)
+  .action((opts) => {
+    loadCommand('../src/commands/eval-question-generate', 'evalQuestionGenerateCli')(opts).then(
+      (exitCode) => process.exit(exitCode)
+    );
+  });
 
 program
   .command('coach')
@@ -745,6 +788,31 @@ program
       forwardedArgsFromCommand(command)
     )
   );
+
+registerWave312PublicCommand(
+  'architecture-drift-check',
+  'architectureDriftCheckCommand',
+  'Run the package architecture drift check surface'
+);
+registerWave312PublicCommand('coach-diagnose', 'coachDiagnoseCommand', 'Run the package coach diagnosis surface');
+registerWave312PublicCommand(
+  'emit-runtime-policy',
+  'emitRuntimePolicyCommand',
+  'Emit the package runtime policy surface'
+);
+registerWave312PublicCommand('init-to-root', 'initToRootCommand', 'Run the package init-to-root surface');
+registerWave312PublicCommand(
+  'live-smoke-speckit-workflow',
+  'liveSmokeSpeckitWorkflowCommand',
+  'Run the package live smoke workflow surface'
+);
+registerWave312PublicCommand('setup', 'setupCommand', 'Run the package setup surface');
+registerWave312PublicCommand('speckit-cli', 'speckitCliCommand', 'Run the package Speckit CLI surface');
+registerWave312PublicCommand(
+  'validate-single-source-whitelist',
+  'validateSingleSourceWhitelistCommand',
+  'Run the package single-source whitelist validation surface'
+);
 
 program
   .command('eval-questions')

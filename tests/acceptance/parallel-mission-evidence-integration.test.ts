@@ -8,7 +8,7 @@ import {
   buildParallelMissionPlan,
   buildPrTopology,
   evaluateParallelMissionEvidenceIntegration,
-} from '../../scripts/parallel-mission-control';
+} from '../../packages/bmad-speckit/src/main-agent/runtime/parallel-mission-control.js';
 import { sha256Object } from '../../scripts/subagent-evidence-envelope';
 
 const SOURCE_HASH = 'sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570';

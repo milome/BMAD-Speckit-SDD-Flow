@@ -5,7 +5,7 @@ import path from 'node:path';
 import {
   collectReadinessProjectionDiagnosis,
   collectReviewerProjectionDiagnosis,
-} from '../../scripts/diagnose-bmad-state';
+} from '../../packages/bmad-speckit/src/main-agent/runtime/diagnose-bmad-state.js';
 import { writeMinimalRegistryAndProjectContext } from '../helpers/runtime-registry-fixture';
 
 describe('diagnose-bmad-state reviewer projection', () => {

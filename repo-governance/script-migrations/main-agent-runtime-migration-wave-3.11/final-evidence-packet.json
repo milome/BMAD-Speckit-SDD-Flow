@@ -1,0 +1,223 @@
+{
+  "waveId": "main-agent-runtime-migration-wave-3.11",
+  "status": "sealed_snapshot",
+  "sealed": true,
+  "generatedAt": "2026-06-06T02:31:02.984Z",
+  "sealedAt": "2026-06-06T02:31:02.984Z",
+  "sealHash": "sha256:5f7d017c212f46167bf0761001790ed0845ffbe1d89886fbf2a8ef084325e414",
+  "acceptanceStatus": {
+    "ACC001": {
+      "status": "passed",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/evidence.json"
+      ],
+      "commandIds": [
+        "cmd-git-status-baseline",
+        "cmd-encoding-pre-implementation"
+      ],
+      "notes": "All required command rows passed."
+    },
+    "ACC002": {
+      "status": "passed",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/evidence.json"
+      ],
+      "commandIds": [
+        "cmd-build-main-agent-dist"
+      ],
+      "notes": "All required command rows passed."
+    },
+    "ACC003": {
+      "status": "passed",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/evidence.json"
+      ],
+      "commandIds": [
+        "cmd-test-runtime-modules"
+      ],
+      "notes": "All required command rows passed."
+    },
+    "ACC004": {
+      "status": "passed",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/evidence.json"
+      ],
+      "commandIds": [
+        "cmd-test-runtime-acceptance-import-switches"
+      ],
+      "notes": "All required command rows passed."
+    },
+    "ACC005": {
+      "status": "passed",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/evidence.json"
+      ],
+      "commandIds": [
+        "cmd-build-main-agent-dist",
+        "cmd-test-helpers"
+      ],
+      "notes": "All required command rows passed."
+    },
+    "ACC006": {
+      "status": "passed",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/evidence.json"
+      ],
+      "commandIds": [
+        "cmd-build-scoring",
+        "cmd-test-scoring-eval-questions",
+        "cmd-test-eval-question-generate",
+        "cmd-smoke-eval-question-generate-source-tree",
+        "cmd-run-install-matrix"
+      ],
+      "notes": "All required command rows passed."
+    },
+    "ACC007": {
+      "status": "passed",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/evidence.json"
+      ],
+      "commandIds": [
+        "cmd-test-check-score",
+        "cmd-assert-public-cli-dispatch",
+        "cmd-validate-registry"
+      ],
+      "notes": "All required command rows passed."
+    },
+    "ACC008": {
+      "status": "passed",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/evidence.json"
+      ],
+      "commandIds": [
+        "cmd-assert-no-migration-internal-exact"
+      ],
+      "notes": "All required command rows passed."
+    },
+    "ACC009": {
+      "status": "passed",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/evidence.json"
+      ],
+      "commandIds": [
+        "cmd-validate-registry"
+      ],
+      "notes": "All required command rows passed."
+    },
+    "ACC010": {
+      "status": "passed",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/evidence.json"
+      ],
+      "commandIds": [
+        "cmd-closure-audit-write",
+        "cmd-assert-closure-audit-exact-wave-3-11"
+      ],
+      "notes": "All required command rows passed."
+    },
+    "ACC011": {
+      "status": "passed",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/evidence.json"
+      ],
+      "commandIds": [
+        "cmd-build-scoring",
+        "cmd-test-scoring-eval-questions",
+        "cmd-build-main-agent-dist",
+        "cmd-test-package-build-dispatch-regressions",
+        "cmd-test-runtime-modules",
+        "cmd-test-helpers",
+        "cmd-test-eval-question-generate",
+        "cmd-test-check-score"
+      ],
+      "notes": "All required command rows passed."
+    },
+    "ACC012": {
+      "status": "passed",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/evidence.json"
+      ],
+      "commandIds": [
+        "cmd-test-install-surface-regressions",
+        "cmd-run-install-matrix",
+        "cmd-validate-wave-3-11-evidence-running"
+      ],
+      "notes": "All required command rows passed."
+    },
+    "ACC013": {
+      "status": "self_excluded",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/evidence.json"
+      ],
+      "commandIds": [],
+      "notes": "Final acceptance and final validator rows are future commands at seal time.",
+      "pendingCommandIds": [
+        "cmd-test-wave-3-11-contract-final",
+        "cmd-validate-wave-3-11-final"
+      ],
+      "reason": "sealed_packet_cannot_validate_future_final_commands"
+    },
+    "ACC014": {
+      "status": "self_excluded",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/evidence.json"
+      ],
+      "commandIds": [],
+      "notes": "Final acceptance and final validator rows are future commands at seal time.",
+      "pendingCommandIds": [
+        "cmd-test-wave-3-11-contract-final",
+        "cmd-validate-wave-3-11-final"
+      ],
+      "reason": "sealed_packet_cannot_validate_future_final_commands"
+    }
+  },
+  "manualVerificationStatus": {
+    "MAN001": {
+      "status": "passed",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/evidence.json"
+      ],
+      "commandIds": [
+        "cmd-assert-root-scripts-not-deleted"
+      ],
+      "notes": "Manual verification scenario is proven by command evidence."
+    },
+    "MAN002": {
+      "status": "passed",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/evidence.json"
+      ],
+      "commandIds": [
+        "cmd-assert-public-cli-dispatch"
+      ],
+      "notes": "Manual verification scenario is proven by command evidence."
+    },
+    "MAN003": {
+      "status": "passed",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/evidence.json"
+      ],
+      "commandIds": [
+        "cmd-assert-closure-audit-exact-wave-3-11"
+      ],
+      "notes": "Manual verification scenario is proven by command evidence."
+    },
+    "MAN004": {
+      "status": "passed",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/evidence.json"
+      ],
+      "commandIds": [
+        "cmd-assert-final-closeout-language"
+      ],
+      "notes": "Manual verification scenario is proven by command evidence."
+    }
+  },
+  "sealedEvidenceJsonHash": "sha256:cd32561ea49cfbf0bf05ca1f06ac32cad771ec578df8333a58127ba06f790807",
+  "installMatrixHash": "sha256:aec754d161dc8f3d2e64b2274b1f6c65303c7e0942c3c1abbeb57e3bcfe66645",
+  "summaryHash": "sha256:5e9ff7184dd3f4914c09ebb1527b0b275bc32b132b9b946917456464f711f152",
+  "finalEncodingCommandId": "cmd-encoding-final",
+  "expectedFinalAcceptanceCommandId": "cmd-test-wave-3-11-contract-final",
+  "expectedFinalValidatorCommandId": "cmd-validate-wave-3-11-final",
+  "residualRisks": []
+}

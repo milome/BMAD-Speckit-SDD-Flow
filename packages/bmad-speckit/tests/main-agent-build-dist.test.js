@@ -11,6 +11,10 @@ const DIST_ROOT = path.join(PACKAGE_ROOT, 'dist', 'main-agent');
 const EXPECTED_DIST_FILES = [
   'index.js',
   'runtime.js',
+  'runtime/host-runtime-mode.js',
+  'runtime/supervised-worker-runtime.js',
+  'runtime/diagnose-bmad-state.js',
+  'runtime/parallel-mission-control.js',
   'actions/inspect.js',
   'actions/chaos-scenarios.js',
   'actions/codex-worker-adapter.js',
@@ -28,6 +32,11 @@ const EXPECTED_DIST_FILES = [
   'actions/soak-runner.js',
   'actions/unified-ingress.js',
   'auditor-host/run-auditor-host.cjs',
+  'helpers/bmad-state-reader.js',
+  'helpers/e2e-verify-paths.js',
+  'helpers/query-validate.js',
+  'helpers/runtime-step-state.js',
+  'helpers/verify-agent-files.js',
   'helpers/write-runtime-context.cjs',
 ];
 

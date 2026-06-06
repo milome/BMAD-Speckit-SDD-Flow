@@ -1,5 +1,15 @@
 /* eslint-disable no-console */
 const path = require('node:path');
+const { adaptiveIntakeGovernanceGateAction } = require('./actions/adaptive-intake-governance-gate');
+const { adaptiveIntakeProofGateAction } = require('./actions/adaptive-intake-proof-gate');
+const { aiTddContractGateAction } = require('./actions/ai-tdd-contract-gate');
+const { aiTddCloseoutRemediationAdapterAction } = require('./actions/ai-tdd-closeout-remediation-adapter');
+const { auditReviewGateAction } = require('./actions/audit-review-gate');
+const { auditStageRoutingAction } = require('./actions/audit-stage-routing');
+const { auditorPostActionsAction } = require('./actions/auditor-post-actions');
+const { auditorSpecAction } = require('./actions/auditor-spec');
+const { bmadRuntimeWorkerAction } = require('./actions/bmad-runtime-worker');
+const { bmadArtifactHardcutAction } = require('./actions/bmad-artifact-hardcut');
 const { chaosScenariosAction } = require('./actions/chaos-scenarios');
 const { codexWorkerAdapterAction } = require('./actions/codex-worker-adapter');
 const { compiledPromptRunnerAction } = require('./actions/compiled-prompt-runner');
@@ -8,20 +18,171 @@ const {
   confirmScopeMissingReason,
   legacyConfirmScopeAction,
 } = require('./actions/confirm-scope');
+const { controlPlaneIsolationCheckAction } = require('./actions/control-plane-isolation-check');
+const { dataGovernanceGateAction } = require('./actions/data-governance-gate');
 const { deliveryCloseoutGateAction } = require('./actions/delivery-closeout-gate');
 const { deliveryEvidenceRunAction } = require('./actions/delivery-evidence-run');
+const { datasetReleaseGateAction } = require('./actions/dataset-release-gate');
+const { decisionFieldCheckAction } = require('./actions/decision-field-check');
 const { dispatchPlanAction } = require('./actions/dispatch-plan');
 const { deliveryTruthGateAction } = require('./actions/delivery-truth-gate');
+const { developmentJourneyMatrixAction } = require('./actions/development-journey-matrix');
 const { dualHostPrOrchestratorAction } = require('./actions/dual-host-pr-orchestrator');
+const { entryflowTraceabilityCheckAction } = require('./actions/entryflow-traceability-check');
+const { executionClosureGateAction } = require('./actions/execution-closure-gate');
+const { e2eDualHostJourneyRunnerAction } = require('./actions/e2e-dual-host-journey-runner');
+const { e2eHostMatrixJourneyRunnerAction } = require('./actions/e2e-host-matrix-journey-runner');
+const { finalCloseoutEvidenceRunnerAction } = require('./actions/final-closeout-evidence-runner');
+const { functionalResumeCheckAction } = require('./actions/functional-resume-check');
+const { governedDataProductsAction } = require('./actions/governed-data-products');
+const { governancePacketDispatchWorkerAction } = require('./actions/governance-packet-dispatch-worker');
 const { implementationReadinessGateAction } = require('./actions/implementation-readiness-gate');
+const {
+  initializeSixModelRequirementConfirmationAction,
+} = require('./actions/initialize-six-model-requirement-confirmation');
 const { hasRuntimeState, inspectRuntimeState, legacyInspectSurface } = require('./actions/inspect');
+const { liveSmokeMainAgentRuntimeAction } = require('./actions/live-smoke-main-agent-runtime');
+const { orchestrationDispatchContractAction } = require('./actions/orchestration-dispatch-contract');
+const { orchestrationGovernanceContractAction } = require('./actions/orchestration-governance-contract');
+const { orchestrationStateAction } = require('./actions/orchestration-state');
+const { ingestImplementationEvidenceAction } = require('./actions/ingest-implementation-evidence');
+const { perMustClosureEvidenceIndexAction } = require('./actions/per-must-closure-evidence-index');
+const { preRerunAntiFalsePositiveGateAction } = require('./actions/pre-rerun-anti-false-positive-gate');
+const { printResolvedAuditPromptAction } = require('./actions/print-resolved-audit-prompt');
+const { productionLoopReadyCheckAction } = require('./actions/production-loop-ready-check');
 const { qualityGateAction } = require('./actions/quality-gate');
+const { reconfirmationRuntimeAction } = require('./actions/reconfirmation-runtime');
+const {
+  recordMainAgentInspectReadinessClosureAction,
+} = require('./actions/record-main-agent-inspect-readiness-closure');
 const { releaseGateAction } = require('./actions/release-gate');
+const { requirementRecordControlStoreAction } = require('./actions/requirement-record-control-store');
+const { requirementRecordLiveSchemaGateAction } = require('./actions/requirement-record-live-schema-gate');
+const { requirementRecordSchemaEvolutionAction } = require('./actions/requirement-record-schema-evolution');
+const { resolveActiveRequirementAction } = require('./actions/resolve-active-requirement');
 const { legacyRunLoopAction, runLoopAction } = require('./actions/run-loop');
+const { runtimePolicySnapshotCheckAction } = require('./actions/runtime-policy-snapshot-check');
+const { runtimeScoringDataPathAction } = require('./actions/runtime-scoring-data-path');
+const { scoringGatesCheckAction } = require('./actions/scoring-gates-check');
+const { skillOrchestrationAuditAction } = require('./actions/skill-orchestration-audit');
+const { sixModelRuntimeDecisionAction } = require('./actions/six-model-runtime-decision');
 const { soakRunnerAction } = require('./actions/soak-runner');
+const { renderAuditBlockCliAction } = require('./actions/render-audit-block-cli');
+const { strictCloseoutProofGateAction } = require('./actions/strict-closeout-proof-gate');
+const { targetArtifactRealizationGateAction } = require('./actions/target-artifact-realization-gate');
+const { traceStatusPolicyCheckAction } = require('./actions/trace-status-policy-check');
+const { trace040EvidencePacketGeneratorAction } = require('./actions/trace-040-evidence-packet-generator');
 const { unifiedIngressAction } = require('./actions/unified-ingress');
+const { updateRuntimeAuditIndexAction } = require('./actions/update-runtime-audit-index');
+const { verifyCursorAuditGranularityAction } = require('./actions/verify-cursor-audit-granularity');
 
 const SCHEMA_VERSION = 'main-agent-package-runtime/v1';
+const PACKAGE_RUNTIME_READY_ACTIONS = {
+  'live-smoke-main-agent-runtime': liveSmokeMainAgentRuntimeAction,
+  'ai-tdd-closeout-remediation-adapter': aiTddCloseoutRemediationAdapterAction,
+  'audit-review-gate': auditReviewGateAction,
+  'bmad-artifact-hardcut': bmadArtifactHardcutAction,
+  'control-plane-isolation-check': controlPlaneIsolationCheckAction,
+  'data-governance-gate': dataGovernanceGateAction,
+  'dataset-release-gate': datasetReleaseGateAction,
+  'decision-field-check': decisionFieldCheckAction,
+  'development-journey-matrix': developmentJourneyMatrixAction,
+  'entryflow-traceability-check': entryflowTraceabilityCheckAction,
+  'execution-closure-gate': executionClosureGateAction,
+  'functional-resume-check': functionalResumeCheckAction,
+  'governed-data-products': governedDataProductsAction,
+  'production-loop-ready-check': productionLoopReadyCheckAction,
+  'runtime-policy-snapshot-check': runtimePolicySnapshotCheckAction,
+  'scoring-gates-check': scoringGatesCheckAction,
+  'trace-status-policy-check': traceStatusPolicyCheckAction,
+  'orchestration-dispatch-contract': orchestrationDispatchContractAction,
+  'orchestration-governance-contract': orchestrationGovernanceContractAction,
+  'orchestration-state': orchestrationStateAction,
+  'record-main-agent-inspect-readiness-closure': recordMainAgentInspectReadinessClosureAction,
+  'skill-orchestration-audit': skillOrchestrationAuditAction,
+  'initialize-six-model-requirement-confirmation': initializeSixModelRequirementConfirmationAction,
+  'reconfirmation-runtime': reconfirmationRuntimeAction,
+  'requirement-record-control-store': requirementRecordControlStoreAction,
+  'requirement-record-live-schema-gate': requirementRecordLiveSchemaGateAction,
+  'requirement-record-schema-evolution': requirementRecordSchemaEvolutionAction,
+  'resolve-active-requirement': resolveActiveRequirementAction,
+  'runtime-scoring-data-path': runtimeScoringDataPathAction,
+  'six-model-runtime-decision': sixModelRuntimeDecisionAction,
+  'adaptive-intake-governance-gate': adaptiveIntakeGovernanceGateAction,
+  'adaptive-intake-proof-gate': adaptiveIntakeProofGateAction,
+  'ai-tdd-contract-gate': aiTddContractGateAction,
+  'audit-stage-routing': auditStageRoutingAction,
+  'auditor-post-actions': auditorPostActionsAction,
+  'auditor-spec': auditorSpecAction,
+  'bmad-runtime-worker': bmadRuntimeWorkerAction,
+  'e2e-dual-host-journey-runner': e2eDualHostJourneyRunnerAction,
+  'e2e-host-matrix-journey-runner': e2eHostMatrixJourneyRunnerAction,
+  'final-closeout-evidence-runner': finalCloseoutEvidenceRunnerAction,
+  'governance-packet-dispatch-worker': governancePacketDispatchWorkerAction,
+  'print-resolved-audit-prompt': printResolvedAuditPromptAction,
+  'render-audit-block-cli': renderAuditBlockCliAction,
+  'ingest-implementation-evidence': ingestImplementationEvidenceAction,
+  'per-must-closure-evidence-index': perMustClosureEvidenceIndexAction,
+  'pre-rerun-anti-false-positive-gate': preRerunAntiFalsePositiveGateAction,
+  'strict-closeout-proof-gate': strictCloseoutProofGateAction,
+  'target-artifact-realization-gate': targetArtifactRealizationGateAction,
+  'trace-040-evidence-packet-generator': trace040EvidencePacketGeneratorAction,
+  'update-runtime-audit-index': updateRuntimeAuditIndexAction,
+  'verify-cursor-audit-granularity': verifyCursorAuditGranularityAction,
+};
+const WAVE_3_12_PACKAGE_RUNTIME_ACTIONS = {
+  'analytics-sft-extract': ['./actions/analytics-sft-extract', 'runAnalyticsSftExtract'],
+  'assert-implementation-entry': ['./actions/assert-implementation-entry', 'runAssertImplementationEntry'],
+  'bmad-config': ['./actions/bmad-config', 'runBmadConfig'],
+  'check-sprint-ready': ['./actions/check-sprint-ready', 'runCheckSprintReady'],
+  'dashboard-generate': ['./actions/dashboard-generate', 'runDashboardGenerate'],
+  'governance-execution-result-ingestor': [
+    './actions/governance-execution-result-ingestor',
+    'runGovernanceExecutionResultIngestor',
+  ],
+  'governance-hook-types': ['./actions/governance-hook-types', 'runGovernanceHookTypes'],
+  'governance-provider-adapter': ['./actions/governance-provider-adapter', 'runGovernanceProviderAdapter'],
+  'governance-runtime-queue': ['./actions/governance-runtime-queue', 'runGovernanceRuntimeQueue'],
+  'governance-stage-event-emitter': [
+    './actions/governance-stage-event-emitter',
+    'runGovernanceStageEventEmitter',
+  ],
+  'i18n-render-template': ['./actions/i18n-render-template', 'runRenderTemplate'],
+  'ingest-architecture-confirmation': [
+    './actions/ingest-architecture-confirmation',
+    'runIngestArchitectureConfirmation',
+  ],
+  'mcp-consumer-install-consumer-mcp': [
+    './actions/mcp-consumer-install-consumer-mcp',
+    'runInstallConsumerMcp',
+  ],
+  'mcp-consumer-verify-consumer-mcp': [
+    './actions/mcp-consumer-verify-consumer-mcp',
+    'runVerifyConsumerMcp',
+  ],
+  'model-governance-hint-resolver': [
+    './actions/model-governance-hint-resolver',
+    'runModelGovernanceHintResolver',
+  ],
+  'parse-and-write-score': ['./actions/parse-and-write-score', 'runParseAndWriteScore'],
+  'runtime-governance': ['./actions/runtime-governance', 'runRuntimeGovernance'],
+  'runtime-governance-registry': ['./actions/runtime-governance-registry', 'runRuntimeGovernanceRegistry'],
+  'runtime-governance-template-schema': [
+    './actions/runtime-governance-template-schema',
+    'runRuntimeGovernanceTemplateSchema',
+  ],
+  'sft-extract': ['./actions/sft-extract', 'runSftExtract'],
+  'user-story-mapping': ['./actions/user-story-mapping', 'runUserStoryMapping'],
+  'validate-consumer-governance': [
+    './actions/validate-consumer-governance',
+    'runValidateConsumerGovernance',
+  ],
+  'verify-hooks-no-ts-node': ['./actions/verify-hooks-no-ts-node', 'runVerifyHooksNoTsNode'],
+  'write-runtime-policy-snapshot-and-recovery-context': [
+    './actions/write-runtime-policy-snapshot-and-recovery-context',
+    'runWriteRuntimePolicySnapshotAndRecoveryContext',
+  ],
+};
 const SUPPORTED_ACTIONS = new Set([
   'inspect',
   'confirm-scope',
@@ -39,7 +200,16 @@ const SUPPORTED_ACTIONS = new Set([
   'soak-runner',
   'dual-host-pr-orchestrator',
   'chaos-scenarios',
+  ...Object.keys(PACKAGE_RUNTIME_READY_ACTIONS),
+  ...Object.keys(WAVE_3_12_PACKAGE_RUNTIME_ACTIONS),
 ]);
+
+function loadWave312PackageRuntimeAction(action) {
+  const definition = WAVE_3_12_PACKAGE_RUNTIME_ACTIONS[action];
+  if (!definition) return null;
+  const [modulePath, exportName] = definition;
+  return require(modulePath)[exportName];
+}
 
 function normalizeAction(value) {
   return String(value || '').trim().replace(/_/g, '-');
@@ -253,6 +423,15 @@ async function runMainAgentRuntime(context) {
 
   if (context.action === 'chaos-scenarios') {
     return emitResponse(context, envelope(context, 'package_runtime_ready', 0, chaosScenariosAction(context)));
+  }
+
+  const packageRuntimeReadyAction =
+    PACKAGE_RUNTIME_READY_ACTIONS[context.action] || loadWave312PackageRuntimeAction(context.action);
+  if (packageRuntimeReadyAction) {
+    return emitResponse(
+      context,
+      envelope(context, 'package_runtime_ready', 0, packageRuntimeReadyAction(context))
+    );
   }
 }
 

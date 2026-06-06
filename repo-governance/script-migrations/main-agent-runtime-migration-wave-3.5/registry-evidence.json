@@ -1,0 +1,44 @@
+{
+  "schemaVersion": "main-agent-install-surface-registry-evidence/v1",
+  "waveId": "main-agent-runtime-migration-wave-3.5",
+  "contractPath": "docs/plans/2026-06-04-main-agent-runtime-migration-wave-3-3-and-3-4-goal-execution-plan.md",
+  "validatedAt": "2026-06-04T19:29:20.466Z",
+  "entries": [
+    {
+      "entryId": "main-agent-install-surface-hardening",
+      "originalPath": "_bmad/_config/script-owner-model-registry.yaml",
+      "targetPaths": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.5/registry-invocation-contract.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.5/skill-helper-hardening.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.5/skill-sync-parity.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.5/evidence.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.5/summary.md",
+        "tools/script-migration/validate-main-agent-install-surface-wave-3-5.cjs",
+        "tests/acceptance/main-agent-install-surface-wave-3-5-contract.test.ts"
+      ],
+      "commands": [
+        {
+          "command": "d:\\nvm4w\\nodejs\\node.exe _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js",
+          "exitCode": 0,
+          "stdoutHash": "sha256:49229509461e4b936dfa1f8ae0fa687a02760af03df3231524e02ea39abcd291",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "command": "git status --short -- scripts",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "installMatrixEvidence": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.5/registry-invocation-contract.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.5/skill-helper-hardening.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.5/skill-sync-parity.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.5/evidence.json"
+      ],
+      "result": "passed"
+    }
+  ],
+  "installSurfaceEvidence": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.5/evidence.json",
+  "scopeStatement": "Installation-surface hardening only; source-only registry rows remain source-repository maintenance assets until a later wave proves consumer-runnable behavior."
+}
