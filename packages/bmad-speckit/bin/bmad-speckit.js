@@ -24,11 +24,11 @@ function loadCommand(modulePath, exportName) {
 function runRuntimeModule(modulePath, exportName, args) {
   Promise.resolve(require(modulePath)[exportName](args))
     .then((exitCode) => {
-      process.exit(exitCode ?? 0);
+      process.exitCode = exitCode ?? 0;
     })
     .catch((error) => {
       console.error(error instanceof Error ? error.message : String(error));
-      process.exit(1);
+      process.exitCode = 1;
     });
 }
 
