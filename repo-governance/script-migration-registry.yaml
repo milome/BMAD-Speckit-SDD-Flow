@@ -6004,12 +6004,12 @@ waves:
         deletionApprovalRef: null
         implementationState: validated
   - waveId: main-agent-runtime-migration-wave-3.13
-    title: Main Agent renderer package CLI closeout
+    title: Main Agent renderer package CLI and kbase install matrix closeout
     contractPath: repo-governance/script-migrations/main-agent-runtime-migration-wave-3.13/summary.md
     refinesWaveId: main-agent-runtime-migration-wave-3.12
     status: validated
     startedAt: '2026-06-06T17:47:56.436Z'
-    completedAt: '2026-06-06T17:47:56.436Z'
+    completedAt: '2026-06-06T22:03:18.272Z'
     entries:
       - entryId: bmad-help-renderer
         refinesWaveId: main-agent-runtime-migration-wave-3.10

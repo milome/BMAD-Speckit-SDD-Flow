@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "renderer-package-cli-closeout-evidence/v1",
+  "schemaVersion": "renderer-package-cli-closeout-evidence/v2",
   "waveId": "main-agent-runtime-migration-wave-3.13",
   "validatedAt": "2026-06-06T17:47:56.436Z",
   "scope": {
@@ -11,12 +11,53 @@
     "doesClaim": [
       "bmad-help-renderer is served by the package CLI bmad-help command",
       "bmads-renderer is served by the package CLI bmads command and bmad-speckit alias",
-      "the package entry-surface contract passes without root renderer script dispatch"
+      "the package entry-surface contract passes without root renderer script dispatch",
+      "kbase fresh consumer install matrix passes for covered package runtime and public CLI probes"
     ],
     "doesNotClaim": [
       "root scripts are deletion-ready",
       "every root scripts/** file is directly runnable from a consumer project",
       "repo-governance is a consumer runtime dependency"
+    ]
+  },
+  "kbaseInstallMatrixCloseout": {
+    "repoEvidencePath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.13/kbase-install-matrix.json",
+    "repoEvidenceSha256": "sha256:7163115fead1a674090df803fea035cf9962c0a50243f001352c0b56bafc7d74",
+    "sourceConsumerProject": "D:/Dev/kbase-content-engine",
+    "sourceMatrixRoot": "D:/Dev/kbase-content-engine/.tmp/bmad-speckit-install-matrix-20260607-045932",
+    "sourceMatrixSummarySha256": "sha256:800bd24f5c374ae2239dbf2d4db9c410ba2c977fb80afbc026766c4fc53079cc",
+    "sourceRunnerSha256": "sha256:13037aaa6568d0f0092280a31aa8995ba23541e1e945c765ee03863bac9f9f98",
+    "sourceTarballSha256": "sha256:0cc6324e475ba2aee5248a1810cfd91dd23d7b2f861739f27131e28f413ef272",
+    "status": "passed",
+    "modes": [
+      {
+        "mode": "save-dev",
+        "passed": 10,
+        "total": 10
+      },
+      {
+        "mode": "no-save",
+        "passed": 10,
+        "total": 10
+      },
+      {
+        "mode": "npx-package",
+        "passed": 7,
+        "total": 7
+      }
+    ],
+    "totalProbeRecords": 27,
+    "maxStdoutBytes": 89641,
+    "bmadHelpJsonDefaultRawRecord": false,
+    "consumerRuntimeProof": {
+      "usedRootScript": false,
+      "usedTsx": false,
+      "usedTsNode": false,
+      "usedCompiledFallback": false
+    },
+    "nonClaims": [
+      "does not claim every root scripts/** file is directly runnable from a consumer project",
+      "does not mark root scripts deletion-ready"
     ]
   },
   "entries": [
