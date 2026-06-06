@@ -12,6 +12,7 @@ const {
   WAVE_ID,
   normalizePath,
   repoPath,
+  sha256CanonicalTextFile,
   sha256File,
 } = require('./safe-write-main-agent-wave-3-12-artifact.cjs');
 
@@ -158,7 +159,11 @@ function validateLedgerSchema(errors) {
   expect(ledger.sourcePlanPath === SUMMARY_PATH, errors, `ledger sourcePlanPath must be ${SUMMARY_PATH}`);
   expect(ledger.sourcePlanHash === EXPECTED_SOURCE_PLAN_HASH, errors, `ledger sourcePlanHash must be ${EXPECTED_SOURCE_PLAN_HASH}`);
   expect(ledger.executionContractPath === EXECUTION_CONTRACT_PATH, errors, `ledger executionContractPath must be ${EXECUTION_CONTRACT_PATH}`);
-  expect(ledger.executionContractHash === sha256File(EXECUTION_CONTRACT_PATH), errors, 'ledger executionContractHash must match current execution contract');
+  expect(
+    ledger.executionContractHash === sha256CanonicalTextFile(EXECUTION_CONTRACT_PATH),
+    errors,
+    'ledger executionContractHash must match current execution contract',
+  );
   expect(ledger.sourceAuditPath === AUDIT_PATH, errors, `ledger sourceAuditPath must be ${AUDIT_PATH}`);
   expect(ledger.sourceRegistryPath === REGISTRY_PATH, errors, `ledger sourceRegistryPath must be ${REGISTRY_PATH}`);
   expect(ledger.sourceSummaryPath === SUMMARY_PATH, errors, `ledger sourceSummaryPath must be ${SUMMARY_PATH}`);
@@ -552,7 +557,11 @@ function validateEvidence(errors, ledger) {
   expect(evidence.sourcePlanPath === SUMMARY_PATH, errors, 'evidence sourcePlanPath mismatch');
   expect(evidence.sourcePlanHash === EXPECTED_SOURCE_PLAN_HASH, errors, 'evidence sourcePlanHash mismatch');
   expect(evidence.executionContractPath === EXECUTION_CONTRACT_PATH, errors, 'evidence executionContractPath mismatch');
-  expect(evidence.executionContractHash === sha256File(EXECUTION_CONTRACT_PATH), errors, 'evidence executionContractHash mismatch');
+  expect(
+    evidence.executionContractHash === sha256CanonicalTextFile(EXECUTION_CONTRACT_PATH),
+    errors,
+    'evidence executionContractHash mismatch',
+  );
   expect(evidence.auditContractPath === AUDIT_CONTRACT_PATH, errors, 'evidence auditContractPath mismatch');
   expect(Array.isArray(evidence.entries) && evidence.entries.length === ledgerEntries(ledger).length, errors, 'evidence entries must cover ledger entries');
   for (const entry of evidence.entries || []) {

@@ -51,6 +51,11 @@ function sha256File(relativePath) {
   return sha256Buffer(fs.readFileSync(repoPath(relativePath)));
 }
 
+function sha256CanonicalTextFile(relativePath) {
+  const text = fs.readFileSync(repoPath(relativePath), 'utf8').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  return sha256Text(text);
+}
+
 function canonicalize(value, omitTopLevelSelfVerification = false, depth = 0) {
   if (value === null || typeof value !== 'object') return value;
   if (Array.isArray(value)) return value.map((item) => canonicalize(item, false, depth + 1));
@@ -597,7 +602,7 @@ function buildLedger() {
     sourceRegistryPath: REGISTRY_PATH,
     sourceSummaryPath: SUMMARY_PATH,
     executionContractPath: EXECUTION_CONTRACT_PATH,
-    executionContractHash: sha256File(EXECUTION_CONTRACT_PATH),
+    executionContractHash: sha256CanonicalTextFile(EXECUTION_CONTRACT_PATH),
     queueHash,
     counts,
     entries,
@@ -730,6 +735,7 @@ module.exports = {
   repoPath,
   safeWriteFile,
   saveReceipts,
+  sha256CanonicalTextFile,
   sha256File,
   sha256Text,
 };

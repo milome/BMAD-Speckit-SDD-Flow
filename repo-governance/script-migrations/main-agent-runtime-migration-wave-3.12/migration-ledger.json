@@ -7,7 +7,7 @@
   "sourceRegistryPath": "repo-governance/script-migration-registry.yaml",
   "sourceSummaryPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/summary.md",
   "executionContractPath": "docs/plans/2026-06-06-main-agent-runtime-migration-wave-3-12-goal-execution-plan.md",
-  "executionContractHash": "sha256:4f3e964d5b7aaf62c280a47b7976063fc60dbe0aa360f4dc59ada02eacfff953",
+  "executionContractHash": "sha256:02be8d63d36273eb89b4e367675f5503d362d62e1b4c24e14f2c6430f8998ccf",
   "queueHash": "sha256:202c3a2f3305b084771c42dc5b385f4e82255475db7d994fa97d71a38b1617ea",
   "counts": {
     "total": 102,
