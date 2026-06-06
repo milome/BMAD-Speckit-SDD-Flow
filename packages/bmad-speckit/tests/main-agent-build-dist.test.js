@@ -5,8 +5,10 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
+const REPO_ROOT = path.resolve(PACKAGE_ROOT, '..', '..');
 const BUILD_SCRIPT = path.join(PACKAGE_ROOT, 'scripts', 'build-main-agent-dist.cjs');
 const PACKAGE_JSON = path.join(PACKAGE_ROOT, 'package.json');
+const RELEASE_WORKFLOW = path.join(REPO_ROOT, '.github', 'workflows', 'release.yml');
 const DIST_ROOT = path.join(PACKAGE_ROOT, 'dist', 'main-agent');
 const EXPECTED_DIST_FILES = [
   'index.js',
@@ -46,6 +48,19 @@ describe('main-agent dist build', () => {
     assert.equal(typeof pkg.scripts['build:main-agent-dist'], 'string');
     assert.match(pkg.scripts.prepack, /build:main-agent-dist/);
     assert.ok(pkg.files.includes('dist/'));
+  });
+
+  it('builds main-agent dist before release CI-equivalent tests', () => {
+    const workflow = fs.readFileSync(RELEASE_WORKFLOW, 'utf8');
+    const buildIndex = workflow.indexOf('npm run build:main-agent-dist');
+    const testIndex = workflow.indexOf('npm run test:ci');
+
+    assert.notEqual(buildIndex, -1, 'release workflow must build main-agent dist');
+    assert.notEqual(testIndex, -1, 'release workflow must run CI-equivalent tests');
+    assert.ok(
+      buildIndex < testIndex,
+      'release workflow must build main-agent dist before tests invoke package CLI'
+    );
   });
 
   it('generates required dist runtime files from package source', () => {
