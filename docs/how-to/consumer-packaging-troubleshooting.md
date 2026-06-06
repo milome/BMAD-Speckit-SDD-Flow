@@ -49,11 +49,11 @@ shared parser 一度只放在仓库根 `scripts/` 下，而 consumer 零脚本�
 
 shared parser 已经下沉到：
 
-- [_bmad/runtime/hooks/deferred-gap-governance.cjs](D:/Dev/BMAD-Speckit-SDD-Flow/_bmad/runtime/hooks/deferred-gap-governance.cjs)
+- [\_bmad/runtime/hooks/deferred-gap-governance.cjs](../../_bmad/runtime/hooks/deferred-gap-governance.cjs)
 
 仓库根的：
 
-- [scripts/deferred-gap-governance.cjs](D:/Dev/BMAD-Speckit-SDD-Flow/scripts/deferred-gap-governance.cjs)
+- [scripts/deferred-gap-governance.cjs](../../scripts/deferred-gap-governance.cjs)
 
 现在只是 repo 内 wrapper，不再是 consumer hook 的真实依赖面。
 
@@ -88,13 +88,13 @@ ENOENT: no such file or directory, open '...node_modules/bmad-speckit/node_modul
 
 现在已经新增正式 schema workspace：
 
-- [packages/schema/package.json](D:/Dev/BMAD-Speckit-SDD-Flow/packages/schema/package.json)
+- [packages/schema/package.json](../../packages/schema/package.json)
 
 并接入：
 
-- [packages/runtime-emit/package.json](D:/Dev/BMAD-Speckit-SDD-Flow/packages/runtime-emit/package.json)
-- [packages/bmad-speckit/package.json](D:/Dev/BMAD-Speckit-SDD-Flow/packages/bmad-speckit/package.json)
-- [scripts/prepublish-check.js](D:/Dev/BMAD-Speckit-SDD-Flow/scripts/prepublish-check.js)
+- [packages/runtime-emit/package.json](../../packages/runtime-emit/package.json)
+- [packages/bmad-speckit/package.json](../../packages/bmad-speckit/package.json)
+- [scripts/prepublish-check.js](../../scripts/prepublish-check.js)
 
 现在 tarball 里应包含：
 
@@ -131,7 +131,7 @@ RunScoreRecord validation failed: ... /stage ... must be equal to one of the all
 
 现在已在：
 
-- [packages/scoring/governance/write-rerun-history.ts](D:/Dev/BMAD-Speckit-SDD-Flow/packages/scoring/governance/write-rerun-history.ts)
+- [packages/scoring/governance/write-rerun-history.ts](../../packages/scoring/governance/write-rerun-history.ts)
 
 显式做映射：
 
@@ -141,7 +141,7 @@ RunScoreRecord validation failed: ... /stage ... must be equal to one of the all
 
 并补了针对性测试：
 
-- [packages/scoring/governance/__tests__/write-rerun-history.test.ts](D:/Dev/BMAD-Speckit-SDD-Flow/packages/scoring/governance/__tests__/write-rerun-history.test.ts)
+- [packages/scoring/governance/**tests**/write-rerun-history.test.ts](../../packages/scoring/governance/__tests__/write-rerun-history.test.ts)
 
 ## 回归清单
 
@@ -214,10 +214,14 @@ npx vitest run packages/scoring/governance/__tests__/write-rerun-history.test.ts
 在消费项目根执行：
 
 ```powershell
+cd <consumer-root>
+npm ls bmad-speckit-sdd-flow --depth=0
+node -e "const fs=require('node:fs'); const p=process.platform==='win32'?'node_modules/.bin/bmad-speckit.cmd':'node_modules/.bin/bmad-speckit'; if(!fs.existsSync(p)){console.error('missing project-local '+p); process.exit(1)} console.log('found '+p)"
+npx --no-install bmad-speckit init . --ai claude,cursor-agent --yes --force
 pwsh _bmad\speckit\scripts\powershell\check-prerequisites.ps1 -PathsOnly
-npx bmad-speckit check
-npx bmad-speckit-init --agent claude-code
-npx bmad-speckit-init --agent cursor
+npx --no-install bmad-speckit check
+npx --no-install bmad-speckit dashboard-status
+npx --no-install bmad-speckit bmads
 ```
 
 如果你要专项验证 pre-continue：

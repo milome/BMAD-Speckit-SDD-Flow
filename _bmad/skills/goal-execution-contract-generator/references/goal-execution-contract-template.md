@@ -3,8 +3,9 @@
 <!-- goal-slot:frontMatter required dynamic=frontMatter -->
 <!-- /goal-slot:frontMatter -->
 
-> **For Codex /goal:** REQUIRED EXECUTION MODE: Use this file as the authoritative frozen `/goal` source. Execute task-by-task, keep fresh verification evidence, and do not claim completion until every strict acceptance item passes.
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> **For Codex /goal:** REQUIRED EXECUTION MODE: Use this file as the authoritative frozen `/goal` source. Execute task-by-task, keep fresh verification evidence, run the regression tests associated with every changed file, and do not claim completion until every strict acceptance item and associated regression test passes.
+> **For Claude /goal:** REQUIRED EXECUTION MODE: Use this file as the authoritative frozen `/goal` source. Execute task-by-task, keep fresh verification evidence, run the regression tests associated with every changed file, and do not claim completion until every strict acceptance item and associated regression test passes.
+> **For Cursor /goal:** REQUIRED EXECUTION MODE: Use this file as the authoritative frozen `/goal` source. Execute task-by-task, keep fresh verification evidence, run the regression tests associated with every changed file, and do not claim completion until every strict acceptance item and associated regression test passes.
 
 The Markdown template is the human canonical contract source. The JSON profile is a machine-readable index and compatibility contract. The shared renderer may fill only declared slots and must preserve static prose outside slot boundaries.
 
@@ -62,6 +63,7 @@ Fail closed when any required section, field, task ID, acceptance ID, evidence c
 - Inspect `git status --short` before editing and do not revert unrelated dirty worktree changes.
 - Do not mark a task complete without fresh command output or direct file evidence.
 - Do not mark an acceptance item complete without evidence that directly proves that item.
+- Run the regression tests associated with every changed file and keep fresh passing evidence before claiming completion.
 - Do not claim completion from generated prompts, generated goal documents, audit receipts, stdout, exit code, dashboards, score records, or audit prose alone.
 - Do not weaken the declared machine-readable authority.
 - Do not hardcode absolute skill install paths into generated templates, profile files, compiler output, or tests.

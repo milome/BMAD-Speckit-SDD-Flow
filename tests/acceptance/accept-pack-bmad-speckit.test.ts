@@ -67,6 +67,36 @@ describe('npm pack root package → clean install → CLI', () => {
       expect(ver).toContain(ROOT_PACKAGE_VERSION);
 
       const rootInstallDir = join(consumer, 'node_modules', 'bmad-speckit-sdd-flow');
+      const installedPromoteScript = join(
+        rootInstallDir,
+        '_bmad',
+        'skills',
+        'requirements-contract-authoring',
+        'scripts',
+        'promote-draft-large-doc.js'
+      );
+      const installedManifestScript = join(
+        rootInstallDir,
+        '_bmad',
+        'skills',
+        'requirements-contract-authoring',
+        'scripts',
+        'generate-draft-manifest.js'
+      );
+      const installedNormalizeScript = join(
+        rootInstallDir,
+        '_bmad',
+        'skills',
+        'requirements-contract-authoring',
+        'scripts',
+        'normalize-draft-markdown.js'
+      );
+      expect(existsSync(installedPromoteScript)).toBe(true);
+      expect(existsSync(installedManifestScript)).toBe(true);
+      expect(existsSync(installedNormalizeScript)).toBe(true);
+      expect(run(`"${process.execPath}" "${installedPromoteScript}" --help`, consumer)).toContain(
+        '--preflight-only'
+      );
       const bundledRe =
         findFirstExistingPath([
           join(

@@ -1,0 +1,152 @@
+{
+  "schemaVersion": "main-agent-installed-surface-touchpoints/v1",
+  "waveId": "main-agent-runtime-migration-wave-3.4",
+  "contractPath": "docs/plans/2026-06-04-main-agent-runtime-migration-wave-3-3-and-3-4-goal-execution-plan.md",
+  "generatedAt": "2026-06-05T00:00:00.000Z",
+  "entries": [
+    {
+      "entryId": "main-agent-unified-ingress",
+      "originalPath": "scripts/main-agent-unified-ingress.ts",
+      "selectedRuntimeRoute": "package_runtime_module",
+      "routeReason": "Installed and test surfaces can reach unified ingress; consumer-safe route is the package CLI runtime action.",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/unified-ingress.js",
+        "packages/bmad-speckit/dist/main-agent/actions/unified-ingress.js"
+      ],
+      "touchpoints": [
+        {
+          "surfaceType": "test_surface",
+          "surfacePath": "tests/acceptance/main-agent-unified-ingress-e2e.test.ts",
+          "currentInvocation": "source repo may exercise scripts/main-agent-unified-ingress.ts for source-dev tests",
+          "postMigrationInvocation": "npx --no-install bmad-speckit main-agent unified-ingress --json"
+        },
+        {
+          "surfaceType": "owner_registry",
+          "surfacePath": "_bmad/_config/script-owner-model-registry.yaml",
+          "currentInvocation": "scripts/main-agent-unified-ingress.ts as source provenance",
+          "postMigrationInvocation": "npx --no-install bmad-speckit main-agent unified-ingress --json"
+        }
+      ]
+    },
+    {
+      "entryId": "main-agent-delivery-closeout-gate",
+      "originalPath": "scripts/main-agent-delivery-closeout-gate.ts",
+      "selectedRuntimeRoute": "package_runtime_module",
+      "routeReason": "Delivery closeout is consumer lifecycle reachable; the installed route must not depend on root TypeScript.",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/delivery-closeout-gate.js",
+        "packages/bmad-speckit/dist/main-agent/actions/delivery-closeout-gate.js"
+      ],
+      "touchpoints": [
+        {
+          "surfaceType": "owner_registry",
+          "surfacePath": "_bmad/_config/script-owner-model-registry.yaml",
+          "currentInvocation": "scripts/main-agent-delivery-closeout-gate.ts as source provenance",
+          "postMigrationInvocation": "npx --no-install bmad-speckit main-agent delivery-closeout-gate --json"
+        },
+        {
+          "surfaceType": "test_surface",
+          "surfacePath": "tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts",
+          "currentInvocation": "source repo may exercise root TypeScript gate behavior",
+          "postMigrationInvocation": "npx --no-install bmad-speckit main-agent delivery-closeout-gate --json"
+        }
+      ]
+    },
+    {
+      "entryId": "main-agent-delivery-evidence-run",
+      "originalPath": "scripts/main-agent-delivery-evidence-run.ts",
+      "selectedRuntimeRoute": "package_runtime_module",
+      "routeReason": "Delivery evidence execution is installed-surface reachable and must be callable through package runtime.",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/delivery-evidence-run.js",
+        "packages/bmad-speckit/dist/main-agent/actions/delivery-evidence-run.js"
+      ],
+      "touchpoints": [
+        {
+          "surfaceType": "npm_script",
+          "surfacePath": "package.json",
+          "currentInvocation": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-delivery-evidence-run.ts",
+          "postMigrationInvocation": "npx --no-install bmad-speckit main-agent delivery-evidence-run --json"
+        },
+        {
+          "surfaceType": "owner_registry",
+          "surfacePath": "_bmad/_config/script-owner-model-registry.yaml",
+          "currentInvocation": "scripts/main-agent-delivery-evidence-run.ts as source provenance",
+          "postMigrationInvocation": "npx --no-install bmad-speckit main-agent delivery-evidence-run --json"
+        }
+      ]
+    },
+    {
+      "entryId": "main-agent-soak-runner",
+      "originalPath": "scripts/main-agent-soak-runner.ts",
+      "selectedRuntimeRoute": "package_runtime_module",
+      "routeReason": "Soak runner is an installed-surface lifecycle probe; the package action records that long-run soak is optional evidence.",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/soak-runner.js",
+        "packages/bmad-speckit/dist/main-agent/actions/soak-runner.js"
+      ],
+      "touchpoints": [
+        {
+          "surfaceType": "npm_script",
+          "surfacePath": "package.json",
+          "currentInvocation": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-soak-runner.ts",
+          "postMigrationInvocation": "npx --no-install bmad-speckit main-agent soak-runner --json"
+        },
+        {
+          "surfaceType": "owner_registry",
+          "surfacePath": "_bmad/_config/script-owner-model-registry.yaml",
+          "currentInvocation": "scripts/main-agent-soak-runner.ts as source provenance",
+          "postMigrationInvocation": "npx --no-install bmad-speckit main-agent soak-runner --json"
+        }
+      ]
+    },
+    {
+      "entryId": "main-agent-dual-host-pr-orchestrator",
+      "originalPath": "scripts/main-agent-dual-host-pr-orchestrator.ts",
+      "selectedRuntimeRoute": "package_runtime_module",
+      "routeReason": "Dual-host PR orchestration can be referenced by installed governance surfaces and must resolve through package runtime.",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/dual-host-pr-orchestrator.js",
+        "packages/bmad-speckit/dist/main-agent/actions/dual-host-pr-orchestrator.js"
+      ],
+      "touchpoints": [
+        {
+          "surfaceType": "npm_script",
+          "surfacePath": "package.json",
+          "currentInvocation": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-dual-host-pr-orchestrator.ts",
+          "postMigrationInvocation": "npx --no-install bmad-speckit main-agent dual-host-pr-orchestrator --json"
+        },
+        {
+          "surfaceType": "owner_registry",
+          "surfacePath": "_bmad/_config/script-owner-model-registry.yaml",
+          "currentInvocation": "scripts/main-agent-dual-host-pr-orchestrator.ts as source provenance",
+          "postMigrationInvocation": "npx --no-install bmad-speckit main-agent dual-host-pr-orchestrator --json"
+        }
+      ]
+    },
+    {
+      "entryId": "main-agent-chaos-scenarios",
+      "originalPath": "scripts/main-agent-chaos-scenarios.ts",
+      "selectedRuntimeRoute": "package_runtime_module",
+      "routeReason": "Chaos scenario checks are consumer-visible validation probes and must not require source repo TypeScript execution.",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/chaos-scenarios.js",
+        "packages/bmad-speckit/dist/main-agent/actions/chaos-scenarios.js"
+      ],
+      "touchpoints": [
+        {
+          "surfaceType": "test_surface",
+          "surfacePath": "tests/acceptance/main-agent-chaos-recovery-e2e.test.ts",
+          "currentInvocation": "source repo may exercise scripts/main-agent-chaos-scenarios.ts in source-dev tests",
+          "postMigrationInvocation": "npx --no-install bmad-speckit main-agent chaos-scenarios --json"
+        },
+        {
+          "surfaceType": "owner_registry",
+          "surfacePath": "_bmad/_config/script-owner-model-registry.yaml",
+          "currentInvocation": "scripts/main-agent-chaos-scenarios.ts as source provenance",
+          "postMigrationInvocation": "npx --no-install bmad-speckit main-agent chaos-scenarios --json"
+        }
+      ]
+    }
+  ]
+}

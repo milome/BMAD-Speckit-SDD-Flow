@@ -9,6 +9,7 @@ const {
   normalizeRepoPath,
   profileHashFor,
   sha256,
+  templateHashFor,
 } = require('./extract-goal-contract-profile');
 
 const RENDERER_VERSION = 'req-trace-goal-contract-renderer/v1';
@@ -29,7 +30,7 @@ function assertSupportedProfile(profile) {
 }
 
 function validateProfileHashes(templateText, profile) {
-  const templateHash = sha256(templateText);
+  const templateHash = templateHashFor(templateText);
   const profileHash = profileHashFor(profile);
   const mismatches = [];
   if (profile.templateHash !== templateHash) mismatches.push('templateHash');
@@ -94,7 +95,7 @@ function auditRenderedDocument(document, profile, slotInfo, templateText) {
     .map((slot) => slot.name);
   return {
     templatePath: profile.templatePath,
-    templateHash: sha256(templateText),
+    templateHash: templateHashFor(templateText),
     profileVersion: profile.profileVersion,
     profileHash: profileHashFor(profile),
     rendererVersion: RENDERER_VERSION,

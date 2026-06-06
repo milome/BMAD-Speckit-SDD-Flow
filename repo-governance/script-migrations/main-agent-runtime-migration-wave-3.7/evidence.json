@@ -1,0 +1,554 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-evidence/v1",
+  "waveId": "main-agent-runtime-migration-wave-3.7",
+  "contractPath": "docs/plans/2026-06-05-main-agent-p1-p4-runtime-migration-goal-execution-plan.md",
+  "validatedAt": "2026-06-05T04:15:23.011Z",
+  "commandsRun": [
+    {
+      "commandId": "CMD-08",
+      "command": "d:\\nvm4w\\nodejs\\node.exe tools/script-migration/validate-main-agent-runtime-migration-wave-3-7.cjs --manifest-only",
+      "exitCode": 0,
+      "stdoutHash": "sha256:30a75f932c7316911e359b0cf2f44bc64f6cabe4ffac9c3a14a2e9c30b0d41f6",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"mode\": \"manifest-only\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.7\",\n  \"contractPath\": \"docs/plans/2026-06-05-main-agent-p1-p4-runtime-migration-goal-execution-plan.md\",\n  \"expectedRemainingCount\": 8,\n  \"errors\": []\n}\n",
+      "stderrPreview": ""
+    },
+    {
+      "commandId": "CMD-09",
+      "command": "npm.cmd run test --prefix packages/bmad-speckit -- main-agent-wave-3-7-runtime-actions.test.js",
+      "exitCode": 0,
+      "stdoutHash": "sha256:12293c944e7eba47668bc02b88d9db2f6094b433b21502a55b1cdbf566b9ae82",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "\n> bmad-speckit@2.0.1 test\n> node scripts/run-node-tests.cjs main-agent-wave-3-7-runtime-actions.test.js\n\nTAP version 13\n# Subtest: main-agent wave 3.7 package runtime actions\n    # Subtest: ships package source action files without root TypeScript dispatch\n    ok 1 - ships package source action files without root TypeScript dispatch\n      ---\n      duration_ms: 1.4313\n      type: 'test'\n      ...\n    # Subtest: supports wave 3.7 actions from package source runtime with stable envelopes\n    ok 2 - supports wave 3.7 actions from package source runtime with stable envelopes\n      ---\n      duration_ms: 19.293\n      type: 'test'\n      ...\n    1..2\nok 1 - main-agent wave 3.7 package runtime actions\n  ---\n  duration_ms: 21.358\n  type: 'suite'\n  ...\n1..1\n# tests 2\n# suites 1\n# pass 2\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 111.9024\n",
+      "stderrPreview": ""
+    },
+    {
+      "commandId": "CMD-10",
+      "command": "npm.cmd run build:main-agent-dist --prefix packages/bmad-speckit",
+      "exitCode": 0,
+      "stdoutHash": "sha256:86f47ed80ebfcfa43ac4e71b599ee8471efdc324403fd6b2c99a170fd6a855b2",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "\n> bmad-speckit@2.0.1 build:main-agent-dist\n> node scripts/build-main-agent-dist.cjs\n\nbuilt dist/main-agent files=51\n",
+      "stderrPreview": ""
+    },
+    {
+      "commandId": "CMD-11",
+      "command": "d:\\nvm4w\\nodejs\\node.exe tools/script-migration/validate-main-agent-runtime-migration-wave-3-7.cjs",
+      "exitCode": 0,
+      "stdoutHash": "sha256:8929db5869b4fa680a930ccd8a74c2dc1f50fc4fc91f1fa36ea82a2c98903cc0",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"mode\": \"full\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.7\",\n  \"contractPath\": \"docs/plans/2026-06-05-main-agent-p1-p4-runtime-migration-goal-execution-plan.md\",\n  \"expectedRemainingCount\": 8,\n  \"errors\": []\n}\n",
+      "stderrPreview": ""
+    },
+    {
+      "commandId": "CMD-12",
+      "command": "npx.cmd vitest run tests/acceptance/main-agent-runtime-migration-wave-3-7-contract.test.ts",
+      "exitCode": 0,
+      "stdoutHash": "sha256:0997fe0ada06f45d7594ab3f83a16cbef617fc3bd7a20afa124661e2294ebd47",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "\n\u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m\n\n \u001b[32m✓\u001b[39m tests/acceptance/main-agent-runtime-migration-wave-3-7-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 1122\u001b[2mms\u001b[22m\u001b[39m\n     \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs the Wave 3.7 migration validator successfully \u001b[33m 1120\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m\n\u001b[2m   Start at \u001b[22m 12:15:21\n\u001b[2m   Duration \u001b[22m 1.55s\u001b[2m (transform 23ms, setup 0ms, import 47ms, tests 1.12s, environment 0ms)\u001b[22m\n\n",
+      "stderrPreview": ""
+    }
+  ],
+  "entries": [
+    {
+      "entryId": "initialize-six-model-requirement-confirmation",
+      "originalPath": "scripts/initialize-six-model-requirement-confirmation.ts",
+      "actionSlug": "initialize-six-model-requirement-confirmation",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/initialize-six-model-requirement-confirmation.js",
+        "packages/bmad-speckit/dist/main-agent/actions/initialize-six-model-requirement-confirmation.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "commands": [
+        {
+          "commandId": "CMD-08",
+          "command": "d:\\nvm4w\\nodejs\\node.exe tools/script-migration/validate-main-agent-runtime-migration-wave-3-7.cjs --manifest-only",
+          "exitCode": 0,
+          "stdoutHash": "sha256:30a75f932c7316911e359b0cf2f44bc64f6cabe4ffac9c3a14a2e9c30b0d41f6",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"mode\": \"manifest-only\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.7\",\n  \"contractPath\": \"docs/plans/2026-06-05-main-agent-p1-p4-runtime-migration-goal-execution-plan.md\",\n  \"expectedRemainingCount\": 8,\n  \"errors\": []\n}\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-09",
+          "command": "npm.cmd run test --prefix packages/bmad-speckit -- main-agent-wave-3-7-runtime-actions.test.js",
+          "exitCode": 0,
+          "stdoutHash": "sha256:12293c944e7eba47668bc02b88d9db2f6094b433b21502a55b1cdbf566b9ae82",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 test\n> node scripts/run-node-tests.cjs main-agent-wave-3-7-runtime-actions.test.js\n\nTAP version 13\n# Subtest: main-agent wave 3.7 package runtime actions\n    # Subtest: ships package source action files without root TypeScript dispatch\n    ok 1 - ships package source action files without root TypeScript dispatch\n      ---\n      duration_ms: 1.4313\n      type: 'test'\n      ...\n    # Subtest: supports wave 3.7 actions from package source runtime with stable envelopes\n    ok 2 - supports wave 3.7 actions from package source runtime with stable envelopes\n      ---\n      duration_ms: 19.293\n      type: 'test'\n      ...\n    1..2\nok 1 - main-agent wave 3.7 package runtime actions\n  ---\n  duration_ms: 21.358\n  type: 'suite'\n  ...\n1..1\n# tests 2\n# suites 1\n# pass 2\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 111.9024\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-10",
+          "command": "npm.cmd run build:main-agent-dist --prefix packages/bmad-speckit",
+          "exitCode": 0,
+          "stdoutHash": "sha256:86f47ed80ebfcfa43ac4e71b599ee8471efdc324403fd6b2c99a170fd6a855b2",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 build:main-agent-dist\n> node scripts/build-main-agent-dist.cjs\n\nbuilt dist/main-agent files=51\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-11",
+          "command": "d:\\nvm4w\\nodejs\\node.exe tools/script-migration/validate-main-agent-runtime-migration-wave-3-7.cjs",
+          "exitCode": 0,
+          "stdoutHash": "sha256:8929db5869b4fa680a930ccd8a74c2dc1f50fc4fc91f1fa36ea82a2c98903cc0",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"mode\": \"full\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.7\",\n  \"contractPath\": \"docs/plans/2026-06-05-main-agent-p1-p4-runtime-migration-goal-execution-plan.md\",\n  \"expectedRemainingCount\": 8,\n  \"errors\": []\n}\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-12",
+          "command": "npx.cmd vitest run tests/acceptance/main-agent-runtime-migration-wave-3-7-contract.test.ts",
+          "exitCode": 0,
+          "stdoutHash": "sha256:0997fe0ada06f45d7594ab3f83a16cbef617fc3bd7a20afa124661e2294ebd47",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n\u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m\n\n \u001b[32m✓\u001b[39m tests/acceptance/main-agent-runtime-migration-wave-3-7-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 1122\u001b[2mms\u001b[22m\u001b[39m\n     \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs the Wave 3.7 migration validator successfully \u001b[33m 1120\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m\n\u001b[2m   Start at \u001b[22m 12:15:21\n\u001b[2m   Duration \u001b[22m 1.55s\u001b[2m (transform 23ms, setup 0ms, import 47ms, tests 1.12s, environment 0ms)\u001b[22m\n\n",
+          "stderrPreview": ""
+        }
+      ],
+      "installMatrixEvidence": [],
+      "deletionAllowed": false,
+      "result": "passed"
+    },
+    {
+      "entryId": "reconfirmation-runtime",
+      "originalPath": "scripts/reconfirmation-runtime.ts",
+      "actionSlug": "reconfirmation-runtime",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/reconfirmation-runtime.js",
+        "packages/bmad-speckit/dist/main-agent/actions/reconfirmation-runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "commands": [
+        {
+          "commandId": "CMD-08",
+          "command": "d:\\nvm4w\\nodejs\\node.exe tools/script-migration/validate-main-agent-runtime-migration-wave-3-7.cjs --manifest-only",
+          "exitCode": 0,
+          "stdoutHash": "sha256:30a75f932c7316911e359b0cf2f44bc64f6cabe4ffac9c3a14a2e9c30b0d41f6",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"mode\": \"manifest-only\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.7\",\n  \"contractPath\": \"docs/plans/2026-06-05-main-agent-p1-p4-runtime-migration-goal-execution-plan.md\",\n  \"expectedRemainingCount\": 8,\n  \"errors\": []\n}\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-09",
+          "command": "npm.cmd run test --prefix packages/bmad-speckit -- main-agent-wave-3-7-runtime-actions.test.js",
+          "exitCode": 0,
+          "stdoutHash": "sha256:12293c944e7eba47668bc02b88d9db2f6094b433b21502a55b1cdbf566b9ae82",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 test\n> node scripts/run-node-tests.cjs main-agent-wave-3-7-runtime-actions.test.js\n\nTAP version 13\n# Subtest: main-agent wave 3.7 package runtime actions\n    # Subtest: ships package source action files without root TypeScript dispatch\n    ok 1 - ships package source action files without root TypeScript dispatch\n      ---\n      duration_ms: 1.4313\n      type: 'test'\n      ...\n    # Subtest: supports wave 3.7 actions from package source runtime with stable envelopes\n    ok 2 - supports wave 3.7 actions from package source runtime with stable envelopes\n      ---\n      duration_ms: 19.293\n      type: 'test'\n      ...\n    1..2\nok 1 - main-agent wave 3.7 package runtime actions\n  ---\n  duration_ms: 21.358\n  type: 'suite'\n  ...\n1..1\n# tests 2\n# suites 1\n# pass 2\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 111.9024\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-10",
+          "command": "npm.cmd run build:main-agent-dist --prefix packages/bmad-speckit",
+          "exitCode": 0,
+          "stdoutHash": "sha256:86f47ed80ebfcfa43ac4e71b599ee8471efdc324403fd6b2c99a170fd6a855b2",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 build:main-agent-dist\n> node scripts/build-main-agent-dist.cjs\n\nbuilt dist/main-agent files=51\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-11",
+          "command": "d:\\nvm4w\\nodejs\\node.exe tools/script-migration/validate-main-agent-runtime-migration-wave-3-7.cjs",
+          "exitCode": 0,
+          "stdoutHash": "sha256:8929db5869b4fa680a930ccd8a74c2dc1f50fc4fc91f1fa36ea82a2c98903cc0",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"mode\": \"full\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.7\",\n  \"contractPath\": \"docs/plans/2026-06-05-main-agent-p1-p4-runtime-migration-goal-execution-plan.md\",\n  \"expectedRemainingCount\": 8,\n  \"errors\": []\n}\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-12",
+          "command": "npx.cmd vitest run tests/acceptance/main-agent-runtime-migration-wave-3-7-contract.test.ts",
+          "exitCode": 0,
+          "stdoutHash": "sha256:0997fe0ada06f45d7594ab3f83a16cbef617fc3bd7a20afa124661e2294ebd47",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n\u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m\n\n \u001b[32m✓\u001b[39m tests/acceptance/main-agent-runtime-migration-wave-3-7-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 1122\u001b[2mms\u001b[22m\u001b[39m\n     \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs the Wave 3.7 migration validator successfully \u001b[33m 1120\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m\n\u001b[2m   Start at \u001b[22m 12:15:21\n\u001b[2m   Duration \u001b[22m 1.55s\u001b[2m (transform 23ms, setup 0ms, import 47ms, tests 1.12s, environment 0ms)\u001b[22m\n\n",
+          "stderrPreview": ""
+        }
+      ],
+      "installMatrixEvidence": [],
+      "deletionAllowed": false,
+      "result": "passed"
+    },
+    {
+      "entryId": "requirement-record-control-store",
+      "originalPath": "scripts/requirement-record-control-store.ts",
+      "actionSlug": "requirement-record-control-store",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/requirement-record-control-store.js",
+        "packages/bmad-speckit/dist/main-agent/actions/requirement-record-control-store.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "commands": [
+        {
+          "commandId": "CMD-08",
+          "command": "d:\\nvm4w\\nodejs\\node.exe tools/script-migration/validate-main-agent-runtime-migration-wave-3-7.cjs --manifest-only",
+          "exitCode": 0,
+          "stdoutHash": "sha256:30a75f932c7316911e359b0cf2f44bc64f6cabe4ffac9c3a14a2e9c30b0d41f6",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"mode\": \"manifest-only\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.7\",\n  \"contractPath\": \"docs/plans/2026-06-05-main-agent-p1-p4-runtime-migration-goal-execution-plan.md\",\n  \"expectedRemainingCount\": 8,\n  \"errors\": []\n}\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-09",
+          "command": "npm.cmd run test --prefix packages/bmad-speckit -- main-agent-wave-3-7-runtime-actions.test.js",
+          "exitCode": 0,
+          "stdoutHash": "sha256:12293c944e7eba47668bc02b88d9db2f6094b433b21502a55b1cdbf566b9ae82",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 test\n> node scripts/run-node-tests.cjs main-agent-wave-3-7-runtime-actions.test.js\n\nTAP version 13\n# Subtest: main-agent wave 3.7 package runtime actions\n    # Subtest: ships package source action files without root TypeScript dispatch\n    ok 1 - ships package source action files without root TypeScript dispatch\n      ---\n      duration_ms: 1.4313\n      type: 'test'\n      ...\n    # Subtest: supports wave 3.7 actions from package source runtime with stable envelopes\n    ok 2 - supports wave 3.7 actions from package source runtime with stable envelopes\n      ---\n      duration_ms: 19.293\n      type: 'test'\n      ...\n    1..2\nok 1 - main-agent wave 3.7 package runtime actions\n  ---\n  duration_ms: 21.358\n  type: 'suite'\n  ...\n1..1\n# tests 2\n# suites 1\n# pass 2\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 111.9024\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-10",
+          "command": "npm.cmd run build:main-agent-dist --prefix packages/bmad-speckit",
+          "exitCode": 0,
+          "stdoutHash": "sha256:86f47ed80ebfcfa43ac4e71b599ee8471efdc324403fd6b2c99a170fd6a855b2",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 build:main-agent-dist\n> node scripts/build-main-agent-dist.cjs\n\nbuilt dist/main-agent files=51\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-11",
+          "command": "d:\\nvm4w\\nodejs\\node.exe tools/script-migration/validate-main-agent-runtime-migration-wave-3-7.cjs",
+          "exitCode": 0,
+          "stdoutHash": "sha256:8929db5869b4fa680a930ccd8a74c2dc1f50fc4fc91f1fa36ea82a2c98903cc0",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"mode\": \"full\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.7\",\n  \"contractPath\": \"docs/plans/2026-06-05-main-agent-p1-p4-runtime-migration-goal-execution-plan.md\",\n  \"expectedRemainingCount\": 8,\n  \"errors\": []\n}\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-12",
+          "command": "npx.cmd vitest run tests/acceptance/main-agent-runtime-migration-wave-3-7-contract.test.ts",
+          "exitCode": 0,
+          "stdoutHash": "sha256:0997fe0ada06f45d7594ab3f83a16cbef617fc3bd7a20afa124661e2294ebd47",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n\u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m\n\n \u001b[32m✓\u001b[39m tests/acceptance/main-agent-runtime-migration-wave-3-7-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 1122\u001b[2mms\u001b[22m\u001b[39m\n     \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs the Wave 3.7 migration validator successfully \u001b[33m 1120\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m\n\u001b[2m   Start at \u001b[22m 12:15:21\n\u001b[2m   Duration \u001b[22m 1.55s\u001b[2m (transform 23ms, setup 0ms, import 47ms, tests 1.12s, environment 0ms)\u001b[22m\n\n",
+          "stderrPreview": ""
+        }
+      ],
+      "installMatrixEvidence": [],
+      "deletionAllowed": false,
+      "result": "passed"
+    },
+    {
+      "entryId": "requirement-record-live-schema-gate",
+      "originalPath": "scripts/requirement-record-live-schema-gate.ts",
+      "actionSlug": "requirement-record-live-schema-gate",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/requirement-record-live-schema-gate.js",
+        "packages/bmad-speckit/dist/main-agent/actions/requirement-record-live-schema-gate.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "commands": [
+        {
+          "commandId": "CMD-08",
+          "command": "d:\\nvm4w\\nodejs\\node.exe tools/script-migration/validate-main-agent-runtime-migration-wave-3-7.cjs --manifest-only",
+          "exitCode": 0,
+          "stdoutHash": "sha256:30a75f932c7316911e359b0cf2f44bc64f6cabe4ffac9c3a14a2e9c30b0d41f6",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"mode\": \"manifest-only\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.7\",\n  \"contractPath\": \"docs/plans/2026-06-05-main-agent-p1-p4-runtime-migration-goal-execution-plan.md\",\n  \"expectedRemainingCount\": 8,\n  \"errors\": []\n}\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-09",
+          "command": "npm.cmd run test --prefix packages/bmad-speckit -- main-agent-wave-3-7-runtime-actions.test.js",
+          "exitCode": 0,
+          "stdoutHash": "sha256:12293c944e7eba47668bc02b88d9db2f6094b433b21502a55b1cdbf566b9ae82",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 test\n> node scripts/run-node-tests.cjs main-agent-wave-3-7-runtime-actions.test.js\n\nTAP version 13\n# Subtest: main-agent wave 3.7 package runtime actions\n    # Subtest: ships package source action files without root TypeScript dispatch\n    ok 1 - ships package source action files without root TypeScript dispatch\n      ---\n      duration_ms: 1.4313\n      type: 'test'\n      ...\n    # Subtest: supports wave 3.7 actions from package source runtime with stable envelopes\n    ok 2 - supports wave 3.7 actions from package source runtime with stable envelopes\n      ---\n      duration_ms: 19.293\n      type: 'test'\n      ...\n    1..2\nok 1 - main-agent wave 3.7 package runtime actions\n  ---\n  duration_ms: 21.358\n  type: 'suite'\n  ...\n1..1\n# tests 2\n# suites 1\n# pass 2\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 111.9024\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-10",
+          "command": "npm.cmd run build:main-agent-dist --prefix packages/bmad-speckit",
+          "exitCode": 0,
+          "stdoutHash": "sha256:86f47ed80ebfcfa43ac4e71b599ee8471efdc324403fd6b2c99a170fd6a855b2",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 build:main-agent-dist\n> node scripts/build-main-agent-dist.cjs\n\nbuilt dist/main-agent files=51\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-11",
+          "command": "d:\\nvm4w\\nodejs\\node.exe tools/script-migration/validate-main-agent-runtime-migration-wave-3-7.cjs",
+          "exitCode": 0,
+          "stdoutHash": "sha256:8929db5869b4fa680a930ccd8a74c2dc1f50fc4fc91f1fa36ea82a2c98903cc0",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"mode\": \"full\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.7\",\n  \"contractPath\": \"docs/plans/2026-06-05-main-agent-p1-p4-runtime-migration-goal-execution-plan.md\",\n  \"expectedRemainingCount\": 8,\n  \"errors\": []\n}\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-12",
+          "command": "npx.cmd vitest run tests/acceptance/main-agent-runtime-migration-wave-3-7-contract.test.ts",
+          "exitCode": 0,
+          "stdoutHash": "sha256:0997fe0ada06f45d7594ab3f83a16cbef617fc3bd7a20afa124661e2294ebd47",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n\u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m\n\n \u001b[32m✓\u001b[39m tests/acceptance/main-agent-runtime-migration-wave-3-7-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 1122\u001b[2mms\u001b[22m\u001b[39m\n     \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs the Wave 3.7 migration validator successfully \u001b[33m 1120\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m\n\u001b[2m   Start at \u001b[22m 12:15:21\n\u001b[2m   Duration \u001b[22m 1.55s\u001b[2m (transform 23ms, setup 0ms, import 47ms, tests 1.12s, environment 0ms)\u001b[22m\n\n",
+          "stderrPreview": ""
+        }
+      ],
+      "installMatrixEvidence": [],
+      "deletionAllowed": false,
+      "result": "passed"
+    },
+    {
+      "entryId": "requirement-record-schema-evolution",
+      "originalPath": "scripts/requirement-record-schema-evolution.ts",
+      "actionSlug": "requirement-record-schema-evolution",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/requirement-record-schema-evolution.js",
+        "packages/bmad-speckit/dist/main-agent/actions/requirement-record-schema-evolution.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "commands": [
+        {
+          "commandId": "CMD-08",
+          "command": "d:\\nvm4w\\nodejs\\node.exe tools/script-migration/validate-main-agent-runtime-migration-wave-3-7.cjs --manifest-only",
+          "exitCode": 0,
+          "stdoutHash": "sha256:30a75f932c7316911e359b0cf2f44bc64f6cabe4ffac9c3a14a2e9c30b0d41f6",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"mode\": \"manifest-only\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.7\",\n  \"contractPath\": \"docs/plans/2026-06-05-main-agent-p1-p4-runtime-migration-goal-execution-plan.md\",\n  \"expectedRemainingCount\": 8,\n  \"errors\": []\n}\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-09",
+          "command": "npm.cmd run test --prefix packages/bmad-speckit -- main-agent-wave-3-7-runtime-actions.test.js",
+          "exitCode": 0,
+          "stdoutHash": "sha256:12293c944e7eba47668bc02b88d9db2f6094b433b21502a55b1cdbf566b9ae82",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 test\n> node scripts/run-node-tests.cjs main-agent-wave-3-7-runtime-actions.test.js\n\nTAP version 13\n# Subtest: main-agent wave 3.7 package runtime actions\n    # Subtest: ships package source action files without root TypeScript dispatch\n    ok 1 - ships package source action files without root TypeScript dispatch\n      ---\n      duration_ms: 1.4313\n      type: 'test'\n      ...\n    # Subtest: supports wave 3.7 actions from package source runtime with stable envelopes\n    ok 2 - supports wave 3.7 actions from package source runtime with stable envelopes\n      ---\n      duration_ms: 19.293\n      type: 'test'\n      ...\n    1..2\nok 1 - main-agent wave 3.7 package runtime actions\n  ---\n  duration_ms: 21.358\n  type: 'suite'\n  ...\n1..1\n# tests 2\n# suites 1\n# pass 2\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 111.9024\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-10",
+          "command": "npm.cmd run build:main-agent-dist --prefix packages/bmad-speckit",
+          "exitCode": 0,
+          "stdoutHash": "sha256:86f47ed80ebfcfa43ac4e71b599ee8471efdc324403fd6b2c99a170fd6a855b2",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 build:main-agent-dist\n> node scripts/build-main-agent-dist.cjs\n\nbuilt dist/main-agent files=51\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-11",
+          "command": "d:\\nvm4w\\nodejs\\node.exe tools/script-migration/validate-main-agent-runtime-migration-wave-3-7.cjs",
+          "exitCode": 0,
+          "stdoutHash": "sha256:8929db5869b4fa680a930ccd8a74c2dc1f50fc4fc91f1fa36ea82a2c98903cc0",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"mode\": \"full\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.7\",\n  \"contractPath\": \"docs/plans/2026-06-05-main-agent-p1-p4-runtime-migration-goal-execution-plan.md\",\n  \"expectedRemainingCount\": 8,\n  \"errors\": []\n}\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-12",
+          "command": "npx.cmd vitest run tests/acceptance/main-agent-runtime-migration-wave-3-7-contract.test.ts",
+          "exitCode": 0,
+          "stdoutHash": "sha256:0997fe0ada06f45d7594ab3f83a16cbef617fc3bd7a20afa124661e2294ebd47",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n\u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m\n\n \u001b[32m✓\u001b[39m tests/acceptance/main-agent-runtime-migration-wave-3-7-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 1122\u001b[2mms\u001b[22m\u001b[39m\n     \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs the Wave 3.7 migration validator successfully \u001b[33m 1120\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m\n\u001b[2m   Start at \u001b[22m 12:15:21\n\u001b[2m   Duration \u001b[22m 1.55s\u001b[2m (transform 23ms, setup 0ms, import 47ms, tests 1.12s, environment 0ms)\u001b[22m\n\n",
+          "stderrPreview": ""
+        }
+      ],
+      "installMatrixEvidence": [],
+      "deletionAllowed": false,
+      "result": "passed"
+    },
+    {
+      "entryId": "resolve-active-requirement",
+      "originalPath": "scripts/resolve-active-requirement.ts",
+      "actionSlug": "resolve-active-requirement",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/resolve-active-requirement.js",
+        "packages/bmad-speckit/dist/main-agent/actions/resolve-active-requirement.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "commands": [
+        {
+          "commandId": "CMD-08",
+          "command": "d:\\nvm4w\\nodejs\\node.exe tools/script-migration/validate-main-agent-runtime-migration-wave-3-7.cjs --manifest-only",
+          "exitCode": 0,
+          "stdoutHash": "sha256:30a75f932c7316911e359b0cf2f44bc64f6cabe4ffac9c3a14a2e9c30b0d41f6",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"mode\": \"manifest-only\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.7\",\n  \"contractPath\": \"docs/plans/2026-06-05-main-agent-p1-p4-runtime-migration-goal-execution-plan.md\",\n  \"expectedRemainingCount\": 8,\n  \"errors\": []\n}\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-09",
+          "command": "npm.cmd run test --prefix packages/bmad-speckit -- main-agent-wave-3-7-runtime-actions.test.js",
+          "exitCode": 0,
+          "stdoutHash": "sha256:12293c944e7eba47668bc02b88d9db2f6094b433b21502a55b1cdbf566b9ae82",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 test\n> node scripts/run-node-tests.cjs main-agent-wave-3-7-runtime-actions.test.js\n\nTAP version 13\n# Subtest: main-agent wave 3.7 package runtime actions\n    # Subtest: ships package source action files without root TypeScript dispatch\n    ok 1 - ships package source action files without root TypeScript dispatch\n      ---\n      duration_ms: 1.4313\n      type: 'test'\n      ...\n    # Subtest: supports wave 3.7 actions from package source runtime with stable envelopes\n    ok 2 - supports wave 3.7 actions from package source runtime with stable envelopes\n      ---\n      duration_ms: 19.293\n      type: 'test'\n      ...\n    1..2\nok 1 - main-agent wave 3.7 package runtime actions\n  ---\n  duration_ms: 21.358\n  type: 'suite'\n  ...\n1..1\n# tests 2\n# suites 1\n# pass 2\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 111.9024\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-10",
+          "command": "npm.cmd run build:main-agent-dist --prefix packages/bmad-speckit",
+          "exitCode": 0,
+          "stdoutHash": "sha256:86f47ed80ebfcfa43ac4e71b599ee8471efdc324403fd6b2c99a170fd6a855b2",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 build:main-agent-dist\n> node scripts/build-main-agent-dist.cjs\n\nbuilt dist/main-agent files=51\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-11",
+          "command": "d:\\nvm4w\\nodejs\\node.exe tools/script-migration/validate-main-agent-runtime-migration-wave-3-7.cjs",
+          "exitCode": 0,
+          "stdoutHash": "sha256:8929db5869b4fa680a930ccd8a74c2dc1f50fc4fc91f1fa36ea82a2c98903cc0",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"mode\": \"full\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.7\",\n  \"contractPath\": \"docs/plans/2026-06-05-main-agent-p1-p4-runtime-migration-goal-execution-plan.md\",\n  \"expectedRemainingCount\": 8,\n  \"errors\": []\n}\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-12",
+          "command": "npx.cmd vitest run tests/acceptance/main-agent-runtime-migration-wave-3-7-contract.test.ts",
+          "exitCode": 0,
+          "stdoutHash": "sha256:0997fe0ada06f45d7594ab3f83a16cbef617fc3bd7a20afa124661e2294ebd47",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n\u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m\n\n \u001b[32m✓\u001b[39m tests/acceptance/main-agent-runtime-migration-wave-3-7-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 1122\u001b[2mms\u001b[22m\u001b[39m\n     \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs the Wave 3.7 migration validator successfully \u001b[33m 1120\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m\n\u001b[2m   Start at \u001b[22m 12:15:21\n\u001b[2m   Duration \u001b[22m 1.55s\u001b[2m (transform 23ms, setup 0ms, import 47ms, tests 1.12s, environment 0ms)\u001b[22m\n\n",
+          "stderrPreview": ""
+        }
+      ],
+      "installMatrixEvidence": [],
+      "deletionAllowed": false,
+      "result": "passed"
+    },
+    {
+      "entryId": "runtime-scoring-data-path",
+      "originalPath": "scripts/runtime-scoring-data-path.ts",
+      "actionSlug": "runtime-scoring-data-path",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/runtime-scoring-data-path.js",
+        "packages/bmad-speckit/dist/main-agent/actions/runtime-scoring-data-path.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "commands": [
+        {
+          "commandId": "CMD-08",
+          "command": "d:\\nvm4w\\nodejs\\node.exe tools/script-migration/validate-main-agent-runtime-migration-wave-3-7.cjs --manifest-only",
+          "exitCode": 0,
+          "stdoutHash": "sha256:30a75f932c7316911e359b0cf2f44bc64f6cabe4ffac9c3a14a2e9c30b0d41f6",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"mode\": \"manifest-only\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.7\",\n  \"contractPath\": \"docs/plans/2026-06-05-main-agent-p1-p4-runtime-migration-goal-execution-plan.md\",\n  \"expectedRemainingCount\": 8,\n  \"errors\": []\n}\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-09",
+          "command": "npm.cmd run test --prefix packages/bmad-speckit -- main-agent-wave-3-7-runtime-actions.test.js",
+          "exitCode": 0,
+          "stdoutHash": "sha256:12293c944e7eba47668bc02b88d9db2f6094b433b21502a55b1cdbf566b9ae82",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 test\n> node scripts/run-node-tests.cjs main-agent-wave-3-7-runtime-actions.test.js\n\nTAP version 13\n# Subtest: main-agent wave 3.7 package runtime actions\n    # Subtest: ships package source action files without root TypeScript dispatch\n    ok 1 - ships package source action files without root TypeScript dispatch\n      ---\n      duration_ms: 1.4313\n      type: 'test'\n      ...\n    # Subtest: supports wave 3.7 actions from package source runtime with stable envelopes\n    ok 2 - supports wave 3.7 actions from package source runtime with stable envelopes\n      ---\n      duration_ms: 19.293\n      type: 'test'\n      ...\n    1..2\nok 1 - main-agent wave 3.7 package runtime actions\n  ---\n  duration_ms: 21.358\n  type: 'suite'\n  ...\n1..1\n# tests 2\n# suites 1\n# pass 2\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 111.9024\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-10",
+          "command": "npm.cmd run build:main-agent-dist --prefix packages/bmad-speckit",
+          "exitCode": 0,
+          "stdoutHash": "sha256:86f47ed80ebfcfa43ac4e71b599ee8471efdc324403fd6b2c99a170fd6a855b2",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 build:main-agent-dist\n> node scripts/build-main-agent-dist.cjs\n\nbuilt dist/main-agent files=51\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-11",
+          "command": "d:\\nvm4w\\nodejs\\node.exe tools/script-migration/validate-main-agent-runtime-migration-wave-3-7.cjs",
+          "exitCode": 0,
+          "stdoutHash": "sha256:8929db5869b4fa680a930ccd8a74c2dc1f50fc4fc91f1fa36ea82a2c98903cc0",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"mode\": \"full\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.7\",\n  \"contractPath\": \"docs/plans/2026-06-05-main-agent-p1-p4-runtime-migration-goal-execution-plan.md\",\n  \"expectedRemainingCount\": 8,\n  \"errors\": []\n}\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-12",
+          "command": "npx.cmd vitest run tests/acceptance/main-agent-runtime-migration-wave-3-7-contract.test.ts",
+          "exitCode": 0,
+          "stdoutHash": "sha256:0997fe0ada06f45d7594ab3f83a16cbef617fc3bd7a20afa124661e2294ebd47",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n\u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m\n\n \u001b[32m✓\u001b[39m tests/acceptance/main-agent-runtime-migration-wave-3-7-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 1122\u001b[2mms\u001b[22m\u001b[39m\n     \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs the Wave 3.7 migration validator successfully \u001b[33m 1120\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m\n\u001b[2m   Start at \u001b[22m 12:15:21\n\u001b[2m   Duration \u001b[22m 1.55s\u001b[2m (transform 23ms, setup 0ms, import 47ms, tests 1.12s, environment 0ms)\u001b[22m\n\n",
+          "stderrPreview": ""
+        }
+      ],
+      "installMatrixEvidence": [],
+      "deletionAllowed": false,
+      "result": "passed"
+    },
+    {
+      "entryId": "six-model-runtime-decision",
+      "originalPath": "scripts/six-model-runtime-decision.ts",
+      "actionSlug": "six-model-runtime-decision",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/six-model-runtime-decision.js",
+        "packages/bmad-speckit/dist/main-agent/actions/six-model-runtime-decision.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "commands": [
+        {
+          "commandId": "CMD-08",
+          "command": "d:\\nvm4w\\nodejs\\node.exe tools/script-migration/validate-main-agent-runtime-migration-wave-3-7.cjs --manifest-only",
+          "exitCode": 0,
+          "stdoutHash": "sha256:30a75f932c7316911e359b0cf2f44bc64f6cabe4ffac9c3a14a2e9c30b0d41f6",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"mode\": \"manifest-only\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.7\",\n  \"contractPath\": \"docs/plans/2026-06-05-main-agent-p1-p4-runtime-migration-goal-execution-plan.md\",\n  \"expectedRemainingCount\": 8,\n  \"errors\": []\n}\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-09",
+          "command": "npm.cmd run test --prefix packages/bmad-speckit -- main-agent-wave-3-7-runtime-actions.test.js",
+          "exitCode": 0,
+          "stdoutHash": "sha256:12293c944e7eba47668bc02b88d9db2f6094b433b21502a55b1cdbf566b9ae82",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 test\n> node scripts/run-node-tests.cjs main-agent-wave-3-7-runtime-actions.test.js\n\nTAP version 13\n# Subtest: main-agent wave 3.7 package runtime actions\n    # Subtest: ships package source action files without root TypeScript dispatch\n    ok 1 - ships package source action files without root TypeScript dispatch\n      ---\n      duration_ms: 1.4313\n      type: 'test'\n      ...\n    # Subtest: supports wave 3.7 actions from package source runtime with stable envelopes\n    ok 2 - supports wave 3.7 actions from package source runtime with stable envelopes\n      ---\n      duration_ms: 19.293\n      type: 'test'\n      ...\n    1..2\nok 1 - main-agent wave 3.7 package runtime actions\n  ---\n  duration_ms: 21.358\n  type: 'suite'\n  ...\n1..1\n# tests 2\n# suites 1\n# pass 2\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 111.9024\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-10",
+          "command": "npm.cmd run build:main-agent-dist --prefix packages/bmad-speckit",
+          "exitCode": 0,
+          "stdoutHash": "sha256:86f47ed80ebfcfa43ac4e71b599ee8471efdc324403fd6b2c99a170fd6a855b2",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 build:main-agent-dist\n> node scripts/build-main-agent-dist.cjs\n\nbuilt dist/main-agent files=51\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-11",
+          "command": "d:\\nvm4w\\nodejs\\node.exe tools/script-migration/validate-main-agent-runtime-migration-wave-3-7.cjs",
+          "exitCode": 0,
+          "stdoutHash": "sha256:8929db5869b4fa680a930ccd8a74c2dc1f50fc4fc91f1fa36ea82a2c98903cc0",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"mode\": \"full\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.7\",\n  \"contractPath\": \"docs/plans/2026-06-05-main-agent-p1-p4-runtime-migration-goal-execution-plan.md\",\n  \"expectedRemainingCount\": 8,\n  \"errors\": []\n}\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-12",
+          "command": "npx.cmd vitest run tests/acceptance/main-agent-runtime-migration-wave-3-7-contract.test.ts",
+          "exitCode": 0,
+          "stdoutHash": "sha256:0997fe0ada06f45d7594ab3f83a16cbef617fc3bd7a20afa124661e2294ebd47",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n\u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m\n\n \u001b[32m✓\u001b[39m tests/acceptance/main-agent-runtime-migration-wave-3-7-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 1122\u001b[2mms\u001b[22m\u001b[39m\n     \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs the Wave 3.7 migration validator successfully \u001b[33m 1120\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m\n\u001b[2m   Start at \u001b[22m 12:15:21\n\u001b[2m   Duration \u001b[22m 1.55s\u001b[2m (transform 23ms, setup 0ms, import 47ms, tests 1.12s, environment 0ms)\u001b[22m\n\n",
+          "stderrPreview": ""
+        }
+      ],
+      "installMatrixEvidence": [],
+      "deletionAllowed": false,
+      "result": "passed"
+    }
+  ],
+  "noRootScriptDeletion": true,
+  "rootScriptDeletionApproved": false,
+  "result": "passed"
+}

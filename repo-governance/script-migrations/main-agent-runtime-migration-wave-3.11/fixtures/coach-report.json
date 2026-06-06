@@ -1,0 +1,35 @@
+{
+  "summary": "Fixture coach report for Wave 3.11 eval question generation.",
+  "phase_scores": {
+    "spec": 62,
+    "plan": 68
+  },
+  "phase_iteration_counts": {
+    "spec": 2,
+    "plan": 1
+  },
+  "weak_areas": [
+    "spec",
+    "plan"
+  ],
+  "recommendations": [
+    "Make acceptance criteria observable.",
+    "Split remediation work into deterministic checks."
+  ],
+  "iteration_passed": false,
+  "weakness_clusters": [
+    {
+      "cluster_id": "wave-3-11-contract-clarity",
+      "affected_stages": [
+        "spec",
+        "plan"
+      ],
+      "keywords": [
+        "acceptance",
+        "evidence"
+      ],
+      "count": 2,
+      "severity": "medium"
+    }
+  ]
+}

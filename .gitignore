@@ -80,6 +80,8 @@ packages/scoring/outputs/
 *.tgz
 
 # Session temporary files
+.tmp/
+*.bak*
 progress.txt
 progress.md
 findings.md

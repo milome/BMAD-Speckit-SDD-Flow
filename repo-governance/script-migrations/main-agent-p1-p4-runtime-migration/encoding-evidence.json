@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "main-agent-p1-p4-encoding-evidence/v1",
+  "contractPath": "docs/plans/2026-06-05-main-agent-p1-p4-runtime-migration-goal-execution-plan.md",
+  "command": {
+    "commandId": "CMD-28",
+    "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js }\"",
+    "exitCode": 0,
+    "stdoutHash": "sha256:95f01b2c1cc4ffc06efb93fe2085a8d1de849fa2b67761560514bce7dbc6e21b",
+    "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdoutPreview": "checkedFiles=3037 findings=0\n",
+    "stderrPreview": ""
+  },
+  "checkedFiles": 3037,
+  "findings": 0,
+  "status": "passed",
+  "residualRisks": []
+}

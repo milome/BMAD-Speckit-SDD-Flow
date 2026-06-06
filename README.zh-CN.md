@@ -27,6 +27,7 @@
 - [前置条件](#前置条件)
 - [快速开始](#快速开始)
 - [运行时模型](#运行时模型)
+- [常用技能与工作流选择](#常用技能与工作流选择)
 - [1.x 五层架构](#1x-五层架构)
 - [AI-TDD 控制面](#ai-tdd-控制面)
 - [六心智模型](#六心智模型)
@@ -85,27 +86,34 @@ CLI 是安装与外部接口。它负责把工作流安装到消费项目、校�
 
 ## 前置条件
 
-| 工具       | 版本                             | 作用                                                |
-| ---------- | -------------------------------- | --------------------------------------------------- |
-| Node.js    | 22+                              | 用于已发布 CLI 和安装面。                           |
-| npm        | 9+                               | 用于 `npx --package`、本地安装和 workspace 工作流。 |
-| PowerShell | Windows 上建议 7+                | 用于 setup、验证和运行时辅助脚本。                  |
-| Git        | 2.30+                            | 用于 worktree、分支流和贡献流程。                   |
-| AI 宿主    | Codex、Claude Code CLI 或 Cursor | 用于正常的 `bmads` / `bmad-speckit` 运行时入口。    |
+| 工具       | 版本                             | 作用                                                                             |
+| ---------- | -------------------------------- | -------------------------------------------------------------------------------- |
+| Node.js    | 22+                              | 用于已发布 CLI 和安装面。                                                        |
+| npm        | 9+                               | 用于项目本地安装、`npx --no-install`、临时 `npx --package` 和 workspace 工作流。 |
+| PowerShell | Windows 上建议 7+                | 用于 setup、验证和运行时辅助脚本。                                               |
+| Git        | 2.30+                            | 用于 worktree、分支流和贡献流程。                                                |
+| AI 宿主    | Codex、Claude Code CLI 或 Cursor | 用于正常的 `bmads` / `bmad-speckit` 运行时入口。                                 |
 
 ---
 
 ## 快速开始
 
-对大多数消费项目，推荐先用已发布包安装工作流安装面，再在 AI 宿主中激活编排中枢。
+长期使用 `$bmads`、`$bmad-help` 和生成后的 skills 时，默认应把包安装为消费项目本地依赖。生成后的 skills 会通过 `npx --no-install` 调用项目本地 CLI，因此项目内必须存在 `node_modules/.bin/bmad-speckit`。
 
 ```bash
-npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit version
-npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit-init . --agent claude-code --full --no-package-json
-npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit-init . --agent cursor --full --no-package-json
-npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit-init . --agent codex --full --no-package-json
-npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit check
+npm install --save-dev --ignore-scripts bmad-speckit-sdd-flow@latest
+npm ls bmad-speckit-sdd-flow --depth=0
+node -e "const fs=require('node:fs'); const p=process.platform==='win32'?'node_modules/.bin/bmad-speckit.cmd':'node_modules/.bin/bmad-speckit'; if(!fs.existsSync(p)){console.error('missing project-local '+p); process.exit(1)} console.log('found '+p)"
+npx --no-install bmad-speckit version
+npx --no-install bmad-speckit init . --ai codex --yes --force
+npx --no-install bmad-speckit check
+npx --no-install bmad-speckit dashboard-status
+npx --no-install bmad-speckit bmads
 ```
+
+如果要一次安装 Claude Code、Cursor 和 Codex 三个常用宿主面，把 `--ai codex` 改成 `--ai claude,cursor-agent,codex`。
+
+`--ignore-scripts` 会把“依赖安装”和“安装面生成”分开：先安装包，再显式执行你需要的 `bmad-speckit init ...`。如果省略它，当前根包的 `postinstall` 会在依赖安装期间运行 `scripts/init-to-root.js`，可能在你显式选择 AI 宿主前先写入默认安装面。
 
 然后切换到 AI 宿主会话里激活编排中枢：
 
@@ -113,15 +121,21 @@ npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit check
 $bmads
 ```
 
-如果你是通过 CI artifact 安装而不是直接走 npm registry，推荐的非侵入式路径是使用本地 tarball：
+把 `$bmad-help` 用作工作流路由帮助即可；它不接管根运行时权限。
+
+如果你是通过 CI artifact 安装而不是直接走 npm registry，推荐把本地 tarball 安装为项目依赖：
 
 ```bash
-npx --yes --package ./bmad-speckit-sdd-flow-<version>.tgz bmad-speckit version
-npx --yes --package ./bmad-speckit-sdd-flow-<version>.tgz bmad-speckit-init . --agent claude-code --full --no-package-json
-npx --yes --package ./bmad-speckit-sdd-flow-<version>.tgz bmad-speckit-init . --agent cursor --full --no-package-json
-npx --yes --package ./bmad-speckit-sdd-flow-<version>.tgz bmad-speckit-init . --agent codex --full --no-package-json
-npx --yes --package ./bmad-speckit-sdd-flow-<version>.tgz bmad-speckit check
+npm install --save-dev --ignore-scripts ./bmad-speckit-sdd-flow-<version>.tgz
+npm ls bmad-speckit-sdd-flow --depth=0
+node -e "const fs=require('node:fs'); const p=process.platform==='win32'?'node_modules/.bin/bmad-speckit.cmd':'node_modules/.bin/bmad-speckit'; if(!fs.existsSync(p)){console.error('missing project-local '+p); process.exit(1)} console.log('found '+p)"
+npx --no-install bmad-speckit init . --ai codex --yes --force
+npx --no-install bmad-speckit check
+npx --no-install bmad-speckit dashboard-status
+npx --no-install bmad-speckit bmads
 ```
+
+`npx --package` 只建议用于 smoke test、CI artifact 检查或一次性初始化。它不会把 runtime 持久安装到消费项目里，因此后续生成的 skills 可能因为 `npx --no-install` 找不到本地包而失败。
 
 ---
 
@@ -137,6 +151,14 @@ $bmad-speckit
 /bmad-speckit
 bmad-speckit
 ```
+
+如果只需要 BMAD workflow 路由帮助，而不是让运行时接管根治理权限，使用：
+
+```text
+$bmad-help
+```
+
+`$bmad-help` 会解释推荐的下一步，但它只是只读模型帮助入口。它不会激活编排中枢，不会替代活动需求记录，不会替代 `currentMentalModel`，也不会满足受控门禁证据。
 
 激活后，编排中枢获得当前请求的根治理权限。它的第一责任不是立刻实现，而是检查活动需求、读取当前需求记录、判断当前心智模型、显示进度，并推荐下一步受控动作。
 
@@ -158,6 +180,40 @@ CLI 可以用于安装校验、CI、调试、fallback 宿主和外部只读视�
 
 ---
 
+## 常用技能与工作流选择
+
+BMAD-Speckit-SDD-Flow 安装的是分层技能面。规范核心层 `_bmad/skills` 包含 29 个共享技能。安装到具体宿主时，还会展开 BMAD workflow、agent、core task 和宿主专用 overlay 技能。当前按宿主展开后的技能面为：Codex 70 个，Claude Code 72 个，Cursor 72 个；跨所有支持宿主去重后共有 72 个技能名。
+
+| 范围                   | 数量 | 含义                              |
+| ---------------------- | ---- | --------------------------------- |
+| 规范共享核心层         | 29   | `_bmad/skills` 中的规范共享技能。 |
+| Codex 展开技能面       | 70   | 安装到 Codex 后可见的技能。       |
+| Claude Code 展开技能面 | 72   | 安装到 Claude Code 后可见的技能。 |
+| Cursor 展开技能面      | 72   | 安装到 Cursor 后可见的技能。      |
+| 跨宿主去重技能名       | 72   | 所有支持宿主合并后的唯一技能名。  |
+
+使用 `$bmads` / `$bmad-speckit` 作为正常的受治理运行时入口。需要理解 BMAD 1.x 工作流地图或 2.x 受治理运行时投影时，使用 `$bmad-help` 作为状态感知导航器。`$bmad-help` 是只读导航面：它不会推进心智模型，不会执行 remediation，也不会替代活动需求记录或受控门禁。
+
+| 技能                                   | 使用场景                                                    | 主要产出                                                            | 控制角色                                                 |
+| -------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------- | -------------------------------------------------------- |
+| `$bmads` / `$bmad-speckit`             | 需要在 Codex、Claude Code 或 Cursor 中进入受治理运行时。    | 当前需求状态、下一步受控动作和证据缺口。                            | 当前活动需求的根 Orchestrator Agent 入口。               |
+| `$bmad-help`                           | 需要 BMAD 工作流地图，或不确定下一步该运行什么。            | 推荐路径、阻塞路径或 rerouteRequired 路径。                         | 只读模型导航器，不推进心智模型。                         |
+| `$requirements-contract-authoring`     | 需要创建或更新可确认的 PRD、BUGFIX、TASKS 或 story 源文档。 | 内联 `implementationConfirmation`、traceRows、证据期望和确认 HTML。 | 为用户确认准备源文档，不是独立权威。                     |
+| `$req-trace-matrix-prompt-generator`   | 需要从需求源生成严格的 trace matrix prompt。                | 可用于提示词的需求追溯矩阵合同。                                    | 生成追溯编写输入，不关闭运行时门禁。                     |
+| `$goal-execution-contract-generator`   | 需要为 `/goal` 生成冻结执行合同。                           | `docs/plans` 下的 goal 执行合同。                                   | 为 `/goal` 生成合同，但不执行 `/goal`。                  |
+| `$grill-with-docs`                     | 需要基于现有文档做对抗式澄清。                              | 追问、矛盾点和证据缺口。                                            | 在确认或执行前提高需求清晰度。                           |
+| `$docs-review`                         | 需要检查 README、文档或 diff 的清晰度、结构和风格。         | 文档审查 findings。                                                 | 可选伴随技能；除非另行加入，否则不是项目安装面的一部分。 |
+| `$bmad-create-product-brief`           | 需要在 PRD 前梳理产品意图。                                 | Product brief 与发现记录。                                          | 进入 2.x 控制面的 1.x 上游工作流输入。                   |
+| `$bmad-create-prd`                     | 需要结构化产品需求文档。                                    | 包含目标、范围和验收方向的 PRD。                                    | 输入需求契约的 1.x 上游需求产物。                        |
+| `$bmad-create-architecture`            | 需要架构边界和技术决策。                                    | 架构文档和风险决策。                                                | 后续确认可使用的 1.x 上游架构产物。                      |
+| `$bmad-create-epics-and-stories`       | 需要把产品和架构范围拆成可执行交付切片。                    | Epic、story 和 story context。                                      | 可成为受控实现输入的 1.x 规划产物。                      |
+| `$bmad-check-implementation-readiness` | 需要检查 PRD、UX、Architecture 和 story 是否就绪。          | readiness findings 和缺失前置条件。                                 | 控制面前的就绪辅助；最终仍由运行时门禁决定。             |
+| `$bmad-story-assistant`                | 需要受支持的 story 执行路径。                               | story 执行辅助和 story 状态指导。                                   | 官方 story 路径，优先于只依赖 legacy dev-story。         |
+| `$bmad-standalone-tasks`               | 需要执行独立任务文档。                                      | 任务执行结果和证据。                                                | 任务级辅助，仍必须遵守活动需求门禁。                     |
+| `$bmad-bug-assistant`                  | 需要带根因分析和修复计划的 bugfix 流程。                    | bug 报告分析、修复计划和验证方向。                                  | 可进入需求确认的 bugfix 准备路径。                       |
+
+---
+
 ## 1.x 五层架构
 
 1.x 发布线仍然是连接 BMAD 产品发现与 Speckit 技术实现的交付地图。它也是解释“产品意图如何变成可审计、可评审交付”的最直观入口。
@@ -174,7 +230,7 @@ CLI 可以用于安装校验、CI、调试、fallback 宿主和外部只读视�
 | Layer 4: Speckit Workflow         | 按 `specify -> plan -> GAPS -> tasks -> implement` 推进技术执行。 | spec、plan、gap 分析、tasks、代码和测试。  |
 | Layer 5: Closeout And Integration | 审计实现、评分证据，并准备可评审交付。                            | post-audit、评分、PR、人工评审和发布证据。 |
 
-在 2.0.0 发布线中，五层架构没有被移除。它成为 AI-TDD 控制面的上游交付地图：产品和 Story 产物会进入需求契约输入，Speckit 工作会成为 bounded execution packet，最终交付仍然只能通过受控证据门禁关闭。
+在 2.x 发布线中，五层架构没有被移除。它成为 AI-TDD 控制面的上游交付地图：产品和 Story 产物会进入需求契约输入，Speckit 工作会成为 bounded execution packet，最终交付仍然只能通过受控证据门禁关闭。
 
 ---
 
@@ -238,24 +294,26 @@ Manifest 是 AI-TDD 契约的事实源。它更接近 contract-as-code，而不�
 
 ## CLI 安装与外部接口
 
-使用已发布 npm 包把工作流安装到消费项目。下面这些命令用于安装、校验、生命周期操作和外部运行时查看。
+使用已发布 npm 包把工作流安装到消费项目。为了让生成后的 skills 稳定运行，应把包安装为项目本地依赖，并通过 `npx --no-install` 调用 CLI。
 
 ```bash
-npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit --help
-npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit version
-npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit-init . --agent claude-code --full --no-package-json
-npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit-init . --agent cursor --full --no-package-json
-npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit-init . --agent codex --full --no-package-json
-npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit check
-npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit dashboard-status
+npm install --save-dev --ignore-scripts bmad-speckit-sdd-flow@latest
+npm ls bmad-speckit-sdd-flow --depth=0
+node -e "const fs=require('node:fs'); const p=process.platform==='win32'?'node_modules/.bin/bmad-speckit.cmd':'node_modules/.bin/bmad-speckit'; if(!fs.existsSync(p)){console.error('missing project-local '+p); process.exit(1)} console.log('found '+p)"
+npx --no-install bmad-speckit --help
+npx --no-install bmad-speckit version
+npx --no-install bmad-speckit init . --ai codex --yes --force
+npx --no-install bmad-speckit check
+npx --no-install bmad-speckit dashboard-status
+npx --no-install bmad-speckit bmads
 ```
 
-如果希望写入项目依赖树：
+默认建议带 `--ignore-scripts`：先把包安装进项目，再显式运行 `bmad-speckit init ...` 生成目标宿主安装面。如果不带该参数，当前根包的 `postinstall` 会执行 `scripts/init-to-root.js`，可能通过默认安装流程写入 `_bmad`、宿主目录、hooks、skills、配置或状态文件。
 
-```bash
-npm install --save-dev bmad-speckit-sdd-flow@latest
-npx bmad-speckit-init . --agent codex --full --no-package-json
-npx bmad-speckit check
+Windows 下如果当前 shell 不能解析 shim，可改用 `npx.cmd`：
+
+```powershell
+npx.cmd --no-install bmad-speckit bmads
 ```
 
 公开 CLI 暴露这些辅助接口：
@@ -267,6 +325,21 @@ npx bmad-speckit check
 | 证据与评分     | `score`, `check-score`, `scores`, `dashboard`, `deferred-gap-audit`。                                               |
 | 数据与反馈     | `coach`, `sft-extract`, `sft-preview`, `sft-validate`, `sft-bundle`, `feedback`。                                   |
 
+### 安装矩阵
+
+| 安装方式                                                                                            | 适用场景                                                | 会改动的项目文件                                                                                                          | 长期生成 skill 运行时                                                                                                       |
+| --------------------------------------------------------------------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `npm install --save-dev --ignore-scripts bmad-speckit-sdd-flow@latest`                              | 正常消费项目的默认方式。                                | 写入 `node_modules`、`package.json` 和 lockfile；跳过包生命周期脚本。                                                     | 支持。安装后显式执行 `npx --no-install bmad-speckit init ...`，生成后的 skills 可调用 `npx --no-install bmad-speckit ...`。 |
+| `npm install --save-dev bmad-speckit-sdd-flow@latest`                                               | 你明确接受 package `postinstall` 副作用时的便利安装。   | 写入 `node_modules`、`package.json` 和 lockfile；当前 `postinstall` 还可能通过 `scripts/init-to-root.js` 写入默认安装面。 | 只有在校验本地 shim 并重新显式执行目标宿主的 `bmad-speckit init ...` 后，才应视为长期可用。                                 |
+| `npm install --save-dev --ignore-scripts ./bmad-speckit-sdd-flow-<version>.tgz`                     | 在真实消费项目中验证 CI artifact 或 release candidate。 | 写入 `node_modules`、`package.json` 和 lockfile；跳过包生命周期脚本。                                                     | 支持，运行时固定到该 tarball 内容；安装后仍应显式 init。                                                                    |
+| `npm install --no-save --package-lock=false --ignore-scripts ./bmad-speckit-sdd-flow-<version>.tgz` | 临时本地 artifact smoke test。                          | 写入 `node_modules`；原则上不更新 `package.json` 和 lockfile。                                                            | 仅临时支持。只要 `node_modules` 还在就能运行，但这不是持久项目契约。                                                        |
+| `npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit ...`                                 | 一次性 CLI 执行、smoke test、CI artifact 检查。         | 不会持久安装项目本地 runtime 依赖。                                                                                       | 不支持长期 skills。后续生成的 skills 可能因为 `npx --no-install` 找不到本地包而失败。                                       |
+| 全局安装                                                                                            | 受治理项目外的人工操作便利。                            | 不会把 runtime 版本固定到消费项目。                                                                                       | 不建议用于项目 skills，因为项目无法控制 runtime 版本。如果只跑 `npx --no-install` 做校验，它还可能掩盖本地依赖缺失。        |
+
+稳定的生成 skill 运行时契约是：通过项目本地安装的公开包 CLI 执行 `npx --no-install bmad-speckit ...`，而不是调用仓库源码路径。新增或已迁移的 skills 不应把 `node packages/bmad-speckit/bin/bmad-speckit.js`、`scripts/*.ts`、`tsx` 或 `ts-node` 写成消费者 runtime 命令。如果遗留 skill 文本里仍出现 root script 命令，应视为迁移债务，而不是推荐的消费者 runtime。
+
+`bmad-speckit-init` 仍保留为兼容别名。新的 README 示例、生成后的 skills 和集成脚本应优先使用 `bmad-speckit init ...`。
+
 ### 公开 CLI 命令面
 
 下面的截图展示已发布 npm 包暴露的 CLI 命令面。它用于快速理解安装、生命周期、运行时只读视图、评分、Coach 和 SFT 工具入口；它不是用户日常的编排中枢工作流。
@@ -277,12 +350,24 @@ npx bmad-speckit check
 
 ### 安装校验
 
-建议为消费项目保留这些安装校验命令：
+建议为消费项目保留这些安装校验命令。检查生成文件前，先按目标宿主执行对应的 `init` 行：
 
 ```bash
-npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit version
-npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit check
-npx --yes --package bmad-speckit-sdd-flow@latest bmad-speckit dashboard-status
+npm ls bmad-speckit-sdd-flow --depth=0
+node -e "const fs=require('node:fs'); const p=process.platform==='win32'?'node_modules/.bin/bmad-speckit.cmd':'node_modules/.bin/bmad-speckit'; if(!fs.existsSync(p)){console.error('missing project-local '+p); process.exit(1)} console.log('found '+p)"
+npx --no-install bmad-speckit version
+npx --no-install bmad-speckit init . --ai codex --yes --force
+npx --no-install bmad-speckit check
+npx --no-install bmad-speckit dashboard-status
+npx --no-install bmad-speckit bmads
+```
+
+不要把单独运行 `npx --no-install` 当成本地 runtime 存在的证明。必须先确认项目依赖和本地 shim 都存在，避免全局可执行文件掩盖缺失或未固定版本的项目安装。
+
+如果你用 `--ai claude,cursor-agent,codex` 初始化所有常用宿主，还要检查这些目标安装面：
+
+```bash
+node -e "const fs=require('node:fs'); const paths=['_bmad-output/config/bmad-speckit-install-manifest.json','.codex/skills','.claude/hooks/runtime-policy-inject.cjs','.claude/hooks/pre-continue-check.cjs','.cursor/hooks/runtime-policy-inject.cjs','.cursor/hooks/pre-continue-check.cjs']; for (const p of paths){ if(!fs.existsSync(p)){ console.error('missing '+p); process.exit(1); } console.log('found '+p); }"
 ```
 
 CLI 用来安装和查看；宿主技能用来让编排中枢接管需求流。
@@ -307,7 +392,7 @@ CLI 用来安装和查看；宿主技能用来让编排中枢接管需求流。
 
 1.x 发布线的 BMAD + Speckit 资产仍然是兼容面：Product Brief、PRD、Architecture、Epic/Story、Speckit specify/plan/GAPS/tasks、实现、审计、评分、看板、Coach 和 SFT extraction 仍然有用。
 
-2.0.0 发布线现在会先把五层架构作为 1.x 交付地图呈现，再引出 AI-TDD。它的主权威仍然是 AI-TDD 工具链生态和这套控制面。1.x 产物是控制面里的输入和投影，而不是需求契约权威的替代品。
+2.x 发布线现在会先把五层架构作为 1.x 交付地图呈现，再引出 AI-TDD。它的主权威仍然是 AI-TDD 工具链生态和这套控制面。1.x 产物是控制面里的输入和投影，而不是需求契约权威的替代品。
 
 ---
 

@@ -1,0 +1,260 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-wave-3.1-install-matrix/v1",
+  "waveId": "main-agent-runtime-migration-wave-3.1",
+  "installMode": "no-save",
+  "packageSpec": "D:/Dev/BMAD-Speckit-SDD-Flow/repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/bmad-speckit-2.0.1.tgz",
+  "packagePath": "C:/Users/milom/AppData/Local/Temp/wave31-no-save-qOvOsb/node_modules/bmad-speckit",
+  "consumerRoot": "C:/Users/milom/AppData/Local/Temp/wave31-no-save-qOvOsb",
+  "commandCount": 9,
+  "usedRootScript": false,
+  "usedTsx": false,
+  "usedTsNode": false,
+  "usedCompiledFallback": false,
+  "commands": [
+    {
+      "commandId": "release-gate",
+      "command": "npx.cmd --no-install bmad-speckit main-agent:release-gate --json",
+      "exitCode": 0,
+      "stdoutHash": "sha256:3b38d550e804ffe48841a4097a34aac752d0d16c75fae5b7268ad8eaec33f5a5",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "{\n  \"schemaVersion\": \"main-agent-package-runtime/v1\",\n  \"action\": \"release-gate\",\n  \"cwd\": \"C:\\\\Users\\\\milom\\\\AppData\\\\Local\\\\Temp\\\\wave31-no-save-qOvOsb\",\n  \"status\": \"package_runtime_ready\",\n  \"exitCode\": 0,\n  \"errors\": [],\n  \"data\": {\n    \"report\": {\n      \"reportType\": \"main_agent_release_gate_package_runtime\",\n      \"generatedAt\": \"2026-06-03T19:36:45.795Z\",\n      \"gate\": \"main-agent-release-gate\",\n      \"completionAllowed\": false,\n      \"criticalFailures\": 0,\n      \"mode\": \"package_runtime",
+      "stderrPreview": "",
+      "parsed": {
+        "schemaVersion": "main-agent-package-runtime/v1",
+        "action": "release-gate",
+        "cwd": "C:\\Users\\milom\\AppData\\Local\\Temp\\wave31-no-save-qOvOsb",
+        "status": "package_runtime_ready",
+        "exitCode": 0,
+        "errors": [],
+        "data": {
+          "report": {
+            "reportType": "main_agent_release_gate_package_runtime",
+            "generatedAt": "2026-06-03T19:36:45.795Z",
+            "gate": "main-agent-release-gate",
+            "completionAllowed": false,
+            "criticalFailures": 0,
+            "mode": "package_runtime_module",
+            "checks": [
+              {
+                "id": "package-runtime-dispatch",
+                "passed": true,
+                "summary": "release gate command resolved through package runtime"
+              }
+            ]
+          },
+          "reportPath": null
+        }
+      },
+      "usedRootScript": false,
+      "usedTsx": false,
+      "usedTsNode": false,
+      "usedCompiledFallback": false,
+      "coveredAction": true,
+      "probeHits": []
+    },
+    {
+      "commandId": "quality-gate",
+      "command": "npx.cmd --no-install bmad-speckit main-agent:quality-gate --json",
+      "exitCode": 0,
+      "stdoutHash": "sha256:c8409342a4bd90a9e232a8b1e75bcd136dd0b4a8746eab098e32fcc9156f665a",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "{\n  \"schemaVersion\": \"main-agent-package-runtime/v1\",\n  \"action\": \"quality-gate\",\n  \"cwd\": \"C:\\\\Users\\\\milom\\\\AppData\\\\Local\\\\Temp\\\\wave31-no-save-qOvOsb\",\n  \"status\": \"package_runtime_ready\",\n  \"exitCode\": 0,\n  \"errors\": [],\n  \"data\": {\n    \"report\": {\n      \"reportType\": \"main_agent_quality_gate_package_runtime\",\n      \"generatedAt\": \"2026-06-03T19:36:46.700Z\",\n      \"gate\": \"main-agent-quality-gate\",\n      \"criticalFailures\": 0,\n      \"mode\": \"package_runtime_module\",\n      \"checks\": [\n      ",
+      "stderrPreview": "",
+      "parsed": {
+        "schemaVersion": "main-agent-package-runtime/v1",
+        "action": "quality-gate",
+        "cwd": "C:\\Users\\milom\\AppData\\Local\\Temp\\wave31-no-save-qOvOsb",
+        "status": "package_runtime_ready",
+        "exitCode": 0,
+        "errors": [],
+        "data": {
+          "report": {
+            "reportType": "main_agent_quality_gate_package_runtime",
+            "generatedAt": "2026-06-03T19:36:46.700Z",
+            "gate": "main-agent-quality-gate",
+            "criticalFailures": 0,
+            "mode": "package_runtime_module",
+            "checks": [
+              {
+                "id": "package-runtime-dispatch",
+                "passed": true,
+                "summary": "quality gate command resolved through package runtime"
+              }
+            ]
+          },
+          "reportPath": null
+        }
+      },
+      "usedRootScript": false,
+      "usedTsx": false,
+      "usedTsNode": false,
+      "usedCompiledFallback": false,
+      "coveredAction": true,
+      "probeHits": []
+    },
+    {
+      "commandId": "delivery-truth-gate",
+      "command": "npx.cmd --no-install bmad-speckit main-agent:delivery-truth-gate --json",
+      "exitCode": 0,
+      "stdoutHash": "sha256:51bea74cd2cdd7828a9e74c81680898f53e15fcde4de58199153d848b23cc26a",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "{\n  \"schemaVersion\": \"main-agent-package-runtime/v1\",\n  \"action\": \"delivery-truth-gate\",\n  \"cwd\": \"C:\\\\Users\\\\milom\\\\AppData\\\\Local\\\\Temp\\\\wave31-no-save-qOvOsb\",\n  \"status\": \"package_runtime_ready\",\n  \"exitCode\": 0,\n  \"errors\": [],\n  \"data\": {\n    \"report\": {\n      \"reportType\": \"main_agent_delivery_truth_gate_package_runtime\",\n      \"generatedAt\": \"2026-06-03T19:36:47.645Z\",\n      \"completionAllowed\": false,\n      \"deliveryStatus\": \"partial\",\n      \"completionLanguage\": \"partial_only\",\n      \"",
+      "stderrPreview": "",
+      "parsed": {
+        "schemaVersion": "main-agent-package-runtime/v1",
+        "action": "delivery-truth-gate",
+        "cwd": "C:\\Users\\milom\\AppData\\Local\\Temp\\wave31-no-save-qOvOsb",
+        "status": "package_runtime_ready",
+        "exitCode": 0,
+        "errors": [],
+        "data": {
+          "report": {
+            "reportType": "main_agent_delivery_truth_gate_package_runtime",
+            "generatedAt": "2026-06-03T19:36:47.645Z",
+            "completionAllowed": false,
+            "deliveryStatus": "partial",
+            "completionLanguage": "partial_only",
+            "mode": "package_runtime_module",
+            "checks": [
+              {
+                "id": "package-runtime-dispatch",
+                "passed": true,
+                "summary": "delivery truth gate command resolved through package runtime"
+              }
+            ]
+          },
+          "reportPath": null
+        }
+      },
+      "usedRootScript": false,
+      "usedTsx": false,
+      "usedTsNode": false,
+      "usedCompiledFallback": false,
+      "coveredAction": true,
+      "probeHits": []
+    },
+    {
+      "commandId": "run-auditor-host-help",
+      "command": "npx.cmd --no-install bmad-speckit run-auditor-host --help",
+      "exitCode": 0,
+      "stdoutHash": "sha256:37298b511f941193f9b9d4fe573e0bd4ae9b3a32e7fadb07f3172ed7e0a99032",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "Usage: bmad-speckit run-auditor-host [options]\n\nRun the BMAD auditor host CLI surface\n\nOptions:\n  -h, --help  display help for command\n",
+      "stderrPreview": "",
+      "parsed": null,
+      "usedRootScript": false,
+      "usedTsx": false,
+      "usedTsNode": false,
+      "usedCompiledFallback": false,
+      "coveredAction": false,
+      "probeHits": []
+    },
+    {
+      "commandId": "write-runtime-context",
+      "command": "npx.cmd --no-install bmad-speckit write-runtime-context C:\\Users\\milom\\AppData\\Local\\Temp\\wave31-no-save-qOvOsb\\.tmp\\runtime-context.json story specify",
+      "exitCode": 0,
+      "stdoutHash": "sha256:20aa7daed50f2c045542b6a9ccfdefbde8b39992ec9c7f29a7ef8dd7a9b520e2",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "Wrote C:\\Users\\milom\\AppData\\Local\\Temp\\wave31-no-save-qOvOsb\\.tmp\\runtime-context.json\n",
+      "stderrPreview": "",
+      "parsed": {
+        "outputPath": "C:/Users/milom/AppData/Local/Temp/wave31-no-save-qOvOsb/.tmp/runtime-context.json"
+      },
+      "usedRootScript": false,
+      "usedTsx": false,
+      "usedTsNode": false,
+      "usedCompiledFallback": false,
+      "coveredAction": false,
+      "probeHits": []
+    },
+    {
+      "commandId": "eval-questions-deprecated",
+      "command": "npx.cmd --no-install bmad-speckit eval-questions --json",
+      "exitCode": 0,
+      "stdoutHash": "sha256:ce1d1bf9e9b8f1c12cdf5c35e0bed8c09d56acd7ebf5c82d4a4ffd399642fc95",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "{\n  \"schemaVersion\": \"bmad-speckit-deprecated-alias/v1\",\n  \"command\": \"eval-questions\",\n  \"status\": \"deprecated\",\n  \"exitCode\": 0,\n  \"replacement\": \"source-repository evaluation workflow\"\n}\n",
+      "stderrPreview": "",
+      "parsed": {
+        "schemaVersion": "bmad-speckit-deprecated-alias/v1",
+        "command": "eval-questions",
+        "status": "deprecated",
+        "exitCode": 0,
+        "replacement": "source-repository evaluation workflow"
+      },
+      "usedRootScript": false,
+      "usedTsx": false,
+      "usedTsNode": false,
+      "usedCompiledFallback": false,
+      "coveredAction": false,
+      "probeHits": []
+    },
+    {
+      "commandId": "bmad-help-five-layer-matrix-deprecated",
+      "command": "npx.cmd --no-install bmad-speckit main-agent:bmad-help-five-layer-matrix --json",
+      "exitCode": 0,
+      "stdoutHash": "sha256:9123c6581669abafd50b04c89ed2f97cdee70f1723caa9509b31dfd3fc96e791",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "{\n  \"schemaVersion\": \"bmad-speckit-deprecated-alias/v1\",\n  \"command\": \"main-agent:bmad-help-five-layer-matrix\",\n  \"status\": \"deprecated\",\n  \"exitCode\": 0,\n  \"replacement\": \"bmad-help\"\n}\n",
+      "stderrPreview": "",
+      "parsed": {
+        "schemaVersion": "bmad-speckit-deprecated-alias/v1",
+        "command": "main-agent:bmad-help-five-layer-matrix",
+        "status": "deprecated",
+        "exitCode": 0,
+        "replacement": "bmad-help"
+      },
+      "usedRootScript": false,
+      "usedTsx": false,
+      "usedTsNode": false,
+      "usedCompiledFallback": false,
+      "coveredAction": false,
+      "probeHits": []
+    },
+    {
+      "commandId": "host-matrix-pr-orchestrate-deprecated",
+      "command": "npx.cmd --no-install bmad-speckit main-agent:host-matrix-pr-orchestrate --json",
+      "exitCode": 0,
+      "stdoutHash": "sha256:bfc3d27d8f967fc5c11f16e1b3877db187b05746812128c90238e56f5916ebe3",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "{\n  \"schemaVersion\": \"bmad-speckit-deprecated-alias/v1\",\n  \"command\": \"main-agent:host-matrix-pr-orchestrate\",\n  \"status\": \"deprecated\",\n  \"exitCode\": 0,\n  \"replacement\": \"main-agent run-loop\"\n}\n",
+      "stderrPreview": "",
+      "parsed": {
+        "schemaVersion": "bmad-speckit-deprecated-alias/v1",
+        "command": "main-agent:host-matrix-pr-orchestrate",
+        "status": "deprecated",
+        "exitCode": 0,
+        "replacement": "main-agent run-loop"
+      },
+      "usedRootScript": false,
+      "usedTsx": false,
+      "usedTsNode": false,
+      "usedCompiledFallback": false,
+      "coveredAction": false,
+      "probeHits": []
+    },
+    {
+      "commandId": "bmads-auto-deprecated",
+      "command": "npx.cmd --no-install bmad-speckit bmads-auto --json",
+      "exitCode": 0,
+      "stdoutHash": "sha256:d1ec78cb0de0b17463fd16d39ff985cfc82c33162559fc9ccf65f0324ea1af62",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "{\n  \"schemaVersion\": \"bmad-speckit-deprecated-alias/v1\",\n  \"command\": \"bmads-auto\",\n  \"status\": \"deprecated\",\n  \"exitCode\": 0,\n  \"replacement\": \"bmads\"\n}\n",
+      "stderrPreview": "",
+      "parsed": {
+        "schemaVersion": "bmad-speckit-deprecated-alias/v1",
+        "command": "bmads-auto",
+        "status": "deprecated",
+        "exitCode": 0,
+        "replacement": "bmads"
+      },
+      "usedRootScript": false,
+      "usedTsx": false,
+      "usedTsNode": false,
+      "usedCompiledFallback": false,
+      "coveredAction": false,
+      "probeHits": []
+    }
+  ],
+  "result": "passed"
+}

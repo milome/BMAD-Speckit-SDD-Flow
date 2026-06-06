@@ -1,0 +1,513 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-candidate-manifest/v1",
+  "waveId": "main-agent-runtime-migration-wave-3.9",
+  "title": "Wave 3.9 P4 durable helper closure",
+  "contractPath": "docs/plans/2026-06-05-main-agent-p1-p4-runtime-migration-goal-execution-plan.md",
+  "refinesWaveId": "main-agent-runtime-migration-wave-3.8",
+  "sourcePriorityMatrixPath": "repo-governance/script-migrations/main-agent-runtime-closure-wave-3/priority-matrix.md",
+  "registryPath": "repo-governance/script-migration-registry.yaml",
+  "evidencePath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.9/evidence.json",
+  "summaryPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.9/summary.md",
+  "selection": {
+    "priority": "P4",
+    "matrixTotal": 14,
+    "alreadyValidated": 0,
+    "remaining": 14,
+    "selectionRule": "Include every P4 priority-matrix row as a package-local durable helper copy."
+  },
+  "status": "manifest_locked",
+  "deletionAllowed": false,
+  "deletionApprovalRef": null,
+  "entries": [
+    {
+      "entryId": "governance-packet-execution-store",
+      "priority": "P4",
+      "originalPath": "scripts/governance-packet-execution-store.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeMigration": "durable_helper_copy",
+      "migrationStrategy": "durable_helper_copy",
+      "migrationStatus": "validated",
+      "helperId": "governance-packet-execution-store",
+      "exportName": "governancePacketExecutionStoreHelper",
+      "targetSourcePaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/governance-packet-execution-store.js"
+      ],
+      "targetDistPaths": [
+        "packages/bmad-speckit/dist/main-agent/helpers/governance-packet-execution-store.js"
+      ],
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/governance-packet-execution-store.js",
+        "packages/bmad-speckit/dist/main-agent/helpers/governance-packet-execution-store.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/governance-packet-execution-store.ts"
+      ],
+      "publicCommandsAfterMigration": [],
+      "callerSwitchRequired": false,
+      "callerSwitchStatus": "not_applicable",
+      "validationStatus": "passed",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.9/evidence.json"
+      ],
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "governance-packet-reconciler",
+      "priority": "P4",
+      "originalPath": "scripts/governance-packet-reconciler.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeMigration": "durable_helper_copy",
+      "migrationStrategy": "durable_helper_copy",
+      "migrationStatus": "validated",
+      "helperId": "governance-packet-reconciler",
+      "exportName": "governancePacketReconcilerHelper",
+      "targetSourcePaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/governance-packet-reconciler.js"
+      ],
+      "targetDistPaths": [
+        "packages/bmad-speckit/dist/main-agent/helpers/governance-packet-reconciler.js"
+      ],
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/governance-packet-reconciler.js",
+        "packages/bmad-speckit/dist/main-agent/helpers/governance-packet-reconciler.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/governance-packet-reconciler.ts"
+      ],
+      "publicCommandsAfterMigration": [],
+      "callerSwitchRequired": false,
+      "callerSwitchStatus": "not_applicable",
+      "validationStatus": "passed",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.9/evidence.json"
+      ],
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "governance-remediation-artifact",
+      "priority": "P4",
+      "originalPath": "scripts/governance-remediation-artifact.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeMigration": "durable_helper_copy",
+      "migrationStrategy": "durable_helper_copy",
+      "migrationStatus": "validated",
+      "helperId": "governance-remediation-artifact",
+      "exportName": "governanceRemediationArtifactHelper",
+      "targetSourcePaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/governance-remediation-artifact.js"
+      ],
+      "targetDistPaths": [
+        "packages/bmad-speckit/dist/main-agent/helpers/governance-remediation-artifact.js"
+      ],
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/governance-remediation-artifact.js",
+        "packages/bmad-speckit/dist/main-agent/helpers/governance-remediation-artifact.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/governance-remediation-artifact.ts"
+      ],
+      "publicCommandsAfterMigration": [],
+      "callerSwitchRequired": false,
+      "callerSwitchStatus": "not_applicable",
+      "validationStatus": "passed",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.9/evidence.json"
+      ],
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "governance-remediation-config",
+      "priority": "P4",
+      "originalPath": "scripts/governance-remediation-config.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeMigration": "durable_helper_copy",
+      "migrationStrategy": "durable_helper_copy",
+      "migrationStatus": "validated",
+      "helperId": "governance-remediation-config",
+      "exportName": "governanceRemediationConfigHelper",
+      "targetSourcePaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/governance-remediation-config.js"
+      ],
+      "targetDistPaths": [
+        "packages/bmad-speckit/dist/main-agent/helpers/governance-remediation-config.js"
+      ],
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/governance-remediation-config.js",
+        "packages/bmad-speckit/dist/main-agent/helpers/governance-remediation-config.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/governance-remediation-config.ts"
+      ],
+      "publicCommandsAfterMigration": [],
+      "callerSwitchRequired": false,
+      "callerSwitchStatus": "not_applicable",
+      "validationStatus": "passed",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.9/evidence.json"
+      ],
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "governance-remediation-runner",
+      "priority": "P4",
+      "originalPath": "scripts/governance-remediation-runner.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeMigration": "durable_helper_copy",
+      "migrationStrategy": "durable_helper_copy",
+      "migrationStatus": "validated",
+      "helperId": "governance-remediation-runner",
+      "exportName": "governanceRemediationRunnerHelper",
+      "targetSourcePaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/governance-remediation-runner.js"
+      ],
+      "targetDistPaths": [
+        "packages/bmad-speckit/dist/main-agent/helpers/governance-remediation-runner.js"
+      ],
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/governance-remediation-runner.js",
+        "packages/bmad-speckit/dist/main-agent/helpers/governance-remediation-runner.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/governance-remediation-runner.ts"
+      ],
+      "publicCommandsAfterMigration": [],
+      "callerSwitchRequired": false,
+      "callerSwitchStatus": "not_applicable",
+      "validationStatus": "passed",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.9/evidence.json"
+      ],
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "agent-display-names",
+      "priority": "P4",
+      "originalPath": "scripts/i18n/agent-display-names.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeMigration": "durable_helper_copy",
+      "migrationStrategy": "durable_helper_copy",
+      "migrationStatus": "validated",
+      "helperId": "agent-display-names",
+      "exportName": "agentDisplayNamesHelper",
+      "targetSourcePaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/agent-display-names.js"
+      ],
+      "targetDistPaths": [
+        "packages/bmad-speckit/dist/main-agent/helpers/agent-display-names.js"
+      ],
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/agent-display-names.js",
+        "packages/bmad-speckit/dist/main-agent/helpers/agent-display-names.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/i18n/agent-display-names.ts"
+      ],
+      "publicCommandsAfterMigration": [],
+      "callerSwitchRequired": false,
+      "callerSwitchStatus": "not_applicable",
+      "validationStatus": "passed",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.9/evidence.json"
+      ],
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "load-manifest",
+      "priority": "P4",
+      "originalPath": "scripts/i18n/load-manifest.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeMigration": "durable_helper_copy",
+      "migrationStrategy": "durable_helper_copy",
+      "migrationStatus": "validated",
+      "helperId": "load-manifest",
+      "exportName": "loadManifestHelper",
+      "targetSourcePaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/load-manifest.js"
+      ],
+      "targetDistPaths": [
+        "packages/bmad-speckit/dist/main-agent/helpers/load-manifest.js"
+      ],
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/load-manifest.js",
+        "packages/bmad-speckit/dist/main-agent/helpers/load-manifest.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/i18n/load-manifest.ts"
+      ],
+      "publicCommandsAfterMigration": [],
+      "callerSwitchRequired": false,
+      "callerSwitchStatus": "not_applicable",
+      "validationStatus": "passed",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.9/evidence.json"
+      ],
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "party-mode-runtime-assets",
+      "priority": "P4",
+      "originalPath": "scripts/i18n/party-mode-runtime-assets.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeMigration": "durable_helper_copy",
+      "migrationStrategy": "durable_helper_copy",
+      "migrationStatus": "validated",
+      "helperId": "party-mode-runtime-assets",
+      "exportName": "partyModeRuntimeAssetsHelper",
+      "targetSourcePaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/party-mode-runtime-assets.js"
+      ],
+      "targetDistPaths": [
+        "packages/bmad-speckit/dist/main-agent/helpers/party-mode-runtime-assets.js"
+      ],
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/party-mode-runtime-assets.js",
+        "packages/bmad-speckit/dist/main-agent/helpers/party-mode-runtime-assets.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/i18n/party-mode-runtime-assets.ts"
+      ],
+      "publicCommandsAfterMigration": [],
+      "callerSwitchRequired": false,
+      "callerSwitchStatus": "not_applicable",
+      "validationStatus": "passed",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.9/evidence.json"
+      ],
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "model-governance-policy-filter",
+      "priority": "P4",
+      "originalPath": "scripts/model-governance-policy-filter.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeMigration": "durable_helper_copy",
+      "migrationStrategy": "durable_helper_copy",
+      "migrationStatus": "validated",
+      "helperId": "model-governance-policy-filter",
+      "exportName": "modelGovernancePolicyFilterHelper",
+      "targetSourcePaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/model-governance-policy-filter.js"
+      ],
+      "targetDistPaths": [
+        "packages/bmad-speckit/dist/main-agent/helpers/model-governance-policy-filter.js"
+      ],
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/model-governance-policy-filter.js",
+        "packages/bmad-speckit/dist/main-agent/helpers/model-governance-policy-filter.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/model-governance-policy-filter.ts"
+      ],
+      "publicCommandsAfterMigration": [],
+      "callerSwitchRequired": false,
+      "callerSwitchStatus": "not_applicable",
+      "validationStatus": "passed",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.9/evidence.json"
+      ],
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "party-mode-runtime",
+      "priority": "P4",
+      "originalPath": "scripts/party-mode-runtime.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeMigration": "durable_helper_copy",
+      "migrationStrategy": "durable_helper_copy",
+      "migrationStatus": "validated",
+      "helperId": "party-mode-runtime",
+      "exportName": "partyModeRuntimeHelper",
+      "targetSourcePaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/party-mode-runtime.js"
+      ],
+      "targetDistPaths": [
+        "packages/bmad-speckit/dist/main-agent/helpers/party-mode-runtime.js"
+      ],
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/party-mode-runtime.js",
+        "packages/bmad-speckit/dist/main-agent/helpers/party-mode-runtime.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/party-mode-runtime.ts"
+      ],
+      "publicCommandsAfterMigration": [],
+      "callerSwitchRequired": false,
+      "callerSwitchStatus": "not_applicable",
+      "validationStatus": "passed",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.9/evidence.json"
+      ],
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "prompt-routing-governance",
+      "priority": "P4",
+      "originalPath": "scripts/prompt-routing-governance.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeMigration": "durable_helper_copy",
+      "migrationStrategy": "durable_helper_copy",
+      "migrationStatus": "validated",
+      "helperId": "prompt-routing-governance",
+      "exportName": "promptRoutingGovernanceHelper",
+      "targetSourcePaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/prompt-routing-governance.js"
+      ],
+      "targetDistPaths": [
+        "packages/bmad-speckit/dist/main-agent/helpers/prompt-routing-governance.js"
+      ],
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/prompt-routing-governance.js",
+        "packages/bmad-speckit/dist/main-agent/helpers/prompt-routing-governance.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/prompt-routing-governance.ts"
+      ],
+      "publicCommandsAfterMigration": [],
+      "callerSwitchRequired": false,
+      "callerSwitchStatus": "not_applicable",
+      "validationStatus": "passed",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.9/evidence.json"
+      ],
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "prompt-routing-hints-schema",
+      "priority": "P4",
+      "originalPath": "scripts/prompt-routing-hints-schema.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeMigration": "durable_helper_copy",
+      "migrationStrategy": "durable_helper_copy",
+      "migrationStatus": "validated",
+      "helperId": "prompt-routing-hints-schema",
+      "exportName": "promptRoutingHintsSchemaHelper",
+      "targetSourcePaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/prompt-routing-hints-schema.js"
+      ],
+      "targetDistPaths": [
+        "packages/bmad-speckit/dist/main-agent/helpers/prompt-routing-hints-schema.js"
+      ],
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/prompt-routing-hints-schema.js",
+        "packages/bmad-speckit/dist/main-agent/helpers/prompt-routing-hints-schema.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/prompt-routing-hints-schema.ts"
+      ],
+      "publicCommandsAfterMigration": [],
+      "callerSwitchRequired": false,
+      "callerSwitchStatus": "not_applicable",
+      "validationStatus": "passed",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.9/evidence.json"
+      ],
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "prompt-routing-hints",
+      "priority": "P4",
+      "originalPath": "scripts/prompt-routing-hints.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeMigration": "durable_helper_copy",
+      "migrationStrategy": "durable_helper_copy",
+      "migrationStatus": "validated",
+      "helperId": "prompt-routing-hints",
+      "exportName": "promptRoutingHintsHelper",
+      "targetSourcePaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/prompt-routing-hints.js"
+      ],
+      "targetDistPaths": [
+        "packages/bmad-speckit/dist/main-agent/helpers/prompt-routing-hints.js"
+      ],
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/prompt-routing-hints.js",
+        "packages/bmad-speckit/dist/main-agent/helpers/prompt-routing-hints.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/prompt-routing-hints.ts"
+      ],
+      "publicCommandsAfterMigration": [],
+      "callerSwitchRequired": false,
+      "callerSwitchStatus": "not_applicable",
+      "validationStatus": "passed",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.9/evidence.json"
+      ],
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "skill-inventory-provider",
+      "priority": "P4",
+      "originalPath": "scripts/skill-inventory-provider.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeMigration": "durable_helper_copy",
+      "migrationStrategy": "durable_helper_copy",
+      "migrationStatus": "validated",
+      "helperId": "skill-inventory-provider",
+      "exportName": "skillInventoryProviderHelper",
+      "targetSourcePaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/skill-inventory-provider.js"
+      ],
+      "targetDistPaths": [
+        "packages/bmad-speckit/dist/main-agent/helpers/skill-inventory-provider.js"
+      ],
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/skill-inventory-provider.js",
+        "packages/bmad-speckit/dist/main-agent/helpers/skill-inventory-provider.js"
+      ],
+      "publicCommandsBeforeMigration": [
+        "source repository scripts/skill-inventory-provider.ts"
+      ],
+      "publicCommandsAfterMigration": [],
+      "callerSwitchRequired": false,
+      "callerSwitchStatus": "not_applicable",
+      "validationStatus": "passed",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.9/evidence.json"
+      ],
+      "oldPathDisposition": "retained_source_dev_only",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    }
+  ]
+}

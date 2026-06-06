@@ -1,0 +1,550 @@
+{
+  "schemaVersion": "script-migration-evidence/v1",
+  "waveId": "main-agent-runtime-migration-wave-3.2",
+  "contractPath": "docs/plans/2026-06-04-main-agent-runtime-migration-wave-3-2-goal-execution-plan.md",
+  "sourcePlanHash": "sha256:36c45498fe3296973659d871dacaf8ab539698d5450c8ff111be59fbf32d35b8",
+  "validatedAt": "2026-06-04T10:00:44.337Z",
+  "entries": [
+    {
+      "entryId": "main-agent-codex-worker-adapter",
+      "originalPath": "scripts/main-agent-codex-worker-adapter.ts",
+      "recommendedMigrationStrategy": "package_runtime_module",
+      "consumerReachability": "consumer_runtime_reachable",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/codex-worker-adapter.js",
+        "packages/bmad-speckit/dist/main-agent/actions/codex-worker-adapter.js"
+      ],
+      "commands": [],
+      "installMatrixEvidence": [],
+      "result": "passed",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/classification-matrix.md"
+      ]
+    },
+    {
+      "entryId": "main-agent-compiled-prompt-runner",
+      "originalPath": "scripts/main-agent-compiled-prompt-runner.ts",
+      "recommendedMigrationStrategy": "package_runtime_module",
+      "consumerReachability": "consumer_runtime_reachable",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/compiled-prompt-runner.js",
+        "packages/bmad-speckit/dist/main-agent/actions/compiled-prompt-runner.js"
+      ],
+      "commands": [],
+      "installMatrixEvidence": [],
+      "result": "passed",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/classification-matrix.md"
+      ]
+    },
+    {
+      "entryId": "main-agent-implementation-readiness-gate",
+      "originalPath": "scripts/main-agent-implementation-readiness-gate.ts",
+      "recommendedMigrationStrategy": "package_runtime_module",
+      "consumerReachability": "consumer_runtime_reachable",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/implementation-readiness-gate.js",
+        "packages/bmad-speckit/dist/main-agent/actions/implementation-readiness-gate.js"
+      ],
+      "commands": [],
+      "installMatrixEvidence": [],
+      "result": "passed",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/classification-matrix.md"
+      ]
+    },
+    {
+      "entryId": "main-agent-unified-ingress",
+      "originalPath": "scripts/main-agent-unified-ingress.ts",
+      "recommendedMigrationStrategy": "package_runtime_module",
+      "consumerReachability": "installed_surface_reachable",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/unified-ingress.js",
+        "packages/bmad-speckit/dist/main-agent/actions/unified-ingress.js"
+      ],
+      "commands": [],
+      "installMatrixEvidence": [],
+      "result": "passed",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/classification-matrix.md"
+      ]
+    },
+    {
+      "entryId": "main-agent-delivery-closeout-gate",
+      "originalPath": "scripts/main-agent-delivery-closeout-gate.ts",
+      "recommendedMigrationStrategy": "package_runtime_module",
+      "consumerReachability": "installed_surface_reachable",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/delivery-closeout-gate.js",
+        "packages/bmad-speckit/dist/main-agent/actions/delivery-closeout-gate.js"
+      ],
+      "commands": [],
+      "installMatrixEvidence": [],
+      "result": "passed",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/classification-matrix.md"
+      ]
+    },
+    {
+      "entryId": "main-agent-execution-closure-gate",
+      "originalPath": "scripts/main-agent-execution-closure-gate.ts",
+      "recommendedMigrationStrategy": "repo_internal_reclassify",
+      "consumerReachability": "source_repo_only",
+      "targetPaths": [],
+      "commands": [],
+      "installMatrixEvidence": [],
+      "result": "passed",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/classification-matrix.md"
+      ]
+    },
+    {
+      "entryId": "main-agent-production-loop-ready-check",
+      "originalPath": "scripts/main-agent-production-loop-ready-check.ts",
+      "recommendedMigrationStrategy": "repo_internal_reclassify",
+      "consumerReachability": "source_repo_only",
+      "targetPaths": [],
+      "commands": [],
+      "installMatrixEvidence": [],
+      "result": "passed",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/classification-matrix.md"
+      ]
+    },
+    {
+      "entryId": "main-agent-scoring-gates-check",
+      "originalPath": "scripts/main-agent-scoring-gates-check.ts",
+      "recommendedMigrationStrategy": "repo_internal_reclassify",
+      "consumerReachability": "source_repo_only",
+      "targetPaths": [],
+      "commands": [],
+      "installMatrixEvidence": [],
+      "result": "passed",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/classification-matrix.md"
+      ]
+    },
+    {
+      "entryId": "main-agent-runtime-policy-snapshot-check",
+      "originalPath": "scripts/main-agent-runtime-policy-snapshot-check.ts",
+      "recommendedMigrationStrategy": "repo_internal_reclassify",
+      "consumerReachability": "source_repo_only",
+      "targetPaths": [],
+      "commands": [],
+      "installMatrixEvidence": [],
+      "result": "passed",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/classification-matrix.md"
+      ]
+    },
+    {
+      "entryId": "main-agent-trace-status-policy-check",
+      "originalPath": "scripts/main-agent-trace-status-policy-check.ts",
+      "recommendedMigrationStrategy": "repo_internal_reclassify",
+      "consumerReachability": "source_repo_only",
+      "targetPaths": [],
+      "commands": [],
+      "installMatrixEvidence": [],
+      "result": "passed",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/classification-matrix.md"
+      ]
+    },
+    {
+      "entryId": "main-agent-data-governance-gate",
+      "originalPath": "scripts/main-agent-data-governance-gate.ts",
+      "recommendedMigrationStrategy": "repo_internal_reclassify",
+      "consumerReachability": "source_repo_only",
+      "targetPaths": [],
+      "commands": [],
+      "installMatrixEvidence": [],
+      "result": "passed",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/classification-matrix.md"
+      ]
+    },
+    {
+      "entryId": "main-agent-dataset-release-gate",
+      "originalPath": "scripts/main-agent-dataset-release-gate.ts",
+      "recommendedMigrationStrategy": "repo_internal_reclassify",
+      "consumerReachability": "source_repo_only",
+      "targetPaths": [],
+      "commands": [],
+      "installMatrixEvidence": [],
+      "result": "passed",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/classification-matrix.md"
+      ]
+    },
+    {
+      "entryId": "main-agent-governed-data-products",
+      "originalPath": "scripts/main-agent-governed-data-products.ts",
+      "recommendedMigrationStrategy": "repo_internal_reclassify",
+      "consumerReachability": "source_repo_only",
+      "targetPaths": [],
+      "commands": [],
+      "installMatrixEvidence": [],
+      "result": "passed",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/classification-matrix.md"
+      ]
+    },
+    {
+      "entryId": "main-agent-functional-resume-check",
+      "originalPath": "scripts/main-agent-functional-resume-check.ts",
+      "recommendedMigrationStrategy": "repo_internal_reclassify",
+      "consumerReachability": "source_repo_only",
+      "targetPaths": [],
+      "commands": [],
+      "installMatrixEvidence": [],
+      "result": "passed",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/classification-matrix.md"
+      ]
+    },
+    {
+      "entryId": "main-agent-entryflow-traceability-check",
+      "originalPath": "scripts/main-agent-entryflow-traceability-check.ts",
+      "recommendedMigrationStrategy": "repo_internal_reclassify",
+      "consumerReachability": "source_repo_only",
+      "targetPaths": [],
+      "commands": [],
+      "installMatrixEvidence": [],
+      "result": "passed",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/classification-matrix.md"
+      ]
+    },
+    {
+      "entryId": "main-agent-control-plane-isolation-check",
+      "originalPath": "scripts/main-agent-control-plane-isolation-check.ts",
+      "recommendedMigrationStrategy": "repo_internal_reclassify",
+      "consumerReachability": "source_repo_only",
+      "targetPaths": [],
+      "commands": [],
+      "installMatrixEvidence": [],
+      "result": "passed",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/classification-matrix.md"
+      ]
+    },
+    {
+      "entryId": "main-agent-decision-field-check",
+      "originalPath": "scripts/main-agent-decision-field-check.ts",
+      "recommendedMigrationStrategy": "repo_internal_reclassify",
+      "consumerReachability": "source_repo_only",
+      "targetPaths": [],
+      "commands": [],
+      "installMatrixEvidence": [],
+      "result": "passed",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/classification-matrix.md"
+      ]
+    },
+    {
+      "entryId": "main-agent-ai-tdd-closeout-remediation-adapter",
+      "originalPath": "scripts/main-agent-ai-tdd-closeout-remediation-adapter.ts",
+      "recommendedMigrationStrategy": "repo_internal_reclassify",
+      "consumerReachability": "source_repo_only",
+      "targetPaths": [],
+      "commands": [],
+      "installMatrixEvidence": [],
+      "result": "passed",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/classification-matrix.md"
+      ]
+    },
+    {
+      "entryId": "main-agent-audit-review-gate",
+      "originalPath": "scripts/main-agent-audit-review-gate.ts",
+      "recommendedMigrationStrategy": "repo_internal_reclassify",
+      "consumerReachability": "source_repo_only",
+      "targetPaths": [],
+      "commands": [],
+      "installMatrixEvidence": [],
+      "result": "passed",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/classification-matrix.md"
+      ]
+    },
+    {
+      "entryId": "main-agent-bmad-artifact-hardcut",
+      "originalPath": "scripts/main-agent-bmad-artifact-hardcut.ts",
+      "recommendedMigrationStrategy": "repo_internal_reclassify",
+      "consumerReachability": "source_repo_only",
+      "targetPaths": [],
+      "commands": [],
+      "installMatrixEvidence": [],
+      "result": "passed",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/classification-matrix.md"
+      ]
+    },
+    {
+      "entryId": "main-agent-delivery-evidence-run",
+      "originalPath": "scripts/main-agent-delivery-evidence-run.ts",
+      "recommendedMigrationStrategy": "package_runtime_module",
+      "consumerReachability": "installed_surface_reachable",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/delivery-evidence-run.js",
+        "packages/bmad-speckit/dist/main-agent/actions/delivery-evidence-run.js"
+      ],
+      "commands": [],
+      "installMatrixEvidence": [],
+      "result": "passed",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/classification-matrix.md"
+      ]
+    },
+    {
+      "entryId": "main-agent-soak-runner",
+      "originalPath": "scripts/main-agent-soak-runner.ts",
+      "recommendedMigrationStrategy": "package_runtime_module",
+      "consumerReachability": "installed_surface_reachable",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/soak-runner.js",
+        "packages/bmad-speckit/dist/main-agent/actions/soak-runner.js"
+      ],
+      "commands": [],
+      "installMatrixEvidence": [],
+      "result": "passed",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/classification-matrix.md"
+      ]
+    },
+    {
+      "entryId": "main-agent-development-journey-matrix",
+      "originalPath": "scripts/main-agent-development-journey-matrix.ts",
+      "recommendedMigrationStrategy": "repo_internal_reclassify",
+      "consumerReachability": "source_repo_only",
+      "targetPaths": [],
+      "commands": [],
+      "installMatrixEvidence": [],
+      "result": "passed",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/classification-matrix.md"
+      ]
+    },
+    {
+      "entryId": "main-agent-dual-host-pr-orchestrator",
+      "originalPath": "scripts/main-agent-dual-host-pr-orchestrator.ts",
+      "recommendedMigrationStrategy": "package_runtime_module",
+      "consumerReachability": "installed_surface_reachable",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/dual-host-pr-orchestrator.js",
+        "packages/bmad-speckit/dist/main-agent/actions/dual-host-pr-orchestrator.js"
+      ],
+      "commands": [],
+      "installMatrixEvidence": [],
+      "result": "passed",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/classification-matrix.md"
+      ]
+    },
+    {
+      "entryId": "main-agent-chaos-scenarios",
+      "originalPath": "scripts/main-agent-chaos-scenarios.ts",
+      "recommendedMigrationStrategy": "package_runtime_module",
+      "consumerReachability": "installed_surface_reachable",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/chaos-scenarios.js",
+        "packages/bmad-speckit/dist/main-agent/actions/chaos-scenarios.js"
+      ],
+      "commands": [],
+      "installMatrixEvidence": [],
+      "result": "passed",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null,
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/caller-inventory.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/classification-matrix.md"
+      ]
+    }
+  ],
+  "commands": [
+    {
+      "commandId": "CMD-01",
+      "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { git status --short --branch }\"",
+      "exitCode": 0,
+      "stdoutHash": "sha256:311737fe5d1883da79d711061578cde0af8a5727e6cc254adc5e3527bccca4fb",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "## dev...origin/dev\n M repo-governance/script-migration-registry.yaml\n?? repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/\n?? tests/acceptance/main-agent-runtime-migration-wave-3-2-contract.test.ts\n?? tools/script-migration/analyze-main-agent-wave-3-2.cjs\n?? tools/script-migration/validate-main-agent-wave-3-2.cjs\n",
+      "stderrPreview": ""
+    },
+    {
+      "commandId": "CMD-02",
+      "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js }\"",
+      "exitCode": 0,
+      "stdoutHash": "sha256:55b060679b61dea163da03b8e669f416aa6d664c0c44d96b2e3cbc03e3510aae",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "checkedFiles=3021 findings=0\n",
+      "stderrPreview": ""
+    },
+    {
+      "commandId": "CMD-03",
+      "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <candidate set check> }\"",
+      "exitCode": 0,
+      "stdoutHash": "sha256:641652dc406c4b8f2732b12c92c60e599e38dbf1f260f9d262d9bf1218a6e18b",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "rootMainAgentTotal=31\nsettledEntriesExcludedFromWave3.2=6\nwave3.2TargetEntries=25\nscripts/main-agent-ai-tdd-closeout-remediation-adapter.ts\nscripts/main-agent-audit-review-gate.ts\nscripts/main-agent-bmad-artifact-hardcut.ts\nscripts/main-agent-chaos-scenarios.ts\nscripts/main-agent-codex-worker-adapter.ts\nscripts/main-agent-compiled-prompt-runner.ts\nscripts/main-agent-control-plane-isolation-check.ts\nscripts/main-agent-data-governance-gate.ts\nscripts/main-agent-dataset-release-gate.ts\nscripts/main-agent-decision-field-check.ts\nscripts/main-agent-delivery-closeout-gate.ts\nscripts/main-agent-delivery-evidence-run.ts\nscripts/main-agent-development-journey-matrix.ts\nscripts/main-agent-dual-host-pr-orchestrator.ts\nscripts/main-agent-entryflow-traceability-check.ts\nscripts/main-agent-execution-closure-gate.ts\nscripts/main-agent-functional-resume-check.ts\nscripts/main-agent-governed-data-products.ts\nscripts/main-agent-implementation-readiness-gate.ts\nscripts/main-agent-production-loop-ready-check.ts\nscripts/main-agent-runtime-policy-snapshot-check.ts\nscripts/main-agent-scoring-gates-check.ts\nscripts/main-agent-soak-runner.ts\nscripts/main-agent-trace-status-policy-check.ts\nscripts/main-agent-unified-ingress.ts\n",
+      "stderrPreview": ""
+    },
+    {
+      "commandId": "CMD-04",
+      "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node tools/script-migration/analyze-main-agent-wave-3-2.cjs --write; exit `$LASTEXITCODE }\"",
+      "exitCode": 0,
+      "stdoutHash": "sha256:ab962b9363424c9842075a3ef710db2fb93a1eb45afeaded8f3fb4eece1ebb48",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.2\",\n  \"targetEntries\": 25,\n  \"deletionAllowedCount\": 0,\n  \"mode\": \"write\"\n}\n",
+      "stderrPreview": ""
+    },
+    {
+      "commandId": "CMD-05",
+      "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node tools/script-migration/validate-main-agent-wave-3-2.cjs; exit `$LASTEXITCODE }\"",
+      "exitCode": 0,
+      "stdoutHash": "sha256:16065e75fc314b67c617204250f0f8c7ad91df1305fe03da6171e9d147e0ce4d",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.2\",\n  \"targetEntries\": 25,\n  \"deletionAllowedCount\": 0,\n  \"errors\": []\n}\n",
+      "stderrPreview": ""
+    },
+    {
+      "commandId": "CMD-06",
+      "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node tools/script-migration/validate-registry.cjs; exit `$LASTEXITCODE }\"",
+      "exitCode": 0,
+      "stdoutHash": "sha256:03e86d3a93b78396c78137de46ac5ecd960049e7c9b3b3792b5ac8b7abe51970",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "{\"status\":\"passed\",\"registryPath\":\"repo-governance/script-migration-registry.yaml\",\"packExclusion\":\"not_requested\",\"errors\":[]}\n",
+      "stderrPreview": ""
+    },
+    {
+      "commandId": "CMD-07",
+      "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { npx vitest run tests/acceptance/main-agent-runtime-migration-wave-3-2-contract.test.ts; exit `$LASTEXITCODE }\"",
+      "exitCode": 0,
+      "stdoutHash": "sha256:4d8ad47f13da881da501f52444d30a2713ab767746c4f5d0a59f9b7ea1f94263",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "\n\u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m\n\n \u001b[32m✓\u001b[39m tests/acceptance/main-agent-runtime-migration-wave-3-2-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 15980\u001b[2mms\u001b[22m\u001b[39m\n     \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs the Wave 3.2 validator successfully \u001b[33m 15977\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m\n\u001b[2m   Start at \u001b[22m 18:01:20\n\u001b[2m   Duration \u001b[22m 16.26s\u001b[2m (transform 24ms, setup 0ms, import 49ms, tests 15.98s, environment 0ms)\u001b[22m\n\n",
+      "stderrPreview": ""
+    },
+    {
+      "commandId": "CMD-08",
+      "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { npm run test --prefix packages/bmad-speckit; exit `$LASTEXITCODE }\"",
+      "exitCode": 0,
+      "stdoutHash": "sha256:3b999343113038712e2fed218381e714ece38321f83ef569f42430ba0558719b",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "\n> bmad-speckit@2.0.1 test\n> node scripts/run-node-tests.cjs\n\nTAP version 13\n# Subtest: ai-registry-builtin (Story 12.1 T2)\n    # Subtest: exports array of 22 entries\n    ok 1 - exports array of 22 entries\n      ---\n      duration_ms: 0.645\n      type: 'test'\n      ...\n    # Subtest: each entry has id, name, description, configTemplate\n    ok 2 - each entry has id, name, description, configTemplate\n      ---\n      duration_ms: 0.2226\n      type: 'test'\n      ...\n    # Subtest: each configTemplate has subagentSupport\n    ok 3 - each configTemplate has subagentSupport\n      ---\n      duration_ms: 0.8685\n      type: 'test'\n      ...\n    # Subtest: opencode uses .opencode/command (spec-kit)\n    ok 4 - opencode uses .opencode/command (spec-kit)\n      ---\n      duration_ms: 0.1583\n      type: 'test'\n      ...\n    # Subtest: auggie uses .augment/rules only (no commandsDir)\n    ok 5 - auggie uses .augment/rules only (no commandsDir)\n      ---\n      duration_ms: 0.0847\n      type: 'test'\n      ...\n    # Subtest: bob uses .bob/commands\n    ok 6 - bob uses .bob/commands\n      ---\n      duration_ms: 0.0661\n      type: 'test'\n      ...\n    # Subtest: shai uses .shai/commands\n    ok 7 - shai uses .shai/commands\n      ---\n      duration_ms: 0.1001\n      type: 'test'\n      ...\n    # Subtest: codex uses .codex commands, agents, skills, and protocols without config.toml\n    ok 8 - codex uses .codex commands, agents, skills, and protocols without config.toml\n      ---\n      duration_ms: 0.127\n      type: 'test'\n      ...\n    # Subtest: cursor, claude, and codex use project-local skills by def",
+      "stderrPreview": ""
+    },
+    {
+      "commandId": "CMD-09",
+      "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <evidence receipt check> }\"",
+      "exitCode": 0,
+      "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "",
+      "stderrPreview": ""
+    },
+    {
+      "commandId": "CMD-10",
+      "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { <no deletion/no implementation migration check> }\"",
+      "exitCode": 0,
+      "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "",
+      "stderrPreview": ""
+    },
+    {
+      "commandId": "CMD-11",
+      "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js; exit `$LASTEXITCODE }\"",
+      "exitCode": 0,
+      "stdoutHash": "sha256:55b060679b61dea163da03b8e669f416aa6d664c0c44d96b2e3cbc03e3510aae",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "checkedFiles=3021 findings=0\n",
+      "stderrPreview": ""
+    },
+    {
+      "commandId": "CMD-12",
+      "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { git status --short }\"",
+      "exitCode": 0,
+      "stdoutHash": "sha256:67c2fa56595f89ce8f99e76fd4be87617c64ca7e8bcd565b274022e4c8f21f5b",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": " M repo-governance/script-migration-registry.yaml\n?? repo-governance/script-migrations/main-agent-runtime-migration-wave-3.2/\n?? tests/acceptance/main-agent-runtime-migration-wave-3-2-contract.test.ts\n?? tools/script-migration/analyze-main-agent-wave-3-2.cjs\n?? tools/script-migration/validate-main-agent-wave-3-2.cjs\n",
+      "stderrPreview": ""
+    }
+  ],
+  "rootScriptsDeleted": false,
+  "implementationMigrated": false,
+  "publicCliChanged": false,
+  "result": "passed"
+}

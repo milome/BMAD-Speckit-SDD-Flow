@@ -1,0 +1,102 @@
+{
+  "schemaVersion": "kbase-bmad-speckit-install-matrix-closeout/v1",
+  "waveId": "main-agent-runtime-migration-wave-3.13",
+  "recordedAt": "2026-06-06T22:03:18.272Z",
+  "sourceConsumerProject": {
+    "name": "kbase-content-engine",
+    "path": "D:/Dev/kbase-content-engine",
+    "matrixRoot": "D:/Dev/kbase-content-engine/.tmp/bmad-speckit-install-matrix-20260607-045932"
+  },
+  "sourceArtifacts": {
+    "matrixSummaryPath": "D:/Dev/kbase-content-engine/.tmp/bmad-speckit-install-matrix-20260607-045932/matrix-summary.json",
+    "matrixSummarySha256": "sha256:800bd24f5c374ae2239dbf2d4db9c410ba2c977fb80afbc026766c4fc53079cc",
+    "runnerPath": "D:/Dev/kbase-content-engine/.tmp/bmad-speckit-install-matrix-20260607-045932/run-matrix.cjs",
+    "runnerSha256": "sha256:13037aaa6568d0f0092280a31aa8995ba23541e1e945c765ee03863bac9f9f98",
+    "tarballPath": "D:/Dev/kbase-content-engine/.tmp/bmad-speckit-install-matrix-20260607-045932/pack/bmad-speckit-sdd-flow-2.0.1.tgz",
+    "tarballSha256": "sha256:0cc6324e475ba2aee5248a1810cfd91dd23d7b2f861739f27131e28f413ef272"
+  },
+  "result": {
+    "status": "passed",
+    "totalProbeRecords": 27,
+    "maxStdoutBytes": 89641,
+    "outputLimitBytes": 134217728,
+    "bmadHelpJsonDefaultRawRecord": false
+  },
+  "modes": [
+    {
+      "mode": "save-dev",
+      "installCommand": "npm install --save-dev file:<fresh-tgz>",
+      "total": 10,
+      "passed": 10,
+      "failed": []
+    },
+    {
+      "mode": "no-save",
+      "installCommand": "npm install --no-save file:<fresh-tgz> followed by npx --no-install",
+      "total": 10,
+      "passed": 10,
+      "failed": []
+    },
+    {
+      "mode": "npx-package",
+      "installCommand": "npx --package file:<fresh-tgz> bmad-speckit ...",
+      "total": 7,
+      "passed": 7,
+      "failed": []
+    }
+  ],
+  "probes": {
+    "save-dev": [
+      "npm-init",
+      "npm-install",
+      "package-resolution",
+      "cli-version",
+      "bmad-help-json-compact",
+      "bmads-json-compact",
+      "main-agent-inspect-json",
+      "main-agent-quality-gate-json",
+      "architecture-drift-check-json",
+      "eval-question-generate"
+    ],
+    "no-save": [
+      "npm-init",
+      "npm-install",
+      "package-resolution",
+      "cli-version",
+      "bmad-help-json-compact",
+      "bmads-json-compact",
+      "main-agent-inspect-json",
+      "main-agent-quality-gate-json",
+      "architecture-drift-check-json",
+      "eval-question-generate"
+    ],
+    "npx-package": [
+      "npm-init",
+      "cli-version",
+      "bmad-help-json-compact",
+      "bmads-json-compact",
+      "main-agent-inspect-json",
+      "architecture-drift-check-json",
+      "eval-question-generate"
+    ]
+  },
+  "keyRuntimeAssertions": [
+    "installed package resolves from each sandbox node_modules, not the source checkout",
+    "dist/main-agent/index.js exports mainAgentRuntimeCommand",
+    "src/runtime/bmad-help-renderer.js exports mainBmadHelpRenderer",
+    "src/runtime/bmads-renderer.js exports mainBmadsRenderer",
+    "selected runtime entry files do not invoke tsx, ts-node, or scripts/*.ts",
+    "bmad-help --json --budget compact emits valid JSON below 128MB and omits rawRecord by default",
+    "architecture-drift-check --json reports usedRootScript=false, usedTsx=false, usedTsNode=false, usedCompiledFallback=false",
+    "eval-question-generate creates an eval question file and manifest from a local coach report fixture"
+  ],
+  "narrowClaims": [
+    "kbase fresh consumer install matrix passed for package runtime and public CLI probes",
+    "the matrix proves the covered runtime probes are consumer-runnable through the installed package"
+  ],
+  "nonClaims": [
+    "does not claim every root scripts/** file is directly runnable from a consumer project",
+    "does not mark root scripts deletion-ready",
+    "does not make repo-governance a consumer runtime dependency"
+  ]
+}

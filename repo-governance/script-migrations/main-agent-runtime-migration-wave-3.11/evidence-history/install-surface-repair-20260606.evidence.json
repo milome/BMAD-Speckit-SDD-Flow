@@ -1,0 +1,591 @@
+{
+  "waveId": "main-agent-runtime-migration-wave-3.11",
+  "archivedAt": "2026-06-06T01:49:21.723Z",
+  "repairRoundId": "install-surface-repair-20260606",
+  "blockedReason": "required_command_failed:cmd-run-install-matrix",
+  "blockedCommandId": "cmd-run-install-matrix",
+  "evidence": {
+    "waveId": "main-agent-runtime-migration-wave-3.11",
+    "status": "blocked",
+    "startedAt": "2026-06-06T00:02:25.287Z",
+    "completedAt": "2026-06-06T00:47:14.111Z",
+    "commandRows": [
+      {
+        "commandId": "cmd-git-status-baseline",
+        "sequence": 1,
+        "attempt": 1,
+        "command": "pwsh.exe -NoLogo -NoProfile -Command '& { git status --short --branch; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE } }'",
+        "cwd": "D:\\Dev\\BMAD-Speckit-SDD-Flow",
+        "exitCode": 0,
+        "stdoutHash": "sha256:c5424d94f8ffc9e51b0d9cf72186ba4161b773220994f35b444d5c98fd02cdfd",
+        "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "startedAt": "2026-06-06T00:02:52.911Z",
+        "completedAt": "2026-06-06T00:02:53.250Z",
+        "stdoutPreview": "## dev...origin/dev\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.js\n M packages/bmad-speckit/src/services/platform-skill-frontmatter.js\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/scoring/package.json\n M repo-governance/script-migration-registry.yaml\n M tests/acceptance/diagnose-bmad-state-reviewer-projection.test.ts\n M tests/acceptance/main-agent-delivery-truth-gate.test.ts\n M tests/acceptance/main-agent-host-runtime-mode.test.ts\n M tests/acceptance/main-agent-parallel-locking.test.ts\n M tests/acceptance/main-agent-pr-topology.test.ts\n M tests/acceptance/main-agent-supervised-worker-timeout.test.ts\n M tests/acceptance/parallel-mission-evidence-integration.test.ts\n?? packages/bmad-speckit/src/commands/eval-question-generate.js\n?? packages/bmad-speckit/src/main-agent/actions/adaptive-intake-governance-gate.js\n?? packages/bmad-speckit/src/main-agent/actions/adaptive-intake-proof-gate.js\n?? packages/bmad-speckit/src/main-agent/actions/ai-tdd-closeout-remediation-adapter.js\n?? packages/bmad-speckit/src/main-agent/actions/ai-tdd-contract-gate.js\n?? packages/bmad-speckit/src/main-agent/actions/audit-review-gate.js\n?? packages/bmad-speckit/src/main-agent/actions/audit-stage-routing.js\n?? packages/bmad-speckit/src/main-agent/actions/auditor-post-actions.js\n?? packages/bmad-speckit/src/main-agent/actions/auditor-spec.js\n?? packages/bmad-speckit/src/main-agent/actions/bmad-artifact-hardcut.js\n?? packages/bmad-speckit/src/main-agent/actions/bmad-runtime-worker.js\n?? packages/bmad-speckit/src/main-agent/actions/control-plane-isolation-check.js\n?? packages/bmad-speckit/src/main-agent/actions/data-governance-gate.js\n?? packages/bmad-speckit/src/main-agent/actions/dataset-release-gate.js\n?? packages/bmad-speckit/src/main-agent/actions/decision-field-check.js\n?? packages/bmad-speckit/src/main-agent/actions/development-journey-matrix.js\n?? packages/bmad-speckit/src/main-agent/actions/e2e-dual-host-journey-runner.js\n?? packages/bmad-speckit/src/main-agent/actions/e2e-host-matrix-journey-runner.js\n?? packages/bmad-speckit/src/main-agent/actions/entryflow-traceability-check.js\n?? packages/bmad-speckit/src/main-agent/actions/execution-closure-gate.js\n?? packages/bmad-speckit/src/main-agent/actions/final-closeout-evidence-runner.js\n?? packages/bmad-speckit/src/main-agent/actions/functional-resume-check.js\n?? packages/bmad-speckit/src/main-agent/actions/governance-packet-dispatch-worker.js\n?? packages/bmad-speckit/src/main-agent/actions/governed-data-products.js\n?? packages/bmad-speckit/src/main-agent/actions/ingest-implementation-evidence.js\n?? packages/bmad-speckit/src/main-agent/actions/initialize-six-model-requirement-confirmation.js\n?? packages/bmad-speckit/src/main-agent/actions/live-smoke-main-agent-runtime.js\n?? packages/bmad-speckit/src/main-agent/actions/orchestration-dispatch-contract.js\n?? packages/bmad-speckit/src/main-agent/actions/orchestration-governance-contract.js\n?? packages/bmad-speckit/src/main-agent/actions/orchestration-state.js\n?? packages/bmad-speckit/src/main-agent/actions/package-runtime-report.js\n?? packages/bmad-speckit/src/main-agent/actions/per-must-closure-evidence-index.js\n?? packages/bmad-speckit/src/main-agent/actions/pre-rerun-anti-false-positive-gate.js\n?? packages/bmad-speckit/src/main-agent/actions/print-resolved-audit-prompt.js\n?? packages/bmad-speckit/src/main-agent/actions/production-loop-ready-check.js\n?? packages/bmad-speckit/src/main-agent/actions/reconfirmation-runtime.js\n?? packages/bmad-speckit/src/main-agent/actions/record-main-agent-inspect-readiness-closure.js\n?? packages/bmad-speckit/src/main-agent/actions/render-audit-block-cli.js\n?? packages/bmad-speckit/src/main-agent/actions/requirement-record-control-store.js\n?? packages/bmad-speckit/src/main-agent/actions/requirement-record-live-schema-gate.js\n?? packages/bmad-speckit/src/main-agent/actions/requirement-record",
+        "stderrPreview": "",
+        "status": "passed"
+      },
+      {
+        "commandId": "cmd-encoding-pre-implementation",
+        "sequence": 2,
+        "attempt": 1,
+        "command": "pwsh.exe -NoLogo -NoProfile -Command '& { node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE } }'",
+        "cwd": "D:\\Dev\\BMAD-Speckit-SDD-Flow",
+        "exitCode": 0,
+        "stdoutHash": "sha256:95f01b2c1cc4ffc06efb93fe2085a8d1de849fa2b67761560514bce7dbc6e21b",
+        "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "startedAt": "2026-06-06T00:02:53.372Z",
+        "completedAt": "2026-06-06T00:02:54.146Z",
+        "stdoutPreview": "checkedFiles=3037 findings=0\n",
+        "stderrPreview": "",
+        "status": "passed"
+      },
+      {
+        "commandId": "cmd-build-scoring",
+        "sequence": 3,
+        "attempt": 1,
+        "command": "pwsh.exe -NoLogo -NoProfile -Command '& { npm run build:scoring; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE } }'",
+        "cwd": "D:\\Dev\\BMAD-Speckit-SDD-Flow",
+        "exitCode": 0,
+        "stdoutHash": "sha256:7ffa27e41ff329b070e79591c10027aef3cdc08cfcc2626460d8786c30755ce2",
+        "stderrHash": "sha256:8303c3d59a4c5f419723fa529e36cc1f7cad9ce937de4633368147434bfaab49",
+        "startedAt": "2026-06-06T00:02:54.265Z",
+        "completedAt": "2026-06-06T00:02:58.481Z",
+        "stdoutPreview": "\n> bmad-speckit-sdd-flow@2.0.1 build:scoring\n> cd packages/scoring && npm run build\n\n\n> @bmad-speckit/scoring@2.0.1 build\n> npm run build:dashboard-ui && tsc --outDir dist\n\n\n> @bmad-speckit/scoring@2.0.1 build:dashboard-ui\n> node dashboard/ui/build.mjs\n\n",
+        "stderrPreview": "\u001b[3m\u001b[1m\u001b[34m≈\u001b[39m\u001b[22m\u001b[23m tailwindcss \u001b[34mv4.2.2\u001b[39m\n\nDone in \u001b[34m53ms\u001b[39m\n\n  app.js   224.4kb\n  app.css    4.5kb\n\n⚡ Done in 28ms\n",
+        "status": "passed"
+      },
+      {
+        "commandId": "cmd-test-scoring-eval-questions",
+        "sequence": 4,
+        "attempt": 1,
+        "command": "pwsh.exe -NoLogo -NoProfile -Command '& { npx vitest run packages/scoring/eval-questions/__tests__/template-generator.test.ts packages/scoring/eval-questions/__tests__/manifest-loader.test.ts packages/scoring/eval-questions/__tests__/run-core.test.ts packages/scoring/eval-questions/__tests__/cli-integration.test.ts packages/scoring/__tests__/e2e/eval-question-flow.test.ts; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE } }'",
+        "cwd": "D:\\Dev\\BMAD-Speckit-SDD-Flow",
+        "exitCode": 0,
+        "stdoutHash": "sha256:5d6ed7718934c13fafec22002a30eb2be730c8316c9f26b895c49ff2332bb425",
+        "stderrHash": "sha256:74a52d1402c071e2fdf4dd86e04665ebb52c5aed54ca31ac1662edf49fddc11e",
+        "startedAt": "2026-06-06T00:02:58.615Z",
+        "completedAt": "2026-06-06T00:03:08.514Z",
+        "stdoutPreview": "\n\u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m\n\n \u001b[32m✓\u001b[39m packages/scoring/eval-questions/__tests__/manifest-loader.test.ts \u001b[2m(\u001b[22m\u001b[2m10 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 22\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m packages/scoring/eval-questions/__tests__/template-generator.test.ts \u001b[2m(\u001b[22m\u001b[2m10 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 11\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m packages/scoring/__tests__/e2e/eval-question-flow.test.ts \u001b[2m(\u001b[22m\u001b[2m3 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 554\u001b[2mms\u001b[22m\u001b[39m\n     \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m eval_question + question_version → 完整写入 + coach 诊断成功 \u001b[33m 317\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m packages/scoring/eval-questions/__tests__/run-core.test.ts \u001b[2m(\u001b[22m\u001b[2m6 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 4\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m packages/scoring/eval-questions/__tests__/cli-integration.test.ts \u001b[2m(\u001b[22m\u001b[2m9 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 6274\u001b[2mms\u001b[22m\u001b[39m\n     \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m list 空 manifest 输出「当前版本无题目」 \u001b[33m 804\u001b[2mms\u001b[22m\u001b[39m\n     \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m add 生成文件且 list 可列出 \u001b[33m 1329\u001b[2mms\u001b[22m\u001b[39m\n     \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m add 生成的文件可被 loadManifest 解析 \u001b[33m 594\u001b[2mms\u001b[22m\u001b[39m\n     \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m add --version v2 写入 v2 目录 \u001b[33m 584\u001b[2mms\u001b[22m\u001b[39m\n     \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m add 无 --title 时退出码非 0 \u001b[33m 566\u001b[2mms\u001b[22m\u001b[39m\n       \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m run 题目不存在时输出明确错误 \u001b[33m 564\u001b[2mms\u001b[22m\u001b[39m\n       \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m run 缺 --id 时输出用法 \u001b[33m 561\u001b[2mms\u001b[22m\u001b[39m\n       \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m run 缺 --version 时输出用法 \u001b[33m 568\u001b[2mms\u001b[22m\u001b[39m\n       \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m run 使用 --reportPath 与有效报告时写入评分 \u001b[33m 704\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m5 passed\u001b[39m\u001b[22m\u001b[90m (5)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m38 passed\u001b[39m\u001b[22m\u001b[90m (38)\u001b[39m\n\u001b[2m   Start at \u001b[22m 08:03:01\n\u001b[2m   Duration \u001b[22m 6.51s\u001b[2m (transform 441ms, setup 0ms, import 626ms, tests 6.87s, environment 0ms)\u001b[22m\n\n",
+        "stderrPreview": "Error: --title 必填\nUsage: npx ts-node scripts/eval-questions-cli.ts add --title \"题目标题\" [--version v1|v2]\n题目 q999 在版本 v1 中不存在\nError: --id 必填\nUsage: npx ts-node scripts/eval-questions-cli.ts run --id <questionId> --version v1|v2 [--reportPath <path>] [--no-agent]\n  --no-agent: 不调用 Agent，直接解析题目文件（默认：先 Agent 作答再 parseAndWriteScore）\nError: --version 必填\nUsage: npx ts-node scripts/eval-questions-cli.ts run --id <questionId> --version v1|v2 [--reportPath <path>] [--no-agent]\n  --no-agent: 不调用 Agent，直接解析题目文件（默认：先 Agent 作答再 parseAndWriteScore）\n",
+        "status": "passed"
+      },
+      {
+        "commandId": "cmd-build-main-agent-dist",
+        "sequence": 5,
+        "attempt": 1,
+        "command": "pwsh.exe -NoLogo -NoProfile -Command '& { npm run build:main-agent-dist; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE } }'",
+        "cwd": "D:\\Dev\\BMAD-Speckit-SDD-Flow",
+        "exitCode": 0,
+        "stdoutHash": "sha256:34a81a86c03b093fe182fc734c0198bf48dc270d534bc907a04ab597f6fcf9e5",
+        "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "startedAt": "2026-06-06T00:03:08.633Z",
+        "completedAt": "2026-06-06T00:03:09.755Z",
+        "stdoutPreview": "\n> bmad-speckit-sdd-flow@2.0.1 build:main-agent-dist\n> npm run build:main-agent-dist --prefix packages/bmad-speckit\n\n\n> bmad-speckit@2.0.1 build:main-agent-dist\n> node scripts/build-main-agent-dist.cjs\n\nbuilt dist/main-agent files=96 package files=1\n",
+        "stderrPreview": "",
+        "status": "passed"
+      },
+      {
+        "commandId": "cmd-test-package-build-dispatch-regressions",
+        "sequence": 6,
+        "attempt": 1,
+        "command": "pwsh.exe -NoLogo -NoProfile -Command '& { npm run test --prefix packages/bmad-speckit -- main-agent-build-dist.test.js main-agent-no-root-ts-dispatch.test.js main-agent-dist-no-root-ts-dispatch.test.js; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE } }'",
+        "cwd": "D:\\Dev\\BMAD-Speckit-SDD-Flow",
+        "exitCode": 1,
+        "stdoutHash": "sha256:261c5c0a94b72528065d4b122443794d7927cb16b9f33ea2c0afbcc3ea14acd9",
+        "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "startedAt": "2026-06-06T00:03:09.876Z",
+        "completedAt": "2026-06-06T00:03:11.055Z",
+        "stdoutPreview": "\n> bmad-speckit@2.0.1 test\n> node scripts/run-node-tests.cjs main-agent-build-dist.test.js main-agent-no-root-ts-dispatch.test.js main-agent-dist-no-root-ts-dispatch.test.js\n\nTAP version 13\n# Subtest: main-agent dist build\n    # Subtest: declares package build and pack surface for main-agent dist\n    ok 1 - declares package build and pack surface for main-agent dist\n      ---\n      duration_ms: 0.9021\n      type: 'test'\n      ...\n    # Subtest: generates required dist runtime files from package source\n    ok 2 - generates required dist runtime files from package source\n      ---\n      duration_ms: 112.2553\n      type: 'test'\n      ...\n    1..2\nok 1 - main-agent dist build\n  ---\n  duration_ms: 113.842\n  type: 'suite'\n  ...\n# Subtest: main-agent dist dispatch guard\n    # Subtest: routes every covered CLI command block through dist/main-agent\n    ok 1 - routes every covered CLI command block through dist/main-agent\n      ---\n      duration_ms: 1.1408\n      type: 'test'\n      ...\n    # Subtest: keeps the root bin shim as a package CLI forwarder only\n    ok 2 - keeps the root bin shim as a package CLI forwarder only\n      ---\n      duration_ms: 0.2408\n      type: 'test'\n      ...\n    1..2\nok 2 - main-agent dist dispatch guard\n  ---\n  duration_ms: 2.0925\n  type: 'suite'\n  ...\n# Subtest: main-agent public dispatch root TypeScript guard\n    # Subtest: keeps stable public main-agent commands out of runRepoScript and TypeScript runners\n    ok 1 - keeps stable public main-agent commands out of runRepoScript and TypeScript runners\n      ---\n      duration_ms: 1.3473\n      type: 'test'\n      ...\n    # Subtest: retains the root orchestration script as source_dev_only_or_compatibility_shim_after_wave_1\n    ok 2 - retains the root orchestration script as source_dev_only_or_compatibility_shim_after_wave_1\n      ---\n      duration_ms: 0.2677\n      type: 'test'\n      ...\n    # Subtest: keeps package runtime tests plain JavaScript without root TypeScript imports\n    not ok 3 - keeps package runtime tests plain JavaScript without root TypeScript imports\n      ---\n      duration_ms: 3.393\n      type: 'test'\n      location: 'D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\bmad-speckit\\\\tests\\\\main-agent-no-root-ts-dispatch.test.js:38:3'\n      failureType: 'testCodeFailure'\n      error: |-\n        The input was expected to not match the regular expression /ts-node/. Input:\n        \n        \"const { describe, it } = require('node:test');\\n\" +\n          \"const assert = require('node:assert');\\n\" +\n          \"const fs = require('node:fs');\\n\" +\n          \"const os = require('node:os');\\n\" +\n          \"const path = require('node:path');\\n\" +\n          \"const { spawnSync } = require('node:child_process');\\n\" +\n          '\\n' +\n          \"const PACKAGE_ROOT = path.resolve(__dirname, '..');\\n\" +\n          \"const PACKAGE_CLI = path.join(PACKAGE_ROOT, 'bin', 'bmad-speckit.js');\\n\" +\n          '\\n' +\n          'function makeRoot(prefix) {\\n' +\n          '  return fs.mkdtempSync(path.join(os.tmpdir(), prefix));\\n' +\n          '}\\n' +\n          '\\n' +\n          'function writeJson(filePath, value) {\\n' +\n          '  fs.mkdirSync(path.dirname(filePath), { recursive: true });\\n' +\n          \"  fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\\\\n`, 'utf8');\\n\" +\n          '}\\n' +\n          '\\n' +\n          \"describe('check-score package command', () => {\\n\" +\n          \"  it('keeps check-score wired to the package command module', () => {\\n\" +\n          \"    const cli = fs.readFileSync(PACKAGE_CLI, 'utf8');\\n\" +\n          \"    assert.match(cli, /\\\\.command\\\\('check-score'\\\\)/);\\n\" +\n          '    assert.match(cli, /\\\\.\\\\.\\\\/src\\\\/commands\\\\/check-score/);\\n' +\n          `    const block = cli.slice(cli.indexOf(\".command('check-score'\"), cli.indexOf(\".command('eval-question-generate'\"));\\n` +\n          '    assert.doesNotMatch(block, /scripts[\\\\\\\\/]check-story-score-written\\\\.ts/);\\n' +\n          '    assert.doesNotMatch(block, /\\\\btsx\\\\b/);\\n' +\n          '",
+        "stderrPreview": "",
+        "status": "failed"
+      },
+      {
+        "commandId": "cmd-test-package-build-dispatch-regressions",
+        "sequence": 7,
+        "attempt": 2,
+        "command": "pwsh.exe -NoLogo -NoProfile -Command '& { npm run test --prefix packages/bmad-speckit -- main-agent-build-dist.test.js main-agent-no-root-ts-dispatch.test.js main-agent-dist-no-root-ts-dispatch.test.js; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE } }'",
+        "cwd": "D:\\Dev\\BMAD-Speckit-SDD-Flow",
+        "exitCode": 0,
+        "stdoutHash": "sha256:56c1a06af583e722dd1744536d2b93ecd6fc53c0293de2e5b6b039b41dba3927",
+        "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "startedAt": "2026-06-06T00:07:54.521Z",
+        "completedAt": "2026-06-06T00:07:55.627Z",
+        "stdoutPreview": "\n> bmad-speckit@2.0.1 test\n> node scripts/run-node-tests.cjs main-agent-build-dist.test.js main-agent-no-root-ts-dispatch.test.js main-agent-dist-no-root-ts-dispatch.test.js\n\nTAP version 13\n# Subtest: main-agent dist build\n    # Subtest: declares package build and pack surface for main-agent dist\n    ok 1 - declares package build and pack surface for main-agent dist\n      ---\n      duration_ms: 0.8992\n      type: 'test'\n      ...\n    # Subtest: generates required dist runtime files from package source\n    ok 2 - generates required dist runtime files from package source\n      ---\n      duration_ms: 112.7031\n      type: 'test'\n      ...\n    1..2\nok 1 - main-agent dist build\n  ---\n  duration_ms: 114.2677\n  type: 'suite'\n  ...\n# Subtest: main-agent dist dispatch guard\n    # Subtest: routes every covered CLI command block through dist/main-agent\n    ok 1 - routes every covered CLI command block through dist/main-agent\n      ---\n      duration_ms: 0.8817\n      type: 'test'\n      ...\n    # Subtest: keeps the root bin shim as a package CLI forwarder only\n    ok 2 - keeps the root bin shim as a package CLI forwarder only\n      ---\n      duration_ms: 0.2059\n      type: 'test'\n      ...\n    1..2\nok 2 - main-agent dist dispatch guard\n  ---\n  duration_ms: 1.7707\n  type: 'suite'\n  ...\n# Subtest: main-agent public dispatch root TypeScript guard\n    # Subtest: keeps stable public main-agent commands out of runRepoScript and TypeScript runners\n    ok 1 - keeps stable public main-agent commands out of runRepoScript and TypeScript runners\n      ---\n      duration_ms: 0.7203\n      type: 'test'\n      ...\n    # Subtest: retains the root orchestration script as source_dev_only_or_compatibility_shim_after_wave_1\n    ok 2 - retains the root orchestration script as source_dev_only_or_compatibility_shim_after_wave_1\n      ---\n      duration_ms: 0.2003\n      type: 'test'\n      ...\n    # Subtest: keeps package runtime tests plain JavaScript without root TypeScript imports\n    ok 3 - keeps package runtime tests plain JavaScript without root TypeScript imports\n      ---\n      duration_ms: 5.6729\n      type: 'test'\n      ...\n    1..3\nok 3 - main-agent public dispatch root TypeScript guard\n  ---\n  duration_ms: 7.2766\n  type: 'suite'\n  ...\n1..3\n# tests 7\n# suites 3\n# pass 7\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 218.0959\n",
+        "stderrPreview": "",
+        "status": "passed"
+      },
+      {
+        "commandId": "cmd-test-runtime-modules",
+        "sequence": 8,
+        "attempt": 1,
+        "command": "pwsh.exe -NoLogo -NoProfile -Command '& { npm run test --prefix packages/bmad-speckit -- main-agent-wave-3-11-runtime-modules.test.js; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE } }'",
+        "cwd": "D:\\Dev\\BMAD-Speckit-SDD-Flow",
+        "exitCode": 0,
+        "stdoutHash": "sha256:4b1668bff377ae6db9e6adf1aa4ea76c36fb03bc648e1fa7dae0cae991c6d206",
+        "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "startedAt": "2026-06-06T00:10:27.147Z",
+        "completedAt": "2026-06-06T00:10:28.099Z",
+        "stdoutPreview": "\n> bmad-speckit@2.0.1 test\n> node scripts/run-node-tests.cjs main-agent-wave-3-11-runtime-modules.test.js\n\nTAP version 13\n# === BMAD 状态诊断 ===\n# ❌ 文件不存在: .claude\\\\state\\\\bmad-progress.yaml\n# 建议: 运行 bmad-master 初始化流程创建状态文件\n# Subtest: main-agent wave 3.11 runtime modules\n    # Subtest: exposes the required D006 runtime exports without repository script runners\n    ok 1 - exposes the required D006 runtime exports without repository script runners\n      ---\n      duration_ms: 0.9588\n      type: 'test'\n      ...\n    # Subtest: executes host runtime positive and negative native goal paths\n    ok 2 - executes host runtime positive and negative native goal paths\n      ---\n      duration_ms: 7.6493\n      type: 'test'\n      ...\n    # Subtest: executes supervised worker heartbeat and blocker decisions\n    ok 3 - executes supervised worker heartbeat and blocker decisions\n      ---\n      duration_ms: 4.8683\n      type: 'test'\n      ...\n    # Subtest: executes reviewer/readiness diagnosis with missing-state error path\n    ok 4 - executes reviewer/readiness diagnosis with missing-state error path\n      ---\n      duration_ms: 3.9271\n      type: 'test'\n      ...\n    # Subtest: executes parallel mission planning, topology, integration, and negative paths\n    ok 5 - executes parallel mission planning, topology, integration, and negative paths\n      ---\n      duration_ms: 1.0777\n      type: 'test'\n      ...\n    1..5\nok 1 - main-agent wave 3.11 runtime modules\n  ---\n  duration_ms: 19.2625\n  type: 'suite'\n  ...\n1..1\n# tests 5\n# suites 1\n# pass 5\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 119.3405\n",
+        "stderrPreview": "",
+        "status": "passed"
+      },
+      {
+        "commandId": "cmd-test-helpers",
+        "sequence": 9,
+        "attempt": 1,
+        "command": "pwsh.exe -NoLogo -NoProfile -Command '& { npm run test --prefix packages/bmad-speckit -- main-agent-wave-3-11-helpers.test.js; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE } }'",
+        "cwd": "D:\\Dev\\BMAD-Speckit-SDD-Flow",
+        "exitCode": 0,
+        "stdoutHash": "sha256:e79624bfb1857f8d22fdb3658862bc81a549c00f50947d363334cb46a3b9c62c",
+        "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "startedAt": "2026-06-06T00:10:28.232Z",
+        "completedAt": "2026-06-06T00:10:29.186Z",
+        "stdoutPreview": "\n> bmad-speckit@2.0.1 test\n> node scripts/run-node-tests.cjs main-agent-wave-3-11-helpers.test.js\n\nTAP version 13\n# [bmad-state-reader] 全局状态文件不存在: .claude\\\\state\\\\bmad-progress.yaml\n# {\n#   \"schemaVersion\": \"e2e-verify-paths-result/v1\",\n#   \"cwd\": \"C:\\\\\\\\Users\\\\\\\\milom\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\wave-3-11-agents-c7Xnw6\",\n#   \"results\": [\n#     {\n#       \"name\": \"dir:.claude/state/stories\",\n#       \"passed\": true,\n#       \"detail\": \"created\"\n#     },\n#     {\n#       \"name\": \"dir:specs/epic-TEST-test-epic/story-001-test-story\",\n#       \"passed\": true,\n#       \"detail\": \"created\"\n#     },\n#     {\n#       \"name\": \"dir:_bmad-output/implementation-artifacts/epic-TEST-test-epic/story-001-test-story\",\n#       \"passed\": true,\n#       \"detail\": \"created\"\n#     },\n#     {\n#       \"name\": \"file:.claude/agents/bmad-master.md\",\n#       \"passed\": true,\n#       \"detail\": \"exists\"\n#     },\n#     {\n#       \"name\": \"file:.claude/agents/bmad-story-create.md\",\n#       \"passed\": true,\n#       \"detail\": \"exists\"\n#     },\n#     {\n#       \"name\": \"file:.claude/agents/bmad-story-audit.md\",\n#       \"passed\": true,\n#       \"detail\": \"exists\"\n#     },\n#     {\n#       \"name\": \"file:.claude/agents/speckit-specify.md\",\n#       \"passed\": true,\n#       \"detail\": \"exists\"\n#     },\n#     {\n#       \"name\": \"file:.claude/agents/speckit-plan.md\",\n#       \"passed\": true,\n#       \"detail\": \"exists\"\n#     },\n#     {\n#       \"name\": \"file:.claude/agents/speckit-gaps.md\",\n#       \"passed\": true,\n#       \"detail\": \"exists\"\n#     },\n#     {\n#       \"name\": \"file:.claude/agents/speckit-tasks.md\",\n#       \"passed\": true,\n#       \"detail\": \"exists\"\n#     },\n#     {\n#       \"name\": \"file:.claude/agents/layers/bmad-layer4-speckit-specify.md\",\n#       \"passed\": true,\n#       \"detail\": \"exists\"\n#     },\n#     {\n#       \"name\": \"file:.claude/agents/layers/bmad-layer4-speckit-plan.md\",\n#       \"passed\": true,\n#       \"detail\": \"exists\"\n#     },\n#     {\n#       \"name\": \"file:.claude/agents/layers/bmad-layer4-speckit-gaps.md\",\n#       \"passed\": true,\n#       \"detail\": \"exists\"\n#     },\n#     {\n#       \"name\": \"file:.claude/agents/layers/bmad-layer4-speckit-tasks.md\",\n#       \"passed\": true,\n#       \"detail\": \"exists\"\n#     },\n#     {\n#       \"name\": \"file:.claude/agents/layers/bmad-layer4-speckit-implement.md\",\n#       \"passed\": true,\n#       \"detail\": \"exists\"\n#     },\n#     {\n#       \"name\": \"file:.claude/agents/auditors/auditor-spec.md\",\n#       \"passed\": true,\n#       \"detail\": \"exists\"\n#     },\n#     {\n#       \"name\": \"file:.claude/agents/auditors/auditor-plan.md\",\n#       \"passed\": true,\n#       \"detail\": \"exists\"\n#     },\n#     {\n#       \"name\": \"file:.claude/agents/auditors/auditor-gaps.md\",\n#       \"passed\": true,\n#       \"detail\": \"exists\"\n#     },\n#     {\n#       \"name\": \"file:.claude/agents/auditors/auditor-tasks.md\",\n#       \"passed\": true,\n#       \"detail\": \"exists\"\n#     },\n#     {\n#       \"name\": \"file:.claude/agents/auditors/auditor-implement.md\",\n#       \"passed\": true,\n#       \"detail\": \"exists\"\n#     },\n#     {\n#       \"name\": \"file:.claude/agents/auditors/auditor-document.md\",\n#       \"passed\": true,\n#       \"detail\": \"exists\"\n#     },\n#     {\n#       \"name\": \"prereq:plan\",\n#       \"passed\": true,\n#       \"detail\": \"matched\"\n#     },\n#     {\n#       \"name\": \"prereq:gaps\",\n#       \"passed\": true,\n#       \"detail\": \"matched\"\n#     },\n#     {\n#       \"name\": \"prereq:tasks\",\n#       \"passed\": true,\n#       \"detail\": \"matched\"\n#     },\n#     {\n#       \"name\": \"prereq:implement\",\n#       \"passed\": true,\n#       \"detail\": \"matched\"\n#     }\n#   ],\n#   \"passed\": true,\n#   \"exitCode\": 0,\n#   \"log\": []\n# }\n# {\n#   \"schemaVersion\": \"verify-agent-files-result/v1\",\n#   \"cwd\": \"C:\\\\\\\\Users\\\\\\\\milom\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\wave-3-11-agents-c7Xnw6\",\n#   \"checks\": [\n#     {\n#       \"group\": \"required_agents\",\n#       \"name\": \"bmad-master\",\n#       \"path\": \".claude/agents/bmad-master.md\",\n#       \"passed\": true,\n#       \"issues\": []\n#     },\n#     {\n#       \"group\": \"re",
+        "stderrPreview": "",
+        "status": "passed"
+      },
+      {
+        "commandId": "cmd-test-eval-question-generate",
+        "sequence": 10,
+        "attempt": 1,
+        "command": "pwsh.exe -NoLogo -NoProfile -Command '& { npm run test --prefix packages/bmad-speckit -- eval-question-generate-command.test.js; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE } }'",
+        "cwd": "D:\\Dev\\BMAD-Speckit-SDD-Flow",
+        "exitCode": 0,
+        "stdoutHash": "sha256:e181b832df1c27ebf983c5468fed16b23fba7f65f79f63d79e9ecfd8f6af84bb",
+        "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "startedAt": "2026-06-06T00:10:29.296Z",
+        "completedAt": "2026-06-06T00:10:30.269Z",
+        "stdoutPreview": "\n> bmad-speckit@2.0.1 test\n> node scripts/run-node-tests.cjs eval-question-generate-command.test.js\n\nTAP version 13\n# Subtest: eval-question-generate package command\n    # Subtest: generates eval question files and a loadable manifest from --input\n    ok 1 - generates eval question files and a loadable manifest from --input\n      ---\n      duration_ms: 13.8977\n      type: 'test'\n      ...\n    # Subtest: fails closed for unresolved --run-id compatibility scope\n    ok 2 - fails closed for unresolved --run-id compatibility scope\n      ---\n      duration_ms: 12.1529\n      type: 'test'\n      ...\n    1..2\nok 1 - eval-question-generate package command\n  ---\n  duration_ms: 26.6566\n  type: 'suite'\n  ...\n1..1\n# tests 2\n# suites 1\n# pass 2\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 126.9606\n",
+        "stderrPreview": "",
+        "status": "passed"
+      },
+      {
+        "commandId": "cmd-test-check-score",
+        "sequence": 11,
+        "attempt": 1,
+        "command": "pwsh.exe -NoLogo -NoProfile -Command '& { npm run test --prefix packages/bmad-speckit -- check-score-command.test.js; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE } }'",
+        "cwd": "D:\\Dev\\BMAD-Speckit-SDD-Flow",
+        "exitCode": 0,
+        "stdoutHash": "sha256:9a5fafcbfb86cef54a0cdcd2a10d204b99f5b033f3f3c22c38f86bcb177b76bc",
+        "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "startedAt": "2026-06-06T00:10:30.397Z",
+        "completedAt": "2026-06-06T00:10:31.429Z",
+        "stdoutPreview": "\n> bmad-speckit@2.0.1 test\n> node scripts/run-node-tests.cjs check-score-command.test.js\n\nTAP version 13\n# Subtest: check-score package command\n    # Subtest: keeps check-score wired to the package command module\n    ok 1 - keeps check-score wired to the package command module\n      ---\n      duration_ms: 0.6454\n      type: 'test'\n      ...\n    # Subtest: finds matching scoring records from a fixture dataPath\n    ok 2 - finds matching scoring records from a fixture dataPath\n      ---\n      duration_ms: 120.9939\n      type: 'test'\n      ...\n    1..2\nok 1 - check-score package command\n  ---\n  duration_ms: 122.2433\n  type: 'suite'\n  ...\n1..1\n# tests 2\n# suites 1\n# pass 2\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 222.858\n",
+        "stderrPreview": "",
+        "status": "passed"
+      },
+      {
+        "commandId": "cmd-smoke-eval-question-generate-source-tree",
+        "sequence": 12,
+        "attempt": 1,
+        "command": "pwsh.exe -NoLogo -NoProfile -Command '& { node tools/script-migration/validate-main-agent-runtime-migration-wave-3-11.cjs --assert eval-question-source-smoke; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE } }'",
+        "cwd": "D:\\Dev\\BMAD-Speckit-SDD-Flow",
+        "exitCode": 1,
+        "stdoutHash": "sha256:bd606ab9d9ed11e6057429fafb09f0b80d40659a44486cfc0f7866458a94d008",
+        "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "startedAt": "2026-06-06T00:10:31.555Z",
+        "completedAt": "2026-06-06T00:10:32.039Z",
+        "stdoutPreview": "{\n  \"status\": \"failed\",\n  \"mode\": \"assert\",\n  \"assertion\": \"eval-question-source-smoke\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.11\",\n  \"contractPath\": \"docs/plans/2026-06-05-main-agent-runtime-migration-wave-3-11-goal-execution-plan.md\",\n  \"entries\": 13,\n  \"errors\": [\n    \"Error: Manifest not found: D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\repo-governance\\\\script-migrations\\\\main-agent-runtime-migration-wave-3.11\\\\tmp\\\\eval-questions-ec7b5760-3632-44ea-bdc2-79e251da1a03\\\\manifest.yaml\\n    at loadManifest (D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\scoring\\\\dist\\\\eval-questions\\\\manifest-loader.js:56:15)\\n    at validateEvalQuestionSourceSmoke (D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\tools\\\\script-migration\\\\validate-main-agent-runtime-migration-wave-3-11.cjs:2042:20)\\n    at runAssertion (D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\tools\\\\script-migration\\\\validate-main-agent-runtime-migration-wave-3-11.cjs:2115:7)\\n    at main (D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\tools\\\\script-migration\\\\validate-main-agent-runtime-migration-wave-3-11.cjs:2130:33)\\n    at Object.<anonymous> (D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\tools\\\\script-migration\\\\validate-main-agent-runtime-migration-wave-3-11.cjs:2151:1)\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14)\\n    at Object..js (node:internal/modules/cjs/loader:1838:10)\\n    at Module.load (node:internal/modules/cjs/loader:1441:32)\\n    at Function._load (node:internal/modules/cjs/loader:1263:12)\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\"\n  ]\n}\n",
+        "stderrPreview": "",
+        "status": "failed"
+      },
+      {
+        "commandId": "cmd-smoke-eval-question-generate-source-tree",
+        "sequence": 13,
+        "attempt": 2,
+        "command": "pwsh.exe -NoLogo -NoProfile -Command '& { node tools/script-migration/validate-main-agent-runtime-migration-wave-3-11.cjs --assert eval-question-source-smoke; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE } }'",
+        "cwd": "D:\\Dev\\BMAD-Speckit-SDD-Flow",
+        "exitCode": 0,
+        "stdoutHash": "sha256:cc6ea62ef3c5f109b4796305eff6096dcbe3d00ec52f949ee0a20d9e02c6c42f",
+        "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "startedAt": "2026-06-06T00:13:51.273Z",
+        "completedAt": "2026-06-06T00:13:51.788Z",
+        "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"mode\": \"assert\",\n  \"assertion\": \"eval-question-source-smoke\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.11\",\n  \"contractPath\": \"docs/plans/2026-06-05-main-agent-runtime-migration-wave-3-11-goal-execution-plan.md\",\n  \"entries\": 13,\n  \"errors\": []\n}\n",
+        "stderrPreview": "",
+        "status": "passed"
+      },
+      {
+        "commandId": "cmd-test-runtime-acceptance-import-switches",
+        "sequence": 14,
+        "attempt": 1,
+        "command": "pwsh.exe -NoLogo -NoProfile -Command '& { npx vitest run tests/acceptance/main-agent-host-runtime-mode.test.ts tests/acceptance/main-agent-supervised-worker-timeout.test.ts tests/acceptance/diagnose-bmad-state-reviewer-projection.test.ts tests/acceptance/main-agent-delivery-truth-gate.test.ts tests/acceptance/main-agent-pr-topology.test.ts tests/acceptance/main-agent-parallel-locking.test.ts tests/acceptance/parallel-mission-evidence-integration.test.ts; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE } }'",
+        "cwd": "D:\\Dev\\BMAD-Speckit-SDD-Flow",
+        "exitCode": 0,
+        "stdoutHash": "sha256:b9430b99685588cf1d227bee1940e47b6df1a8708b099d5877fa2fad6c7edb65",
+        "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "startedAt": "2026-06-06T00:14:35.016Z",
+        "completedAt": "2026-06-06T00:14:40.430Z",
+        "stdoutPreview": "\n\u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m\n\n \u001b[32m✓\u001b[39m tests/acceptance/main-agent-delivery-truth-gate.test.ts \u001b[2m(\u001b[22m\u001b[2m4 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 855\u001b[2mms\u001b[22m\u001b[39m\n     \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m emits a blocked report when required evidence files are missing \u001b[33m 483\u001b[2mms\u001b[22m\u001b[39m\n     \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m writes the default delivery truth report path for the project root \u001b[33m 367\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/acceptance/diagnose-bmad-state-reviewer-projection.test.ts \u001b[2m(\u001b[22m\u001b[2m1 test\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 1288\u001b[2mms\u001b[22m\u001b[39m\n     \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m explains the active reviewer consumer and cross-host routes from registry-backed runtime context \u001b[33m 1287\u001b[2mms\u001b[22m\u001b[39m\ndelivery_closeout=blocked\ndelivery_closeout=blocked\ndelivery_closeout=blocked\n \u001b[32m✓\u001b[39m tests/acceptance/parallel-mission-evidence-integration.test.ts \u001b[2m(\u001b[22m\u001b[2m7 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 297\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/acceptance/main-agent-host-runtime-mode.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 49\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/acceptance/main-agent-parallel-locking.test.ts \u001b[2m(\u001b[22m\u001b[2m1 test\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 2\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/acceptance/main-agent-supervised-worker-timeout.test.ts \u001b[2m(\u001b[22m\u001b[2m1 test\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 28\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/acceptance/main-agent-pr-topology.test.ts \u001b[2m(\u001b[22m\u001b[2m1 test\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 2\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m7 passed\u001b[39m\u001b[22m\u001b[90m (7)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m17 passed\u001b[39m\u001b[22m\u001b[90m (17)\u001b[39m\n\u001b[2m   Start at \u001b[22m 08:14:37\n\u001b[2m   Duration \u001b[22m 2.46s\u001b[2m (transform 628ms, setup 0ms, import 1.09s, tests 2.52s, environment 1ms)\u001b[22m\n\n",
+        "stderrPreview": "",
+        "status": "passed"
+      },
+      {
+        "commandId": "cmd-closure-audit-write",
+        "sequence": 15,
+        "attempt": 1,
+        "command": "pwsh.exe -NoLogo -NoProfile -Command '& { node tools/script-migration/audit-consumer-reachable-closure.cjs --write --pretty --quiet; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE } }'",
+        "cwd": "D:\\Dev\\BMAD-Speckit-SDD-Flow",
+        "exitCode": 0,
+        "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "startedAt": "2026-06-06T00:14:40.589Z",
+        "completedAt": "2026-06-06T00:14:50.288Z",
+        "stdoutPreview": "",
+        "stderrPreview": "",
+        "status": "passed"
+      },
+      {
+        "commandId": "cmd-validate-registry",
+        "sequence": 16,
+        "attempt": 1,
+        "command": "pwsh.exe -NoLogo -NoProfile -Command '& { node tools/script-migration/validate-registry.cjs; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE } }'",
+        "cwd": "D:\\Dev\\BMAD-Speckit-SDD-Flow",
+        "exitCode": 0,
+        "stdoutHash": "sha256:03e86d3a93b78396c78137de46ac5ecd960049e7c9b3b3792b5ac8b7abe51970",
+        "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "startedAt": "2026-06-06T00:14:50.437Z",
+        "completedAt": "2026-06-06T00:14:50.921Z",
+        "stdoutPreview": "{\"status\":\"passed\",\"registryPath\":\"repo-governance/script-migration-registry.yaml\",\"packExclusion\":\"not_requested\",\"errors\":[]}\n",
+        "stderrPreview": "",
+        "status": "passed"
+      },
+      {
+        "commandId": "cmd-assert-no-migration-internal-exact",
+        "sequence": 17,
+        "attempt": 1,
+        "command": "pwsh.exe -NoLogo -NoProfile -Command '& { node tools/script-migration/validate-main-agent-runtime-migration-wave-3-11.cjs --assert no-migration-internal-exact; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE } }'",
+        "cwd": "D:\\Dev\\BMAD-Speckit-SDD-Flow",
+        "exitCode": 0,
+        "stdoutHash": "sha256:8a38da60a915c7f2e1de9f1860f24501cf66410f44d3700326ec283d6a8d5c80",
+        "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "startedAt": "2026-06-06T00:14:51.052Z",
+        "completedAt": "2026-06-06T00:14:51.442Z",
+        "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"mode\": \"assert\",\n  \"assertion\": \"no-migration-internal-exact\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.11\",\n  \"contractPath\": \"docs/plans/2026-06-05-main-agent-runtime-migration-wave-3-11-goal-execution-plan.md\",\n  \"entries\": 13,\n  \"errors\": []\n}\n",
+        "stderrPreview": "",
+        "status": "passed"
+      },
+      {
+        "commandId": "cmd-assert-root-scripts-not-deleted",
+        "sequence": 18,
+        "attempt": 1,
+        "command": "pwsh.exe -NoLogo -NoProfile -Command '& { node tools/script-migration/validate-main-agent-runtime-migration-wave-3-11.cjs --assert root-scripts-not-deleted; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE } }'",
+        "cwd": "D:\\Dev\\BMAD-Speckit-SDD-Flow",
+        "exitCode": 0,
+        "stdoutHash": "sha256:a95008243d2c1439fcecd1e591ca9288b2f98507974d5fc06702428c13777141",
+        "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "startedAt": "2026-06-06T00:15:53.376Z",
+        "completedAt": "2026-06-06T00:15:53.862Z",
+        "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"mode\": \"assert\",\n  \"assertion\": \"root-scripts-not-deleted\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.11\",\n  \"contractPath\": \"docs/plans/2026-06-05-main-agent-runtime-migration-wave-3-11-goal-execution-plan.md\",\n  \"entries\": 13,\n  \"errors\": []\n}\n",
+        "stderrPreview": "",
+        "status": "passed",
+        "manualScenarioIds": [
+          "MAN001"
+        ]
+      },
+      {
+        "commandId": "cmd-assert-public-cli-dispatch",
+        "sequence": 19,
+        "attempt": 1,
+        "command": "pwsh.exe -NoLogo -NoProfile -Command '& { node tools/script-migration/validate-main-agent-runtime-migration-wave-3-11.cjs --assert public-cli-dispatch; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE } }'",
+        "cwd": "D:\\Dev\\BMAD-Speckit-SDD-Flow",
+        "exitCode": 0,
+        "stdoutHash": "sha256:077449378dc12ae7e6f41102453bd4f13695741a226d59f0431c8ba72e7aeba2",
+        "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "startedAt": "2026-06-06T00:15:53.972Z",
+        "completedAt": "2026-06-06T00:15:54.374Z",
+        "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"mode\": \"assert\",\n  \"assertion\": \"public-cli-dispatch\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.11\",\n  \"contractPath\": \"docs/plans/2026-06-05-main-agent-runtime-migration-wave-3-11-goal-execution-plan.md\",\n  \"entries\": 13,\n  \"errors\": []\n}\n",
+        "stderrPreview": "",
+        "status": "passed",
+        "manualScenarioIds": [
+          "MAN002"
+        ]
+      },
+      {
+        "commandId": "cmd-assert-closure-audit-exact-wave-3-11",
+        "sequence": 20,
+        "attempt": 1,
+        "command": "pwsh.exe -NoLogo -NoProfile -Command '& { node tools/script-migration/validate-main-agent-runtime-migration-wave-3-11.cjs --assert closure-audit-exact-wave-3-11; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE } }'",
+        "cwd": "D:\\Dev\\BMAD-Speckit-SDD-Flow",
+        "exitCode": 0,
+        "stdoutHash": "sha256:8232e82cbd26c815cdee74ac0b4934308de3d652d8d69dac5744ba49016978a3",
+        "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "startedAt": "2026-06-06T00:15:54.480Z",
+        "completedAt": "2026-06-06T00:15:54.879Z",
+        "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"mode\": \"assert\",\n  \"assertion\": \"closure-audit-exact-wave-3-11\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.11\",\n  \"contractPath\": \"docs/plans/2026-06-05-main-agent-runtime-migration-wave-3-11-goal-execution-plan.md\",\n  \"entries\": 13,\n  \"errors\": []\n}\n",
+        "stderrPreview": "",
+        "status": "passed",
+        "manualScenarioIds": [
+          "MAN003"
+        ]
+      },
+      {
+        "commandId": "cmd-validate-wave-3-11-pre-evidence",
+        "sequence": 21,
+        "attempt": 1,
+        "command": "pwsh.exe -NoLogo -NoProfile -Command '& { node tools/script-migration/validate-main-agent-runtime-migration-wave-3-11.cjs --pre-evidence; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE } }'",
+        "cwd": "D:\\Dev\\BMAD-Speckit-SDD-Flow",
+        "exitCode": 0,
+        "stdoutHash": "sha256:235cd5300e488f17716c4e3d2a9459f7f7eeb19e64f9ef4ca68e7982c26f6bbb",
+        "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "startedAt": "2026-06-06T00:15:54.988Z",
+        "completedAt": "2026-06-06T00:15:55.424Z",
+        "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"mode\": \"pre-evidence\",\n  \"assertion\": null,\n  \"waveId\": \"main-agent-runtime-migration-wave-3.11\",\n  \"contractPath\": \"docs/plans/2026-06-05-main-agent-runtime-migration-wave-3-11-goal-execution-plan.md\",\n  \"entries\": 13,\n  \"errors\": []\n}\n",
+        "stderrPreview": "",
+        "status": "passed"
+      },
+      {
+        "commandId": "cmd-test-wave-3-11-contract-pre-evidence",
+        "sequence": 22,
+        "attempt": 1,
+        "command": "pwsh.exe -NoLogo -NoProfile -Command '& { $env:MAIN_AGENT_WAVE_3_11_VALIDATOR_MODE = \"pre-evidence\"; npx vitest run tests/acceptance/main-agent-runtime-migration-wave-3-11-contract.test.ts; $code = $LASTEXITCODE; Remove-Item Env:MAIN_AGENT_WAVE_3_11_VALIDATOR_MODE -ErrorAction SilentlyContinue; exit $code }'",
+        "cwd": "D:\\Dev\\BMAD-Speckit-SDD-Flow",
+        "exitCode": 0,
+        "stdoutHash": "sha256:2e779ce559a98f42341b92a9f52ca0d8abc73f46c4578cb0ae2c3e79afd2474b",
+        "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "startedAt": "2026-06-06T00:15:55.528Z",
+        "completedAt": "2026-06-06T00:15:58.770Z",
+        "stdoutPreview": "\n\u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m\n\n \u001b[32m✓\u001b[39m tests/acceptance/main-agent-runtime-migration-wave-3-11-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 156\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m\n\u001b[2m   Start at \u001b[22m 08:15:58\n\u001b[2m   Duration \u001b[22m 343ms\u001b[2m (transform 21ms, setup 0ms, import 34ms, tests 156ms, environment 0ms)\u001b[22m\n\n",
+        "stderrPreview": "",
+        "status": "passed"
+      },
+      {
+        "commandId": "cmd-run-install-matrix",
+        "sequence": 23,
+        "attempt": 1,
+        "command": "pwsh.exe -NoLogo -NoProfile -Command '& { node tools/script-migration/run-main-agent-wave-3-11-install-matrix.cjs; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE } }'",
+        "cwd": "D:\\Dev\\BMAD-Speckit-SDD-Flow",
+        "exitCode": 1,
+        "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrHash": "sha256:f05bc3632e548835b35bcffb563f98aad94af5984b062c9fc7d540451dc45143",
+        "startedAt": "2026-06-06T00:15:58.958Z",
+        "completedAt": "2026-06-06T00:17:41.197Z",
+        "stdoutPreview": "",
+        "stderrPreview": "Error: init-sync-consumer missing bmad-speckit.json\n    at runMode (D:\\Dev\\BMAD-Speckit-SDD-Flow\\tools\\script-migration\\run-main-agent-wave-3-11-install-matrix.cjs:562:43)\n    at D:\\Dev\\BMAD-Speckit-SDD-Flow\\tools\\script-migration\\run-main-agent-wave-3-11-install-matrix.cjs:751:7\n    at Array.map (<anonymous>)\n    at main (D:\\Dev\\BMAD-Speckit-SDD-Flow\\tools\\script-migration\\run-main-agent-wave-3-11-install-matrix.cjs:750:80)\n    at Object.<anonymous> (D:\\Dev\\BMAD-Speckit-SDD-Flow\\tools\\script-migration\\run-main-agent-wave-3-11-install-matrix.cjs:808:1)\n    at Module._compile (node:internal/modules/cjs/loader:1705:14)\n    at Object..js (node:internal/modules/cjs/loader:1838:10)\n    at Module.load (node:internal/modules/cjs/loader:1441:32)\n    at Function._load (node:internal/modules/cjs/loader:1263:12)\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\n",
+        "status": "failed"
+      },
+      {
+        "commandId": "cmd-validate-wave-3-11-evidence-running",
+        "sequence": 24,
+        "attempt": 1,
+        "command": "pwsh.exe -NoLogo -NoProfile -Command '& { node tools/script-migration/validate-main-agent-runtime-migration-wave-3-11.cjs --evidence-running; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE } }'",
+        "cwd": "D:\\Dev\\BMAD-Speckit-SDD-Flow",
+        "exitCode": 1,
+        "stdoutHash": "sha256:7060838b7e4e3f123b920864c3708860d417351a91fd952b442cb14d18efe218",
+        "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "startedAt": "2026-06-06T00:17:41.326Z",
+        "completedAt": "2026-06-06T00:17:41.764Z",
+        "stdoutPreview": "{\n  \"status\": \"failed\",\n  \"mode\": \"evidence-running\",\n  \"assertion\": null,\n  \"waveId\": \"main-agent-runtime-migration-wave-3.11\",\n  \"contractPath\": \"docs/plans/2026-06-05-main-agent-runtime-migration-wave-3-11-goal-execution-plan.md\",\n  \"entries\": 13,\n  \"errors\": [\n    \"evidence required command cmd-run-install-matrix is not passed\",\n    \"install-matrix.status expected \\\"passed\\\" but got \\\"failed\\\"\",\n    \"install-matrix.modes length expected 4 but got 0\",\n    \"install-matrix missing mode save-dev\",\n    \"install-matrix missing mode no-save\",\n    \"install-matrix missing mode npx-package\",\n    \"install-matrix missing mode init-sync-consumer\"\n  ]\n}\n",
+        "stderrPreview": "",
+        "status": "failed"
+      },
+      {
+        "commandId": "cmd-run-install-matrix",
+        "sequence": 25,
+        "attempt": 2,
+        "command": "pwsh.exe -NoLogo -NoProfile -Command '& { node tools/script-migration/run-main-agent-wave-3-11-install-matrix.cjs; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE } }'",
+        "cwd": "D:\\Dev\\BMAD-Speckit-SDD-Flow",
+        "exitCode": 1,
+        "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrHash": "sha256:4bc4acc89435268ed2955a7367546567df690e6f6c55e5f2b416398c727c7068",
+        "startedAt": "2026-06-06T00:25:00.253Z",
+        "completedAt": "2026-06-06T00:26:37.506Z",
+        "stdoutPreview": "",
+        "stderrPreview": "Error: init-sync-consumer check failed: Error: structure validation failed. Missing: .codex/i18n; _bmad/_config/bmads-runtime.yaml; _bmad/_config/orchestration-governance.contract.yaml; _bmad/_config/stage-mapping.yaml; .codex/README.md\n\n    at assertPassed (D:\\Dev\\BMAD-Speckit-SDD-Flow\\tools\\script-migration\\run-main-agent-wave-3-11-install-matrix.cjs:126:11)\n    at runMode (D:\\Dev\\BMAD-Speckit-SDD-Flow\\tools\\script-migration\\run-main-agent-wave-3-11-install-matrix.cjs:571:5)\n    at D:\\Dev\\BMAD-Speckit-SDD-Flow\\tools\\script-migration\\run-main-agent-wave-3-11-install-matrix.cjs:753:7\n    at Array.map (<anonymous>)\n    at main (D:\\Dev\\BMAD-Speckit-SDD-Flow\\tools\\script-migration\\run-main-agent-wave-3-11-install-matrix.cjs:752:80)\n    at Object.<anonymous> (D:\\Dev\\BMAD-Speckit-SDD-Flow\\tools\\script-migration\\run-main-agent-wave-3-11-install-matrix.cjs:810:1)\n    at Module._compile (node:internal/modules/cjs/loader:1705:14)\n    at Object..js (node:internal/modules/cjs/loader:1838:10)\n    at Module.load (node:internal/modules/cjs/loader:1441:32)\n    at Function._load (node:internal/modules/cjs/loader:1263:12)\n",
+        "status": "failed"
+      }
+    ],
+    "acceptanceStatus": {
+      "ACC001": {
+        "status": "passed",
+        "evidenceRefs": [
+          "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/evidence.json"
+        ],
+        "commandIds": [
+          "cmd-git-status-baseline",
+          "cmd-encoding-pre-implementation"
+        ],
+        "notes": "All required command rows passed."
+      },
+      "ACC002": {
+        "status": "passed",
+        "evidenceRefs": [
+          "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/evidence.json"
+        ],
+        "commandIds": [
+          "cmd-build-main-agent-dist"
+        ],
+        "notes": "All required command rows passed."
+      },
+      "ACC003": {
+        "status": "passed",
+        "evidenceRefs": [
+          "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/evidence.json"
+        ],
+        "commandIds": [
+          "cmd-test-runtime-modules"
+        ],
+        "notes": "All required command rows passed."
+      },
+      "ACC004": {
+        "status": "passed",
+        "evidenceRefs": [
+          "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/evidence.json"
+        ],
+        "commandIds": [
+          "cmd-test-runtime-acceptance-import-switches"
+        ],
+        "notes": "All required command rows passed."
+      },
+      "ACC005": {
+        "status": "passed",
+        "evidenceRefs": [
+          "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/evidence.json"
+        ],
+        "commandIds": [
+          "cmd-build-main-agent-dist",
+          "cmd-test-helpers"
+        ],
+        "notes": "All required command rows passed."
+      },
+      "ACC006": {
+        "status": "failed",
+        "evidenceRefs": [
+          "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/evidence.json"
+        ],
+        "commandIds": [
+          "cmd-build-scoring",
+          "cmd-test-scoring-eval-questions",
+          "cmd-test-eval-question-generate",
+          "cmd-smoke-eval-question-generate-source-tree",
+          "cmd-run-install-matrix"
+        ],
+        "notes": "At least one required command row failed."
+      },
+      "ACC007": {
+        "status": "passed",
+        "evidenceRefs": [
+          "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/evidence.json"
+        ],
+        "commandIds": [
+          "cmd-test-check-score",
+          "cmd-assert-public-cli-dispatch",
+          "cmd-validate-registry"
+        ],
+        "notes": "All required command rows passed."
+      },
+      "ACC008": {
+        "status": "passed",
+        "evidenceRefs": [
+          "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/evidence.json"
+        ],
+        "commandIds": [
+          "cmd-assert-no-migration-internal-exact"
+        ],
+        "notes": "All required command rows passed."
+      },
+      "ACC009": {
+        "status": "passed",
+        "evidenceRefs": [
+          "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/evidence.json"
+        ],
+        "commandIds": [
+          "cmd-validate-registry"
+        ],
+        "notes": "All required command rows passed."
+      },
+      "ACC010": {
+        "status": "passed",
+        "evidenceRefs": [
+          "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/evidence.json"
+        ],
+        "commandIds": [
+          "cmd-closure-audit-write",
+          "cmd-assert-closure-audit-exact-wave-3-11"
+        ],
+        "notes": "All required command rows passed."
+      },
+      "ACC011": {
+        "status": "passed",
+        "evidenceRefs": [
+          "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/evidence.json"
+        ],
+        "commandIds": [
+          "cmd-build-scoring",
+          "cmd-test-scoring-eval-questions",
+          "cmd-build-main-agent-dist",
+          "cmd-test-package-build-dispatch-regressions",
+          "cmd-test-runtime-modules",
+          "cmd-test-helpers",
+          "cmd-test-eval-question-generate",
+          "cmd-test-check-score"
+        ],
+        "notes": "All required command rows passed."
+      },
+      "ACC012": {
+        "status": "failed",
+        "evidenceRefs": [
+          "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/evidence.json"
+        ],
+        "commandIds": [
+          "cmd-run-install-matrix",
+          "cmd-validate-wave-3-11-evidence-running"
+        ],
+        "notes": "At least one required command row failed."
+      },
+      "ACC013": {
+        "status": "pending",
+        "evidenceRefs": [],
+        "commandIds": [],
+        "notes": "Pending command evidence."
+      },
+      "ACC014": {
+        "status": "pending",
+        "evidenceRefs": [],
+        "commandIds": [],
+        "notes": "Pending command evidence."
+      }
+    },
+    "manualVerificationStatus": {
+      "MAN001": {
+        "status": "passed",
+        "evidenceRefs": [
+          "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/evidence.json"
+        ],
+        "commandIds": [
+          "cmd-assert-root-scripts-not-deleted"
+        ],
+        "notes": "Manual verification scenario is proven by command evidence."
+      },
+      "MAN002": {
+        "status": "passed",
+        "evidenceRefs": [
+          "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/evidence.json"
+        ],
+        "commandIds": [
+          "cmd-assert-public-cli-dispatch"
+        ],
+        "notes": "Manual verification scenario is proven by command evidence."
+      },
+      "MAN003": {
+        "status": "passed",
+        "evidenceRefs": [
+          "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/evidence.json"
+        ],
+        "commandIds": [
+          "cmd-assert-closure-audit-exact-wave-3-11"
+        ],
+        "notes": "Manual verification scenario is proven by command evidence."
+      },
+      "MAN004": {
+        "status": "pending",
+        "evidenceRefs": [],
+        "commandIds": [],
+        "notes": "Pending manual verification command evidence."
+      }
+    },
+    "blockedReason": "required_command_failed:cmd-run-install-matrix",
+    "blockedCommandId": "cmd-run-install-matrix",
+    "blockedAt": "2026-06-06T00:47:14.111Z"
+  }
+}

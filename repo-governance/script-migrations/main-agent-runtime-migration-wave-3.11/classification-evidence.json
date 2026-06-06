@@ -1,0 +1,165 @@
+{
+  "waveId": "main-agent-runtime-migration-wave-3.11",
+  "refinesWaveId": "main-agent-runtime-migration-wave-3.10",
+  "auditReportPath": "repo-governance/script-migrations/consumer-reachable-closure-audit/audit-report.json",
+  "registryPath": "repo-governance/script-migration-registry.yaml",
+  "generatedAt": "2026-06-05T22:58:32.605Z",
+  "entries": [
+    {
+      "originalPath": "scripts/host-runtime-mode.ts",
+      "currentClassification": "package_runtime_module",
+      "migrationStrategy": "package_runtime_module",
+      "auditSemanticClassification": "package_runtime_module",
+      "registryMigrationStrategy": "package_runtime_module",
+      "status": "passed",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/consumer-reachable-closure-audit/audit-report.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/registry-evidence.json"
+      ]
+    },
+    {
+      "originalPath": "scripts/supervised-worker-runtime.ts",
+      "currentClassification": "package_runtime_module",
+      "migrationStrategy": "package_runtime_module",
+      "auditSemanticClassification": "package_runtime_module",
+      "registryMigrationStrategy": "package_runtime_module",
+      "status": "passed",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/consumer-reachable-closure-audit/audit-report.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/registry-evidence.json"
+      ]
+    },
+    {
+      "originalPath": "scripts/diagnose-bmad-state.ts",
+      "currentClassification": "package_runtime_module",
+      "migrationStrategy": "package_runtime_module",
+      "auditSemanticClassification": "package_runtime_module",
+      "registryMigrationStrategy": "package_runtime_module",
+      "status": "passed",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/consumer-reachable-closure-audit/audit-report.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/registry-evidence.json"
+      ]
+    },
+    {
+      "originalPath": "scripts/parallel-mission-control.ts",
+      "currentClassification": "package_runtime_module",
+      "migrationStrategy": "package_runtime_module",
+      "auditSemanticClassification": "package_runtime_module",
+      "registryMigrationStrategy": "package_runtime_module",
+      "status": "passed",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/consumer-reachable-closure-audit/audit-report.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/registry-evidence.json"
+      ]
+    },
+    {
+      "originalPath": "scripts/bmad-state-reader.ts",
+      "currentClassification": "package_local_helper",
+      "migrationStrategy": "durable_helper_copy",
+      "auditSemanticClassification": "package_local_helper",
+      "registryMigrationStrategy": "durable_helper_copy",
+      "status": "passed",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/consumer-reachable-closure-audit/audit-report.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/registry-evidence.json"
+      ]
+    },
+    {
+      "originalPath": "scripts/e2e-verify-paths.ts",
+      "currentClassification": "package_local_helper",
+      "migrationStrategy": "durable_helper_copy",
+      "auditSemanticClassification": "package_local_helper",
+      "registryMigrationStrategy": "durable_helper_copy",
+      "status": "passed",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/consumer-reachable-closure-audit/audit-report.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/registry-evidence.json"
+      ]
+    },
+    {
+      "originalPath": "scripts/query-validate.ts",
+      "currentClassification": "package_local_helper",
+      "migrationStrategy": "durable_helper_copy",
+      "auditSemanticClassification": "package_local_helper",
+      "registryMigrationStrategy": "durable_helper_copy",
+      "status": "passed",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/consumer-reachable-closure-audit/audit-report.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/registry-evidence.json"
+      ]
+    },
+    {
+      "originalPath": "scripts/runtime-step-state.ts",
+      "currentClassification": "package_local_helper",
+      "migrationStrategy": "durable_helper_copy",
+      "auditSemanticClassification": "package_local_helper",
+      "registryMigrationStrategy": "durable_helper_copy",
+      "status": "passed",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/consumer-reachable-closure-audit/audit-report.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/registry-evidence.json"
+      ]
+    },
+    {
+      "originalPath": "scripts/verify-agent-files.ts",
+      "currentClassification": "package_local_helper",
+      "migrationStrategy": "durable_helper_copy",
+      "auditSemanticClassification": "package_local_helper",
+      "registryMigrationStrategy": "durable_helper_copy",
+      "status": "passed",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/consumer-reachable-closure-audit/audit-report.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/registry-evidence.json"
+      ]
+    },
+    {
+      "originalPath": "scripts/eval-question-generate.ts",
+      "currentClassification": "public_cli_package_action",
+      "migrationStrategy": "public_cli_de_surface",
+      "auditSemanticClassification": "public_cli_package_action",
+      "registryMigrationStrategy": "public_cli_de_surface",
+      "status": "passed",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/consumer-reachable-closure-audit/audit-report.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/registry-evidence.json"
+      ]
+    },
+    {
+      "originalPath": "scripts/check-story-score-written.ts",
+      "currentClassification": "public_cli_package_action_existing_root_legacy",
+      "migrationStrategy": "public_cli_de_surface",
+      "auditSemanticClassification": "public_cli_package_action_existing_root_legacy",
+      "registryMigrationStrategy": "public_cli_de_surface",
+      "status": "passed",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/consumer-reachable-closure-audit/audit-report.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/registry-evidence.json"
+      ]
+    },
+    {
+      "originalPath": "scripts/create-second-story.ts",
+      "currentClassification": "repo_internal_test_seed_only",
+      "migrationStrategy": "repo_internal_reclassify",
+      "auditSemanticClassification": "repo_internal_test_seed_only",
+      "registryMigrationStrategy": "repo_internal_reclassify",
+      "status": "passed",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/consumer-reachable-closure-audit/audit-report.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/registry-evidence.json"
+      ]
+    },
+    {
+      "originalPath": "scripts/verify-score-auto-scoped-bundle.cjs",
+      "currentClassification": "repo_internal_verification_harness",
+      "migrationStrategy": "repo_internal_reclassify",
+      "auditSemanticClassification": "repo_internal_verification_harness",
+      "registryMigrationStrategy": "repo_internal_reclassify",
+      "status": "passed",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/consumer-reachable-closure-audit/audit-report.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/registry-evidence.json"
+      ]
+    }
+  ]
+}

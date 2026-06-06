@@ -1,0 +1,67 @@
+{
+  "schemaVersion": "main-agent-p1-p4-runtime-migration-preflight/v1",
+  "contractPath": "docs/plans/2026-06-05-main-agent-p1-p4-runtime-migration-goal-execution-plan.md",
+  "sourcePlanPath": "conversation://main-agent-p1-p4-runtime-migration",
+  "generatedAt": "2026-06-05T00:00:00+08:00",
+  "commands": [
+    {
+      "commandId": "CMD-01",
+      "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { git status --short --branch }\"",
+      "exitCode": 0,
+      "stdoutLines": [
+        "## dev...origin/dev",
+        " M packages/bmad-speckit/src/services/platform-skill-frontmatter.js",
+        " M repo-governance/script-migration-registry.yaml",
+        "?? packages/bmad-speckit/tests/platform-skill-frontmatter.test.js",
+        "?? repo-governance/script-migrations/main-agent-runtime-migration-wave-3.5/registry-evidence.json"
+      ],
+      "unrelatedDirtyPathsPreserved": [
+        "packages/bmad-speckit/src/services/platform-skill-frontmatter.js",
+        "packages/bmad-speckit/tests/platform-skill-frontmatter.test.js"
+      ],
+      "goalPreExistingDirtyPathsPreserved": [
+        "repo-governance/script-migration-registry.yaml",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.5/registry-evidence.json"
+      ]
+    },
+    {
+      "commandId": "CMD-02",
+      "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js; exit $LASTEXITCODE }\"",
+      "exitCode": 0,
+      "stdoutLines": [
+        "checkedFiles=3037 findings=0"
+      ],
+      "checkedFiles": 3037,
+      "findings": 0
+    }
+  ],
+  "backlogCounts": {
+    "sourcePriorityMatrixPath": "repo-governance/script-migrations/main-agent-runtime-closure-wave-3/priority-matrix.md",
+    "registryPath": "repo-governance/script-migration-registry.yaml",
+    "selectionRule": "A script is remaining when it appears under P1, P2, P3, or P4 in the priority matrix and no registry row with the same originalPath has validationStatus=passed.",
+    "P1": {
+      "matrixTotal": 31,
+      "alreadyValidated": 9,
+      "remaining": 22
+    },
+    "P2": {
+      "matrixTotal": 8,
+      "alreadyValidated": 0,
+      "remaining": 8
+    },
+    "P3": {
+      "matrixTotal": 38,
+      "alreadyValidated": 0,
+      "remaining": 38
+    },
+    "P4": {
+      "matrixTotal": 14,
+      "alreadyValidated": 0,
+      "remaining": 14
+    },
+    "totalRemaining": 82
+  },
+  "rootScriptDeletionApproved": false,
+  "rootScriptsDeleted": false,
+  "status": "passed"
+}

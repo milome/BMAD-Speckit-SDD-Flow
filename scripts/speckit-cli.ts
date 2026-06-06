@@ -145,7 +145,7 @@ const COMMANDS: Record<string, CommandConfig> = {
   },
 };
 
-const VERSION = '2.0.0';
+const VERSION = '2.0.1';
 
 function printUsage(command?: string): void {
   if (command && COMMANDS[command]) {

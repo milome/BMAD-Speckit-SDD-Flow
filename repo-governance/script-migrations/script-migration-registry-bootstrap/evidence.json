@@ -1,0 +1,41 @@
+{
+  "waveId": "script-migration-registry-bootstrap",
+  "validatedAt": "2026-06-02T12:17:04+08:00",
+  "entries": [
+    {
+      "entryId": "script-migration-registry",
+      "originalPath": "repo-governance/script-migration-registry.yaml",
+      "targetPaths": [
+        "repo-governance/script-migration-registry.yaml"
+      ],
+      "commands": [
+        {
+          "command": "CMD-03 Registry Contract Acceptance Test: pwsh.exe -NoLogo -NoProfile -Command \"& { npx vitest run tests/acceptance/script-migration-registry-contract.test.ts }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:4f2322d399c63df0ad44b66cdc4633a4db42b7153442854242f09645a8b27d11",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "command": "CMD-04 Registry Validator: pwsh.exe -NoLogo -NoProfile -Command \"& { node tools/script-migration/validate-registry.cjs }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:03e86d3a93b78396c78137de46ac5ecd960049e7c9b3b3792b5ac8b7abe51970",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "command": "CMD-05 Registry Pack Exclusion Validator: pwsh.exe -NoLogo -NoProfile -Command \"& { node tools/script-migration/validate-registry.cjs --check-pack-exclusion }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:f8a43070bf036dbd33dc504c9258ee4c8daee4a468232a2513759a1c544860cb",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "command": "CMD-06 Post-Implementation Encoding Gate: pwsh.exe -NoLogo -NoProfile -Command \"& { node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:319f4d65e7fc266a9b4e092d7654bf89c3aaf524805aa6199f5b6ff42f9c5a86",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    }
+  ]
+}

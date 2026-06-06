@@ -1,0 +1,165 @@
+{
+  "schemaVersion": "renderer-package-cli-closeout-evidence/v2",
+  "waveId": "main-agent-runtime-migration-wave-3.13",
+  "validatedAt": "2026-06-06T17:47:56.436Z",
+  "scope": {
+    "purpose": "Close out the two Wave 3.10 renderer records that were already caller-switched but remained partial.",
+    "refinesWaveIds": [
+      "main-agent-runtime-migration-wave-3.10",
+      "main-agent-runtime-migration-wave-3.12"
+    ],
+    "doesClaim": [
+      "bmad-help-renderer is served by the package CLI bmad-help command",
+      "bmads-renderer is served by the package CLI bmads command and bmad-speckit alias",
+      "the package entry-surface contract passes without root renderer script dispatch",
+      "kbase fresh consumer install matrix passes for covered package runtime and public CLI probes"
+    ],
+    "doesNotClaim": [
+      "root scripts are deletion-ready",
+      "every root scripts/** file is directly runnable from a consumer project",
+      "repo-governance is a consumer runtime dependency"
+    ]
+  },
+  "kbaseInstallMatrixCloseout": {
+    "repoEvidencePath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.13/kbase-install-matrix.json",
+    "repoEvidenceSha256": "sha256:7163115fead1a674090df803fea035cf9962c0a50243f001352c0b56bafc7d74",
+    "sourceConsumerProject": "D:/Dev/kbase-content-engine",
+    "sourceMatrixRoot": "D:/Dev/kbase-content-engine/.tmp/bmad-speckit-install-matrix-20260607-045932",
+    "sourceMatrixSummarySha256": "sha256:800bd24f5c374ae2239dbf2d4db9c410ba2c977fb80afbc026766c4fc53079cc",
+    "sourceRunnerSha256": "sha256:13037aaa6568d0f0092280a31aa8995ba23541e1e945c765ee03863bac9f9f98",
+    "sourceTarballSha256": "sha256:0cc6324e475ba2aee5248a1810cfd91dd23d7b2f861739f27131e28f413ef272",
+    "status": "passed",
+    "modes": [
+      {
+        "mode": "save-dev",
+        "passed": 10,
+        "total": 10
+      },
+      {
+        "mode": "no-save",
+        "passed": 10,
+        "total": 10
+      },
+      {
+        "mode": "npx-package",
+        "passed": 7,
+        "total": 7
+      }
+    ],
+    "totalProbeRecords": 27,
+    "maxStdoutBytes": 89641,
+    "bmadHelpJsonDefaultRawRecord": false,
+    "consumerRuntimeProof": {
+      "usedRootScript": false,
+      "usedTsx": false,
+      "usedTsNode": false,
+      "usedCompiledFallback": false
+    },
+    "nonClaims": [
+      "does not claim every root scripts/** file is directly runnable from a consumer project",
+      "does not mark root scripts deletion-ready"
+    ]
+  },
+  "entries": [
+    {
+      "entryId": "bmad-help-renderer",
+      "originalPath": "scripts/bmad-help-renderer.ts",
+      "semanticClassification": "already_migrated_package_runtime_deprecated_root_path",
+      "targetPaths": [
+        "packages/bmad-speckit/bin/bmad-speckit.js",
+        "packages/bmad-speckit/src/runtime/bmad-help-renderer.js"
+      ],
+      "publicCommandsAfterMigration": [
+        "bmad-speckit bmad-help"
+      ],
+      "commands": [
+        {
+          "command": "node --test packages/bmad-speckit/tests/bmad-help-entry-surface-contract.test.js",
+          "exitCode": 0,
+          "stdoutHash": "sha256:877e030349b8831ffb044642533e817df1f808dc99b65d2488e66caa4526b77b",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutBytes": 1387,
+          "stderrBytes": 0
+        },
+        {
+          "command": "node packages/bmad-speckit/bin/bmad-speckit.js bmad-help --cwd . --budget route",
+          "exitCode": 0,
+          "stdoutHash": "sha256:9fc6b5fde7759ed17c1be704e68486bcbfc48634ee95ad46fadfc9ebe3ad1c6c",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutBytes": 7783,
+          "stderrBytes": 0
+        }
+      ],
+      "installMatrixEvidence": [
+        {
+          "mode": "package_local_cli",
+          "command": "node packages/bmad-speckit/bin/bmad-speckit.js bmad-help --cwd . --budget route",
+          "usedRootScript": false,
+          "usedTsx": false,
+          "usedTsNode": false,
+          "usedCompiledFallback": false
+        }
+      ],
+      "result": "passed"
+    },
+    {
+      "entryId": "bmads-renderer",
+      "originalPath": "scripts/bmads-renderer.ts",
+      "semanticClassification": "already_migrated_package_runtime_deprecated_root_path",
+      "targetPaths": [
+        "packages/bmad-speckit/bin/bmad-speckit.js",
+        "packages/bmad-speckit/src/runtime/bmads-renderer.js"
+      ],
+      "publicCommandsAfterMigration": [
+        "bmad-speckit bmads",
+        "bmad-speckit bmad-speckit"
+      ],
+      "commands": [
+        {
+          "command": "node --test packages/bmad-speckit/tests/bmad-help-entry-surface-contract.test.js",
+          "exitCode": 0,
+          "stdoutHash": "sha256:877e030349b8831ffb044642533e817df1f808dc99b65d2488e66caa4526b77b",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutBytes": 1387,
+          "stderrBytes": 0
+        },
+        {
+          "command": "node packages/bmad-speckit/bin/bmad-speckit.js bmads --cwd . --budget route",
+          "exitCode": 0,
+          "stdoutHash": "sha256:4aaace14e26ee966fdd8cb3cfc78e9d450ff0ec002a6ae0b3c52601940fbdd05",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutBytes": 8195,
+          "stderrBytes": 0
+        },
+        {
+          "command": "node packages/bmad-speckit/bin/bmad-speckit.js bmad-speckit --cwd . --budget route",
+          "exitCode": 0,
+          "stdoutHash": "sha256:4aaace14e26ee966fdd8cb3cfc78e9d450ff0ec002a6ae0b3c52601940fbdd05",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutBytes": 8195,
+          "stderrBytes": 0
+        }
+      ],
+      "installMatrixEvidence": [
+        {
+          "mode": "package_local_cli",
+          "command": "node packages/bmad-speckit/bin/bmad-speckit.js bmads --cwd . --budget route",
+          "usedRootScript": false,
+          "usedTsx": false,
+          "usedTsNode": false,
+          "usedCompiledFallback": false
+        },
+        {
+          "mode": "package_local_cli_alias",
+          "command": "node packages/bmad-speckit/bin/bmad-speckit.js bmad-speckit --cwd . --budget route",
+          "usedRootScript": false,
+          "usedTsx": false,
+          "usedTsNode": false,
+          "usedCompiledFallback": false
+        }
+      ],
+      "result": "passed"
+    }
+  ],
+  "result": "passed"
+}

@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-wave-3.3-and-3.4-install-matrix/v1",
+  "contractPath": "docs/plans/2026-06-04-main-agent-runtime-migration-wave-3-3-and-3-4-goal-execution-plan.md",
+  "installMode": "init-codex",
+  "packageSpec": "D:/Dev/BMAD-Speckit-SDD-Flow/repo-governance/script-migrations/main-agent-runtime-migration-wave-3.3/bmad-speckit-2.0.1.tgz",
+  "packagePath": "C:/Users/milom/AppData/Local/Temp/wave33-34-init-codex-w0FX17/node_modules/bmad-speckit",
+  "consumerRoot": "C:/Users/milom/AppData/Local/Temp/wave33-34-init-codex-w0FX17",
+  "commandCount": 1,
+  "usedRootScript": false,
+  "usedTsx": false,
+  "usedTsNode": false,
+  "usedCompiledFallback": false,
+  "commands": [
+    {
+      "commandId": "init-codex",
+      "command": "npx.cmd --no-install bmad-speckit init . --ai codex --yes --force --no-git --bmad-path C:\\Users\\milom\\AppData\\Local\\Temp\\wave33-34-init-codex-w0FX17\\node_modules\\bmad-speckit\\_bmad",
+      "exitCode": 0,
+      "stdoutHash": "sha256:594e99a15bc31d6daa68c599f3ba3fe0ee88a2128f647fbe51279cdb75f59f6e",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "\n✓ Initialized (worktree) at C:\\Users\\milom\\AppData\\Local\\Temp\\wave33-34-init-codex-w0FX17 [codex]\nInit complete. Run `/bmad-help` in your AI IDE for next steps, or start Spec-Driven Development with `speckit.constitution`.\nFeedback: run `bmad-speckit feedback` to get the feedback entry.\n",
+      "stderrPreview": ""
+    }
+  ],
+  "result": "passed",
+  "waveId": "main-agent-runtime-migration-wave-3.3"
+}

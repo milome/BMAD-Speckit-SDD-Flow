@@ -1,0 +1,515 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-evidence/v1",
+  "waveId": "main-agent-runtime-migration-wave-3.4",
+  "contractPath": "docs/plans/2026-06-04-main-agent-runtime-migration-wave-3-3-and-3-4-goal-execution-plan.md",
+  "validatedAt": "2026-06-04T20:13:01.200Z",
+  "entries": [
+    {
+      "entryId": "main-agent-unified-ingress",
+      "originalPath": "scripts/main-agent-unified-ingress.ts",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/unified-ingress.js",
+        "packages/bmad-speckit/dist/main-agent/actions/unified-ingress.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js"
+      ],
+      "commands": [
+        {
+          "commandId": "CMD-05",
+          "command": "npm.cmd run build:main-agent-dist --prefix packages/bmad-speckit",
+          "exitCode": 0,
+          "stdoutHash": "sha256:5e523a349017c7dba3d0cb26c46ab3726e6f2fb782d7210074441b7caf0602ae",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 build:main-agent-dist\n> node scripts/build-main-agent-dist.cjs\n\nbuilt dist/main-agent files=20\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-04",
+          "command": "npm.cmd run test --prefix packages/bmad-speckit -- main-agent-wave-3-3-runtime-actions.test.js",
+          "exitCode": 0,
+          "stdoutHash": "sha256:d87d2df20b6d082357318c0ebf57a3f47ec0b2ba94753e362b0fdc4f4df928c2",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 test\n> node scripts/run-node-tests.cjs main-agent-wave-3-3-runtime-actions.test.js\n\nTAP version 13\n# Subtest: main-agent wave 3.3 package runtime actions\n    # Subtest: ships package source action files without root TypeScript dispatch\n    ok 1 - ships package source action files without root TypeScript dispatch\n      ---\n      duration_ms: 1.498\n      type: 'test'\n      ...\n    # Subtest: supports wave 3.3 actions from package source runtime with stable envelopes\n    ok 2 - supports wave 3.3 actions from package source runtime with stable envelopes\n      ---\n      durati",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-07",
+          "command": "npm.cmd run test --prefix packages/bmad-speckit -- main-agent-wave-3-4-installed-surface-actions.test.js",
+          "exitCode": 0,
+          "stdoutHash": "sha256:79c9ede3af5c1d9b71af1246d64388a65bee72233c2a84176518955350a1cec1",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 test\n> node scripts/run-node-tests.cjs main-agent-wave-3-4-installed-surface-actions.test.js\n\nTAP version 13\n# Subtest: main-agent wave 3.4 installed surface actions\n    # Subtest: ships package source and dist action files for every package_runtime_module route\n    ok 1 - ships package source and dist action files for every package_runtime_module route\n      ---\n      duration_ms: 1.5929\n      type: 'test'\n      ...\n    # Subtest: supports wave 3.4 package runtime routes with stable envelopes\n    ok 2 - supports wave 3.4 package runtime routes with stable envelopes\n     ",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "prepare-package-install-surface",
+          "command": "d:\\nvm4w\\nodejs\\node.exe scripts/prepublish-check.js",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "npm-pack",
+          "command": "npm.cmd pack --pack-destination D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-3.3 --json --ignore-scripts",
+          "exitCode": 0,
+          "stdoutHash": "sha256:3051184ca749a269846156c6a4ffd3eda7753c1d2b3f4849cd4229834f986032",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "[\n  {\n    \"id\": \"bmad-speckit@2.0.1\",\n    \"name\": \"bmad-speckit\",\n    \"version\": \"2.0.1\",\n    \"size\": 5713709,\n    \"unpackedSize\": 24778475,\n    \"shasum\": \"005f0d0f11ef63386fce530458ba4c91023d5376\",\n    \"integrity\": \"sha512-T5tInKnyKr4jaFXDF7hOtszbyhJOs3ldF/7xeKo1R9JA1znZR+sPtmZSfWRMnxFixMDk470a5iVrce5MgR1RHw==\",\n    \"filename\": \"bmad-speckit-2.0.1.tgz\",\n    \"files\": [\n      {\n        \"path\": \"_bmad/_config/agent-manifest.csv\",\n        \"size\": 17971,\n        \"mode\": 420\n      },\n      {\n        \"path\": \"_bmad/_config/agents/bmb-agent-builder.customize.yaml\",\n        \"size\": 908,\n        \"mode\"",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "cleanup-package-install-surface",
+          "command": "d:\\nvm4w\\nodejs\\node.exe scripts/cleanup-packed-bmad.js",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-12",
+          "command": "node tools/script-migration/run-main-agent-wave-3-3-and-3-4-install-matrix.cjs",
+          "exitCode": 0,
+          "stdoutHash": "sha256:4a2b20805295f826c56fbcdbfbd0b488eeae89f39a5813a39f72f4789dc7bc6a",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "install matrix passed",
+          "stderrPreview": ""
+        }
+      ],
+      "installMatrixEvidence": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.4/install-matrix/save-dev.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.4/install-matrix/npx-package.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.4/install-matrix/no-save.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.4/install-matrix/init-codex.json"
+      ],
+      "deletionAllowed": false,
+      "result": "passed"
+    },
+    {
+      "entryId": "main-agent-delivery-closeout-gate",
+      "originalPath": "scripts/main-agent-delivery-closeout-gate.ts",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/delivery-closeout-gate.js",
+        "packages/bmad-speckit/dist/main-agent/actions/delivery-closeout-gate.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js"
+      ],
+      "commands": [
+        {
+          "commandId": "CMD-05",
+          "command": "npm.cmd run build:main-agent-dist --prefix packages/bmad-speckit",
+          "exitCode": 0,
+          "stdoutHash": "sha256:5e523a349017c7dba3d0cb26c46ab3726e6f2fb782d7210074441b7caf0602ae",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 build:main-agent-dist\n> node scripts/build-main-agent-dist.cjs\n\nbuilt dist/main-agent files=20\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-04",
+          "command": "npm.cmd run test --prefix packages/bmad-speckit -- main-agent-wave-3-3-runtime-actions.test.js",
+          "exitCode": 0,
+          "stdoutHash": "sha256:d87d2df20b6d082357318c0ebf57a3f47ec0b2ba94753e362b0fdc4f4df928c2",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 test\n> node scripts/run-node-tests.cjs main-agent-wave-3-3-runtime-actions.test.js\n\nTAP version 13\n# Subtest: main-agent wave 3.3 package runtime actions\n    # Subtest: ships package source action files without root TypeScript dispatch\n    ok 1 - ships package source action files without root TypeScript dispatch\n      ---\n      duration_ms: 1.498\n      type: 'test'\n      ...\n    # Subtest: supports wave 3.3 actions from package source runtime with stable envelopes\n    ok 2 - supports wave 3.3 actions from package source runtime with stable envelopes\n      ---\n      durati",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-07",
+          "command": "npm.cmd run test --prefix packages/bmad-speckit -- main-agent-wave-3-4-installed-surface-actions.test.js",
+          "exitCode": 0,
+          "stdoutHash": "sha256:79c9ede3af5c1d9b71af1246d64388a65bee72233c2a84176518955350a1cec1",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 test\n> node scripts/run-node-tests.cjs main-agent-wave-3-4-installed-surface-actions.test.js\n\nTAP version 13\n# Subtest: main-agent wave 3.4 installed surface actions\n    # Subtest: ships package source and dist action files for every package_runtime_module route\n    ok 1 - ships package source and dist action files for every package_runtime_module route\n      ---\n      duration_ms: 1.5929\n      type: 'test'\n      ...\n    # Subtest: supports wave 3.4 package runtime routes with stable envelopes\n    ok 2 - supports wave 3.4 package runtime routes with stable envelopes\n     ",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "prepare-package-install-surface",
+          "command": "d:\\nvm4w\\nodejs\\node.exe scripts/prepublish-check.js",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "npm-pack",
+          "command": "npm.cmd pack --pack-destination D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-3.3 --json --ignore-scripts",
+          "exitCode": 0,
+          "stdoutHash": "sha256:3051184ca749a269846156c6a4ffd3eda7753c1d2b3f4849cd4229834f986032",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "[\n  {\n    \"id\": \"bmad-speckit@2.0.1\",\n    \"name\": \"bmad-speckit\",\n    \"version\": \"2.0.1\",\n    \"size\": 5713709,\n    \"unpackedSize\": 24778475,\n    \"shasum\": \"005f0d0f11ef63386fce530458ba4c91023d5376\",\n    \"integrity\": \"sha512-T5tInKnyKr4jaFXDF7hOtszbyhJOs3ldF/7xeKo1R9JA1znZR+sPtmZSfWRMnxFixMDk470a5iVrce5MgR1RHw==\",\n    \"filename\": \"bmad-speckit-2.0.1.tgz\",\n    \"files\": [\n      {\n        \"path\": \"_bmad/_config/agent-manifest.csv\",\n        \"size\": 17971,\n        \"mode\": 420\n      },\n      {\n        \"path\": \"_bmad/_config/agents/bmb-agent-builder.customize.yaml\",\n        \"size\": 908,\n        \"mode\"",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "cleanup-package-install-surface",
+          "command": "d:\\nvm4w\\nodejs\\node.exe scripts/cleanup-packed-bmad.js",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-12",
+          "command": "node tools/script-migration/run-main-agent-wave-3-3-and-3-4-install-matrix.cjs",
+          "exitCode": 0,
+          "stdoutHash": "sha256:4a2b20805295f826c56fbcdbfbd0b488eeae89f39a5813a39f72f4789dc7bc6a",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "install matrix passed",
+          "stderrPreview": ""
+        }
+      ],
+      "installMatrixEvidence": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.4/install-matrix/save-dev.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.4/install-matrix/npx-package.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.4/install-matrix/no-save.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.4/install-matrix/init-codex.json"
+      ],
+      "deletionAllowed": false,
+      "result": "passed"
+    },
+    {
+      "entryId": "main-agent-delivery-evidence-run",
+      "originalPath": "scripts/main-agent-delivery-evidence-run.ts",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/delivery-evidence-run.js",
+        "packages/bmad-speckit/dist/main-agent/actions/delivery-evidence-run.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js"
+      ],
+      "commands": [
+        {
+          "commandId": "CMD-05",
+          "command": "npm.cmd run build:main-agent-dist --prefix packages/bmad-speckit",
+          "exitCode": 0,
+          "stdoutHash": "sha256:5e523a349017c7dba3d0cb26c46ab3726e6f2fb782d7210074441b7caf0602ae",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 build:main-agent-dist\n> node scripts/build-main-agent-dist.cjs\n\nbuilt dist/main-agent files=20\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-04",
+          "command": "npm.cmd run test --prefix packages/bmad-speckit -- main-agent-wave-3-3-runtime-actions.test.js",
+          "exitCode": 0,
+          "stdoutHash": "sha256:d87d2df20b6d082357318c0ebf57a3f47ec0b2ba94753e362b0fdc4f4df928c2",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 test\n> node scripts/run-node-tests.cjs main-agent-wave-3-3-runtime-actions.test.js\n\nTAP version 13\n# Subtest: main-agent wave 3.3 package runtime actions\n    # Subtest: ships package source action files without root TypeScript dispatch\n    ok 1 - ships package source action files without root TypeScript dispatch\n      ---\n      duration_ms: 1.498\n      type: 'test'\n      ...\n    # Subtest: supports wave 3.3 actions from package source runtime with stable envelopes\n    ok 2 - supports wave 3.3 actions from package source runtime with stable envelopes\n      ---\n      durati",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-07",
+          "command": "npm.cmd run test --prefix packages/bmad-speckit -- main-agent-wave-3-4-installed-surface-actions.test.js",
+          "exitCode": 0,
+          "stdoutHash": "sha256:79c9ede3af5c1d9b71af1246d64388a65bee72233c2a84176518955350a1cec1",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 test\n> node scripts/run-node-tests.cjs main-agent-wave-3-4-installed-surface-actions.test.js\n\nTAP version 13\n# Subtest: main-agent wave 3.4 installed surface actions\n    # Subtest: ships package source and dist action files for every package_runtime_module route\n    ok 1 - ships package source and dist action files for every package_runtime_module route\n      ---\n      duration_ms: 1.5929\n      type: 'test'\n      ...\n    # Subtest: supports wave 3.4 package runtime routes with stable envelopes\n    ok 2 - supports wave 3.4 package runtime routes with stable envelopes\n     ",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "prepare-package-install-surface",
+          "command": "d:\\nvm4w\\nodejs\\node.exe scripts/prepublish-check.js",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "npm-pack",
+          "command": "npm.cmd pack --pack-destination D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-3.3 --json --ignore-scripts",
+          "exitCode": 0,
+          "stdoutHash": "sha256:3051184ca749a269846156c6a4ffd3eda7753c1d2b3f4849cd4229834f986032",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "[\n  {\n    \"id\": \"bmad-speckit@2.0.1\",\n    \"name\": \"bmad-speckit\",\n    \"version\": \"2.0.1\",\n    \"size\": 5713709,\n    \"unpackedSize\": 24778475,\n    \"shasum\": \"005f0d0f11ef63386fce530458ba4c91023d5376\",\n    \"integrity\": \"sha512-T5tInKnyKr4jaFXDF7hOtszbyhJOs3ldF/7xeKo1R9JA1znZR+sPtmZSfWRMnxFixMDk470a5iVrce5MgR1RHw==\",\n    \"filename\": \"bmad-speckit-2.0.1.tgz\",\n    \"files\": [\n      {\n        \"path\": \"_bmad/_config/agent-manifest.csv\",\n        \"size\": 17971,\n        \"mode\": 420\n      },\n      {\n        \"path\": \"_bmad/_config/agents/bmb-agent-builder.customize.yaml\",\n        \"size\": 908,\n        \"mode\"",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "cleanup-package-install-surface",
+          "command": "d:\\nvm4w\\nodejs\\node.exe scripts/cleanup-packed-bmad.js",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-12",
+          "command": "node tools/script-migration/run-main-agent-wave-3-3-and-3-4-install-matrix.cjs",
+          "exitCode": 0,
+          "stdoutHash": "sha256:4a2b20805295f826c56fbcdbfbd0b488eeae89f39a5813a39f72f4789dc7bc6a",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "install matrix passed",
+          "stderrPreview": ""
+        }
+      ],
+      "installMatrixEvidence": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.4/install-matrix/save-dev.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.4/install-matrix/npx-package.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.4/install-matrix/no-save.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.4/install-matrix/init-codex.json"
+      ],
+      "deletionAllowed": false,
+      "result": "passed"
+    },
+    {
+      "entryId": "main-agent-soak-runner",
+      "originalPath": "scripts/main-agent-soak-runner.ts",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/soak-runner.js",
+        "packages/bmad-speckit/dist/main-agent/actions/soak-runner.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js"
+      ],
+      "commands": [
+        {
+          "commandId": "CMD-05",
+          "command": "npm.cmd run build:main-agent-dist --prefix packages/bmad-speckit",
+          "exitCode": 0,
+          "stdoutHash": "sha256:5e523a349017c7dba3d0cb26c46ab3726e6f2fb782d7210074441b7caf0602ae",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 build:main-agent-dist\n> node scripts/build-main-agent-dist.cjs\n\nbuilt dist/main-agent files=20\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-04",
+          "command": "npm.cmd run test --prefix packages/bmad-speckit -- main-agent-wave-3-3-runtime-actions.test.js",
+          "exitCode": 0,
+          "stdoutHash": "sha256:d87d2df20b6d082357318c0ebf57a3f47ec0b2ba94753e362b0fdc4f4df928c2",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 test\n> node scripts/run-node-tests.cjs main-agent-wave-3-3-runtime-actions.test.js\n\nTAP version 13\n# Subtest: main-agent wave 3.3 package runtime actions\n    # Subtest: ships package source action files without root TypeScript dispatch\n    ok 1 - ships package source action files without root TypeScript dispatch\n      ---\n      duration_ms: 1.498\n      type: 'test'\n      ...\n    # Subtest: supports wave 3.3 actions from package source runtime with stable envelopes\n    ok 2 - supports wave 3.3 actions from package source runtime with stable envelopes\n      ---\n      durati",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-07",
+          "command": "npm.cmd run test --prefix packages/bmad-speckit -- main-agent-wave-3-4-installed-surface-actions.test.js",
+          "exitCode": 0,
+          "stdoutHash": "sha256:79c9ede3af5c1d9b71af1246d64388a65bee72233c2a84176518955350a1cec1",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 test\n> node scripts/run-node-tests.cjs main-agent-wave-3-4-installed-surface-actions.test.js\n\nTAP version 13\n# Subtest: main-agent wave 3.4 installed surface actions\n    # Subtest: ships package source and dist action files for every package_runtime_module route\n    ok 1 - ships package source and dist action files for every package_runtime_module route\n      ---\n      duration_ms: 1.5929\n      type: 'test'\n      ...\n    # Subtest: supports wave 3.4 package runtime routes with stable envelopes\n    ok 2 - supports wave 3.4 package runtime routes with stable envelopes\n     ",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "prepare-package-install-surface",
+          "command": "d:\\nvm4w\\nodejs\\node.exe scripts/prepublish-check.js",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "npm-pack",
+          "command": "npm.cmd pack --pack-destination D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-3.3 --json --ignore-scripts",
+          "exitCode": 0,
+          "stdoutHash": "sha256:3051184ca749a269846156c6a4ffd3eda7753c1d2b3f4849cd4229834f986032",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "[\n  {\n    \"id\": \"bmad-speckit@2.0.1\",\n    \"name\": \"bmad-speckit\",\n    \"version\": \"2.0.1\",\n    \"size\": 5713709,\n    \"unpackedSize\": 24778475,\n    \"shasum\": \"005f0d0f11ef63386fce530458ba4c91023d5376\",\n    \"integrity\": \"sha512-T5tInKnyKr4jaFXDF7hOtszbyhJOs3ldF/7xeKo1R9JA1znZR+sPtmZSfWRMnxFixMDk470a5iVrce5MgR1RHw==\",\n    \"filename\": \"bmad-speckit-2.0.1.tgz\",\n    \"files\": [\n      {\n        \"path\": \"_bmad/_config/agent-manifest.csv\",\n        \"size\": 17971,\n        \"mode\": 420\n      },\n      {\n        \"path\": \"_bmad/_config/agents/bmb-agent-builder.customize.yaml\",\n        \"size\": 908,\n        \"mode\"",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "cleanup-package-install-surface",
+          "command": "d:\\nvm4w\\nodejs\\node.exe scripts/cleanup-packed-bmad.js",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-12",
+          "command": "node tools/script-migration/run-main-agent-wave-3-3-and-3-4-install-matrix.cjs",
+          "exitCode": 0,
+          "stdoutHash": "sha256:4a2b20805295f826c56fbcdbfbd0b488eeae89f39a5813a39f72f4789dc7bc6a",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "install matrix passed",
+          "stderrPreview": ""
+        }
+      ],
+      "installMatrixEvidence": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.4/install-matrix/save-dev.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.4/install-matrix/npx-package.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.4/install-matrix/no-save.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.4/install-matrix/init-codex.json"
+      ],
+      "deletionAllowed": false,
+      "result": "passed"
+    },
+    {
+      "entryId": "main-agent-dual-host-pr-orchestrator",
+      "originalPath": "scripts/main-agent-dual-host-pr-orchestrator.ts",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/dual-host-pr-orchestrator.js",
+        "packages/bmad-speckit/dist/main-agent/actions/dual-host-pr-orchestrator.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js"
+      ],
+      "commands": [
+        {
+          "commandId": "CMD-05",
+          "command": "npm.cmd run build:main-agent-dist --prefix packages/bmad-speckit",
+          "exitCode": 0,
+          "stdoutHash": "sha256:5e523a349017c7dba3d0cb26c46ab3726e6f2fb782d7210074441b7caf0602ae",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 build:main-agent-dist\n> node scripts/build-main-agent-dist.cjs\n\nbuilt dist/main-agent files=20\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-04",
+          "command": "npm.cmd run test --prefix packages/bmad-speckit -- main-agent-wave-3-3-runtime-actions.test.js",
+          "exitCode": 0,
+          "stdoutHash": "sha256:d87d2df20b6d082357318c0ebf57a3f47ec0b2ba94753e362b0fdc4f4df928c2",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 test\n> node scripts/run-node-tests.cjs main-agent-wave-3-3-runtime-actions.test.js\n\nTAP version 13\n# Subtest: main-agent wave 3.3 package runtime actions\n    # Subtest: ships package source action files without root TypeScript dispatch\n    ok 1 - ships package source action files without root TypeScript dispatch\n      ---\n      duration_ms: 1.498\n      type: 'test'\n      ...\n    # Subtest: supports wave 3.3 actions from package source runtime with stable envelopes\n    ok 2 - supports wave 3.3 actions from package source runtime with stable envelopes\n      ---\n      durati",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-07",
+          "command": "npm.cmd run test --prefix packages/bmad-speckit -- main-agent-wave-3-4-installed-surface-actions.test.js",
+          "exitCode": 0,
+          "stdoutHash": "sha256:79c9ede3af5c1d9b71af1246d64388a65bee72233c2a84176518955350a1cec1",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 test\n> node scripts/run-node-tests.cjs main-agent-wave-3-4-installed-surface-actions.test.js\n\nTAP version 13\n# Subtest: main-agent wave 3.4 installed surface actions\n    # Subtest: ships package source and dist action files for every package_runtime_module route\n    ok 1 - ships package source and dist action files for every package_runtime_module route\n      ---\n      duration_ms: 1.5929\n      type: 'test'\n      ...\n    # Subtest: supports wave 3.4 package runtime routes with stable envelopes\n    ok 2 - supports wave 3.4 package runtime routes with stable envelopes\n     ",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "prepare-package-install-surface",
+          "command": "d:\\nvm4w\\nodejs\\node.exe scripts/prepublish-check.js",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "npm-pack",
+          "command": "npm.cmd pack --pack-destination D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-3.3 --json --ignore-scripts",
+          "exitCode": 0,
+          "stdoutHash": "sha256:3051184ca749a269846156c6a4ffd3eda7753c1d2b3f4849cd4229834f986032",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "[\n  {\n    \"id\": \"bmad-speckit@2.0.1\",\n    \"name\": \"bmad-speckit\",\n    \"version\": \"2.0.1\",\n    \"size\": 5713709,\n    \"unpackedSize\": 24778475,\n    \"shasum\": \"005f0d0f11ef63386fce530458ba4c91023d5376\",\n    \"integrity\": \"sha512-T5tInKnyKr4jaFXDF7hOtszbyhJOs3ldF/7xeKo1R9JA1znZR+sPtmZSfWRMnxFixMDk470a5iVrce5MgR1RHw==\",\n    \"filename\": \"bmad-speckit-2.0.1.tgz\",\n    \"files\": [\n      {\n        \"path\": \"_bmad/_config/agent-manifest.csv\",\n        \"size\": 17971,\n        \"mode\": 420\n      },\n      {\n        \"path\": \"_bmad/_config/agents/bmb-agent-builder.customize.yaml\",\n        \"size\": 908,\n        \"mode\"",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "cleanup-package-install-surface",
+          "command": "d:\\nvm4w\\nodejs\\node.exe scripts/cleanup-packed-bmad.js",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-12",
+          "command": "node tools/script-migration/run-main-agent-wave-3-3-and-3-4-install-matrix.cjs",
+          "exitCode": 0,
+          "stdoutHash": "sha256:4a2b20805295f826c56fbcdbfbd0b488eeae89f39a5813a39f72f4789dc7bc6a",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "install matrix passed",
+          "stderrPreview": ""
+        }
+      ],
+      "installMatrixEvidence": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.4/install-matrix/save-dev.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.4/install-matrix/npx-package.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.4/install-matrix/no-save.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.4/install-matrix/init-codex.json"
+      ],
+      "deletionAllowed": false,
+      "result": "passed"
+    },
+    {
+      "entryId": "main-agent-chaos-scenarios",
+      "originalPath": "scripts/main-agent-chaos-scenarios.ts",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/chaos-scenarios.js",
+        "packages/bmad-speckit/dist/main-agent/actions/chaos-scenarios.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js"
+      ],
+      "commands": [
+        {
+          "commandId": "CMD-05",
+          "command": "npm.cmd run build:main-agent-dist --prefix packages/bmad-speckit",
+          "exitCode": 0,
+          "stdoutHash": "sha256:5e523a349017c7dba3d0cb26c46ab3726e6f2fb782d7210074441b7caf0602ae",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 build:main-agent-dist\n> node scripts/build-main-agent-dist.cjs\n\nbuilt dist/main-agent files=20\n",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-04",
+          "command": "npm.cmd run test --prefix packages/bmad-speckit -- main-agent-wave-3-3-runtime-actions.test.js",
+          "exitCode": 0,
+          "stdoutHash": "sha256:d87d2df20b6d082357318c0ebf57a3f47ec0b2ba94753e362b0fdc4f4df928c2",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 test\n> node scripts/run-node-tests.cjs main-agent-wave-3-3-runtime-actions.test.js\n\nTAP version 13\n# Subtest: main-agent wave 3.3 package runtime actions\n    # Subtest: ships package source action files without root TypeScript dispatch\n    ok 1 - ships package source action files without root TypeScript dispatch\n      ---\n      duration_ms: 1.498\n      type: 'test'\n      ...\n    # Subtest: supports wave 3.3 actions from package source runtime with stable envelopes\n    ok 2 - supports wave 3.3 actions from package source runtime with stable envelopes\n      ---\n      durati",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-07",
+          "command": "npm.cmd run test --prefix packages/bmad-speckit -- main-agent-wave-3-4-installed-surface-actions.test.js",
+          "exitCode": 0,
+          "stdoutHash": "sha256:79c9ede3af5c1d9b71af1246d64388a65bee72233c2a84176518955350a1cec1",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "\n> bmad-speckit@2.0.1 test\n> node scripts/run-node-tests.cjs main-agent-wave-3-4-installed-surface-actions.test.js\n\nTAP version 13\n# Subtest: main-agent wave 3.4 installed surface actions\n    # Subtest: ships package source and dist action files for every package_runtime_module route\n    ok 1 - ships package source and dist action files for every package_runtime_module route\n      ---\n      duration_ms: 1.5929\n      type: 'test'\n      ...\n    # Subtest: supports wave 3.4 package runtime routes with stable envelopes\n    ok 2 - supports wave 3.4 package runtime routes with stable envelopes\n     ",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "prepare-package-install-surface",
+          "command": "d:\\nvm4w\\nodejs\\node.exe scripts/prepublish-check.js",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "npm-pack",
+          "command": "npm.cmd pack --pack-destination D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-3.3 --json --ignore-scripts",
+          "exitCode": 0,
+          "stdoutHash": "sha256:3051184ca749a269846156c6a4ffd3eda7753c1d2b3f4849cd4229834f986032",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "[\n  {\n    \"id\": \"bmad-speckit@2.0.1\",\n    \"name\": \"bmad-speckit\",\n    \"version\": \"2.0.1\",\n    \"size\": 5713709,\n    \"unpackedSize\": 24778475,\n    \"shasum\": \"005f0d0f11ef63386fce530458ba4c91023d5376\",\n    \"integrity\": \"sha512-T5tInKnyKr4jaFXDF7hOtszbyhJOs3ldF/7xeKo1R9JA1znZR+sPtmZSfWRMnxFixMDk470a5iVrce5MgR1RHw==\",\n    \"filename\": \"bmad-speckit-2.0.1.tgz\",\n    \"files\": [\n      {\n        \"path\": \"_bmad/_config/agent-manifest.csv\",\n        \"size\": 17971,\n        \"mode\": 420\n      },\n      {\n        \"path\": \"_bmad/_config/agents/bmb-agent-builder.customize.yaml\",\n        \"size\": 908,\n        \"mode\"",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "cleanup-package-install-surface",
+          "command": "d:\\nvm4w\\nodejs\\node.exe scripts/cleanup-packed-bmad.js",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "",
+          "stderrPreview": ""
+        },
+        {
+          "commandId": "CMD-12",
+          "command": "node tools/script-migration/run-main-agent-wave-3-3-and-3-4-install-matrix.cjs",
+          "exitCode": 0,
+          "stdoutHash": "sha256:4a2b20805295f826c56fbcdbfbd0b488eeae89f39a5813a39f72f4789dc7bc6a",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdoutPreview": "install matrix passed",
+          "stderrPreview": ""
+        }
+      ],
+      "installMatrixEvidence": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.4/install-matrix/save-dev.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.4/install-matrix/npx-package.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.4/install-matrix/no-save.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.4/install-matrix/init-codex.json"
+      ],
+      "deletionAllowed": false,
+      "result": "passed"
+    }
+  ],
+  "installMatrixEvidence": [
+    "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.4/install-matrix/save-dev.json",
+    "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.4/install-matrix/npx-package.json",
+    "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.4/install-matrix/no-save.json",
+    "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.4/install-matrix/init-codex.json"
+  ],
+  "noRootScriptDeletion": true,
+  "rootScriptDeletionApproved": false,
+  "result": "passed"
+}

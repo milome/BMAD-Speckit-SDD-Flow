@@ -1,0 +1,909 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-wave-3.11-install-matrix/v1",
+  "waveId": "main-agent-runtime-migration-wave-3.11",
+  "status": "passed",
+  "startedAt": "2026-06-06T02:19:33.866Z",
+  "completedAt": "2026-06-06T02:21:14.767Z",
+  "packageCwd": "packages/bmad-speckit",
+  "packageName": "bmad-speckit",
+  "packageVersion": "2.0.1",
+  "tarballPath": ".tmp/main-agent-runtime-migration-wave-3.11/pack-46odso/bmad-speckit-2.0.1.tgz",
+  "tarballSha256": "sha256:599696fe4af694b08423ed62120a03cfb57c4aac76124f3c3e22a1a4d4a71483",
+  "scoringPackageSourceCwd": "packages/scoring",
+  "scoringPackageName": "@bmad-speckit/scoring",
+  "scoringWorkspaceVersion": "2.0.1",
+  "scoringWorkspaceDistHashes": {
+    "dist/eval-questions/template-generator.js": "sha256:8a4356d8674f42cbc738632b90774d1b5537e61e7378a56e8271caa3b22fe54d",
+    "dist/eval-questions/manifest-loader.js": "sha256:a42de048079e9c160fef4d2a81860bc448a6cfe5383c4bab32d9f16873a2b3b9"
+  },
+  "prepackPrepCommands": [
+    {
+      "command": "npm run build:scoring",
+      "cwd": "",
+      "exitCode": 0,
+      "stdoutHash": "sha256:7ffa27e41ff329b070e79591c10027aef3cdc08cfcc2626460d8786c30755ce2",
+      "stderrHash": "sha256:871c2553128ffdcf137e153a1d100b20df18dbe930a605b964630c151d9e0407",
+      "startedAt": "2026-06-06T02:19:33.867Z",
+      "completedAt": "2026-06-06T02:19:38.174Z",
+      "status": "passed",
+      "stdoutPreview": "\n> bmad-speckit-sdd-flow@2.0.1 build:scoring\n> cd packages/scoring && npm run build\n\n\n> @bmad-speckit/scoring@2.0.1 build\n> npm run build:dashboard-ui && tsc --outDir dist\n\n\n> @bmad-speckit/scoring@2.0.1 build:dashboard-ui\n> node dashboard/ui/build.mjs\n\n",
+      "stderrPreview": "\u001b[3m\u001b[1m\u001b[34m≈\u001b[39m\u001b[22m\u001b[23m tailwindcss \u001b[34mv4.2.2\u001b[39m\n\nDone in \u001b[34m68ms\u001b[39m\n\n  app.js   224.4kb\n  app.css    4.5kb\n\n⚡ Done in 50ms\n"
+    },
+    {
+      "command": "npm run build:runtime-context",
+      "cwd": "",
+      "exitCode": 0,
+      "stdoutHash": "sha256:121f2b8f88fe822c22c415a596ab0b3b68dfe98377969c33c01bd75f03dea901",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "startedAt": "2026-06-06T02:19:38.174Z",
+      "completedAt": "2026-06-06T02:19:40.145Z",
+      "status": "passed",
+      "stdoutPreview": "\n> bmad-speckit-sdd-flow@2.0.1 build:runtime-context\n> npm run build -w @bmad-speckit/runtime-context\n\n\n> @bmad-speckit/runtime-context@2.0.1 build\n> tsc --project tsconfig.json\n\n",
+      "stderrPreview": ""
+    },
+    {
+      "command": "npm run build:runtime-emit",
+      "cwd": "",
+      "exitCode": 0,
+      "stdoutHash": "sha256:484a1079643ba3f3564875062901906ae990ba4ef2ab3b85b756d4e50420967a",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "startedAt": "2026-06-06T02:19:40.145Z",
+      "completedAt": "2026-06-06T02:19:41.441Z",
+      "status": "passed",
+      "stdoutPreview": "\n> bmad-speckit-sdd-flow@2.0.1 build:runtime-emit\n> npm run build -w @bmad-speckit/runtime-emit\n\n\n> @bmad-speckit/runtime-emit@2.0.1 build\n> node build.js\n\nruntime-emit: wrote packages\\runtime-emit\\dist\\emit-runtime-policy.cjs\nruntime-emit: wrote packages\\runtime-emit\\dist\\resolve-for-session.cjs\nruntime-emit: wrote packages\\runtime-emit\\dist\\render-audit-block.cjs\nruntime-emit: wrote packages\\runtime-emit\\dist\\consumer-mcp-server.cjs\nruntime-emit: wrote packages\\runtime-emit\\dist\\update-runtime-audit-index.cjs\nruntime-emit: wrote packages\\runtime-emit\\dist\\auditor-post-actions.cjs\nruntime-emit: wrote packages\\runtime-emit\\dist\\run-auditor-host.cjs\n",
+      "stderrPreview": ""
+    },
+    {
+      "command": "npm run build:ralph-method",
+      "cwd": "",
+      "exitCode": 0,
+      "stdoutHash": "sha256:1dddf2a7636f36cb22200dbf1d9f3929d8752f2aee6be3cd7cb0f255f326e415",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "startedAt": "2026-06-06T02:19:41.441Z",
+      "completedAt": "2026-06-06T02:19:43.165Z",
+      "status": "passed",
+      "stdoutPreview": "\n> bmad-speckit-sdd-flow@2.0.1 build:ralph-method\n> npm run build -w @bmad-speckit/ralph-method\n\n\n> @bmad-speckit/ralph-method@2.0.1 build\n> tsc --project tsconfig.json\n\n",
+      "stderrPreview": ""
+    },
+    {
+      "command": "npm run build:main-agent-dist",
+      "cwd": "",
+      "exitCode": 0,
+      "stdoutHash": "sha256:34a81a86c03b093fe182fc734c0198bf48dc270d534bc907a04ab597f6fcf9e5",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "startedAt": "2026-06-06T02:19:43.165Z",
+      "completedAt": "2026-06-06T02:19:44.315Z",
+      "status": "passed",
+      "stdoutPreview": "\n> bmad-speckit-sdd-flow@2.0.1 build:main-agent-dist\n> npm run build:main-agent-dist --prefix packages/bmad-speckit\n\n\n> bmad-speckit@2.0.1 build:main-agent-dist\n> node scripts/build-main-agent-dist.cjs\n\nbuilt dist/main-agent files=96 package files=1\n",
+      "stderrPreview": ""
+    },
+    {
+      "command": "d:\\nvm4w\\nodejs\\node.exe scripts/prepublish-check.js",
+      "cwd": "",
+      "exitCode": 0,
+      "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "startedAt": "2026-06-06T02:19:44.315Z",
+      "completedAt": "2026-06-06T02:19:47.053Z",
+      "status": "passed",
+      "stdoutPreview": "",
+      "stderrPreview": ""
+    }
+  ],
+  "cleanupCommands": [
+    {
+      "command": "d:\\nvm4w\\nodejs\\node.exe scripts/cleanup-packed-bmad.js",
+      "cwd": "",
+      "exitCode": 0,
+      "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "startedAt": "2026-06-06T02:21:14.202Z",
+      "completedAt": "2026-06-06T02:21:14.766Z",
+      "status": "passed",
+      "stdoutPreview": "",
+      "stderrPreview": ""
+    },
+    {
+      "command": "runner-owned cleanup packages/bmad-speckit/_bmad",
+      "cwd": "",
+      "exitCode": 0,
+      "stdoutHash": "sha256:899abb9b47debc30d7c13abc55da103c42e81eb09faeef93c9385d50b8fbcf70",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "startedAt": "2026-06-06T02:21:14.766Z",
+      "completedAt": "2026-06-06T02:21:14.766Z",
+      "status": "passed",
+      "stdoutPreview": "{\"surface\":\"packages/bmad-speckit/_bmad\",\"removed\":true}\n",
+      "stderrPreview": ""
+    },
+    {
+      "command": "runner-owned cleanup packages/bmad-speckit/_bmad.staging",
+      "cwd": "",
+      "exitCode": 0,
+      "stdoutHash": "sha256:4b043d85c6686c45d5d889070ff226a9db5a26df50faf86ee0fed9fadfccf4c8",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "startedAt": "2026-06-06T02:21:14.766Z",
+      "completedAt": "2026-06-06T02:21:14.766Z",
+      "status": "passed",
+      "stdoutPreview": "{\"surface\":\"packages/bmad-speckit/_bmad.staging\",\"removed\":true}\n",
+      "stderrPreview": ""
+    },
+    {
+      "command": "runner-owned cleanup packages/bmad-speckit/_bmad.old",
+      "cwd": "",
+      "exitCode": 0,
+      "stdoutHash": "sha256:e7cf1db8a7ab65a3e57a44e7ce3c9079c8a0db75430378b95d4a5f378a555929",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "startedAt": "2026-06-06T02:21:14.766Z",
+      "completedAt": "2026-06-06T02:21:14.766Z",
+      "status": "passed",
+      "stdoutPreview": "{\"surface\":\"packages/bmad-speckit/_bmad.old\",\"removed\":true}\n",
+      "stderrPreview": ""
+    },
+    {
+      "command": "runner-owned cleanup packages/bmad-speckit/node_modules/@bmad-speckit",
+      "cwd": "",
+      "exitCode": 0,
+      "stdoutHash": "sha256:3d9997346490804ff27ffb7067b4b7937c0a967ba0e1e8776828635a516fcfba",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "startedAt": "2026-06-06T02:21:14.766Z",
+      "completedAt": "2026-06-06T02:21:14.766Z",
+      "status": "passed",
+      "stdoutPreview": "{\"surface\":\"packages/bmad-speckit/node_modules/@bmad-speckit\",\"removed\":true}\n",
+      "stderrPreview": ""
+    },
+    {
+      "command": "runner-owned cleanup packages/bmad-speckit/node_modules/@bmad-speckit.staging",
+      "cwd": "",
+      "exitCode": 0,
+      "stdoutHash": "sha256:c9d352f787edaa103b40b41397c2dd8c139b2dcd8c66c453623a362b91d093f5",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "startedAt": "2026-06-06T02:21:14.766Z",
+      "completedAt": "2026-06-06T02:21:14.766Z",
+      "status": "passed",
+      "stdoutPreview": "{\"surface\":\"packages/bmad-speckit/node_modules/@bmad-speckit.staging\",\"removed\":true}\n",
+      "stderrPreview": ""
+    },
+    {
+      "command": "runner-owned cleanup packages/bmad-speckit/node_modules/@bmad-speckit.old",
+      "cwd": "",
+      "exitCode": 0,
+      "stdoutHash": "sha256:9147775abc0d44310b14d02d9904b49a44cae6fa9ef21809d2be7b5528f70595",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "startedAt": "2026-06-06T02:21:14.766Z",
+      "completedAt": "2026-06-06T02:21:14.766Z",
+      "status": "passed",
+      "stdoutPreview": "{\"surface\":\"packages/bmad-speckit/node_modules/@bmad-speckit.old\",\"removed\":true}\n",
+      "stderrPreview": ""
+    },
+    {
+      "command": "runner-owned cleanup packages/bmad-speckit/node_modules/.pack-session-count.json",
+      "cwd": "",
+      "exitCode": 0,
+      "stdoutHash": "sha256:9b74cf84cf40d8dbd09b34c0657e5f53755e55d7d77c2d010980f58f90ba8957",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "startedAt": "2026-06-06T02:21:14.766Z",
+      "completedAt": "2026-06-06T02:21:14.766Z",
+      "status": "passed",
+      "stdoutPreview": "{\"surface\":\"packages/bmad-speckit/node_modules/.pack-session-count.json\",\"removed\":true}\n",
+      "stderrPreview": ""
+    },
+    {
+      "command": "runner-owned cleanup packages/bmad-speckit/node_modules/.pack-session.lock",
+      "cwd": "",
+      "exitCode": 0,
+      "stdoutHash": "sha256:0d66b812ba1bf0b7b8b87009b2703f00615d69de2a985b1adda8efbd3bd99f24",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "startedAt": "2026-06-06T02:21:14.766Z",
+      "completedAt": "2026-06-06T02:21:14.766Z",
+      "status": "passed",
+      "stdoutPreview": "{\"surface\":\"packages/bmad-speckit/node_modules/.pack-session.lock\",\"removed\":true}\n",
+      "stderrPreview": ""
+    },
+    {
+      "command": "runner-owned cleanup packages/bmad-speckit/node_modules/.prepublish-sync.lock",
+      "cwd": "",
+      "exitCode": 0,
+      "stdoutHash": "sha256:52bb078def5030560191d73e004b530c878b10db22fe31e13d2b1519071011a9",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "startedAt": "2026-06-06T02:21:14.766Z",
+      "completedAt": "2026-06-06T02:21:14.767Z",
+      "status": "passed",
+      "stdoutPreview": "{\"surface\":\"packages/bmad-speckit/node_modules/.prepublish-sync.lock\",\"removed\":true}\n",
+      "stderrPreview": ""
+    },
+    {
+      "command": "runner-owned staging absence check",
+      "cwd": "",
+      "exitCode": 0,
+      "stdoutHash": "sha256:67ab20e186f8b2494a2585d3b01f73cd707191b42f6ba07375bba2bc0d6f70fc",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "startedAt": "2026-06-06T02:21:14.767Z",
+      "completedAt": "2026-06-06T02:21:14.767Z",
+      "status": "passed",
+      "stdoutPreview": "{\"absent\":true,\"checked\":[\"packages/bmad-speckit/_bmad\",\"packages/bmad-speckit/_bmad.staging\",\"packages/bmad-speckit/_bmad.old\",\"packages/bmad-speckit/node_modules/@bmad-speckit\",\"packages/bmad-speckit/node_modules/@bmad-speckit.staging\",\"packages/bmad-speckit/node_modules/@bmad-speckit.old\",\"packages/bmad-speckit/node_modules/.pack-session-count.json\",\"packages/bmad-speckit/node_modules/.pack-session.lock\",\"packages/bmad-speckit/node_modules/.prepublish-sync.lock\"]}\n",
+      "stderrPreview": ""
+    }
+  ],
+  "modes": [
+    {
+      "mode": "save-dev",
+      "status": "passed",
+      "consumerRoot": ".tmp/main-agent-runtime-migration-wave-3.11/save-dev-lnTTMC/consumer",
+      "probeRoot": ".tmp/main-agent-runtime-migration-wave-3.11/save-dev-lnTTMC/consumer",
+      "requireProbeRoot": ".tmp/main-agent-runtime-migration-wave-3.11/save-dev-lnTTMC/consumer",
+      "packageRoot": ".tmp/main-agent-runtime-migration-wave-3.11/save-dev-lnTTMC/consumer/node_modules/bmad-speckit",
+      "receiptPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/install-matrix/save-dev.json",
+      "commands": [
+        {
+          "command": "npm install --save-dev D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\pack-46odso\\bmad-speckit-2.0.1.tgz",
+          "cwd": ".tmp/main-agent-runtime-migration-wave-3.11/save-dev-lnTTMC/consumer",
+          "exitCode": 0,
+          "stdoutHash": "sha256:1ef290bf3c559f4a22d45eed0274265f124b57df7240abd13d955aea539e21fc",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "startedAt": "2026-06-06T02:19:52.134Z",
+          "completedAt": "2026-06-06T02:20:08.113Z",
+          "status": "passed",
+          "stdoutPreview": "\nadded 101 packages in 16s\n\n45 packages are looking for funding\n  run `npm fund` for details\n",
+          "stderrPreview": ""
+        },
+        {
+          "command": "d:\\nvm4w\\nodejs\\node.exe D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\save-dev-lnTTMC\\consumer\\probe-runtime.cjs",
+          "cwd": ".tmp/main-agent-runtime-migration-wave-3.11/save-dev-lnTTMC/consumer",
+          "exitCode": 0,
+          "stdoutHash": "sha256:2d4c35b7f0d0f7cbb9d59024588162dde39c3917144ca7586a5668164d1813b3",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "startedAt": "2026-06-06T02:20:08.114Z",
+          "completedAt": "2026-06-06T02:20:08.255Z",
+          "status": "passed",
+          "stdoutPreview": "{\"rowId\":\"IM001\",\"passed\":true}\n",
+          "stderrPreview": ""
+        },
+        {
+          "command": "d:\\nvm4w\\nodejs\\node.exe D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\save-dev-lnTTMC\\consumer\\probe-helpers.cjs",
+          "cwd": ".tmp/main-agent-runtime-migration-wave-3.11/save-dev-lnTTMC/consumer",
+          "exitCode": 0,
+          "stdoutHash": "sha256:9f0eb6ad16a9d458a707f488fd1330f363b591bebefcff9a41c9ad11b1cb6005",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "startedAt": "2026-06-06T02:20:08.256Z",
+          "completedAt": "2026-06-06T02:20:08.395Z",
+          "status": "passed",
+          "stdoutPreview": "{\"rowId\":\"IM002\",\"passed\":true}\n",
+          "stderrPreview": ""
+        },
+        {
+          "command": "d:\\nvm4w\\nodejs\\node.exe D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\save-dev-lnTTMC\\consumer\\node_modules\\bmad-speckit\\bin\\bmad-speckit.js eval-question-generate --input D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\save-dev-lnTTMC\\consumer\\coach-report.json --outputDir D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\save-dev-lnTTMC\\consumer\\eval-output --version v1 && manifest-loader probe",
+          "cwd": ".tmp/main-agent-runtime-migration-wave-3.11/save-dev-lnTTMC/consumer",
+          "exitCode": 0,
+          "stdoutHash": "sha256:48bff8719df5cbbd5f7d52ccdb278a5dbcea2565253ee70ec9e4cc9ccbacdece",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "startedAt": "2026-06-06T02:20:08.397Z",
+          "completedAt": "2026-06-06T02:20:08.673Z",
+          "status": "passed",
+          "stdoutPreview": "Created: eval-output/gen-1780712408514-0-spec.md\nCreated: eval-output/gen-1780712408514-1-plan.md\nCreated: eval-output/gen-1780712408514-2-specplan-acceptanceevidence.md\nManifest: eval-output/manifest.yaml\n{\"rowId\":\"IM003\",\"passed\":true,\"questionCount\":3}\n",
+          "stderrPreview": ""
+        },
+        {
+          "command": "d:\\nvm4w\\nodejs\\node.exe D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\save-dev-lnTTMC\\consumer\\node_modules\\bmad-speckit\\bin\\bmad-speckit.js check-score --epic 9 --story 1 --dataPath D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\save-dev-lnTTMC\\consumer\\scores",
+          "cwd": ".tmp/main-agent-runtime-migration-wave-3.11/save-dev-lnTTMC/consumer",
+          "exitCode": 0,
+          "stdoutHash": "sha256:9fed35b640da58bd2e51116282e32cbb752362673a513779b7b6658923d36b51",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "startedAt": "2026-06-06T02:20:08.675Z",
+          "completedAt": "2026-06-06T02:20:08.809Z",
+          "status": "passed",
+          "stdoutPreview": "STORY_SCORE_WRITTEN:yes\nFound 1 record(s) for epic=9 story=1\n",
+          "stderrPreview": ""
+        }
+      ],
+      "rows": [
+        {
+          "mode": "save-dev",
+          "rowId": "IM001",
+          "commandSurface": "installed package direct runtime require probe",
+          "status": "passed",
+          "command": "d:\\nvm4w\\nodejs\\node.exe D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\save-dev-lnTTMC\\consumer\\probe-runtime.cjs",
+          "cwd": ".tmp/main-agent-runtime-migration-wave-3.11/save-dev-lnTTMC/consumer",
+          "exitCode": 0,
+          "receiptPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/install-matrix/save-dev.json",
+          "stdoutHash": "sha256:2d4c35b7f0d0f7cbb9d59024588162dde39c3917144ca7586a5668164d1813b3",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "usedRootScript": false,
+          "usedTsx": false,
+          "usedTsNode": false,
+          "usedCompiledFallback": false,
+          "assertions": [
+            "runtime modules resolve from installed package dist",
+            "D006 runtime exports exist",
+            "no root script, tsx, ts-node, or compiled fallback used"
+          ]
+        },
+        {
+          "mode": "save-dev",
+          "rowId": "IM002",
+          "commandSurface": "installed package direct helper require probe",
+          "status": "passed",
+          "command": "d:\\nvm4w\\nodejs\\node.exe D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\save-dev-lnTTMC\\consumer\\probe-helpers.cjs",
+          "cwd": ".tmp/main-agent-runtime-migration-wave-3.11/save-dev-lnTTMC/consumer",
+          "exitCode": 0,
+          "receiptPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/install-matrix/save-dev.json",
+          "stdoutHash": "sha256:9f0eb6ad16a9d458a707f488fd1330f363b591bebefcff9a41c9ad11b1cb6005",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "usedRootScript": false,
+          "usedTsx": false,
+          "usedTsNode": false,
+          "usedCompiledFallback": false,
+          "assertions": [
+            "helper modules resolve from installed package dist",
+            "D006 helper exports exist",
+            "fixture-backed helper calls pass without root script or TypeScript runner"
+          ]
+        },
+        {
+          "mode": "save-dev",
+          "rowId": "IM003",
+          "commandSurface": "installed bmad-speckit eval-question-generate --input",
+          "status": "passed",
+          "command": "d:\\nvm4w\\nodejs\\node.exe D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\save-dev-lnTTMC\\consumer\\node_modules\\bmad-speckit\\bin\\bmad-speckit.js eval-question-generate --input D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\save-dev-lnTTMC\\consumer\\coach-report.json --outputDir D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\save-dev-lnTTMC\\consumer\\eval-output --version v1 && manifest-loader probe",
+          "cwd": ".tmp/main-agent-runtime-migration-wave-3.11/save-dev-lnTTMC/consumer",
+          "exitCode": 0,
+          "receiptPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/install-matrix/save-dev.json",
+          "stdoutHash": "sha256:48bff8719df5cbbd5f7d52ccdb278a5dbcea2565253ee70ec9e4cc9ccbacdece",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "usedRootScript": false,
+          "usedTsx": false,
+          "usedTsNode": false,
+          "usedCompiledFallback": false,
+          "assertions": [
+            "eval-question-generate runs from installed package CLI surface",
+            "generated manifest loads through installed scoring manifest-loader",
+            "installed scoring eval-question files hash-match workspace build"
+          ],
+          "currentWorkspaceScoringHashMatched": true,
+          "installedScoringResolvedPath": ".tmp/main-agent-runtime-migration-wave-3.11/save-dev-lnTTMC/consumer/node_modules/bmad-speckit/node_modules/@bmad-speckit/scoring",
+          "installedScoringPackageVersion": "2.0.1",
+          "installedScoringDistHashes": {
+            "dist/eval-questions/template-generator.js": "sha256:8a4356d8674f42cbc738632b90774d1b5537e61e7378a56e8271caa3b22fe54d",
+            "dist/eval-questions/manifest-loader.js": "sha256:a42de048079e9c160fef4d2a81860bc448a6cfe5383c4bab32d9f16873a2b3b9"
+          }
+        },
+        {
+          "mode": "save-dev",
+          "rowId": "IM004",
+          "commandSurface": "installed bmad-speckit check-score",
+          "status": "passed",
+          "command": "d:\\nvm4w\\nodejs\\node.exe D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\save-dev-lnTTMC\\consumer\\node_modules\\bmad-speckit\\bin\\bmad-speckit.js check-score --epic 9 --story 1 --dataPath D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\save-dev-lnTTMC\\consumer\\scores",
+          "cwd": ".tmp/main-agent-runtime-migration-wave-3.11/save-dev-lnTTMC/consumer",
+          "exitCode": 0,
+          "receiptPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/install-matrix/save-dev.json",
+          "stdoutHash": "sha256:9fed35b640da58bd2e51116282e32cbb752362673a513779b7b6658923d36b51",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "usedRootScript": false,
+          "usedTsx": false,
+          "usedTsNode": false,
+          "usedCompiledFallback": false,
+          "assertions": [
+            "check-score runs from installed package CLI surface",
+            "score fixture resolves through consumer dataPath",
+            "root check-story-score-written script is not executed"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "no-save",
+      "status": "passed",
+      "consumerRoot": ".tmp/main-agent-runtime-migration-wave-3.11/no-save-qrYJzN/consumer",
+      "probeRoot": ".tmp/main-agent-runtime-migration-wave-3.11/no-save-qrYJzN/consumer",
+      "requireProbeRoot": ".tmp/main-agent-runtime-migration-wave-3.11/no-save-qrYJzN/consumer",
+      "packageRoot": ".tmp/main-agent-runtime-migration-wave-3.11/no-save-qrYJzN/consumer/node_modules/bmad-speckit",
+      "receiptPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/install-matrix/no-save.json",
+      "commands": [
+        {
+          "command": "npm install --no-save D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\pack-46odso\\bmad-speckit-2.0.1.tgz",
+          "cwd": ".tmp/main-agent-runtime-migration-wave-3.11/no-save-qrYJzN/consumer",
+          "exitCode": 0,
+          "stdoutHash": "sha256:cd126201cf66b1cd3905f5b7b072b3773fd7837fa3aa5c998b0e3b0137e055d7",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "startedAt": "2026-06-06T02:20:08.819Z",
+          "completedAt": "2026-06-06T02:20:21.496Z",
+          "status": "passed",
+          "stdoutPreview": "\nadded 101 packages in 12s\n\n45 packages are looking for funding\n  run `npm fund` for details\n",
+          "stderrPreview": ""
+        },
+        {
+          "command": "d:\\nvm4w\\nodejs\\node.exe D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\no-save-qrYJzN\\consumer\\probe-runtime.cjs",
+          "cwd": ".tmp/main-agent-runtime-migration-wave-3.11/no-save-qrYJzN/consumer",
+          "exitCode": 0,
+          "stdoutHash": "sha256:2d4c35b7f0d0f7cbb9d59024588162dde39c3917144ca7586a5668164d1813b3",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "startedAt": "2026-06-06T02:20:21.497Z",
+          "completedAt": "2026-06-06T02:20:21.645Z",
+          "status": "passed",
+          "stdoutPreview": "{\"rowId\":\"IM001\",\"passed\":true}\n",
+          "stderrPreview": ""
+        },
+        {
+          "command": "d:\\nvm4w\\nodejs\\node.exe D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\no-save-qrYJzN\\consumer\\probe-helpers.cjs",
+          "cwd": ".tmp/main-agent-runtime-migration-wave-3.11/no-save-qrYJzN/consumer",
+          "exitCode": 0,
+          "stdoutHash": "sha256:9f0eb6ad16a9d458a707f488fd1330f363b591bebefcff9a41c9ad11b1cb6005",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "startedAt": "2026-06-06T02:20:21.646Z",
+          "completedAt": "2026-06-06T02:20:21.781Z",
+          "status": "passed",
+          "stdoutPreview": "{\"rowId\":\"IM002\",\"passed\":true}\n",
+          "stderrPreview": ""
+        },
+        {
+          "command": "d:\\nvm4w\\nodejs\\node.exe D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\no-save-qrYJzN\\consumer\\node_modules\\bmad-speckit\\bin\\bmad-speckit.js eval-question-generate --input D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\no-save-qrYJzN\\consumer\\coach-report.json --outputDir D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\no-save-qrYJzN\\consumer\\eval-output --version v1 && manifest-loader probe",
+          "cwd": ".tmp/main-agent-runtime-migration-wave-3.11/no-save-qrYJzN/consumer",
+          "exitCode": 0,
+          "stdoutHash": "sha256:be6a3e1795c89a1f10373c49baac54f8aede69f8e939f30ab2d4d5474a3ca026",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "startedAt": "2026-06-06T02:20:21.782Z",
+          "completedAt": "2026-06-06T02:20:22.035Z",
+          "status": "passed",
+          "stdoutPreview": "Created: eval-output/gen-1780712421892-0-spec.md\nCreated: eval-output/gen-1780712421892-1-plan.md\nCreated: eval-output/gen-1780712421892-2-specplan-acceptanceevidence.md\nManifest: eval-output/manifest.yaml\n{\"rowId\":\"IM003\",\"passed\":true,\"questionCount\":3}\n",
+          "stderrPreview": ""
+        },
+        {
+          "command": "d:\\nvm4w\\nodejs\\node.exe D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\no-save-qrYJzN\\consumer\\node_modules\\bmad-speckit\\bin\\bmad-speckit.js check-score --epic 9 --story 1 --dataPath D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\no-save-qrYJzN\\consumer\\scores",
+          "cwd": ".tmp/main-agent-runtime-migration-wave-3.11/no-save-qrYJzN/consumer",
+          "exitCode": 0,
+          "stdoutHash": "sha256:9fed35b640da58bd2e51116282e32cbb752362673a513779b7b6658923d36b51",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "startedAt": "2026-06-06T02:20:22.037Z",
+          "completedAt": "2026-06-06T02:20:22.146Z",
+          "status": "passed",
+          "stdoutPreview": "STORY_SCORE_WRITTEN:yes\nFound 1 record(s) for epic=9 story=1\n",
+          "stderrPreview": ""
+        }
+      ],
+      "rows": [
+        {
+          "mode": "no-save",
+          "rowId": "IM001",
+          "commandSurface": "installed package direct runtime require probe",
+          "status": "passed",
+          "command": "d:\\nvm4w\\nodejs\\node.exe D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\no-save-qrYJzN\\consumer\\probe-runtime.cjs",
+          "cwd": ".tmp/main-agent-runtime-migration-wave-3.11/no-save-qrYJzN/consumer",
+          "exitCode": 0,
+          "receiptPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/install-matrix/no-save.json",
+          "stdoutHash": "sha256:2d4c35b7f0d0f7cbb9d59024588162dde39c3917144ca7586a5668164d1813b3",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "usedRootScript": false,
+          "usedTsx": false,
+          "usedTsNode": false,
+          "usedCompiledFallback": false,
+          "assertions": [
+            "runtime modules resolve from installed package dist",
+            "D006 runtime exports exist",
+            "no root script, tsx, ts-node, or compiled fallback used"
+          ]
+        },
+        {
+          "mode": "no-save",
+          "rowId": "IM002",
+          "commandSurface": "installed package direct helper require probe",
+          "status": "passed",
+          "command": "d:\\nvm4w\\nodejs\\node.exe D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\no-save-qrYJzN\\consumer\\probe-helpers.cjs",
+          "cwd": ".tmp/main-agent-runtime-migration-wave-3.11/no-save-qrYJzN/consumer",
+          "exitCode": 0,
+          "receiptPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/install-matrix/no-save.json",
+          "stdoutHash": "sha256:9f0eb6ad16a9d458a707f488fd1330f363b591bebefcff9a41c9ad11b1cb6005",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "usedRootScript": false,
+          "usedTsx": false,
+          "usedTsNode": false,
+          "usedCompiledFallback": false,
+          "assertions": [
+            "helper modules resolve from installed package dist",
+            "D006 helper exports exist",
+            "fixture-backed helper calls pass without root script or TypeScript runner"
+          ]
+        },
+        {
+          "mode": "no-save",
+          "rowId": "IM003",
+          "commandSurface": "installed bmad-speckit eval-question-generate --input",
+          "status": "passed",
+          "command": "d:\\nvm4w\\nodejs\\node.exe D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\no-save-qrYJzN\\consumer\\node_modules\\bmad-speckit\\bin\\bmad-speckit.js eval-question-generate --input D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\no-save-qrYJzN\\consumer\\coach-report.json --outputDir D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\no-save-qrYJzN\\consumer\\eval-output --version v1 && manifest-loader probe",
+          "cwd": ".tmp/main-agent-runtime-migration-wave-3.11/no-save-qrYJzN/consumer",
+          "exitCode": 0,
+          "receiptPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/install-matrix/no-save.json",
+          "stdoutHash": "sha256:be6a3e1795c89a1f10373c49baac54f8aede69f8e939f30ab2d4d5474a3ca026",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "usedRootScript": false,
+          "usedTsx": false,
+          "usedTsNode": false,
+          "usedCompiledFallback": false,
+          "assertions": [
+            "eval-question-generate runs from installed package CLI surface",
+            "generated manifest loads through installed scoring manifest-loader",
+            "installed scoring eval-question files hash-match workspace build"
+          ],
+          "currentWorkspaceScoringHashMatched": true,
+          "installedScoringResolvedPath": ".tmp/main-agent-runtime-migration-wave-3.11/no-save-qrYJzN/consumer/node_modules/bmad-speckit/node_modules/@bmad-speckit/scoring",
+          "installedScoringPackageVersion": "2.0.1",
+          "installedScoringDistHashes": {
+            "dist/eval-questions/template-generator.js": "sha256:8a4356d8674f42cbc738632b90774d1b5537e61e7378a56e8271caa3b22fe54d",
+            "dist/eval-questions/manifest-loader.js": "sha256:a42de048079e9c160fef4d2a81860bc448a6cfe5383c4bab32d9f16873a2b3b9"
+          }
+        },
+        {
+          "mode": "no-save",
+          "rowId": "IM004",
+          "commandSurface": "installed bmad-speckit check-score",
+          "status": "passed",
+          "command": "d:\\nvm4w\\nodejs\\node.exe D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\no-save-qrYJzN\\consumer\\node_modules\\bmad-speckit\\bin\\bmad-speckit.js check-score --epic 9 --story 1 --dataPath D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\no-save-qrYJzN\\consumer\\scores",
+          "cwd": ".tmp/main-agent-runtime-migration-wave-3.11/no-save-qrYJzN/consumer",
+          "exitCode": 0,
+          "receiptPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/install-matrix/no-save.json",
+          "stdoutHash": "sha256:9fed35b640da58bd2e51116282e32cbb752362673a513779b7b6658923d36b51",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "usedRootScript": false,
+          "usedTsx": false,
+          "usedTsNode": false,
+          "usedCompiledFallback": false,
+          "assertions": [
+            "check-score runs from installed package CLI surface",
+            "score fixture resolves through consumer dataPath",
+            "root check-story-score-written script is not executed"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "npx-package",
+      "status": "passed",
+      "consumerRoot": ".tmp/main-agent-runtime-migration-wave-3.11/npx-package-f4kkyz/npx-consumer",
+      "probeRoot": ".tmp/main-agent-runtime-migration-wave-3.11/npx-package-f4kkyz/npx-consumer",
+      "requireProbeRoot": ".tmp/main-agent-runtime-migration-wave-3.11/npx-package-f4kkyz/direct-require-consumer",
+      "packageRoot": ".tmp/main-agent-runtime-migration-wave-3.11/npx-package-f4kkyz/direct-require-consumer/node_modules/bmad-speckit",
+      "receiptPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/install-matrix/npx-package.json",
+      "commands": [
+        {
+          "command": "npm install --no-save D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\pack-46odso\\bmad-speckit-2.0.1.tgz",
+          "cwd": ".tmp/main-agent-runtime-migration-wave-3.11/npx-package-f4kkyz/direct-require-consumer",
+          "exitCode": 0,
+          "stdoutHash": "sha256:cd126201cf66b1cd3905f5b7b072b3773fd7837fa3aa5c998b0e3b0137e055d7",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "startedAt": "2026-06-06T02:20:22.156Z",
+          "completedAt": "2026-06-06T02:20:34.053Z",
+          "status": "passed",
+          "stdoutPreview": "\nadded 101 packages in 12s\n\n45 packages are looking for funding\n  run `npm fund` for details\n",
+          "stderrPreview": ""
+        },
+        {
+          "command": "d:\\nvm4w\\nodejs\\node.exe D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\npx-package-f4kkyz\\direct-require-consumer\\probe-runtime.cjs",
+          "cwd": ".tmp/main-agent-runtime-migration-wave-3.11/npx-package-f4kkyz/direct-require-consumer",
+          "exitCode": 0,
+          "stdoutHash": "sha256:2d4c35b7f0d0f7cbb9d59024588162dde39c3917144ca7586a5668164d1813b3",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "startedAt": "2026-06-06T02:20:34.054Z",
+          "completedAt": "2026-06-06T02:20:34.222Z",
+          "status": "passed",
+          "stdoutPreview": "{\"rowId\":\"IM001\",\"passed\":true}\n",
+          "stderrPreview": ""
+        },
+        {
+          "command": "d:\\nvm4w\\nodejs\\node.exe D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\npx-package-f4kkyz\\direct-require-consumer\\probe-helpers.cjs",
+          "cwd": ".tmp/main-agent-runtime-migration-wave-3.11/npx-package-f4kkyz/direct-require-consumer",
+          "exitCode": 0,
+          "stdoutHash": "sha256:9f0eb6ad16a9d458a707f488fd1330f363b591bebefcff9a41c9ad11b1cb6005",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "startedAt": "2026-06-06T02:20:34.222Z",
+          "completedAt": "2026-06-06T02:20:34.343Z",
+          "status": "passed",
+          "stdoutPreview": "{\"rowId\":\"IM002\",\"passed\":true}\n",
+          "stderrPreview": ""
+        },
+        {
+          "command": "npm exec --yes --package D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\pack-46odso\\bmad-speckit-2.0.1.tgz -- bmad-speckit eval-question-generate --input D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\npx-package-f4kkyz\\npx-consumer\\coach-report.json --outputDir D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\npx-package-f4kkyz\\npx-consumer\\eval-output --version v1 && manifest-loader probe",
+          "cwd": ".tmp/main-agent-runtime-migration-wave-3.11/npx-package-f4kkyz/npx-consumer",
+          "exitCode": 0,
+          "stdoutHash": "sha256:d4b06e9385792f22241d8f77d9cbfca4aa222c7e436b1957e2bfe121c9ef2a4d",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "startedAt": "2026-06-06T02:20:34.344Z",
+          "completedAt": "2026-06-06T02:20:50.103Z",
+          "status": "passed",
+          "stdoutPreview": "Created: eval-output/gen-1780712449921-0-spec.md\nCreated: eval-output/gen-1780712449921-1-plan.md\nCreated: eval-output/gen-1780712449921-2-specplan-acceptanceevidence.md\nManifest: eval-output/manifest.yaml\n{\"rowId\":\"IM003\",\"passed\":true,\"questionCount\":3}\n",
+          "stderrPreview": ""
+        },
+        {
+          "command": "npm exec --yes --package D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\pack-46odso\\bmad-speckit-2.0.1.tgz -- bmad-speckit check-score --epic 9 --story 1 --dataPath D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\npx-package-f4kkyz\\npx-consumer\\scores",
+          "cwd": ".tmp/main-agent-runtime-migration-wave-3.11/npx-package-f4kkyz/npx-consumer",
+          "exitCode": 0,
+          "stdoutHash": "sha256:9fed35b640da58bd2e51116282e32cbb752362673a513779b7b6658923d36b51",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "startedAt": "2026-06-06T02:20:50.103Z",
+          "completedAt": "2026-06-06T02:21:00.175Z",
+          "status": "passed",
+          "stdoutPreview": "STORY_SCORE_WRITTEN:yes\nFound 1 record(s) for epic=9 story=1\n",
+          "stderrPreview": ""
+        }
+      ],
+      "rows": [
+        {
+          "mode": "npx-package",
+          "rowId": "IM001",
+          "commandSurface": "installed package direct runtime require probe",
+          "status": "passed",
+          "command": "d:\\nvm4w\\nodejs\\node.exe D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\npx-package-f4kkyz\\direct-require-consumer\\probe-runtime.cjs",
+          "cwd": ".tmp/main-agent-runtime-migration-wave-3.11/npx-package-f4kkyz/direct-require-consumer",
+          "exitCode": 0,
+          "receiptPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/install-matrix/npx-package.json",
+          "stdoutHash": "sha256:2d4c35b7f0d0f7cbb9d59024588162dde39c3917144ca7586a5668164d1813b3",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "usedRootScript": false,
+          "usedTsx": false,
+          "usedTsNode": false,
+          "usedCompiledFallback": false,
+          "assertions": [
+            "runtime modules resolve from installed package dist",
+            "D006 runtime exports exist",
+            "no root script, tsx, ts-node, or compiled fallback used"
+          ]
+        },
+        {
+          "mode": "npx-package",
+          "rowId": "IM002",
+          "commandSurface": "installed package direct helper require probe",
+          "status": "passed",
+          "command": "d:\\nvm4w\\nodejs\\node.exe D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\npx-package-f4kkyz\\direct-require-consumer\\probe-helpers.cjs",
+          "cwd": ".tmp/main-agent-runtime-migration-wave-3.11/npx-package-f4kkyz/direct-require-consumer",
+          "exitCode": 0,
+          "receiptPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/install-matrix/npx-package.json",
+          "stdoutHash": "sha256:9f0eb6ad16a9d458a707f488fd1330f363b591bebefcff9a41c9ad11b1cb6005",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "usedRootScript": false,
+          "usedTsx": false,
+          "usedTsNode": false,
+          "usedCompiledFallback": false,
+          "assertions": [
+            "helper modules resolve from installed package dist",
+            "D006 helper exports exist",
+            "fixture-backed helper calls pass without root script or TypeScript runner"
+          ]
+        },
+        {
+          "mode": "npx-package",
+          "rowId": "IM003",
+          "commandSurface": "installed bmad-speckit eval-question-generate --input",
+          "status": "passed",
+          "command": "npm exec --yes --package D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\pack-46odso\\bmad-speckit-2.0.1.tgz -- bmad-speckit eval-question-generate --input D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\npx-package-f4kkyz\\npx-consumer\\coach-report.json --outputDir D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\npx-package-f4kkyz\\npx-consumer\\eval-output --version v1 && manifest-loader probe",
+          "cwd": ".tmp/main-agent-runtime-migration-wave-3.11/npx-package-f4kkyz/npx-consumer",
+          "exitCode": 0,
+          "receiptPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/install-matrix/npx-package.json",
+          "stdoutHash": "sha256:d4b06e9385792f22241d8f77d9cbfca4aa222c7e436b1957e2bfe121c9ef2a4d",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "usedRootScript": false,
+          "usedTsx": false,
+          "usedTsNode": false,
+          "usedCompiledFallback": false,
+          "assertions": [
+            "eval-question-generate runs from installed package CLI surface",
+            "generated manifest loads through installed scoring manifest-loader",
+            "installed scoring eval-question files hash-match workspace build"
+          ],
+          "currentWorkspaceScoringHashMatched": true,
+          "installedScoringResolvedPath": ".tmp/main-agent-runtime-migration-wave-3.11/npx-package-f4kkyz/direct-require-consumer/node_modules/bmad-speckit/node_modules/@bmad-speckit/scoring",
+          "installedScoringPackageVersion": "2.0.1",
+          "installedScoringDistHashes": {
+            "dist/eval-questions/template-generator.js": "sha256:8a4356d8674f42cbc738632b90774d1b5537e61e7378a56e8271caa3b22fe54d",
+            "dist/eval-questions/manifest-loader.js": "sha256:a42de048079e9c160fef4d2a81860bc448a6cfe5383c4bab32d9f16873a2b3b9"
+          }
+        },
+        {
+          "mode": "npx-package",
+          "rowId": "IM004",
+          "commandSurface": "installed bmad-speckit check-score",
+          "status": "passed",
+          "command": "npm exec --yes --package D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\pack-46odso\\bmad-speckit-2.0.1.tgz -- bmad-speckit check-score --epic 9 --story 1 --dataPath D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\npx-package-f4kkyz\\npx-consumer\\scores",
+          "cwd": ".tmp/main-agent-runtime-migration-wave-3.11/npx-package-f4kkyz/npx-consumer",
+          "exitCode": 0,
+          "receiptPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/install-matrix/npx-package.json",
+          "stdoutHash": "sha256:9fed35b640da58bd2e51116282e32cbb752362673a513779b7b6658923d36b51",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "usedRootScript": false,
+          "usedTsx": false,
+          "usedTsNode": false,
+          "usedCompiledFallback": false,
+          "assertions": [
+            "check-score runs from installed package CLI surface",
+            "score fixture resolves through consumer dataPath",
+            "root check-story-score-written script is not executed"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "init-sync-consumer",
+      "status": "passed",
+      "consumerRoot": ".tmp/main-agent-runtime-migration-wave-3.11/init-sync-consumer-ICEZXh/parent",
+      "probeRoot": ".tmp/main-agent-runtime-migration-wave-3.11/init-sync-consumer-ICEZXh/parent/wave-3-11-sync",
+      "requireProbeRoot": ".tmp/main-agent-runtime-migration-wave-3.11/init-sync-consumer-ICEZXh/parent/wave-3-11-sync",
+      "packageRoot": ".tmp/main-agent-runtime-migration-wave-3.11/init-sync-consumer-ICEZXh/parent/node_modules/bmad-speckit",
+      "receiptPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/install-matrix/init-sync-consumer.json",
+      "commands": [
+        {
+          "command": "npm install --no-save D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\pack-46odso\\bmad-speckit-2.0.1.tgz",
+          "cwd": ".tmp/main-agent-runtime-migration-wave-3.11/init-sync-consumer-ICEZXh/parent",
+          "exitCode": 0,
+          "stdoutHash": "sha256:cd126201cf66b1cd3905f5b7b072b3773fd7837fa3aa5c998b0e3b0137e055d7",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "startedAt": "2026-06-06T02:21:00.183Z",
+          "completedAt": "2026-06-06T02:21:12.552Z",
+          "status": "passed",
+          "stdoutPreview": "\nadded 101 packages in 12s\n\n45 packages are looking for funding\n  run `npm fund` for details\n",
+          "stderrPreview": ""
+        },
+        {
+          "command": "d:\\nvm4w\\nodejs\\node.exe D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\init-sync-consumer-ICEZXh\\parent\\node_modules\\bmad-speckit\\bin\\bmad-speckit.js init wave-3-11-sync --yes --no-git --ai codex --bmad-path D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\init-sync-consumer-ICEZXh\\parent\\node_modules\\bmad-speckit\\_bmad",
+          "cwd": ".tmp/main-agent-runtime-migration-wave-3.11/init-sync-consumer-ICEZXh/parent",
+          "exitCode": 0,
+          "stdoutHash": "sha256:3fade1446af002f5b5d04b6cbf496473d7bfc950afeb1df2628db2eb6667f65e",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "startedAt": "2026-06-06T02:21:12.553Z",
+          "completedAt": "2026-06-06T02:21:13.367Z",
+          "status": "passed",
+          "stdoutPreview": "\n✓ Initialized (worktree) at D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\init-sync-consumer-ICEZXh\\parent\\wave-3-11-sync [codex]\nInit complete. Run `/bmad-help` in your AI IDE for next steps, or start Spec-Driven Development with `speckit.constitution`.\nFeedback: run `bmad-speckit feedback` to get the feedback entry.\n",
+          "stderrPreview": ""
+        },
+        {
+          "command": "d:\\nvm4w\\nodejs\\node.exe D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\init-sync-consumer-ICEZXh\\parent\\node_modules\\bmad-speckit\\bin\\bmad-speckit.js check --json --ignore-agent-tools",
+          "cwd": ".tmp/main-agent-runtime-migration-wave-3.11/init-sync-consumer-ICEZXh/parent/wave-3-11-sync",
+          "exitCode": 0,
+          "stdoutHash": "sha256:cb6301b45d137396eb5d9b23ee6055538b06f89426ca0613735c11e5cac069fe",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "startedAt": "2026-06-06T02:21:13.368Z",
+          "completedAt": "2026-06-06T02:21:13.583Z",
+          "status": "passed",
+          "stdoutPreview": "{\"cliVersion\":\"2.0.1\",\"templateVersion\":\"latest\",\"selectedAI\":\"codex\",\"subagentSupport\":\"native\",\"envVars\":{\"PATH\":\"D:\\\\Program Files\\\\PowerShell\\\\7;C:\\\\Users\\\\milom\\\\.codex\\\\tmp\\\\arg0\\\\codex-arg0RqXpaw;d:\\\\Users\\\\milom\\\\AppData...\"},\"aiToolsInstalled\":[]}\n",
+          "stderrPreview": ""
+        },
+        {
+          "command": "d:\\nvm4w\\nodejs\\node.exe D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\init-sync-consumer-ICEZXh\\parent\\wave-3-11-sync\\probe-runtime.cjs",
+          "cwd": ".tmp/main-agent-runtime-migration-wave-3.11/init-sync-consumer-ICEZXh/parent/wave-3-11-sync",
+          "exitCode": 0,
+          "stdoutHash": "sha256:2d4c35b7f0d0f7cbb9d59024588162dde39c3917144ca7586a5668164d1813b3",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "startedAt": "2026-06-06T02:21:13.584Z",
+          "completedAt": "2026-06-06T02:21:13.695Z",
+          "status": "passed",
+          "stdoutPreview": "{\"rowId\":\"IM001\",\"passed\":true}\n",
+          "stderrPreview": ""
+        },
+        {
+          "command": "d:\\nvm4w\\nodejs\\node.exe D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\init-sync-consumer-ICEZXh\\parent\\wave-3-11-sync\\probe-helpers.cjs",
+          "cwd": ".tmp/main-agent-runtime-migration-wave-3.11/init-sync-consumer-ICEZXh/parent/wave-3-11-sync",
+          "exitCode": 0,
+          "stdoutHash": "sha256:9f0eb6ad16a9d458a707f488fd1330f363b591bebefcff9a41c9ad11b1cb6005",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "startedAt": "2026-06-06T02:21:13.696Z",
+          "completedAt": "2026-06-06T02:21:13.817Z",
+          "status": "passed",
+          "stdoutPreview": "{\"rowId\":\"IM002\",\"passed\":true}\n",
+          "stderrPreview": ""
+        },
+        {
+          "command": "d:\\nvm4w\\nodejs\\node.exe D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\init-sync-consumer-ICEZXh\\parent\\node_modules\\bmad-speckit\\bin\\bmad-speckit.js eval-question-generate --input D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\init-sync-consumer-ICEZXh\\parent\\wave-3-11-sync\\coach-report.json --outputDir D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\init-sync-consumer-ICEZXh\\parent\\wave-3-11-sync\\eval-output --version v1 && manifest-loader probe",
+          "cwd": ".tmp/main-agent-runtime-migration-wave-3.11/init-sync-consumer-ICEZXh/parent/wave-3-11-sync",
+          "exitCode": 0,
+          "stdoutHash": "sha256:9a4fe1c6f07ef198b16d8c2b7bb5b5661f0481e4d7a009efeffd546476bccee6",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "startedAt": "2026-06-06T02:21:13.818Z",
+          "completedAt": "2026-06-06T02:21:14.073Z",
+          "status": "passed",
+          "stdoutPreview": "Created: eval-output/gen-1780712473935-0-spec.md\nCreated: eval-output/gen-1780712473935-1-plan.md\nCreated: eval-output/gen-1780712473935-2-specplan-acceptanceevidence.md\nManifest: eval-output/manifest.yaml\n{\"rowId\":\"IM003\",\"passed\":true,\"questionCount\":3}\n",
+          "stderrPreview": ""
+        },
+        {
+          "command": "d:\\nvm4w\\nodejs\\node.exe D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\init-sync-consumer-ICEZXh\\parent\\node_modules\\bmad-speckit\\bin\\bmad-speckit.js check-score --epic 9 --story 1 --dataPath D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\init-sync-consumer-ICEZXh\\parent\\wave-3-11-sync\\scores",
+          "cwd": ".tmp/main-agent-runtime-migration-wave-3.11/init-sync-consumer-ICEZXh/parent/wave-3-11-sync",
+          "exitCode": 0,
+          "stdoutHash": "sha256:9fed35b640da58bd2e51116282e32cbb752362673a513779b7b6658923d36b51",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "startedAt": "2026-06-06T02:21:14.075Z",
+          "completedAt": "2026-06-06T02:21:14.192Z",
+          "status": "passed",
+          "stdoutPreview": "STORY_SCORE_WRITTEN:yes\nFound 1 record(s) for epic=9 story=1\n",
+          "stderrPreview": ""
+        }
+      ],
+      "rows": [
+        {
+          "mode": "init-sync-consumer",
+          "rowId": "IM001",
+          "commandSurface": "installed package direct runtime require probe",
+          "status": "passed",
+          "command": "d:\\nvm4w\\nodejs\\node.exe D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\init-sync-consumer-ICEZXh\\parent\\wave-3-11-sync\\probe-runtime.cjs",
+          "cwd": ".tmp/main-agent-runtime-migration-wave-3.11/init-sync-consumer-ICEZXh/parent/wave-3-11-sync",
+          "exitCode": 0,
+          "receiptPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/install-matrix/init-sync-consumer.json",
+          "stdoutHash": "sha256:2d4c35b7f0d0f7cbb9d59024588162dde39c3917144ca7586a5668164d1813b3",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "usedRootScript": false,
+          "usedTsx": false,
+          "usedTsNode": false,
+          "usedCompiledFallback": false,
+          "assertions": [
+            "runtime modules resolve from installed package dist",
+            "D006 runtime exports exist",
+            "no root script, tsx, ts-node, or compiled fallback used"
+          ]
+        },
+        {
+          "mode": "init-sync-consumer",
+          "rowId": "IM002",
+          "commandSurface": "installed package direct helper require probe",
+          "status": "passed",
+          "command": "d:\\nvm4w\\nodejs\\node.exe D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\init-sync-consumer-ICEZXh\\parent\\wave-3-11-sync\\probe-helpers.cjs",
+          "cwd": ".tmp/main-agent-runtime-migration-wave-3.11/init-sync-consumer-ICEZXh/parent/wave-3-11-sync",
+          "exitCode": 0,
+          "receiptPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/install-matrix/init-sync-consumer.json",
+          "stdoutHash": "sha256:9f0eb6ad16a9d458a707f488fd1330f363b591bebefcff9a41c9ad11b1cb6005",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "usedRootScript": false,
+          "usedTsx": false,
+          "usedTsNode": false,
+          "usedCompiledFallback": false,
+          "assertions": [
+            "helper modules resolve from installed package dist",
+            "D006 helper exports exist",
+            "fixture-backed helper calls pass without root script or TypeScript runner"
+          ]
+        },
+        {
+          "mode": "init-sync-consumer",
+          "rowId": "IM003",
+          "commandSurface": "installed bmad-speckit eval-question-generate --input",
+          "status": "passed",
+          "command": "d:\\nvm4w\\nodejs\\node.exe D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\init-sync-consumer-ICEZXh\\parent\\node_modules\\bmad-speckit\\bin\\bmad-speckit.js eval-question-generate --input D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\init-sync-consumer-ICEZXh\\parent\\wave-3-11-sync\\coach-report.json --outputDir D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\init-sync-consumer-ICEZXh\\parent\\wave-3-11-sync\\eval-output --version v1 && manifest-loader probe",
+          "cwd": ".tmp/main-agent-runtime-migration-wave-3.11/init-sync-consumer-ICEZXh/parent/wave-3-11-sync",
+          "exitCode": 0,
+          "receiptPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/install-matrix/init-sync-consumer.json",
+          "stdoutHash": "sha256:9a4fe1c6f07ef198b16d8c2b7bb5b5661f0481e4d7a009efeffd546476bccee6",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "usedRootScript": false,
+          "usedTsx": false,
+          "usedTsNode": false,
+          "usedCompiledFallback": false,
+          "assertions": [
+            "eval-question-generate runs from installed package CLI surface",
+            "generated manifest loads through installed scoring manifest-loader",
+            "installed scoring eval-question files hash-match workspace build"
+          ],
+          "currentWorkspaceScoringHashMatched": true,
+          "installedScoringResolvedPath": ".tmp/main-agent-runtime-migration-wave-3.11/init-sync-consumer-ICEZXh/parent/node_modules/bmad-speckit/node_modules/@bmad-speckit/scoring",
+          "installedScoringPackageVersion": "2.0.1",
+          "installedScoringDistHashes": {
+            "dist/eval-questions/template-generator.js": "sha256:8a4356d8674f42cbc738632b90774d1b5537e61e7378a56e8271caa3b22fe54d",
+            "dist/eval-questions/manifest-loader.js": "sha256:a42de048079e9c160fef4d2a81860bc448a6cfe5383c4bab32d9f16873a2b3b9"
+          }
+        },
+        {
+          "mode": "init-sync-consumer",
+          "rowId": "IM004",
+          "commandSurface": "installed bmad-speckit check-score",
+          "status": "passed",
+          "command": "d:\\nvm4w\\nodejs\\node.exe D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\init-sync-consumer-ICEZXh\\parent\\node_modules\\bmad-speckit\\bin\\bmad-speckit.js check-score --epic 9 --story 1 --dataPath D:\\Dev\\BMAD-Speckit-SDD-Flow\\.tmp\\main-agent-runtime-migration-wave-3.11\\init-sync-consumer-ICEZXh\\parent\\wave-3-11-sync\\scores",
+          "cwd": ".tmp/main-agent-runtime-migration-wave-3.11/init-sync-consumer-ICEZXh/parent/wave-3-11-sync",
+          "exitCode": 0,
+          "receiptPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/install-matrix/init-sync-consumer.json",
+          "stdoutHash": "sha256:9fed35b640da58bd2e51116282e32cbb752362673a513779b7b6658923d36b51",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "usedRootScript": false,
+          "usedTsx": false,
+          "usedTsNode": false,
+          "usedCompiledFallback": false,
+          "assertions": [
+            "check-score runs from installed package CLI surface",
+            "score fixture resolves through consumer dataPath",
+            "root check-story-score-written script is not executed"
+          ]
+        }
+      ]
+    }
+  ]
+}

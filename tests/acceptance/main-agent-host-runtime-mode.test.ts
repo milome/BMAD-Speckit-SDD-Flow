@@ -6,7 +6,7 @@ import {
   writeExecutionRuntimeModeSelection,
   writeNativeGoalInvocationReceipt,
   validateNativeGoalInvocationReceipt,
-} from '../../scripts/host-runtime-mode';
+} from '../../packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.js';
 import {
   cleanupRequirementWorkspace,
   materializeRequirementFixture,

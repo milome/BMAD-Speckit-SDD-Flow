@@ -14,9 +14,6 @@
  * Exit codes are defined in constants/exit-codes.js.
  */
 const { program } = require('commander');
-const { spawnSync } = require('child_process');
-const fs = require('fs');
-const path = require('path');
 const pkg = require('../package.json');
 const ttyUtils = require('../src/utils/tty');
 
@@ -24,59 +21,71 @@ function loadCommand(modulePath, exportName) {
   return require(modulePath)[exportName];
 }
 
-function resolveRepoScript(scriptName) {
-  const candidates = [
-    path.resolve(__dirname, '..', '..', '..', 'scripts', scriptName),
-    path.resolve(__dirname, '..', 'scripts', scriptName),
-    path.resolve(process.cwd(), 'node_modules', 'bmad-speckit-sdd-flow', 'scripts', scriptName),
-    path.resolve(process.cwd(), 'node_modules', 'bmad-speckit', 'scripts', scriptName),
-  ];
-  const scriptPath = candidates.find((candidate) => require('fs').existsSync(candidate));
-  if (!scriptPath) {
-    console.error(`bmad-speckit: cannot locate script ${scriptName}`);
-    process.exit(1);
-  }
-  return scriptPath;
-}
-
-function resolveTsxCli() {
-  const candidates = [
-    path.resolve(process.cwd(), 'node_modules', 'tsx', 'dist', 'cli.mjs'),
-    path.resolve(__dirname, '..', 'node_modules', 'tsx', 'dist', 'cli.mjs'),
-    path.resolve(__dirname, '..', '..', 'node_modules', 'tsx', 'dist', 'cli.mjs'),
-    path.resolve(__dirname, '..', '..', '..', 'node_modules', 'tsx', 'dist', 'cli.mjs'),
-    path.resolve(__dirname, '..', '..', '..', '..', 'tsx', 'dist', 'cli.mjs'),
-  ];
-  return candidates.find((candidate) => fs.existsSync(candidate));
-}
-
-function runScriptPath(scriptPath, args, options = {}) {
-  const tsxCli = scriptPath.endsWith('.ts') ? resolveTsxCli() : undefined;
-  const runner = scriptPath.endsWith('.ts')
-    ? tsxCli
-      ? [process.execPath, [tsxCli, scriptPath, ...args]]
-      : ['npx', ['--no-install', 'tsx', scriptPath, ...args]]
-    : [process.execPath, [scriptPath, ...args]];
-  return spawnSync(runner[0], runner[1], {
-    cwd: process.cwd(),
-    stdio: options.silent ? ['inherit', 'ignore', 'inherit'] : 'inherit',
-    shell: runner[0] === 'npx' && process.platform === 'win32',
-  });
-}
-
-function runRepoScript(scriptName, args, options = {}) {
-  for (const prerequisite of options.before ?? []) {
-    const result = runScriptPath(resolveRepoScript(prerequisite), [], { silent: true });
-    if ((result.status ?? (result.error ? 1 : 0)) !== 0) {
-      process.exit(result.status ?? 1);
-    }
-  }
-  const result = runScriptPath(resolveRepoScript(scriptName), args);
-  process.exit(result.status ?? (result.error ? 1 : 0));
+function runRuntimeModule(modulePath, exportName, args) {
+  Promise.resolve(require(modulePath)[exportName](args))
+    .then((exitCode) => {
+      process.exitCode = exitCode ?? 0;
+    })
+    .catch((error) => {
+      console.error(error instanceof Error ? error.message : String(error));
+      process.exitCode = 1;
+    });
 }
 
 function forwardedArgsFromCommand(command) {
-  return Array.isArray(command?.args) ? [...command.args] : [];
+  const args = Array.isArray(command?.args) ? [...command.args] : [];
+  const options = typeof command?.opts === 'function' ? command.opts() : {};
+  for (const [key, value] of Object.entries(options)) {
+    if (value === undefined || value === false) continue;
+    const flag = `--${key.replace(/[A-Z]/g, (char) => `-${char.toLowerCase()}`)}`;
+    if (value === true) args.push(flag);
+    else args.push(flag, String(value));
+  }
+  return args;
+}
+
+function emitDeprecatedAlias(commandName, replacement, args) {
+  const json = args.includes('--json');
+  const payload = {
+    schemaVersion: 'bmad-speckit-deprecated-alias/v1',
+    command: commandName,
+    status: 'deprecated',
+    exitCode: 0,
+    replacement,
+  };
+  if (json) {
+    process.stdout.write(`${JSON.stringify(payload, null, 2)}\n`);
+  } else {
+    process.stdout.write(
+      `${commandName} is deprecated. Use ${replacement} or a source-repository maintenance workflow.\n`
+    );
+  }
+}
+
+function runCommandPromise(commandName, result) {
+  return Promise.resolve(result)
+    .then((exitCode) => {
+      if (typeof exitCode === 'number') process.exitCode = exitCode;
+    })
+    .catch((error) => {
+      console.error(error instanceof Error ? error.message : String(error));
+      process.exitCode = 1;
+    });
+}
+
+function registerWave312PublicCommand(commandName, exportName, description) {
+  program
+    .command(commandName)
+    .description(description)
+    .option('--json', 'Print machine-readable JSON')
+    .allowUnknownOption(true)
+    .allowExcessArguments(true)
+    .action((opts, command) =>
+      runCommandPromise(
+        commandName,
+        loadCommand(`../src/commands/${commandName}`, exportName)(opts, forwardedArgsFromCommand(command))
+      )
+    );
 }
 
 // Show banner for init (including init --help) when in TTY
@@ -88,6 +97,7 @@ if (process.argv.includes('init') && ttyUtils.isTTY()) {
 program
   .name('bmad-speckit')
   .version(pkg.version)
+  .enablePositionalOptions()
   .description('BMAD-Speckit: init, check, version, upgrade, uninstall, config, feedback');
 
 program
@@ -301,6 +311,22 @@ program
   .option('--dataPath <path>', 'Scoring data directory')
   .option('--stage <stage>', 'Stage filter (story|implement)')
   .action((opts) => loadCommand('../src/commands/check-score', 'checkScoreCommand')(opts));
+
+program
+  .command('eval-question-generate')
+  .description('Generate eval question templates from coach diagnosis output')
+  .option('--run-id <id>', 'Run ID')
+  .option('--input <path>', 'Coach diagnosis JSON input path')
+  .option('--version <version>', 'Eval question version directory', 'v1')
+  .option('--outputDir <path>', 'Output directory')
+  .option('--output-dir <path>', 'Output directory')
+  .option('--dataPath <path>', 'Scoring data directory for --run-id compatibility')
+  .allowUnknownOption(false)
+  .action((opts) => {
+    loadCommand('../src/commands/eval-question-generate', 'evalQuestionGenerateCli')(opts).then(
+      (exitCode) => process.exit(exitCode)
+    );
+  });
 
 program
   .command('coach')
@@ -564,30 +590,73 @@ program
   });
 
 program
-  .command('bmads')
-  .description('Render the BMAD-Speckit main-agent runtime console')
+  .command('bmad-help')
+  .description('Render BMAD Method help guidance from the package runtime')
+  .option('--cwd <path>', 'Project root to inspect')
+  .option('--all', 'Show all available BMAD help details')
+  .option('--module <name>', 'Filter help by module')
+  .option('--phase <name>', 'Filter help by phase')
+  .option('--json', 'Print machine-readable JSON')
+  .option('--workflow-guidance', 'Include workflow guidance')
+  .option('--raw-workflow', 'Print raw workflow guidance')
+  .option('--debug', 'Include diagnostics')
+  .option('--full', 'Include full raw runtime records in JSON diagnostics')
+  .option('--catalog', 'Include catalog details')
+  .option('--budget <level>', 'Display budget: compact, route, expanded, or full')
   .allowUnknownOption(true)
   .allowExcessArguments(true)
   .action((_options, command) =>
-    runRepoScript('bmads-renderer.ts', forwardedArgsFromCommand(command))
+    runRuntimeModule(
+      '../src/runtime/bmad-help-renderer.js',
+      'mainBmadHelpRenderer',
+      forwardedArgsFromCommand(command)
+    )
+  );
+
+program
+  .command('bmads')
+  .description('Render the BMAD-Speckit main-agent runtime console')
+  .option('--cwd <path>', 'Project root to inspect')
+  .option('--json', 'Print machine-readable JSON')
+  .option('--budget <level>', 'Display budget: compact, route, expanded, or full')
+  .option('--lang <locale>', 'Output language, for example en or zh-CN')
+  .option('--locale <locale>', 'Alias for --lang')
+  .allowUnknownOption(true)
+  .allowExcessArguments(true)
+  .action((_options, command) =>
+    runRuntimeModule(
+      '../src/runtime/bmads-renderer.js',
+      'mainBmadsRenderer',
+      forwardedArgsFromCommand(command)
+    )
   );
 
 program
   .command('bmads-auto')
-  .description('Run the BMADS Auto governed orchestration CLI surface')
+  .description('Deprecated compatibility alias for BMADS Auto source-repository orchestration')
+  .option('--json', 'Print machine-readable deprecation status')
   .allowUnknownOption(true)
   .allowExcessArguments(true)
   .action((_options, command) =>
-    runRepoScript('bmads-auto-cli.ts', forwardedArgsFromCommand(command))
+    emitDeprecatedAlias('bmads-auto', 'bmads', forwardedArgsFromCommand(command))
   );
 
 program
   .command('bmad-speckit')
   .description('Alias for bmads: render the BMAD-Speckit main-agent runtime console')
+  .option('--cwd <path>', 'Project root to inspect')
+  .option('--json', 'Print machine-readable JSON')
+  .option('--budget <level>', 'Display budget: compact, route, expanded, or full')
+  .option('--lang <locale>', 'Output language, for example en or zh-CN')
+  .option('--locale <locale>', 'Alias for --lang')
   .allowUnknownOption(true)
   .allowExcessArguments(true)
   .action((_options, command) =>
-    runRepoScript('bmads-renderer.ts', forwardedArgsFromCommand(command))
+    runRuntimeModule(
+      '../src/runtime/bmads-renderer.js',
+      'mainBmadsRenderer',
+      forwardedArgsFromCommand(command)
+    )
   );
 
 program
@@ -596,7 +665,11 @@ program
   .allowUnknownOption(true)
   .allowExcessArguments(true)
   .action((_options, command) =>
-    runRepoScript('main-agent-orchestration.ts', forwardedArgsFromCommand(command))
+    runRuntimeModule(
+      '../dist/main-agent/index.js',
+      'mainAgentRuntimeCommand',
+      ['--legacy-orchestration', ...forwardedArgsFromCommand(command)]
+    )
   );
 
 program
@@ -605,7 +678,8 @@ program
   .allowUnknownOption(true)
   .allowExcessArguments(true)
   .action((_options, command) =>
-    runRepoScript('main-agent-orchestration.ts', [
+    runRuntimeModule('../dist/main-agent/index.js', 'mainAgentRuntimeCommand', [
+      '--legacy-orchestration',
       '--action',
       'confirm-scope',
       ...forwardedArgsFromCommand(command),
@@ -618,7 +692,8 @@ program
   .allowUnknownOption(true)
   .allowExcessArguments(true)
   .action((_options, command) =>
-    runRepoScript('main-agent-orchestration.ts', [
+    runRuntimeModule('../dist/main-agent/index.js', 'mainAgentRuntimeCommand', [
+      '--legacy-orchestration',
       '--action',
       'confirm-scope',
       ...forwardedArgsFromCommand(command),
@@ -627,11 +702,16 @@ program
 
 program
   .command('main-agent:bmad-help-five-layer-matrix')
-  .description('Run the diagnostic BMAD help five-layer matrix; use bmad-help for the stable user help renderer')
+  .description('Deprecated compatibility alias; use bmad-help for stable user help rendering')
+  .option('--json', 'Print machine-readable deprecation status')
   .allowUnknownOption(true)
   .allowExcessArguments(true)
   .action((_options, command) =>
-    runRepoScript('main-agent-bmad-help-five-layer-matrix.ts', forwardedArgsFromCommand(command))
+    emitDeprecatedAlias(
+      'main-agent:bmad-help-five-layer-matrix',
+      'bmad-help',
+      forwardedArgsFromCommand(command)
+    )
   );
 
 program
@@ -640,18 +720,24 @@ program
   .allowUnknownOption(true)
   .allowExcessArguments(true)
   .action((_options, command) =>
-    runRepoScript('main-agent-quality-gate.ts', forwardedArgsFromCommand(command), {
-      before: ['ensure-governance-user-story-mapping-fixture.js'],
-    })
+    runRuntimeModule('../dist/main-agent/index.js', 'mainAgentRuntimeCommand', [
+      'quality-gate',
+      ...forwardedArgsFromCommand(command),
+    ])
   );
 
 program
   .command('main-agent:host-matrix-pr-orchestrate')
-  .description('Run the BMAD multi-host host matrix PR orchestration CLI surface')
+  .description('Deprecated compatibility alias for source-repository host matrix orchestration')
+  .option('--json', 'Print machine-readable deprecation status')
   .allowUnknownOption(true)
   .allowExcessArguments(true)
   .action((_options, command) =>
-    runRepoScript('main-agent-host-matrix-pr-orchestrator.ts', forwardedArgsFromCommand(command))
+    emitDeprecatedAlias(
+      'main-agent:host-matrix-pr-orchestrate',
+      'main-agent run-loop',
+      forwardedArgsFromCommand(command)
+    )
   );
 
 program
@@ -660,9 +746,10 @@ program
   .allowUnknownOption(true)
   .allowExcessArguments(true)
   .action((_options, command) =>
-    runRepoScript('main-agent-release-gate.ts', forwardedArgsFromCommand(command), {
-      before: ['ensure-governance-user-story-mapping-fixture.js'],
-    })
+    runRuntimeModule('../dist/main-agent/index.js', 'mainAgentRuntimeCommand', [
+      'release-gate',
+      ...forwardedArgsFromCommand(command),
+    ])
   );
 
 program
@@ -671,7 +758,10 @@ program
   .allowUnknownOption(true)
   .allowExcessArguments(true)
   .action((_options, command) =>
-    runRepoScript('main-agent-delivery-truth-gate.ts', forwardedArgsFromCommand(command))
+    runRuntimeModule('../dist/main-agent/index.js', 'mainAgentRuntimeCommand', [
+      'delivery-truth-gate',
+      ...forwardedArgsFromCommand(command),
+    ])
   );
 
 program
@@ -680,7 +770,11 @@ program
   .allowUnknownOption(true)
   .allowExcessArguments(true)
   .action((_options, command) =>
-    runRepoScript('write-runtime-context.cjs', forwardedArgsFromCommand(command))
+    runRuntimeModule(
+      '../dist/main-agent/helpers/write-runtime-context.cjs',
+      'main',
+      forwardedArgsFromCommand(command)
+    )
   );
 
 program
@@ -689,16 +783,62 @@ program
   .allowUnknownOption(true)
   .allowExcessArguments(true)
   .action((_options, command) =>
-    runRepoScript('run-auditor-host.ts', forwardedArgsFromCommand(command))
+    runRuntimeModule(
+      '../dist/main-agent/auditor-host/run-auditor-host.cjs',
+      'main',
+      forwardedArgsFromCommand(command)
+    )
   );
+
+registerWave312PublicCommand(
+  'architecture-drift-check',
+  'architectureDriftCheckCommand',
+  'Run the package architecture drift check surface'
+);
+registerWave312PublicCommand('coach-diagnose', 'coachDiagnoseCommand', 'Run the package coach diagnosis surface');
+registerWave312PublicCommand(
+  'emit-runtime-policy',
+  'emitRuntimePolicyCommand',
+  'Emit the package runtime policy surface'
+);
+registerWave312PublicCommand('init-to-root', 'initToRootCommand', 'Run the package init-to-root surface');
+registerWave312PublicCommand(
+  'live-smoke-speckit-workflow',
+  'liveSmokeSpeckitWorkflowCommand',
+  'Run the package live smoke workflow surface'
+);
+registerWave312PublicCommand('setup', 'setupCommand', 'Run the package setup surface');
+registerWave312PublicCommand('speckit-cli', 'speckitCliCommand', 'Run the package Speckit CLI surface');
+registerWave312PublicCommand(
+  'validate-single-source-whitelist',
+  'validateSingleSourceWhitelistCommand',
+  'Run the package single-source whitelist validation surface'
+);
 
 program
   .command('eval-questions')
-  .description('Run the BMAD evaluation question CLI surface')
+  .description('Deprecated compatibility alias for source-repository evaluation question tooling')
+  .option('--json', 'Print machine-readable deprecation status')
   .allowUnknownOption(true)
   .allowExcessArguments(true)
   .action((_options, command) =>
-    runRepoScript('eval-questions-cli.ts', forwardedArgsFromCommand(command))
+    emitDeprecatedAlias('eval-questions', 'source-repository evaluation workflow', forwardedArgsFromCommand(command))
+  );
+
+program
+  .command('main-agent')
+  .argument('[action]')
+  .description('Run stable package-local Main Agent runtime actions')
+  .option('--cwd <path>', 'Project root to inspect')
+  .option('--json', 'Print machine-readable JSON')
+  .allowUnknownOption(true)
+  .allowExcessArguments(true)
+  .action((_action, _options, command) =>
+    runRuntimeModule(
+      '../dist/main-agent/index.js',
+      'mainAgentRuntimeCommand',
+      forwardedArgsFromCommand(command)
+    )
   );
 
 program.parse();

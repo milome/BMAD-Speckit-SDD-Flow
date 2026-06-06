@@ -1,0 +1,240 @@
+{
+  "schemaVersion": "consumer-reachable-closure-reclassification-evidence/v1",
+  "waveId": "main-agent-runtime-migration-wave-3.10",
+  "validatedAt": "2026-06-05T08:45:00Z",
+  "scope": {
+    "sourceAudit": "repo-governance/script-migrations/consumer-reachable-closure-audit/audit-report.json",
+    "purpose": "remove fourteen scripts from repo_internal_reclassify_possible and register corrected consumer-closure classifications",
+    "doesNotClaim": [
+      "all scripts are migrated",
+      "all consumer commands can directly run from package runtime",
+      "root scripts are deletion-ready"
+    ]
+  },
+  "entries": [
+    {
+      "entryId": "host-runtime-mode",
+      "originalPath": "scripts/host-runtime-mode.ts",
+      "semanticClassification": "package_runtime_module",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.js",
+        "packages/bmad-speckit/dist/main-agent/runtime/host-runtime-mode.js"
+      ],
+      "evidenceBasis": [
+        "tests/acceptance/main-agent-host-runtime-mode.test.ts imports this runtime contract",
+        "script selects execution runtime host and writes runtime blocker records"
+      ],
+      "commands": [],
+      "installMatrixEvidence": [],
+      "result": "partial"
+    },
+    {
+      "entryId": "supervised-worker-runtime",
+      "originalPath": "scripts/supervised-worker-runtime.ts",
+      "semanticClassification": "package_runtime_module",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/runtime/supervised-worker-runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime/supervised-worker-runtime.js"
+      ],
+      "evidenceBasis": [
+        "tests/acceptance/main-agent-supervised-worker-timeout.test.ts imports this runtime contract",
+        "script supervises worker heartbeat, timeout, recovery, and blocker state"
+      ],
+      "commands": [],
+      "installMatrixEvidence": [],
+      "result": "partial"
+    },
+    {
+      "entryId": "bmad-help-renderer",
+      "originalPath": "scripts/bmad-help-renderer.ts",
+      "semanticClassification": "already_migrated_package_runtime_deprecated_root_path",
+      "targetPaths": [
+        "packages/bmad-speckit/bin/bmad-speckit.js",
+        "packages/bmad-speckit/src/runtime/bmad-help-renderer.js"
+      ],
+      "evidenceBasis": [
+        "root script path is absent",
+        "package bin dispatches bmad-help to package runtime"
+      ],
+      "commands": [],
+      "installMatrixEvidence": [],
+      "result": "partial"
+    },
+    {
+      "entryId": "bmad-state-reader",
+      "originalPath": "scripts/bmad-state-reader.ts",
+      "semanticClassification": "package_local_helper",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/bmad-state-reader.js",
+        "packages/bmad-speckit/dist/main-agent/helpers/bmad-state-reader.js"
+      ],
+      "evidenceBasis": [
+        "script reads BMAD project state files used by runtime diagnostics",
+        "state-reader semantics belong to package-local helper closure if consumed outside source repo"
+      ],
+      "commands": [],
+      "installMatrixEvidence": [],
+      "result": "partial"
+    },
+    {
+      "entryId": "bmads-renderer",
+      "originalPath": "scripts/bmads-renderer.ts",
+      "semanticClassification": "already_migrated_package_runtime_deprecated_root_path",
+      "targetPaths": [
+        "packages/bmad-speckit/bin/bmad-speckit.js",
+        "packages/bmad-speckit/src/runtime/bmads-renderer.js"
+      ],
+      "evidenceBasis": [
+        "root script path is absent",
+        "package bin dispatches bmads and bmad-speckit aliases to package runtime"
+      ],
+      "commands": [],
+      "installMatrixEvidence": [],
+      "result": "partial"
+    },
+    {
+      "entryId": "check-story-score-written",
+      "originalPath": "scripts/check-story-score-written.ts",
+      "semanticClassification": "public_cli_package_action_existing_root_legacy",
+      "targetPaths": [
+        "packages/bmad-speckit/bin/bmad-speckit.js",
+        "packages/bmad-speckit/src/commands/check-score.js"
+      ],
+      "evidenceBasis": [
+        "packages/bmad-speckit/src/commands/check-score.js is ported from this script",
+        "docs/reference/source-code.md maps this script to npx bmad-speckit check-score"
+      ],
+      "commands": [],
+      "installMatrixEvidence": [],
+      "result": "partial"
+    },
+    {
+      "entryId": "create-second-story",
+      "originalPath": "scripts/create-second-story.ts",
+      "semanticClassification": "repo_internal_test_seed_only",
+      "targetPaths": [
+        "scripts/create-second-story.ts"
+      ],
+      "evidenceBasis": [
+        "script creates a hard-coded second story for testing",
+        "no package CLI or runtime surface signal found"
+      ],
+      "commands": [],
+      "installMatrixEvidence": [],
+      "result": "partial"
+    },
+    {
+      "entryId": "diagnose-bmad-state",
+      "originalPath": "scripts/diagnose-bmad-state.ts",
+      "semanticClassification": "package_runtime_module",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/runtime/diagnose-bmad-state.js",
+        "packages/bmad-speckit/dist/main-agent/runtime/diagnose-bmad-state.js"
+      ],
+      "evidenceBasis": [
+        "tests/acceptance/diagnose-bmad-state-reviewer-projection.test.ts imports this diagnosis projection",
+        "script composes runtime policy, reviewer projection, and scoring readiness diagnostics"
+      ],
+      "commands": [],
+      "installMatrixEvidence": [],
+      "result": "partial"
+    },
+    {
+      "entryId": "e2e-verify-paths",
+      "originalPath": "scripts/e2e-verify-paths.ts",
+      "semanticClassification": "package_local_helper",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/e2e-verify-paths.js",
+        "packages/bmad-speckit/dist/main-agent/helpers/e2e-verify-paths.js"
+      ],
+      "evidenceBasis": [
+        "script validates installed agent/path structure used by BMAD workflow surfaces",
+        "path verification belongs to install-surface helper closure if exposed to consumers"
+      ],
+      "commands": [],
+      "installMatrixEvidence": [],
+      "result": "partial"
+    },
+    {
+      "entryId": "parallel-mission-control",
+      "originalPath": "scripts/parallel-mission-control.ts",
+      "semanticClassification": "package_runtime_module",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/runtime/parallel-mission-control.js",
+        "packages/bmad-speckit/dist/main-agent/runtime/parallel-mission-control.js"
+      ],
+      "evidenceBasis": [
+        "tests/acceptance/main-agent-delivery-truth-gate.test.ts imports this runtime contract",
+        "tests/acceptance/main-agent-pr-topology.test.ts and parallel mission tests import it",
+        "docs/reference/pr-topology-contract.md names this script as canonical implementation"
+      ],
+      "commands": [],
+      "installMatrixEvidence": [],
+      "result": "partial"
+    },
+    {
+      "entryId": "query-validate",
+      "originalPath": "scripts/query-validate.ts",
+      "semanticClassification": "package_local_helper",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/query-validate.js",
+        "packages/bmad-speckit/dist/main-agent/helpers/query-validate.js"
+      ],
+      "evidenceBasis": [
+        "script validates scoring query APIs",
+        "docs/reference/source-code.md marks it as production source"
+      ],
+      "commands": [],
+      "installMatrixEvidence": [],
+      "result": "partial"
+    },
+    {
+      "entryId": "runtime-step-state",
+      "originalPath": "scripts/runtime-step-state.ts",
+      "semanticClassification": "package_local_helper",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/runtime-step-state.js",
+        "packages/bmad-speckit/dist/main-agent/helpers/runtime-step-state.js"
+      ],
+      "evidenceBasis": [
+        "script is a wrapper around _bmad/runtime/hooks/runtime-step-state.cjs",
+        "runtime step state is used by installed hook/runtime surfaces"
+      ],
+      "commands": [],
+      "installMatrixEvidence": [],
+      "result": "partial"
+    },
+    {
+      "entryId": "verify-agent-files",
+      "originalPath": "scripts/verify-agent-files.ts",
+      "semanticClassification": "package_local_helper",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/verify-agent-files.js",
+        "packages/bmad-speckit/dist/main-agent/helpers/verify-agent-files.js"
+      ],
+      "evidenceBasis": [
+        "script verifies installed .claude agent files and prerequisites",
+        "verification is tied to installed workflow surfaces"
+      ],
+      "commands": [],
+      "installMatrixEvidence": [],
+      "result": "partial"
+    },
+    {
+      "entryId": "verify-score-auto-scoped-bundle",
+      "originalPath": "scripts/verify-score-auto-scoped-bundle.cjs",
+      "semanticClassification": "repo_internal_verification_harness",
+      "targetPaths": [
+        "scripts/verify-score-auto-scoped-bundle.cjs"
+      ],
+      "evidenceBasis": [
+        "script is a non-vitest score to scoped-bundle to dashboard verification harness",
+        "no direct package CLI or installed runtime surface signal found"
+      ],
+      "commands": [],
+      "installMatrixEvidence": [],
+      "result": "partial"
+    }
+  ],
+  "result": "partial"
+}

@@ -33,7 +33,7 @@ Cursor 侧当前 accepted runtime path 已经收敛为：
 1. `.cursor/hooks/runtime-policy-inject.cjs`
 2. `.cursor/hooks/pre-continue-check.cjs`
 3. 用户在 Cursor 会话中通过 `$bmad-speckit`、`/bmad-speckit`、`bmad-speckit` 或等价 skill 入口激活主控
-4. 主 Agent 内部执行或等价消费 `main-agent-orchestration inspect|dispatch-plan`
+4. 主 Agent 内部执行或等价消费 package-local `bmad-speckit main-agent inspect|dispatch-plan`
 5. 主 Agent 只从 `requirement-record.json`、`currentMentalModel`、六个心智模型链路和 controlled ingest 记录决定是否 claim / dispatch / complete / invalidate
 
 旧 worker 相关 start/skip 日志只应视为 legacy compatibility 提示，不再是当前成功标准。
@@ -65,17 +65,30 @@ Cursor 侧当前 accepted runtime path 已经收敛为：
 
 1. `.cursor/hooks.json` 是否真的接到了事件
 2. `runtime-policy-inject.cjs` / `pre-continue-check.cjs` 是否真的被执行
-3. 主 Agent 能否通过 `main-agent-orchestration` 读取 authoritative surface
+3. 主 Agent 能否通过 package-local `bmad-speckit main-agent inspect|dispatch-plan` 读取 authoritative surface
 
 ## Skill 与 Command 依赖
 
-| Command | 依赖 Skill | 说明 |
-|---------|------------|------|
-| `/bmad-bmm-create-story` | bmad-story-assistant, bmad-party-mode | Create Story 全流程；涉及方案选择时需 party-mode |
-| `/bmad-bmm-dev-story` | bmad-story-assistant, speckit-workflow | Dev Story 全流程 |
-| `/bmad-coach` | bmad-eval-analytics | Coach 诊断 |
-| `/bmad-sft-extract` | bmad-eval-analytics | SFT 数据提取 |
+| Command                  | 依赖 Skill                             | 说明                                             |
+| ------------------------ | -------------------------------------- | ------------------------------------------------ |
+| `/bmad-bmm-create-story` | bmad-story-assistant, bmad-party-mode  | Create Story 全流程；涉及方案选择时需 party-mode |
+| `/bmad-bmm-dev-story`    | bmad-story-assistant, speckit-workflow | Dev Story 全流程                                 |
+| `/bmad-coach`            | bmad-eval-analytics                    | Coach 诊断                                       |
+| `/bmad-sft-extract`      | bmad-eval-analytics                    | SFT 数据提取                                     |
 
-**安装**：执行 `pwsh scripts/setup.ps1 -Target <项目根>` 将 skills 部署到 `{SKILLS_ROOT}`。**init 后须 setup**：`init-to-root` 仅部署 commands，skills 需单独安装。  
+**安装**：普通 Cursor 消费项目先按 [消费项目安装指南](./consumer-installation.md) 使用项目本地安装：
+
+```powershell
+npm install --save-dev --ignore-scripts bmad-speckit-sdd-flow@latest
+npm ls bmad-speckit-sdd-flow --depth=0
+node -e "const fs=require('node:fs'); const p=process.platform==='win32'?'node_modules/.bin/bmad-speckit.cmd':'node_modules/.bin/bmad-speckit'; if(!fs.existsSync(p)){console.error('missing project-local '+p); process.exit(1)} console.log('found '+p)"
+npx --no-install bmad-speckit init . --ai cursor-agent --yes --force
+npx --no-install bmad-speckit check
+npx --no-install bmad-speckit dashboard-status
+npx --no-install bmad-speckit bmads
+```
+
+`pwsh scripts/setup.ps1 -Target <项目根>` 只适用于已经 clone 本仓库的源码维护者、安装器调试或本地未发布改动验证，不是普通消费项目的默认安装方式。
+
 **衔接步骤**：Create Story 产出 Story 文档后，须**显式触发** `/bmad-bmm-dev-story` 完成 Dev Story 流程，无自动衔接。  
 **Manifest**：结构化依赖见 `_bmad/_config/skill-command-mapping.yaml`。

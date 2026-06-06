@@ -7,7 +7,7 @@ const {
   extractTemplateProfile,
   normalizeRepoPath,
   profileHashFor,
-  sha256,
+  templateHashFor,
 } = require('./extract-goal-contract-profile');
 
 const SHARED_DIR = path.join(ROOT, '_bmad', 'shared', 'goal-contract');
@@ -35,13 +35,20 @@ function readJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 
+function canonicalizeForComparison(text) {
+  return text
+    .replace(/^\uFEFF/u, '')
+    .replace(/\r\n/g, '\n')
+    .replace(/\s+$/u, '');
+}
+
 function compareFiles(left, right, issues, code) {
   if (!fs.existsSync(right)) {
     issues.push(`${code}:missing:${normalizeRepoPath(right)}`);
     return;
   }
-  const leftText = fs.readFileSync(left, 'utf8');
-  const rightText = fs.readFileSync(right, 'utf8');
+  const leftText = canonicalizeForComparison(fs.readFileSync(left, 'utf8'));
+  const rightText = canonicalizeForComparison(fs.readFileSync(right, 'utf8'));
   if (leftText !== rightText) issues.push(`${code}:drift:${normalizeRepoPath(right)}`);
 }
 
@@ -62,7 +69,7 @@ function verifyGoalContractProfile({
   const lock = readJson(lockPath);
   const extracted = extractTemplateProfile(templateText);
   const profileHash = profileHashFor(profile);
-  const templateHash = sha256(templateText);
+  const templateHash = templateHashFor(templateText);
 
   for (const field of [
     'schemaVersion',

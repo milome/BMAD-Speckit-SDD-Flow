@@ -120,8 +120,8 @@ function extractTargetModificationPaths() {
 }
 
 function readCheckpointImplementationConfirmation(): Record<string, any> {
-  const source = fs.readFileSync(checkpointRequirementDocPath(), 'utf8');
-  const match = source.match(/\nimplementationConfirmation:\n[\s\S]*?(?=\n## |\n# |$)/u);
+  const source = fs.readFileSync(checkpointRequirementDocPath(), 'utf8').replace(/\r\n/g, '\n');
+  const match = source.match(/(?:^|\n)implementationConfirmation:\n[\s\S]*?(?=\n#{1,6}\s|$)/u);
   if (!match) {
     throw new Error(
       'implementationConfirmation block not found in checkpoint automation source document'
@@ -1750,6 +1750,10 @@ describe('requirements contract checkpoint automation', () => {
     expect(result.stderr).toContain('[requirements-contract-authoring] scale assessment started');
     expect(result.stderr).toContain('[requirements-contract-authoring] scale assessment result');
     expect(result.stderr).toContain('decision=checkpoint_required');
+    expect(result.stderr).toContain('[需求契约]');
+    expect(result.stderr).toContain('现在在做什么：');
+    expect(result.stderr).toContain('下一安全动作：');
+    expect(result.stderr).toContain('机器信息：');
   });
 
   it('emits checkpoint plan in deterministic pre-render order', () => {
@@ -1885,6 +1889,106 @@ describe('requirements contract checkpoint automation', () => {
     expect(result.status).toBe(1);
     expect(json.code).toBe('document_hash_mismatch');
     expect(json.nextCheckpoint).toBe('cp-02-confirmation-core-applicability');
+    expect(result.stderr).toContain('[需求契约]');
+    expect(result.stderr).toContain('现在在做什么：');
+    expect(result.stderr).toContain('为什么停在这里：');
+    expect(result.stderr).toContain('下一安全动作：');
+    expect(result.stderr).toContain('机器信息：');
+  });
+
+  it('prints human checkpoint status for plan/status/run/resume while keeping stdout JSON-only', () => {
+    initGitRepo(tempDir);
+    const source = writeGloballyConsistentSource(tempDir);
+    const progress = path.join(tempDir, 'progress.json');
+    writeValidMustGateArtifactsForSource(source, authoringDirForGlobalGateRecord(tempDir));
+
+    const plan = runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'plan'], tempDir);
+    expect(plan.result.status).toBe(0);
+    expect(() => JSON.parse(plan.result.stdout)).not.toThrow();
+    expect(plan.result.stderr).toContain('[需求契约]');
+    expect(plan.result.stderr).toContain('现在在做什么：');
+    expect(plan.result.stderr).toContain('为什么继续：');
+    expect(plan.result.stderr).toContain('下一安全动作：');
+    expect(plan.result.stderr).toContain('机器信息：');
+
+    const run = runNode(
+      CHECKPOINTS,
+      [
+        '--source',
+        source,
+        '--progress',
+        progress,
+        '--mode',
+        'run',
+        '--checkpoint',
+        'cp-01-header-scope-decisions',
+      ],
+      tempDir
+    );
+    expect(run.result.status).toBe(0);
+    expect(() => JSON.parse(run.result.stdout)).not.toThrow();
+    expect(run.result.stderr).toContain('[需求契约]');
+    expect(run.result.stderr).toContain('现在在做什么：');
+    expect(run.result.stderr).toContain('下一安全动作：');
+    expect(run.result.stderr).toContain('机器信息：');
+
+    const status = runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'status'], tempDir);
+    expect(status.result.status).toBe(0);
+    expect(() => JSON.parse(status.result.stdout)).not.toThrow();
+    expect(status.result.stderr).toContain('[需求契约]');
+    expect(status.result.stderr).toContain('现在在做什么：');
+    expect(status.result.stderr).toContain('下一安全动作：');
+    expect(status.result.stderr).toContain('机器信息：');
+
+    const resume = runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'resume'], tempDir);
+    expect(resume.result.status).toBe(1);
+    expect(() => JSON.parse(resume.result.stdout)).not.toThrow();
+    expect(resume.result.stderr).toContain('[需求契约]');
+    expect(resume.result.stderr).toContain('现在在做什么：');
+    expect(resume.result.stderr).toContain('为什么停在这里：');
+    expect(resume.result.stderr).toContain('下一安全动作：');
+    expect(resume.result.stderr).toContain('机器信息：');
+  });
+
+  it('explains checkpoint_source_edit_missing in human language and suppresses it with --quiet', () => {
+    initGitRepo(tempDir);
+    const source = writeGloballyConsistentSource(tempDir);
+    const progress = path.join(tempDir, 'progress.json');
+    writeValidMustGateArtifactsForSource(source, authoringDirForGlobalGateRecord(tempDir));
+    runNode(
+      CHECKPOINTS,
+      [
+        '--source',
+        source,
+        '--progress',
+        progress,
+        '--mode',
+        'run',
+        '--checkpoint',
+        'cp-01-header-scope-decisions',
+      ],
+      tempDir
+    );
+
+    const blocked = runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'resume'], tempDir);
+    expect(blocked.result.status).toBe(1);
+    expect(blocked.json.code).toBe('checkpoint_source_edit_missing');
+    expect(blocked.result.stderr).toContain('当前源文档还没有写入本 checkpoint 需要保存的内容');
+    expect(blocked.result.stderr).toContain('不会替代需求契约编写');
+    expect(blocked.result.stderr).toContain('不能伪造进度');
+    expect(blocked.result.stderr).toContain('blockingReason=checkpoint_source_edit_missing');
+
+    const quiet = spawnSync(
+      process.execPath,
+      [CHECKPOINTS, '--source', source, '--progress', progress, '--mode', 'resume', '--json', '--quiet'],
+      {
+        cwd: tempDir,
+        encoding: 'utf8',
+      }
+    );
+    expect(quiet.status).toBe(1);
+    expect(() => JSON.parse(quiet.stdout)).not.toThrow();
+    expect(quiet.stderr).toBe('');
   });
 
   it('fails closed when unrelated staged files exist before checkpoint commit', () => {

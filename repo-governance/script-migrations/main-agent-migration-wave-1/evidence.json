@@ -1,0 +1,128 @@
+{
+  "waveId": "main-agent-migration-wave-1",
+  "validatedAt": "2026-06-02T15:15:10+08:00",
+  "entries": [
+    {
+      "entryId": "main-agent-orchestration",
+      "originalPath": "scripts/main-agent-orchestration.ts",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/index.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/actions/inspect.js",
+        "packages/bmad-speckit/src/main-agent/actions/confirm-scope.js",
+        "packages/bmad-speckit/src/main-agent/actions/dispatch-plan.js",
+        "packages/bmad-speckit/src/main-agent/actions/run-loop.js",
+        "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs"
+      ],
+      "commands": [
+        {
+          "command": "CMD-01 pwsh.exe -NoLogo -NoProfile -Command \"& { git status --short --branch }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:9f19fd57d41fe1af833361b3219e8b3a721f7c62e9465a2250cf6f753c89e126",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "command": "CMD-02 pwsh.exe -NoLogo -NoProfile -Command \"& { node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:db7b3c0c6a8fa4f0d7f54c81bda8dd3d12056efda32decbff5514111a7fd31c4",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "command": "CMD-03 pwsh.exe -NoLogo -NoProfile -Command \"& { npm run test --prefix packages/bmad-speckit -- main-agent-runtime-facade.test.js main-agent-no-root-ts-dispatch.test.js runtime-entry-content-fidelity.test.js runtime-entry-skill-passthrough.test.js install-surface-manifest.test.js }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:f08717e239d7182c5cfd6c844220eb674bf8b7637e39b006fbaf0279d3d21afd",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "command": "CMD-04 pwsh.exe -NoLogo -NoProfile -Command \"& { static public main-agent dispatch guard }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "command": "CMD-05 pwsh.exe -NoLogo -NoProfile -Command \"& { npx vitest run tests/acceptance/accept-install-consumer-cli.test.ts tests/acceptance/main-agent-orchestration-consumer.test.ts tests/acceptance/main-agent-codex-consumer-five-layer-e2e.test.ts }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:36f4a0a20d0b5bc0cd30ba9a9f2f22666f81d1df9ce3b151db636bdb5d7fbb69",
+          "stderrHash": "sha256:34b9f18ee7255547d4e08af023980b0dd6c03e9f4055f467e844fca5b3cd095b"
+        },
+        {
+          "command": "CMD-06 pwsh.exe -NoLogo -NoProfile -Command \"& { npm pack --pack-destination .tmp/main-agent-migration-wave-1 && npx vitest run tests/acceptance/accept-install-consumer-cli.test.ts }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:b32eb43e04163d24da329cdb6efe762c34ea2b272a3997b8573f816131cf6547",
+          "stderrHash": "sha256:9f3d44e3733834cc7f6523d40dfac08a05a1d2bb9225d9f34d514af4b48e95d7"
+        },
+        {
+          "command": "CMD-07 pwsh.exe -NoLogo -NoProfile -Command \"& { npx vitest run tests/acceptance/main-agent-unified-ingress-e2e.test.ts tests/acceptance/main-agent-run-loop-e2e.test.ts tests/acceptance/main-agent-orchestration-consumer.test.ts tests/acceptance/main-agent-codex-consumer-five-layer-e2e.test.ts }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:7ab9c4bc09da4811ab4aef67f8b42a98b9a45adbc22b9fc7ef3f26dcce6a2ff5",
+          "stderrHash": "sha256:8db5cc7180f01d11f3a145f0a9d84274a1976e237d5f7ea7070d93f22cb90d40"
+        },
+        {
+          "command": "CMD-08 pwsh.exe -NoLogo -NoProfile -Command \"& { npm run test --prefix packages/bmad-speckit }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e189cc9fc201f98552f9dd5d9f5eab3018be72844d7c8211a22d976f4de67479",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "command": "CMD-09 pwsh.exe -NoLogo -NoProfile -Command \"& { node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:c28dca6f2c97570fc33ed7ae8748897ee99d302b3b0318cc6c27702ada76a3f1",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "command": "CMD-10 pwsh.exe -NoLogo -NoProfile -Command \"& { git status --short }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:7f81b160562c7c701bc959d8e139f888afc8ac938a668718c59aecf5436a330c",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "command": "CMD-11 pwsh.exe -NoLogo -NoProfile -Command \"& { rg -n -e 'scripts/main-agent-orchestration\\.ts' -e 'runRepoScript\\(' -e 'main-agent-orchestration' -- 'packages/bmad-speckit/tests' 'tests/acceptance'; if ($LASTEXITCODE -eq 1) { 'no matching test references'; exit 0 }; exit $LASTEXITCODE }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:11ff29ce52b08e9eb0e2b73541ce8025cefcbdd6a8577f5d89050dae95c46ba1",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "command": "ASSOC-01 pwsh.exe -NoLogo -NoProfile -Command \"& { npx vitest run tests/acceptance/bmad-help-renderer.test.ts }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:b8842a22eea98988934b6652d5af0f68f217098c75fd9db78b55637ae17335bd",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "command": "REG-01 pwsh.exe -NoLogo -NoProfile -Command \"& { node tools/script-migration/validate-registry.cjs }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:d1ac9be830fd8d9cfb9c9b55afaffcc4829b7c6cd80005cc64c4908caa7f93e6",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "command": "REG-02 pwsh.exe -NoLogo -NoProfile -Command \"& { npx vitest run tests/acceptance/script-migration-registry-contract.test.ts }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:b2a60d9b7b0972db117b2619112831cc216a924e53d6764aa6e2e6ec98752469",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "command": "REG-03 pwsh.exe -NoLogo -NoProfile -Command \"& { node tools/script-migration/validate-registry.cjs --check-pack-exclusion }\"",
+          "exitCode": 0,
+          "stdoutHash": "sha256:ae8ff0377d85e111b1b9fa44a56684ddfc1a9a8a7e252b97422d60ad83a1b1de",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "testMigrationInventory": {
+        "command": "CMD-11",
+        "hitCount": 104,
+        "classificationRef": "repo-governance/script-migrations/main-agent-migration-wave-1/summary.md#cmd-11-test-migration-classification"
+      },
+      "installMatrixEvidence": [
+        ".tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json",
+        ".tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json",
+        ".tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json",
+        ".tmp/main-agent-migration-wave-1/install-matrix/npx-package-bmads.json",
+        ".tmp/main-agent-migration-wave-1/install-matrix/npx-package-bmad-help.json",
+        ".tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json",
+        ".tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json",
+        ".tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json",
+        ".tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json"
+      ],
+      "result": "passed"
+    }
+  ]
+}

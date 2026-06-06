@@ -1,0 +1,36 @@
+{
+  "waveId": "main-agent-runtime-migration-wave-3.5",
+  "generatedAt": "2026-06-04T19:29:20.466Z",
+  "result": "passed",
+  "noRootScriptDeletion": true,
+  "consumerRootScriptsDependency": false,
+  "userGlobalSkillWrite": false,
+  "registryInvocationContract": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.5/registry-invocation-contract.json",
+  "skillHelperHardening": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.5/skill-helper-hardening.json",
+  "skillSyncParity": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.5/skill-sync-parity.json",
+  "commandEvidence": [
+    {
+      "command": "d:\\nvm4w\\nodejs\\node.exe _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js",
+      "exitCode": 0,
+      "stdoutHash": "sha256:49229509461e4b936dfa1f8ae0fa687a02760af03df3231524e02ea39abcd291",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "checkedFiles=3022 findings=0\n",
+      "stderrPreview": ""
+    },
+    {
+      "command": "git status --short -- scripts",
+      "exitCode": 0,
+      "stdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "",
+      "stderrPreview": ""
+    }
+  ],
+  "stableConsumerInvocation": "npx --no-install bmad-speckit ...",
+  "unsupportedSuccessPaths": [
+    "node scripts/*.ts from consumer root for source repository scripts",
+    "node node_modules/.../scripts/*.ts",
+    "tsx or ts-node in consumer runtime",
+    "Windows-only wrapper dispatch"
+  ]
+}

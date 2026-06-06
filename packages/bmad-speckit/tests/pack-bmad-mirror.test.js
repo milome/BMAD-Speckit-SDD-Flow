@@ -25,6 +25,16 @@ test('npm pack --dry-run includes packaged _bmad hook cjs files', () => {
     '_bmad/runtime/hooks/runtime-policy-inject-core.cjs',
     '_bmad/cursor/hooks/runtime-policy-inject.cjs',
     '_bmad/claude/hooks/runtime-policy-inject.cjs',
+    '_bmad/_config/ai-tdd-six-model-manifest.csv',
+    '_bmad/_config/ai-tdd-six-model-action-matrix.csv',
+    '_bmad/_config/ai-tdd-six-model-skill-routes.csv',
+    '_bmad/_config/ai-tdd-reconfirmation-route-matrix.csv',
+    '_bmad/skills/ai-tdd-runtime-navigator/workflow.md',
+    'src/runtime/bmad-help-renderer.js',
+    'src/runtime/bmads-renderer.js',
+    'src/runtime/ai-tdd/projection-manifest.js',
+    'src/runtime/ai-tdd/display-budget.js',
+    'src/runtime/ai-tdd/runtime-decision.js',
   ];
 
   const expectedHookSubset = expectedHookFiles.filter((file) => file.endsWith('.cjs'));

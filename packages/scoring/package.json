@@ -1,6 +1,6 @@
 {
   "name": "@bmad-speckit/scoring",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "BMAD scoring system: audit parsing, score calculation, coach diagnosis, dashboard generation",
   "main": "dist/orchestrator/index.js",
   "types": "dist/orchestrator/index.d.ts",
@@ -51,6 +51,14 @@
     },
     "./runtime/schema/runtime-event": "./runtime/schema/runtime-event.schema.json",
     "./runtime/schema/runtime-run-projection": "./runtime/schema/runtime-run-projection.schema.json",
+    "./eval-questions/template-generator": {
+      "require": "./dist/eval-questions/template-generator.js",
+      "types": "./dist/eval-questions/template-generator.d.ts"
+    },
+    "./eval-questions/manifest-loader": {
+      "require": "./dist/eval-questions/manifest-loader.js",
+      "types": "./dist/eval-questions/manifest-loader.d.ts"
+    },
     "./analytics/types": {
       "require": "./dist/analytics/types.js",
       "types": "./dist/analytics/types.d.ts"
@@ -71,7 +79,7 @@
     }
   },
   "scripts": {
-    "test": "vitest run",
+    "test": "node scripts/run-tests.cjs",
     "build:dashboard-ui": "node dashboard/ui/build.mjs",
     "build": "npm run build:dashboard-ui && tsc --outDir dist"
   },
@@ -79,6 +87,7 @@
     "dist/",
     "rules/",
     "schema/",
+    "eval-questions/",
     "runtime/schema/",
     "analytics/schema/",
     "dashboard/ui/",

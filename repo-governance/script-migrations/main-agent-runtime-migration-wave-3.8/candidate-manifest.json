@@ -1,0 +1,974 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-candidate-manifest/v1",
+  "waveId": "main-agent-runtime-migration-wave-3.8",
+  "title": "Wave 3.8 P3 classification compression and runtime closure",
+  "contractPath": "docs/plans/2026-06-05-main-agent-p1-p4-runtime-migration-goal-execution-plan.md",
+  "refinesWaveId": "main-agent-runtime-migration-wave-3.7",
+  "sourcePriorityMatrixPath": "repo-governance/script-migrations/main-agent-runtime-closure-wave-3/priority-matrix.md",
+  "registryPath": "repo-governance/script-migration-registry.yaml",
+  "classificationPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/classification-compression.json",
+  "evidencePath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json",
+  "summaryPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/summary.md",
+  "selection": {
+    "priority": "P3",
+    "matrixTotal": 38,
+    "alreadyValidated": 0,
+    "remaining": 38,
+    "selectionRule": "Include every P3 priority-matrix row, then require classification compression before migration."
+  },
+  "status": "manifest_locked",
+  "deletionAllowed": false,
+  "deletionApprovalRef": null,
+  "entries": [
+    {
+      "entryId": "adaptive-intake-governance-gate",
+      "priority": "P3",
+      "originalPath": "scripts/adaptive-intake-governance-gate.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "blocked_until_classification_compression",
+      "plannedActionSlug": "adaptive-intake-governance-gate",
+      "plannedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/adaptive-intake-governance-gate.js",
+        "packages/bmad-speckit/dist/main-agent/actions/adaptive-intake-governance-gate.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "callerSwitchRequired": true,
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_classification",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "adaptive-intake-proof-gate",
+      "priority": "P3",
+      "originalPath": "scripts/adaptive-intake-proof-gate.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "blocked_until_classification_compression",
+      "plannedActionSlug": "adaptive-intake-proof-gate",
+      "plannedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/adaptive-intake-proof-gate.js",
+        "packages/bmad-speckit/dist/main-agent/actions/adaptive-intake-proof-gate.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "callerSwitchRequired": true,
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_classification",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "ai-tdd-contract-gate",
+      "priority": "P3",
+      "originalPath": "scripts/ai-tdd-contract-gate.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "blocked_until_classification_compression",
+      "plannedActionSlug": "ai-tdd-contract-gate",
+      "plannedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/ai-tdd-contract-gate.js",
+        "packages/bmad-speckit/dist/main-agent/actions/ai-tdd-contract-gate.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "callerSwitchRequired": true,
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_classification",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "audit-scoring-convergence-policy",
+      "priority": "P3",
+      "originalPath": "scripts/audit-scoring-convergence-policy.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "blocked_until_classification_compression",
+      "plannedActionSlug": "audit-scoring-convergence-policy",
+      "plannedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/audit-scoring-convergence-policy.js",
+        "packages/bmad-speckit/dist/main-agent/actions/audit-scoring-convergence-policy.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "callerSwitchRequired": true,
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_classification",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "audit-stage-routing",
+      "priority": "P3",
+      "originalPath": "scripts/audit-stage-routing.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "blocked_until_classification_compression",
+      "plannedActionSlug": "audit-stage-routing",
+      "plannedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/audit-stage-routing.js",
+        "packages/bmad-speckit/dist/main-agent/actions/audit-stage-routing.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "callerSwitchRequired": true,
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_classification",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "audit-triad-orchestrator",
+      "priority": "P3",
+      "originalPath": "scripts/audit-triad-orchestrator.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "blocked_until_classification_compression",
+      "plannedActionSlug": "audit-triad-orchestrator",
+      "plannedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/audit-triad-orchestrator.js",
+        "packages/bmad-speckit/dist/main-agent/actions/audit-triad-orchestrator.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "callerSwitchRequired": true,
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_classification",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "auditor-post-actions",
+      "priority": "P3",
+      "originalPath": "scripts/auditor-post-actions.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "blocked_until_classification_compression",
+      "plannedActionSlug": "auditor-post-actions",
+      "plannedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/auditor-post-actions.js",
+        "packages/bmad-speckit/dist/main-agent/actions/auditor-post-actions.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "callerSwitchRequired": true,
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_classification",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "auditor-spec",
+      "priority": "P3",
+      "originalPath": "scripts/auditor-spec.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "blocked_until_classification_compression",
+      "plannedActionSlug": "auditor-spec",
+      "plannedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/auditor-spec.js",
+        "packages/bmad-speckit/dist/main-agent/actions/auditor-spec.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "callerSwitchRequired": true,
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_classification",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "bmad-runtime-worker",
+      "priority": "P3",
+      "originalPath": "scripts/bmad-runtime-worker.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "blocked_until_classification_compression",
+      "plannedActionSlug": "bmad-runtime-worker",
+      "plannedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/bmad-runtime-worker.js",
+        "packages/bmad-speckit/dist/main-agent/actions/bmad-runtime-worker.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "callerSwitchRequired": true,
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_classification",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "controlled-readiness-audit-bridge",
+      "priority": "P3",
+      "originalPath": "scripts/controlled-readiness-audit-bridge.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "blocked_until_classification_compression",
+      "plannedActionSlug": "controlled-readiness-audit-bridge",
+      "plannedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/controlled-readiness-audit-bridge.js",
+        "packages/bmad-speckit/dist/main-agent/actions/controlled-readiness-audit-bridge.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "callerSwitchRequired": true,
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_classification",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "critical-auditor-profile",
+      "priority": "P3",
+      "originalPath": "scripts/critical-auditor-profile.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "blocked_until_classification_compression",
+      "plannedActionSlug": "critical-auditor-profile",
+      "plannedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/critical-auditor-profile.js",
+        "packages/bmad-speckit/dist/main-agent/actions/critical-auditor-profile.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "callerSwitchRequired": true,
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_classification",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "e2e-dual-host-journey-runner",
+      "priority": "P3",
+      "originalPath": "scripts/e2e-dual-host-journey-runner.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "blocked_until_classification_compression",
+      "plannedActionSlug": "e2e-dual-host-journey-runner",
+      "plannedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/e2e-dual-host-journey-runner.js",
+        "packages/bmad-speckit/dist/main-agent/actions/e2e-dual-host-journey-runner.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "callerSwitchRequired": true,
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_classification",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "e2e-host-matrix-journey-runner",
+      "priority": "P3",
+      "originalPath": "scripts/e2e-host-matrix-journey-runner.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "blocked_until_classification_compression",
+      "plannedActionSlug": "e2e-host-matrix-journey-runner",
+      "plannedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/e2e-host-matrix-journey-runner.js",
+        "packages/bmad-speckit/dist/main-agent/actions/e2e-host-matrix-journey-runner.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "callerSwitchRequired": true,
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_classification",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "final-closeout-evidence-runner",
+      "priority": "P3",
+      "originalPath": "scripts/final-closeout-evidence-runner.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "blocked_until_classification_compression",
+      "plannedActionSlug": "final-closeout-evidence-runner",
+      "plannedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/final-closeout-evidence-runner.js",
+        "packages/bmad-speckit/dist/main-agent/actions/final-closeout-evidence-runner.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "callerSwitchRequired": true,
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_classification",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "governance-host-dispatch-adapter",
+      "priority": "P3",
+      "originalPath": "scripts/governance-host-dispatch-adapter.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "blocked_until_classification_compression",
+      "plannedActionSlug": "governance-host-dispatch-adapter",
+      "plannedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/governance-host-dispatch-adapter.js",
+        "packages/bmad-speckit/dist/main-agent/actions/governance-host-dispatch-adapter.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "callerSwitchRequired": true,
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_classification",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "governance-packet-dispatch-worker",
+      "priority": "P3",
+      "originalPath": "scripts/governance-packet-dispatch-worker.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "blocked_until_classification_compression",
+      "plannedActionSlug": "governance-packet-dispatch-worker",
+      "plannedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/governance-packet-dispatch-worker.js",
+        "packages/bmad-speckit/dist/main-agent/actions/governance-packet-dispatch-worker.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "callerSwitchRequired": true,
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_classification",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "host-runtime-mode",
+      "priority": "P3",
+      "originalPath": "scripts/host-runtime-mode.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "blocked_until_classification_compression",
+      "plannedActionSlug": "host-runtime-mode",
+      "plannedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/host-runtime-mode.js",
+        "packages/bmad-speckit/dist/main-agent/actions/host-runtime-mode.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "callerSwitchRequired": true,
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_classification",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "print-resolved-audit-prompt",
+      "priority": "P3",
+      "originalPath": "scripts/i18n/print-resolved-audit-prompt.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "blocked_until_classification_compression",
+      "plannedActionSlug": "print-resolved-audit-prompt",
+      "plannedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/print-resolved-audit-prompt.js",
+        "packages/bmad-speckit/dist/main-agent/actions/print-resolved-audit-prompt.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "callerSwitchRequired": true,
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_classification",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "render-audit-block-cli",
+      "priority": "P3",
+      "originalPath": "scripts/i18n/render-audit-block-cli.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "blocked_until_classification_compression",
+      "plannedActionSlug": "render-audit-block-cli",
+      "plannedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/render-audit-block-cli.js",
+        "packages/bmad-speckit/dist/main-agent/actions/render-audit-block-cli.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "callerSwitchRequired": true,
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_classification",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "resolve-audit-prompt-path",
+      "priority": "P3",
+      "originalPath": "scripts/i18n/resolve-audit-prompt-path.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "blocked_until_classification_compression",
+      "plannedActionSlug": "resolve-audit-prompt-path",
+      "plannedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/resolve-audit-prompt-path.js",
+        "packages/bmad-speckit/dist/main-agent/actions/resolve-audit-prompt-path.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "callerSwitchRequired": true,
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_classification",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "ingest-implementation-evidence",
+      "priority": "P3",
+      "originalPath": "scripts/ingest-implementation-evidence.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "blocked_until_classification_compression",
+      "plannedActionSlug": "ingest-implementation-evidence",
+      "plannedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/ingest-implementation-evidence.js",
+        "packages/bmad-speckit/dist/main-agent/actions/ingest-implementation-evidence.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "callerSwitchRequired": true,
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_classification",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "parse-bmad-audit-result",
+      "priority": "P3",
+      "originalPath": "scripts/parse-bmad-audit-result.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "blocked_until_classification_compression",
+      "plannedActionSlug": "parse-bmad-audit-result",
+      "plannedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/parse-bmad-audit-result.js",
+        "packages/bmad-speckit/dist/main-agent/actions/parse-bmad-audit-result.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "callerSwitchRequired": true,
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_classification",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "party-mode-gate-check",
+      "priority": "P3",
+      "originalPath": "scripts/party-mode-gate-check.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "blocked_until_classification_compression",
+      "plannedActionSlug": "party-mode-gate-check",
+      "plannedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/party-mode-gate-check.js",
+        "packages/bmad-speckit/dist/main-agent/actions/party-mode-gate-check.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "callerSwitchRequired": true,
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_classification",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "per-must-closure-evidence-index",
+      "priority": "P3",
+      "originalPath": "scripts/per-must-closure-evidence-index.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "blocked_until_classification_compression",
+      "plannedActionSlug": "per-must-closure-evidence-index",
+      "plannedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/per-must-closure-evidence-index.js",
+        "packages/bmad-speckit/dist/main-agent/actions/per-must-closure-evidence-index.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "callerSwitchRequired": true,
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_classification",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "pre-rerun-anti-false-positive-gate",
+      "priority": "P3",
+      "originalPath": "scripts/pre-rerun-anti-false-positive-gate.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "blocked_until_classification_compression",
+      "plannedActionSlug": "pre-rerun-anti-false-positive-gate",
+      "plannedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/pre-rerun-anti-false-positive-gate.js",
+        "packages/bmad-speckit/dist/main-agent/actions/pre-rerun-anti-false-positive-gate.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "callerSwitchRequired": true,
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_classification",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "reviewer-contract",
+      "priority": "P3",
+      "originalPath": "scripts/reviewer-contract.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "blocked_until_classification_compression",
+      "plannedActionSlug": "reviewer-contract",
+      "plannedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/reviewer-contract.js",
+        "packages/bmad-speckit/dist/main-agent/actions/reviewer-contract.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "callerSwitchRequired": true,
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_classification",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "reviewer-registry",
+      "priority": "P3",
+      "originalPath": "scripts/reviewer-registry.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "blocked_until_classification_compression",
+      "plannedActionSlug": "reviewer-registry",
+      "plannedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/reviewer-registry.js",
+        "packages/bmad-speckit/dist/main-agent/actions/reviewer-registry.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "callerSwitchRequired": true,
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_classification",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "reviewer-rollout-gate",
+      "priority": "P3",
+      "originalPath": "scripts/reviewer-rollout-gate.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "blocked_until_classification_compression",
+      "plannedActionSlug": "reviewer-rollout-gate",
+      "plannedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/reviewer-rollout-gate.js",
+        "packages/bmad-speckit/dist/main-agent/actions/reviewer-rollout-gate.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "callerSwitchRequired": true,
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_classification",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "reviewer-runtime-definition",
+      "priority": "P3",
+      "originalPath": "scripts/reviewer-runtime-definition.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "blocked_until_classification_compression",
+      "plannedActionSlug": "reviewer-runtime-definition",
+      "plannedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/reviewer-runtime-definition.js",
+        "packages/bmad-speckit/dist/main-agent/actions/reviewer-runtime-definition.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "callerSwitchRequired": true,
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_classification",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "reviewer-schema",
+      "priority": "P3",
+      "originalPath": "scripts/reviewer-schema.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "blocked_until_classification_compression",
+      "plannedActionSlug": "reviewer-schema",
+      "plannedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/reviewer-schema.js",
+        "packages/bmad-speckit/dist/main-agent/actions/reviewer-schema.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "callerSwitchRequired": true,
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_classification",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "run-ci-release-gate-fixture",
+      "priority": "P3",
+      "originalPath": "scripts/run-ci-release-gate-fixture.js",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "blocked_until_classification_compression",
+      "plannedActionSlug": "run-ci-release-gate-fixture",
+      "plannedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/run-ci-release-gate-fixture.js",
+        "packages/bmad-speckit/dist/main-agent/actions/run-ci-release-gate-fixture.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "callerSwitchRequired": true,
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_classification",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "strict-closeout-proof-gate",
+      "priority": "P3",
+      "originalPath": "scripts/strict-closeout-proof-gate.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "blocked_until_classification_compression",
+      "plannedActionSlug": "strict-closeout-proof-gate",
+      "plannedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/strict-closeout-proof-gate.js",
+        "packages/bmad-speckit/dist/main-agent/actions/strict-closeout-proof-gate.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "callerSwitchRequired": true,
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_classification",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "subagent-evidence-envelope",
+      "priority": "P3",
+      "originalPath": "scripts/subagent-evidence-envelope.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "blocked_until_classification_compression",
+      "plannedActionSlug": "subagent-evidence-envelope",
+      "plannedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/subagent-evidence-envelope.js",
+        "packages/bmad-speckit/dist/main-agent/actions/subagent-evidence-envelope.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "callerSwitchRequired": true,
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_classification",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "supervised-worker-runtime",
+      "priority": "P3",
+      "originalPath": "scripts/supervised-worker-runtime.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "blocked_until_classification_compression",
+      "plannedActionSlug": "supervised-worker-runtime",
+      "plannedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/supervised-worker-runtime.js",
+        "packages/bmad-speckit/dist/main-agent/actions/supervised-worker-runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "callerSwitchRequired": true,
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_classification",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "target-artifact-realization-gate",
+      "priority": "P3",
+      "originalPath": "scripts/target-artifact-realization-gate.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "blocked_until_classification_compression",
+      "plannedActionSlug": "target-artifact-realization-gate",
+      "plannedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/target-artifact-realization-gate.js",
+        "packages/bmad-speckit/dist/main-agent/actions/target-artifact-realization-gate.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "callerSwitchRequired": true,
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_classification",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "trace-040-evidence-packet-generator",
+      "priority": "P3",
+      "originalPath": "scripts/trace-040-evidence-packet-generator.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "blocked_until_classification_compression",
+      "plannedActionSlug": "trace-040-evidence-packet-generator",
+      "plannedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/trace-040-evidence-packet-generator.js",
+        "packages/bmad-speckit/dist/main-agent/actions/trace-040-evidence-packet-generator.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "callerSwitchRequired": true,
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_classification",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "update-runtime-audit-index",
+      "priority": "P3",
+      "originalPath": "scripts/update-runtime-audit-index.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "blocked_until_classification_compression",
+      "plannedActionSlug": "update-runtime-audit-index",
+      "plannedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/update-runtime-audit-index.js",
+        "packages/bmad-speckit/dist/main-agent/actions/update-runtime-audit-index.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "callerSwitchRequired": true,
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_classification",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    },
+    {
+      "entryId": "verify-cursor-audit-granularity",
+      "priority": "P3",
+      "originalPath": "scripts/verify-cursor-audit-granularity.ts",
+      "originalPathStatus": "retained",
+      "originalClassBeforeMigration": "unknown_requires_followup",
+      "matrixStrategyBeforeCompression": "package_runtime_module",
+      "routeDecision": "blocked_until_classification_compression",
+      "plannedActionSlug": "verify-cursor-audit-granularity",
+      "plannedTargetPaths": [
+        "packages/bmad-speckit/src/main-agent/actions/verify-cursor-audit-granularity.js",
+        "packages/bmad-speckit/dist/main-agent/actions/verify-cursor-audit-granularity.js",
+        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime.js",
+        "packages/bmad-speckit/bin/bmad-speckit.js"
+      ],
+      "callerSwitchRequired": true,
+      "validationStatus": "pending",
+      "evidenceRefs": [
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json"
+      ],
+      "oldPathDisposition": "retained_pending_classification",
+      "deletionAllowed": false,
+      "deletionApprovalRef": null
+    }
+  ]
+}

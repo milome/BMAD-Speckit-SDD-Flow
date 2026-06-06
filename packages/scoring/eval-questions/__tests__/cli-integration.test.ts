@@ -8,10 +8,10 @@ import * as os from 'os';
 import { execSync } from 'child_process';
 import { loadManifest } from '../manifest-loader';
 
-const PROJECT_ROOT = process.cwd();
-const CLI_SCRIPT = path.resolve(PROJECT_ROOT, 'scripts', 'eval-questions-cli.ts');
-const TS_NODE_BIN = path.resolve(PROJECT_ROOT, 'node_modules', 'ts-node', 'dist', 'bin.js');
-const TSCONFIG = path.resolve(PROJECT_ROOT, 'tsconfig.node.json');
+const REPO_ROOT = path.resolve(__dirname, '..', '..', '..', '..');
+const CLI_SCRIPT = path.resolve(REPO_ROOT, 'scripts', 'eval-questions-cli.ts');
+const TS_NODE_BIN = path.resolve(REPO_ROOT, 'node_modules', 'ts-node', 'dist', 'bin.js');
+const TSCONFIG = path.resolve(REPO_ROOT, 'tsconfig.node.json');
 
 function runCli(args: string[], cwd = process.cwd()): string {
   const cmd = `node "${TS_NODE_BIN}" --project "${TSCONFIG}" --transpile-only "${CLI_SCRIPT}" ${args.join(' ')}`;

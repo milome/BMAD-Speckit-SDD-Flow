@@ -430,12 +430,44 @@ function copyFileWithRetry(src, dest, maxAttempts = 20) {
   }
 }
 
-function normalizeCodexSkillFrontmatterFile(filePath) {
+const PLATFORM_SKILLS_DIRS = ['.codex/skills', '.claude/skills', '.cursor/skills'];
+
+function isCodexSkillFrontmatterFile(filePath) {
+  const portablePath = String(filePath || '').replace(/\\/g, '/');
+  return (
+    path.basename(filePath) === 'SKILL.md' &&
+    (portablePath.includes('/.codex/skills/') || portablePath.startsWith('.codex/skills/'))
+  );
+}
+
+function hasRequiredSkillFrontmatter(raw) {
+  const lines = String(raw || '').split(/\r?\n/u);
+  if (lines[0] !== '---') return false;
+  const endIndex = lines.findIndex((line, index) => index > 0 && line.trim() === '---');
+  if (endIndex < 0) return false;
+  const frontmatter = lines.slice(1, endIndex).join('\n');
+  return /^name:\s*.+$/mu.test(frontmatter) && /^description:\s*.+$/mu.test(frontmatter);
+}
+
+function normalizePlatformSkillFrontmatterFile(filePath) {
   const portablePath = filePath.replace(/\\/g, '/');
-  if (!portablePath.includes('/.codex/skills/') && !portablePath.startsWith('.codex/skills/')) return;
+  if (
+    !PLATFORM_SKILLS_DIRS.some(
+      (skillsDir) => portablePath.includes(`/${skillsDir}/`) || portablePath.startsWith(`${skillsDir}/`)
+    )
+  ) return;
   if (path.basename(filePath) !== 'SKILL.md') return;
   const raw = fs.readFileSync(filePath, 'utf8').replace(/^\uFEFF/u, '');
   const withoutPolicy = raw.replace(/^<!--\s*BLOCK_LABEL_POLICY=[^>]*-->\s*\r?\n?/u, '');
+  if (hasRequiredSkillFrontmatter(withoutPolicy)) {
+    const preserved = isCodexSkillFrontmatterFile(filePath)
+      ? withoutPolicy.replace(/\r\n/gu, '\n')
+      : withoutPolicy;
+    if (preserved !== raw) {
+      fs.writeFileSync(filePath, preserved, 'utf8');
+    }
+    return;
+  }
   const skillName = path.basename(path.dirname(filePath));
   let frontmatter = '';
   let body = withoutPolicy;
@@ -458,7 +490,7 @@ function normalizeCodexSkillFrontmatterFile(filePath) {
         .filter(Boolean)
         .join(' ')
     : inlineDescriptionMatch?.[1]?.replace(/^['"]|['"]$/gu, '').trim();
-  const description = (rawDescription || `BMAD Codex skill ${name}.`)
+  const description = (rawDescription || `BMAD platform skill ${name}.`)
     .replace(/\s+/gu, ' ')
     .slice(0, 500);
   const normalized = [
@@ -558,7 +590,7 @@ function copyRecursive(src, dest) {
     }
   } else {
     copyFileWithRetry(src, dest);
-    normalizeCodexSkillFrontmatterFile(dest);
+    normalizePlatformSkillFrontmatterFile(dest);
   }
 }
 
@@ -1017,7 +1049,7 @@ function materializeSkillMdByLanguage(targetDir) {
       if (fs.existsSync(zh) && fs.existsSync(en)) {
         const src = mode === 'zh' ? zh : en;
         copyFileWithRetry(src, primary);
-        normalizeCodexSkillFrontmatterFile(primary);
+        normalizePlatformSkillFrontmatterFile(primary);
       }
     }
   }

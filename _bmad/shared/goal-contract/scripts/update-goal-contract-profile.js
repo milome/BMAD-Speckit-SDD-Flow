@@ -7,7 +7,7 @@ const {
   extractTemplateProfile,
   normalizeRepoPath,
   profileHashFor,
-  sha256,
+  templateHashFor,
 } = require('./extract-goal-contract-profile');
 
 const SHARED_DIR = path.join(ROOT, '_bmad', 'shared', 'goal-contract');
@@ -47,7 +47,7 @@ function updateGoalContractProfile({ now = new Date().toISOString() } = {}) {
   const profile = readJson(PROFILE_PATH);
   const extracted = extractTemplateProfile(templateText);
   profile.templatePath = normalizeRepoPath(TEMPLATE_PATH);
-  profile.templateHash = sha256(templateText);
+  profile.templateHash = templateHashFor(templateText);
   profile.profileHash = profileHashFor(profile);
   writeJson(PROFILE_PATH, profile);
 

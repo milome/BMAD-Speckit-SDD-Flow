@@ -1,0 +1,475 @@
+{
+  "waveId": "main-agent-runtime-migration-wave-3.12",
+  "validatedAt": "2026-06-06T04:43:41.039Z",
+  "entries": [
+    {
+      "entryId": "readme-md",
+      "originalPath": "scripts/README.md",
+      "targetPaths": [
+        "scripts/README.md"
+      ],
+      "commands": [
+        {
+          "command": "AUDIT-01 full physical script closure classification for scripts/README.md",
+          "exitCode": 0,
+          "stdoutHash": "sha256:926221ebc8b72ed14042712d20bbcb2f731fd498379c1f57e802a8b89039d3bf",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "bmad-speckit-cli-js",
+      "originalPath": "scripts/bmad-speckit-cli.js",
+      "targetPaths": [
+        "packages/bmad-speckit/bin/bmad-speckit.js",
+        "scripts/bmad-speckit-cli.js"
+      ],
+      "commands": [
+        {
+          "command": "AUDIT-01 full physical script closure classification for scripts/bmad-speckit-cli.js",
+          "exitCode": 0,
+          "stdoutHash": "sha256:f9e4813879a4785302020d9504c921661f43527418c3e77871b815290819243c",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "compare-bmad-help-upstream-js",
+      "originalPath": "scripts/compare-bmad-help-upstream.js",
+      "targetPaths": [
+        "scripts/compare-bmad-help-upstream.js"
+      ],
+      "commands": [
+        {
+          "command": "AUDIT-01 full physical script closure classification for scripts/compare-bmad-help-upstream.js",
+          "exitCode": 0,
+          "stdoutHash": "sha256:93e33a5bc3a5d61fcd71c16d6c922c2d7e292b8a761bc11202671bd149b9c9f3",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "create-test-story-ts",
+      "originalPath": "scripts/create-test-story.ts",
+      "targetPaths": [
+        "scripts/create-test-story.ts"
+      ],
+      "commands": [
+        {
+          "command": "AUDIT-01 full physical script closure classification for scripts/create-test-story.ts",
+          "exitCode": 0,
+          "stdoutHash": "sha256:58ce833ab990902b622ae38ea0f5e85d58fcb47e6f8905bd89573902459a7fed",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "deferred-gap-governance-d-cts",
+      "originalPath": "scripts/deferred-gap-governance.d.cts",
+      "targetPaths": [
+        "scripts/deferred-gap-governance.d.cts"
+      ],
+      "commands": [
+        {
+          "command": "AUDIT-01 full physical script closure classification for scripts/deferred-gap-governance.d.cts",
+          "exitCode": 0,
+          "stdoutHash": "sha256:84d4828ff08f009e13f58897fd45a4d976c6052bf51fef0d6f8ffdf43754ba72",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "ensure-governance-user-story-mapping-fixture-js",
+      "originalPath": "scripts/ensure-governance-user-story-mapping-fixture.js",
+      "targetPaths": [
+        "scripts/ensure-governance-user-story-mapping-fixture.js"
+      ],
+      "commands": [
+        {
+          "command": "AUDIT-01 full physical script closure classification for scripts/ensure-governance-user-story-mapping-fixture.js",
+          "exitCode": 0,
+          "stdoutHash": "sha256:0a23d7c72d45a17aac2b8c0292eff8668c9a544a65ebbe31b79eb82c1435be5e",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "extract-npm-pack-json-js",
+      "originalPath": "scripts/extract-npm-pack-json.js",
+      "targetPaths": [
+        "scripts/extract-npm-pack-json.js"
+      ],
+      "commands": [
+        {
+          "command": "AUDIT-01 full physical script closure classification for scripts/extract-npm-pack-json.js",
+          "exitCode": 0,
+          "stdoutHash": "sha256:529fe2430f953933caa18e6259bc18c6756f14f8f323a54c9c099bbaf7a9f526",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "i18n-bootstrap-skill-bilingual-files-mjs",
+      "originalPath": "scripts/i18n/bootstrap-skill-bilingual-files.mjs",
+      "targetPaths": [
+        "scripts/i18n/bootstrap-skill-bilingual-files.mjs"
+      ],
+      "commands": [
+        {
+          "command": "AUDIT-01 full physical script closure classification for scripts/i18n/bootstrap-skill-bilingual-files.mjs",
+          "exitCode": 0,
+          "stdoutHash": "sha256:18fcc33daa1f2e1400e83b1d791bdb3a80f3927672699e36deca92828d83ea88",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "i18n-han-outside-fences-mjs",
+      "originalPath": "scripts/i18n/han-outside-fences.mjs",
+      "targetPaths": [
+        "scripts/i18n/han-outside-fences.mjs"
+      ],
+      "commands": [
+        {
+          "command": "AUDIT-01 full physical script closure classification for scripts/i18n/han-outside-fences.mjs",
+          "exitCode": 0,
+          "stdoutHash": "sha256:e0679999ea09346bf642b7db5b5df10cc3b2071c99a7ce6d5b83edbd2c750afb",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "i18n-phase3-skill-en-transform-mjs",
+      "originalPath": "scripts/i18n/phase3-skill-en-transform.mjs",
+      "targetPaths": [
+        "scripts/i18n/phase3-skill-en-transform.mjs"
+      ],
+      "commands": [
+        {
+          "command": "AUDIT-01 full physical script closure classification for scripts/i18n/phase3-skill-en-transform.mjs",
+          "exitCode": 0,
+          "stdoutHash": "sha256:aaf77542893f32449ebd50cab19b32ebdd625296701162e2d42d0c47d0f01245",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "i18n-phase3-translate-skill-en-py",
+      "originalPath": "scripts/i18n/phase3_translate_skill_en.py",
+      "targetPaths": [
+        "scripts/i18n/phase3_translate_skill_en.py"
+      ],
+      "commands": [
+        {
+          "command": "AUDIT-01 full physical script closure classification for scripts/i18n/phase3_translate_skill_en.py",
+          "exitCode": 0,
+          "stdoutHash": "sha256:eb4c0cbc32704fd47e12b915b1f97b5a34475dd9acc04b2a8122ceebea40e729",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "normalize-pack-manifests-js",
+      "originalPath": "scripts/normalize-pack-manifests.js",
+      "targetPaths": [
+        "scripts/normalize-pack-manifests.js"
+      ],
+      "commands": [
+        {
+          "command": "AUDIT-01 full physical script closure classification for scripts/normalize-pack-manifests.js",
+          "exitCode": 0,
+          "stdoutHash": "sha256:f31febe41ccd10a17eca952e73bd6317494ec2a2ee30d6f86eda6955739cdbb5",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "ralph-method-pathing-ts",
+      "originalPath": "scripts/ralph-method/pathing.ts",
+      "targetPaths": [
+        "packages/ralph-method/src/pathing.ts",
+        "scripts/ralph-method/pathing.ts"
+      ],
+      "commands": [
+        {
+          "command": "AUDIT-01 full physical script closure classification for scripts/ralph-method/pathing.ts",
+          "exitCode": 0,
+          "stdoutHash": "sha256:7f639e0cd9ec12aea7e941490088eb763026fd80d5a21504b697239a8c0f0cc5",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "ralph-method-progress-format-ts",
+      "originalPath": "scripts/ralph-method/progress-format.ts",
+      "targetPaths": [
+        "packages/ralph-method/src/progress-format.ts",
+        "scripts/ralph-method/progress-format.ts"
+      ],
+      "commands": [
+        {
+          "command": "AUDIT-01 full physical script closure classification for scripts/ralph-method/progress-format.ts",
+          "exitCode": 0,
+          "stdoutHash": "sha256:4db268e84963cbf6914273653c9d830546fd8fc7351c2917e141a52b69ea9917",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "ralph-method-schema-ts",
+      "originalPath": "scripts/ralph-method/schema.ts",
+      "targetPaths": [
+        "packages/ralph-method/src/schema.ts",
+        "scripts/ralph-method/schema.ts"
+      ],
+      "commands": [
+        {
+          "command": "AUDIT-01 full physical script closure classification for scripts/ralph-method/schema.ts",
+          "exitCode": 0,
+          "stdoutHash": "sha256:1518f829ad0892b72538f1cbe79e066788b64a965ffef028d4cb21c77ae9abb3",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "ralph-method-speckit-implement-ts",
+      "originalPath": "scripts/ralph-method/speckit-implement.ts",
+      "targetPaths": [
+        "packages/ralph-method/src/speckit-implement.ts",
+        "scripts/ralph-method/speckit-implement.ts"
+      ],
+      "commands": [
+        {
+          "command": "AUDIT-01 full physical script closure classification for scripts/ralph-method/speckit-implement.ts",
+          "exitCode": 0,
+          "stdoutHash": "sha256:97e9496cb51b3d3d5ec7a783d33ad0a735ca977b307689283303dd4d2d5941b4",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "ralph-method-types-ts",
+      "originalPath": "scripts/ralph-method/types.ts",
+      "targetPaths": [
+        "packages/ralph-method/src/types.ts",
+        "scripts/ralph-method/types.ts"
+      ],
+      "commands": [
+        {
+          "command": "AUDIT-01 full physical script closure classification for scripts/ralph-method/types.ts",
+          "exitCode": 0,
+          "stdoutHash": "sha256:596d89fca0a1ddedc6524d8154df463738351cff89d29577a48788d55c4559ef",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "ralph-method-verify-pass-consistency-ts",
+      "originalPath": "scripts/ralph-method/verify-pass-consistency.ts",
+      "targetPaths": [
+        "packages/ralph-method/src/verify-pass-consistency.ts",
+        "scripts/ralph-method/verify-pass-consistency.ts"
+      ],
+      "commands": [
+        {
+          "command": "AUDIT-01 full physical script closure classification for scripts/ralph-method/verify-pass-consistency.ts",
+          "exitCode": 0,
+          "stdoutHash": "sha256:7b4e715a4cde72364413bb5a85e3f98a6b3f32aa67c69727a0b80ea395602108",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "ralph-method-verify-ralph-compliance-ts",
+      "originalPath": "scripts/ralph-method/verify-ralph-compliance.ts",
+      "targetPaths": [
+        "packages/ralph-method/src/verify-ralph-compliance.ts",
+        "scripts/ralph-method/verify-ralph-compliance.ts"
+      ],
+      "commands": [
+        {
+          "command": "AUDIT-01 full physical script closure classification for scripts/ralph-method/verify-ralph-compliance.ts",
+          "exitCode": 0,
+          "stdoutHash": "sha256:97fee38d326aed44fcb1d20e04e5f539f5f1f5197ba4019650bf6bd479b98a5e",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "ralph-method-verify-tdd-trace-ts",
+      "originalPath": "scripts/ralph-method/verify-tdd-trace.ts",
+      "targetPaths": [
+        "packages/ralph-method/src/verify-tdd-trace.ts",
+        "scripts/ralph-method/verify-tdd-trace.ts"
+      ],
+      "commands": [
+        {
+          "command": "AUDIT-01 full physical script closure classification for scripts/ralph-method/verify-tdd-trace.ts",
+          "exitCode": 0,
+          "stdoutHash": "sha256:a5225709f1e037f2c7ea7fbbd2b766074167b7812805dffe59bf4034413d1439",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "ralph-method-write-tracking-files-ts",
+      "originalPath": "scripts/ralph-method/write-tracking-files.ts",
+      "targetPaths": [
+        "packages/ralph-method/src/write-tracking-files.ts",
+        "scripts/ralph-method/write-tracking-files.ts"
+      ],
+      "commands": [
+        {
+          "command": "AUDIT-01 full physical script closure classification for scripts/ralph-method/write-tracking-files.ts",
+          "exitCode": 0,
+          "stdoutHash": "sha256:652503ed71bce726abe6a1ab625b5ab769a3ce2af445f8004e1e0f0f227bb874",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "render-upstream-bmad-help-baseline-js",
+      "originalPath": "scripts/render-upstream-bmad-help-baseline.js",
+      "targetPaths": [
+        "scripts/render-upstream-bmad-help-baseline.js"
+      ],
+      "commands": [
+        {
+          "command": "AUDIT-01 full physical script closure classification for scripts/render-upstream-bmad-help-baseline.js",
+          "exitCode": 0,
+          "stdoutHash": "sha256:2a36fd1e0c1577d2825f257c826500de26c8427c49f33742930fd053bfbb8136",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "run-fresh-regression-matrix-ts",
+      "originalPath": "scripts/run-fresh-regression-matrix.ts",
+      "targetPaths": [
+        "scripts/run-fresh-regression-matrix.ts"
+      ],
+      "commands": [
+        {
+          "command": "AUDIT-01 full physical script closure classification for scripts/run-fresh-regression-matrix.ts",
+          "exitCode": 0,
+          "stdoutHash": "sha256:8eaefe860653a2a9ce2ed2dfddc59bcc5a41bd029dc34a296b74931a9da347ef",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "test-locks-ts",
+      "originalPath": "scripts/test-locks.ts",
+      "targetPaths": [
+        "scripts/test-locks.ts"
+      ],
+      "commands": [
+        {
+          "command": "AUDIT-01 full physical script closure classification for scripts/test-locks.ts",
+          "exitCode": 0,
+          "stdoutHash": "sha256:b95fa011dba4582f12a9cd303078503b92ec22f85580bfddceed8fa0bb07c7e3",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "test-story-flow-ts",
+      "originalPath": "scripts/test-story-flow.ts",
+      "targetPaths": [
+        "scripts/test-story-flow.ts"
+      ],
+      "commands": [
+        {
+          "command": "AUDIT-01 full physical script closure classification for scripts/test-story-flow.ts",
+          "exitCode": 0,
+          "stdoutHash": "sha256:6c44553979228f961d048d98f6f305dafe9b633760d75ea83b2e808b8c2f5bd1",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "verify-skill-architecture-sh",
+      "originalPath": "scripts/verify-skill-architecture.sh",
+      "targetPaths": [
+        "scripts/verify-skill-architecture.sh"
+      ],
+      "commands": [
+        {
+          "command": "AUDIT-01 full physical script closure classification for scripts/verify-skill-architecture.sh",
+          "exitCode": 0,
+          "stdoutHash": "sha256:8eaba6f95febb5eb69fe46c61f2ad6664f9954775c61a25ce8ab3b13843ecf90",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    },
+    {
+      "entryId": "verify-speckit-mirror-sync-js",
+      "originalPath": "scripts/verify-speckit-mirror-sync.js",
+      "targetPaths": [
+        "scripts/verify-speckit-mirror-sync.js"
+      ],
+      "commands": [
+        {
+          "command": "AUDIT-01 full physical script closure classification for scripts/verify-speckit-mirror-sync.js",
+          "exitCode": 0,
+          "stdoutHash": "sha256:323158baa57d23f2e199413bb539129fda8fa0310057ac3b966c7d4b18e6ebe2",
+          "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "installMatrixEvidence": [],
+      "result": "passed"
+    }
+  ]
+}

@@ -3,7 +3,10 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { evaluateDeliveryTruthGate } from '../../scripts/main-agent-delivery-truth-gate';
-import { buildPrTopology, buildParallelMissionPlan } from '../../scripts/parallel-mission-control';
+import {
+  buildPrTopology,
+  buildParallelMissionPlan,
+} from '../../packages/bmad-speckit/src/main-agent/runtime/parallel-mission-control.js';
 
 const evidenceProvenance = {
   runId: 'main-agent-run-loop-1',

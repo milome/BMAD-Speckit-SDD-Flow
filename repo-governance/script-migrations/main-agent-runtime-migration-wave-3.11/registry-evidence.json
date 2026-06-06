@@ -1,0 +1,173 @@
+{
+  "waveId": "main-agent-runtime-migration-wave-3.11",
+  "validatedAt": "2026-06-05T22:58:32.605Z",
+  "entries": [
+    {
+      "entryId": "host-runtime-mode",
+      "originalPath": "scripts/host-runtime-mode.ts",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.js",
+        "packages/bmad-speckit/dist/main-agent/runtime/host-runtime-mode.js"
+      ],
+      "commands": [],
+      "installMatrixEvidence": {
+        "status": "not_required_for_pre_evidence_registry_schema"
+      },
+      "result": "passed"
+    },
+    {
+      "entryId": "supervised-worker-runtime",
+      "originalPath": "scripts/supervised-worker-runtime.ts",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/runtime/supervised-worker-runtime.js",
+        "packages/bmad-speckit/dist/main-agent/runtime/supervised-worker-runtime.js"
+      ],
+      "commands": [],
+      "installMatrixEvidence": {
+        "status": "not_required_for_pre_evidence_registry_schema"
+      },
+      "result": "passed"
+    },
+    {
+      "entryId": "diagnose-bmad-state",
+      "originalPath": "scripts/diagnose-bmad-state.ts",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/runtime/diagnose-bmad-state.js",
+        "packages/bmad-speckit/dist/main-agent/runtime/diagnose-bmad-state.js"
+      ],
+      "commands": [],
+      "installMatrixEvidence": {
+        "status": "not_required_for_pre_evidence_registry_schema"
+      },
+      "result": "passed"
+    },
+    {
+      "entryId": "parallel-mission-control",
+      "originalPath": "scripts/parallel-mission-control.ts",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/runtime/parallel-mission-control.js",
+        "packages/bmad-speckit/dist/main-agent/runtime/parallel-mission-control.js"
+      ],
+      "commands": [],
+      "installMatrixEvidence": {
+        "status": "not_required_for_pre_evidence_registry_schema"
+      },
+      "result": "passed"
+    },
+    {
+      "entryId": "bmad-state-reader",
+      "originalPath": "scripts/bmad-state-reader.ts",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/bmad-state-reader.js",
+        "packages/bmad-speckit/dist/main-agent/helpers/bmad-state-reader.js"
+      ],
+      "commands": [],
+      "installMatrixEvidence": {
+        "status": "not_required_for_pre_evidence_registry_schema"
+      },
+      "result": "passed"
+    },
+    {
+      "entryId": "e2e-verify-paths",
+      "originalPath": "scripts/e2e-verify-paths.ts",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/e2e-verify-paths.js",
+        "packages/bmad-speckit/dist/main-agent/helpers/e2e-verify-paths.js"
+      ],
+      "commands": [],
+      "installMatrixEvidence": {
+        "status": "not_required_for_pre_evidence_registry_schema"
+      },
+      "result": "passed"
+    },
+    {
+      "entryId": "query-validate",
+      "originalPath": "scripts/query-validate.ts",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/query-validate.js",
+        "packages/bmad-speckit/dist/main-agent/helpers/query-validate.js"
+      ],
+      "commands": [],
+      "installMatrixEvidence": {
+        "status": "not_required_for_pre_evidence_registry_schema"
+      },
+      "result": "passed"
+    },
+    {
+      "entryId": "runtime-step-state",
+      "originalPath": "scripts/runtime-step-state.ts",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/runtime-step-state.js",
+        "packages/bmad-speckit/dist/main-agent/helpers/runtime-step-state.js"
+      ],
+      "commands": [],
+      "installMatrixEvidence": {
+        "status": "not_required_for_pre_evidence_registry_schema"
+      },
+      "result": "passed"
+    },
+    {
+      "entryId": "verify-agent-files",
+      "originalPath": "scripts/verify-agent-files.ts",
+      "targetPaths": [
+        "packages/bmad-speckit/src/main-agent/helpers/verify-agent-files.js",
+        "packages/bmad-speckit/dist/main-agent/helpers/verify-agent-files.js"
+      ],
+      "commands": [],
+      "installMatrixEvidence": {
+        "status": "not_required_for_pre_evidence_registry_schema"
+      },
+      "result": "passed"
+    },
+    {
+      "entryId": "eval-question-generate",
+      "originalPath": "scripts/eval-question-generate.ts",
+      "targetPaths": [
+        "packages/bmad-speckit/bin/bmad-speckit.js",
+        "packages/bmad-speckit/src/commands/eval-question-generate.js"
+      ],
+      "commands": [],
+      "installMatrixEvidence": {
+        "status": "not_required_for_pre_evidence_registry_schema"
+      },
+      "result": "passed"
+    },
+    {
+      "entryId": "check-story-score-written",
+      "originalPath": "scripts/check-story-score-written.ts",
+      "targetPaths": [
+        "packages/bmad-speckit/bin/bmad-speckit.js",
+        "packages/bmad-speckit/src/commands/check-score.js"
+      ],
+      "commands": [],
+      "installMatrixEvidence": {
+        "status": "not_required_for_pre_evidence_registry_schema"
+      },
+      "result": "passed"
+    },
+    {
+      "entryId": "create-second-story",
+      "originalPath": "scripts/create-second-story.ts",
+      "targetPaths": [
+        "scripts/create-second-story.ts"
+      ],
+      "commands": [],
+      "installMatrixEvidence": {
+        "status": "not_required_for_pre_evidence_registry_schema"
+      },
+      "result": "passed"
+    },
+    {
+      "entryId": "verify-score-auto-scoped-bundle",
+      "originalPath": "scripts/verify-score-auto-scoped-bundle.cjs",
+      "targetPaths": [
+        "scripts/verify-score-auto-scoped-bundle.cjs"
+      ],
+      "commands": [],
+      "installMatrixEvidence": {
+        "status": "not_required_for_pre_evidence_registry_schema"
+      },
+      "result": "passed"
+    }
+  ]
+}

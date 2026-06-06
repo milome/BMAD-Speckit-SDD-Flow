@@ -1,0 +1,541 @@
+{
+  "schemaVersion": "main-agent-p1-p4-final-evidence-packet/v1",
+  "generatedAt": "2026-06-05T06:30:31.973Z",
+  "contractPath": "docs/plans/2026-06-05-main-agent-p1-p4-runtime-migration-goal-execution-plan.md",
+  "sourcePlanPath": "conversation://main-agent-p1-p4-runtime-migration",
+  "sourcePlanHash": "sha256:96afad1d7f9bf3aeebd7a6c57cadf2a0cadc243e9dd55a0f3ff8894303064bdf",
+  "registryPath": "repo-governance/script-migration-registry.yaml",
+  "priorityMatrixPath": "repo-governance/script-migrations/main-agent-runtime-closure-wave-3/priority-matrix.md",
+  "wave3_6ManifestPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.6/candidate-manifest.json",
+  "wave3_6EvidencePath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.6/evidence.json",
+  "wave3_6SummaryPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.6/summary.md",
+  "wave3_7ManifestPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.7/candidate-manifest.json",
+  "wave3_7EvidencePath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.7/evidence.json",
+  "wave3_7SummaryPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.7/summary.md",
+  "wave3_8ClassificationPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/classification-compression.json",
+  "wave3_8EvidencePath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json",
+  "wave3_8SummaryPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/summary.md",
+  "wave3_9ManifestPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.9/candidate-manifest.json",
+  "wave3_9EvidencePath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.9/evidence.json",
+  "wave3_9SummaryPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.9/summary.md",
+  "installMatrixRunnerPath": "tools/script-migration/run-main-agent-p1-p4-install-matrix.cjs",
+  "staticDispatchGuardPath": "tools/script-migration/validate-main-agent-p1-p4-no-root-ts-dispatch.cjs",
+  "noDeletionGuardPath": "tools/script-migration/validate-main-agent-p1-p4-no-root-script-deletion.cjs",
+  "encodingEvidencePath": "repo-governance/script-migrations/main-agent-p1-p4-runtime-migration/encoding-evidence.json",
+  "worktreeEvidencePath": "repo-governance/script-migrations/main-agent-p1-p4-runtime-migration/worktree-evidence.json",
+  "finalEvidencePacketPath": "repo-governance/script-migrations/main-agent-p1-p4-runtime-migration/final-evidence-packet.json",
+  "p1RemainingCount": 22,
+  "p2RemainingCount": 8,
+  "p3RemainingCount": 38,
+  "p4RemainingCount": 14,
+  "totalRemainingCount": 82,
+  "rootScriptsDeleted": false,
+  "rootScriptDeletionApproved": false,
+  "scopeStatement": "This closure claims covered package runtime and install-surface hardening only; it does not claim every root script is directly consumer-callable.",
+  "waveStatus": {
+    "main-agent-runtime-migration-wave-3.6": {
+      "count": 22,
+      "status": "validated"
+    },
+    "main-agent-runtime-migration-wave-3.7": {
+      "count": 8,
+      "status": "validated"
+    },
+    "main-agent-runtime-migration-wave-3.8": {
+      "count": 38,
+      "packageRuntimeCount": 21,
+      "deterministicExclusionCount": 17,
+      "status": "validated"
+    },
+    "main-agent-runtime-migration-wave-3.9": {
+      "count": 14,
+      "durableHelperCount": 14,
+      "status": "validated"
+    }
+  },
+  "installReceipts": [
+    {
+      "installMode": "save-dev",
+      "path": "repo-governance/script-migrations/main-agent-p1-p4-runtime-migration/install-matrix/save-dev.json",
+      "sha256": "sha256:90f03870c307e39756a2740daa6d8fc906da36aaf9b41dc73fe9d4525772f0c3",
+      "commandCount": 65,
+      "usedRootScript": false,
+      "usedTsx": false,
+      "usedTsNode": false,
+      "usedCompiledFallback": false
+    },
+    {
+      "installMode": "npx-package",
+      "path": "repo-governance/script-migrations/main-agent-p1-p4-runtime-migration/install-matrix/npx-package.json",
+      "sha256": "sha256:a7cb8c7bbf48ae4a56a9a9e353930dc948ada71b094f6c7571815563b61dec40",
+      "commandCount": 1,
+      "usedRootScript": false,
+      "usedTsx": false,
+      "usedTsNode": false,
+      "usedCompiledFallback": false
+    },
+    {
+      "installMode": "no-save",
+      "path": "repo-governance/script-migrations/main-agent-p1-p4-runtime-migration/install-matrix/no-save.json",
+      "sha256": "sha256:879f6e1576656db404b09df02f3c4a661315d459ac95898448cb85360e410019",
+      "commandCount": 65,
+      "usedRootScript": false,
+      "usedTsx": false,
+      "usedTsNode": false,
+      "usedCompiledFallback": false
+    },
+    {
+      "installMode": "init-sync-consumer",
+      "path": "repo-governance/script-migrations/main-agent-p1-p4-runtime-migration/install-matrix/init-sync-consumer.json",
+      "sha256": "sha256:a0e5ac7e92d89bf15f79b1c67d78d44f9fc55a53643d940e33af1264dd5d9262",
+      "commandCount": 66,
+      "usedRootScript": false,
+      "usedTsx": false,
+      "usedTsNode": false,
+      "usedCompiledFallback": false
+    }
+  ],
+  "commandsRun": [
+    {
+      "commandId": "CMD-01",
+      "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { git status --short --branch }\"",
+      "exitCode": 0,
+      "stdoutHash": "sha256:ebfb6003007acad226f5e967cf26a34286bc329637d9f6dde0ea7fef86a9341d",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "## dev...origin/dev\n M packages/bmad-speckit/src/services/platform-skill-frontmatter.js\n M repo-governance/script-migration-registry.yaml\n?? packages/bmad-speckit/tests/platform-skill-frontmatter.test.js\n?? repo-governance/script-migrations/main-agent-runtime-migration-wave-3.5/registry-evidence.json",
+      "stderrPreview": "",
+      "evidencePath": "repo-governance/script-migrations/main-agent-p1-p4-runtime-migration/preflight.json"
+    },
+    {
+      "commandId": "CMD-02",
+      "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js; exit $LASTEXITCODE }\"",
+      "exitCode": 0,
+      "stdoutHash": "sha256:461eae2ad12cfa8928a2120d07ebb1e2de40c2947293fd7d4e93c4ebc43f6693",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "checkedFiles=3037 findings=0",
+      "stderrPreview": "",
+      "evidencePath": "repo-governance/script-migrations/main-agent-p1-p4-runtime-migration/preflight.json"
+    },
+    {
+      "commandId": "CMD-03",
+      "command": "d:\\nvm4w\\nodejs\\node.exe tools/script-migration/validate-main-agent-runtime-migration-wave-3-6.cjs --manifest-only",
+      "exitCode": 0,
+      "stdoutHash": "sha256:20c6191f2cb2fafafdb8cf50b59d8d5b861df1df36427261370e5abcf2b5ad67",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"mode\": \"manifest-only\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.6\",\n  \"contractPath\": \"docs/plans/2026-06-05-main-agent-p1-p4-runtime-migration-goal-execution-plan.md\",\n  \"expectedRemainingCount\": 22,\n  \"errors\": []\n}\n",
+      "stderrPreview": "",
+      "evidencePath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.6/evidence.json"
+    },
+    {
+      "commandId": "CMD-04",
+      "command": "npm.cmd run test --prefix packages/bmad-speckit -- main-agent-wave-3-6-runtime-actions.test.js",
+      "exitCode": 0,
+      "stdoutHash": "sha256:ec6d22a901affc481e8ae5b52fa85f8f29ece5c90fc856bb5314f33289ce2369",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "\n> bmad-speckit@2.0.1 test\n> node scripts/run-node-tests.cjs main-agent-wave-3-6-runtime-actions.test.js\n\nTAP version 13\n# Subtest: main-agent wave 3.6 package runtime actions\n    # Subtest: ships package source action files without root TypeScript dispatch\n    ok 1 - ships package source action files without root TypeScript dispatch\n      ---\n      duration_ms: 2.3897\n      type: 'test'\n      ...\n    # Subtest: supports wave 3.6 actions from package source runtime with stable envelopes\n    ok 2 - supports wave 3.6 actions from package source runtime with stable envelopes\n      ---\n      duration_ms: 15.1459\n      type: 'test'\n      ...\n    1..2\nok 1 - main-agent wave 3.6 package runtime actions\n  ---\n  duration_ms: 18.1071\n  type: 'suite'\n  ...\n1..1\n# tests 2\n# suites 1\n# pass 2\n# fail 0\n",
+      "stderrPreview": "",
+      "evidencePath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.6/evidence.json"
+    },
+    {
+      "commandId": "CMD-05",
+      "command": "npm.cmd run build:main-agent-dist --prefix packages/bmad-speckit",
+      "exitCode": 0,
+      "stdoutHash": "sha256:4e9617d00fccd269e310cb7ed99446799d7a503747aa0fe1efc678adbda0149e",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "\n> bmad-speckit@2.0.1 build:main-agent-dist\n> node scripts/build-main-agent-dist.cjs\n\nbuilt dist/main-agent files=43\n",
+      "stderrPreview": "",
+      "evidencePath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.6/evidence.json"
+    },
+    {
+      "commandId": "CMD-08",
+      "command": "d:\\nvm4w\\nodejs\\node.exe tools/script-migration/validate-main-agent-runtime-migration-wave-3-7.cjs --manifest-only",
+      "exitCode": 0,
+      "stdoutHash": "sha256:30a75f932c7316911e359b0cf2f44bc64f6cabe4ffac9c3a14a2e9c30b0d41f6",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"mode\": \"manifest-only\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.7\",\n  \"contractPath\": \"docs/plans/2026-06-05-main-agent-p1-p4-runtime-migration-goal-execution-plan.md\",\n  \"expectedRemainingCount\": 8,\n  \"errors\": []\n}\n",
+      "stderrPreview": "",
+      "evidencePath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.7/evidence.json"
+    },
+    {
+      "commandId": "CMD-09",
+      "command": "npm.cmd run test --prefix packages/bmad-speckit -- main-agent-wave-3-7-runtime-actions.test.js",
+      "exitCode": 0,
+      "stdoutHash": "sha256:12293c944e7eba47668bc02b88d9db2f6094b433b21502a55b1cdbf566b9ae82",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "\n> bmad-speckit@2.0.1 test\n> node scripts/run-node-tests.cjs main-agent-wave-3-7-runtime-actions.test.js\n\nTAP version 13\n# Subtest: main-agent wave 3.7 package runtime actions\n    # Subtest: ships package source action files without root TypeScript dispatch\n    ok 1 - ships package source action files without root TypeScript dispatch\n      ---\n      duration_ms: 1.4313\n      type: 'test'\n      ...\n    # Subtest: supports wave 3.7 actions from package source runtime with stable envelopes\n    ok 2 - supports wave 3.7 actions from package source runtime with stable envelopes\n      ---\n      duration_ms: 19.293\n      type: 'test'\n      ...\n    1..2\nok 1 - main-agent wave 3.7 package runtime actions\n  ---\n  duration_ms: 21.358\n  type: 'suite'\n  ...\n1..1\n# tests 2\n# suites 1\n# pass 2\n# fail 0\n# ",
+      "stderrPreview": "",
+      "evidencePath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.7/evidence.json"
+    },
+    {
+      "commandId": "CMD-10",
+      "command": "npm.cmd run build:main-agent-dist --prefix packages/bmad-speckit",
+      "exitCode": 0,
+      "stdoutHash": "sha256:86f47ed80ebfcfa43ac4e71b599ee8471efdc324403fd6b2c99a170fd6a855b2",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "\n> bmad-speckit@2.0.1 build:main-agent-dist\n> node scripts/build-main-agent-dist.cjs\n\nbuilt dist/main-agent files=51\n",
+      "stderrPreview": "",
+      "evidencePath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.7/evidence.json"
+    },
+    {
+      "commandId": "CMD-11",
+      "command": "d:\\nvm4w\\nodejs\\node.exe tools/script-migration/validate-main-agent-runtime-migration-wave-3-7.cjs",
+      "exitCode": 0,
+      "stdoutHash": "sha256:8929db5869b4fa680a930ccd8a74c2dc1f50fc4fc91f1fa36ea82a2c98903cc0",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"mode\": \"full\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.7\",\n  \"contractPath\": \"docs/plans/2026-06-05-main-agent-p1-p4-runtime-migration-goal-execution-plan.md\",\n  \"expectedRemainingCount\": 8,\n  \"errors\": []\n}\n",
+      "stderrPreview": "",
+      "evidencePath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.7/evidence.json"
+    },
+    {
+      "commandId": "CMD-12",
+      "command": "npx.cmd vitest run tests/acceptance/main-agent-runtime-migration-wave-3-7-contract.test.ts",
+      "exitCode": 0,
+      "stdoutHash": "sha256:0997fe0ada06f45d7594ab3f83a16cbef617fc3bd7a20afa124661e2294ebd47",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "\n\u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m\n\n \u001b[32m✓\u001b[39m tests/acceptance/main-agent-runtime-migration-wave-3-7-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 1122\u001b[2mms\u001b[22m\u001b[39m\n     \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs the Wave 3.7 migration validator successfully \u001b[33m 1120\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m\n\u001b[2m   Start at \u001b[22m 12:15:21\n\u001b[2m   Duration \u001b[22m 1.55s\u001b[2m (transform 23ms, setup 0ms, import 47ms, tests 1.12s, environment 0ms)\u001b[22m\n\n",
+      "stderrPreview": "",
+      "evidencePath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.7/evidence.json"
+    },
+    {
+      "commandId": "CMD-13",
+      "command": "d:\\nvm4w\\nodejs\\node.exe tools/script-migration/validate-main-agent-runtime-migration-wave-3-8.cjs --classification-only",
+      "exitCode": 0,
+      "stdoutHash": "sha256:1132001f2974331a564721944d973fd486cfc6368047b60dcb3aece9863a24ef",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"mode\": \"classification-only\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.8\",\n  \"contractPath\": \"docs/plans/2026-06-05-main-agent-p1-p4-runtime-migration-goal-execution-plan.md\",\n  \"p3Total\": 38,\n  \"selectedPackageRuntimeCount\": 21,\n  \"deterministicExclusionCount\": 17,\n  \"errors\": []\n}\n",
+      "stderrPreview": "",
+      "evidencePath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json"
+    },
+    {
+      "commandId": "CMD-14",
+      "command": "npm.cmd run test --prefix packages/bmad-speckit -- main-agent-wave-3-8-runtime-actions.test.js",
+      "exitCode": 0,
+      "stdoutHash": "sha256:ed530f3177fe1e15a1bb08087671854c4eece0b4a1b15cdad80c02c43494b153",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "\n> bmad-speckit@2.0.1 test\n> node scripts/run-node-tests.cjs main-agent-wave-3-8-runtime-actions.test.js\n\nTAP version 13\n# Subtest: main-agent wave 3.8 package runtime actions\n    # Subtest: ships selected P3 package action files without root TypeScript dispatch\n    ok 1 - ships selected P3 package action files without root TypeScript dispatch\n      ---\n      duration_ms: 2.1247\n      type: 'test'\n      ...\n    # Subtest: supports selected P3 actions from package source runtime with stable envelopes\n    ok 2 - supports selected P3 actions from package source runtime with stable envelopes\n      ---\n      duration_ms: 21.5404\n      type: 'test'\n      ...\n    1..2\nok 1 - main-agent wave 3.8 package runtime actions\n  ---\n  duration_ms: 24.2355\n  type: 'suite'\n  ...\n1..1\n# tests 2\n# suites 1\n# ",
+      "stderrPreview": "",
+      "evidencePath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json"
+    },
+    {
+      "commandId": "CMD-15",
+      "command": "npm.cmd run build:main-agent-dist --prefix packages/bmad-speckit",
+      "exitCode": 0,
+      "stdoutHash": "sha256:bb02edb5560f11abd9786d2bfccee82fa68aaa262390957eb9b191307c45a1ed",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "\n> bmad-speckit@2.0.1 build:main-agent-dist\n> node scripts/build-main-agent-dist.cjs\n\nbuilt dist/main-agent files=72\n",
+      "stderrPreview": "",
+      "evidencePath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json"
+    },
+    {
+      "commandId": "CMD-16",
+      "command": "d:\\nvm4w\\nodejs\\node.exe tools/script-migration/validate-main-agent-runtime-migration-wave-3-8.cjs",
+      "exitCode": 0,
+      "stdoutHash": "sha256:e1c703487847a33b12f344d68bdf0964eeed158211f94ee54b00de7f227803fc",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"mode\": \"full\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.8\",\n  \"contractPath\": \"docs/plans/2026-06-05-main-agent-p1-p4-runtime-migration-goal-execution-plan.md\",\n  \"p3Total\": 38,\n  \"selectedPackageRuntimeCount\": 21,\n  \"deterministicExclusionCount\": 17,\n  \"errors\": []\n}\n",
+      "stderrPreview": "",
+      "evidencePath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json"
+    },
+    {
+      "commandId": "CMD-17",
+      "command": "npx.cmd vitest run tests/acceptance/main-agent-runtime-migration-wave-3-8-contract.test.ts",
+      "exitCode": 0,
+      "stdoutHash": "sha256:26401795438f3247280554f219933c4024b980b3fb420280a40defbf4664cbde",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "\n\u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m\n\n \u001b[32m✓\u001b[39m tests/acceptance/main-agent-runtime-migration-wave-3-8-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 2679\u001b[2mms\u001b[22m\u001b[39m\n     \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs the Wave 3.8 migration validator successfully \u001b[33m 2677\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m\n\u001b[2m   Start at \u001b[22m 12:41:42\n\u001b[2m   Duration \u001b[22m 2.86s\u001b[2m (transform 20ms, setup 0ms, import 31ms, tests 2.68s, environment 0ms)\u001b[22m\n\n",
+      "stderrPreview": "",
+      "evidencePath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json"
+    },
+    {
+      "commandId": "CMD-18",
+      "command": "d:\\nvm4w\\nodejs\\node.exe tools/script-migration/validate-main-agent-runtime-migration-wave-3-9.cjs --manifest-only",
+      "exitCode": 0,
+      "stdoutHash": "sha256:e44657c8f4991d13aca296a68d7311b091e82cc5482d0b0ee966b4da8570f859",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"mode\": \"manifest-only\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.9\",\n  \"contractPath\": \"docs/plans/2026-06-05-main-agent-p1-p4-runtime-migration-goal-execution-plan.md\",\n  \"p4Total\": 14,\n  \"durableHelperCount\": 14,\n  \"errors\": []\n}\n",
+      "stderrPreview": "",
+      "evidencePath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.9/evidence.json"
+    },
+    {
+      "commandId": "CMD-19",
+      "command": "npm.cmd run test --prefix packages/bmad-speckit -- main-agent-wave-3-9-durable-helpers.test.js",
+      "exitCode": 0,
+      "stdoutHash": "sha256:264db1207512549fa6102245a9d83df6e44d3a1dc80822a826dd135b58c21457",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "\n> bmad-speckit@2.0.1 test\n> node scripts/run-node-tests.cjs main-agent-wave-3-9-durable-helpers.test.js\n\nTAP version 13\n# Subtest: main-agent wave 3.9 durable helpers\n    # Subtest: ships selected P4 helpers as package-local helper files without root dispatch\n    ok 1 - ships selected P4 helpers as package-local helper files without root dispatch\n      ---\n      duration_ms: 1.7571\n      type: 'test'\n      ...\n    # Subtest: returns stable durable helper descriptors from package source modules\n    ok 2 - returns stable durable helper descriptors from package source modules\n      ---\n      duration_ms: 7.019\n      type: 'test'\n      ...\n    # Subtest: does not expose P4 durable helpers as public main-agent CLI actions\n    ok 3 - does not expose P4 durable helpers as public main-agent CLI a",
+      "stderrPreview": "",
+      "evidencePath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.9/evidence.json"
+    },
+    {
+      "commandId": "CMD-20",
+      "command": "npm.cmd run build:main-agent-dist --prefix packages/bmad-speckit",
+      "exitCode": 0,
+      "stdoutHash": "sha256:bd04c48acae588363ec08c40172ae846e9f98850ee326420e30c5d7d3c9f6c6a",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "\n> bmad-speckit@2.0.1 build:main-agent-dist\n> node scripts/build-main-agent-dist.cjs\n\nbuilt dist/main-agent files=87\n",
+      "stderrPreview": "",
+      "evidencePath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.9/evidence.json"
+    },
+    {
+      "commandId": "CMD-21",
+      "command": "d:\\nvm4w\\nodejs\\node.exe tools/script-migration/validate-main-agent-runtime-migration-wave-3-9.cjs",
+      "exitCode": 0,
+      "stdoutHash": "sha256:530e9be7ec2ffca1efde29e943559d9c5fff91e479131972bf189946e59ca1b6",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"mode\": \"full\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.9\",\n  \"contractPath\": \"docs/plans/2026-06-05-main-agent-p1-p4-runtime-migration-goal-execution-plan.md\",\n  \"p4Total\": 14,\n  \"durableHelperCount\": 14,\n  \"errors\": []\n}\n",
+      "stderrPreview": "",
+      "evidencePath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.9/evidence.json"
+    },
+    {
+      "commandId": "CMD-22",
+      "command": "npx.cmd vitest run tests/acceptance/main-agent-runtime-migration-wave-3-9-contract.test.ts",
+      "exitCode": 0,
+      "stdoutHash": "sha256:37a291177dc64870261d217cabdfe7a659ace1757d814ec04e4687228e4684eb",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "\n\u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m\n\n \u001b[32m✓\u001b[39m tests/acceptance/main-agent-runtime-migration-wave-3-9-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 1883\u001b[2mms\u001b[22m\u001b[39m\n     \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs the Wave 3.9 migration validator successfully \u001b[33m 1880\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m\n\u001b[2m   Start at \u001b[22m 12:59:46\n\u001b[2m   Duration \u001b[22m 2.09s\u001b[2m (transform 31ms, setup 0ms, import 43ms, tests 1.88s, environment 0ms)\u001b[22m\n\n",
+      "stderrPreview": "",
+      "evidencePath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.9/evidence.json"
+    },
+    {
+      "commandId": "CMD-23",
+      "command": "d:\\nvm4w\\nodejs\\node.exe tools/script-migration/validate-registry.cjs",
+      "exitCode": 0,
+      "stdoutHash": "sha256:03e86d3a93b78396c78137de46ac5ecd960049e7c9b3b3792b5ac8b7abe51970",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "{\"status\":\"passed\",\"registryPath\":\"repo-governance/script-migration-registry.yaml\",\"packExclusion\":\"not_requested\",\"errors\":[]}\n",
+      "stderrPreview": ""
+    },
+    {
+      "commandId": "CMD-24",
+      "command": "npx.cmd vitest run tests/acceptance/script-migration-registry-contract.test.ts tests/acceptance/main-agent-runtime-migration-p1-p4-contract.test.ts",
+      "exitCode": 0,
+      "stdoutHash": "sha256:00f66832cf407267a3fac76b8ca4e5bcd70deded448c59b8652d696fddbebbc2",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "\n\u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m\n\n \u001b[32m✓\u001b[39m tests/acceptance/main-agent-runtime-migration-p1-p4-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m4 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 42\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/acceptance/script-migration-registry-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m13 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 1837\u001b[2mms\u001b[22m\u001b[39m\n     \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m allows source history only original paths without weakening retained path checks \u001b[33m 369\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m17 passed\u001b[39m\u001b[22m\u001b[90m (17)\u001b[39m\n\u001b[2m   Start at \u001b[22m 14:22:54\n\u001b[2m   Duration \u001b[22m 2.07s\u001b[2m (transform 44ms, setup 0ms, import 88ms, tests 1.88s, environment 0ms)\u001b[22m\n\n",
+      "stderrPreview": ""
+    },
+    {
+      "commandId": "CMD-25",
+      "command": "d:\\nvm4w\\nodejs\\node.exe tools/script-migration/run-main-agent-p1-p4-install-matrix.cjs",
+      "exitCode": 0,
+      "stdoutHash": "sha256:9ea89746bbf41965197b171f72069f076abd96b6332d41f88962e7a140d54552",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"contractPath\": \"docs/plans/2026-06-05-main-agent-p1-p4-runtime-migration-goal-execution-plan.md\",\n  \"registryPath\": \"repo-governance/script-migration-registry.yaml\",\n  \"waveIds\": [\n    \"main-agent-runtime-migration-wave-3.6\",\n    \"main-agent-runtime-migration-wave-3.7\",\n    \"main-agent-runtime-migration-wave-3.8\",\n    \"main-agent-runtime-migration-wave-3.9\"\n  ],\n  \"installModes\": [\n    \"save-dev\",\n    \"npx-package\",\n    \"no-save\",\n    \"init-sync-consumer\"\n  ],\n  \"packageTarball\": \"repo-governance/script-migrations/main-agent-p1-p4-runtime-migration/bmad-speckit-2.0.1.tgz\",\n  \"runtimeActionCount\": 51,\n  \"durableHelperCount\": 14,\n  \"receipts\": [\n    \"repo-governance/script-migrations/main-agent-p1-p4-runtime-migration/install-matrix/save-dev.json\",\n    \"repo-govern",
+      "stderrPreview": ""
+    },
+    {
+      "commandId": "CMD-26",
+      "command": "d:\\nvm4w\\nodejs\\node.exe tools/script-migration/validate-main-agent-p1-p4-no-root-ts-dispatch.cjs",
+      "exitCode": 0,
+      "stdoutHash": "sha256:a721c7e63c06e7614a9e1d8029d680150fc4cfd538775838e693e4314f7fd94e",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"registryPath\": \"repo-governance/script-migration-registry.yaml\",\n  \"checkedEntries\": 82,\n  \"scannedFiles\": [\n    \"packages/bmad-speckit/bin/bmad-speckit.js\",\n    \"packages/bmad-speckit/dist/main-agent/actions/package-runtime-report.js\",\n    \"packages/bmad-speckit/dist/main-agent/helpers/durable-helper-report.js\",\n    \"packages/bmad-speckit/dist/main-agent/index.js\",\n    \"packages/bmad-speckit/dist/main-agent/runtime.js\",\n    \"packages/bmad-speckit/src/main-agent/actions/package-runtime-report.js\",\n    \"packages/bmad-speckit/src/main-agent/helpers/durable-helper-report.js\",\n    \"packages/bmad-speckit/src/main-agent/index.js\",\n    \"packages/bmad-speckit/src/main-agent/runtime.js\"\n  ],\n  \"installMatrixReceipts\": [\n    \"repo-governance/script-migrations/main-agent-p1",
+      "stderrPreview": ""
+    },
+    {
+      "commandId": "CMD-27",
+      "command": "d:\\nvm4w\\nodejs\\node.exe tools/script-migration/validate-main-agent-p1-p4-no-root-script-deletion.cjs",
+      "exitCode": 0,
+      "stdoutHash": "sha256:3dfb16ce00ec3923fff89ef539c870179d90f5414723f4475df64aabdd83704a",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"registryPath\": \"repo-governance/script-migration-registry.yaml\",\n  \"waveIds\": [\n    \"main-agent-runtime-migration-wave-3.6\",\n    \"main-agent-runtime-migration-wave-3.7\",\n    \"main-agent-runtime-migration-wave-3.8\",\n    \"main-agent-runtime-migration-wave-3.9\"\n  ],\n  \"checkedEntries\": 82,\n  \"rootScriptsDeleted\": false,\n  \"rootScriptDeletionApproved\": false,\n  \"errors\": []\n}\n",
+      "stderrPreview": ""
+    },
+    {
+      "commandId": "CMD-28",
+      "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js }\"",
+      "exitCode": 0,
+      "stdoutHash": "sha256:95f01b2c1cc4ffc06efb93fe2085a8d1de849fa2b67761560514bce7dbc6e21b",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "checkedFiles=3037 findings=0\n",
+      "stderrPreview": ""
+    },
+    {
+      "commandId": "CMD-29",
+      "command": "pwsh.exe -NoLogo -NoProfile -Command \"& { git status --short }\"",
+      "exitCode": 0,
+      "stdoutHash": "sha256:7635af87f7989eee0daa60b3f542ed6ab0698bd565e2950e19a4cf4061ac8565",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": " M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.js\n M packages/bmad-speckit/src/services/platform-skill-frontmatter.js\n M repo-governance/script-migration-registry.yaml\n?? packages/bmad-speckit/src/main-agent/actions/adaptive-intake-governance-gate.js\n?? packages/bmad-speckit/src/main-agent/actions/adaptive-intake-proof-gate.js\n?? packages/bmad-speckit/src/main-agent/actions/ai-tdd-closeout-remediation-adapter.js\n?? packages/bmad-speckit/src/main-agent/actions/ai-tdd-contract-gate.js\n?? packages/bmad-speckit/src/main-agent/actions/audit-review-gate.js\n?? packages/bmad-speckit/src/main-agent/actions/audit-stage-routing.js\n?? packages/bmad-speckit/src/main-agent/actions/auditor-post-actions.js\n?? packages/bmad-speckit/src/main-agent/actions/auditor-spec.js\n?? packages/bmad-speckit/src/main-agent/actions/bmad-artifact-hardcut.js\n?? packages/bmad-speckit/src/main-agent/actions/bmad-runtime-worker.js\n?? packages/bmad-speckit/src/main-agent/actions/control-plane-isolation-check.js\n?? packages/bmad-speckit/src/main-agent/actions/data-governance-gate.js\n?? packages/bmad-speckit/src/main-agent/actions/dataset-release-gate.js\n?? pack",
+      "stderrPreview": ""
+    },
+    {
+      "commandId": "CMD-06",
+      "command": "d:\\nvm4w\\nodejs\\node.exe tools/script-migration/validate-main-agent-runtime-migration-wave-3-6.cjs",
+      "exitCode": 0,
+      "stdoutHash": "sha256:e70f61a6a9134bc968180591ae08a59aed508000bd3db63e1b9c158342226bf7",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "{\n  \"status\": \"passed\",\n  \"mode\": \"full\",\n  \"waveId\": \"main-agent-runtime-migration-wave-3.6\",\n  \"contractPath\": \"docs/plans/2026-06-05-main-agent-p1-p4-runtime-migration-goal-execution-plan.md\",\n  \"expectedRemainingCount\": 22,\n  \"errors\": []\n}\n",
+      "stderrPreview": ""
+    },
+    {
+      "commandId": "CMD-07",
+      "command": "npx.cmd vitest run tests/acceptance/main-agent-runtime-migration-wave-3-6-contract.test.ts",
+      "exitCode": 0,
+      "stdoutHash": "sha256:cda6dd7f800f4933a0de302cdb1f348f00edf6608c115c9e6f7fd5ac4f61e2d8",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPreview": "\n\u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90mD:/Dev/BMAD-Speckit-SDD-Flow\u001b[39m\n\n \u001b[32m✓\u001b[39m tests/acceptance/main-agent-runtime-migration-wave-3-6-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 2986\u001b[2mms\u001b[22m\u001b[39m\n     \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m runs the Wave 3.6 migration validator successfully \u001b[33m 2983\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m\n\u001b[2m   Start at \u001b[22m 14:25:58\n\u001b[2m   Duration \u001b[22m 3.18s\u001b[2m (transform 20ms, setup 0ms, import 33ms, tests 2.99s, environment 0ms)\u001b[22m\n\n",
+      "stderrPreview": ""
+    }
+  ],
+  "acceptanceStatus": {
+    "ACC001": "pass",
+    "ACC002": "pass",
+    "ACC003": "pass",
+    "ACC004": "pass",
+    "ACC005": "pass",
+    "ACC006": "pass",
+    "ACC007": "pass",
+    "ACC008": "pass",
+    "ACC009": "pass",
+    "ACC010": "pass",
+    "ACC011": "pass",
+    "ACC012": "pass",
+    "ACC013": "pass",
+    "ACC014": "pass",
+    "ACC015": "pass",
+    "ACC016": "pass"
+  },
+  "taskStatus": {
+    "G001": "pass",
+    "G002": "pass",
+    "G003": "pass",
+    "G004": "pass",
+    "G005": "pass",
+    "G006": "pass",
+    "G007": "pass",
+    "G008": "pass",
+    "G009": "pass",
+    "G010": "pass",
+    "G011": "pass",
+    "G012": "pass",
+    "G013": "pass",
+    "G014": "pass",
+    "G015": "pass",
+    "G016": "pass",
+    "G017": "pass",
+    "G018": "pass",
+    "G019": "pass"
+  },
+  "stopConditionOutcomes": {
+    "contract_amendment_required": false,
+    "scope_amendment_required": false,
+    "root_script_deletion_approval_required": false,
+    "deletion_ready_classification_forbidden": false,
+    "install_matrix_contract_required": false,
+    "encoding_integrity_failed": false
+  },
+  "artifacts": {
+    "contractPath": {
+      "path": "docs/plans/2026-06-05-main-agent-p1-p4-runtime-migration-goal-execution-plan.md",
+      "sha256": "sha256:758378af0f7bfd4659914cb2472b0a201529bc847e5eb00a923edbdbc02cdf7b",
+      "exists": true
+    },
+    "registryPath": {
+      "path": "repo-governance/script-migration-registry.yaml",
+      "sha256": "sha256:b1a58fbb2d1d9a3f9bbc192d093d7c5a183f4298a60e5f47a0797b3c889e4a33",
+      "exists": true
+    },
+    "priorityMatrixPath": {
+      "path": "repo-governance/script-migrations/main-agent-runtime-closure-wave-3/priority-matrix.md",
+      "sha256": "sha256:8499ef2f50f850a690d0aae3cf5191f661cf719b3517f4e87e3037602fc18a82",
+      "exists": true
+    },
+    "wave3_6ManifestPath": {
+      "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.6/candidate-manifest.json",
+      "sha256": "sha256:bddbcb1b56262cbe1f3ef48e9358259f530294de5798bc83ec70fa522072430c",
+      "exists": true
+    },
+    "wave3_6EvidencePath": {
+      "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.6/evidence.json",
+      "sha256": "sha256:68d010069c62f787be933f4de959ad98c8637e19b2c73900ceebdc6aae5432ef",
+      "exists": true
+    },
+    "wave3_6SummaryPath": {
+      "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.6/summary.md",
+      "sha256": "sha256:ab0b27ed3e89c619decdd515065a204d38bda473a9b0bf6c329a97547430215c",
+      "exists": true
+    },
+    "wave3_7ManifestPath": {
+      "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.7/candidate-manifest.json",
+      "sha256": "sha256:985d680478825f6e7e1948ec4f3dd122d5ac47aec919821cedc12bfdb1c93972",
+      "exists": true
+    },
+    "wave3_7EvidencePath": {
+      "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.7/evidence.json",
+      "sha256": "sha256:00dd8d0ee5a458b6cdb47ef1ba5938a4dd26b13cf00c3ce2cd557602bc141f38",
+      "exists": true
+    },
+    "wave3_7SummaryPath": {
+      "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.7/summary.md",
+      "sha256": "sha256:a4a7790b16c5f621b5aca611543eaded07c263dbe1ea2566e534a85e2ee221ec",
+      "exists": true
+    },
+    "wave3_8ClassificationPath": {
+      "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/classification-compression.json",
+      "sha256": "sha256:11ad848c1d885a834232a202863b8f1590a2bbce35591e8cb41e04614558b35f",
+      "exists": true
+    },
+    "wave3_8EvidencePath": {
+      "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/evidence.json",
+      "sha256": "sha256:ab09692a08c1f32eaed1f352860779739c4c4be2ce87794e6ceb80c3559d85a5",
+      "exists": true
+    },
+    "wave3_8SummaryPath": {
+      "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.8/summary.md",
+      "sha256": "sha256:02915259de9a71ad4dd6de014c98c601c4110ee7138633a07eb4425e29c09e79",
+      "exists": true
+    },
+    "wave3_9ManifestPath": {
+      "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.9/candidate-manifest.json",
+      "sha256": "sha256:46ba484572fd775309d2dfaaa7e170deeaf4e33a5d0a25ac2ebb5c1d044c7f6e",
+      "exists": true
+    },
+    "wave3_9EvidencePath": {
+      "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.9/evidence.json",
+      "sha256": "sha256:5052e9aa18f443363fac01ebdafb8c5568bed90a49745cf22cefd6dd812a1930",
+      "exists": true
+    },
+    "wave3_9SummaryPath": {
+      "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.9/summary.md",
+      "sha256": "sha256:1ee176cebab6e9849cb7dbf634bbe5bcf9dfd0211533757ef6c2ae7eb4e55584",
+      "exists": true
+    },
+    "installMatrixRunnerPath": {
+      "path": "tools/script-migration/run-main-agent-p1-p4-install-matrix.cjs",
+      "sha256": "sha256:592e1a47492dfeb306118e5f9e50135050b358c52522b945090a8c965bb9bf38",
+      "exists": true
+    },
+    "staticDispatchGuardPath": {
+      "path": "tools/script-migration/validate-main-agent-p1-p4-no-root-ts-dispatch.cjs",
+      "sha256": "sha256:fb8a161638a12c9c0326665fffebbfcbce6a01c735d8acb43c24edec41d9b264",
+      "exists": true
+    },
+    "noDeletionGuardPath": {
+      "path": "tools/script-migration/validate-main-agent-p1-p4-no-root-script-deletion.cjs",
+      "sha256": "sha256:74357bf87097fd5c2e7fa5e16fe8cfd929be88b54d2b0a45bfec5be2be684cb3",
+      "exists": true
+    },
+    "encodingEvidencePath": {
+      "path": "repo-governance/script-migrations/main-agent-p1-p4-runtime-migration/encoding-evidence.json",
+      "sha256": "sha256:c9eb12d8796ade72f7a1ea3ab747ccefe9a2c47eeb5a64417aed8d3f8521efdd",
+      "exists": true
+    },
+    "worktreeEvidencePath": {
+      "path": "repo-governance/script-migrations/main-agent-p1-p4-runtime-migration/worktree-evidence.json",
+      "sha256": "sha256:5fe81815da7c30043cb46760e63e7841c7efe91b2c19b12000a2184a3ee662c0",
+      "exists": true
+    },
+    "finalEvidencePacketPath": {
+      "path": "repo-governance/script-migrations/main-agent-p1-p4-runtime-migration/final-evidence-packet.json",
+      "sha256": null,
+      "exists": true,
+      "hashNote": "self-referential hash is not embedded in final-evidence-packet.json"
+    }
+  },
+  "residualRisks": [
+    "Root scripts remain retained and deletion is not approved under this contract.",
+    "P3 deterministic exclusions are source-only or deprecated classifications and are not claimed as runtime migrations.",
+    "P4 durable helpers are package-local helper surfaces and are not public CLI actions."
+  ]
+}
