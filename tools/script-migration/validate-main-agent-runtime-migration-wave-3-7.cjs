@@ -215,7 +215,7 @@ function validateActionFiles(entries, errors) {
     /scripts[\\/].*\.ts/u,
     /runRepoScript\(/u,
     /\btsx\b/u,
-    /\bts-node\b/u,
+    /(^|[^A-Za-z0-9_-])ts-node(?:\.cmd)?($|[^A-Za-z0-9_-])/iu,
     /compiled[\\/]main-agent-orchestration\.cjs/u,
   ];
   const helperPaths = [

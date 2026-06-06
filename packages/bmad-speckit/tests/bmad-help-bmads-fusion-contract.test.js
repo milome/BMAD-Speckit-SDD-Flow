@@ -169,7 +169,7 @@ describe('bmad-help and bmads fusion contract', () => {
           {
             cwd: PROJECT_ROOT,
             encoding: 'utf8',
-            maxBuffer: 2 * 1024 * 1024,
+            maxBuffer: 128 * 1024 * 1024,
           }
         );
         const output = JSON.parse(text);

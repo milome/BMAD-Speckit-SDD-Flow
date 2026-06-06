@@ -128,7 +128,7 @@ function containsForbiddenRuntime(value) {
     /(^|\s|["'])scripts\/[^"'\s]+\.ts(\s|["']|$)/u.test(text) ||
     /node_modules\/[^"'\s]*\/scripts\/[^"'\s]+\.ts/u.test(text) ||
     /\btsx\b/u.test(text) ||
-    /\bts-node\b/u.test(text)
+    /(^|[^A-Za-z0-9_-])ts-node(?:\.cmd)?($|[^A-Za-z0-9_-])/iu.test(text)
   );
 }
 

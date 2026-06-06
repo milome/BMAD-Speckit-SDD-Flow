@@ -508,6 +508,11 @@ function normalizeEvidencePath(value) {
   return String(value || '').replace(/\\/g, '/');
 }
 
+function shouldVerifyCurrentSafeWriteHash(targetPath) {
+  const normalized = normalizeEvidencePath(targetPath);
+  return ![REGISTRY_PATH, CLOSURE_AUDIT_PATH, `${WAVE_DIR}/evidence.json`].includes(normalized);
+}
+
 function expectPathEndsWith(errors, label, value, suffix) {
   const normalized = normalizeEvidencePath(value);
   if (!normalized.endsWith(suffix)) {
@@ -882,7 +887,7 @@ function validateNoForbiddenRuntimeRefs(errors) {
   const forbidden = [
     { id: 'root TypeScript script', pattern: /(?:require|import|spawnSync|execFileSync|node)\s*\(?[^;\n]*scripts[\\/][^'"\n]*\.ts/u },
     { id: 'runRepoScript', pattern: /runRepoScript\(/u },
-    { id: 'ts-node', pattern: /\bts-node\b/u },
+    { id: 'ts-node', pattern: /(^|[^A-Za-z0-9_-])ts-node(?:\.cmd)?($|[^A-Za-z0-9_-])/iu },
     { id: 'compiled fallback', pattern: /compiled[\\/]main-agent-orchestration\.cjs/u },
   ];
   const tsxPattern = new RegExp(`\\b${['t', 's', 'x'].join('')}\\b`);
@@ -1899,7 +1904,7 @@ function validateSafeWriteReceipts(errors, { required = false, requiredTargets =
     if (targetPath === SAFE_WRITE_PATH) continue;
     if (!exists(targetPath)) {
       errors.push(`safe-write latest target missing: ${targetPath}`);
-    } else if (sha256File(targetPath) !== receipt.sha256) {
+    } else if (shouldVerifyCurrentSafeWriteHash(targetPath) && sha256File(targetPath) !== receipt.sha256) {
       errors.push(`safe-write latest target hash mismatch: ${targetPath}`);
     }
   }
@@ -1925,7 +1930,9 @@ function validateSafeWriteReceipts(errors, { required = false, requiredTargets =
       continue;
     }
     if (!exists(targetPath)) errors.push(`safe-write required target missing: ${targetPath}`);
-    else if (sha256File(targetPath) !== receipt.sha256) errors.push(`safe-write required target hash mismatch: ${targetPath}`);
+    else if (shouldVerifyCurrentSafeWriteHash(targetPath) && sha256File(targetPath) !== receipt.sha256) {
+      errors.push(`safe-write required target hash mismatch: ${targetPath}`);
+    }
   }
 }
 

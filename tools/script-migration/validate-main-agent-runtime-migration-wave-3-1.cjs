@@ -393,7 +393,7 @@ function validateRuntimeFiles(errors) {
     /ensure-governance-user-story-mapping-fixture\.js/u,
     /runRepoScript\(/u,
     /\btsx\b/u,
-    /\bts-node\b/u,
+    /(^|[^A-Za-z0-9_-])ts-node(?:\.cmd)?($|[^A-Za-z0-9_-])/iu,
   ];
   for (const guardPath of guardPaths) {
     const full = path.join(ROOT, guardPath);
