@@ -846,6 +846,7 @@ function buildBmadsOutput(projectRootInput = process.cwd(), buildOptions = {}) {
   const aiTdd = resolveAiTddRuntimeDecision(projectRoot, {
     assetRoot,
     displayBudget: options.budget,
+    includeRawRecord: options.includeRawRecord === true || options.json === true,
   });
   const displayBudget = resolveDisplayBudget(options.budget, 'route');
   const currentRoute = runtime.layers

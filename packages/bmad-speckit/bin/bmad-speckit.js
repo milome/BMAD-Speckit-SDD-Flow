@@ -600,6 +600,7 @@ program
   .option('--workflow-guidance', 'Include workflow guidance')
   .option('--raw-workflow', 'Print raw workflow guidance')
   .option('--debug', 'Include diagnostics')
+  .option('--full', 'Include full raw runtime records in JSON diagnostics')
   .option('--catalog', 'Include catalog details')
   .option('--budget <level>', 'Display budget: compact, route, expanded, or full')
   .allowUnknownOption(true)

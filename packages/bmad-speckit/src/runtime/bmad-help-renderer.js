@@ -370,6 +370,7 @@ function buildBmadHelpOutput(options) {
     runtimeCrossEntry: resolveAiTddRuntimeDecision(projectRoot, {
       assetRoot,
       displayBudget: options.budget,
+      includeRawRecord: options.debug === true || options.full === true,
     }),
     displayBudget: resolveDisplayBudget(options.budget, 'route'),
     catalog: {
@@ -523,6 +524,7 @@ function parseArgs(argv) {
     else if (arg === '--workflow-guidance') options.workflowGuidance = true;
     else if (arg === '--raw-workflow') options.rawWorkflow = true;
     else if (arg === '--debug') options.debug = true;
+    else if (arg === '--full') options.full = true;
     else if (arg === '--catalog') options.catalog = true;
     else if (arg === '--budget') options.budget = argv[++index];
     else if (arg.startsWith('--budget=')) options.budget = arg.slice('--budget='.length);
@@ -533,6 +535,7 @@ function parseArgs(argv) {
   if (process.env.npm_config_workflow_guidance === 'true') options.workflowGuidance = true;
   if (process.env.npm_config_raw_workflow === 'true') options.rawWorkflow = true;
   if (process.env.npm_config_debug === 'true') options.debug = true;
+  if (process.env.npm_config_full === 'true') options.full = true;
   if (process.env.npm_config_catalog === 'true') options.catalog = true;
   if (process.env.npm_config_module && process.env.npm_config_module !== 'true') {
     options.module = process.env.npm_config_module;

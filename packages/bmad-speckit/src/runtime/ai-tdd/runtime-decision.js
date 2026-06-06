@@ -454,17 +454,17 @@ function nextSafeActionFor(input) {
   return 'inspect_requirement_record';
 }
 
-function canCompileGoalPacket(record, summary) {
+function canCompileGoalPacket(summary) {
   return (
-    Boolean(record.sourceDocumentHash) &&
-    Boolean(record.implementationConfirmationHash) &&
+    Boolean(summary.sourceDocumentHash) &&
+    Boolean(summary.implementationConfirmationHash) &&
     ['implementation_readiness', 'execution_closure'].includes(summary.currentMentalModel) &&
     !summary.hasSafetyBlocker &&
     ['pass', 'not_established'].includes(summary.schemaModelStatus)
   );
 }
 
-function summarizeRecord(entry) {
+function summarizeRecord(entry, options = {}) {
   const { record, recordPath, recordId, isExplicitSelection, isIndexedActive } = entry;
   const currentMentalModel = inferCurrentMentalModel(record);
   const schemaModelStatus = statusForModel(record, currentMentalModel);
@@ -506,7 +506,7 @@ function summarizeRecord(entry) {
       isCurrent: currentMentalModel === modelId,
     };
   }
-  return {
+  const summary = {
     recordId,
     sourceOrTitle: sourceOrTitle(record),
     activityState: entry.activityState,
@@ -540,8 +540,9 @@ function summarizeRecord(entry) {
     hasSafetyBlocker,
     modelStatuses,
     recordPath: normalizePath(path.relative(process.cwd(), recordPath)),
-    rawRecord: record,
   };
+  if (options.includeRawRecord) summary.rawRecord = record;
+  return summary;
 }
 
 function isFixtureIndexPointer(record) {
@@ -605,7 +606,7 @@ function goalRouteRecommendation(activeRecords, primaryRecord) {
       reason: 'no_active_requirement_record',
     };
   }
-  if (canCompileGoalPacket(primaryRecord.rawRecord, primaryRecord)) {
+  if (canCompileGoalPacket(primaryRecord)) {
     return {
       skill: 'req-trace-matrix-prompt-generator',
       reason: 'active_requirement_record_current',
@@ -637,7 +638,14 @@ function resolveAiTddRuntimeDecision(projectRoot, options = {}) {
   const root = path.resolve(projectRoot || process.cwd());
   const manifests = loadAiTddProjectionManifests(root, { assetRoot: options.assetRoot });
   const { index, records, allRecords, closedRecords } = loadActiveRequirementRecords(root, options);
-  const activeRecords = annotateIndexPointerTrust(records.map(summarizeRecord), index);
+  const activeRecords = annotateIndexPointerTrust(
+    records.map((record) =>
+      summarizeRecord(record, {
+        includeRawRecord: options.includeRawRecord === true,
+      })
+    ),
+    index
+  );
   const primaryRecord = selectPrimaryRecord(activeRecords);
   return {
     viewMode: VIEW_MODE,

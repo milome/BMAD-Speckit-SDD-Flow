@@ -1,12 +1,15 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert');
-const { spawnSync } = require('node:child_process');
+const { execFileSync, spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { buildBmadHelpOutput, renderBmadHelp } = require('../src/runtime/bmad-help-renderer');
+const { buildBmadsOutput } = require('../src/runtime/bmads-renderer');
 
 const PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..');
+const PACKAGE_CLI = path.join(PROJECT_ROOT, 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js');
+const RAW_RECORD_SENTINEL = 'raw-only-fixture:'.repeat(32768);
 
 function materializePackageMirror() {
   const result = spawnSync('node', ['scripts/prepublish-check.js'], {
@@ -38,6 +41,7 @@ function makeRoot() {
         currentMentalModel: 'implementation_readiness',
         sourceDocumentHash: 'sha256:source',
         implementationConfirmationHash: 'sha256:confirmation',
+        privateDiagnosticBlob: RAW_RECORD_SENTINEL,
         sixModelResults: {
           implementation_readiness: { status: 'pass' },
         },
@@ -124,6 +128,72 @@ describe('bmad-help and bmads fusion contract', () => {
       assert.doesNotMatch(text, /## Active Requirement Records/);
       assert.doesNotMatch(text, /## Six Mental Model Panorama/);
       assert.doesNotMatch(text, /recordId: REQ-BMAD-HELP-CROSS/);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('keeps bmad-help JSON on the public projection by default', () => {
+    const root = makeRoot();
+    try {
+      const text = execFileSync(
+        process.execPath,
+        [PACKAGE_CLI, 'bmad-help', '--json', '--cwd', root],
+        {
+          cwd: PROJECT_ROOT,
+          encoding: 'utf8',
+          maxBuffer: 1024 * 1024,
+        }
+      );
+      const bytes = Buffer.byteLength(text, 'utf8');
+      const output = JSON.parse(text);
+
+      assert.ok(bytes < 256 * 1024, `expected bmad-help --json under 256KB, got ${bytes}`);
+      assert.equal(text.includes('"rawRecord"'), false);
+      assert.equal(text.includes('raw-only-fixture'), false);
+      assert.equal(output.runtimeCrossEntry.primaryRecord.recordId, 'REQ-BMAD-HELP-CROSS');
+      assert.equal(output.runtimeCrossEntry.primaryRecord.rawRecord, undefined);
+      assert.equal(output.runtimeCrossEntry.activeRecords[0].rawRecord, undefined);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('keeps raw runtime records behind explicit debug or full JSON diagnostics', () => {
+    const root = makeRoot();
+    try {
+      for (const flag of ['--debug', '--full']) {
+        const text = execFileSync(
+          process.execPath,
+          [PACKAGE_CLI, 'bmad-help', '--json', flag, '--cwd', root],
+          {
+            cwd: PROJECT_ROOT,
+            encoding: 'utf8',
+            maxBuffer: 2 * 1024 * 1024,
+          }
+        );
+        const output = JSON.parse(text);
+
+        assert.equal(
+          output.runtimeCrossEntry.primaryRecord.rawRecord.privateDiagnosticBlob,
+          RAW_RECORD_SENTINEL
+        );
+        assert.match(text, /raw-only-fixture/);
+      }
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('keeps bmads JSON as the full runtime diagnostic surface', () => {
+    const root = makeRoot();
+    try {
+      const output = buildBmadsOutput({ projectRoot: root, json: true });
+
+      assert.equal(
+        output.aiTdd.primaryRecord.rawRecord.privateDiagnosticBlob,
+        RAW_RECORD_SENTINEL
+      );
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }
