@@ -94,6 +94,7 @@ jobs:
 
       - name: Build release artifacts
         run: |
+          npm run build:main-agent-dist
           npm run build:scoring
           npm run build:runtime-context
           npm run build:runtime-emit
