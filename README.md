@@ -1,4 +1,4 @@
-# BMAD-Speckit-SDD-Flow: Requirement-Contract-Driven Orchestrator Agent Control Plane
+# BMAD-Speckit-SDD-Flow: AI-TDD Control Plane For Requirement Contracts And Evidence-Chain Delivery
 
 English | [简体中文](README.zh-CN.md)
 
@@ -7,12 +7,12 @@ English | [简体中文](README.zh-CN.md)
 </p>
 
 <h3 align="center">
-  Agent governance and AI-TDD control plane for BMAD + Spec-Kit delivery across Cursor, Claude Code, and Codex
+  AI-TDD control plane for requirement contracts and evidence-chain delivery across Cursor, Claude Code, and Codex
 </h3>
 
 <p align="center">
   <strong>Built on <a href="https://github.com/bmad-code-org/BMAD-METHOD">BMAD-METHOD</a> and <a href="https://github.com/github/spec-kit">Spec-Kit</a>.</strong><br>
-  <em>BMAD-Speckit-SDD-Flow keeps the end-to-end BMAD + Spec-Kit path from product discovery to technical implementation, then adds AI-TDD, agent governance, requirement contracts, readiness gates, delivery gates, trace evidence, and bounded execution on top.</em>
+  <em>BMAD-Speckit-SDD-Flow turns BMAD + Spec-Kit delivery into a governed AI-TDD path: confirmed Manifest contracts before execution, bounded agent work during implementation, and TRACE/EVD/CMD/ART evidence-chain closeout before delivery claims.</em>
 </p>
 
 <p align="center">
@@ -23,6 +23,7 @@ English | [简体中文](README.zh-CN.md)
 ## Table Of Contents
 
 - [What This Is](#what-this-is)
+- [Core AI-TDD Model](#core-ai-tdd-model)
 - [Who This Is For](#who-this-is-for)
 - [Prerequisites](#prerequisites)
 - [Quick Start](#quick-start)
@@ -31,9 +32,9 @@ English | [简体中文](README.zh-CN.md)
 - [1.x Five-Layer Architecture](#1x-five-layer-architecture)
 - [AI-TDD Control Plane](#ai-tdd-control-plane)
 - [Six Mental Models](#six-mental-models)
-- [Manifest And Trace Evidence](#manifest-and-trace-evidence)
+- [Manifest Contract And Evidence Chain](#manifest-contract-and-evidence-chain)
 - [CLI Installation And External Interfaces](#cli-installation-and-external-interfaces)
-- [Delivery Evidence](#delivery-evidence)
+- [Delivery Closeout Evidence](#delivery-closeout-evidence)
 - [Release Line Compatibility](#release-line-compatibility)
 - [Repository Map](#repository-map)
 - [Documentation](#documentation)
@@ -44,9 +45,11 @@ English | [简体中文](README.zh-CN.md)
 
 ## What This Is
 
-BMAD-Speckit-SDD-Flow is a requirement-contract-driven orchestration layer for AI-assisted software delivery. It combines the product and delivery structure of BMAD-METHOD with the specification-driven development flow of Spec-Kit, then adds a governed Orchestrator Agent control plane, the top-level coordinator that routes work, enforces gates, and closes delivery, for Cursor, Claude Code, and Codex.
+BMAD-Speckit-SDD-Flow is a requirement-contract-driven AI-TDD control plane for AI-assisted software delivery. It combines the product and delivery structure of BMAD-METHOD with the specification-driven development flow of Spec-Kit, then adds a governed Orchestrator Agent control plane, the top-level coordinator that routes work, enforces gates, and closes delivery, for Cursor, Claude Code, and Codex.
 
 The goal is not to replace BMAD or Spec-Kit. The goal is to make the complete path from product intent to implementation safer, more traceable, and easier to execute with AI agents. The workflow installs into consumer projects through the CLI, then runs inside Codex, Claude Code CLI, or Cursor through the `bmads` / `bmad-speckit` skills.
+
+AI-TDD in this project follows one rule: without a confirmed Manifest, AI is guessing; without a current evidence chain, delivery is only an optimistic claim. The Orchestrator Agent may not dispatch implementation until the Manifest is complete enough to establish `AI-TDD-RED`, and it may not claim delivery until the current attempt closes the Manifest-linked TRACE/EVD/CMD/ART evidence chain, receives a Gate Verdict, and records a Human-in-the-loop decision.
 
 <p align="center">
   <img src="docs/assets/toolchain-ecosystem-en.svg" alt="AI-TDD toolchain ecosystem for requirement-contract driven agent automation" width="100%" />
@@ -61,9 +64,28 @@ The project provides:
 - AI-TDD workflow control.
 - Readiness gates before implementation.
 - Delivery gates before completion claims.
-- Trace evidence for requirements, implementation, and verification.
+- Multi-dimensional TRACE/EVD/CMD/ART evidence-chain acceptance.
 - Bounded execution to reduce uncontrolled agent drift.
 - End-to-end BMAD + Spec-Kit delivery flow support.
+
+---
+
+## Core AI-TDD Model
+
+The operating model is:
+
+```text
+Intent -> Manifest Contract -> AI-TDD-RED -> Bounded Execution -> Evidence Chain -> AI-TDD-GREEN
+```
+
+| Stage             | Meaning                                                                                  | Control rule                                                           |
+| ----------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Intent            | Human goal, scope, non-goals, and assumptions are clarified.                             | Ambiguity must be converted into contract language before execution.   |
+| Manifest Contract | `MUST`, `NEG`, `OUT`, `TRACE`, `EVD`, `CMD`, `ART`, tests, and tasks are registered.     | Manifest is the requirement contract matrix, not a test checklist.     |
+| `AI-TDD-RED`      | The readiness gate confirms the contract and acceptance baseline exist.                  | Implementation may start only after the entry gate reaches this state. |
+| Bounded Execution | Agents receive bounded packets and implement inside the confirmed contract.              | Agent work must stay inside Manifest constraints and trace rows.       |
+| Evidence Chain    | The current attempt produces replayable TRACE/EVD/CMD/ART evidence and audit provenance. | Stale evidence and unbound tests cannot prove the current attempt.     |
+| `AI-TDD-GREEN`    | Gate Verdict plus Human-in-the-loop decision closes the delivery attempt.                | Completion language is allowed only after closeout evidence closes.    |
 
 ---
 
@@ -236,7 +258,7 @@ In the 2.x release line, this five-layer architecture is not removed. It becomes
 
 ## AI-TDD Control Plane
 
-AI-TDD in this project means Manifest-level, acceptance-driven development. The Manifest is the requirement contract matrix: it carries `MUST`, `NEG` (`MUST NOT` negative assertions), `OUT` (`OUT OF SCOPE` boundaries), `TRACE`, `EVD`, `ACC/E2E`, `FAIL/EDGE`, `CMD`, `ART`, and `TASK` definitions that both humans and agents can verify. `MUST NOT` is the conceptual alias for `NEG-*`; older `NOT DONE` wording means `OUT OF SCOPE / OUT-*`.
+AI-TDD in this project means Manifest-level, acceptance-driven development. The Manifest is not a test list. It is the requirement contract matrix that binds `MUST`, `NEG` (`MUST NOT` negative assertions), `OUT` (`OUT OF SCOPE` boundaries), `TRACE`, `EVD`, `ACC/E2E`, `FAIL/EDGE`, `CMD`, `ART`, `TASK`, tests, artifacts, Gate Verdicts, and Human-in-the-loop decisions into one acceptance surface. `MUST NOT` is the conceptual alias for `NEG-*`; older `NOT DONE` wording means `OUT OF SCOPE / OUT-*`.
 
 The control plane exists to enforce two rules:
 
@@ -274,19 +296,28 @@ Implementation agents do not choose the global route. They receive bounded packe
 
 ---
 
-## Manifest And Trace Evidence
+## Manifest Contract And Evidence Chain
 
-The Manifest is the source of truth for the AI-TDD contract. It is closer to contract-as-code than to a prose requirements document.
+The Manifest is the source of truth for the AI-TDD contract. It is closer to contract-as-code than to a prose requirements document: it encodes what must happen, what must not happen, what is out of scope, how each slice is traced, and which evidence can prove delivery.
 
 <p align="center">
   <img src="docs/assets/manifest-structure-en.svg" alt="AI-TDD Manifest structure with requirement, boundary, evidence, and gate layers" width="100%" />
 </p>
 
-Every meaningful delivery claim should be traceable across requirement, trace, evidence, command, and artifact dimensions.
+Every meaningful delivery claim should be traceable across requirement, trace, evidence, command, artifact, verdict, and human-decision dimensions.
 
 <p align="center">
   <img src="docs/assets/5d-trace-matrix-en.svg" alt="Five-dimensional AI-TDD trace matrix" width="100%" />
 </p>
+
+| Dimension   | Required proof                                                                   | Closeout meaning                                       |
+| ----------- | -------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| Requirement | Confirmed Manifest rows for `MUST`, `NEG`, and `OUT`.                            | The acceptance target is explicit and versioned.       |
+| Trace       | `TRACE` rows bind requirements to tasks, tests, commands, artifacts, and audits. | Each claim has a replayable contract slice.            |
+| Evidence    | `EVD` records identify the proof expected for each trace row.                    | The gate knows what evidence must exist.               |
+| Command     | `CMD` records show the current attempt ran the registered checks.                | Old or unrelated command output cannot close delivery. |
+| Artifact    | `ART` records capture reports, receipts, hashes, snapshots, or audit outputs.    | Results are reviewable after the chat session ends.    |
+| Decision    | Gate Verdict and Human-in-the-loop decision are recorded for the attempt.        | Delivery can close only after machine and human gates. |
 
 The Orchestrator Agent should block or reroute when Manifest completeness, trace coverage, command evidence, artifact evidence, audit provenance, or closeout evidence is missing.
 
@@ -374,17 +405,17 @@ Use the CLI to install and inspect. Use the host skill to let the Orchestrator A
 
 ---
 
-## Delivery Evidence
+## Delivery Closeout Evidence
 
-Delivery evidence is different from the CLI command-surface screenshot. It is the gate material used to decide whether the active requirement can close through the Delivery Closeout Gate.
+Delivery closeout evidence is different from the CLI command-surface screenshot. It is the attempt-scoped gate material used to decide whether the active requirement can close through the Delivery Closeout Gate.
 
-| Evidence type        | Required proof                                                              |
-| -------------------- | --------------------------------------------------------------------------- |
-| Requirement contract | Confirmed Manifest and requirement record.                                  |
-| Readiness            | Implementation Readiness Gate result at `AI-TDD-RED`.                       |
-| Execution            | Bounded packet result, command evidence, artifact index, and trace closure. |
-| Audit                | Findings, reruns, RCA, score records, and provenance.                       |
-| Delivery             | Delivery Closeout Gate result at `AI-TDD-GREEN` for the current attempt.    |
+| Evidence type        | Required proof                                                              | Gate impact                                                     |
+| -------------------- | --------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| Requirement contract | Confirmed Manifest, requirement record, and Manifest/source hash.           | Defines the contract that all later evidence must satisfy.      |
+| Readiness            | Implementation Readiness Gate result at `AI-TDD-RED`.                       | Allows bounded implementation to begin.                         |
+| Execution            | Bounded packet result, command evidence, artifact index, and trace closure. | Proves implementation stayed inside the contract.               |
+| Audit                | Findings, reruns, RCA, score records, scope checks, and provenance.         | Detects drift, stale proof, and unreviewed risk.                |
+| Delivery             | TRACE/EVD/CMD/ART closure, Gate Verdict, and Human-in-the-loop decision.    | Allows `AI-TDD-GREEN` and completion language for this attempt. |
 
 ---
 

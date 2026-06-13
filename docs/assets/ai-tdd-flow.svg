@@ -70,7 +70,7 @@
   <text x="45" y="225" class="text text-sub" style="text-anchor:start;">• 原子化需求拆解</text>
   <text x="45" y="242" class="text text-sub" style="text-anchor:start;">• 定义 MUST/NEG/OUT</text>
   <text x="45" y="259" class="text text-sub" style="text-anchor:start;">• 建立 TRACE rows</text>
-  <text x="45" y="276" class="text text-sub" style="text-anchor:start;">• Human-in-loop确认</text>
+  <text x="45" y="276" class="text text-sub" style="text-anchor:start;">• Human-in-the-loop确认</text>
   <text x="45" y="293" class="text text-sub" style="text-anchor:start;">• 生成需求确认页HTML</text>
 
   <rect x="300" y="185" width="240" height="125" rx="4" fill="#ffffff" stroke="#e5e5e5" stroke-width="1"/>
@@ -133,5 +133,5 @@
   <circle cx="950" cy="535" r="6" fill="#16a34a"/>
   <text x="950" y="560" class="text" style="font-size:10px;fill:#16a34a;">交付门禁</text>
 
-  <text x="550" y="610" class="text text-sub" style="font-size:11px;">Human-in-loop关键决策点：需求确认 → 架构确认 → 交付确认</text>
+  <text x="550" y="610" class="text text-sub" style="font-size:11px;">Human-in-the-loop关键决策点：需求确认 → 架构确认 → 交付确认</text>
 </svg>
