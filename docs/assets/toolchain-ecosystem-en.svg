@@ -120,7 +120,7 @@
   <rect x="400" y="310" width="360" height="55" fill="#ffffff" stroke="#d1d5db" stroke-width="1"/>
   <text x="410" y="327" class="table-cell">requirement_authoring</text>
   <text x="410" y="340" class="table-cell">requirement_confirmation</text>
-  <text x="410" y="353" class="tag-highlight">Human-in-loop decision point</text>
+  <text x="410" y="353" class="tag-highlight">Human-in-the-loop decision point</text>
 
   <rect x="760" y="310" width="70" height="55" fill="#dbeafe" stroke="#d1d5db" stroke-width="1"/>
   <text x="795" y="342" class="count-number" style="fill:#1e40af;">2</text>
@@ -140,7 +140,7 @@
 
   <rect x="400" y="365" width="360" height="40" fill="#ffffff" stroke="#d1d5db" stroke-width="1"/>
   <text x="410" y="382" class="table-cell">architecture_confirmation</text>
-  <text x="410" y="395" class="tag-highlight">Human-in-loop mandatory</text>
+  <text x="410" y="395" class="tag-highlight">Human-in-the-loop mandatory</text>
 
   <rect x="760" y="365" width="70" height="40" fill="#e0e7ff" stroke="#d1d5db" stroke-width="1"/>
   <text x="795" y="387" class="count-number" style="fill:#3730a3;">1</text>
@@ -229,7 +229,7 @@
   <text x="410" y="577" class="table-cell">delivery_closeout</text>
   <text x="410" y="590" class="table-cell">observability</text>
   <text x="410" y="603" class="table-cell">dashboard_read_model</text>
-  <text x="410" y="613" class="tag-highlight">Human-in-loop mandatory</text>
+  <text x="410" y="613" class="tag-highlight">Human-in-the-loop mandatory</text>
 
   <rect x="760" y="560" width="70" height="55" fill="#d1fae5" stroke="#d1d5db" stroke-width="1"/>
   <text x="795" y="592" class="count-number" style="fill:#047857;">3</text>
@@ -315,7 +315,7 @@
   <text x="70" y="1015" class="legend-text" style="font-size:10px;">1. Main Agent Control Plane: Cross-layer orchestration, state management, decision routing, human-AI collaboration</text>
   <text x="70" y="1035" class="legend-text" style="font-size:10px;">2. Controlled RequirementRecord Store: Contract matrix persistence, trace evidence storage, state snapshots</text>
   <text x="70" y="1055" class="legend-text" style="font-size:10px;">3. Six Mental Models are internal concepts with 16 subsystems; users don't directly interact with them</text>
-  <text x="70" y="1075" class="legend-text" style="font-size:10px;">4. Human-in-loop mandatory checkpoints: Requirement → Architecture → Delivery (3 Human-in-loop points)</text>
+  <text x="70" y="1075" class="legend-text" style="font-size:10px;">4. Human-in-the-loop mandatory checkpoints: Requirement → Architecture → Delivery (3 Human-in-the-loop points)</text>
   <text x="70" y="1095" class="legend-text" style="font-size:10px;">5. 16 subsystems distribution: Requirement(2) + Architecture(1) + Implementation(1) + Execution(3) + Audit(6) + Delivery(3)</text>
   <text x="70" y="1115" class="legend-text" style="font-size:10px;">6. Audit Review (6 subsystems) exposes CLI: score, check-score, coach, sft-extract, scores</text>
   <text x="70" y="1135" class="legend-text" style="font-size:10px;">7. Delivery Confirmation (3 subsystems) exposes CLI: dashboard, dashboard-status</text>

@@ -1,4 +1,4 @@
-# BMAD-Speckit-SDD-Flow：需求契约驱动的编排中枢控制面
+# BMAD-Speckit-SDD-Flow：面向需求契约与证据链交付的 AI-TDD 控制面
 
 [English](README.md) | 简体中文
 
@@ -7,12 +7,12 @@
 </p>
 
 <h3 align="center">
-  面向 Cursor、Claude Code 与 Codex 的 Agent 治理和 AI-TDD 控制面，构建于 BMAD + Spec-Kit 交付流之上
+  面向 Cursor、Claude Code 与 Codex 的需求契约和证据链交付控制面
 </h3>
 
 <p align="center">
   <strong>基于 <a href="https://github.com/bmad-code-org/BMAD-METHOD">BMAD-METHOD</a> 与 <a href="https://github.com/github/spec-kit">Spec-Kit</a> 构建。</strong><br>
-  <em>BMAD-Speckit-SDD-Flow 保留从产品发现到技术实现的 BMAD + Spec-Kit 端到端路径，并在其上加入 AI-TDD、Agent 治理、需求契约、准入门禁、交付门禁、追溯证据和有界执行。</em>
+  <em>BMAD-Speckit-SDD-Flow 把 BMAD + Spec-Kit 交付流升级为受治理的 AI-TDD 路径：执行前先确认 Manifest 契约，实现中约束 Agent 有界工作，交付前闭合 TRACE/EVD/CMD/ART 证据链。</em>
 </p>
 
 <p align="center">
@@ -23,6 +23,7 @@
 ## 目录
 
 - [这是什么](#这是什么)
+- [核心 AI-TDD 模型](#核心-ai-tdd-模型)
 - [适用对象](#适用对象)
 - [前置条件](#前置条件)
 - [快速开始](#快速开始)
@@ -31,9 +32,9 @@
 - [1.x 五层架构](#1x-五层架构)
 - [AI-TDD 控制面](#ai-tdd-控制面)
 - [六心智模型](#六心智模型)
-- [Manifest 与追溯证据](#manifest-与追溯证据)
+- [Manifest 契约与证据链](#manifest-契约与证据链)
 - [CLI 安装与外部接口](#cli-安装与外部接口)
-- [交付证据链](#交付证据链)
+- [交付收口证据](#交付收口证据)
 - [发布线兼容说明](#发布线兼容说明)
 - [仓库结构](#仓库结构)
 - [文档入口](#文档入口)
@@ -44,9 +45,11 @@
 
 ## 这是什么
 
-BMAD-Speckit-SDD-Flow 是一个需求契约驱动的 AI 辅助软件交付编排层。它结合 BMAD-METHOD 的产品与交付结构，以及 Spec-Kit 的规格驱动开发流程，并在此基础上为 Cursor、Claude Code 和 Codex 增加一个由 Orchestrator Agent 统筹的治理控制面（编排中枢），负责路由工作、执行门禁并收口交付。
+BMAD-Speckit-SDD-Flow 是一个需求契约驱动的 AI-TDD 控制面，用于治理 AI 辅助软件交付。它结合 BMAD-METHOD 的产品与交付结构，以及 Spec-Kit 的规格驱动开发流程，并在此基础上为 Cursor、Claude Code 和 Codex 增加一个由 Orchestrator Agent 统筹的治理控制面（编排中枢），负责路由工作、执行门禁并收口交付。
 
 它不是要替代 BMAD 或 Spec-Kit，而是让从产品意图到技术实现的完整路径更安全、更可追溯，也更适合由 AI Agent 执行。工作流通过 CLI 安装到消费项目，然后在 Codex、Claude Code CLI 或 Cursor 中通过 `bmads` / `bmad-speckit` 技能激活编排中枢。
+
+本项目中的 AI-TDD 遵循一条原则：没有经过确认的 Manifest，AI 就是在猜；没有当前 attempt 的证据链，交付就只是不可复核的乐观判断。Manifest 未达到足够完备状态前，编排中枢不能派发实现；当前 attempt 尚未闭合 Manifest 关联的 TRACE/EVD/CMD/ART 证据链、Gate Verdict 和 Human-in-the-loop 决策前，不能宣称交付完成。
 
 <p align="center">
   <img src="docs/assets/toolchain-ecosystem.svg" alt="AI-TDD 工具链生态系统：需求契约驱动的 Agent 自动化" width="100%" />
@@ -61,9 +64,28 @@ CLI 是安装与外部接口。它负责把工作流安装到消费项目、校�
 - AI-TDD 工作流控制。
 - 实现前准入门禁。
 - 交付前完成门禁。
-- 需求、实现与验证之间的追溯证据。
+- 面向 TRACE/EVD/CMD/ART 的多维证据链验收。
 - 降低 Agent 失控漂移的有界执行。
 - 端到端 BMAD + Spec-Kit 交付流支持。
+
+---
+
+## 核心 AI-TDD 模型
+
+运行模型是：
+
+```text
+Intent -> Manifest Contract -> AI-TDD-RED -> Bounded Execution -> Evidence Chain -> AI-TDD-GREEN
+```
+
+| 阶段              | 含义                                                                  | 控制规则                                            |
+| ----------------- | --------------------------------------------------------------------- | --------------------------------------------------- |
+| Intent            | 澄清人类目标、范围、不做项和假设。                                    | 歧义必须先转成契约语言，不能直接进入执行。          |
+| Manifest Contract | 注册 `MUST`、`NEG`、`OUT`、`TRACE`、`EVD`、`CMD`、`ART`、测试和任务。 | Manifest 是需求契约矩阵，不是测试清单。             |
+| `AI-TDD-RED`      | 准入门禁确认契约和验收基线已经存在。                                  | 只有入口门禁达到该状态后，才能开始实现。            |
+| Bounded Execution | Agent 接收有界任务包，在已确认契约内实现。                            | Agent 工作必须受 Manifest 约束，并绑定 trace rows。 |
+| Evidence Chain    | 当前 attempt 产生可回放的 TRACE/EVD/CMD/ART 证据和审计 provenance。   | 陈旧证据和未绑定测试不能证明当前 attempt。          |
+| `AI-TDD-GREEN`    | Gate Verdict 加 Human-in-the-loop 决策关闭本次交付。                  | 只有 closeout 证据闭合后，才允许完成表述。          |
 
 ---
 
@@ -236,7 +258,7 @@ BMAD-Speckit-SDD-Flow 安装的是分层技能面。规范核心层 `_bmad/skill
 
 ## AI-TDD 控制面
 
-本项目中的 AI-TDD 指 Manifest 级的验收驱动开发。Manifest 是需求契约矩阵，承载 `MUST`、`NEG`（`MUST NOT` 负向断言）、`OUT`（`OUT OF SCOPE` 范围边界）、`TRACE`、`EVD`、`ACC/E2E`、`FAIL/EDGE`、`CMD`、`ART` 和 `TASK` 等可被人和 Agent 共同验证的定义。`MUST NOT` 是 `NEG-*` 的概念别名；旧 `NOT DONE` 语义应迁移为 `OUT OF SCOPE / OUT-*`。
+本项目中的 AI-TDD 指 Manifest 级的验收驱动开发。Manifest 不是测试清单，而是需求契约矩阵：它把 `MUST`、`NEG`（`MUST NOT` 负向断言）、`OUT`（`OUT OF SCOPE` 范围边界）、`TRACE`、`EVD`、`ACC/E2E`、`FAIL/EDGE`、`CMD`、`ART`、`TASK`、测试、产物、Gate Verdict 和 Human-in-the-loop 决策绑定到同一个验收面。`MUST NOT` 是 `NEG-*` 的概念别名；旧 `NOT DONE` 语义应迁移为 `OUT OF SCOPE / OUT-*`。
 
 控制面要执行两条规则：
 
@@ -274,19 +296,28 @@ readiness gate 不表示功能已经完成。它表示需求契约足够完整�
 
 ---
 
-## Manifest 与追溯证据
+## Manifest 契约与证据链
 
-Manifest 是 AI-TDD 契约的事实源。它更接近 contract-as-code，而不是普通自然语言需求文档。
+Manifest 是 AI-TDD 契约的事实源。它更接近 contract-as-code，而不是普通自然语言需求文档：它编码“必须做什么”“不能做什么”“哪些内容不在范围内”“每个切片如何追溯”以及“哪些证据可以证明交付”。
 
 <p align="center">
   <img src="docs/assets/manifest-structure.svg" alt="AI-TDD Manifest 结构：需求、边界、证据与门禁层" width="100%" />
 </p>
 
-每个有意义的交付声明，都应该能在需求、追溯、证据、命令和产物五个维度上回放。
+每个有意义的交付声明，都应该能在需求、追溯、证据、命令、产物、裁决和人工决策维度上回放。
 
 <p align="center">
   <img src="docs/assets/5d-trace-matrix.svg" alt="AI-TDD 五维追溯矩阵" width="100%" />
 </p>
+
+| 维度 | 必要证明                                                   | 收口含义                                 |
+| ---- | ---------------------------------------------------------- | ---------------------------------------- |
+| 需求 | 已确认的 `MUST`、`NEG` 和 `OUT` Manifest rows。            | 验收目标明确且已版本化。                 |
+| 追溯 | `TRACE` rows 绑定需求、任务、测试、命令、产物和审计。      | 每个声明都有可回放的契约切片。           |
+| 证据 | `EVD` 记录标识每个 trace row 需要的证明。                  | 门禁知道必须存在什么证据。               |
+| 命令 | `CMD` 记录证明当前 attempt 运行了已注册检查。              | 旧命令输出或无关命令输出不能关闭交付。   |
+| 产物 | `ART` 记录报告、receipt、hash、snapshot 或审计输出。       | 结果在聊天会话结束后仍可复核。           |
+| 决策 | 当前 attempt 记录 Gate Verdict 和 Human-in-the-loop 决策。 | 只有机器门禁和人工决策都闭合后才能交付。 |
 
 当 Manifest 完备性、trace 覆盖、命令证据、产物证据、审计 provenance 或 closeout 证据缺失时，编排中枢应该阻塞、重路由或要求补证，而不是继续实现或直接交付。
 
@@ -374,17 +405,17 @@ CLI 用来安装和查看；宿主技能用来让编排中枢接管需求流。
 
 ---
 
-## 交付证据链
+## 交付收口证据
 
-交付证据链不同于 CLI 命令面截图。它用于判断当前需求是否可以通过 Delivery Closeout Gate 收口。
+交付收口证据不同于 CLI 命令面截图。它是按 attempt 归属的门禁材料，用于判断当前需求是否可以通过 Delivery Closeout Gate 收口。
 
-| 证据类型 | 必要证明                                                          |
-| -------- | ----------------------------------------------------------------- |
-| 需求契约 | 已确认的 Manifest 和 requirement record。                         |
-| 准入     | `AI-TDD-RED` 状态的 Implementation Readiness Gate 结果。          |
-| 执行     | Bounded packet 结果、命令证据、产物索引与 trace closure。         |
-| 审计     | Findings、rerun、RCA、score record 与 provenance。                |
-| 交付     | 当前 attempt 达到 `AI-TDD-GREEN` 的 Delivery Closeout Gate 结果。 |
+| 证据类型 | 必要证明                                                         | 门禁影响                                          |
+| -------- | ---------------------------------------------------------------- | ------------------------------------------------- |
+| 需求契约 | 已确认的 Manifest、requirement record 和 Manifest/source hash。  | 定义后续所有证据必须满足的契约。                  |
+| 准入     | `AI-TDD-RED` 状态的 Implementation Readiness Gate 结果。         | 允许有界实现开始。                                |
+| 执行     | Bounded packet 结果、命令证据、产物索引与 trace closure。        | 证明实现没有越过契约边界。                        |
+| 审计     | Findings、rerun、RCA、score record、范围检查与 provenance。      | 识别漂移、陈旧证据和未评审风险。                  |
+| 交付     | TRACE/EVD/CMD/ART 闭合、Gate Verdict 和 Human-in-the-loop 决策。 | 允许当前 attempt 进入 `AI-TDD-GREEN` 和完成表述。 |
 
 ---
 

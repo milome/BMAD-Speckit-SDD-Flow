@@ -118,7 +118,7 @@
   <rect x="400" y="310" width="360" height="55" fill="#ffffff" stroke="#d1d5db" stroke-width="1"/>
   <text x="410" y="327" class="table-cell">requirement_authoring</text>
   <text x="410" y="340" class="table-cell">requirement_confirmation</text>
-  <text x="410" y="353" class="tag-highlight">Human-in-loop决策点</text>
+  <text x="410" y="353" class="tag-highlight">Human-in-the-loop决策点</text>
 
   <rect x="760" y="310" width="70" height="55" fill="#dbeafe" stroke="#d1d5db" stroke-width="1"/>
   <text x="795" y="342" class="count-number" style="fill:#1e40af;">2</text>
@@ -138,7 +138,7 @@
 
   <rect x="400" y="365" width="360" height="40" fill="#ffffff" stroke="#d1d5db" stroke-width="1"/>
   <text x="410" y="382" class="table-cell">architecture_confirmation</text>
-  <text x="410" y="395" class="tag-highlight">Human-in-loop强制确认</text>
+  <text x="410" y="395" class="tag-highlight">Human-in-the-loop强制确认</text>
 
   <rect x="760" y="365" width="70" height="40" fill="#e0e7ff" stroke="#d1d5db" stroke-width="1"/>
   <text x="795" y="387" class="count-number" style="fill:#3730a3;">1</text>
@@ -227,7 +227,7 @@
   <text x="410" y="577" class="table-cell">delivery_closeout</text>
   <text x="410" y="590" class="table-cell">observability</text>
   <text x="410" y="603" class="table-cell">dashboard_read_model</text>
-  <text x="410" y="613" class="tag-highlight">Human-in-loop强制确认</text>
+  <text x="410" y="613" class="tag-highlight">Human-in-the-loop强制确认</text>
 
   <rect x="760" y="560" width="70" height="55" fill="#d1fae5" stroke="#d1d5db" stroke-width="1"/>
   <text x="795" y="592" class="count-number" style="fill:#047857;">3</text>
@@ -313,7 +313,7 @@
   <text x="70" y="1015" class="legend-text">1. Main Agent Control Plane: 跨层编排、状态管理、决策路由、人机协作</text>
   <text x="70" y="1035" class="legend-text">2. Controlled RequirementRecord Store: 契约矩阵持久化、Trace证据存储、状态快照</text>
   <text x="70" y="1055" class="legend-text">3. 六大心智模型是内部概念，包含16个内部子系统，用户不直接操作</text>
-  <text x="70" y="1075" class="legend-text">4. 人机协作强制确认点：需求确认 → 架构确认 → 交付确认 (3个Human-in-loop)</text>
+  <text x="70" y="1075" class="legend-text">4. 人机协作强制确认点：需求确认 → 架构确认 → 交付确认 (3个Human-in-the-loop)</text>
   <text x="70" y="1095" class="legend-text">5. 16个子系统分布：需求确认(2) + 架构确认(1) + 实施准备(1) + 执行闭合(3) + 审计复核(6) + 交付确认(3)</text>
   <text x="70" y="1115" class="legend-text">6. 审计复核(6个子系统)暴露CLI：score, check-score, coach, sft-extract, scores</text>
   <text x="70" y="1135" class="legend-text">7. 交付确认(3个子系统)暴露CLI：dashboard, dashboard-status</text>
