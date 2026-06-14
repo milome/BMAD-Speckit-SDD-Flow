@@ -2,13 +2,7 @@
 
 ---
 name: bmad-story-assistant
-description: |
-  BMAD Story Assistant: Execute the complete Create Story → Audit → Dev Story → Post-Implementation Audit workflow by Epic/Story number.
-  Phase zero: Automatically detect and patch party-mode display name optimization in new projects/worktree (if _bmad exists and is not optimized).
-  Use subagent to perform tasks; the audit step prioritizes scheduling code-reviewer (.codex/agents/ or .codex/agents/) through Codex worker dispatch, and falls back to Codex worker adapter general-purpose if it fails.
-  Follow ralph-method, TDD traffic lights, speckit-workflow constraints. The main agent is prohibited from directly modifying the production code.
-  **It is prohibited to skip party-mode because Epic/Story already exists**: Create Story can be skipped only when the user explicitly says "party-mode has been passed and the audit has passed"; otherwise Create Story must be executed. Before entering Codex party-mode, the main Agent must show `20 / 50 / 100`, wait for the user's choice, complete the pre-launch self-check, and let the host inject `Party Mode Session Bootstrap (JSON)` on `SubagentStart`; party-mode still runs for at least 100 rounds when it comes to solution selection or design decisions.
-  Applicable scenarios: The user provides Epic and Story numbers (e.g. 4 and 1 for Story 4.1); produce the Story document, pass audit, run Dev Story, and complete post-implementation audit. Deliverables and subagent copy-paste prompts stay in Chinese per workflow and parser rules.
+description: Use when the user provides Epic/Story numbers such as Story 4.1 or asks to create, implement, audit, or close out a BMAD story. Triggers include Create Story, Story audit, Dev Story, post-implementation audit, closeout approved, party-mode tier selection 20/50/100, ralph-method, TDD traffic lights, Codex worker/code-reviewer dispatch, handoff/state/score writing, commit gate, Chinese deliverables, and copy-paste prompts.
 ---
 
 <!-- CLOSEOUT-APPROVED-CANONICAL -->
