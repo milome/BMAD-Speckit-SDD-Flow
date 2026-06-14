@@ -185,6 +185,22 @@ program
   .action((ai) => loadCommand('../src/commands/add-agent', 'addAgentCommand')(ai, { cwd: process.cwd() }));
 
 program
+  .command('large-doc')
+  .description('Create, validate, safely promote, and clean up large generated document draft sessions')
+  .option('--json', 'Print machine-readable JSON')
+  .allowUnknownOption(true)
+  .allowExcessArguments(true)
+  .action((opts, command) =>
+    runCommandPromise(
+      'large-doc',
+      loadCommand('../src/commands/large-doc', 'largeDocCommand')(
+        opts,
+        forwardedArgsFromCommand(command)
+      )
+    )
+  );
+
+program
   .command('feedback')
   .description('Show feedback entry and full-flow compatible AI list')
   .action(() => loadCommand('../src/commands/feedback', 'feedbackCommand')());

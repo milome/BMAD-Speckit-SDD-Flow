@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const yaml = require('./load-js-yaml');
+const { safeWriteJson, safeWriteText } = require('../../../../packages/bmad-speckit/src/utils/large-document-writer');
 const {
   classifyConfirmationDrift,
   STALE_BOOKKEEPING_REPAIR_REQUIRED,
@@ -147,12 +148,12 @@ function readOptionalJson(file) {
 
 function writeJson(file, value) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+  safeWriteJson(file, value, { mode: 'upsert' });
 }
 
 function writeText(file, value) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, value, 'utf8');
+  safeWriteText(file, value, { mode: 'upsert' });
 }
 
 function displayPath(file) {
