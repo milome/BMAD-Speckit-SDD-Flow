@@ -56,6 +56,12 @@ If the gate reports findings, stop normal implementation. Classify affected file
 - Long-run soak may still be produced as optional observability evidence, but missing, short, heartbeat-only, or stale soak evidence must not by itself block completion language.
 - Do not use wall-clock heartbeat soak, empty timer, mock journey, contract fixture, deterministic replay, or background idle process to claim stronger runtime reliability than was actually proven.
 
+## Large Document Writer Routing
+
+- generic large document generation uses `large-document-writer`.
+- requirements source document generation uses `requirements-contract-authoring`.
+- new root `scripts/` runtime helpers are forbidden.
+
 ## User Rules
 
 - Multiple Roles: 多角色视角分析和评审

@@ -14,22 +14,44 @@ const SHARED_DIR = path.join(ROOT, '_bmad', 'shared', 'goal-contract');
 const TEMPLATE_PATH = path.join(SHARED_DIR, 'goal-execution-contract-template.md');
 const PROFILE_PATH = path.join(SHARED_DIR, 'goal-contract-profile.json');
 const LOCK_PATH = path.join(SHARED_DIR, 'goal-contract-profile.lock.json');
-const SKILL_REFERENCE_TEMPLATE = path.join(
-  ROOT,
-  '_bmad',
-  'skills',
-  'goal-execution-contract-generator',
-  'references',
-  'goal-execution-contract-template.md'
-);
-const SKILL_REFERENCE_PROFILE = path.join(
-  ROOT,
-  '_bmad',
-  'skills',
-  'goal-execution-contract-generator',
-  'references',
-  'goal-contract-profile.json'
-);
+const SKILL_REFERENCE_PAIRS = [
+  {
+    template: path.join(
+      ROOT,
+      '_bmad',
+      'skills',
+      'goal-execution-contract-generator',
+      'references',
+      'goal-execution-contract-template.md'
+    ),
+    profile: path.join(
+      ROOT,
+      '_bmad',
+      'skills',
+      'goal-execution-contract-generator',
+      'references',
+      'goal-contract-profile.json'
+    ),
+  },
+  {
+    template: path.join(
+      ROOT,
+      '.codex',
+      'skills',
+      'goal-execution-contract-generator',
+      'references',
+      'goal-execution-contract-template.md'
+    ),
+    profile: path.join(
+      ROOT,
+      '.codex',
+      'skills',
+      'goal-execution-contract-generator',
+      'references',
+      'goal-contract-profile.json'
+    ),
+  },
+];
 
 function readJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
@@ -118,13 +140,22 @@ function verifyGoalContractProfile({
   }
 
   if (checkSkillReference) {
-    compareFiles(templatePath, SKILL_REFERENCE_TEMPLATE, issues, 'SKILL_REFERENCE_TEMPLATE');
-    compareFiles(profilePath, SKILL_REFERENCE_PROFILE, issues, 'SKILL_REFERENCE_PROFILE');
+    for (const pair of SKILL_REFERENCE_PAIRS) {
+      compareFiles(templatePath, pair.template, issues, 'SKILL_REFERENCE_TEMPLATE');
+      compareFiles(profilePath, pair.profile, issues, 'SKILL_REFERENCE_PROFILE');
+    }
   }
+  const checkedReferences = checkSkillReference
+    ? SKILL_REFERENCE_PAIRS.flatMap((pair) => [
+        normalizeRepoPath(pair.template),
+        normalizeRepoPath(pair.profile),
+      ])
+    : [];
 
   return {
     ok: issues.length === 0,
     issues,
+    checkedReferences,
     templateHash,
     profileHash,
     profileVersion: profile.profileVersion,

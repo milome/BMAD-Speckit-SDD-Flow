@@ -22,6 +22,14 @@ const CANONICAL_PROFILE = path.join(
   'goal-contract',
   'goal-contract-profile.json'
 );
+const VERIFY_GOAL_PROFILE = path.join(
+  ROOT,
+  '_bmad',
+  'shared',
+  'goal-contract',
+  'scripts',
+  'verify-goal-contract-profile.js'
+);
 
 let tempDir: string;
 let canonicalProfile: string;
@@ -132,6 +140,41 @@ describe('req-trace shared goal contract profile integration', () => {
     expect(goalDocument).toContain('goalContractProfileHash:');
     expect(goalDocument).toContain('model_packet.json is the machine-readable execution authority');
     expect(goalDocument).toContain('goal_execution.md is not execution authority');
+  });
+
+  it('records artifact hashes from final bytes after safe writer integration', () => {
+    const result = runNativeGoal();
+    expect(result.status).toBe(0);
+    const receipt = JSON.parse(
+      fs.readFileSync(path.join(result.outDir, 'audit_receipt.json'), 'utf8')
+    );
+    expect(receipt.outputHashes.modelPacketHash).toBe(
+      sha256(fs.readFileSync(path.join(result.outDir, 'model_packet.json'), 'utf8'))
+    );
+    expect(receipt.outputHashes.humanPromptHash).toBe(
+      sha256(fs.readFileSync(path.join(result.outDir, 'human_prompt.txt'), 'utf8'))
+    );
+    expect(receipt.outputHashes.goalDocumentHash).toBe(
+      sha256(fs.readFileSync(path.join(result.outDir, 'goal_execution.md'), 'utf8'))
+    );
+  });
+
+  it('verifies both _bmad and .codex goal contract reference projections', () => {
+    const stdout = execFileSync(process.execPath, [VERIFY_GOAL_PROFILE], {
+      cwd: ROOT,
+      encoding: 'utf8',
+    });
+    const result = JSON.parse(stdout);
+    expect(result.ok).toBe(true);
+    expect(result.issues).toEqual([]);
+    expect(result.checkedReferences).toEqual(
+      expect.arrayContaining([
+        '_bmad/skills/goal-execution-contract-generator/references/goal-execution-contract-template.md',
+        '_bmad/skills/goal-execution-contract-generator/references/goal-contract-profile.json',
+        '.codex/skills/goal-execution-contract-generator/references/goal-execution-contract-template.md',
+        '.codex/skills/goal-execution-contract-generator/references/goal-contract-profile.json',
+      ])
+    );
   });
 
   it('blocks when the shared profile is missing', () => {

@@ -2,6 +2,7 @@
 /* eslint-disable no-console */
 const fs = require('node:fs');
 const path = require('node:path');
+const { safeWriteText } = require('../../../../packages/bmad-speckit/src/utils/large-document-writer');
 const {
   ROOT,
   extractSections,
@@ -141,9 +142,9 @@ function main(argv = process.argv.slice(2)) {
   const profile = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
   const slotData = slotDataPath ? JSON.parse(fs.readFileSync(slotDataPath, 'utf8')) : {};
   const result = renderGoalContract({ templateText, profile, slotData, validateHashes: args['no-hash-check'] !== 'true' });
-  if (outPath) fs.writeFileSync(outPath, result.document, 'utf8');
+  const writeReceipt = outPath ? safeWriteText(outPath, result.document, { mode: 'upsert' }) : null;
   process.stdout.write(
-    `${JSON.stringify({ documentPath: outPath ? normalizeRepoPath(outPath) : null, audit: result.audit }, null, 2)}\n`
+    `${JSON.stringify({ documentPath: outPath ? normalizeRepoPath(outPath) : null, audit: result.audit, writeReceipt }, null, 2)}\n`
   );
 }
 

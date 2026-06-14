@@ -210,3 +210,9 @@ Report:
 - docs-review rounds and whether 3 consecutive no-gap rounds were achieved.
 - Encoding gate result.
 - Any residual risks or blocked conditions.
+
+## Large Document Writer Integration
+
+- Deterministic renderer output uses `safeWriteText()` for final document persistence.
+- For LLM-authored or stream-risk contract bodies that exceed the large-document threshold, use a `large-document-writer` draft session before final promotion.
+- `large-document-writer` must not generate goal tasks, acceptance IDs, trace rows, commands, stop conditions, docs-review fixes, or goal contract semantic content.

@@ -10,6 +10,30 @@ const {
   PROJECTION_REFRESH_REQUIRED,
 } = require('../../requirements-contract-authoring/scripts/confirmation_drift_classifier');
 
+function requireLargeDocumentWriter() {
+  const candidates = [];
+  try {
+    candidates.push(require.resolve('bmad-speckit/src/utils/large-document-writer', {
+      paths: [process.cwd(), __dirname],
+    }));
+  } catch {
+    // Local source and copied-script test runs use explicit filesystem candidates below.
+  }
+  candidates.push(
+    path.resolve(process.cwd(), 'packages', 'bmad-speckit', 'src', 'utils', 'large-document-writer'),
+    path.resolve(process.cwd(), 'node_modules', 'bmad-speckit', 'src', 'utils', 'large-document-writer'),
+    path.resolve(__dirname, '..', '..', '..', '..', 'packages', 'bmad-speckit', 'src', 'utils', 'large-document-writer'),
+    path.resolve(__dirname, '..', '..', '..', '..', 'src', 'utils', 'large-document-writer')
+  );
+  const found = candidates.find((candidate) => fs.existsSync(candidate) || fs.existsSync(`${candidate}.js`));
+  if (!found) {
+    throw new Error(`large-document-writer helper not found. Checked: ${candidates.join(', ')}`);
+  }
+  return require(found);
+}
+
+const { safeWriteJson, safeWriteText } = requireLargeDocumentWriter();
+
 const SKILL_LINE = '$executing-plans $verification-before-completion';
 const COMMAND_PREFIXES = [
   'npm ',
@@ -147,12 +171,12 @@ function readOptionalJson(file) {
 
 function writeJson(file, value) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+  safeWriteJson(file, value, { mode: 'upsert' });
 }
 
 function writeText(file, value) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, value, 'utf8');
+  safeWriteText(file, value, { mode: 'upsert' });
 }
 
 function displayPath(file) {

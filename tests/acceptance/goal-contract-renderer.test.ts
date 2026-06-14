@@ -1,4 +1,6 @@
 import * as fs from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -202,5 +204,33 @@ describe('shared goal contract renderer', () => {
         }),
       })
     ).toThrow(/GOAL_CONTRACT_INCOMPLETE/);
+  });
+
+  it('writes rendered documents through safe writer and reports writeReceipt', () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'goal-contract-render-'));
+    const slotDataPath = path.join(tempDir, 'slots.json');
+    const outPath = path.join(tempDir, 'goal.md');
+    fs.writeFileSync(slotDataPath, `${JSON.stringify(slotData(), null, 2)}\n`, 'utf8');
+
+    const stdout = execFileSync(
+      process.execPath,
+      [
+        path.join(ROOT, '_bmad', 'shared', 'goal-contract', 'scripts', 'render-goal-contract.js'),
+        '--slot-data',
+        slotDataPath,
+        '--out',
+        outPath,
+      ],
+      { cwd: ROOT, encoding: 'utf8' }
+    );
+
+    const receipt = JSON.parse(stdout);
+    expect(receipt.writeReceipt).toMatchObject({
+      schemaVersion: 'large-document-writer-safe-write/v1',
+      targetPath: outPath,
+      mode: 'upsert',
+    });
+    expect(receipt.writeReceipt.finalHash).toMatch(/^sha256:/);
+    expect(fs.readFileSync(outPath, 'utf8')).toContain('The Markdown template is the human canonical contract source.');
   });
 });

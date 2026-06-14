@@ -32,6 +32,9 @@ function run(cmd: string, cwd: string): string {
     maxBuffer: 64 * 1024 * 1024,
     env: {
       ...process.env,
+      GIT_CONFIG_COUNT: '1',
+      GIT_CONFIG_KEY_0: 'safe.directory',
+      GIT_CONFIG_VALUE_0: PKG_ROOT,
       npm_config_loglevel: 'error',
     },
   });
@@ -39,6 +42,12 @@ function run(cmd: string, cwd: string): string {
 
 function findFirstExistingPath(candidates: string[]): string | null {
   return candidates.find((candidate) => existsSync(candidate)) ?? null;
+}
+
+function expectFirstExistingPath(candidates: string[]): string {
+  const found = findFirstExistingPath(candidates);
+  expect(found, `Expected one existing path from: ${candidates.join(', ')}`).toBeTruthy();
+  return found!;
 }
 
 describe('npm pack root package → clean install → CLI', () => {
@@ -67,6 +76,44 @@ describe('npm pack root package → clean install → CLI', () => {
       expect(ver).toContain(ROOT_PACKAGE_VERSION);
 
       const rootInstallDir = join(consumer, 'node_modules', 'bmad-speckit-sdd-flow');
+      expect(
+        existsSync(join(rootInstallDir, '_bmad', 'skills', 'large-document-writer', 'SKILL.md'))
+      ).toBe(true);
+      expect(
+        existsSync(
+          join(rootInstallDir, '_bmad', 'skills', 'large-document-writer', 'agents', 'openai.yaml')
+        )
+      ).toBe(true);
+      expect(
+        expectFirstExistingPath([
+          join(rootInstallDir, 'node_modules', 'bmad-speckit', 'src', 'commands', 'large-doc.js'),
+          join(rootInstallDir, 'packages', 'bmad-speckit', 'src', 'commands', 'large-doc.js'),
+          join(rootInstallDir, 'src', 'commands', 'large-doc.js'),
+        ])
+      ).toBeTruthy();
+      expectFirstExistingPath([
+        join(
+          rootInstallDir,
+          'node_modules',
+          'bmad-speckit',
+          'src',
+          'utils',
+          'large-document-writer',
+          'index.js'
+        ),
+        join(
+          rootInstallDir,
+          'packages',
+          'bmad-speckit',
+          'src',
+          'utils',
+          'large-document-writer',
+          'index.js'
+        ),
+        join(rootInstallDir, 'src', 'utils', 'large-document-writer', 'index.js'),
+      ]);
+      expect(run('npx bmad-speckit large-doc --help', consumer)).toContain('large-doc');
+      expect(existsSync(join(consumer, 'scripts'))).toBe(false);
       const installedPromoteScript = join(
         rootInstallDir,
         '_bmad',

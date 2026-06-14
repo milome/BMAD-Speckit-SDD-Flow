@@ -308,6 +308,12 @@ describe('install to consumer ->CLI acceptance', () => {
       expect(existsSync(join(target, 'scripts', 'emit-runtime-policy.cjs'))).toBe(false);
       expect(existsSync(join(target, 'scripts', 'start-runtime-dashboard-server.cjs'))).toBe(false);
       expect(existsSync(join(target, 'scripts'))).toBe(false);
+      expect(existsSync(join(target, '_bmad', 'skills', 'large-document-writer', 'SKILL.md'))).toBe(
+        true
+      );
+      expect(
+        existsSync(join(target, '_bmad', 'skills', 'large-document-writer', 'agents', 'openai.yaml'))
+      ).toBe(true);
       expect(
         existsSync(join(target, '_bmad-output', 'config', 'bmad-speckit-install-manifest.json'))
       ).toBe(true);
@@ -327,6 +333,8 @@ describe('install to consumer ->CLI acceptance', () => {
 
       const out = run('npx bmad-speckit check', target);
       expect(out).toMatch(/Check OK|OK/i);
+      expect(run('npx bmad-speckit large-doc --help', target)).toContain('large-doc');
+      expect(existsSync(join(target, 'scripts'))).toBe(false);
 
       const promoteScript = join(
         target,

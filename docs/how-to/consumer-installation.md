@@ -53,6 +53,7 @@ npx --no-install bmad-speckit init . --ai claude,cursor-agent,codex --yes --forc
 npx --no-install bmad-speckit check
 npx --no-install bmad-speckit dashboard-status
 npx --no-install bmad-speckit bmads
+npx --no-install bmad-speckit large-doc --help
 ```
 
 如果你验证的是本地 CI artifact 或 release candidate，把第一条安装命令换成：
@@ -68,6 +69,7 @@ npm install --save-dev --ignore-scripts .\bmad-speckit-sdd-flow-<version>.tgz
 - 会更新 lockfile
 - 会把后续生成 skills 需要的 runtime 固定到消费项目本地
 - 不会在安装依赖阶段运行 package lifecycle scripts
+- 会提供 `bmad-speckit large-doc`，用于消费项目里的大文档 chunk draft、恢复、验证、安全 promote 和 cleanup
 
 如果目标是已有业务应用仓库，这应当是 off-repo 场景下的最高优先级默认方案。它的核心验收标准是：在没有 clone `BMAD-Speckit-SDD-Flow` 的机器上，只安装发布包后，公开 CLI/runtime 仍能运行。
 
@@ -175,6 +177,7 @@ npx --no-install bmad-speckit init . --ai claude,cursor-agent,codex --yes --forc
 npx --no-install bmad-speckit check
 npx --no-install bmad-speckit dashboard-status
 npx --no-install bmad-speckit bmads
+npx --no-install bmad-speckit large-doc --help
 ```
 
 ### 路径 B：推荐，tgz 项目本地安装
@@ -188,6 +191,7 @@ npx --no-install bmad-speckit init . --ai claude,cursor-agent,codex --yes --forc
 npx --no-install bmad-speckit check
 npx --no-install bmad-speckit dashboard-status
 npx --no-install bmad-speckit bmads
+npx --no-install bmad-speckit large-doc --help
 ```
 
 这条路径会修改 `node_modules`、`package.json` 和 lockfile，适合在真实消费项目中验证 CI artifact 或 release candidate。
@@ -262,9 +266,12 @@ pwsh _bmad\speckit\scripts\powershell\check-prerequisites.ps1 -PathsOnly
 
 # 4. CLI 是否可用
 npx --no-install bmad-speckit check
+npx --no-install bmad-speckit large-doc --help
 
 # 5. installed host assets and internal control plane availability
 Test-Path .codex\skills
+Test-Path _bmad\skills\large-document-writer\SKILL.md
+Test-Path _bmad\skills\large-document-writer\agents\openai.yaml
 Test-Path .claude\hooks\runtime-policy-inject.cjs
 Test-Path .claude\hooks\pre-continue-check.cjs
 Test-Path .cursor\hooks\runtime-policy-inject.cjs
@@ -277,7 +284,7 @@ node -e "const fs=require('node:fs'); const manifest='_bmad-output/config/bmad-s
 - 第 1 步必须证明项目本地依赖和 `.bin` shim 都存在
 - 第 2 步必须无报错
 - 第 3、4 步必须成功
-- 第 5 步所有 `Test-Path` 都应返回 `True`，manifest 检查必须包含 `claude-code`、`cursor`、`codex`
+- 第 5 步所有 `Test-Path` 都应返回 `True`，包括 `_bmad\skills\large-document-writer\SKILL.md` 与其 OpenAI route 文件；manifest 检查必须包含 `claude-code`、`cursor`、`codex`
 - 普通消费用户应在宿主会话中使用 `$bmad-speckit`、`/bmad-speckit` 或 `bmad-speckit` 激活主控
 
 安装验证、CI、debug 或 no-skill fallback 场景可以直接验证 stable package-local Main Agent runtime：

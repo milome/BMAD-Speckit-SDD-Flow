@@ -1,0 +1,3 @@
+display_name: Large Document Writer
+short_description: Safely generate, recover, validate, promote, and clean up large text documents.
+default_prompt: Use $large-document-writer for generic large generated text documents that need chunked drafting, interruption recovery, validation, safe final promotion, and receipt evidence.
