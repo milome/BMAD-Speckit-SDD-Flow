@@ -29,12 +29,10 @@ function classifyText(text, headingPath) {
   return classifyHeading(headingPath);
 }
 
-function summarize(text) {
-  return normalizeLineEndings(text).replace(/\s+/gu, ' ').trim().slice(0, 180);
-}
-
 function makeObligation(index, base, sourcePlanHash) {
   const text = normalizeLineEndings(base.text).trim();
+  const textHash = sha256Text(text);
+  const sourceRef = `${base.sourcePlanPath}:${base.lineStart}-${base.lineEnd}`;
   return {
     id: `SRC${String(index + 1).padStart(3, '0')}`,
     kind: base.kind,
@@ -43,8 +41,8 @@ function makeObligation(index, base, sourcePlanHash) {
     lineStart: base.lineStart,
     lineEnd: base.lineEnd,
     headingPath: base.headingPath,
-    textHash: sha256Text(text),
-    summary: summarize(text || base.headingPath.at(-1) || base.kind),
+    textHash,
+    summary: `sourceRef=${sourceRef}; sourceKind=${base.kind}; sourceTextHash=${textHash}`,
     required: true,
   };
 }

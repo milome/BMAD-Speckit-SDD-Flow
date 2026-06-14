@@ -1,4 +1,3 @@
-const path = require('node:path');
 const { buildSourceCoverageMatrix, validateSourceCoverage } = require('./source-coverage-matrix');
 
 function repoPath(filePath) {
@@ -69,8 +68,8 @@ function buildImplementationTasks(sourceObligations) {
         `- ${obligation.sourcePlanPath}`,
         '',
         '**Steps:**',
-        `- Implement the behavior described by ${obligation.id}: ${obligation.summary}.`,
-        `- Keep generated semantic rows linked to ${obligation.id}.`,
+        `- Implement ${obligation.id} using sourceRef=${obligation.sourcePlanPath}:${obligation.lineStart}-${obligation.lineEnd} and sourceTextHash=${obligation.textHash}.`,
+        `- Keep generated semantic rows linked to ${obligation.id}, ${taskId}, ${acceptanceId}, ${commandId}, and ${obligation.evidenceRefs[0]}.`,
         '',
         '**Validation:**',
         `- COMMAND ${commandId} MUST prove ${obligation.id} remains mapped to ${taskId} and ${acceptanceId}.`,
@@ -92,7 +91,7 @@ function buildAcceptance(sourceObligations) {
 
 function buildTrace(sourceObligations) {
   return [
-    '| Acceptance ID | Task IDs | Evidence command or artifact | Pass condition |',
+    '| Acceptance ID | Task IDs | Evidence command and artifact | Pass condition |',
     '| --- | --- | --- | --- |',
     ...sourceObligations.map((obligation) => `| ${obligation.acceptanceRefs[0]} | ${obligation.goalTaskRefs[0]} | ${obligation.commandRefs[0]}; ${obligation.evidenceRefs[0]} | ${obligation.id} has task, acceptance, command, and evidence mappings. |`),
   ].join('\n');
@@ -147,7 +146,7 @@ function buildSlotData({ source, profile, outPath, coverageReceiptPath, generati
     ].join('\n'),
     rootCause: [
       'The source plan requires source-plan-faithful goal execution generation with deterministic coverage proof.',
-      'The generator must fail closed when any source obligation lacks generated task, acceptance, command, or evidence mapping.',
+      'The generator must fail closed when any source obligation lacks generated task mapping, acceptance mapping, command mapping, evidence mapping.',
     ].join('\n\n'),
     domainAddenda: [
       '### Source coverage contract',

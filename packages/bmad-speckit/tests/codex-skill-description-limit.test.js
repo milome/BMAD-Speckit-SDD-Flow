@@ -78,36 +78,40 @@ describe('Codex skill description limit', () => {
   it('keeps every materialized Codex SKILL.md description within the 1024 character platform limit', () => {
     const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'codex-skill-limit-'));
 
-    const result = spawnSync(process.execPath, [INIT_TO_ROOT, projectRoot, '--agent', 'codex'], {
-      cwd: ROOT,
-      encoding: 'utf8',
-    });
+    try {
+      const result = spawnSync(process.execPath, [INIT_TO_ROOT, projectRoot, '--agent', 'codex'], {
+        cwd: ROOT,
+        encoding: 'utf8',
+      });
 
-    assert.strictEqual(
-      result.status,
-      0,
-      `init-to-root should succeed\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`
-    );
+      assert.strictEqual(
+        result.status,
+        0,
+        `init-to-root should succeed\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`
+      );
 
-    const skillRoot = path.join(projectRoot, '.codex', 'skills');
-    const overLimit = [];
-    const missingFragments = [];
-    for (const skillPath of collectSkillFiles(skillRoot)) {
-      const description = readSkillDescription(skillPath);
-      const skill = path.relative(skillRoot, path.dirname(skillPath)).replace(/\\/gu, '/');
-      if (description.length > MAX_CODEX_DESCRIPTION_LENGTH) {
-        overLimit.push({
-          skill,
-          length: description.length,
-        });
-      }
-      for (const fragment of REQUIRED_DESCRIPTION_FRAGMENTS[skill] || []) {
-        if (!description.includes(fragment)) {
-          missingFragments.push({ skill, fragment });
+      const skillRoot = path.join(projectRoot, '.codex', 'skills');
+      const overLimit = [];
+      const missingFragments = [];
+      for (const skillPath of collectSkillFiles(skillRoot)) {
+        const description = readSkillDescription(skillPath);
+        const skill = path.relative(skillRoot, path.dirname(skillPath)).replace(/\\/gu, '/');
+        if (description.length > MAX_CODEX_DESCRIPTION_LENGTH) {
+          overLimit.push({
+            skill,
+            length: description.length,
+          });
+        }
+        for (const fragment of REQUIRED_DESCRIPTION_FRAGMENTS[skill] || []) {
+          if (!description.includes(fragment)) {
+            missingFragments.push({ skill, fragment });
+          }
         }
       }
+      assert.deepStrictEqual(overLimit, []);
+      assert.deepStrictEqual(missingFragments, []);
+    } finally {
+      fs.rmSync(projectRoot, { recursive: true, force: true });
     }
-    assert.deepStrictEqual(overLimit, []);
-    assert.deepStrictEqual(missingFragments, []);
   });
 });

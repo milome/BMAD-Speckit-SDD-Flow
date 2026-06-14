@@ -54,6 +54,10 @@ function writeSourcePlan(root) {
       '',
       'This repair blocks release until coverage passes.',
       '',
+      '## Ambiguity Regression',
+      '',
+      '- This optional source row includes 可选 and 或 in source prose.',
+      '',
     ].join('\n'),
     'utf8'
   );
@@ -89,6 +93,8 @@ describe('bmad-speckit goal-contract command', () => {
     assert.match(goalText, /\| SRC001 \|/u);
     assert.match(goalText, /coverage receipt contains SRC001/u);
     assert.doesNotMatch(goalText, /rg -n -F 'SRC001' -- '.*source-plan\.md'/u);
+    assert.doesNotMatch(goalText, /optional|可选|或/u);
+    assert.match(goalText, /sourceTextHash=sha256:[0-9a-f]{64}/u);
 
     const coverage = JSON.parse(fs.readFileSync(payload.coverageReceiptPath, 'utf8'));
     const generation = JSON.parse(fs.readFileSync(payload.generationReceiptPath, 'utf8'));

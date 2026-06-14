@@ -60,6 +60,8 @@ describe('goal-contract source obligation extractor', () => {
     for (const obligation of result.sourceObligations) {
       assert.match(obligation.textHash, /^sha256:[0-9a-f]{64}$/u);
       assert.equal(obligation.sourcePlanHash, result.sourcePlanHash);
+      assert.match(obligation.summary, /^sourceRef=docs\/plans\/source-plan\.md:\d+-\d+; sourceKind=[a-z_]+; sourceTextHash=sha256:[0-9a-f]{64}$/u);
+      assert.doesNotMatch(obligation.summary, /\boptional\b|可选|或/u);
       assert.ok(obligation.lineStart >= 1);
       assert.ok(obligation.lineEnd >= obligation.lineStart);
       assert.equal(obligation.required, true);

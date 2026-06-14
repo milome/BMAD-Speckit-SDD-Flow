@@ -23,14 +23,14 @@ The full execution contract is this document, not the command text.
 ## Contract Freeze Rules
 
 - `/goal` must not rewrite this contract.
-- `/goal` must not replace this contract with a different task list, acceptance matrix, completion gate, or authority model.
+- `/goal` must not replace this contract with a different task list, acceptance matrix, completion gate, authority model.
 - `/goal` must not convert this template into a JSON-generates-Markdown design.
 - `/goal` must not convert a consumer compiler into a hardcoded local Markdown string that bypasses shared template slots.
 - If this contract is incomplete, `/goal` must stop with `contract_amendment_required` and list the missing fields.
 - If acceptance criteria are insufficient, `/goal` must stop with `contract_amendment_required`; it must not silently add stricter acceptance criteria while executing.
 - If a task requires files outside its declared write scope, `/goal` must stop with `scope_amendment_required` unless this contract explicitly allows scope expansion.
 - If a requirement semantic decision is missing, `/goal` must stop with `semantic_decision_required`.
-- If a validation command is unavailable, ambiguous, and not produced by a declared earlier or current task in this contract, `/goal` must stop with `validation_contract_required`.
+- If a validation command is unavailable, ambiguous, and not produced by a declared earlier task and not produced by the current task in this contract, `/goal` must stop with `validation_contract_required`.
 
 ## Contract Completeness Gate
 
@@ -55,20 +55,20 @@ Before editing files, verify the frozen front matter has no unresolved placehold
 
 Source-plan contracts require front matter fields `sourcePlanHash`, `coverageReceiptPath`, and `unmappedSourceObligations: 0`.
 
-Fail closed when any required section, field, task ID, acceptance ID, evidence command, matrix row, slot, or invariant fragment is missing.
+Fail closed when any required section, field, task ID, acceptance ID, evidence command, matrix row, slot, invariant fragment is missing.
 
 ## Non-Negotiable Execution Rules
 
 - Use the shell required by the host environment and repository rules.
 - Use `apply_patch` for manual code and documentation edits.
-- Run the project encoding gate before and after Markdown, JSON, skill, command, or generated-surface edits when the repository provides one.
+- Run the project encoding gate before and after Markdown, JSON, skill, command, generated-surface edits when the repository provides one.
 - Inspect `git status --short` before editing and do not revert unrelated dirty worktree changes.
-- Do not mark a task complete without fresh command output or direct file evidence.
+- Do not mark a task complete without fresh command output and direct file evidence.
 - Do not mark an acceptance item complete without evidence that directly proves that item.
 - Run the regression tests associated with every changed file and keep fresh passing evidence before claiming completion.
-- Do not claim completion from generated prompts, generated goal documents, audit receipts, stdout, exit code, dashboards, score records, or audit prose alone.
+- Do not claim completion from generated prompts, generated goal documents, audit receipts, stdout, exit code, dashboards, score records, audit prose alone.
 - Do not weaken the declared machine-readable authority.
-- Do not hardcode absolute skill install paths into generated templates, profile files, compiler output, or tests.
+- Do not hardcode absolute skill install paths into generated templates, profile files, compiler output, tests.
 
 ## Authority Model
 
@@ -82,7 +82,7 @@ Fail closed when any required section, field, task ID, acceptance ID, evidence c
 
 ## Domain-Specific Contract Addenda
 
-Use this section to bind any domain-specific classifier, state machine, schema, controlled writer, prompt/compiler output, renderer/report surface, gate, audit, score, or other machine contract.
+Use this section to bind any domain-specific classifier, state machine, schema, controlled writer, prompt/compiler output, renderer/report surface, gate, audit, score, additional machine contract.
 
 <!-- goal-slot:domainAddenda required dynamic=domainAddenda -->
 <!-- /goal-slot:domainAddenda -->
