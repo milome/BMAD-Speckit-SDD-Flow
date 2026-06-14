@@ -26,7 +26,23 @@ function writeManifest(sessionDir, manifest) {
   return manifest;
 }
 
+function validateInitOptions(options) {
+  if (!options || typeof options !== 'object') {
+    block('INVALID_INIT_OPTIONS', { reason: 'options must be an object' });
+  }
+  if (typeof options.targetPath !== 'string' || options.targetPath.trim() === '') {
+    block('INVALID_TARGET_PATH', { targetPath: options.targetPath ?? null });
+  }
+  if (
+    options.sessionDir !== undefined &&
+    (typeof options.sessionDir !== 'string' || options.sessionDir.trim() === '')
+  ) {
+    block('INVALID_SESSION_DIR', { sessionDir: options.sessionDir ?? null });
+  }
+}
+
 function initSession(options) {
+  validateInitOptions(options);
   const targetPath = path.resolve(options.targetPath);
   const sessionDir = path.resolve(options.sessionDir || defaultSessionDir(targetPath));
   const createdAt = now();

@@ -23,7 +23,7 @@ function getSessionStatus({ sessionDir }) {
   const lastCompleteChunkId = completedInPlan.at(-1) || null;
   const nextChunkId =
     manifest.chunkPlan.find((entry) => !state.completedChunks.includes(entry.chunkId))?.chunkId ||
-    String(Number(lastCompleteChunkId || '0') + 1).padStart(3, '0');
+    null;
 
   return {
     schemaVersion: 'large-document-writer-status/v1',
@@ -43,8 +43,16 @@ function promoteAssembly({ sessionDir }) {
   const manifest = readManifest(sessionDir);
   const paths = sessionPaths(sessionDir);
   if (!fs.existsSync(paths.assembledPath)) block('ASSEMBLY_VALIDATION_FAILED', { missingAssembly: paths.assembledPath });
-  readValidationReceipt(sessionDir);
   const text = fs.readFileSync(paths.assembledPath, 'utf8');
+  const validationReceipt = readValidationReceipt(sessionDir);
+  const currentAssemblyHash = sha256Text(text);
+  if (validationReceipt.assemblyHash !== currentAssemblyHash) {
+    block('ASSEMBLY_VALIDATION_FAILED', {
+      reason: 'stale_validation_receipt',
+      validatedHash: validationReceipt.assemblyHash,
+      currentHash: currentAssemblyHash,
+    });
+  }
   const writeReceipt = safeWriteText(manifest.targetPath, text, { mode: manifest.mode });
   const receipt = {
     sessionDir: path.resolve(sessionDir),
@@ -66,6 +74,9 @@ function cleanupSession({ sessionDir, policy = 'keep' }) {
   const manifest = readManifest(sessionDir);
   const paths = sessionPaths(sessionDir);
   if (!manifest.promoted || !manifest.finalHash) block('CLEANUP_BEFORE_PROMOTE', { sessionDir });
+  if (!fs.existsSync(manifest.targetPath)) {
+    block('PROMOTED_TARGET_MISSING', { targetPath: manifest.targetPath });
+  }
   if (sha256File(manifest.targetPath) !== manifest.finalHash) {
     block('PROMOTE_HASH_MISMATCH', { targetPath: manifest.targetPath });
   }

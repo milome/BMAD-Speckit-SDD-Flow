@@ -21,7 +21,10 @@ function has(args, name) {
 
 function parseChunkPlan(args) {
   return takeAll(args, '--chunk').map((value) => {
-    const [chunkId, sectionId] = value.split(':');
+    const [chunkId, sectionId, extra] = String(value).split(':');
+    if (!chunkId || !sectionId || extra !== undefined) {
+      throw new Error('--chunk must be chunkId:sectionId');
+    }
     return { chunkId, sectionId };
   });
 }
@@ -29,7 +32,10 @@ function parseChunkPlan(args) {
 function parseInteger(args, name) {
   const value = take(args, name);
   if (value === undefined) return undefined;
-  return Number.parseInt(value, 10);
+  if (!/^\d+$/u.test(String(value))) {
+    throw new Error(`${name} must be a non-negative integer`);
+  }
+  return Number(value);
 }
 
 function emitJson(value) {
@@ -62,8 +68,8 @@ function largeDocCommand(_opts = {}, forwardedArgs = []) {
       requiredFragments: takeAll(args, '--require-fragment'),
       forbiddenFragments: takeAll(args, '--forbidden-fragment'),
       allowPlaceholders: !has(args, '--no-placeholders'),
-      minBytes: parseInteger(args, '--min-bytes') || 0,
-      minLines: parseInteger(args, '--min-lines') || 0,
+      minBytes: parseInteger(args, '--min-bytes') ?? 0,
+      minLines: parseInteger(args, '--min-lines') ?? 0,
     });
   } else if (command === 'status') {
     result = writer.getSessionStatus({ sessionDir: requireValue(take(args, '--session'), '--session') });

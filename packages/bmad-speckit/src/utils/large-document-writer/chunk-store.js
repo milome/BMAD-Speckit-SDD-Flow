@@ -13,11 +13,19 @@ function markerRegex(chunkId, sectionId) {
   );
 }
 
+function assertSafeToken(name, value) {
+  if (typeof value !== 'string' || !/^[A-Za-z0-9._-]+$/u.test(value)) {
+    block('INVALID_TOKEN', { name, value });
+  }
+}
+
 function chunkPath(sessionDir, chunkId) {
+  assertSafeToken('chunkId', chunkId);
   return path.join(sessionPaths(sessionDir).chunksDir, `${chunkId}.md`);
 }
 
 function chunkReceiptPath(sessionDir, chunkId) {
+  assertSafeToken('chunkId', chunkId);
   return path.join(sessionPaths(sessionDir).receiptsDir, `${chunkId}.receipt.json`);
 }
 
@@ -28,6 +36,8 @@ function stripChunkMarkers(content, chunkId, sectionId) {
 }
 
 function addChunk({ sessionDir, chunkId, sectionId, content }) {
+  assertSafeToken('chunkId', chunkId);
+  assertSafeToken('sectionId', sectionId);
   const manifest = readManifest(sessionDir);
   const planEntry = manifest.chunkPlan.find((entry) => entry.chunkId === chunkId);
   if (!planEntry || planEntry.sectionId !== sectionId) block('CHUNK_MARKER_INVALID', { chunkId, sectionId });
@@ -51,6 +61,8 @@ function addChunk({ sessionDir, chunkId, sectionId, content }) {
 }
 
 function readChunkWithReceipt(sessionDir, entry) {
+  assertSafeToken('chunkId', entry.chunkId);
+  assertSafeToken('sectionId', entry.sectionId);
   const filePath = chunkPath(sessionDir, entry.chunkId);
   const receiptPath = chunkReceiptPath(sessionDir, entry.chunkId);
   if (!fs.existsSync(filePath) || !fs.existsSync(receiptPath)) {
@@ -73,6 +85,8 @@ function listChunkState(sessionDir) {
   const completedChunks = [];
 
   for (const entry of manifest.chunkPlan) {
+    assertSafeToken('chunkId', entry.chunkId);
+    assertSafeToken('sectionId', entry.sectionId);
     const filePath = chunkPath(sessionDir, entry.chunkId);
     const receiptPath = chunkReceiptPath(sessionDir, entry.chunkId);
     if (fs.existsSync(filePath) && !fs.existsSync(receiptPath)) {
@@ -102,6 +116,7 @@ function listChunkState(sessionDir) {
 
 module.exports = {
   addChunk,
+  assertSafeToken,
   chunkPath,
   chunkReceiptPath,
   listChunkState,

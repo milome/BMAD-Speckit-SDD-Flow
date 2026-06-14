@@ -1,5 +1,4 @@
 const fs = require('node:fs');
-const os = require('node:os');
 const path = require('node:path');
 const { block } = require('./errors');
 const { sha256File, sha256Text, stableStringify } = require('./receipts');

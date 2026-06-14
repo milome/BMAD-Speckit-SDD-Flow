@@ -12,12 +12,17 @@ function makeTempRoot() {
 }
 
 function runLargeDoc(args, options = {}) {
+  const result = runLargeDocRaw(args, options);
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  return JSON.parse(result.stdout);
+}
+
+function runLargeDocRaw(args, options = {}) {
   const result = spawnSync(process.execPath, [BIN, 'large-doc', ...args, '--json'], {
     cwd: options.cwd || path.join(__dirname, '..'),
     encoding: 'utf8',
   });
-  assert.equal(result.status, 0, result.stderr || result.stdout);
-  return JSON.parse(result.stdout);
+  return result;
 }
 
 function writeChunk(root, chunkId, sectionId, body) {
@@ -77,7 +82,7 @@ describe('bmad-speckit large-doc command', () => {
     const status = runLargeDoc(['status', '--session', init.sessionDir]);
     assert.equal(status.schemaVersion, 'large-document-writer-status/v1');
     assert.equal(status.lastCompleteChunkId, '001');
-    assert.equal(status.nextChunkId, '002');
+    assert.equal(status.nextChunkId, null);
 
     const assemble = runLargeDoc(['assemble', '--session', init.sessionDir]);
     assert.equal(assemble.schemaVersion, 'large-document-writer-assembly-receipt/v1');
@@ -113,5 +118,62 @@ describe('bmad-speckit large-doc command', () => {
 
     const status = runLargeDoc(['status', '--session', init.sessionDir]);
     assert.deepEqual(status.corruptChunks, ['001']);
+  });
+
+  it('rejects malformed chunk plans and integer thresholds', () => {
+    const root = makeTempRoot();
+    const target = path.join(root, 'target.md');
+
+    const malformedChunk = runLargeDocRaw([
+      'init',
+      '--target',
+      target,
+      '--mode',
+      'create',
+      '--chunk',
+      '001',
+    ]);
+    assert.notEqual(malformedChunk.status, 0);
+    assert.match(malformedChunk.stderr, /--chunk must be chunkId:sectionId/u);
+
+    const extraChunkField = runLargeDocRaw([
+      'init',
+      '--target',
+      target,
+      '--mode',
+      'create',
+      '--chunk',
+      '001:scope:extra',
+    ]);
+    assert.notEqual(extraChunkField.status, 0);
+    assert.match(extraChunkField.stderr, /--chunk must be chunkId:sectionId/u);
+
+    const badMinBytes = runLargeDocRaw([
+      'init',
+      '--target',
+      target,
+      '--mode',
+      'create',
+      '--chunk',
+      '001:scope',
+      '--min-bytes',
+      '10x',
+    ]);
+    assert.notEqual(badMinBytes.status, 0);
+    assert.match(badMinBytes.stderr, /--min-bytes must be a non-negative integer/u);
+
+    const badMinLines = runLargeDocRaw([
+      'init',
+      '--target',
+      target,
+      '--mode',
+      'create',
+      '--chunk',
+      '001:scope',
+      '--min-lines',
+      'abc',
+    ]);
+    assert.notEqual(badMinLines.status, 0);
+    assert.match(badMinLines.stderr, /--min-lines must be a non-negative integer/u);
   });
 });

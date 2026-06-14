@@ -70,6 +70,63 @@ describe('large-document-writer helper', () => {
     );
   });
 
+  it('rejects unsafe chunk and section tokens before filesystem access', () => {
+    const root = makeTempRoot();
+    const session = writer.initSession({
+      targetPath: path.join(root, 'target.md'),
+      mode: 'create',
+      chunkPlan: [{ chunkId: '../escape', sectionId: 'scope' }],
+    });
+
+    assert.throws(
+      () =>
+        writer.addChunk({
+          sessionDir: session.sessionDir,
+          chunkId: '../escape',
+          sectionId: 'scope',
+          content: markerChunk({ chunkId: '../escape', sectionId: 'scope' }),
+        }),
+      (error) => error.code === 'INVALID_TOKEN' && error.details.name === 'chunkId'
+    );
+    assert.equal(fs.existsSync(path.join(session.sessionDir, 'escape.md')), false);
+
+    const sessionWithUnsafeSection = writer.initSession({
+      targetPath: path.join(root, 'target-2.md'),
+      mode: 'create',
+      chunkPlan: [{ chunkId: '001', sectionId: '../scope' }],
+    });
+
+    assert.throws(
+      () =>
+        writer.addChunk({
+          sessionDir: sessionWithUnsafeSection.sessionDir,
+          chunkId: '001',
+          sectionId: '../scope',
+          content: markerChunk({ chunkId: '001', sectionId: '../scope' }),
+        }),
+      (error) => error.code === 'INVALID_TOKEN' && error.details.name === 'sectionId'
+    );
+  });
+
+  it('validates initSession options before resolving paths', () => {
+    assert.throws(
+      () => writer.initSession(),
+      (error) => error.code === 'INVALID_INIT_OPTIONS'
+    );
+    assert.throws(
+      () => writer.initSession({}),
+      (error) => error.code === 'INVALID_TARGET_PATH'
+    );
+    assert.throws(
+      () => writer.initSession({ targetPath: '   ' }),
+      (error) => error.code === 'INVALID_TARGET_PATH'
+    );
+    assert.throws(
+      () => writer.initSession({ targetPath: 'target.md', sessionDir: '' }),
+      (error) => error.code === 'INVALID_SESSION_DIR'
+    );
+  });
+
   it('assembles chunks in manifest order, strips markers, validates, and promotes create mode', () => {
     const root = makeTempRoot();
     const targetPath = path.join(root, 'target.md');
@@ -123,6 +180,26 @@ describe('large-document-writer helper', () => {
     assert.equal(promotion.backupHash, null);
   });
 
+  it('returns null nextChunkId when a non-numeric chunk plan is complete', () => {
+    const root = makeTempRoot();
+    const session = writer.initSession({
+      targetPath: path.join(root, 'target.md'),
+      mode: 'create',
+      chunkPlan: [{ chunkId: 'intro', sectionId: 'scope' }],
+    });
+    writer.addChunk({
+      sessionDir: session.sessionDir,
+      chunkId: 'intro',
+      sectionId: 'scope',
+      content: markerChunk({ chunkId: 'intro', sectionId: 'scope' }),
+    });
+
+    const status = writer.getSessionStatus({ sessionDir: session.sessionDir });
+
+    assert.equal(status.lastCompleteChunkId, 'intro');
+    assert.equal(status.nextChunkId, null);
+  });
+
   it('fails closed for missing chunks, chunk hash drift, validation errors, and early cleanup', () => {
     const root = makeTempRoot();
     const session = writer.initSession({
@@ -161,6 +238,63 @@ describe('large-document-writer helper', () => {
     assert.throws(
       () => writer.assembleSession({ sessionDir: session.sessionDir }),
       (error) => error.code === 'CHUNK_HASH_MISMATCH'
+    );
+  });
+
+  it('blocks promotion when assembled content changed after validation', () => {
+    const root = makeTempRoot();
+    const session = writer.initSession({
+      targetPath: path.join(root, 'target.md'),
+      mode: 'create',
+      profile: 'markdown',
+      chunkPlan: [{ chunkId: '001', sectionId: 'scope' }],
+      requiredHeadings: ['## Scope'],
+    });
+
+    writer.addChunk({
+      sessionDir: session.sessionDir,
+      chunkId: '001',
+      sectionId: 'scope',
+      content: markerChunk({ body: '## Scope\nOriginal.\n' }),
+    });
+    writer.assembleSession({ sessionDir: session.sessionDir });
+    writer.validateAssembly({ sessionDir: session.sessionDir });
+    fs.appendFileSync(path.join(session.sessionDir, 'assembled.md'), 'Stale mutation.\n', 'utf8');
+
+    assert.throws(
+      () => writer.promoteAssembly({ sessionDir: session.sessionDir }),
+      (error) =>
+        error.code === 'ASSEMBLY_VALIDATION_FAILED' &&
+        error.details.reason === 'stale_validation_receipt'
+    );
+    assert.equal(fs.existsSync(path.join(root, 'target.md')), false);
+  });
+
+  it('blocks cleanup with a structured error when promoted target is missing', () => {
+    const root = makeTempRoot();
+    const targetPath = path.join(root, 'target.md');
+    const session = writer.initSession({
+      targetPath,
+      mode: 'create',
+      profile: 'markdown',
+      chunkPlan: [{ chunkId: '001', sectionId: 'scope' }],
+      requiredHeadings: ['## Scope'],
+    });
+
+    writer.addChunk({
+      sessionDir: session.sessionDir,
+      chunkId: '001',
+      sectionId: 'scope',
+      content: markerChunk({ body: '## Scope\nBody.\n' }),
+    });
+    writer.assembleSession({ sessionDir: session.sessionDir });
+    writer.validateAssembly({ sessionDir: session.sessionDir });
+    writer.promoteAssembly({ sessionDir: session.sessionDir });
+    fs.rmSync(targetPath, { force: true });
+
+    assert.throws(
+      () => writer.cleanupSession({ sessionDir: session.sessionDir, policy: 'keep' }),
+      (error) => error.code === 'PROMOTED_TARGET_MISSING'
     );
   });
 
