@@ -10,6 +10,10 @@ description: Use when the user provides Epic/Story numbers such as Story 4.1 or 
 
 # BMAD Story Assistant
 
+## Required References
+
+Read [entry-rules.md](references/entry-rules.md) before executing, skipping, resuming, auditing, or closing this skill. It contains the hard entry rules intentionally kept out of the frontmatter description, including Phase zero, party-mode no-skip policy, `20 / 50 / 100` tier selection, `SubagentStart`, and Codex worker/code-reviewer fallback behavior.
+
 ## Main Agent Orchestration Surface
 
 Consumer users activate governance through `$bmad-speckit`, `/bmad-speckit`, or `bmad-speckit` in the active AI host session. Do not present package-script main-agent orchestration commands or bmad-speckit main-agent-orchestration commands as the default consumer-user step; those commands are install validation, CI, debug, or no-skill fallback only.

@@ -10,6 +10,20 @@ description: Use when the user runs or asks about /speckit.constitution, /specki
 
 # Speckit development process is improved
 
+## Required References
+
+Read these references before executing the matching stage or audit loop. They are the required rule anchors that keep the compact frontmatter description from becoming the only source of truth:
+
+| Required reference | When it must be read |
+|------|------|
+| [audit-prompts.md](references/audit-prompts.md) | Before any code-review audit prompt for specify, plan, GAPS, tasks, or implementation |
+| [audit-document-iteration-rules.md](references/audit-document-iteration-rules.md) | Before running or re-running a document audit closed loop |
+| [mapping-tables.md](references/mapping-tables.md) | Before adding requirement mapping tables to spec, plan, or tasks artifacts |
+| [task-execution-tdd.md](references/task-execution-tdd.md) | Before executing tasks or validating TDD red-green-refactor records |
+| [qa-agent-rules.md](references/qa-agent-rules.md) | Before enforcing QA_Agent, ralph-wiggum, production-path, and no-fake-implementation rules |
+| [audit-post-impl-rules.md](references/audit-post-impl-rules.md) | Before final implementation audit or inter-batch audit decisions |
+| [lint-requirement-matrix.md](references/lint-requirement-matrix.md) | Before claiming lint validation, exemption, or language-specific lint coverage |
+
 > 🚨 **Mandatory constraints - cannot be skipped**
 > Must be executed in order: specify → plan → GAPS → tasks → execute. Each stage must pass the code-review audit before entering the next stage. Skipping any stage or audit is strictly prohibited!
 
