@@ -23,6 +23,8 @@ function loadRenderer() {
       profile: Record<string, any>;
       slotData: Record<string, string>;
       validateHashes?: boolean;
+      coverageReceipt?: Record<string, any>;
+      generationMode?: string;
     }) => { document: string; audit: Record<string, any> };
   };
 }
@@ -55,6 +57,11 @@ function slotData(overrides: Record<string, string> = {}) {
       'executionMode: execute_only',
       'sourcePlanPath: model_packet.json',
       'sourcePlanHash: sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      'sourceBytes: 0',
+      'sourceLines: 0',
+      'coverageReceiptPath: legacy_slot_projection',
+      'generationReceiptPath: legacy_slot_projection',
+      'unmappedSourceObligations: 0',
       'runtimeRecordId: REQ-TEST',
       'entryFlow: standalone_tasks',
       'taskRange: G00-G01',
@@ -80,6 +87,8 @@ function slotData(overrides: Record<string, string> = {}) {
       '- [ ] `AC-01` Renderer preserves static prose.\n- [ ] `AC-02` Invariants render.\n- [ ] `AC-03` Commands exist.',
     acceptanceTraceabilityMatrix:
       '| AC ID | Requirement | Owning Task | Evidence Command |\n| --- | --- | --- | --- |\n| AC-01 | Static prose preserved. | G00 | `node test` |',
+    sourceCoverageMatrix:
+      '| Source ID | Source Kind | Source Ref | Goal Tasks | Acceptance | Commands | Evidence |\n| --- | --- | --- | --- | --- | --- | --- |\n| SRC001 | heading_execution_segment | model_packet.json:1-1 | G00 | AC-01 | CMD001 | EVD001 |',
     requiredTestCommands: '```powershell\nnode test\n```',
     manualVerificationScenarios:
       '### Scenario A\n\n- Setup: valid slots.\n- Expected: pass.\n- Forbidden: prose rewrite.',
@@ -204,6 +213,66 @@ describe('shared goal contract renderer', () => {
         }),
       })
     ).toThrow(/GOAL_CONTRACT_INCOMPLETE/);
+  });
+
+  it('requires coverage receipt and matrix in source_plan_strict mode', () => {
+    const templateText = fs.readFileSync(TEMPLATE, 'utf8');
+    const profile = JSON.parse(fs.readFileSync(PROFILE, 'utf8'));
+    const { renderGoalContract } = loadRenderer() as any;
+    const coverageReceipt = {
+      sourcePlanHash: 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      sourceObligations: [
+        {
+          id: 'SRC001',
+          goalTaskRefs: ['G00'],
+          acceptanceRefs: ['AC-01'],
+          commandRefs: ['CMD001'],
+          evidenceRefs: ['EVD001'],
+        },
+      ],
+      unmappedSourceObligations: [],
+    };
+
+    expect(() =>
+      renderGoalContract({
+        templateText,
+        profile,
+        slotData: slotData(),
+        generationMode: 'source_plan_strict',
+      })
+    ).toThrow(/GOAL_CONTRACT_COVERAGE_RECEIPT_MISSING/);
+
+    expect(() =>
+      renderGoalContract({
+        templateText,
+        profile,
+        slotData: slotData({ sourceCoverageMatrix: '' }),
+        coverageReceipt,
+        generationMode: 'source_plan_strict',
+      })
+    ).toThrow(/GOAL_CONTRACT_INCOMPLETE/);
+
+    expect(() =>
+      renderGoalContract({
+        templateText,
+        profile,
+        slotData: slotData(),
+        coverageReceipt: {
+          ...coverageReceipt,
+          unmappedSourceObligations: ['SRC001'],
+        },
+        generationMode: 'source_plan_strict',
+      })
+    ).toThrow(/GOAL_CONTRACT_SOURCE_OBLIGATION_UNMAPPED/);
+
+    const result = renderGoalContract({
+      templateText,
+      profile,
+      slotData: slotData(),
+      coverageReceipt,
+      generationMode: 'source_plan_strict',
+    });
+    expect(result.audit.coverageDecision).toBe('pass');
   });
 
   it('writes rendered documents through safe writer and reports writeReceipt', () => {

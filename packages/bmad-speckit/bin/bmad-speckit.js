@@ -201,6 +201,22 @@ program
   );
 
 program
+  .command('goal-contract')
+  .description('Generate source-covered goal execution contracts from source plans')
+  .option('--json', 'Print machine-readable JSON')
+  .allowUnknownOption(true)
+  .allowExcessArguments(true)
+  .action((opts, command) =>
+    runCommandPromise(
+      'goal-contract',
+      loadCommand('../src/commands/goal-contract', 'goalContractCommand')(
+        opts,
+        forwardedArgsFromCommand(command)
+      )
+    )
+  );
+
+program
   .command('feedback')
   .description('Show feedback entry and full-flow compatible AI list')
   .action(() => loadCommand('../src/commands/feedback', 'feedbackCommand')());

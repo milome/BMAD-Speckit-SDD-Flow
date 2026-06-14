@@ -4,8 +4,8 @@
   "profileVersion": "2.0.0",
   "contractVersion": "goal-execution-contract/v1",
   "templatePath": "_bmad/shared/goal-contract/goal-execution-contract-template.md",
-  "templateHash": "sha256:f6592e98303d0b39cd16a9bf2bbd9f9278651d4ef2cbcb344ca8e95b2d16fd81",
-  "profileHash": "sha256:b67ad6fb7f8c3ea903f03c5b51331fd530252ece0d9b629bf8c11ee93d5c4b70",
+  "templateHash": "sha256:71ea539a2a78020ecc897870303ba6cf315062db38058003a64cdd4a441fcceb",
+  "profileHash": "sha256:8f7993b8083ff227e7a6db801f65d7943890f4802b44147f7c39ed284bd41c49",
   "requiredSections": [
     "/goal Entry",
     "Contract Freeze Rules",
@@ -17,6 +17,7 @@
     "Implementation Tasks",
     "Strict Acceptance Checklist",
     "Acceptance Traceability Matrix",
+    "Source Coverage Matrix",
     "Required Test Commands",
     "Manual Verification Scenarios",
     "Completion Evidence Packet",
@@ -31,6 +32,11 @@
     "executionMode",
     "sourcePlanPath",
     "sourcePlanHash",
+    "sourceBytes",
+    "sourceLines",
+    "coverageReceiptPath",
+    "generationReceiptPath",
+    "unmappedSourceObligations",
     "runtimeRecordId",
     "entryFlow",
     "taskRange",
@@ -50,6 +56,7 @@
     "implementationTasks",
     "strictAcceptanceChecklist",
     "acceptanceTraceabilityMatrix",
+    "sourceCoverageMatrix",
     "requiredTestCommands",
     "manualVerificationScenarios",
     "completionEvidencePacket",
@@ -59,7 +66,10 @@
   "invariantFragments": [
     "model_packet.json is the machine-readable execution authority",
     "goal_execution.md is not execution authority",
-    "/goal completion is not closeout proof"
+    "/goal completion is not closeout proof",
+    "sourcePlanHash",
+    "coverageReceiptPath",
+    "unmappedSourceObligations: 0"
   ],
   "compatibility": {
     "semverPolicy": {

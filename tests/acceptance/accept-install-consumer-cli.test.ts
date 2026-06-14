@@ -36,6 +36,10 @@ function runRepoCli(args: string, cwd: string, env?: NodeJS.ProcessEnv): string 
   return run(cli, cwd, env);
 }
 
+function runJson(cmd: string, cwd: string, env?: NodeJS.ProcessEnv): any {
+  return JSON.parse(run(cmd, cwd, env));
+}
+
 function sha256(value: string): string {
   return `sha256:${createHash('sha256').update(value).digest('hex')}`;
 }
@@ -191,6 +195,26 @@ function resolveInstalledPackagePath(target: string): string {
   return candidates.find((candidate) => existsSync(candidate)) || 'unresolved';
 }
 
+function writeLargeDocChunk(
+  target: string,
+  chunkId: string,
+  sectionId: string,
+  body: string
+): string {
+  const chunkPath = join(target, `${chunkId}-${sectionId}.md`);
+  writeFileSync(
+    chunkPath,
+    [
+      `<!-- large-document-writer chunkId=${chunkId} sectionId=${sectionId} begin -->`,
+      body.trimEnd(),
+      `<!-- large-document-writer chunkId=${chunkId} sectionId=${sectionId} end -->`,
+      '',
+    ].join('\n'),
+    'utf8'
+  );
+  return chunkPath;
+}
+
 function latestOrCreateWaveTarball(): string {
   mkdirSync(WAVE_DIR, { recursive: true });
   const tarballs = readdirSync(WAVE_DIR)
@@ -335,6 +359,47 @@ describe('install to consumer ->CLI acceptance', () => {
       expect(out).toMatch(/Check OK|OK/i);
       expect(run('npx bmad-speckit large-doc --help', target)).toContain('large-doc');
       expect(existsSync(join(target, 'scripts'))).toBe(false);
+
+      const largeDocTarget = join(target, 'large-doc-smoke.md');
+      const init = runJson(
+        `npx --no-install bmad-speckit large-doc init --target "${largeDocTarget}" --chunk c1:smoke --require-heading "# Smoke" --min-bytes 20 --json`,
+        target
+      );
+      expect(init.schemaVersion).toBe('large-document-writer-session-init/v1');
+      const chunkPath = writeLargeDocChunk(
+        target,
+        'c1',
+        'smoke',
+        '# Smoke\n\nlarge document writer smoke content'
+      );
+      const addChunk = runJson(
+        `npx --no-install bmad-speckit large-doc add-chunk --session "${init.sessionDir}" --chunk-id c1 --section-id smoke --content-file "${chunkPath}" --json`,
+        target
+      );
+      expect(addChunk.schemaVersion).toBe('large-document-writer-chunk-receipt/v1');
+      const assemble = runJson(
+        `npx --no-install bmad-speckit large-doc assemble --session "${init.sessionDir}" --json`,
+        target
+      );
+      expect(assemble.schemaVersion).toBe('large-document-writer-assembly-receipt/v1');
+      const validate = runJson(
+        `npx --no-install bmad-speckit large-doc validate --session "${init.sessionDir}" --json`,
+        target
+      );
+      expect(validate.schemaVersion).toBe('large-document-writer-validation-receipt/v1');
+      expect(validate.ok).toBe(true);
+      const promote = runJson(
+        `npx --no-install bmad-speckit large-doc promote --session "${init.sessionDir}" --json`,
+        target
+      );
+      expect(promote.schemaVersion).toBe('large-document-writer-promote-receipt/v1');
+      expect(readFileSync(largeDocTarget, 'utf8')).toContain('# Smoke');
+      const cleanup = runJson(
+        `npx --no-install bmad-speckit large-doc cleanup --session "${init.sessionDir}" --policy delete --json`,
+        target
+      );
+      expect(cleanup.schemaVersion).toBe('large-document-writer-cleanup-receipt/v1');
+      expect(cleanup.policy).toBe('delete');
 
       const promoteScript = join(
         target,
@@ -600,6 +665,9 @@ describe('install to consumer ->CLI acceptance', () => {
       expect(existsSync(join(target, '.codex', 'protocols', 'audit-result-schema.md'))).toBe(true);
       expect(existsSync(join(target, '.codex', 'protocols', 'handoff-schema.md'))).toBe(true);
       expect(existsSync(join(target, '.codex', 'protocols', 'commit-protocol.md'))).toBe(true);
+      expect(
+        existsSync(join(target, '.codex', 'shared', 'skill-runtime', 'resolve-bmad-runtime.js'))
+      ).toBe(true);
       expect(existsSync(join(target, '.codex', 'README.md'))).toBe(true);
       expect(existsSync(join(target, '.codex', 'hooks'))).toBe(false);
       const config = JSON.parse(
@@ -625,6 +693,27 @@ describe('install to consumer ->CLI acceptance', () => {
 
       const ok = run('npx bmad-speckit check', target);
       expect(ok).toMatch(/Check OK|OK/i);
+
+      const reqTracePromptScript = join(
+        target,
+        '.codex',
+        'skills',
+        'req-trace-matrix-prompt-generator',
+        'scripts',
+        'generate_prompt.js'
+      );
+      expect(existsSync(reqTracePromptScript)).toBe(true);
+      const reqTraceMissingArgs = spawnSync(process.execPath, [reqTracePromptScript], {
+        cwd: target,
+        encoding: 'utf8',
+        maxBuffer: 20 * 1024 * 1024,
+      });
+      const reqTraceOutput = `${reqTraceMissingArgs.stdout}\n${reqTraceMissingArgs.stderr}`;
+      expect(reqTraceMissingArgs.status).toBe(2);
+      expect(reqTraceOutput).toContain(
+        'Provide exactly one of --source-document, --contract, or --source-file'
+      );
+      expect(reqTraceOutput).not.toMatch(/large-document-writer helper not found|Cannot resolve js-yaml/u);
 
       rmSync(join(target, '.codex', 'skills'), { recursive: true, force: true });
       expect(() => run('npx bmad-speckit check', target)).toThrow(/\.codex\/skills/);

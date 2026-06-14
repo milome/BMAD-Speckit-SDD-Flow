@@ -5,6 +5,7 @@ const os = require('node:os');
 const path = require('node:path');
 
 const writer = require('../src/utils/large-document-writer');
+const { writeChunk } = require('../src/utils/large-document-writer/chunk-store');
 
 function makeTempRoot() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'large-document-writer-'));
@@ -66,8 +67,32 @@ describe('large-document-writer helper', () => {
           sectionId: 'scope',
           content: '<!-- large-document-writer chunkId=001 sectionId=scope begin -->\n## Scope\n',
         }),
-      (error) => error.code === 'CHUNK_MARKER_INVALID'
+      (error) =>
+        error.code === 'CHUNK_MARKER_INVALID' &&
+        error.details.expectedBeginMarker === '<!-- large-document-writer chunkId=001 sectionId=scope begin -->' &&
+        error.details.expectedEndMarker === '<!-- large-document-writer chunkId=001 sectionId=scope end -->' &&
+        /write-chunk/u.test(error.details.hint)
     );
+  });
+
+  it('writeChunk wraps raw content before accepting the chunk', () => {
+    const root = makeTempRoot();
+    const session = writer.initSession({
+      targetPath: path.join(root, 'target.md'),
+      mode: 'create',
+      chunkPlan: [{ chunkId: '001', sectionId: 'scope' }],
+    });
+
+    const receipt = writeChunk({
+      sessionDir: session.sessionDir,
+      chunkId: '001',
+      sectionId: 'scope',
+      content: '## Scope\nRaw body.\n',
+    });
+
+    assert.equal(receipt.schemaVersion, 'large-document-writer-chunk-receipt/v1');
+    assert.equal(receipt.wrapped, true);
+    assert.equal(fs.readFileSync(path.join(session.sessionDir, 'chunks', '001.md'), 'utf8'), '## Scope\nRaw body.\n');
   });
 
   it('rejects unsafe chunk and section tokens before filesystem access', () => {

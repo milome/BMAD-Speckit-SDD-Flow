@@ -33,8 +33,10 @@ function matchesFilter(testFile, filter, cwd) {
 
   return (
     relativeTestFile === normalizedFilter ||
+    relativeTestFile.includes(normalizedFilter) ||
     relativeTestFile.endsWith(`/${normalizedFilter}`) ||
     basename(testFile) === normalizedFilter ||
+    basename(testFile).includes(normalizedFilter) ||
     (absoluteFilter != null && normalizePathForMatch(absoluteTestFile) === absoluteFilter)
   );
 }

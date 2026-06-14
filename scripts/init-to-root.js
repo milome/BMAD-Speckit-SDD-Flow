@@ -101,6 +101,7 @@ const REGISTERED_AGENT_PROFILES = {
         { src: path.join(bmadRoot, 'commands'), dest: '.cursor/commands' },
         { src: path.join(bmadRoot, 'speckit', 'commands'), dest: '.cursor/commands' },
         { src: path.join(bmadRoot, 'cursor', 'rules'), dest: '.cursor/rules' },
+        { src: path.join(bmadRoot, 'shared'), dest: '.cursor/shared' },
         { src: path.join(bmadRoot, 'skills'), dest: '.cursor/skills' },
         { src: path.join(bmadRoot, 'cursor', 'skills'), dest: '.cursor/skills' },
         { src: path.join(bmadRoot, 'i18n'), dest: '.cursor/i18n' },
@@ -153,6 +154,7 @@ const REGISTERED_AGENT_PROFILES = {
         { src: path.join(bmadRoot, 'speckit', 'commands'), dest: '.claude/commands' },
         { src: path.join(bmadRoot, 'claude', 'rules'), dest: '.claude/rules' },
         { src: path.join(bmadRoot, 'claude', 'agents'), dest: '.claude/agents' },
+        { src: path.join(bmadRoot, 'shared'), dest: '.claude/shared' },
         { src: path.join(bmadRoot, 'skills'), dest: '.claude/skills' },
         { src: path.join(bmadRoot, 'claude', 'skills'), dest: '.claude/skills' },
         { src: path.join(bmadRoot, 'i18n'), dest: '.claude/i18n' },
@@ -222,6 +224,7 @@ const REGISTERED_AGENT_PROFILES = {
       const codexSync = [
         { src: path.join(bmadRoot, 'commands'), dest: '.codex/commands' },
         { src: path.join(bmadRoot, 'speckit', 'commands'), dest: '.codex/commands' },
+        { src: path.join(bmadRoot, 'shared'), dest: '.codex/shared' },
         { src: path.join(bmadRoot, 'skills'), dest: '.codex/skills' },
         { src: path.join(bmadRoot, 'core', 'skills'), dest: '.codex/skills' },
         { src: path.join(bmadRoot, 'i18n'), dest: '.codex/i18n' },

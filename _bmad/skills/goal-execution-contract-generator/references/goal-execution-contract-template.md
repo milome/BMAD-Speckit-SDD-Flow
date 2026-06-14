@@ -53,6 +53,8 @@ Before editing files, verify this contract has all required sections:
 
 Before editing files, verify the frozen front matter has no unresolved placeholders and that every required slot was rendered.
 
+Source-plan contracts require front matter fields `sourcePlanHash`, `coverageReceiptPath`, and `unmappedSourceObligations: 0`.
+
 Fail closed when any required section, field, task ID, acceptance ID, evidence command, matrix row, slot, or invariant fragment is missing.
 
 ## Non-Negotiable Execution Rules
@@ -101,6 +103,13 @@ Every checkbox must have direct evidence before completion is claimed.
 
 <!-- goal-slot:acceptanceTraceabilityMatrix required dynamic=traceEvidence -->
 <!-- /goal-slot:acceptanceTraceabilityMatrix -->
+
+## Source Coverage Matrix
+
+Every source obligation must map to at least one generated task, acceptance item, required command, and evidence item.
+
+<!-- goal-slot:sourceCoverageMatrix required dynamic=sourceCoverageMatrix -->
+<!-- /goal-slot:sourceCoverageMatrix -->
 
 ## Required Test Commands
 

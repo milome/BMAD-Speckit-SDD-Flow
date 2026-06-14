@@ -2,7 +2,9 @@
 /* eslint-disable no-console */
 const fs = require('node:fs');
 const path = require('node:path');
-const { safeWriteText } = require('../../../../packages/bmad-speckit/src/utils/large-document-writer');
+const {
+  requireLargeDocumentWriter,
+} = require('../../skill-runtime/resolve-bmad-runtime');
 const {
   ROOT,
   extractSections,
@@ -13,6 +15,7 @@ const {
   templateHashFor,
 } = require('./extract-goal-contract-profile');
 
+const { safeWriteText } = requireLargeDocumentWriter();
 const RENDERER_VERSION = 'req-trace-goal-contract-renderer/v1';
 
 function block(code, details) {
@@ -45,6 +48,37 @@ function slotText(value, name) {
   if (typeof value === 'function') return String(value(name) ?? '');
   if (Array.isArray(value)) return value.join('\n');
   return String(value ?? '');
+}
+
+function appendFrontMatterField(text, field, value) {
+  if (new RegExp(`^${field}:`, 'mu').test(text)) return text;
+  const line = `${field}: ${value}`;
+  const fenceMatch = /\n```[\t ]*$/u.exec(text);
+  if (!fenceMatch) return `${text.trimEnd()}\n${line}`;
+  return `${text.slice(0, fenceMatch.index)}\n${line}${text.slice(fenceMatch.index)}`;
+}
+
+function withLegacySourceProofSlots(slotData, profile, generationMode) {
+  if (generationMode === 'source_plan_strict') return slotData ?? {};
+  const normalized = { ...(slotData ?? {}) };
+  if ((profile.requiredSlots ?? []).includes('sourceCoverageMatrix') && !slotText(normalized.sourceCoverageMatrix, 'sourceCoverageMatrix').trim()) {
+    normalized.sourceCoverageMatrix = [
+      '| Source ID | Source Kind | Source Ref | Goal Tasks | Acceptance | Commands | Evidence |',
+      '| --- | --- | --- | --- | --- | --- | --- |',
+      '| SRC001 | legacy_slot_projection | model_packet.json | G00 | AC-01 | legacy required commands | audit receipt |',
+    ].join('\n');
+  }
+
+  if ((profile.requiredSlots ?? []).includes('frontMatter')) {
+    let frontMatter = slotText(normalized.frontMatter, 'frontMatter');
+    frontMatter = appendFrontMatterField(frontMatter, 'sourceBytes', '0');
+    frontMatter = appendFrontMatterField(frontMatter, 'sourceLines', '0');
+    frontMatter = appendFrontMatterField(frontMatter, 'coverageReceiptPath', 'legacy_slot_projection');
+    frontMatter = appendFrontMatterField(frontMatter, 'generationReceiptPath', 'legacy_slot_projection');
+    frontMatter = appendFrontMatterField(frontMatter, 'unmappedSourceObligations', '0');
+    normalized.frontMatter = frontMatter;
+  }
+  return normalized;
 }
 
 function replaceSlots(templateText, profile, slotData) {
@@ -111,12 +145,66 @@ function auditRenderedDocument(document, profile, slotInfo, templateText) {
   };
 }
 
-function renderGoalContract({ templateText, profile, slotData, validateHashes = true }) {
+function validateCoverage({ document, coverageReceipt, generationMode }) {
+  if (generationMode !== 'source_plan_strict') return null;
+  if (!coverageReceipt) {
+    throw block('GOAL_CONTRACT_COVERAGE_RECEIPT_MISSING', 'coverageReceipt is required in source_plan_strict mode');
+  }
+  if (!Array.isArray(coverageReceipt.sourceObligations) || coverageReceipt.sourceObligations.length === 0) {
+    throw block('GOAL_CONTRACT_COVERAGE_RECEIPT_EMPTY', 'coverageReceipt.sourceObligations must be non-empty');
+  }
+  const renderedSourceHash = /^sourcePlanHash:\s*(\S+)/mu.exec(document)?.[1] ?? null;
+  if (coverageReceipt.sourcePlanHash && renderedSourceHash && coverageReceipt.sourcePlanHash !== renderedSourceHash) {
+    throw block('GOAL_CONTRACT_SOURCE_HASH_MISMATCH', `${coverageReceipt.sourcePlanHash} !== ${renderedSourceHash}`);
+  }
+  if (!document.includes('## Source Coverage Matrix')) {
+    throw block('GOAL_CONTRACT_COVERAGE_MATRIX_MISSING', 'Source Coverage Matrix section is required');
+  }
+  if (!/\|\s*SRC\d{3}\s*\|/u.test(document)) {
+    throw block('GOAL_CONTRACT_COVERAGE_MATRIX_MISSING', 'Source Coverage Matrix rows are required');
+  }
+  const unmapped = coverageReceipt.unmappedSourceObligations ?? [];
+  if (unmapped.length > 0) {
+    throw block('GOAL_CONTRACT_SOURCE_OBLIGATION_UNMAPPED', unmapped.join(', '));
+  }
+  for (const obligation of coverageReceipt.sourceObligations ?? []) {
+    if (!document.includes(obligation.id)) {
+      throw block('GOAL_CONTRACT_COVERAGE_REF_INVALID', `${obligation.id} missing from rendered document`);
+    }
+    for (const ref of [
+      ...(obligation.goalTaskRefs ?? []),
+      ...(obligation.acceptanceRefs ?? []),
+      ...(obligation.commandRefs ?? []),
+      ...(obligation.evidenceRefs ?? []),
+    ]) {
+      if (!document.includes(ref)) {
+        throw block('GOAL_CONTRACT_COVERAGE_REF_INVALID', `${obligation.id}:${ref}`);
+      }
+    }
+  }
+  return {
+    coverageDecision: 'pass',
+    sourceObligationCount: (coverageReceipt.sourceObligations ?? []).length,
+    unmappedSourceObligations: [],
+  };
+}
+
+function renderGoalContract({
+  templateText,
+  profile,
+  slotData,
+  validateHashes = true,
+  coverageReceipt = null,
+  generationMode = 'legacy_slot_projection',
+}) {
   if (!profile) throw block('GOAL_CONTRACT_PROFILE_MISSING', 'profile is required');
   assertSupportedProfile(profile);
   if (validateHashes) validateProfileHashes(templateText, profile);
-  const { document, slotInfo } = replaceSlots(templateText, profile, slotData ?? {});
+  const normalizedSlotData = withLegacySourceProofSlots(slotData, profile, generationMode);
+  const { document, slotInfo } = replaceSlots(templateText, profile, normalizedSlotData);
   const audit = auditRenderedDocument(document, profile, slotInfo, templateText);
+  const coverageAudit = validateCoverage({ document, coverageReceipt, generationMode });
+  if (coverageAudit) Object.assign(audit, coverageAudit);
   if (!audit.requiredSectionsPassed || !audit.invariantFragmentsPassed || !audit.requiredSlotsPassed) {
     throw block('GOAL_CONTRACT_INCOMPLETE', JSON.stringify(audit));
   }

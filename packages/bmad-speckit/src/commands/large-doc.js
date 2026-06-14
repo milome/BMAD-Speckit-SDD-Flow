@@ -1,5 +1,6 @@
 const fs = require('node:fs');
 const writer = require('../utils/large-document-writer');
+const { writeChunk } = require('../utils/large-document-writer/chunk-store');
 
 function take(args, name, fallback = undefined) {
   const index = args.indexOf(name);
@@ -51,7 +52,7 @@ function largeDocCommand(_opts = {}, forwardedArgs = []) {
   const args = [...forwardedArgs];
   const command = args.shift();
   if (!command || command === 'help' || command === '--help') {
-    process.stdout.write('Usage: bmad-speckit large-doc <init|status|add-chunk|assemble|validate|promote|cleanup> --json\n');
+    process.stdout.write('Usage: bmad-speckit large-doc <init|status|add-chunk|write-chunk|assemble|validate|promote|cleanup> --json\n');
     return 0;
   }
 
@@ -75,6 +76,13 @@ function largeDocCommand(_opts = {}, forwardedArgs = []) {
     result = writer.getSessionStatus({ sessionDir: requireValue(take(args, '--session'), '--session') });
   } else if (command === 'add-chunk') {
     result = writer.addChunk({
+      sessionDir: requireValue(take(args, '--session'), '--session'),
+      chunkId: requireValue(take(args, '--chunk-id'), '--chunk-id'),
+      sectionId: requireValue(take(args, '--section-id'), '--section-id'),
+      content: fs.readFileSync(requireValue(take(args, '--content-file'), '--content-file'), 'utf8'),
+    });
+  } else if (command === 'write-chunk') {
+    result = writeChunk({
       sessionDir: requireValue(take(args, '--session'), '--session'),
       chunkId: requireValue(take(args, '--chunk-id'), '--chunk-id'),
       sectionId: requireValue(take(args, '--section-id'), '--section-id'),

@@ -393,6 +393,7 @@ function collectManagedSurfaceSpecs(projectRoot, bmadRoot, installedTools) {
       for (const spec of collectImmediateChildSpecs(path.join(bmadRoot, 'speckit', 'commands'), '.cursor/commands', 'host_file', ownerAgents, 'delete_entry_only')) add(spec);
       for (const spec of collectImmediateChildSpecs(path.join(bmadRoot, 'cursor', 'rules'), '.cursor/rules', 'host_file', ownerAgents, 'delete_entry_only')) add(spec);
       for (const spec of collectImmediateChildSpecs(path.join(bmadRoot, 'cursor', 'agents'), '.cursor/agents', 'host_file', ownerAgents, 'delete_entry_only')) add(spec);
+      for (const spec of collectImmediateChildSpecs(path.join(bmadRoot, 'shared'), '.cursor/shared', 'host_file', ownerAgents, 'delete_entry_only')) add(spec);
       for (const spec of collectImmediateChildSpecs(path.join(bmadRoot, 'i18n'), '.cursor/i18n', 'host_file', ownerAgents, 'delete_entry_only')) add(spec);
       for (const spec of collectImmediateChildSpecs(path.join(bmadRoot, 'runtime', 'hooks'), '.cursor/hooks', 'host_file', ownerAgents, 'delete_entry_only')) add(spec);
       for (const spec of collectImmediateChildSpecs(path.join(bmadRoot, 'cursor', 'hooks'), '.cursor/hooks', 'host_file', ownerAgents, 'delete_entry_only')) add(spec);
@@ -440,6 +441,7 @@ function collectManagedSurfaceSpecs(projectRoot, bmadRoot, installedTools) {
       for (const spec of collectImmediateChildSpecs(path.join(bmadRoot, 'claude', 'agents'), '.claude/agents', 'host_file', ownerAgents, 'delete_entry_only')) add(spec);
       for (const spec of collectImmediateChildSpecs(path.join(bmadRoot, 'claude', 'hooks'), '.claude/hooks', 'host_file', ownerAgents, 'delete_entry_only')) add(spec);
       for (const spec of collectImmediateChildSpecs(path.join(bmadRoot, 'runtime', 'hooks'), '.claude/hooks', 'host_file', ownerAgents, 'delete_entry_only')) add(spec);
+      for (const spec of collectImmediateChildSpecs(path.join(bmadRoot, 'shared'), '.claude/shared', 'host_file', ownerAgents, 'delete_entry_only')) add(spec);
       for (const spec of collectImmediateChildSpecs(path.join(bmadRoot, 'i18n'), '.claude/i18n', 'host_file', ownerAgents, 'delete_entry_only')) add(spec);
       for (const spec of collectImmediateChildSpecs(path.join(bmadRoot, 'claude', 'protocols'), '.claude/protocols', 'host_file', ownerAgents, 'delete_entry_only')) add(spec);
       for (const spec of collectImmediateChildSpecs(path.join(bmadRoot, 'claude', 'state'), '.claude/state', 'host_file', ownerAgents, 'delete_entry_only')) add(spec);
@@ -484,6 +486,7 @@ function collectManagedSurfaceSpecs(projectRoot, bmadRoot, installedTools) {
       for (const spec of collectImmediateChildSpecs(path.join(bmadRoot, 'commands'), '.codex/commands', 'host_file', ownerAgents, 'delete_entry_only')) add(spec);
       for (const spec of collectImmediateChildSpecs(path.join(bmadRoot, 'speckit', 'commands'), '.codex/commands', 'host_file', ownerAgents, 'delete_entry_only')) add(spec);
       for (const spec of collectImmediateChildSpecs(path.join(bmadRoot, 'i18n'), '.codex/i18n', 'host_file', ownerAgents, 'delete_entry_only')) add(spec);
+      for (const spec of collectImmediateChildSpecs(path.join(bmadRoot, 'shared'), '.codex/shared', 'host_file', ownerAgents, 'delete_entry_only')) add(spec);
       for (const spec of collectImmediateChildSpecs(path.join(bmadRoot, 'codex', 'agents'), '.codex/agents', 'host_file', ownerAgents, 'delete_entry_only')) add(spec);
       for (const spec of collectImmediateChildSpecs(path.join(bmadRoot, 'codex', 'protocols'), '.codex/protocols', 'host_file', ownerAgents, 'delete_entry_only')) add(spec);
       for (const spec of collectImmediateChildSpecs(path.join(bmadRoot, 'codex', 'skills'), '.codex/skills', 'host_file', ownerAgents, 'delete_entry_only')) add(spec);

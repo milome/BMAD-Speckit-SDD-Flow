@@ -9,6 +9,7 @@
 /* eslint-disable @typescript-eslint/no-require-imports -- CommonJS script for prepublish */
 const fs = require('node:fs');
 const path = require('node:path');
+const { checkGoalContractReleaseGate } = require('./check-goal-contract-release-gate');
 
 const ROOT = path.resolve(__dirname, '..');
 const SPECKIT_DIR = path.join(ROOT, 'packages', 'bmad-speckit');
@@ -436,6 +437,18 @@ try {
         path.join(SPECKIT_BMAD_MIRROR, 'claude', 'hooks'),
       ];
       return hookRoots.every((dir) => fs.existsSync(dir) && fs.readdirSync(dir).some((name) => name.endsWith('.cjs')));
+    },
+  });
+
+  checks.push({
+    label: 'source-plan goal contracts include current coverageReceiptPath and unmappedSourceObligations release proof',
+    test: () => {
+      const source = path.join(ROOT, 'docs', 'plans', '2026-06-14-large-document-writer-skill-plan.md');
+      const goal = path.join(ROOT, 'docs', 'plans', '2026-06-14-large-document-writer-goal-execution-plan.md');
+      const coverage = path.join(ROOT, 'docs', 'plans', '.2026-06-14-large-document-writer-goal-execution-plan.coverage.json');
+      const generation = path.join(ROOT, 'docs', 'plans', '.2026-06-14-large-document-writer-goal-execution-plan.generation.json');
+      const result = checkGoalContractReleaseGate({ source, goal, coverage, generation });
+      return result.ok;
     },
   });
 
