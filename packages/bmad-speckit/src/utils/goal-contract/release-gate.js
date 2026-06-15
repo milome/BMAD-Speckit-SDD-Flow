@@ -1,12 +1,13 @@
-#!/usr/bin/env node
-/* eslint-disable no-console */
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 
 function take(args, name) {
   const index = args.indexOf(name);
-  return index >= 0 ? args[index + 1] : undefined;
+  if (index < 0) return undefined;
+  const value = args[index + 1];
+  if (!value || value.startsWith('-')) return undefined;
+  return value;
 }
 
 function has(args, name) {
@@ -21,25 +22,39 @@ function normalize(filePath) {
   return path.resolve(filePath).replace(/\\/g, '/');
 }
 
-function readJsonIfExists(filePath, blockingReasons, code) {
+function readJsonIfExists(filePath, blockingReasons, missingCode, invalidCode) {
   if (!filePath || !fs.existsSync(filePath)) {
-    blockingReasons.push(code);
+    blockingReasons.push(missingCode);
     return null;
   }
-  return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  try {
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch {
+    blockingReasons.push(invalidCode);
+    return null;
+  }
 }
 
-function checkGoalContractReleaseGate({
-  source,
-  goal,
-  coverage,
-  generation,
-}) {
+function checkArrayField(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+function checkGoalContractReleaseGate({ source, goal, coverage, generation }) {
   const blockingReasons = [];
   if (!source || !fs.existsSync(source)) blockingReasons.push('source_plan_missing');
   if (!goal || !fs.existsSync(goal)) blockingReasons.push('goal_contract_missing');
-  const coverageReceipt = readJsonIfExists(coverage, blockingReasons, 'coverage_receipt_missing');
-  const generationReceipt = readJsonIfExists(generation, blockingReasons, 'generation_receipt_missing');
+  const coverageReceipt = readJsonIfExists(
+    coverage,
+    blockingReasons,
+    'coverage_receipt_missing',
+    'coverage_receipt_invalid_json'
+  );
+  const generationReceipt = readJsonIfExists(
+    generation,
+    blockingReasons,
+    'generation_receipt_missing',
+    'generation_receipt_invalid_json'
+  );
 
   const sourceHash = source && fs.existsSync(source) ? sha256File(source) : null;
   const goalHash = goal && fs.existsSync(goal) ? sha256File(goal) : null;
@@ -47,13 +62,20 @@ function checkGoalContractReleaseGate({
   if (coverageReceipt) {
     if (sourceHash && coverageReceipt.sourcePlanHash !== sourceHash) blockingReasons.push('source_hash_mismatch');
     if (goalHash && coverageReceipt.goalContractHash !== goalHash) blockingReasons.push('goal_contract_hash_mismatch');
-    if ((coverageReceipt.unmappedSourceObligations ?? []).length > 0) {
+    if (checkArrayField(coverageReceipt.unmappedSourceObligations).length > 0) {
       blockingReasons.push('unmapped_source_obligations');
+    }
+    if (checkArrayField(coverageReceipt.orphanGeneratedRefs).length > 0) {
+      blockingReasons.push('orphan_generated_refs');
+    }
+    if (checkArrayField(coverageReceipt.blockingReasons).length > 0) {
+      blockingReasons.push('coverage_blocking_reasons');
     }
     if (coverageReceipt.decision !== 'pass') blockingReasons.push('coverage_decision_not_pass');
   }
 
   if (generationReceipt) {
+    if (generationReceipt.ok !== true) blockingReasons.push('generation_receipt_not_ok');
     if (sourceHash && generationReceipt.sourcePlanHash !== sourceHash) blockingReasons.push('generation_source_hash_mismatch');
     if (goalHash && generationReceipt.goalContractHash !== goalHash) blockingReasons.push('generation_goal_hash_mismatch');
     if (generationReceipt.unmappedSourceObligations !== 0) {
@@ -72,28 +94,27 @@ function checkGoalContractReleaseGate({
     generationReceiptPath: generation ? normalize(generation) : null,
     sourcePlanHash: sourceHash,
     goalContractHash: goalHash,
-    unmappedSourceObligations: coverageReceipt?.unmappedSourceObligations?.length ?? null,
+    unmappedSourceObligations: checkArrayField(coverageReceipt?.unmappedSourceObligations).length,
   };
 }
 
-function main(argv = process.argv.slice(2)) {
+function goalContractReleaseGateCommand(_opts = {}, forwardedArgs = []) {
+  const args = [...forwardedArgs];
   const result = checkGoalContractReleaseGate({
-    source: take(argv, '--source'),
-    goal: take(argv, '--goal'),
-    coverage: take(argv, '--coverage'),
-    generation: take(argv, '--generation'),
+    source: take(args, '--source'),
+    goal: take(args, '--goal'),
+    coverage: take(args, '--coverage'),
+    generation: take(args, '--generation'),
   });
-  const output = has(argv, '--json')
+  const json = has(args, '--json') || _opts.json;
+  const output = json
     ? JSON.stringify(result, null, 2)
     : `${result.decision.toUpperCase()}: ${result.blockingReasons.join(', ') || 'goal contract coverage proof current'}`;
   process.stdout.write(`${output}\n`);
   return result.ok ? 0 : 1;
 }
 
-if (require.main === module) {
-  process.exitCode = main();
-}
-
 module.exports = {
   checkGoalContractReleaseGate,
+  goalContractReleaseGateCommand,
 };

@@ -9,7 +9,7 @@
 /* eslint-disable @typescript-eslint/no-require-imports -- CommonJS script for prepublish */
 const fs = require('node:fs');
 const path = require('node:path');
-const { checkGoalContractReleaseGate } = require('./check-goal-contract-release-gate');
+const { checkGoalContractReleaseGate } = require('../packages/bmad-speckit/src/utils/goal-contract/release-gate');
 
 const ROOT = path.resolve(__dirname, '..');
 const SPECKIT_DIR = path.join(ROOT, 'packages', 'bmad-speckit');

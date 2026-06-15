@@ -5,14 +5,14 @@ import { basename, join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const ROOT = process.cwd();
-const SCRIPT = join(ROOT, 'scripts', 'check-goal-contract-release-gate.js');
+const CLI = join(ROOT, 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js');
 const SOURCE = join(ROOT, 'docs', 'plans', '2026-06-14-large-document-writer-skill-plan.md');
 const GOAL = join(ROOT, 'docs', 'plans', '2026-06-14-large-document-writer-goal-execution-plan.md');
 const COVERAGE = join(ROOT, 'docs', 'plans', '.2026-06-14-large-document-writer-goal-execution-plan.coverage.json');
 const GENERATION = join(ROOT, 'docs', 'plans', '.2026-06-14-large-document-writer-goal-execution-plan.generation.json');
 
 function runGate(args: string[]) {
-  return spawnSync(process.execPath, [SCRIPT, ...args], {
+  return spawnSync(process.execPath, [CLI, 'goal-contract', 'release-gate', ...args], {
     cwd: ROOT,
     encoding: 'utf8',
   });
@@ -23,7 +23,9 @@ describe('goal contract public release gate', () => {
     const stdout = execFileSync(
       process.execPath,
       [
-        SCRIPT,
+        CLI,
+        'goal-contract',
+        'release-gate',
         '--source',
         SOURCE,
         '--goal',

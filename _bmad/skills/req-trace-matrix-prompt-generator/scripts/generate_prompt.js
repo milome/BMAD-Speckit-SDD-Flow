@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const yaml = require('./load-js-yaml');
-const { requireLargeDocumentWriter } = require('../../../shared/skill-runtime/resolve-bmad-runtime');
+const { requireLargeDocumentWriter } = require('./resolve-bmad-runtime');
 const {
   classifyConfirmationDrift,
   STALE_BOOKKEEPING_REPAIR_REQUIRED,

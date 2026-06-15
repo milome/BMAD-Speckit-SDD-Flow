@@ -8,6 +8,7 @@ const {
   writeCoverageReceipt,
   writeGenerationReceipt,
 } = require('../utils/goal-contract/goal-contract-receipts');
+const { goalContractReleaseGateCommand } = require('../utils/goal-contract/release-gate');
 
 const PACKAGE_ROOT = path.resolve(__dirname, '..', '..');
 const SOURCE_ROOT = path.resolve(PACKAGE_ROOT, '..', '..');
@@ -19,7 +20,9 @@ function firstExistingPath(candidates) {
 function take(args, name, fallback = undefined) {
   const index = args.indexOf(name);
   if (index === -1) return fallback;
-  return args[index + 1];
+  const value = args[index + 1];
+  if (!value || value.startsWith('-')) return fallback;
+  return value;
 }
 
 function has(args, name) {
@@ -137,10 +140,16 @@ function goalContractCommand(_opts = {}, forwardedArgs = []) {
   const subcommand = args.shift();
   const json = has(args, '--json') || _opts.json;
   try {
+    if (subcommand === 'release-gate') {
+      return goalContractReleaseGateCommand(_opts, args);
+    }
     if (subcommand !== 'generate') {
-      throw Object.assign(new Error('Usage: bmad-speckit goal-contract generate --source <plan.md> --out <goal.md> --json'), {
-        failureClass: 'invalid_subcommand',
-      });
+      throw Object.assign(
+        new Error('Usage: bmad-speckit goal-contract generate --source <plan.md> --out <goal.md> --json'),
+        {
+          failureClass: 'invalid_subcommand',
+        }
+      );
     }
     const result = generate(args);
     if (json) emitJson(result);
