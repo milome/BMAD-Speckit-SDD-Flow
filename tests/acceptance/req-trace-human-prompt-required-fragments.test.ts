@@ -100,6 +100,17 @@ describe('req trace human prompt required fragment audit', () => {
         ROOT,
         '_bmad',
         'skills',
+        'req-trace-matrix-prompt-generator',
+        'scripts',
+        'resolve-bmad-runtime.js'
+      ),
+      path.join(patchedScriptDir, 'resolve-bmad-runtime.js')
+    );
+    fs.copyFileSync(
+      path.join(
+        ROOT,
+        '_bmad',
+        'skills',
         'requirements-contract-authoring',
         'scripts',
         'confirmation_drift_classifier.js'

@@ -9,6 +9,7 @@
 /* eslint-disable @typescript-eslint/no-require-imports -- CommonJS script for prepublish */
 const fs = require('node:fs');
 const path = require('node:path');
+const { checkGoalContractReleaseGate } = require('../packages/bmad-speckit/src/utils/goal-contract/release-gate');
 
 const ROOT = path.resolve(__dirname, '..');
 const SPECKIT_DIR = path.join(ROOT, 'packages', 'bmad-speckit');
@@ -17,6 +18,10 @@ const SPECKIT_SCOPED_NODE_MODULES = path.join(SPECKIT_DIR, 'node_modules', '@bma
 const PACK_SESSION_FILE = path.join(SPECKIT_DIR, 'node_modules', '.pack-session-count.json');
 const PACK_SESSION_LOCK_DIR = path.join(SPECKIT_DIR, 'node_modules', '.pack-session.lock');
 const SILENT = process.env.BMAD_PREPUBLISH_SILENT === '1';
+const PACK_SESSION_LOCK_TIMEOUT_MS = Number.parseInt(
+  process.env.BMAD_PACK_SESSION_LOCK_TIMEOUT_MS || '180000',
+  10
+);
 
 function info(message) {
   if (!SILENT) console.log(message);
@@ -185,11 +190,31 @@ function writePackSessionCount(count) {
   fs.writeFileSync(PACK_SESSION_FILE, JSON.stringify({ count }, null, 2) + '\n', 'utf8');
 }
 
+function readLockOwner(lockDir) {
+  const ownerPath = path.join(lockDir, 'owner.json');
+  if (!fs.existsSync(ownerPath)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(ownerPath, 'utf8'));
+  } catch {
+    return { unreadable: true };
+  }
+}
+
 function acquirePersistentPackSessionLock(lockDir) {
   fs.mkdirSync(path.dirname(lockDir), { recursive: true });
-  for (let attempt = 0; attempt < 120; attempt += 1) {
+  const startedAt = Date.now();
+  const timeoutMs = Number.isFinite(PACK_SESSION_LOCK_TIMEOUT_MS) && PACK_SESSION_LOCK_TIMEOUT_MS > 0
+    ? PACK_SESSION_LOCK_TIMEOUT_MS
+    : 180000;
+  const owner = {
+    pid: process.pid,
+    acquiredAt: new Date().toISOString(),
+    packSession: process.env.BMAD_PACK_SESSION === '1',
+  };
+  while (Date.now() - startedAt < timeoutMs) {
     try {
       fs.mkdirSync(lockDir);
+      fs.writeFileSync(path.join(lockDir, 'owner.json'), JSON.stringify(owner, null, 2) + '\n', 'utf8');
       return;
     } catch (error) {
       if (error.code !== 'EEXIST') {
@@ -198,7 +223,11 @@ function acquirePersistentPackSessionLock(lockDir) {
       Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 250);
     }
   }
-  throw new Error(`Timed out acquiring pack session lock: ${lockDir}`);
+  const currentOwner = readLockOwner(lockDir);
+  throw new Error(
+    `Timed out acquiring pack session lock after ${timeoutMs}ms: ${lockDir}` +
+      (currentOwner ? ` owner=${JSON.stringify(currentOwner)}` : '')
+  );
 }
 
 /**
@@ -436,6 +465,19 @@ try {
         path.join(SPECKIT_BMAD_MIRROR, 'claude', 'hooks'),
       ];
       return hookRoots.every((dir) => fs.existsSync(dir) && fs.readdirSync(dir).some((name) => name.endsWith('.cjs')));
+    },
+  });
+
+  checks.push({
+    label: 'tracked goal-contract release-gate fixture includes current coverageReceiptPath and unmappedSourceObligations proof',
+    test: () => {
+      const fixtureRoot = path.join(ROOT, 'tests', 'fixtures', 'goal-contract-release-gate');
+      const source = path.join(fixtureRoot, 'source-plan.md');
+      const goal = path.join(fixtureRoot, 'goal-contract.md');
+      const coverage = path.join(fixtureRoot, 'coverage.json');
+      const generation = path.join(fixtureRoot, 'generation.json');
+      const result = checkGoalContractReleaseGate({ source, goal, coverage, generation });
+      return result.ok;
     },
   });
 

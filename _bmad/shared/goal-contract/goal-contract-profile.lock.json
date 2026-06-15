@@ -3,8 +3,8 @@
   "profileId": "bmad-speckit-goal-execution-contract",
   "profileVersion": "2.0.0",
   "templatePath": "_bmad/shared/goal-contract/goal-execution-contract-template.md",
-  "templateHash": "sha256:f6592e98303d0b39cd16a9bf2bbd9f9278651d4ef2cbcb344ca8e95b2d16fd81",
-  "profileHash": "sha256:b67ad6fb7f8c3ea903f03c5b51331fd530252ece0d9b629bf8c11ee93d5c4b70",
+  "templateHash": "sha256:ee77d26edae3a0dba9b35692f3c905f917f0be8447f68a2f20c8e14867f16487",
+  "profileHash": "sha256:48187224dc48815abae448711858671a29a3df2b40a60a0c2b8fc6c5fdedfae8",
   "minimumRendererVersion": "1.0.0",
-  "updatedAt": "2026-05-31T23:48:31.836Z"
+  "updatedAt": "2026-06-15T00:34:45.414Z"
 }

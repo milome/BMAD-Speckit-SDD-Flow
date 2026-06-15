@@ -44,7 +44,7 @@ describe('platform skill frontmatter normalization', () => {
     assert.ok(normalized.startsWith('---\nname: "bmad-story-assistant"\n'));
     assert.strictEqual(
       description,
-      'Execute the BMAD story workflow by Epic/Story number: create story, audit, dev story, post-implementation audit, closeout validation, and Codex worker review dispatch when available.'
+      'Use when the user provides Epic/Story numbers such as Story 4.1 or asks to create, implement, audit, or close out a BMAD story. Triggers include Create Story, Story audit, Dev Story, post-implementation audit, closeout approved, party-mode tier selection 20/50/100, ralph-method, TDD traffic lights, Codex worker/code-reviewer dispatch, handoff/state/score writing, commit gate, Chinese deliverables, and copy-paste prompts.'
     );
     assert.ok(description.length <= 1024, 'description must stay within platform limit');
     assert.ok(!normalized.includes('description: |'), 'overlong block description should be compacted');
@@ -88,7 +88,7 @@ describe('platform skill frontmatter normalization', () => {
 
     assert.strictEqual(
       description,
-      'Improve Speckit specify/plan/gaps/tasks/implement workflows with requirement mapping, audit closed-loop iteration, TDD red-green-refactor discipline, and validation gates.'
+      'Use when the user runs or asks about /speckit.constitution, /speckit.specify, /speckit.plan, /speckit.tasks, /speckit.implement, IMPLEMENTATION_GAPS, tasks.md, tasks-v*.md, or Speckit workflows needing requirement mapping, clarify/checklist/analyze, code-review audit closed loops, TDD red-green-refactor, QA_Agent rules, ralph-wiggum, architecture fidelity, no fake implementation, active regression testing, and validation gates.'
     );
   });
 });

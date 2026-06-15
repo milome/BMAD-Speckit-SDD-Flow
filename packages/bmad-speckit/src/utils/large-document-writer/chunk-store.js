@@ -13,6 +13,29 @@ function markerRegex(chunkId, sectionId) {
   );
 }
 
+function beginMarker(chunkId, sectionId) {
+  return `<!-- large-document-writer chunkId=${chunkId} sectionId=${sectionId} begin -->`;
+}
+
+function endMarker(chunkId, sectionId) {
+  return `<!-- large-document-writer chunkId=${chunkId} sectionId=${sectionId} end -->`;
+}
+
+function markerFailureDetails(chunkId, sectionId) {
+  return {
+    chunkId,
+    sectionId,
+    expectedBeginMarker: beginMarker(chunkId, sectionId),
+    expectedEndMarker: endMarker(chunkId, sectionId),
+    hint: 'Use large-doc write-chunk with raw content to avoid hand-authoring markers.',
+  };
+}
+
+function wrapChunkContent(content, chunkId, sectionId) {
+  const body = String(content).replace(/\r\n/g, '\n').replace(/\s+$/u, '');
+  return `${beginMarker(chunkId, sectionId)}\n${body}\n${endMarker(chunkId, sectionId)}\n`;
+}
+
 function assertSafeToken(name, value) {
   if (typeof value !== 'string' || !/^[A-Za-z0-9._-]+$/u.test(value)) {
     block('INVALID_TOKEN', { name, value });
@@ -31,7 +54,7 @@ function chunkReceiptPath(sessionDir, chunkId) {
 
 function stripChunkMarkers(content, chunkId, sectionId) {
   const match = String(content).match(markerRegex(chunkId, sectionId));
-  if (!match) block('CHUNK_MARKER_INVALID', { chunkId, sectionId });
+  if (!match) block('CHUNK_MARKER_INVALID', markerFailureDetails(chunkId, sectionId));
   return `${match[1].replace(/\r\n/g, '\n').replace(/\s+$/u, '')}\n`;
 }
 
@@ -40,7 +63,9 @@ function addChunk({ sessionDir, chunkId, sectionId, content }) {
   assertSafeToken('sectionId', sectionId);
   const manifest = readManifest(sessionDir);
   const planEntry = manifest.chunkPlan.find((entry) => entry.chunkId === chunkId);
-  if (!planEntry || planEntry.sectionId !== sectionId) block('CHUNK_MARKER_INVALID', { chunkId, sectionId });
+  if (!planEntry || planEntry.sectionId !== sectionId) {
+    block('CHUNK_MARKER_INVALID', markerFailureDetails(chunkId, sectionId));
+  }
   const body = stripChunkMarkers(content, chunkId, sectionId);
   const filePath = chunkPath(sessionDir, chunkId);
   if (fs.existsSync(filePath)) block('DUPLICATE_CHUNK', { chunkId });
@@ -58,6 +83,18 @@ function addChunk({ sessionDir, chunkId, sectionId, content }) {
   writeJsonReceipt(chunkReceiptPath(sessionDir, chunkId), receipt);
   updateManifest(sessionDir, {});
   return receipt;
+}
+
+function writeChunk({ sessionDir, chunkId, sectionId, content }) {
+  const receipt = addChunk({
+    sessionDir,
+    chunkId,
+    sectionId,
+    content: wrapChunkContent(content, chunkId, sectionId),
+  });
+  const wrappedReceipt = { ...receipt, wrapped: true };
+  writeJsonReceipt(chunkReceiptPath(sessionDir, chunkId), wrappedReceipt);
+  return wrappedReceipt;
 }
 
 function readChunkWithReceipt(sessionDir, entry) {
@@ -117,9 +154,13 @@ function listChunkState(sessionDir) {
 module.exports = {
   addChunk,
   assertSafeToken,
+  beginMarker,
   chunkPath,
   chunkReceiptPath,
+  endMarker,
   listChunkState,
   readChunkWithReceipt,
   stripChunkMarkers,
+  wrapChunkContent,
+  writeChunk,
 };

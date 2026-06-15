@@ -15,23 +15,34 @@ Create a frozen `/goal` execution contract. This skill only generates and audits
 2. Resolve the output path:
    - Default: `docs/plans/YYYY-MM-DD-<slug>-goal-execution-plan.md`.
    - Use the user-provided path if present.
-3. Load the contract template and profile:
+3. For source-plan goal contracts, use the first-class package CLI:
+   - Run `bmad-speckit goal-contract generate --source <path> --out <path> --json`.
+   - Treat `coverageReceiptPath`, `generationReceiptPath`, `sourcePlanHash`, `goalContractHash`, `sourceObligationCount`, and `unmappedSourceObligations: 0` from the JSON output as required generation evidence.
+   - Require the coverage receipt before public release use.
+   - The installed consumer invocation must work for Codex, Claude Code, and Cursor without host-specific lock-in and without consumer root `scripts/`.
+4. Load the contract template and profile only for manual or compatibility contract authoring:
    - In this repository, the canonical assets live under `_bmad/shared/goal-contract/`.
    - In an installed skill, use the skill-local projections under `references/`.
    - Resolve `references/goal-execution-contract-template.md` and `references/goal-contract-profile.json` relative to this skill directory.
    - If the template is missing, stop with `goal_contract_template_missing`.
    - If the profile is missing, continue only for manual contract authoring, and report `goal_contract_profile_missing` as a packaging defect.
-4. Run docs-review dependency adaptation before writing the contract:
+5. Run docs-review dependency adaptation before writing the contract:
    - Run `node <skill-dir>/scripts/check-docs-review-dependency.js --auto-install`, replacing `<skill-dir>` with this skill's installed directory.
    - If it reports `available` or `installed`, continue.
    - If it reports `blocked`, stop with `docs_review_dependency_blocked` and include the reported reason.
-5. Generate the contract from the template.
-6. Run the contract completeness gate.
-7. Run docs-review audit/fix rounds.
-8. Run encoding integrity gate after all text edits.
+6. Generate the contract from the template only when the package CLI is not applicable.
+7. Run the contract completeness gate.
+8. Run docs-review audit/fix rounds.
+9. Run encoding integrity gate after all text edits.
 
 ## Contract Generation Rules
 
+- `bmad-speckit goal-contract generate --source <path> --out <path> --json` is the required success path for source-plan contracts.
+- `.tmp/*.cjs generation scripts are failure evidence only`; they are not a success path and must not be cited as successful generation proof.
+- `large-document-writer is transport only`; it must not own source-plan obligation extraction, task generation, acceptance generation, command generation, or source coverage semantics.
+- Coverage receipt is source coverage evidence only; it is not implementation evidence.
+- Code obligations must bind to real implementation proof through behavior tests, source seam static assertions, receipt field assertions, or CLI output assertions.
+- Generated commands for code obligations must not use coverage-receipt grep as the only proof.
 - Treat Markdown as the human/model-readable canonical prose and structure.
 - Treat JSON profile as a machine-readable index and compatibility contract only.
 - Do not generate the contract from JSON profile alone.
@@ -53,6 +64,14 @@ Create a frozen `/goal` execution contract. This skill only generates and audits
 - Do not copy classifier-specific, reconfirmation-specific, renderer-specific, or project-specific addendum content into unrelated contracts.
 - Prefer scoped acceptance groups such as `Domain Behavior Acceptance`, `Integration Surface Acceptance`, or `Operational Surface Acceptance` when they make the contract clearer; do not force these group names when the goal is simple.
 - If the source is underspecified, generate a contract that stops with the appropriate amendment condition instead of inventing semantic requirements.
+
+## Deterministic Source Gate
+
+Before emitting any generated task, acceptance row, command row, `NOT DONE` row, or stop condition, the generator must fail closed when a source plan contains nondeterministic executable wording.
+
+The failure payload must use `failureClass: non_deterministic_source_obligation` and must include `sourceId`, `lineStart`, `lineEnd`, `matchedPhrase`, `sourceExcerpt`, and `repairHint`.
+
+The source plan must be repaired to deterministic `MUST` or `MUST NOT` language before goal generation continues. The generator must not transform nondeterministic source wording into generated execution content.
 
 ## Deterministic Requirement Language
 

@@ -120,6 +120,75 @@ describe('bmad-speckit large-doc command', () => {
     assert.deepEqual(status.corruptChunks, ['001']);
   });
 
+  it('write-chunk accepts raw content and reports wrapped chunk receipts', () => {
+    const root = makeTempRoot();
+    const target = path.join(root, 'target.md');
+    const init = runLargeDoc([
+      'init',
+      '--target',
+      target,
+      '--mode',
+      'create',
+      '--chunk',
+      '001:scope',
+    ]);
+    const rawChunk = path.join(root, 'raw.md');
+    fs.writeFileSync(rawChunk, '## Scope\nRaw CLI body.\n', 'utf8');
+
+    const receipt = runLargeDoc([
+      'write-chunk',
+      '--session',
+      init.sessionDir,
+      '--chunk-id',
+      '001',
+      '--section-id',
+      'scope',
+      '--content-file',
+      rawChunk,
+    ]);
+
+    assert.equal(receipt.schemaVersion, 'large-document-writer-chunk-receipt/v1');
+    assert.equal(receipt.wrapped, true);
+  });
+
+  it('prints expected marker diagnostics for Markdown before marker', () => {
+    const root = makeTempRoot();
+    const target = path.join(root, 'target.md');
+    const init = runLargeDoc([
+      'init',
+      '--target',
+      target,
+      '--mode',
+      'create',
+      '--chunk',
+      '001:scope',
+    ]);
+    const malformed = path.join(root, 'malformed.md');
+    fs.writeFileSync(
+      malformed,
+      '# Heading before marker\n<!-- large-document-writer chunkId=001 sectionId=scope begin -->\nBody\n<!-- large-document-writer chunkId=001 sectionId=scope end -->\n',
+      'utf8'
+    );
+
+    const result = runLargeDocRaw([
+      'add-chunk',
+      '--session',
+      init.sessionDir,
+      '--chunk-id',
+      '001',
+      '--section-id',
+      'scope',
+      '--content-file',
+      malformed,
+    ]);
+
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /CHUNK_MARKER_INVALID/u);
+    assert.match(result.stderr, /expectedBeginMarker/u);
+    assert.match(result.stderr, /expectedEndMarker/u);
+    assert.match(result.stderr, /write-chunk/u);
+  });
+
   it('rejects malformed chunk plans and integer thresholds', () => {
     const root = makeTempRoot();
     const target = path.join(root, 'target.md');

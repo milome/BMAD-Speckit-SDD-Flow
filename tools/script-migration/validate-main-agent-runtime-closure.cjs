@@ -126,6 +126,34 @@ const REQUIRED_CANDIDATE_FIELDS = [
   'deletionAllowed',
 ];
 
+const POST_WAVE_ALLOWED_SCRIPT_CHANGES = new Map([
+  [
+    'scripts/prepublish-check.js',
+    {
+      allowedStatuses: new Set(['M']),
+      reason: 'repo maintenance prepublish gate may evolve after the frozen Wave 3 inventory',
+    },
+  ],
+  [
+    'scripts/check-goal-contract-release-gate.js',
+    {
+      allowedStatuses: new Set(['A']),
+      replacementPath: 'packages/bmad-speckit/src/utils/goal-contract/release-gate.js',
+      reason: 'post-wave root helper migrated into package runtime before release',
+    },
+  ],
+]);
+
+const POST_WAVE_ALLOWED_WORKTREE_DELETIONS = new Map([
+  [
+    'scripts/check-goal-contract-release-gate.js',
+    {
+      replacementPath: 'packages/bmad-speckit/src/utils/goal-contract/release-gate.js',
+      reason: 'post-wave root helper migrated into package runtime before release',
+    },
+  ],
+]);
+
 const hasOwn = (object, field) => Object.prototype.hasOwnProperty.call(object, field);
 const toRepoPath = (filePath) => path.relative(ROOT, filePath).replace(/\\/g, '/');
 
@@ -206,6 +234,31 @@ function changedScriptsFromGit(errors) {
     });
 }
 
+function isAllowedPostWaveScriptChange(row) {
+  const allowance = POST_WAVE_ALLOWED_SCRIPT_CHANGES.get(row.scriptPath);
+  if (!allowance) return false;
+  if (!allowance.allowedStatuses.has(row.status)) return false;
+  if (allowance.replacementPath && !fs.existsSync(path.join(ROOT, allowance.replacementPath))) {
+    return false;
+  }
+  return true;
+}
+
+function isAllowedPostWaveWorktreeDeletion(line) {
+  const trimmed = line.trim();
+  let scriptPath = null;
+  const deleted = trimmed.match(/^D\s+(scripts[\\/]\S+)/u);
+  if (deleted) {
+    scriptPath = deleted[1].replace(/\\/g, '/');
+  } else {
+    const renamed = trimmed.match(/^R\d*\s+(scripts[\\/]\S+)(?:\s+->\s+|\s+)(\S+)/u);
+    scriptPath = renamed?.[1]?.replace(/\\/g, '/') || null;
+  }
+  const allowance = scriptPath ? POST_WAVE_ALLOWED_WORKTREE_DELETIONS.get(scriptPath) : null;
+  if (!allowance) return false;
+  return fs.existsSync(path.join(ROOT, allowance.replacementPath));
+}
+
 function validateInventory(inventory, registry, errors) {
   requireFields(inventory, REQUIRED_INVENTORY_FIELDS, 'closure-inventory.json', errors);
   if (!inventory) return;
@@ -261,22 +314,24 @@ function validateChangedScriptsBaseline(inventory, errors) {
     errors.push('changedScriptsBaseline.expectedCountFromPriorMatrix must be 140');
   }
   const changed = changedScriptsFromGit(errors);
-  if (baseline.actualCountFromCommand !== changed.length) {
-    errors.push(
-      `changedScriptsBaseline.actualCountFromCommand must be ${changed.length}, got ${baseline.actualCountFromCommand}`
-    );
-  }
-  if (baseline.countStatus !== (changed.length === 140 ? 'matches_prior_matrix' : 'baseline_drift')) {
-    errors.push('changedScriptsBaseline.countStatus mismatch');
-  }
   const represented = new Set([
     ...(inventory.closureEntries || []).map((entry) => entry.scriptPath),
     ...(inventory.unclassifiedEntries || []).map((entry) => entry.scriptPath),
   ]);
-  for (const row of changed) {
-    if (!represented.has(row.scriptPath)) {
-      errors.push(`changed script absent from closureEntries and unclassifiedEntries: ${row.scriptPath}`);
-    }
+  const representedChanged = changed.filter((row) => represented.has(row.scriptPath));
+  const unrepresentedChanged = changed.filter(
+    (row) => !represented.has(row.scriptPath) && !isAllowedPostWaveScriptChange(row)
+  );
+  if (baseline.actualCountFromCommand !== representedChanged.length) {
+    errors.push(
+      `changedScriptsBaseline.actualCountFromCommand must be ${representedChanged.length}, got ${baseline.actualCountFromCommand}`
+    );
+  }
+  if (baseline.countStatus !== (representedChanged.length === 140 ? 'matches_prior_matrix' : 'baseline_drift')) {
+    errors.push('changedScriptsBaseline.countStatus mismatch');
+  }
+  for (const row of unrepresentedChanged) {
+    errors.push(`changed script absent from closureEntries and unclassifiedEntries: ${row.scriptPath}`);
   }
 }
 
@@ -586,7 +641,8 @@ function validateNoScriptDeletion(errors) {
   }
   const deletedScripts = result.stdout
     .split(/\r?\n/u)
-    .filter((line) => /^ ?D\s+scripts[\\/]/u.test(line) || /^R.+scripts[\\/]/u.test(line));
+    .filter((line) => /^ ?D\s+scripts[\\/]/u.test(line) || /^R.+scripts[\\/]/u.test(line))
+    .filter((line) => !isAllowedPostWaveWorktreeDeletion(line));
   if (deletedScripts.length > 0) {
     errors.push(`root scripts deletion or rename detected: ${deletedScripts.join('; ')}`);
   }

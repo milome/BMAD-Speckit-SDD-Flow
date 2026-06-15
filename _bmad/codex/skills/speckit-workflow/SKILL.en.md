@@ -2,23 +2,27 @@
 
 ---
 name: speckit-workflow
-description: |
-  Improve the Speckit development process: force requirement mapping and audit closed loop at each stage of specify/plan/gaps/tasks,
-  and forcing TDD traffic light mode (red light-green light-refactor) development when executing tasks in tasks.md.
-  After executing /speckit.constitution, /speckit.specify, /speckit.plan, /speckit.tasks, /speckit.implement (or .speckit.* equivalent); the enhanced command clarify/checklist/analyze **must be embedded in the corresponding audit closed-loop iteration for execution**: §1.2 spec audit report states that "there is an ambiguous statement" → clarify (within §1.2 iteration); §2.2 plan within the audit closed-loop, when plan When involving multiple modules or complex architecture → checklist as part of the §2.2 audit step; §4.2 tasks In the audit closed loop, when tasks ≥ 10 or across multiple artifacts → analyze as part of the §4.2 audit step; cannot be skipped in scenarios that should be executed on the grounds of "optional";
-  Or when the model automatically generates IMPLEMENTATION_GAPS through in-depth analysis, or the user requests "generate tasks" or "execute tasks",
-  The requirements mapping list must be added according to the rules of this skill and **call the code-review skill** for audit until passed.
-  This skill **depends on the code-review skill**, which must be explicitly called in the audit closed-loop step and cannot be skipped or declared passed on its own.
-  When a user asks to perform an outstanding task in tasks.md (or tasks-v*.md),
-  You must develop according to the TDD traffic light mode execution rules of this skill, and use TodoWrite to track progress.
-  Strictly abide by 15 iron rules such as architectural fidelity, prohibition of false implementations, and active regression testing.
-  Comply with the QA_Agent execution rules and ralph-wiggum rules at the same time.
+description: Use when the user runs or asks about /speckit.constitution, /speckit.specify, /speckit.plan, /speckit.tasks, /speckit.implement, IMPLEMENTATION_GAPS, tasks.md, tasks-v*.md, or Speckit workflows needing requirement mapping, clarify/checklist/analyze, code-review audit closed loops, TDD red-green-refactor, QA_Agent rules, ralph-wiggum, architecture fidelity, no fake implementation, active regression testing, and validation gates.
 ---
 
 <!-- CLOSEOUT-APPROVED-CANONICAL -->
 > Closeout terminology: in this document, a stage is considered complete only when `runAuditorHost` returns `closeout approved`. An audit report `PASS` only means the host close-out may start; `PASS` alone must not be treated as completion, admission, or release.
 
 # Speckit development process is improved
+
+## Required References
+
+Read these references before executing the matching stage or audit loop. They are the required rule anchors that keep the compact frontmatter description from becoming the only source of truth:
+
+| Required reference | When it must be read |
+|------|------|
+| [audit-prompts.md](references/audit-prompts.md) | Before any code-review audit prompt for specify, plan, GAPS, tasks, or implementation |
+| [audit-document-iteration-rules.md](references/audit-document-iteration-rules.md) | Before running or re-running a document audit closed loop |
+| [mapping-tables.md](references/mapping-tables.md) | Before adding requirement mapping tables to spec, plan, or tasks artifacts |
+| [task-execution-tdd.md](references/task-execution-tdd.md) | Before executing tasks or validating TDD red-green-refactor records |
+| [qa-agent-rules.md](references/qa-agent-rules.md) | Before enforcing QA_Agent, ralph-wiggum, production-path, and no-fake-implementation rules |
+| [audit-post-impl-rules.md](references/audit-post-impl-rules.md) | Before final implementation audit or inter-batch audit decisions |
+| [lint-requirement-matrix.md](references/lint-requirement-matrix.md) | Before claiming lint validation, exemption, or language-specific lint coverage |
 
 > 🚨 **Mandatory constraints - cannot be skipped**
 > Must be executed in order: specify → plan → GAPS → tasks → execute. Each stage must pass the code-review audit before entering the next stage. Skipping any stage or audit is strictly prohibited!

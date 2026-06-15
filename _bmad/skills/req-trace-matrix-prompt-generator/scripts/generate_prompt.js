@@ -4,33 +4,12 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const yaml = require('./load-js-yaml');
+const { requireLargeDocumentWriter } = require('./resolve-bmad-runtime');
 const {
   classifyConfirmationDrift,
   STALE_BOOKKEEPING_REPAIR_REQUIRED,
   PROJECTION_REFRESH_REQUIRED,
 } = require('../../requirements-contract-authoring/scripts/confirmation_drift_classifier');
-
-function requireLargeDocumentWriter() {
-  const candidates = [];
-  try {
-    candidates.push(require.resolve('bmad-speckit/src/utils/large-document-writer', {
-      paths: [process.cwd(), __dirname],
-    }));
-  } catch {
-    // Local source and copied-script test runs use explicit filesystem candidates below.
-  }
-  candidates.push(
-    path.resolve(process.cwd(), 'packages', 'bmad-speckit', 'src', 'utils', 'large-document-writer'),
-    path.resolve(process.cwd(), 'node_modules', 'bmad-speckit', 'src', 'utils', 'large-document-writer'),
-    path.resolve(__dirname, '..', '..', '..', '..', 'packages', 'bmad-speckit', 'src', 'utils', 'large-document-writer'),
-    path.resolve(__dirname, '..', '..', '..', '..', 'src', 'utils', 'large-document-writer')
-  );
-  const found = candidates.find((candidate) => fs.existsSync(candidate) || fs.existsSync(`${candidate}.js`));
-  if (!found) {
-    throw new Error(`large-document-writer helper not found. Checked: ${candidates.join(', ')}`);
-  }
-  return require(found);
-}
 
 const { safeWriteJson, safeWriteText } = requireLargeDocumentWriter();
 

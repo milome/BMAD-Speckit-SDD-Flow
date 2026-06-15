@@ -92,6 +92,8 @@ Date: 2026-05-10
 - [ ] Run `npm run build:ralph-method`.
 - [ ] Run `node scripts/prepublish-check.js` and confirm `packages/bmad-speckit/_bmad/skills/requirements-contract-authoring/SKILL.md` exists.
 - [ ] Run `node scripts/prepublish-check.js` and confirm `packages/bmad-speckit/_bmad/skills/req-trace-matrix-prompt-generator/SKILL.md` exists.
+- [ ] Run `node packages/bmad-speckit/bin/bmad-speckit.js goal-contract release-gate --source docs/plans/2026-06-14-large-document-writer-skill-plan.md --goal docs/plans/2026-06-14-large-document-writer-goal-execution-plan.md --coverage docs/plans/.2026-06-14-large-document-writer-goal-execution-plan.coverage.json --generation docs/plans/.2026-06-14-large-document-writer-goal-execution-plan.generation.json --json` and confirm `coverageReceiptPath`, current hashes, and `unmappedSourceObligations: 0`.
+- [ ] Run `bmad-speckit goal-contract generate --source <source-plan.md> --out <goal-execution-plan.md> --json` for any source-plan goal contract whose source hash changed before public release.
 - [ ] Run `npm pack --dry-run --json` and confirm both skill directories are listed in package contents.
 - [ ] Run the root pack acceptance test: `npx vitest run tests/acceptance/accept-pack-bmad-speckit.test.ts`.
 
@@ -130,6 +132,7 @@ node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.j
 node --check _bmad/skills/requirements-contract-authoring/scripts/reverse_audit_contract.js
 python -m py_compile _bmad/skills/req-trace-matrix-prompt-generator/scripts/generate_prompt.py
 node scripts/prepublish-check.js
+npx vitest run tests/acceptance/goal-contract-release-gate.test.ts
 npm pack --dry-run --json
 npx vitest run tests/acceptance/setup-global-skill-sync-contract.test.ts tests/acceptance/accept-install-consumer-cli.test.ts
 ```
