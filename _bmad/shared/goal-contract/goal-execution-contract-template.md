@@ -46,6 +46,7 @@ Before editing files, verify this contract has all required sections:
 - `Implementation Tasks`
 - `Strict Acceptance Checklist`
 - `Acceptance Traceability Matrix`
+- `Source Coverage Matrix`
 - `Required Test Commands`
 - `Manual Verification Scenarios`
 - `Completion Evidence Packet`

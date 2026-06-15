@@ -245,8 +245,15 @@ function isAllowedPostWaveScriptChange(row) {
 }
 
 function isAllowedPostWaveWorktreeDeletion(line) {
-  const match = line.match(/(?:^ ?D\s+|^R\S*\s+\S+\s+)(scripts[\\/][^\s]+)/u);
-  const scriptPath = match?.[1]?.replace(/\\/g, '/');
+  const trimmed = line.trim();
+  let scriptPath = null;
+  const deleted = trimmed.match(/^D\s+(scripts[\\/]\S+)/u);
+  if (deleted) {
+    scriptPath = deleted[1].replace(/\\/g, '/');
+  } else {
+    const renamed = trimmed.match(/^R\d*\s+(scripts[\\/]\S+)(?:\s+->\s+|\s+)(\S+)/u);
+    scriptPath = renamed?.[1]?.replace(/\\/g, '/') || null;
+  }
   const allowance = scriptPath ? POST_WAVE_ALLOWED_WORKTREE_DELETIONS.get(scriptPath) : null;
   if (!allowance) return false;
   return fs.existsSync(path.join(ROOT, allowance.replacementPath));

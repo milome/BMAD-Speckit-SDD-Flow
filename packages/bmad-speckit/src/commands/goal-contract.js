@@ -113,6 +113,7 @@ function generate(args) {
     sourceObligations: registries.sourceObligations,
     unmappedSourceObligations: [],
     orphanGeneratedRefs: [],
+    blockingReasons: [],
     decision: 'pass',
   };
   writeCoverageReceipt(coverageReceiptPath, coverageReceipt);

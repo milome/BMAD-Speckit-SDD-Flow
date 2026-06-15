@@ -35,8 +35,14 @@ function readJsonIfExists(filePath, blockingReasons, missingCode, invalidCode) {
   }
 }
 
-function checkArrayField(value) {
-  return Array.isArray(value) ? value : [];
+function checkArrayField(value, fieldName, blockingReasons) {
+  if (Array.isArray(value)) return value;
+  if (value === undefined || value === null) {
+    blockingReasons.push(`${fieldName}_missing`);
+    return [];
+  }
+  blockingReasons.push(`${fieldName}_not_array`);
+  return [];
 }
 
 function checkGoalContractReleaseGate({ source, goal, coverage, generation }) {
@@ -62,13 +68,28 @@ function checkGoalContractReleaseGate({ source, goal, coverage, generation }) {
   if (coverageReceipt) {
     if (sourceHash && coverageReceipt.sourcePlanHash !== sourceHash) blockingReasons.push('source_hash_mismatch');
     if (goalHash && coverageReceipt.goalContractHash !== goalHash) blockingReasons.push('goal_contract_hash_mismatch');
-    if (checkArrayField(coverageReceipt.unmappedSourceObligations).length > 0) {
+    const unmappedSourceObligations = checkArrayField(
+      coverageReceipt.unmappedSourceObligations,
+      'coverage_unmapped_source_obligations',
+      blockingReasons
+    );
+    const orphanGeneratedRefs = checkArrayField(
+      coverageReceipt.orphanGeneratedRefs,
+      'coverage_orphan_generated_refs',
+      blockingReasons
+    );
+    const coverageBlockingReasons = checkArrayField(
+      coverageReceipt.blockingReasons,
+      'coverage_blocking_reasons',
+      blockingReasons
+    );
+    if (unmappedSourceObligations.length > 0) {
       blockingReasons.push('unmapped_source_obligations');
     }
-    if (checkArrayField(coverageReceipt.orphanGeneratedRefs).length > 0) {
+    if (orphanGeneratedRefs.length > 0) {
       blockingReasons.push('orphan_generated_refs');
     }
-    if (checkArrayField(coverageReceipt.blockingReasons).length > 0) {
+    if (coverageBlockingReasons.length > 0) {
       blockingReasons.push('coverage_blocking_reasons');
     }
     if (coverageReceipt.decision !== 'pass') blockingReasons.push('coverage_decision_not_pass');
@@ -94,7 +115,9 @@ function checkGoalContractReleaseGate({ source, goal, coverage, generation }) {
     generationReceiptPath: generation ? normalize(generation) : null,
     sourcePlanHash: sourceHash,
     goalContractHash: goalHash,
-    unmappedSourceObligations: checkArrayField(coverageReceipt?.unmappedSourceObligations).length,
+    unmappedSourceObligations: Array.isArray(coverageReceipt?.unmappedSourceObligations)
+      ? coverageReceipt.unmappedSourceObligations.length
+      : null,
   };
 }
 

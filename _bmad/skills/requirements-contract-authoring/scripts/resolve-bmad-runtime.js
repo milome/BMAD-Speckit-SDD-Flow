@@ -55,11 +55,20 @@ function resolveSharedRuntime() {
     );
   }
 
-  const found = unique(candidates).find((candidate) => fs.existsSync(candidate));
-  if (!found) {
-    throw new Error(`Cannot resolve shared skill runtime. Checked: ${unique(candidates).join(', ')}`);
+  const checked = unique(candidates);
+  const failures = [];
+  for (const candidate of checked) {
+    if (!fs.existsSync(candidate)) continue;
+    try {
+      return require(candidate);
+    } catch (error) {
+      failures.push(`${candidate}: ${error.message}`);
+    }
   }
-  return require(found);
+  throw new Error(
+    `Cannot resolve shared skill runtime. Checked: ${checked.join(', ')}` +
+      (failures.length > 0 ? `; require failures: ${failures.join(' | ')}` : '')
+  );
 }
 
 module.exports = resolveSharedRuntime();

@@ -6,10 +6,11 @@ import { describe, expect, it } from 'vitest';
 
 const ROOT = process.cwd();
 const CLI = join(ROOT, 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js');
-const SOURCE = join(ROOT, 'docs', 'plans', '2026-06-14-large-document-writer-skill-plan.md');
-const GOAL = join(ROOT, 'docs', 'plans', '2026-06-14-large-document-writer-goal-execution-plan.md');
-const COVERAGE = join(ROOT, 'docs', 'plans', '.2026-06-14-large-document-writer-goal-execution-plan.coverage.json');
-const GENERATION = join(ROOT, 'docs', 'plans', '.2026-06-14-large-document-writer-goal-execution-plan.generation.json');
+const FIXTURE_ROOT = join(ROOT, 'tests', 'fixtures', 'goal-contract-release-gate');
+const SOURCE = join(FIXTURE_ROOT, 'source-plan.md');
+const GOAL = join(FIXTURE_ROOT, 'goal-contract.md');
+const COVERAGE = join(FIXTURE_ROOT, 'coverage.json');
+const GENERATION = join(FIXTURE_ROOT, 'generation.json');
 
 function runGate(args: string[]) {
   return spawnSync(process.execPath, [CLI, 'goal-contract', 'release-gate', ...args], {
