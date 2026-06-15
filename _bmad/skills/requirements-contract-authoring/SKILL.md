@@ -123,7 +123,9 @@ node <skill-dir>/scripts/promote-draft-large-doc.js \
   --json
 ```
 
-The promotion command performs `normalize-draft-markdown.js`, `generate-draft-manifest.js`, lightweight preflight, reverse audit policy checks, timestamped backup creation, and UTF-8 target replacement. Use `--preflight-only` to validate syntax without reverse audit or target replacement. Use `--dry-run` to run promotion checks without replacing the target.
+The promotion command performs `normalize-draft-markdown.js`, `generate-draft-manifest.js`, lightweight preflight, reverse audit policy checks, package safe-writer final persistence, timestamped backup creation through the safe-writer receipt, and UTF-8 target replacement. Use `--preflight-only` to validate syntax without reverse audit or target replacement. Use `--dry-run` to run promotion checks without replacing the target.
+
+The final persistence seam in `promote-draft-large-doc.js` must call the package large-document-writer safe-writer through the runtime resolver. The promotion receipt must remain owned by this requirements-contract-authoring workflow and must expose `writeReceipt.schemaVersion: "large-document-writer-safe-write/v1"` plus `backupPath` and `targetHash` derived from the safe-writer receipt. Do not replace this requirements-specific promotion with `bmad-speckit large-doc promote`, and do not bypass `normalizeDraftInPlace()`, `buildManifest()`, confirmation-ready status gates, reverse audit, retry receipt handling, or `failureClass` reporting.
 
 The normalizer only repairs deterministic transport damage: LF/BOM normalization, single-backtick Mermaid fence damage, and unquoted colon-space YAML scalar values inside `implementationConfirmation:`. It must not invent requirements, evidence, status, hashes, confirmation text, or audit results.
 

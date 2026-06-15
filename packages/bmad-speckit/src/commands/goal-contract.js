@@ -45,13 +45,19 @@ function loadRenderer() {
 }
 
 function failurePayload(failureClass, error, extra = {}) {
-  return {
+  const payload = {
     ok: false,
     schemaVersion: 'goal-contract-generation-receipt/v1',
     failureClass,
     message: error instanceof Error ? error.message : String(error),
     ...extra,
   };
+  for (const field of ['sourceId', 'lineStart', 'lineEnd', 'matchedPhrase', 'sourceExcerpt', 'repairHint']) {
+    if (error && Object.prototype.hasOwnProperty.call(error, field)) {
+      payload[field] = error[field];
+    }
+  }
+  return payload;
 }
 
 function generate(args) {
@@ -80,7 +86,7 @@ function generate(args) {
   ]);
   const profile = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
   const templateText = fs.readFileSync(templatePath, 'utf8');
-  const { slotData, registries } = buildSlotData({
+  const { slotData, registries, implementationProofAudit } = buildSlotData({
     source,
     profile,
     outPath: normalize(resolvedOut),
@@ -130,6 +136,7 @@ function generate(args) {
     unmappedSourceObligations: 0,
     rendererAudit: rendered.audit,
     coverageAudit: { decision: 'pass', unmappedSourceObligations: [] },
+    implementationProofAudit,
     writeReceipt,
   };
   writeGenerationReceipt(generationReceiptPath, generationReceipt);
@@ -158,7 +165,10 @@ function goalContractCommand(_opts = {}, forwardedArgs = []) {
     return 0;
   } catch (error) {
     const failureClass = error.failureClass || error.code || 'goal_contract_generation_failed';
-    const payload = failurePayload(failureClass, error, error.coverageAudit ? { coverageAudit: error.coverageAudit } : {});
+    const payload = failurePayload(failureClass, error, {
+      ...(error.coverageAudit ? { coverageAudit: error.coverageAudit } : {}),
+      ...(error.implementationProofAudit ? { implementationProofAudit: error.implementationProofAudit } : {}),
+    });
     if (json) emitJson(payload);
     else console.error(payload.message);
     return 1;

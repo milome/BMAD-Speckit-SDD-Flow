@@ -6,6 +6,9 @@ const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 const { buildManifest } = require("./generate-draft-manifest");
 const { normalizeMarkdown } = require("./normalize-draft-markdown");
+const { requireLargeDocumentWriter } = require("./resolve-bmad-runtime");
+
+const { safeWriteText } = requireLargeDocumentWriter();
 
 const CONFIRMATION_READY_STATUSES = new Set(["user_confirmed"]);
 
@@ -101,6 +104,7 @@ function baseReceipt(args) {
     targetPath: normalizePathForReport(args.target),
     manifestPath: null,
     targetHash: null,
+    writeReceipt: null,
     backupPath: null,
     audit: null,
     preflight: null,
@@ -204,20 +208,15 @@ function runReverseAudit(draftPath) {
   };
 }
 
-function copyFileAtomic(sourcePath, targetPath) {
-  const content = fs.readFileSync(sourcePath, "utf8");
-  fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-  const tempPath = `${targetPath}.tmp.${process.pid}.${Date.now()}`;
-  fs.writeFileSync(tempPath, content, "utf8");
-  fs.renameSync(tempPath, targetPath);
-  return sha256(content);
-}
-
-function backupTarget(targetPath) {
-  if (!fs.existsSync(targetPath)) return null;
-  const backupPath = `${targetPath}.bak.${timestamp()}`;
-  fs.copyFileSync(targetPath, backupPath);
-  return backupPath;
+function promoteDraftWithSafeWriter(draftPath, targetPath) {
+  const content = fs.readFileSync(draftPath, "utf8");
+  const writeReceipt = safeWriteText(targetPath, content, {
+    mode: fs.existsSync(targetPath) ? "replace" : "create",
+  });
+  return {
+    targetHash: writeReceipt.finalHash,
+    writeReceipt,
+  };
 }
 
 function fail(receipt, failureClass, details, args, manifest, exitCode = 1) {
@@ -370,9 +369,10 @@ function main() {
       return 0;
     }
 
-    const backupPath = backupTarget(targetPath);
-    receipt.backupPath = normalizePathForReport(backupPath);
-    receipt.targetHash = copyFileAtomic(draftPath, targetPath);
+    const promotion = promoteDraftWithSafeWriter(draftPath, targetPath);
+    receipt.writeReceipt = promotion.writeReceipt;
+    receipt.backupPath = normalizePathForReport(promotion.writeReceipt.backupPath);
+    receipt.targetHash = promotion.targetHash;
     receipt.ok = true;
     receipt.failureClass = null;
     writeReceipt(receipt, args.json);

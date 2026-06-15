@@ -40,6 +40,9 @@ Create a frozen `/goal` execution contract. This skill only generates and audits
 - `bmad-speckit goal-contract generate --source <path> --out <path> --json` is the required success path for source-plan contracts.
 - `.tmp/*.cjs generation scripts are failure evidence only`; they are not a success path and must not be cited as successful generation proof.
 - `large-document-writer is transport only`; it must not own source-plan obligation extraction, task generation, acceptance generation, command generation, or source coverage semantics.
+- Coverage receipt is source coverage evidence only; it is not implementation evidence.
+- Code obligations must bind to real implementation proof through behavior tests, source seam static assertions, receipt field assertions, or CLI output assertions.
+- Generated commands for code obligations must not use coverage-receipt grep as the only proof.
 - Treat Markdown as the human/model-readable canonical prose and structure.
 - Treat JSON profile as a machine-readable index and compatibility contract only.
 - Do not generate the contract from JSON profile alone.
@@ -61,6 +64,14 @@ Create a frozen `/goal` execution contract. This skill only generates and audits
 - Do not copy classifier-specific, reconfirmation-specific, renderer-specific, or project-specific addendum content into unrelated contracts.
 - Prefer scoped acceptance groups such as `Domain Behavior Acceptance`, `Integration Surface Acceptance`, or `Operational Surface Acceptance` when they make the contract clearer; do not force these group names when the goal is simple.
 - If the source is underspecified, generate a contract that stops with the appropriate amendment condition instead of inventing semantic requirements.
+
+## Deterministic Source Gate
+
+Before emitting any generated task, acceptance row, command row, `NOT DONE` row, or stop condition, the generator must fail closed when a source plan contains nondeterministic executable wording.
+
+The failure payload must use `failureClass: non_deterministic_source_obligation` and must include `sourceId`, `lineStart`, `lineEnd`, `matchedPhrase`, `sourceExcerpt`, and `repairHint`.
+
+The source plan must be repaired to deterministic `MUST` or `MUST NOT` language before goal generation continues. The generator must not transform nondeterministic source wording into generated execution content.
 
 ## Deterministic Requirement Language
 

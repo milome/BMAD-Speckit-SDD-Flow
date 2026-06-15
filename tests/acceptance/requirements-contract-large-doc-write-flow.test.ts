@@ -578,9 +578,20 @@ describe('requirements-contract large document write flow', () => {
     const promoted = runNode(PROMOTE, ['--draft', source, '--target', target, '--json']);
     expect(promoted.result.status).toBe(0);
     expect(promoted.json.ok).toBe(true);
-    expect(promoted.json.backupPath).toMatch(/target\.md\.bak\./u);
+    expect(promoted.json.backupPath).toMatch(/target\.md\.backup-/u);
     expect(fs.existsSync(promoted.json.backupPath)).toBe(true);
     expect(fs.readFileSync(promoted.json.backupPath, 'utf8')).toBe('# old target\n');
+    expect(promoted.json.targetHash).toMatch(/^sha256:[a-f0-9]{64}$/u);
+    expect(promoted.json.audit.ok).toBe(true);
+    expect(promoted.json.preflight.manifest.ok).toBe(true);
+    expect(promoted.json.writeReceipt.schemaVersion).toBe('large-document-writer-safe-write/v1');
+    expect(promoted.json.writeReceipt.finalHash).toBe(promoted.json.targetHash);
     expect(fs.readFileSync(target, 'utf8')).toContain('implementationConfirmation:');
+  });
+
+  it('does not use copyFileAtomic as the final target replacement success path', () => {
+    const source = fs.readFileSync(PROMOTE, 'utf8');
+
+    expect(source).not.toContain('receipt.targetHash = copyFileAtomic(draftPath, targetPath)');
   });
 });

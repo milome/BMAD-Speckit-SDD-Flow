@@ -1,5 +1,8 @@
 const path = require('node:path');
 const { sha256Text } = require('../large-document-writer/receipts');
+const {
+  validateDeterministicSourceObligations,
+} = require('./non-deterministic-source-validator');
 
 function normalizeLineEndings(text) {
   return String(text ?? '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
@@ -42,6 +45,7 @@ function makeObligation(index, base, sourcePlanHash) {
     lineEnd: base.lineEnd,
     headingPath: base.headingPath,
     textHash,
+    text,
     summary: `sourceRef=${sourceRef}; sourceKind=${base.kind}; sourceTextHash=${textHash}`,
     required: true,
   };
@@ -148,6 +152,8 @@ function extractSourceObligations({ sourcePath, sourceText }) {
   const sourceObligations = rawObligations
     .filter((item) => item.text && item.text.trim())
     .map((item, index) => makeObligation(index, item, sourcePlanHash));
+
+  validateDeterministicSourceObligations(sourceObligations);
 
   return {
     sourcePlanPath,

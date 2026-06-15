@@ -5,13 +5,17 @@ function repoPath(filePath) {
 }
 
 function makeRegistries(obligations) {
+  const commandObligations = obligations.filter((obligation) => obligation.kind === 'command_block');
   const sourceObligations = obligations.map((obligation, index) => {
     const number = String(index + 1).padStart(3, '0');
+    const commandRef = commandObligations[0]?.id === obligation.id || commandObligations.length === 0
+      ? `CMD${number}`
+      : `CMD${String(obligations.indexOf(commandObligations[0]) + 1).padStart(3, '0')}`;
     return {
       ...obligation,
       goalTaskRefs: [`G${number}`],
       acceptanceRefs: [`ACC${number}`],
-      commandRefs: [`CMD${number}`],
+      commandRefs: [commandRef],
       evidenceRefs: [`EVD${number}`],
     };
   });
@@ -19,8 +23,43 @@ function makeRegistries(obligations) {
     sourceObligations,
     tasks: sourceObligations.map((obligation) => obligation.goalTaskRefs[0]),
     acceptance: sourceObligations.map((obligation) => obligation.acceptanceRefs[0]),
-    commands: sourceObligations.map((obligation) => obligation.commandRefs[0]),
+    commands: [...new Set(sourceObligations.map((obligation) => obligation.commandRefs[0]))],
     evidence: sourceObligations.map((obligation) => obligation.evidenceRefs[0]),
+  };
+}
+
+function isCodeObligation(obligation) {
+  const text = `${obligation.headingPath?.join(' ') || ''} ${obligation.text || ''} ${obligation.summary || ''}`;
+  return /packages\/|_bmad\/|tests\/|\.js|\.ts|script|CLI|command|seam|receipt|safeWriteText|copyFileAtomic/u.test(text);
+}
+
+function commandTextFromFence(text) {
+  const lines = String(text || '').split(/\r?\n/u);
+  return lines
+    .filter((line) => !/^(```|~~~)/u.test(line.trim()))
+    .join('\n')
+    .trim();
+}
+
+function implementationProofAudit(sourceObligations) {
+  const commandBlocks = sourceObligations.filter((obligation) => obligation.kind === 'command_block');
+  const codeObligations = sourceObligations.filter(isCodeObligation);
+  const blockingReasons = [];
+  if (codeObligations.length > 0 && commandBlocks.length === 0) {
+    blockingReasons.push('code obligations require behavior, static seam, receipt field, or CLI output commands');
+  }
+  return {
+    decision: blockingReasons.length === 0 ? 'pass' : 'blocked',
+    codeObligationCount: codeObligations.length,
+    commandBlockCount: commandBlocks.length,
+    codeObligationEvidenceKinds: [
+      'behavior_test',
+      'source_seam_static_assertion',
+      'receipt_field_assertion',
+      'cli_output_assertion',
+    ],
+    coverageOnlyCommandAllowedForCodeObligations: false,
+    blockingReasons,
   };
 }
 
@@ -98,21 +137,34 @@ function buildTrace(sourceObligations) {
 }
 
 function buildCommands(sourceObligations, coverageReceiptPath) {
-  return sourceObligations
+  const commandObligations = sourceObligations.filter((obligation) => obligation.kind === 'command_block');
+  const commandsToRender = commandObligations.length > 0 ? commandObligations : sourceObligations;
+  return commandsToRender
     .map((obligation, index) => [
       `### ${index + 1}. COMMAND ${obligation.commandRefs[0]}`,
       '',
       '```powershell',
-      `pwsh.exe -NoLogo -NoProfile -Command "& { rg -n -F '${obligation.id}' -- '${repoPath(coverageReceiptPath)}' }"`,
+      obligation.kind === 'command_block'
+        ? commandTextFromFence(obligation.text)
+        : `pwsh.exe -NoLogo -NoProfile -Command "& { node -e \\"const fs=require('fs'); const receipt=JSON.parse(fs.readFileSync('${repoPath(coverageReceiptPath)}','utf8')); if (!receipt.sourceObligations.some((item)=>item.id==='${obligation.id}')) process.exit(1);\\" }"`,
       '```',
       '',
-      `Expected pass condition: Command exits \`0\` and the coverage receipt contains ${obligation.id}.`,
+      obligation.kind === 'command_block'
+        ? 'Expected pass condition: Command exits `0` and proves the source plan command block behavior.'
+        : `Expected pass condition: Command exits \`0\` and proves ${obligation.id} remains source-covered without serving as code implementation proof.`,
     ].join('\n'))
     .join('\n\n');
 }
 
 function buildSlotData({ source, profile, outPath, coverageReceiptPath, generationReceiptPath, generatedAt = new Date().toISOString() }) {
   const registries = makeRegistries(source.sourceObligations);
+  const proofAudit = implementationProofAudit(registries.sourceObligations);
+  if (proofAudit.decision !== 'pass') {
+    const error = new Error('implementation_proof_missing');
+    error.code = 'implementation_proof_missing';
+    error.implementationProofAudit = proofAudit;
+    throw error;
+  }
   const coverageAudit = validateSourceCoverage({
     sourceObligations: registries.sourceObligations,
     registries,
@@ -174,10 +226,11 @@ function buildSlotData({ source, profile, outPath, coverageReceiptPath, generati
       '- STOP003: If coverage receipt is missing, stop with `coverage_receipt_missing`.',
     ].join('\n'),
   };
-  return { slotData, registries, coverageAudit };
+  return { slotData, registries, coverageAudit, implementationProofAudit: proofAudit };
 }
 
 module.exports = {
   buildSlotData,
+  implementationProofAudit,
   makeRegistries,
 };

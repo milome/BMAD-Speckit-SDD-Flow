@@ -54,10 +54,6 @@ function writeSourcePlan(root) {
       '',
       'This repair blocks release until coverage passes.',
       '',
-      '## Ambiguity Regression',
-      '',
-      '- This optional source row includes 可选 and 或 in source prose.',
-      '',
     ].join('\n'),
     'utf8'
   );
@@ -91,9 +87,9 @@ describe('bmad-speckit goal-contract command', () => {
     assert.match(goalText, /unmappedSourceObligations: 0/u);
     assert.match(goalText, /## Source Coverage Matrix/u);
     assert.match(goalText, /\| SRC001 \|/u);
-    assert.match(goalText, /coverage receipt contains SRC001/u);
+    assert.match(goalText, /npx --no-install bmad-speckit goal-contract generate --source docs\/plans\/source\.md --out docs\/plans\/goal\.md --json/u);
     assert.doesNotMatch(goalText, /rg -n -F 'SRC001' -- '.*source-plan\.md'/u);
-    assert.doesNotMatch(goalText, /optional|可选|或/u);
+    assert.doesNotMatch(goalText, /rg -n -F 'SRC\d{3}'.*coverage\.json/u);
     assert.match(goalText, /sourceTextHash=sha256:[0-9a-f]{64}/u);
 
     const coverage = JSON.parse(fs.readFileSync(payload.coverageReceiptPath, 'utf8'));
@@ -104,6 +100,9 @@ describe('bmad-speckit goal-contract command', () => {
     assert.equal(coverage.goalContractHash, payload.goalContractHash);
     assert.equal(generation.coverageReceiptPath, payload.coverageReceiptPath);
     assert.equal(generation.goalContractHash, payload.goalContractHash);
+    assert.equal(payload.implementationProofAudit.decision, 'pass');
+    assert.equal(generation.implementationProofAudit.decision, 'pass');
+    assert.equal(generation.implementationProofAudit.coverageOnlyCommandAllowedForCodeObligations, false);
     assert.equal(generation.writeReceipt.schemaVersion, 'large-document-writer-safe-write/v1');
   });
 
