@@ -8,9 +8,12 @@ function makeRegistries(obligations) {
   const commandObligations = obligations.filter((obligation) => obligation.kind === 'command_block');
   const sourceObligations = obligations.map((obligation, index) => {
     const number = String(index + 1).padStart(3, '0');
-    const commandRef = commandObligations[0]?.id === obligation.id || commandObligations.length === 0
+    const commandIndex = obligation.kind === 'command_block'
+      ? index
+      : obligations.indexOf(commandObligations[0]);
+    const commandRef = commandObligations.length === 0
       ? `CMD${number}`
-      : `CMD${String(obligations.indexOf(commandObligations[0]) + 1).padStart(3, '0')}`;
+      : `CMD${String(commandIndex + 1).padStart(3, '0')}`;
     return {
       ...obligation,
       goalTaskRefs: [`G${number}`],

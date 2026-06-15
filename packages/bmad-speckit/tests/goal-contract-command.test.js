@@ -106,6 +106,52 @@ describe('bmad-speckit goal-contract command', () => {
     assert.equal(generation.writeReceipt.schemaVersion, 'large-document-writer-safe-write/v1');
   });
 
+  it('assigns each command block its own command reference', () => {
+    const root = tempRoot();
+    const sourcePath = path.join(root, 'multi-command-source-plan.md');
+    fs.writeFileSync(
+      sourcePath,
+      [
+        '# Multi Command Plan',
+        '',
+        '## File Map',
+        '',
+        '- Modify `packages/bmad-speckit/src/commands/goal-contract.js`.',
+        '',
+        '## Implementation Task Breakdown',
+        '',
+        '### Task 1: First command',
+        '',
+        '- MUST run the first command block.',
+        '',
+        '```powershell',
+        'node --test packages/bmad-speckit/tests/goal-contract-command.test.js',
+        '```',
+        '',
+        '### Task 2: Second command',
+        '',
+        '- MUST run the second command block.',
+        '',
+        '```powershell',
+        'node --test packages/bmad-speckit/tests/goal-contract-implementation-proof.test.js',
+        '```',
+      ].join('\n'),
+      'utf8'
+    );
+    const out = path.join(root, 'goal-execution-plan.md');
+
+    const result = runCli(['generate', '--source', sourcePath, '--out', out, '--json']);
+
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    const goalText = fs.readFileSync(out, 'utf8');
+    const commandHeadings = [...goalText.matchAll(/### \d+\. COMMAND (CMD\d{3})/gu)].map((match) => match[1]);
+
+    assert.equal(commandHeadings.length, 2);
+    assert.notEqual(commandHeadings[0], commandHeadings[1]);
+    assert.match(goalText, /node --test packages\/bmad-speckit\/tests\/goal-contract-command\.test\.js/u);
+    assert.match(goalText, /node --test packages\/bmad-speckit\/tests\/goal-contract-implementation-proof\.test\.js/u);
+  });
+
   it('returns a stable JSON failure when the source path is missing', () => {
     const root = tempRoot();
     const out = path.join(root, 'goal-execution-plan.md');
