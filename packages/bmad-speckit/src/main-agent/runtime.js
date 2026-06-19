@@ -34,6 +34,7 @@ const { e2eDualHostJourneyRunnerAction } = require('./actions/e2e-dual-host-jour
 const { e2eHostMatrixJourneyRunnerAction } = require('./actions/e2e-host-matrix-journey-runner');
 const { finalCloseoutEvidenceRunnerAction } = require('./actions/final-closeout-evidence-runner');
 const { functionalResumeCheckAction } = require('./actions/functional-resume-check');
+const { emitFullOrchestration } = require('./actions/full-orchestration');
 const { governedDataProductsAction } = require('./actions/governed-data-products');
 const { governancePacketDispatchWorkerAction } = require('./actions/governance-packet-dispatch-worker');
 const { implementationReadinessGateAction } = require('./actions/implementation-readiness-gate');
@@ -60,7 +61,6 @@ const { requirementRecordControlStoreAction } = require('./actions/requirement-r
 const { requirementRecordLiveSchemaGateAction } = require('./actions/requirement-record-live-schema-gate');
 const { requirementRecordSchemaEvolutionAction } = require('./actions/requirement-record-schema-evolution');
 const { resolveActiveRequirementAction } = require('./actions/resolve-active-requirement');
-const { legacyRunLoopAction, runLoopAction } = require('./actions/run-loop');
 const { runtimePolicySnapshotCheckAction } = require('./actions/runtime-policy-snapshot-check');
 const { runtimeScoringDataPathAction } = require('./actions/runtime-scoring-data-path');
 const { scoringGatesCheckAction } = require('./actions/scoring-gates-check');
@@ -312,6 +312,10 @@ function requireRuntimeState(context) {
 }
 
 async function runMainAgentRuntime(context) {
+  if (context.legacyOrchestration && (context.action === 'run-loop' || !SUPPORTED_ACTIONS.has(context.action))) {
+    return emitFullOrchestration(context);
+  }
+
   if (!SUPPORTED_ACTIONS.has(context.action)) {
     return emitResponse(
       context,
@@ -350,10 +354,7 @@ async function runMainAgentRuntime(context) {
   }
 
   if (context.action === 'run-loop') {
-    if (context.legacyOrchestration) return emitLegacyResult(legacyRunLoopAction(context));
-    const runtime = requireRuntimeState(context);
-    if (!runtime.ok) return emitResponse(context, runtime.response);
-    return emitResponse(context, envelope(context, 'ok', 0, runLoopAction(context, runtime.state)));
+    return emitFullOrchestration(context);
   }
 
   if (context.action === 'release-gate') {

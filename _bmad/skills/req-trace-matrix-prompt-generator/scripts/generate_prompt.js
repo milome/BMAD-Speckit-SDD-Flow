@@ -73,6 +73,8 @@ function parseArgs(argv) {
     promptLanguage: 'auto',
     humanPromptProfile: 'full',
     goalCommandAvailable: 'auto',
+    packetId: null,
+    taskReportPath: null,
   };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
@@ -935,6 +937,29 @@ function normalizePathSafe(file) {
   return file.split(path.sep).join('/');
 }
 
+function targetModificationPathValue(row) {
+  if (!row || typeof row !== 'object') return '';
+  return String(row.path ?? row.targetPath ?? row.file ?? row.glob ?? '').trim();
+}
+
+function deriveAllowedWriteScope(confirmation) {
+  const directTargets = Array.isArray(confirmation.targetModificationPaths)
+    ? confirmation.targetModificationPaths.flatMap((item) =>
+        typeof item === 'string' ? [item] : [targetModificationPathValue(item)].filter(Boolean)
+      )
+    : [];
+  const taskTargets = objects(confirmation.atomicImplementationTaskList).flatMap((task) =>
+    Array.isArray(task.targetModificationPaths)
+      ? task.targetModificationPaths.flatMap((item) =>
+          typeof item === 'string' ? [item] : [targetModificationPathValue(item)].filter(Boolean)
+        )
+      : []
+  );
+  return unique([...directTargets, ...taskTargets])
+    .map((item) => normalizePathSafe(item))
+    .filter(Boolean);
+}
+
 function optionalArtifactRef(sourcePath, ref) {
   const normalized = normalizeRefPath(sourcePath, ref);
   if (!normalized) return null;
@@ -1184,6 +1209,9 @@ function buildModelPacket(context, args) {
   const sourceLabel = args.sourceLabel || displayPath(context.sourcePath);
   const manifest = confirmation.aiTddContractExecutionManifestProjection ?? {};
   const recordId = context.record.recordId ?? confirmation.recordId ?? 'unknown';
+  const packetId = args.packetId || recordId;
+  const taskReportPath = args.taskReportPath ? normalizePathSafe(path.resolve(args.taskReportPath)) : '';
+  const allowedWriteScope = deriveAllowedWriteScope(confirmation);
   const hostExecutionHints = normalizeHostExecutionHints(manifest.hostExecutionHints, recordId);
   const contractExecutionManifest = buildDerivedContractExecutionManifest({
     confirmation,
@@ -1206,6 +1234,7 @@ function buildModelPacket(context, args) {
     schemaVersion: 'req-trace-ai-tdd-model-packet/v1',
     artifactRole: 'execution_authority',
     recordId,
+    packetId,
     sourceDocument: sourceLabel,
     sourceDocumentHash: context.sourceDocumentHash,
     implementationConfirmationHash: context.implementationConfirmationHash,
@@ -1252,6 +1281,32 @@ function buildModelPacket(context, args) {
         'artifactIndex',
       ],
       missingEvidenceBehavior: 'remain_open_or_record_MISSING_EVIDENCE',
+    },
+    executionHandoff: {
+      packetId,
+      taskReportPath,
+      allowedWriteScope,
+      taskReportSchema:
+        'TaskReport schema: { packetId, status, filesChanged, validationsRun, evidence, downstreamContext, driftFlags? }',
+      requiredValidationCommands: objects(confirmation.requiredCommands).map((command) => ({
+        id: commandId(command),
+        command: commandText(command),
+      })),
+      completionEvidenceFields: [
+        'packetId',
+        'status',
+        'filesChanged',
+        'validationsRun',
+        'evidence',
+        'downstreamContext',
+        'driftFlags?',
+      ],
+      stopConditions: [
+        'reconfirm_required_on_semantic_gap',
+        'scope_expansion_requires_reconfirmation',
+        'validation_unavailable_requires_blocked_TaskReport',
+        'write_strict_TaskReport_before_returning_to_main_agent',
+      ],
     },
     preConfirmationDrilldown: buildPreConfirmationDrilldown(context.sourcePath, confirmation),
     contractExecutionManifest,
@@ -1542,10 +1597,43 @@ oracle: ${command.oracle || '(none)'}`
     .join('\n\n');
 }
 
+function renderGoalNativeTaskReportHandoff(packet) {
+  const handoff = packet.executionHandoff ?? {};
+  const allowedWriteScope = Array.isArray(handoff.allowedWriteScope)
+    ? handoff.allowedWriteScope
+    : [];
+  const requiredValidationCommands = Array.isArray(handoff.requiredValidationCommands)
+    ? handoff.requiredValidationCommands
+    : [];
+  const completionEvidenceFields = Array.isArray(handoff.completionEvidenceFields)
+    ? handoff.completionEvidenceFields
+    : [];
+  const stopConditions = Array.isArray(handoff.stopConditions) ? handoff.stopConditions : [];
+  return `### Native Goal TaskReport Handoff
+
+- Packet ID: ${handoff.packetId || packet.packetId || packet.recordId}
+- TaskReport path: ${handoff.taskReportPath || '(not provided)'}
+- TaskReport schema: { packetId, status, filesChanged, validationsRun, evidence, downstreamContext, driftFlags? }
+- Allowed write scope: ${allowedWriteScope.join(', ') || '(not declared)'}
+- Required validation commands: ${
+    requiredValidationCommands
+      .map((command) => `${command.id || '<missing>'}: ${command.command || '<missing>'}`)
+      .join(' | ') || '(none)'
+  }
+- Completion evidence fields: ${completionEvidenceFields.join(', ') || '(none)'}
+- Stop conditions: ${stopConditions.join(', ') || '(none)'}
+
+Before returning control to main-agent, write strict JSON to the exact TaskReport path above.
+TaskReport.status must be done only after required validations and governed evidence pass.`;
+}
+
 function renderHostDirectiveText(directive) {
   const lines = [`Continuation strategy: ${directive.strategy}`, directive.directive];
   if (directive.goalCommand?.mode === 'native_goal_document_ref') {
     lines.push('The /goal command is an entry pointer only, not the full task scope.');
+    lines.push(
+      'The /goal command is the execution entrypoint for Codex and Claude Code CLI native goal mode.'
+    );
     lines.push('Execution scope is goal_execution.md + model_packet.json.');
   }
   if (directive.userInstruction) lines.push(`User surface: ${directive.userInstruction}`);
@@ -1774,6 +1862,8 @@ function renderGoalDomainAddenda(packet) {
 - Missing evidence behavior: ${packet.runtimeWritePolicy.missingEvidenceBehavior}
 - Semantic gap action: reconfirm_required
 - Non-semantic gap action: repair_and_rerun_same_trace_slice
+
+${renderGoalNativeTaskReportHandoff(packet)}
 
 ### Execution Discipline Profile
 

@@ -78,42 +78,42 @@ function writeCodexImplementationWorker(root: string): void {
   }
 }
 
-function writeFakeCodexBinary(root: string, validationPrefix: string): string {
-  const fakeCodexPath = path.join(root, `${validationPrefix}.cjs`);
-  fs.writeFileSync(
-    fakeCodexPath,
-    [
-      "const fs = require('fs');",
-      "const path = require('path');",
-      "const input = fs.readFileSync(0, 'utf8');",
-      'const reportPath = input.match(/write a JSON TaskReport to: (.+)/i)?.[1]?.trim();',
-      'const packetId = input.match(/Packet ID: (.+)/i)?.[1]?.trim();',
-      'const packetPath = input.match(/Read dispatch packet: (.+)/i)?.[1]?.trim();',
-      "let taskType = 'unknown';",
-      "if (packetPath && fs.existsSync(packetPath)) taskType = JSON.parse(fs.readFileSync(packetPath, 'utf8')).taskType || taskType;",
-      'if (!reportPath || !packetId) process.exit(2);',
-      'fs.mkdirSync(path.dirname(reportPath), { recursive: true });',
-      `fs.writeFileSync(reportPath, JSON.stringify({ packetId, status: 'done', filesChanged: [], validationsRun: ['${validationPrefix}-' + taskType], evidence: ['${validationPrefix}-adapter'], downstreamContext: ['fake codex ' + taskType + ' completed'] }, null, 2) + '\\n', 'utf8');`,
-      'process.exit(0);',
-      '',
-    ].join('\n'),
-    'utf8'
-  );
-  const fakeCodexBin =
-    process.platform === 'win32'
-      ? path.join(root, `${validationPrefix}.cmd`)
-      : path.join(root, validationPrefix);
-  fs.writeFileSync(
-    fakeCodexBin,
-    process.platform === 'win32'
-      ? `@echo off\r\n"${process.execPath}" "${fakeCodexPath}" %*\r\n`
-      : `#!/usr/bin/env sh\n"${process.execPath}" "${fakeCodexPath}" "$@"\n`,
-    'utf8'
-  );
-  if (process.platform !== 'win32') {
-    fs.chmodSync(fakeCodexBin, 0o755);
+function nativeGoalPacketIdFromArgs(args: string[]): string {
+  const commandText = args.find((arg) => arg.startsWith('/goal ')) ?? '';
+  const match = commandText.match(/trace-execution[\\/]+([^\\/]+)[\\/]+goal_execution\.md/u);
+  if (!match) {
+    throw new Error(`unable to resolve packet id from native goal args: ${commandText}`);
   }
-  return fakeCodexBin;
+  return match[1];
+}
+
+function writeNativeGoalTaskReport(root: string, sessionId: string, packetId: string, prefix: string) {
+  const reportPath = path.join(
+    root,
+    '_bmad-output',
+    'runtime',
+    'governance',
+    'task-reports',
+    sessionId,
+    `${packetId}.json`
+  );
+  fs.mkdirSync(path.dirname(reportPath), { recursive: true });
+  fs.writeFileSync(
+    reportPath,
+    JSON.stringify(
+      {
+        packetId,
+        status: 'done',
+        filesChanged: [],
+        validationsRun: [`${prefix}-native-goal`],
+        evidence: [`${prefix}-native-goal-task-report`],
+        downstreamContext: [`${prefix} native goal completed`],
+      },
+      null,
+      2
+    ) + '\n',
+    'utf8'
+  );
 }
 
 describe('main-agent automatic run-loop', () => {
@@ -309,45 +309,31 @@ describe('main-agent automatic run-loop', () => {
     }
   });
 
-  it('runs Codex worker adapter in non-smoke mode through run-loop when a Codex binary is available', () => {
+  it('runs Codex host through native goal invocation when a native command is available', () => {
     const fixture = materializeRunLoopFixture();
     const root = fixture.root;
-    const previous = process.env.CODEX_WORKER_ADAPTER_BIN;
-    const previousAllow = process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE;
     try {
-      writeCodexImplementationWorker(root);
-      const fakeCodexBin = writeFakeCodexBinary(root, 'fake-codex-exec');
-      process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE = 'true';
-      process.env.CODEX_WORKER_ADAPTER_BIN = fakeCodexBin;
-
       const result = runMainAgentAutomaticLoop({
         ...runLoopArgs(fixture),
         host: 'codex',
+        nativeGoalSpawnSyncFn: (_command, args) => {
+          const packetId = nativeGoalPacketIdFromArgs(args);
+          writeNativeGoalTaskReport(root, fixture.requirementSetId, packetId, 'fake-codex');
+          return { status: 0, stdout: 'native goal completed', stderr: '' };
+        },
       });
 
-      expect(result.status).toBe('blocked');
-      expect(result.steps.find((step) => step.step === 'codex-worker-adapter')?.summary).toContain(
-        'mode=codex_exec'
+      expect(result.status).toBe('completed');
+      expect(result.steps.find((step) => step.step === 'native-goal-invocation')?.summary).toContain(
+        'command=codex'
       );
-      expect(result.taskReport?.validationsRun).toContain('fake-codex-exec-implement');
+      expect(result.steps.some((step) => step.step === 'codex-worker-adapter')).toBe(false);
+      expect(result.taskReport?.validationsRun).toContain('fake-codex-native-goal');
       expect(result.taskReport?.validationsRun).not.toContain('codex-worker-adapter-smoke');
       expect(result.taskReport?.validationsRun).not.toContain('main-agent:run-loop-task-report');
-      expect(result.taskReport?.driftFlags).toContain(
-        'task-report-done-without-valid-subagent-evidence-envelope'
-      );
-      expect(result.finalSurface.pendingPacketStatus).toBe('invalidated');
-      expect(result.finalSurface.mainAgentNextAction).toBe('dispatch_implement');
+      expect(result.finalSurface.pendingPacketStatus).toBe('completed');
+      expect(result.finalSurface.mainAgentNextAction).toBe('run_execution_closure_gate');
     } finally {
-      if (previous === undefined) {
-        delete process.env.CODEX_WORKER_ADAPTER_BIN;
-      } else {
-        process.env.CODEX_WORKER_ADAPTER_BIN = previous;
-      }
-      if (previousAllow === undefined) {
-        delete process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE;
-      } else {
-        process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE = previousAllow;
-      }
       cleanupRequirementWorkspace(root);
     }
   });
@@ -387,50 +373,34 @@ describe('main-agent automatic run-loop', () => {
     }
   });
 
-  it('continues rerun_gate remediation and review through the Codex worker adapter', () => {
+  it('continues rerun_gate remediation through native goal invocation failures', () => {
     const fixture = materializeRunLoopFixture();
     const root = fixture.root;
-    const previous = process.env.CODEX_WORKER_ADAPTER_BIN;
-    const previousAllow = process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE;
     try {
-      writeCodexImplementationWorker(root);
-      process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE = 'true';
-      process.env.CODEX_WORKER_ADAPTER_BIN = writeFakeCodexBinary(root, 'fake-rerun-codex');
-
       const remediate = runMainAgentAutomaticLoop({
         ...runLoopArgs(fixture),
         host: 'codex',
+        nativeGoalSpawnSyncFn: () => ({ status: 1, stdout: '', stderr: 'native failed' }),
       });
       expect(remediate.status).toBe('blocked');
       expect(remediate.dispatchInstruction?.taskType).toBe('implement');
-      expect(remediate.taskReport?.validationsRun).toContain('fake-rerun-codex-implement');
-      expect(remediate.taskReport?.driftFlags).toContain(
-        'task-report-done-without-valid-subagent-evidence-envelope'
-      );
+      expect(remediate.taskReport?.validationsRun).toContain('native-goal-host-command');
+      expect(remediate.taskReport?.driftFlags).toContain('native-goal-invocation-failed');
       expect(remediate.finalSurface.mainAgentNextAction).toBe('dispatch_implement');
 
       const review = runMainAgentAutomaticLoop({
         ...runLoopArgs(fixture),
         host: 'codex',
+        nativeGoalSpawnSyncFn: () => ({ status: 1, stdout: '', stderr: 'native failed again' }),
       });
       expect(review.status).toBe('blocked');
       expect(review.dispatchInstruction?.taskType).toBe('implement');
       expect(review.dispatchInstruction?.nextAction).toBe('dispatch_implement');
-      expect(review.steps.find((step) => step.step === 'codex-worker-adapter')?.summary).toContain(
-        'mode=codex_exec'
+      expect(review.steps.find((step) => step.step === 'native-goal-invocation')?.summary).toContain(
+        'command=codex'
       );
       expect(review.finalSurface.orchestrationState?.host).toBe('codex');
     } finally {
-      if (previous === undefined) {
-        delete process.env.CODEX_WORKER_ADAPTER_BIN;
-      } else {
-        process.env.CODEX_WORKER_ADAPTER_BIN = previous;
-      }
-      if (previousAllow === undefined) {
-        delete process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE;
-      } else {
-        process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE = previousAllow;
-      }
       cleanupRequirementWorkspace(root);
     }
   });

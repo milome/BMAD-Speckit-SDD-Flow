@@ -483,6 +483,37 @@ function sha256File(filePath: string): string {
   return `sha256:${createHash('sha256').update(fs.readFileSync(filePath)).digest('hex')}`;
 }
 
+function writeJson(filePath: string, value: unknown): void {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+}
+
+function rewritePacketAuditReceiptAsFallback(packetPath: string): void {
+  const packet = JSON.parse(fs.readFileSync(packetPath, 'utf8')) as Record<string, any>;
+  const ref = packet.compiledPromptRef;
+  const existing = JSON.parse(fs.readFileSync(ref.auditReceiptPath, 'utf8')) as Record<
+    string,
+    unknown
+  >;
+  const directive = 'continue nonstop';
+  writeJson(ref.auditReceiptPath, {
+    ...existing,
+    goalCommand: {
+      mode: 'fallback_prompt_contract',
+      chars: Array.from(directive).length,
+      documentPath: null,
+      documentHash: null,
+      nativeGoalCommandUsed: false,
+    },
+    continuationDirective: {
+      directive,
+      nativeGoalCommandUsed: false,
+    },
+  });
+  packet.compiledPromptRef.auditReceiptHash = sha256File(ref.auditReceiptPath);
+  writeJson(packetPath, packet);
+}
+
 function writeFakeReqTraceSkill(root: string): void {
   const scriptPath = path.join(
     root,
@@ -806,6 +837,7 @@ describe('main-agent codex worker adapter e2e', () => {
         host: 'claude',
         hydratePacket: true,
       });
+      rewritePacketAuditReceiptAsFallback(instruction!.packetPath);
       const taskReportPath = path.join(root, 'fake-codex-task-report.json');
       const adapter = runBoundCodexWorkerAdapter({
         projectRoot: root,
@@ -956,6 +988,7 @@ describe('main-agent codex worker adapter e2e', () => {
         host: 'codex',
         hydratePacket: true,
       });
+      rewritePacketAuditReceiptAsFallback(instruction!.packetPath);
 
       const adapter = runBoundCodexWorkerAdapter({
         projectRoot: root,
@@ -976,7 +1009,7 @@ describe('main-agent codex worker adapter e2e', () => {
     }
   });
 
-  it('renders compiled human_prompt.txt after governance and blocks stale compiled prompt refs', () => {
+  it('blocks direct wrapped prompt execution for native goal packets', () => {
     const root = prepareCodexRoot();
     try {
       const instruction = buildMainAgentDispatchInstruction({
@@ -986,6 +1019,36 @@ describe('main-agent codex worker adapter e2e', () => {
         host: 'codex',
         hydratePacket: true,
       });
+
+      const adapter = runBoundCodexWorkerAdapter({
+        projectRoot: root,
+        packetPath: instruction!.packetPath,
+        taskReportPath: path.join(root, 'native-goal-direct-adapter-task-report.json'),
+        smoke: false,
+        timeoutMs: 1,
+      });
+
+      expect(adapter.exitCode).toBe(1);
+      expect(adapter.taskReport.status).toBe('blocked');
+      expect(adapter.taskReport.driftFlags).toContain('native-goal-invoker-required');
+      expect(adapter.stdinPath).toBeNull();
+      expect(adapter.taskReport.evidence.join('\n')).not.toContain('--- Compiled Human Prompt ---');
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('renders non-native compiled human_prompt.txt after governance and blocks stale compiled prompt refs', () => {
+    const root = prepareCodexRoot();
+    try {
+      const instruction = buildMainAgentDispatchInstruction({
+        projectRoot: root,
+        flow: 'story',
+        stage: 'implement',
+        host: 'codex',
+        hydratePacket: true,
+      });
+      rewritePacketAuditReceiptAsFallback(instruction!.packetPath);
 
       const adapter = runBoundCodexWorkerAdapter({
         projectRoot: root,
@@ -1002,9 +1065,7 @@ describe('main-agent codex worker adapter e2e', () => {
       );
       expect(prompt).toContain('--- Entry Flow Discipline Profile ---');
       expect(prompt).toContain('compiled worker body');
-      expect(prompt).toContain(
-        '/goal is an entry pointer only; execution scope is goal_execution.md plus model_packet.json'
-      );
+      expect(prompt).not.toContain('native goal packets require host-native invoker');
       expect(prompt).not.toContain('BUG-A4-IMPL');
       expect(prompt).not.toContain('STORY-A3-DEV');
 
@@ -1055,6 +1116,7 @@ describe('main-agent codex worker adapter e2e', () => {
         hydratePacket: true,
       });
       expect(instruction?.nextAction).toBe('dispatch_implement');
+      rewritePacketAuditReceiptAsFallback(instruction!.packetPath);
 
       const adapter = runBoundCodexWorkerAdapter({
         projectRoot: root,
@@ -1112,6 +1174,7 @@ describe('main-agent codex worker adapter e2e', () => {
         hydratePacket: true,
       });
       expect(instruction?.nextAction).toBe('dispatch_implement');
+      rewritePacketAuditReceiptAsFallback(instruction!.packetPath);
       markMainAgentPacketDispatched(root, instruction!.sessionId, instruction!.packetId);
 
       const adapter = runBoundCodexWorkerAdapter({
@@ -1306,6 +1369,7 @@ describe('main-agent codex worker adapter e2e', () => {
         host: 'codex',
         hydratePacket: true,
       });
+      rewritePacketAuditReceiptAsFallback(instruction!.packetPath);
       const taskReportPath = path.join(root, 'hidden-write-task-report.json');
 
       const adapter = runBoundCodexWorkerAdapter({

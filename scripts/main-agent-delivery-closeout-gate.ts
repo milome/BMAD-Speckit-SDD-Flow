@@ -10,6 +10,11 @@ import { evaluateStrictCloseoutProof } from './strict-closeout-proof-gate';
 import { readImplementationConfirmation } from './target-artifact-realization-gate';
 import { buildPerMustClosureEvidenceIndex } from './per-must-closure-evidence-index';
 import { openReconfirmationRequests } from './reconfirmation-runtime';
+import {
+  runtimeModeDir,
+  type NativeGoalInvocationReceipt,
+  validateNativeGoalInvocationReceipt,
+} from './host-runtime-mode';
 
 type JsonObject = Record<string, unknown>;
 type CloseoutDecision = 'pass' | 'fail' | 'blocked';
@@ -185,6 +190,10 @@ function closeoutRenderReportPathFor(htmlPath: string, explicit?: string): strin
 function closeoutSummaryPathFor(htmlPath: string): string {
   const parsed = path.parse(htmlPath);
   return path.join(parsed.dir, `${parsed.name}.summary.json`);
+}
+
+function projectRootForRecordPath(recordPath: string): string {
+  return path.resolve(path.dirname(recordPath), '..', '..', '..', '..');
 }
 
 function resolveRecordRelativePath(recordPath: string, candidate: string): string {
@@ -669,6 +678,202 @@ function latestRerunLoops(record: JsonObject): JsonObject[] {
     if (rerunLoopId) latestByRerunLoopId.set(rerunLoopId, loop);
   }
   return [...latestByRerunLoopId.values()];
+}
+
+interface NativeGoalCloseoutAttempt {
+  recordId: string;
+  attemptId: string;
+  packetId: string;
+  host: string;
+  goalExecutionHash: string;
+  taskReportPath: string;
+  orderingKey: string;
+}
+
+function nativeGoalAttemptFromObject(
+  item: JsonObject,
+  recordId: string,
+  orderIndex: number
+): NativeGoalCloseoutAttempt | null {
+  if (text(item.executionRuntimeMode) !== 'native_goal') return null;
+  const packetId = text(item.packetId) || text(item.executionIterationId) || text(item.runId);
+  const attemptId = text(item.attemptId) || text(item.executionIterationId) || packetId;
+  const host = text(item.host) || text(item.canonicalHost) || 'codex';
+  const goalExecutionHash = text(item.goalExecutionHash);
+  if (!packetId || !attemptId || !goalExecutionHash) return null;
+  return {
+    recordId,
+    attemptId,
+    packetId,
+    host,
+    goalExecutionHash,
+    taskReportPath: text(item.taskReportPath),
+    orderingKey:
+      text(item.recordedAt) ||
+      text(item.selectedAt) ||
+      text(item.completedAt) ||
+      String(orderIndex).padStart(8, '0'),
+  };
+}
+
+function nativeGoalAttemptsFromRuntimeModeArtifacts(
+  projectRoot: string,
+  recordId: string
+): NativeGoalCloseoutAttempt[] {
+  const runtimeRoot = runtimeModeDir(projectRoot, recordId, '.');
+  const parentDir = path.dirname(runtimeRoot);
+  if (!fs.existsSync(parentDir)) return [];
+  return fs
+    .readdirSync(parentDir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry, index) => {
+      const selectionPath = path.join(
+        parentDir,
+        entry.name,
+        'execution-runtime-mode-selection.json'
+      );
+      const selection = readJsonIfExists(selectionPath);
+      return selection
+        ? nativeGoalAttemptFromObject(selection, recordId, 100_000 + index)
+        : null;
+    })
+    .filter((attempt): attempt is NativeGoalCloseoutAttempt => Boolean(attempt));
+}
+
+function latestNativeGoalCloseoutAttempt(
+  record: JsonObject,
+  recordPath: string
+): NativeGoalCloseoutAttempt | null {
+  const recordId = text(record.recordId) || text(record.requirementSetId);
+  if (!recordId) return null;
+  const projectRoot = projectRootForRecordPath(recordPath);
+  const explicitAttempts = objects(record.executionIterations)
+    .map((iteration, index) => nativeGoalAttemptFromObject(iteration, recordId, index))
+    .filter((attempt): attempt is NativeGoalCloseoutAttempt => Boolean(attempt));
+  const runtimeAttempts = nativeGoalAttemptsFromRuntimeModeArtifacts(projectRoot, recordId);
+  const byAttempt = new Map<string, NativeGoalCloseoutAttempt>();
+  for (const attempt of [...runtimeAttempts, ...explicitAttempts]) {
+    const existing = byAttempt.get(attempt.attemptId);
+    byAttempt.set(attempt.attemptId, {
+      ...existing,
+      ...attempt,
+      taskReportPath: attempt.taskReportPath || existing?.taskReportPath || '',
+      orderingKey:
+        attempt.orderingKey > (existing?.orderingKey ?? '') ? attempt.orderingKey : existing?.orderingKey ?? attempt.orderingKey,
+    });
+  }
+  return [...byAttempt.values()].sort((left, right) =>
+    left.orderingKey.localeCompare(right.orderingKey)
+  ).at(-1) ?? null;
+}
+
+function nativeGoalReceiptPath(input: {
+  projectRoot: string;
+  recordId: string;
+  attemptId: string;
+}): string {
+  return path.join(
+    runtimeModeDir(input.projectRoot, input.recordId, input.attemptId),
+    'native-goal-invocation-receipt.json'
+  );
+}
+
+function readNativeGoalReceiptIfExists(filePath: string): NativeGoalInvocationReceipt | null {
+  if (!fs.existsSync(filePath)) return null;
+  return readJson(filePath) as unknown as NativeGoalInvocationReceipt;
+}
+
+function strictNativeTaskReportIssues(filePath: string, packetId: string): string[] {
+  if (!filePath || filePath === 'not_available') return ['taskReportPath'];
+  const resolved = path.resolve(filePath);
+  if (!fs.existsSync(resolved)) return ['taskReportPath'];
+  try {
+    const report = readJson(resolved);
+    const issues: string[] = [];
+    if (text(report.packetId) !== packetId) issues.push('packetId');
+    if (text(report.status) !== 'done') issues.push('status');
+    if (!Array.isArray(report.filesChanged)) issues.push('filesChanged');
+    if (!Array.isArray(report.validationsRun)) issues.push('validationsRun');
+    if (!Array.isArray(report.evidence)) issues.push('evidence');
+    if (!Array.isArray(report.downstreamContext)) issues.push('downstreamContext');
+    return issues;
+  } catch {
+    return ['taskReportPath'];
+  }
+}
+
+function nativeGoalCloseoutEvidenceIssues(
+  record: JsonObject,
+  recordPath: string
+): { issues: string[]; checks: JsonObject[] } {
+  const attempt = latestNativeGoalCloseoutAttempt(record, recordPath);
+  if (!attempt) {
+    return {
+      issues: [],
+      checks: [
+        {
+          id: 'native-goal-invocation-receipt',
+          passed: true,
+          required: false,
+        },
+      ],
+    };
+  }
+  const projectRoot = projectRootForRecordPath(recordPath);
+  const receiptBlocker = validateNativeGoalInvocationReceipt({
+    projectRoot,
+    recordId: attempt.recordId,
+    attemptId: attempt.attemptId,
+    packetId: attempt.packetId,
+    host: attempt.host,
+    goalExecutionHash: attempt.goalExecutionHash,
+  });
+  const receiptPath = nativeGoalReceiptPath({
+    projectRoot,
+    recordId: attempt.recordId,
+    attemptId: attempt.attemptId,
+  });
+  if (receiptBlocker) {
+    return {
+      issues: [receiptBlocker.reasonCode],
+      checks: [
+        {
+          id: 'native-goal-invocation-receipt',
+          passed: false,
+          required: true,
+          reasonCode: receiptBlocker.reasonCode,
+          invalidFields: strings(nested(receiptBlocker.reasonDetails).invalidFields),
+          receiptPath: normalizePathForRecord(receiptPath),
+          packetId: attempt.packetId,
+          attemptId: attempt.attemptId,
+        },
+      ],
+    };
+  }
+  const receipt = readNativeGoalReceiptIfExists(receiptPath);
+  const taskReportPath = text(receipt?.taskReportPath) || attempt.taskReportPath;
+  const taskReportIssues = strictNativeTaskReportIssues(taskReportPath, attempt.packetId);
+  const taskReportPassed = taskReportIssues.length === 0;
+  return {
+    issues: taskReportPassed ? [] : ['task_report_missing_after_native_goal'],
+    checks: [
+      {
+        id: 'native-goal-invocation-receipt',
+        passed: true,
+        required: true,
+        receiptPath: normalizePathForRecord(receiptPath),
+        packetId: attempt.packetId,
+        attemptId: attempt.attemptId,
+      },
+      {
+        id: 'native-goal-task-report',
+        passed: taskReportPassed,
+        required: true,
+        taskReportPath: normalizePathForRecord(taskReportPath),
+        invalidFields: taskReportIssues,
+      },
+    ],
+  };
 }
 
 function artifactCompletenessIssues(artifactRef: unknown): string[] {
@@ -1903,6 +2108,10 @@ function evaluate(
     issueCount: hookIssues.length,
   });
   blockingReasons.push(...hookIssues);
+
+  const nativeGoalCloseout = nativeGoalCloseoutEvidenceIssues(record, recordPath);
+  checks.push(...nativeGoalCloseout.checks);
+  blockingReasons.push(...nativeGoalCloseout.issues);
 
   const deliveryTruthRequired = legacyClosedLoopEvidenceRequired(record);
   const failureCasesRequired = failureCaseCoverageRequired(record, applicability);

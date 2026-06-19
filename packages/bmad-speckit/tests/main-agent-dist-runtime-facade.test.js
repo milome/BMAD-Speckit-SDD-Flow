@@ -57,7 +57,6 @@ describe('main-agent dist runtime facade', () => {
         'inspect',
         'confirm-scope',
         'dispatch-plan',
-        'run-loop',
         'release-gate',
         'quality-gate',
         'delivery-truth-gate',

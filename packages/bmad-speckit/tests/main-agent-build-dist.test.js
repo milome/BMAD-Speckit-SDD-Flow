@@ -10,6 +10,15 @@ const BUILD_SCRIPT = path.join(PACKAGE_ROOT, 'scripts', 'build-main-agent-dist.c
 const PACKAGE_JSON = path.join(PACKAGE_ROOT, 'package.json');
 const RELEASE_WORKFLOW = path.join(REPO_ROOT, '.github', 'workflows', 'release.yml');
 const DIST_ROOT = path.join(PACKAGE_ROOT, 'dist', 'main-agent');
+const EXPECTED_PACKAGE_RUNTIME_ASSETS = [
+  '_bmad/core/agents/code-reviewer/base-prompt.md',
+  '_bmad/core/agents/code-reviewer/metadata.json',
+  '_bmad/core/agents/code-reviewer/profiles.json',
+  '_bmad/core/skills/bmad-party-mode/workflow.md',
+  '_bmad/core/skills/bmad-party-mode/steps/step-01-agent-loading.md',
+  '_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md',
+  '_bmad/core/skills/bmad-party-mode/steps/step-03-graceful-exit.md',
+];
 const EXPECTED_DIST_FILES = [
   'index.js',
   'runtime.js',
@@ -26,6 +35,7 @@ const EXPECTED_DIST_FILES = [
   'actions/delivery-evidence-run.js',
   'actions/dispatch-plan.js',
   'actions/dual-host-pr-orchestrator.js',
+  'actions/full-orchestration.js',
   'actions/implementation-readiness-gate.js',
   'actions/run-loop.js',
   'actions/release-gate.js',
@@ -33,6 +43,7 @@ const EXPECTED_DIST_FILES = [
   'actions/delivery-truth-gate.js',
   'actions/soak-runner.js',
   'actions/unified-ingress.js',
+  'compiled/main-agent-orchestration.cjs',
   'auditor-host/run-auditor-host.cjs',
   'helpers/bmad-state-reader.js',
   'helpers/e2e-verify-paths.js',
@@ -74,8 +85,27 @@ describe('main-agent dist build', () => {
       const distFile = path.join(DIST_ROOT, relativePath);
       assert.equal(fs.existsSync(distFile), true, `missing ${relativePath}`);
       const source = fs.readFileSync(distFile, 'utf8');
-      assert.doesNotMatch(source, /scripts[\\/]main-agent-orchestration\.ts/);
-      assert.doesNotMatch(source, /compiled[\\/]main-agent-orchestration\.cjs/);
+      if (relativePath !== 'compiled/main-agent-orchestration.cjs') {
+        assert.doesNotMatch(source, /scripts[\\/]main-agent-orchestration\.ts/);
+      }
+      if (
+        relativePath !== 'compiled/main-agent-orchestration.cjs' &&
+        relativePath !== 'actions/full-orchestration.js'
+      ) {
+        assert.doesNotMatch(source, /compiled[\\/]main-agent-orchestration\.cjs/);
+      }
+    }
+
+    for (const relativePath of EXPECTED_PACKAGE_RUNTIME_ASSETS) {
+      const packageAsset = path.join(PACKAGE_ROOT, relativePath);
+      const repoAsset = path.join(REPO_ROOT, relativePath);
+
+      assert.equal(fs.existsSync(packageAsset), true, `missing package runtime asset ${relativePath}`);
+      assert.equal(
+        fs.readFileSync(packageAsset, 'utf8'),
+        fs.readFileSync(repoAsset, 'utf8'),
+        `package runtime asset drifted from canonical source: ${relativePath}`
+      );
     }
   });
 });

@@ -523,7 +523,11 @@ export function materializeAiTddManifestCloseoutRunnerFixture(
   };
 }
 
-export function writeFakeReqTraceSkill(root: string): string {
+export function writeFakeReqTraceSkill(
+  root: string,
+  input: { goalCommandMode?: 'native_goal_document_ref' | 'fallback_prompt_contract' } = {}
+): string {
+  const goalCommandMode = input.goalCommandMode ?? 'native_goal_document_ref';
   const skillDir = path.join(root, '_bmad', 'skills', 'req-trace-matrix-prompt-generator');
   const scriptPath = path.join(skillDir, 'scripts', 'generate_prompt.js');
   fs.mkdirSync(path.dirname(scriptPath), { recursive: true });
@@ -546,10 +550,13 @@ export function writeFakeReqTraceSkill(root: string): string {
       "const modelPath = path.join(outDir, 'model_packet.json');",
       "const humanPath = path.join(outDir, 'human_prompt.txt');",
       "const goalPath = path.join(outDir, 'goal_execution.md');",
+      "const commandText = `/goal Execute ${record.requirementSetId || record.recordId || 'fixture'} by following ${goalPath}; use ${modelPath} as authority; stop only on final pass or reconfirm_required.`;",
       "fs.writeFileSync(modelPath, JSON.stringify(modelPacket, null, 2) + '\\n', 'utf8');",
       "fs.writeFileSync(humanPath, `model_packet.json is the machine-readable execution authority\\nprofileId: ${profile?.profileId || 'none'}\\nprofileHash: ${profile?.profileHash || 'none'}\\n`, 'utf8');",
       "fs.writeFileSync(goalPath, `# Fixture Goal\\nprofileId: ${profile?.profileId || 'none'}\\nprofileHash: ${profile?.profileHash || 'none'}\\n`, 'utf8');",
-      "const receipt = { decision: 'pass', goalCommand: { mode: 'native_goal_document_ref', documentHash: shaFile(goalPath) }, executionDisciplineProfile: { profileId: profile?.profileId, profileHash: profile?.profileHash, humanPromptProfileRendered: true, goalExecutionProfileRendered: true } };",
+      goalCommandMode === 'fallback_prompt_contract'
+        ? "const receipt = { decision: 'pass', goalCommand: { mode: 'fallback_prompt_contract', chars: 'continue nonstop'.length, documentPath: null, documentHash: null, nativeGoalCommandUsed: false }, continuationDirective: { directive: 'continue nonstop', nativeGoalCommandUsed: false }, executionDisciplineProfile: { profileId: profile?.profileId, profileHash: profile?.profileHash, humanPromptProfileRendered: true, goalExecutionProfileRendered: true } };"
+        : "const receipt = { decision: 'pass', goalCommand: { mode: 'native_goal_document_ref', commandText, chars: Array.from(commandText).length, documentPath: goalPath, documentHash: shaFile(goalPath), nativeGoalCommandUsed: true }, continuationDirective: { directive: commandText, nativeGoalCommandUsed: true }, executionDisciplineProfile: { profileId: profile?.profileId, profileHash: profile?.profileHash, humanPromptProfileRendered: true, goalExecutionProfileRendered: true } };",
       "fs.writeFileSync(path.join(outDir, 'audit_receipt.json'), JSON.stringify(receipt, null, 2) + '\\n', 'utf8');",
       '',
     ].join('\n'),

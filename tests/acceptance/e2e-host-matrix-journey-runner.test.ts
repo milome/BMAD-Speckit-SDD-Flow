@@ -77,7 +77,7 @@ describe('e2e host matrix journey runner', () => {
         '--project-root',
         shellQuote(fixtureRoot),
         '--mode mock',
-        '--hosts cursor,claude,codex',
+        '--hosts cursor,cursor-cli,claude,codex',
         '--write-sprint-status',
       ].join(' ');
 
@@ -93,12 +93,31 @@ describe('e2e host matrix journey runner', () => {
       const report = JSON.parse(fs.readFileSync(result.reportFile, 'utf8')) as {
         finalPassed: boolean;
         sprintStatusUpdate: { applied: boolean; storyKey: string; toStatus: string };
-        journeys: Array<{ host: string; passed: boolean }>;
+        journeys: Array<{
+          host: string;
+          passed: boolean;
+          runtimeMode: { executionRuntimeMode: string };
+          nativeGoalReceipt?: {
+            path: string;
+            receipt: { invokedCommandKind: string; executionRuntimeMode: string };
+          };
+        }>;
       };
 
       expect(report.finalPassed).toBe(true);
-      expect(report.journeys).toHaveLength(3);
+      expect(report.journeys).toHaveLength(4);
       expect(report.journeys.every((item) => item.passed)).toBe(true);
+      const byHost = Object.fromEntries(report.journeys.map((item) => [item.host, item]));
+      expect(byHost.codex.nativeGoalReceipt?.receipt.invokedCommandKind).toBe('host_native_goal');
+      expect(byHost.codex.nativeGoalReceipt?.receipt.executionRuntimeMode).toBe('native_goal');
+      expect(byHost.claude.nativeGoalReceipt?.receipt.invokedCommandKind).toBe('host_native_goal');
+      expect(byHost.claude.nativeGoalReceipt?.receipt.executionRuntimeMode).toBe('native_goal');
+      expect(byHost.cursor.runtimeMode.executionRuntimeMode).toBe(
+        'cursor_ide_subagent_ralph_tdd_loop'
+      );
+      expect(byHost.cursor.nativeGoalReceipt).toBeUndefined();
+      expect(byHost['cursor-cli'].runtimeMode.executionRuntimeMode).toBe('main_session_direct');
+      expect(byHost['cursor-cli'].nativeGoalReceipt).toBeUndefined();
       expect(report.sprintStatusUpdate.applied).toBe(true);
       expect(report.sprintStatusUpdate.storyKey).toBe('99-1-sample-story');
       expect(report.sprintStatusUpdate.toStatus).toBe('in-progress');

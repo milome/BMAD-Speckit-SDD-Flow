@@ -7,6 +7,7 @@ import * as yaml from 'js-yaml';
 import type {
   AuditExecutionProfile,
   AuditTriadExecutionPlanRef,
+  CompiledPromptRef,
   DispatchRoute,
   ExecutionPacket,
   PacketKind,
@@ -110,6 +111,51 @@ import {
 } from './reconfirmation-runtime';
 
 const requireCommonJs = createRequire(__filename);
+
+export type NativeGoalSpawnSyncFn = (
+  command: string,
+  args: string[],
+  options: {
+    cwd: string;
+    encoding: 'utf8';
+    timeout: number;
+    shell: boolean;
+  }
+) => {
+  status?: number | null;
+  stdout?: string | Buffer | null;
+  stderr?: string | Buffer | null;
+  error?: Error | null;
+};
+
+interface NativeGoalInvocationResult {
+  command: string;
+  args: string[];
+  exitCode: number;
+  stdoutPath: string;
+  stderrPath: string;
+  receiptPath: string | null;
+  taskReportPath: string;
+  taskReport: TaskReport;
+}
+
+type RunNativeGoalInvocationInput = {
+  projectRoot: string;
+  host: string;
+  packet: ExecutionPacket;
+  compiledPromptRef: CompiledPromptRef;
+  taskReportPath: string;
+  timeoutMs?: number;
+  spawnSyncFn?: NativeGoalSpawnSyncFn;
+  recordId?: string;
+  attemptId?: string;
+};
+
+const { runNativeGoalInvocation } = requireCommonJs(
+  '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'
+) as {
+  runNativeGoalInvocation: (input: RunNativeGoalInvocationInput) => NativeGoalInvocationResult;
+};
 
 export type MainAgentContinueDecision = 'continue' | 'rerun' | 'blocked' | null;
 export type MainAgentOrchestrationSource =
@@ -280,6 +326,7 @@ export interface MainAgentDispatchInstruction {
   packetId: string;
   packetKind: PacketKind;
   packetPath: string;
+  packet: RecommendationPacket | ExecutionPacket | ResumePacket | null;
   role: string;
   expectedDelta: string;
 }
@@ -7341,6 +7388,12 @@ function latestRecordsById(records: unknown, idField: string): Record<string, un
   return [...latest.values()];
 }
 
+function hasOpenRerunLoop(record: Record<string, unknown> | null): boolean {
+  return latestRecordsById(record?.rerunLoops, 'rerunLoopId').some((loop) =>
+    ['open', 'in_progress', 'no_progress', 'blocked'].includes(normalizeText(loop.status))
+  );
+}
+
 function gateIdentity(gate: Record<string, unknown>, index: number): string {
   return (
     [normalizeText(gate.gate), normalizeText(gate.traceId), normalizeText(gate.requirementId)]
@@ -7500,9 +7553,7 @@ function deriveNextActionFromRequirementRecord(input: {
     !Array.isArray(input.record.architectureConfirmationState)
       ? (input.record.architectureConfirmationState as Record<string, unknown>)
       : null;
-  const openRerun = latestRecordsById(input.record?.rerunLoops, 'rerunLoopId').some((loop) =>
-    ['open', 'in_progress', 'no_progress', 'blocked'].includes(normalizeText(loop.status))
-  );
+  const openRerun = hasOpenRerunLoop(input.record);
   const hasBlockingGate = latestGateChecks(input.record?.gateChecks).some((gate) =>
     ['fail', 'blocked'].includes(normalizeText(gate.decision))
   );
@@ -7931,6 +7982,7 @@ export function resolveMainAgentOrchestrationSurface(
   const controlPlaneBlocksSixModelOverride =
     continueState.continueDecision === 'blocked' ||
     continueState.continueDecision === 'rerun' ||
+    hasOpenRerunLoop(requirementRecord) ||
     implementationEntryDecision === 'block' ||
     implementationEntryDecision === 'reroute';
   const bridgePendingPacketRemainsAuthoritative =
@@ -8559,6 +8611,7 @@ export function buildMainAgentDispatchInstruction(
     packetId: surface.orchestrationState.pendingPacket!.packetId,
     packetKind: surface.orchestrationState.pendingPacket!.packetKind,
     packetPath: surface.orchestrationState.pendingPacket!.packetPath,
+    packet: surface.pendingPacket,
     role:
       'role' in surface.pendingPacket
         ? surface.pendingPacket.role
@@ -8600,6 +8653,55 @@ const MAIN_AGENT_CLI_ACTIONS = new Set([
 
 function isMainAgentCliAction(value: string): boolean {
   return MAIN_AGENT_CLI_ACTIONS.has(value);
+}
+
+function defaultRunLoopTaskReportPath(
+  projectRoot: string,
+  sessionId: string,
+  packetId: string
+): string {
+  return path.join(
+    projectRoot,
+    '_bmad-output',
+    'runtime',
+    'governance',
+    'task-reports',
+    sessionId,
+    `${packetId}.json`
+  );
+}
+
+function dispatchPacketGoalCommandMode(packet: ExecutionPacket): string {
+  const receiptPath = normalizeText(packet.compiledPromptRef?.auditReceiptPath);
+  if (!receiptPath || !fs.existsSync(receiptPath)) return '';
+  try {
+    const receipt = JSON.parse(fs.readFileSync(receiptPath, 'utf8')) as Record<string, unknown>;
+    const goalCommand =
+      receipt.goalCommand && typeof receipt.goalCommand === 'object'
+        ? (receipt.goalCommand as Record<string, unknown>)
+        : {};
+    return normalizeText(goalCommand.mode);
+  } catch {
+    return '';
+  }
+}
+
+function isNativeGoalExecutionPacket(
+  instruction: MainAgentDispatchInstruction,
+  args: Record<string, string | undefined>
+): instruction is MainAgentDispatchInstruction & { packet: ExecutionPacket } {
+  if (args.codexSmoke === 'true') return false;
+  if (instruction.host !== 'codex' && instruction.host !== 'claude') return false;
+  const packet = instruction.packet;
+  return Boolean(
+    packet &&
+      'taskType' in packet &&
+      packet.taskType === 'implement' &&
+      packet.authorityMode === 'compiled_implementation_confirmation' &&
+      packet.compiledPromptRef?.goalExecutionHash &&
+      packet.compiledPromptRef.goalExecutionPath &&
+      dispatchPacketGoalCommandMode(packet) === 'native_goal_document_ref'
+  );
 }
 
 function parseArgs(argv: string[]): Record<string, string | undefined> {
@@ -10903,6 +11005,7 @@ export function runMainAgentAutomaticLoop(input: {
   host?: OrchestrationHost;
   args?: Record<string, string | undefined>;
   executor?: MainAgentRunLoopExecutor;
+  nativeGoalSpawnSyncFn?: NativeGoalSpawnSyncFn;
 }): MainAgentRunLoopResult {
   const args = input.args ?? {};
   const steps: MainAgentRunLoopResult['steps'] = [];
@@ -11114,22 +11217,51 @@ export function runMainAgentAutomaticLoop(input: {
         args,
       }) ?? null;
     const taskReportPath = normalizeText(args.taskReportPath);
+    if (
+      !taskReport &&
+      taskReportPath &&
+      process.env.MAIN_AGENT_ALLOW_EXTERNAL_TASK_REPORT === 'true'
+    ) {
+      taskReport = readTaskReportFromFile(taskReportPath, instruction.packetId);
+    }
+    if (!taskReport && isNativeGoalExecutionPacket(instruction, args)) {
+      const activeRecordId = normalizeText(activeRecord?.recordId);
+      const nativeTaskReportPath =
+        taskReportPath ||
+        defaultRunLoopTaskReportPath(input.projectRoot, instruction.sessionId, instruction.packetId);
+      const nativeResult = runNativeGoalInvocation({
+        projectRoot: input.projectRoot,
+        host: instruction.host,
+        packet: instruction.packet,
+        compiledPromptRef: instruction.packet.compiledPromptRef!,
+        taskReportPath: nativeTaskReportPath,
+        recordId: input.recordId ?? (activeRecordId || instruction.sessionId),
+        attemptId: instruction.packetId,
+        timeoutMs: Number(args.codexTimeoutMs) > 0 ? Number(args.codexTimeoutMs) : undefined,
+        spawnSyncFn: input.nativeGoalSpawnSyncFn,
+      });
+      steps.push({
+        step: 'native-goal-invocation',
+        status: nativeResult.taskReport.status === 'done' ? 'pass' : 'fail',
+        summary: `command=${nativeResult.command}, report=${path.relative(
+          input.projectRoot,
+          nativeResult.taskReportPath
+        )}`,
+      });
+      taskReport = nativeResult.taskReport;
+    }
     if (!taskReport && taskReportPath) {
-      if (process.env.MAIN_AGENT_ALLOW_EXTERNAL_TASK_REPORT === 'true') {
-        taskReport = readTaskReportFromFile(taskReportPath, instruction.packetId);
-      } else {
-        taskReport = {
-          packetId: instruction.packetId,
-          status: 'blocked',
-          filesChanged: [],
-          validationsRun: ['main-agent-external-task-report-denied'],
-          evidence: [
-            'External TaskReport ingestion requires MAIN_AGENT_ALLOW_EXTERNAL_TASK_REPORT=true',
-          ],
-          downstreamContext: [instruction.expectedDelta],
-          driftFlags: ['external-task-report-denied'],
-        };
-      }
+      taskReport = {
+        packetId: instruction.packetId,
+        status: 'blocked',
+        filesChanged: [],
+        validationsRun: ['main-agent-external-task-report-denied'],
+        evidence: [
+          'External TaskReport ingestion requires MAIN_AGENT_ALLOW_EXTERNAL_TASK_REPORT=true',
+        ],
+        downstreamContext: [instruction.expectedDelta],
+        driftFlags: ['external-task-report-denied'],
+      };
     }
     if (!taskReport && instruction.host === 'codex') {
       const activeRecordId = normalizeText(activeRecord?.recordId);

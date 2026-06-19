@@ -86,6 +86,18 @@ function writeProfileSnapshot(filePath: string, profile: ExecutionDisciplineProf
   fs.writeFileSync(filePath, `${JSON.stringify(profile, null, 2)}\n`, 'utf8');
 }
 
+function defaultTaskReportPath(projectRoot: string, sessionId: string, packetId: string): string {
+  return path.join(
+    projectRoot,
+    '_bmad-output',
+    'runtime',
+    'governance',
+    'task-reports',
+    sessionId,
+    `${packetId}.json`
+  );
+}
+
 function hasControlledConfirmation(record: Record<string, unknown>): boolean {
   const history = Array.isArray(record.confirmationHistory) ? record.confirmationHistory : [];
   return history.some((item) => {
@@ -212,6 +224,12 @@ export function runMainAgentCompiledPrompt(input: {
 
   const recordDir = path.dirname(confirmedSource.recordPath);
   const outDir = path.join(recordDir, 'trace-execution', input.packetId);
+  const confirmedRecord = readJson(confirmedSource.recordPath);
+  const sessionId =
+    text(confirmedRecord.requirementSetId) ||
+    text(confirmedRecord.recordId) ||
+    path.basename(recordDir);
+  const taskReportPath = defaultTaskReportPath(input.projectRoot, sessionId, input.packetId);
   fs.mkdirSync(outDir, { recursive: true });
   const profileRefPath =
     input.profileRefPath ?? path.join(outDir, 'execution-discipline-profile.json');
@@ -242,6 +260,10 @@ export function runMainAgentCompiledPrompt(input: {
     '--json',
     '--goal-command-available',
     input.goalCommandAvailable ?? 'auto',
+    '--packet-id',
+    input.packetId,
+    '--task-report-path',
+    taskReportPath,
   ];
   if (fs.existsSync(profileRefPath)) {
     args.push('--execution-discipline-profile-ref', profileRefPath);

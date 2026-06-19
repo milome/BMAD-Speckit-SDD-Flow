@@ -644,6 +644,20 @@ function readCompiledPromptProjection(input: {
   };
 }
 
+function isNativeGoalDocumentRefPacket(packet: Packet): boolean {
+  if (
+    !('authorityMode' in packet) ||
+    packet.authorityMode !== 'compiled_implementation_confirmation'
+  ) {
+    return false;
+  }
+  const ref = packet.compiledPromptRef;
+  if (!ref) return false;
+  const receipt = readJsonIfExists(ref.auditReceiptPath);
+  const goalCommand = nested(receipt?.goalCommand);
+  return text(goalCommand.mode) === 'native_goal_document_ref';
+}
+
 function normalizeTaskReport(report: TaskReport): TaskReport {
   const status = String(report.status);
   return {
@@ -1241,6 +1255,50 @@ export function runCodexWorkerAdapter(input: {
         ok: false,
         status: 'blocked',
         mismatches: compiledPromptProjection.driftFlags,
+        sourceRefs: [],
+        evidenceArtifactRefs: [],
+      },
+    };
+  }
+  if (!input.smoke && isNativeGoalDocumentRefPacket(packet)) {
+    const blockedReport: TaskReport = {
+      packetId: packet.packetId,
+      status: 'blocked',
+      filesChanged: [],
+      validationsRun: ['codex-worker-adapter-native-goal-guard'],
+      evidence: [
+        'native_goal_document_ref packets require runNativeGoalInvocation; refusing wrapped prompt execution',
+      ],
+      downstreamContext: [packetExpectedDelta(packet)],
+      driftFlags: ['native-goal-invoker-required'],
+    };
+    writeTaskReport(taskReportPath, blockedReport);
+    return {
+      reportType: 'main_agent_codex_worker_adapter',
+      generatedAt: new Date().toISOString(),
+      projectRoot,
+      packetPath,
+      taskReportPath,
+      mode: 'codex_exec',
+      codexCommand: ['codex', 'native-goal-invoker-required'],
+      exitCode: 1,
+      scopePassed: false,
+      taskReport: blockedReport,
+      stdinPath: null,
+      stdoutPath: null,
+      stderrPath: null,
+      agentRole,
+      agentSpecPath: agentSpec.path,
+      runtimeGovernanceStatus: runtimeGovernance.status,
+      runtimeGovernanceError: runtimeGovernance.error,
+      actualFilesChanged: [],
+      transportEnvelope: null,
+      transportEnvelopeValidation: { ok: false, mismatches: ['native_goal_invoker_required'] },
+      subagentEvidenceEnvelope: null,
+      subagentEvidenceEnvelopeValidation: {
+        ok: false,
+        status: 'blocked',
+        mismatches: ['native_goal_invoker_required'],
         sourceRefs: [],
         evidenceArtifactRefs: [],
       },

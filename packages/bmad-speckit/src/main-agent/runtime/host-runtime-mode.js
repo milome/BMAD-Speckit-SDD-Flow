@@ -179,7 +179,12 @@ function writeNativeGoalInvocationReceipt(input) {
     executionRuntimeMode: 'native_goal',
     goalExecutionPath: input.goalExecutionPath,
     goalExecutionHash: sha256File(input.goalExecutionPath),
+    goalCommandTextHash: input.goalCommandTextHash ?? 'not_available',
     invokedCommandKind: 'host_native_goal',
+    command: input.command ?? 'not_available',
+    args: input.args ?? [],
+    taskReportPath: input.taskReportPath ?? 'not_available',
+    nativeGoalCommandUsed: true,
     startedAt: input.startedAt ?? new Date().toISOString(),
     endedAt: input.endedAt ?? new Date().toISOString(),
     exitCode: input.exitCode,
@@ -230,6 +235,11 @@ function validateNativeGoalInvocationReceipt(input) {
   if (receipt.attemptId !== input.attemptId) invalidFields.push('attemptId');
   if (receipt.invokedCommandKind !== 'host_native_goal') invalidFields.push('invokedCommandKind');
   if (receipt.goalExecutionHash !== input.goalExecutionHash) invalidFields.push('goalExecutionHash');
+  if (!receipt.goalCommandTextHash) invalidFields.push('goalCommandTextHash');
+  if (!receipt.command) invalidFields.push('command');
+  if (!Array.isArray(receipt.args) || receipt.args.length === 0) invalidFields.push('args');
+  if (!receipt.taskReportPath) invalidFields.push('taskReportPath');
+  if (receipt.nativeGoalCommandUsed !== true) invalidFields.push('nativeGoalCommandUsed');
   if (!receipt.stdoutRef) invalidFields.push('stdoutRef');
   if (!receipt.stderrRef) invalidFields.push('stderrRef');
   if (receipt.exitCode !== 0) invalidFields.push('exitCode');

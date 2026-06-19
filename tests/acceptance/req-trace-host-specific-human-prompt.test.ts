@@ -100,6 +100,10 @@ function sha256(content: string): string {
   return `sha256:${crypto.createHash('sha256').update(content, 'utf8').digest('hex')}`;
 }
 
+function normalizePathForAssert(value: string): string {
+  return value.replace(/\\/gu, '/');
+}
+
 function extractConfirmationBlock(sourceText: string): string {
   const lines = sourceText.replace(/\r\n/gu, '\n').split('\n');
   const start = lines.findIndex((line) => /^implementationConfirmation:\s*$/u.test(line));
@@ -234,7 +238,15 @@ function runLongGoal(extraArgs: string[] = []): {
 describe('req trace host-specific human prompt generation', () => {
   it('uses /goal document-reference mode for Codex only when explicitly available', () => {
     const fallback = runHost('codex');
-    const goal = runHost('codex', ['--goal-command-available', 'true']);
+    const taskReportPath = path.join(tempDir, 'codex-native-task-report.json');
+    const goal = runHost('codex', [
+      '--goal-command-available',
+      'true',
+      '--packet-id',
+      'implement-host-codex',
+      '--task-report-path',
+      taskReportPath,
+    ]);
 
     expect(fallback.prompt).toContain('continue nonstop');
     expect(fallback.prompt).not.toContain('/goal ');
@@ -244,6 +256,9 @@ describe('req trace host-specific human prompt generation', () => {
     expect(goal.prompt).toContain('goal_execution.md');
     expect(goal.prompt).toContain(
       'The /goal command is an entry pointer only, not the full task scope.'
+    );
+    expect(goal.prompt).toContain(
+      'The /goal command is the execution entrypoint for Codex and Claude Code CLI native goal mode.'
     );
     expect(goal.prompt).toContain('Execution scope is goal_execution.md + model_packet.json.');
     expect(goal.prompt).not.toContain('\ncontinue nonstop\n');
@@ -257,6 +272,15 @@ describe('req trace host-specific human prompt generation', () => {
     expect(goal.goalDocument).toContain(
       'model_packet.json is the machine-readable execution authority'
     );
+    expect(goal.goalDocument).toContain('- Packet ID: implement-host-codex');
+    expect(goal.goalDocument).toContain(
+      `- TaskReport path: ${normalizePathForAssert(taskReportPath)}`
+    );
+    expect(goal.goalDocument).toContain('TaskReport schema: { packetId, status, filesChanged, validationsRun, evidence, downstreamContext, driftFlags? }');
+    expect(goal.goalDocument).toContain('Allowed write scope:');
+    expect(goal.goalDocument).toContain('Required validation commands:');
+    expect(goal.goalDocument).toContain('Completion evidence fields:');
+    expect(goal.goalDocument).toContain('Stop conditions:');
   });
 
   it('keeps Cursor IDE and Cursor CLI as separate surfaces', () => {
@@ -284,7 +308,15 @@ describe('req trace host-specific human prompt generation', () => {
 
   it('uses Claude Code /goal document-reference mode only when explicitly available', () => {
     const fallback = runHost('claude-code');
-    const goal = runHost('claude-code', ['--goal-command-available', 'true']);
+    const taskReportPath = path.join(tempDir, 'claude-native-task-report.json');
+    const goal = runHost('claude-code', [
+      '--goal-command-available',
+      'true',
+      '--packet-id',
+      'implement-host-claude',
+      '--task-report-path',
+      taskReportPath,
+    ]);
 
     expect(fallback.prompt).toContain('Continue autonomously until all final gates pass');
     expect(fallback.prompt).not.toContain('/goal ');
@@ -295,10 +327,17 @@ describe('req trace host-specific human prompt generation', () => {
     expect(goal.prompt).toContain(
       'The /goal command is an entry pointer only, not the full task scope.'
     );
+    expect(goal.prompt).toContain(
+      'The /goal command is the execution entrypoint for Codex and Claude Code CLI native goal mode.'
+    );
     expect(goal.prompt).toContain('claude -p --permission-mode auto --output-format stream-json');
     expect(goal.receipt.continuationDirective.nativeGoalCommandUsed).toBe(true);
     expect(goal.receipt.goalCommand.mode).toBe('native_goal_document_ref');
     expect(goal.receipt.goalCommand.mode).not.toBe('native_goal_inline');
+    expect(goal.goalDocument).toContain('- Packet ID: implement-host-claude');
+    expect(goal.goalDocument).toContain(
+      `- TaskReport path: ${normalizePathForAssert(taskReportPath)}`
+    );
   });
 
   it('fails closed for unsupported execution hosts', () => {

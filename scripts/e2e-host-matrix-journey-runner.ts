@@ -10,8 +10,12 @@ import { defaultRuntimeContextFile, writeRuntimeContext } from './runtime-contex
 import { buildMainAgentDispatchInstruction } from './main-agent-orchestration';
 import { runCodexWorkerAdapter } from './main-agent-codex-worker-adapter';
 import { buildEvidenceProvenance, type EvidenceProvenance } from './evidence-provenance';
+import {
+  selectExecutionRuntimeMode,
+  writeNativeGoalInvocationReceipt,
+} from './host-runtime-mode';
 
-type HostId = 'cursor' | 'claude' | 'codex';
+type HostId = 'cursor' | 'cursor-cli' | 'claude' | 'codex';
 type JourneyMode = 'mock' | 'real';
 
 interface RunnerArgs {
@@ -36,6 +40,11 @@ interface GateCheck {
 interface HostJourneyResult {
   host: HostId;
   passed: boolean;
+  runtimeMode: {
+    canonicalHost: string;
+    executionRuntimeMode: string;
+    selectionReason: string;
+  };
   transportCheck: {
     command: string[];
     exitCode: number;
@@ -54,6 +63,10 @@ interface HostJourneyResult {
     passed: boolean;
     taskReportPath: string | null;
     detail: string;
+  };
+  nativeGoalReceipt?: {
+    path: string;
+    receipt: Record<string, unknown>;
   };
 }
 
@@ -103,7 +116,7 @@ function parseHosts(raw: string): HostId[] {
     .split(',')
     .map((value) => normalizeText(value).toLowerCase())
     .filter(Boolean);
-  const valid = new Set<HostId>(['cursor', 'claude', 'codex']);
+  const valid = new Set<HostId>(['cursor', 'cursor-cli', 'claude', 'codex']);
   const deduped = Array.from(new Set(items)).filter((item): item is HostId =>
     valid.has(item as HostId)
   );
@@ -359,12 +372,81 @@ function runInspectCheck(
   };
 }
 
+function canonicalHostInput(host: HostId): string {
+  if (host === 'claude') return 'claude-code-cli';
+  if (host === 'cursor') return 'cursor-ide';
+  return host;
+}
+
+function writeMockNativeGoalEvidence(
+  projectRoot: string,
+  host: HostId,
+  options: { recordId?: string; requirementSetId?: string; runId?: string } = {}
+): HostJourneyResult['nativeGoalReceipt'] {
+  const recordId = options.requirementSetId ?? options.recordId ?? `host-matrix-${host}`;
+  const attemptId = `host-matrix-${host}-mock`;
+  const packetId = `host-matrix-${host}-mock-packet`;
+  const evidenceRoot = path.join(
+    projectRoot,
+    '_bmad-output',
+    'runtime',
+    'e2e',
+    'host-matrix-native-goal',
+    host
+  );
+  const goalExecutionPath = path.join(evidenceRoot, 'goal_execution.md');
+  const stdoutRef = path.join(evidenceRoot, 'stdout.log');
+  const stderrRef = path.join(evidenceRoot, 'stderr.log');
+  const taskReportPath = path.join(evidenceRoot, 'task-report.json');
+  fs.mkdirSync(evidenceRoot, { recursive: true });
+  fs.writeFileSync(goalExecutionPath, `# Mock native goal for ${host}\n`, 'utf8');
+  fs.writeFileSync(stdoutRef, `${host} native goal mock stdout\n`, 'utf8');
+  fs.writeFileSync(stderrRef, '', 'utf8');
+  fs.writeFileSync(
+    taskReportPath,
+    `${JSON.stringify(
+      {
+        packetId,
+        status: 'done',
+        filesChanged: [],
+        validationsRun: [`host-matrix-${host}-native-goal`],
+        evidence: [`host-matrix-${host}-native-goal-receipt`],
+        downstreamContext: [`host matrix ${host} native goal mock completed`],
+      },
+      null,
+      2
+    )}\n`,
+    'utf8'
+  );
+  const written = writeNativeGoalInvocationReceipt({
+    projectRoot,
+    recordId,
+    attemptId,
+    packetId,
+    host: canonicalHostInput(host),
+    goalExecutionPath,
+    goalCommandTextHash: 'sha256:host-matrix-mock',
+    command: host === 'claude' ? 'claude' : 'codex',
+    args: ['/goal', `Execute ${packetId}`],
+    taskReportPath,
+    nativeGoalCommandUsed: true,
+    stdoutRef,
+    stderrRef,
+    exitCode: 0,
+  });
+  return {
+    path: normalizePathForScope(written.path),
+    receipt: written.receipt as unknown as Record<string, unknown>,
+  };
+}
+
 function runHostJourney(
   projectRoot: string,
   mode: JourneyMode,
   host: HostId,
   options: { recordId?: string; requirementSetId?: string; runId?: string } = {}
 ): HostJourneyResult {
+  const selectedRuntime = selectExecutionRuntimeMode(canonicalHostInput(host));
   const transportCheck = runHostTransportCheck(mode, host, projectRoot);
   const inspectCheck = runInspectCheck(projectRoot, {
     recordId: options.recordId,
@@ -373,6 +455,14 @@ function runHostJourney(
     allowLegacyContextFallback: !options.recordId && !options.requirementSetId,
   });
   let workerSmoke: HostJourneyResult['workerSmoke'];
+  const nativeGoalReceipt =
+    mode === 'mock' &&
+    selectedRuntime.executionRuntimeMode === 'native_goal' &&
+    transportCheck.exitCode === 0 &&
+    inspectCheck.exitCode === 0 &&
+    inspectCheck.parsed
+      ? writeMockNativeGoalEvidence(projectRoot, host, options)
+      : undefined;
   if (mode === 'real' && host === 'codex' && transportCheck.exitCode === 0 && inspectCheck.parsed) {
     const smokeOutputRoot = path.join(
       projectRoot,
@@ -490,16 +580,27 @@ function runHostJourney(
     }
   }
   const smokePassed = workerSmoke ? workerSmoke.passed : true;
+  const nativeGoalPassed =
+    selectedRuntime.executionRuntimeMode !== 'native_goal' ||
+    mode !== 'mock' ||
+    Boolean(nativeGoalReceipt?.receipt?.invokedCommandKind === 'host_native_goal');
   return {
     host,
     passed:
       transportCheck.exitCode === 0 &&
       inspectCheck.exitCode === 0 &&
       inspectCheck.parsed &&
-      smokePassed,
+      smokePassed &&
+      nativeGoalPassed,
+    runtimeMode: {
+      canonicalHost: selectedRuntime.canonicalHost,
+      executionRuntimeMode: selectedRuntime.executionRuntimeMode,
+      selectionReason: selectedRuntime.selectionReason,
+    },
     transportCheck,
     inspectCheck,
     ...(workerSmoke ? { workerSmoke } : {}),
+    ...(nativeGoalReceipt ? { nativeGoalReceipt } : {}),
   };
 }
 

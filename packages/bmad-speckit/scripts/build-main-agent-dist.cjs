@@ -3,11 +3,15 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const packageRoot = path.resolve(__dirname, '..');
+const repoRoot = path.resolve(packageRoot, '..', '..');
 const sourceRoot = path.join(packageRoot, 'src', 'main-agent');
 const distRoot = path.join(packageRoot, 'dist', 'main-agent');
 const packageSourceRoot = path.join(packageRoot, 'src');
 const packageDistRoot = path.join(packageRoot, 'dist');
-const excludedRuntimeFiles = new Set([
+const packageBmadRoot = path.join(packageRoot, '_bmad');
+const excludedRuntimeFiles = new Set([]);
+const fullOrchestrationBridgeFiles = new Set([
+  'actions/full-orchestration.js',
   'compiled/main-agent-orchestration.cjs',
 ]);
 
@@ -129,6 +133,10 @@ const files = Array.from(new Set([...staticFiles, ...collectRuntimeFiles()]));
 const packageFiles = [
   'scoring-runtime.js',
 ];
+const runtimeAssetDirectories = [
+  '_bmad/core/agents/code-reviewer',
+  '_bmad/core/skills/bmad-party-mode',
+];
 
 function copyRuntimeFile(relativePath) {
   const source = path.join(sourceRoot, relativePath);
@@ -137,10 +145,16 @@ function copyRuntimeFile(relativePath) {
     throw new Error(`main-agent source file missing: ${relativePath}`);
   }
   const text = fs.readFileSync(source, 'utf8');
-  if (/scripts[\\/]main-agent-orchestration\.ts/.test(text)) {
+  if (
+    !fullOrchestrationBridgeFiles.has(relativePath) &&
+    /scripts[\\/]main-agent-orchestration\.ts/.test(text)
+  ) {
     throw new Error(`main-agent dist source references root orchestration script: ${relativePath}`);
   }
-  if (/compiled[\\/]main-agent-orchestration\.cjs/.test(text)) {
+  if (
+    !fullOrchestrationBridgeFiles.has(relativePath) &&
+    /compiled[\\/]main-agent-orchestration\.cjs/.test(text)
+  ) {
     throw new Error(`covered main-agent source references compiled fallback: ${relativePath}`);
   }
   fs.mkdirSync(path.dirname(target), { recursive: true });
@@ -161,4 +175,44 @@ function copyPackageFile(relativePath) {
 }
 
 for (const file of packageFiles) copyPackageFile(file);
-process.stdout.write(`built dist/main-agent files=${files.length} package files=${packageFiles.length}\n`);
+
+function assertInsidePackageBmad(target) {
+  const resolvedTarget = path.resolve(target);
+  const resolvedBmadRoot = path.resolve(packageBmadRoot);
+  if (resolvedTarget !== resolvedBmadRoot && !resolvedTarget.startsWith(`${resolvedBmadRoot}${path.sep}`)) {
+    throw new Error(`refusing to modify path outside package _bmad: ${target}`);
+  }
+}
+
+function copyDirectoryContents(source, target) {
+  if (!fs.existsSync(source) || !fs.statSync(source).isDirectory()) {
+    throw new Error(`runtime asset directory missing: ${path.relative(repoRoot, source).replace(/\\/g, '/')}`);
+  }
+  fs.mkdirSync(target, { recursive: true });
+  for (const entry of fs.readdirSync(source, { withFileTypes: true })) {
+    const sourcePath = path.join(source, entry.name);
+    const targetPath = path.join(target, entry.name);
+    if (entry.isDirectory()) {
+      copyDirectoryContents(sourcePath, targetPath);
+      continue;
+    }
+    if (!entry.isFile()) continue;
+    fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+    fs.copyFileSync(sourcePath, targetPath);
+  }
+}
+
+function copyRuntimeAssetDirectory(relativePath) {
+  const source = path.join(repoRoot, relativePath);
+  const target = path.join(packageRoot, relativePath);
+  assertInsidePackageBmad(target);
+  if (fs.existsSync(target)) {
+    fs.rmSync(target, { recursive: true, force: true });
+  }
+  copyDirectoryContents(source, target);
+}
+
+for (const directory of runtimeAssetDirectories) copyRuntimeAssetDirectory(directory);
+process.stdout.write(
+  `built dist/main-agent files=${files.length} package files=${packageFiles.length} runtime asset dirs=${runtimeAssetDirectories.length}\n`
+);

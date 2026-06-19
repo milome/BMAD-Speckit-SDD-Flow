@@ -69,12 +69,12 @@ describe('script migration full physical closure', () => {
     expect(missing).toEqual([]);
   });
 
-  it('records Wave 3.12 as validated without claiming root scripts are direct consumer surfaces', () => {
+  it('records Wave 3.12 as blocked when package runtime entries lack functional or package source parity evidence', () => {
     const registry = readRegistry();
     const wave = registry.waves.find((item: any) => item.waveId === WAVE_ID);
     expect(wave).toBeTruthy();
     expect(wave.refinesWaveId).toBe('main-agent-runtime-migration-wave-3.11');
-    expect(wave.status).toBe('validated');
+    expect(wave.status).toBe('blocked');
     expect(wave.contractPath).toBe(
       'docs/plans/2026-06-06-main-agent-runtime-migration-wave-3-12-goal-execution-plan.md'
     );
@@ -86,12 +86,26 @@ describe('script migration full physical closure', () => {
       )
     );
     expect(consumerReachable.length).toBeGreaterThan(0);
+    const blockedConsumerReachable = consumerReachable.filter((entry: any) =>
+      Array.isArray(entry.migrationBlockers)
+    );
+    expect(blockedConsumerReachable.length).toBeGreaterThan(0);
     for (const entry of consumerReachable) {
-      expect(entry.migrationStatus).toBe('validated');
-      expect(entry.validationStatus).toBe('passed');
-      expect(entry.evidenceRefs).toContain(
-        `repo-governance/script-migrations/${WAVE_ID}/evidence.json`
-      );
+      if (Array.isArray(entry.migrationBlockers)) {
+        expect(entry.migrationStatus).toBe('blocked');
+        expect(['partial', 'blocked']).toContain(entry.validationStatus);
+        expect([
+          'missing_functional_parity_evidence',
+          'missing_package_source_parity_evidence',
+          'failed_package_source_parity_gate',
+        ]).toContain(entry.parityEvidenceStatus);
+      } else {
+        expect(entry.migrationStatus).toBe('validated');
+        expect(entry.validationStatus).toBe('passed');
+        expect(entry.evidenceRefs).toContain(
+          `repo-governance/script-migrations/${WAVE_ID}/evidence.json`
+        );
+      }
       expect(entry.deletionAllowed).toBe(false);
       expect(entry.deletionApprovalRef).toBeNull();
     }
@@ -101,7 +115,13 @@ describe('script migration full physical closure', () => {
     );
     expect(registryOnlyEvidence.length).toBeGreaterThan(0);
     for (const entry of registryOnlyEvidence) {
-      expect(entry.migrationStatus).toBe('validated');
+      if (Array.isArray(entry.migrationBlockers)) {
+        expect(entry.migrationStatus).toBe('blocked');
+        expect(['partial', 'blocked']).toContain(entry.validationStatus);
+      } else {
+        expect(entry.migrationStatus).toBe('validated');
+        expect(entry.validationStatus).toBe('passed');
+      }
       expect(entry.evidenceRefs).toContain(
         `repo-governance/script-migrations/${WAVE_ID}/registry-evidence.json`
       );

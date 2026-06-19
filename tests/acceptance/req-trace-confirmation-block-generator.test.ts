@@ -75,6 +75,10 @@ function sha256(content: string): string {
   return `sha256:${crypto.createHash('sha256').update(content, 'utf8').digest('hex')}`;
 }
 
+function normalizePathForAssert(value: string): string {
+  return value.replace(/\\/gu, '/');
+}
+
 function semanticConfirmationForHash(
   confirmation: Record<string, unknown>
 ): Record<string, unknown> {
@@ -856,6 +860,7 @@ describe('req trace generator confirmation block gate', () => {
     const source = writeSource(validCompilerSource());
     const record = writeRequirementRecord(source);
     const outDir = path.join(tempDir, 'codex-goal-trace-execution');
+    const taskReportPath = path.join(tempDir, 'codex-goal-task-report.json');
     const result = runNodePrompt([
       '--source-document',
       source,
@@ -867,6 +872,10 @@ describe('req trace generator confirmation block gate', () => {
       'codex',
       '--goal-command-available',
       'true',
+      '--packet-id',
+      'implement-confirmation-codex',
+      '--task-report-path',
+      taskReportPath,
       '--json',
     ]);
 
@@ -878,11 +887,20 @@ describe('req trace generator confirmation block gate', () => {
     expect(prompt).toContain(
       'The /goal command is an entry pointer only, not the full task scope.'
     );
+    expect(prompt).toContain(
+      'The /goal command is the execution entrypoint for Codex and Claude Code CLI native goal mode.'
+    );
     expect(prompt).toContain('Execution scope is goal_execution.md + model_packet.json.');
     expect(prompt).not.toContain('\ncontinue nonstop\n');
-    expect(fs.readFileSync(path.join(outDir, 'goal_execution.md'), 'utf8')).toContain(
-      'AI-TDD protocol:'
-    );
+    const goalDocument = fs.readFileSync(path.join(outDir, 'goal_execution.md'), 'utf8');
+    expect(goalDocument).toContain('AI-TDD protocol:');
+    expect(goalDocument).toContain('- Packet ID: implement-confirmation-codex');
+    expect(goalDocument).toContain(`- TaskReport path: ${normalizePathForAssert(taskReportPath)}`);
+    expect(goalDocument).toContain('TaskReport schema: { packetId, status, filesChanged, validationsRun, evidence, downstreamContext, driftFlags? }');
+    expect(goalDocument).toContain('Allowed write scope:');
+    expect(goalDocument).toContain('Required validation commands:');
+    expect(goalDocument).toContain('Completion evidence fields:');
+    expect(goalDocument).toContain('Stop conditions:');
     expect(receipt.continuationDirective).toMatchObject({
       strategy: 'goal_if_available_else_continue_nonstop',
       nativeGoalCommandUsed: true,

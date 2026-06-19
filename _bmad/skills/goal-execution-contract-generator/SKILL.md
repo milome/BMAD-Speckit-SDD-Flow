@@ -58,7 +58,7 @@ Create a frozen `/goal` execution contract. This skill only generates and audits
 - Include direct evidence expectations for every acceptance item.
 - Include required commands in executable order.
 - Include stop conditions that force `/goal` to stop instead of rewriting the contract.
-- Include a clear authority model that separates machine-readable authority, human-facing projections, execution evidence, and completion authority.
+- Include a clear authority model that separates machine-readable source bindings, machine-readable evidence indexes, human-facing projections, execution evidence, and completion authority.
 - Instantiate `Domain-Specific Contract Addenda` only when the goal defines a classifier, state machine, schema, event payload, controlled writer, prompt/compiler output, renderer/report surface, gate, audit, score, or other domain-specific machine contract.
 - When `Domain-Specific Contract Addenda` is instantiated, keep it generic to the requested domain and ensure every addendum is referenced by at least one task, one acceptance item, and one acceptance traceability matrix row.
 - Do not copy classifier-specific, reconfirmation-specific, renderer-specific, or project-specific addendum content into unrelated contracts.

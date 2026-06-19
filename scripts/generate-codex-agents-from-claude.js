@@ -35,6 +35,10 @@ function toPortable(value) {
   return value.replace(/\\/g, '/');
 }
 
+function normalizeLineEndings(value) {
+  return value.replace(/\r\n/g, '\n');
+}
+
 function tomlString(value) {
   return JSON.stringify(value);
 }
@@ -336,7 +340,7 @@ function main() {
   const diffs = [];
   for (const item of generated) {
     const current = fs.existsSync(item.target) ? fs.readFileSync(item.target, 'utf8') : null;
-    if (current !== item.content) {
+    if (current === null || normalizeLineEndings(current) !== normalizeLineEndings(item.content)) {
       diffs.push(toPortable(path.relative(ROOT, item.target)));
       if (!check) {
         fs.mkdirSync(path.dirname(item.target), { recursive: true });

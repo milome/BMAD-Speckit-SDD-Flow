@@ -1,0 +1,193 @@
+{
+  "schemaVersion": "goal-contract-source-coverage-receipt/v1",
+  "sourcePlanPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.0-rebaseline/source-inventory.json",
+  "sourcePlanHash": "sha256:897c403b25e2bf78b9bb1498a550294e4b990b71125b095b85ef7eb752a44c31",
+  "sourceBytes": 735064,
+  "sourceLines": 22288,
+  "goalContractPath": "docs/plans/2026-06-20-main-agent-runtime-migration-wave-4-1-goal-execution-plan.md",
+  "goalContractHash": "sha256:727551e7a3d07571c63a9878c896d730dbdbcc4727a531ef697b1bfb2360f48d",
+  "sourceObligations": [
+    {
+      "id": "SRC001",
+      "kind": "conversation_requirement",
+      "source": "User request: wave4.1 full-scope complete equivalent no-fallback migration goal contract with all 240 scripts requiring packageImplementationSet, strict byte and LOC size-delta gates, 240-path no-fallback scan, and automatic /goal rework until strict acceptance passes",
+      "goalTaskRefs": [
+        "G001-G015"
+      ],
+      "acceptanceRefs": [
+        "ACC001-ACC025"
+      ],
+      "commandRefs": [
+        "CMD001-CMD016"
+      ],
+      "evidenceRefs": [
+        "docs/plans/2026-06-20-main-agent-runtime-migration-wave-4-1-goal-execution-plan.generation-receipt.json"
+      ]
+    },
+    {
+      "id": "SRC002",
+      "kind": "full_inventory_scope",
+      "source": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.0-rebaseline/source-inventory.json; sha256:897c403b25e2bf78b9bb1498a550294e4b990b71125b095b85ef7eb752a44c31",
+      "goalTaskRefs": [
+        "G001",
+        "G009",
+        "G012",
+        "G014",
+        "G015"
+      ],
+      "acceptanceRefs": [
+        "ACC001",
+        "ACC002",
+        "ACC016",
+        "ACC017",
+        "ACC021",
+        "ACC022",
+        "ACC023",
+        "ACC025"
+      ],
+      "commandRefs": [
+        "CMD002",
+        "CMD003",
+        "CMD008",
+        "CMD013"
+      ],
+      "evidenceRefs": [
+        "docs/plans/2026-06-20-main-agent-runtime-migration-wave-4-1-goal-execution-plan.coverage-receipt.json"
+      ]
+    },
+    {
+      "id": "SRC003",
+      "kind": "queue_scope",
+      "source": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.0-rebaseline/migration-queue.json; sha256:3b3ccf1b1a88d9f7dd559413e4bcb502d0cdf7305b308b64e2b12f26ac42ddb5",
+      "goalTaskRefs": [
+        "G001",
+        "G003-G012",
+        "G014",
+        "G015"
+      ],
+      "acceptanceRefs": [
+        "ACC001-ACC025"
+      ],
+      "commandRefs": [
+        "CMD002",
+        "CMD003",
+        "CMD013"
+      ],
+      "evidenceRefs": [
+        "docs/plans/2026-06-20-main-agent-runtime-migration-wave-4-1-goal-execution-plan.coverage-receipt.json"
+      ]
+    },
+    {
+      "id": "SRC004",
+      "kind": "parity_baseline",
+      "source": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.0-rebaseline/package-source-parity-baseline.json; sha256:9d69564dc665ba50eb40fab76a955a8880602963dd57667f6b8d308074629dee",
+      "goalTaskRefs": [
+        "G001",
+        "G004-G010",
+        "G013-G015"
+      ],
+      "acceptanceRefs": [
+        "ACC003-ACC016",
+        "ACC021-ACC025"
+      ],
+      "commandRefs": [
+        "CMD002",
+        "CMD008",
+        "CMD013"
+      ],
+      "evidenceRefs": [
+        "docs/plans/2026-06-20-main-agent-runtime-migration-wave-4-1-goal-execution-plan.coverage-receipt.json"
+      ]
+    },
+    {
+      "id": "SRC005",
+      "kind": "registry_state",
+      "source": "repo-governance/script-migration-registry.yaml; sha256:9c86cac253049e18b4c126994817c6786f7d115800884eac0348e4d18ad8cf33",
+      "goalTaskRefs": [
+        "G001",
+        "G012",
+        "G014",
+        "G015"
+      ],
+      "acceptanceRefs": [
+        "ACC011",
+        "ACC017-ACC025"
+      ],
+      "commandRefs": [
+        "CMD007",
+        "CMD013"
+      ],
+      "evidenceRefs": [
+        "docs/plans/2026-06-20-main-agent-runtime-migration-wave-4-1-goal-execution-plan.coverage-receipt.json"
+      ]
+    },
+    {
+      "id": "SRC006",
+      "kind": "no_fallback_policy",
+      "source": "No root script dispatch across all 240 source inventory original paths, no tsx, no ts-node, no compiled fallback, no descriptor-only helper, no report-only action",
+      "goalTaskRefs": [
+        "G002-G015"
+      ],
+      "acceptanceRefs": [
+        "ACC003-ACC025"
+      ],
+      "commandRefs": [
+        "CMD003",
+        "CMD008",
+        "CMD013"
+      ],
+      "evidenceRefs": [
+        "docs/plans/2026-06-20-main-agent-runtime-migration-wave-4-1-goal-execution-plan.coverage-receipt.json"
+      ]
+    },
+    {
+      "id": "SRC007",
+      "kind": "strict_acceptance_policy",
+      "source": "Every acceptance row requires direct behavior, packageImplementationSet, byte and LOC size-delta proof, source seam, receipt field, CLI output, registry, package build, install matrix, encoding proof, and automatic rework closure",
+      "goalTaskRefs": [
+        "G002-G015"
+      ],
+      "acceptanceRefs": [
+        "ACC003-ACC025"
+      ],
+      "commandRefs": [
+        "CMD004-CMD016"
+      ],
+      "evidenceRefs": [
+        "docs/plans/2026-06-20-main-agent-runtime-migration-wave-4-1-goal-execution-plan.generation-receipt.json"
+      ]
+    },
+    {
+      "id": "SRC008",
+      "kind": "user_strict_addendum",
+      "source": "All 240 scripts/** rows must have non-empty packageImplementationSet, original/package bytes and LOC ratios, strict threshold decision, 240-path no-fallback scan, and automatic goal rework until compliant",
+      "goalTaskRefs": [
+        "G001",
+        "G002",
+        "G009",
+        "G014",
+        "G015"
+      ],
+      "acceptanceRefs": [
+        "ACC022",
+        "ACC023",
+        "ACC024",
+        "ACC025"
+      ],
+      "commandRefs": [
+        "CMD003",
+        "CMD008",
+        "CMD013",
+        "CMD014"
+      ],
+      "evidenceRefs": [
+        "docs/plans/2026-06-20-main-agent-runtime-migration-wave-4-1-goal-execution-plan.generation-receipt.json"
+      ]
+    }
+  ],
+  "unmappedSourceObligations": [],
+  "orphanGeneratedRefs": [],
+  "blockingReasons": [],
+  "decision": "pass",
+  "generatedAt": "2026-06-19T20:55:53.003Z"
+}
