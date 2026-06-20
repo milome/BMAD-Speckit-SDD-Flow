@@ -1,0 +1,178 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-wave-4-1-owner-initial-behavior-matrix/v1",
+  "waveId": "main-agent-runtime-migration-wave-4.1",
+  "ownerTaskId": "G004",
+  "generatedAt": "2026-06-20T07:04:37.611Z",
+  "artifactSuffix": "probe_auditor_spec",
+  "timeoutMs": 30000,
+  "coverageDecision": "passed_full_original_behavior_coverage",
+  "eligibleOwnerRowCount": 91,
+  "selectedRowCount": 1,
+  "matrixRowCount": 1,
+  "scenarioCount": 1,
+  "fullCoverageStillRequired": false,
+  "rows": [
+    {
+      "originalPath": "scripts/auditor-spec.ts",
+      "entryId": "auditor-spec",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/auditor-spec.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/auditor-spec.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G004_STATIC_FULL:scripts/auditor-spec.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 1,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 1,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g004_auditor_spec_ts_no_args",
+          "originalEntryPoint": "scripts/auditor-spec.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/auditor-spec.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/auditor-spec.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/auditor-spec.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g004_auditor_spec_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g004_auditor_spec_ts_no_args-original-eGjsuQ",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g004_auditor_spec_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g004_auditor_spec_ts_no_args-package-gFoIP8",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "Usage: npx ts-node scripts/auditor-spec.ts <spec-path> [iteration]\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "Usage: npx ts-node scripts/auditor-spec.ts <spec-path> [iteration]"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G004_ORIGINAL_REPLAY:scripts/auditor-spec.ts:no_args",
+            "originalReplayArtifactHash": "sha256:afe9ece28c6bd43959817fc73fe8ac3ef0299edcaf18bdcdf81287c78475e99e",
+            "sourceDerivedProofId": "G004_SOURCE_DERIVED:scripts/auditor-spec.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 80,
+                "anchor": "scripts/auditor-spec.ts:80",
+                "text": "console.log(`Audit complete: ${result.status}`);"
+              },
+              {
+                "line": 81,
+                "anchor": "scripts/auditor-spec.ts:81",
+                "text": "console.log(`Report written to: ${result.reportPath}`);"
+              },
+              {
+                "line": 87,
+                "anchor": "scripts/auditor-spec.ts:87",
+                "text": "const specPath = process.argv[2];"
+              },
+              {
+                "line": 88,
+                "anchor": "scripts/auditor-spec.ts:88",
+                "text": "const iteration = parseInt(process.argv[3] || '1', 10);"
+              },
+              {
+                "line": 91,
+                "anchor": "scripts/auditor-spec.ts:91",
+                "text": "console.error('Usage: npx ts-node scripts/auditor-spec.ts <spec-path> [iteration]');"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/auditor-spec.ts",
+                "to": "scripts/auditor-spec.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/auditor-spec.js",
+                "to": "scripts/auditor-spec.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G004_STATIC_FULL:scripts/auditor-spec.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

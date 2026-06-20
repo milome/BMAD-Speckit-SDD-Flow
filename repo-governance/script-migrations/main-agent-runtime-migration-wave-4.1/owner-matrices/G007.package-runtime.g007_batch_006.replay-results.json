@@ -1,0 +1,1596 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-wave-4-1-owner-initial-replay-results/v1",
+  "waveId": "main-agent-runtime-migration-wave-4.1",
+  "ownerTaskId": "G007",
+  "generatedAt": "2026-06-20T11:19:34.145Z",
+  "artifactSuffix": "g007_batch_006",
+  "timeoutMs": 30000,
+  "matrixPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G007.package-runtime.g007_batch_006.behavior-matrix.json",
+  "matrixHash": "sha256:0d5e1b78ae6dc6d339c5770da31bd1f0aaab7f2a1bf53b281148e52497be1a30",
+  "matrixRowCount": 10,
+  "scenarioCount": 37,
+  "passedScenarioCount": 37,
+  "failedScenarioCount": 0,
+  "replayRows": [
+    {
+      "originalPath": "scripts/prompt-routing-hints.ts",
+      "entryId": "prompt-routing-hints",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/prompt-routing-hints.js",
+      "scenarioCount": 1,
+      "passedScenarioCount": 1,
+      "failedScenarioCount": 0,
+      "scenarios": [
+        {
+          "scenarioId": "g007_prompt_routing_hints_ts_no_args",
+          "originalReplay": {
+            "exitCode": 0,
+            "stdoutBytes": 0,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 0,
+            "stdoutBytes": 0,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g007_prompt_routing_hints_ts_no_args",
+            "originalEntryPoint": "scripts/prompt-routing-hints.ts",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prompt-routing-hints.ts",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 0,
+            "stdoutBytes": 0,
+            "stderrBytes": 0,
+            "normalizedExpectedStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedExpectedStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/query-validate.ts",
+      "entryId": "query-validate",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/query-validate.js",
+      "scenarioCount": 3,
+      "passedScenarioCount": 3,
+      "failedScenarioCount": 0,
+      "scenarios": [
+        {
+          "scenarioId": "g007_query_validate_ts_no_args",
+          "originalReplay": {
+            "exitCode": 0,
+            "stdoutBytes": 227,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 0,
+            "stdoutBytes": 227,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g007_query_validate_ts_no_args",
+            "originalEntryPoint": "scripts/query-validate.ts",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/query-validate.ts",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 0,
+            "stdoutBytes": 227,
+            "stderrBytes": 0,
+            "normalizedExpectedStdoutHash": "sha256:7ab21a95a352c25762c15a66ae1ae305d8d7971f2060d1615ab1a1e5d51c591f",
+            "normalizedReplayStdoutHash": "sha256:7ab21a95a352c25762c15a66ae1ae305d8d7971f2060d1615ab1a1e5d51c591f",
+            "normalizedExpectedStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        },
+        {
+          "scenarioId": "g007_query_validate_ts_flag_data_path",
+          "originalReplay": {
+            "exitCode": 0,
+            "stdoutBytes": 249,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 0,
+            "stdoutBytes": 248,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g007_query_validate_ts_flag_data_path",
+            "originalEntryPoint": "scripts/query-validate.ts",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/query-validate.ts",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 0,
+            "stdoutBytes": 248,
+            "stderrBytes": 0,
+            "normalizedExpectedStdoutHash": "sha256:fe768ca7d39ea973276abd5c1cce11530d401598a2a0e32bdc57c7351e76f818",
+            "normalizedReplayStdoutHash": "sha256:fe768ca7d39ea973276abd5c1cce11530d401598a2a0e32bdc57c7351e76f818",
+            "normalizedExpectedStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        },
+        {
+          "scenarioId": "g007_query_validate_ts_env_scoring_data_path",
+          "originalReplay": {
+            "exitCode": 0,
+            "stdoutBytes": 212,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 0,
+            "stdoutBytes": 212,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g007_query_validate_ts_env_scoring_data_path",
+            "originalEntryPoint": "scripts/query-validate.ts",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/query-validate.ts",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 0,
+            "stdoutBytes": 212,
+            "stderrBytes": 0,
+            "normalizedExpectedStdoutHash": "sha256:2ed36f63f7a09afbce764df07b74381f34408cbf89f73ee7ddfefe6a5ee0c82e",
+            "normalizedReplayStdoutHash": "sha256:2ed36f63f7a09afbce764df07b74381f34408cbf89f73ee7ddfefe6a5ee0c82e",
+            "normalizedExpectedStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/real-development-tick-worker.js",
+      "entryId": "real-development-tick-worker-js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/real-development-tick-worker.js",
+      "scenarioCount": 7,
+      "passedScenarioCount": 7,
+      "failedScenarioCount": 0,
+      "scenarios": [
+        {
+          "scenarioId": "g007_real_development_tick_worker_js_no_args",
+          "originalReplay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 76,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 76,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g007_real_development_tick_worker_js_no_args",
+            "originalEntryPoint": "scripts/real-development-tick-worker.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.js",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 76,
+            "normalizedExpectedStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedExpectedStderrHash": "sha256:04ed539a104f66df7f0310281b006a319c7fc71cf394721a7d16ff7e0a7f3f63",
+            "normalizedReplayStderrHash": "sha256:04ed539a104f66df7f0310281b006a319c7fc71cf394721a7d16ff7e0a7f3f63",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        },
+        {
+          "scenarioId": "g007_real_development_tick_worker_js_flag_name_only",
+          "originalReplay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 76,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 76,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g007_real_development_tick_worker_js_flag_name_only",
+            "originalEntryPoint": "scripts/real-development-tick-worker.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.js",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 76,
+            "normalizedExpectedStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedExpectedStderrHash": "sha256:04ed539a104f66df7f0310281b006a319c7fc71cf394721a7d16ff7e0a7f3f63",
+            "normalizedReplayStderrHash": "sha256:04ed539a104f66df7f0310281b006a319c7fc71cf394721a7d16ff7e0a7f3f63",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        },
+        {
+          "scenarioId": "g007_real_development_tick_worker_js_env_bmad_framework_root",
+          "originalReplay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 76,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 76,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g007_real_development_tick_worker_js_env_bmad_framework_root",
+            "originalEntryPoint": "scripts/real-development-tick-worker.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.js",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 76,
+            "normalizedExpectedStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedExpectedStderrHash": "sha256:04ed539a104f66df7f0310281b006a319c7fc71cf394721a7d16ff7e0a7f3f63",
+            "normalizedReplayStderrHash": "sha256:04ed539a104f66df7f0310281b006a319c7fc71cf394721a7d16ff7e0a7f3f63",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        },
+        {
+          "scenarioId": "g007_real_development_tick_worker_js_env_bmad_real_dev_session_dir",
+          "originalReplay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 76,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 76,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g007_real_development_tick_worker_js_env_bmad_real_dev_session_dir",
+            "originalEntryPoint": "scripts/real-development-tick-worker.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.js",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 76,
+            "normalizedExpectedStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedExpectedStderrHash": "sha256:04ed539a104f66df7f0310281b006a319c7fc71cf394721a7d16ff7e0a7f3f63",
+            "normalizedReplayStderrHash": "sha256:04ed539a104f66df7f0310281b006a319c7fc71cf394721a7d16ff7e0a7f3f63",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        },
+        {
+          "scenarioId": "g007_real_development_tick_worker_js_env_bmad_real_dev_tick",
+          "originalReplay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 76,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 76,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g007_real_development_tick_worker_js_env_bmad_real_dev_tick",
+            "originalEntryPoint": "scripts/real-development-tick-worker.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.js",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 76,
+            "normalizedExpectedStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedExpectedStderrHash": "sha256:04ed539a104f66df7f0310281b006a319c7fc71cf394721a7d16ff7e0a7f3f63",
+            "normalizedReplayStderrHash": "sha256:04ed539a104f66df7f0310281b006a319c7fc71cf394721a7d16ff7e0a7f3f63",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        },
+        {
+          "scenarioId": "g007_real_development_tick_worker_js_env_bmad_real_dev_tick_dir",
+          "originalReplay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 76,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 76,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g007_real_development_tick_worker_js_env_bmad_real_dev_tick_dir",
+            "originalEntryPoint": "scripts/real-development-tick-worker.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.js",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 76,
+            "normalizedExpectedStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedExpectedStderrHash": "sha256:04ed539a104f66df7f0310281b006a319c7fc71cf394721a7d16ff7e0a7f3f63",
+            "normalizedReplayStderrHash": "sha256:04ed539a104f66df7f0310281b006a319c7fc71cf394721a7d16ff7e0a7f3f63",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        },
+        {
+          "scenarioId": "g007_real_development_tick_worker_js_env_bmad_real_dev_tick_timeout_ms",
+          "originalReplay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 76,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 76,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g007_real_development_tick_worker_js_env_bmad_real_dev_tick_timeout_ms",
+            "originalEntryPoint": "scripts/real-development-tick-worker.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.js",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 76,
+            "normalizedExpectedStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedExpectedStderrHash": "sha256:04ed539a104f66df7f0310281b006a319c7fc71cf394721a7d16ff7e0a7f3f63",
+            "normalizedReplayStderrHash": "sha256:04ed539a104f66df7f0310281b006a319c7fc71cf394721a7d16ff7e0a7f3f63",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/requirement-record-event-reducer.ts",
+      "entryId": "requirement-record-event-reducer-ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/requirement-record-event-reducer.js",
+      "scenarioCount": 1,
+      "passedScenarioCount": 1,
+      "failedScenarioCount": 0,
+      "scenarios": [
+        {
+          "scenarioId": "g007_requirement_record_event_reducer_ts_no_args",
+          "originalReplay": {
+            "exitCode": 0,
+            "stdoutBytes": 160,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 0,
+            "stdoutBytes": 160,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g007_requirement_record_event_reducer_ts_no_args",
+            "originalEntryPoint": "scripts/requirement-record-event-reducer.ts",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirement-record-event-reducer.ts",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 0,
+            "stdoutBytes": 160,
+            "stderrBytes": 0,
+            "normalizedExpectedStdoutHash": "sha256:aa9056db6b2beac4264a3b43ea7bdea3fec272682a3544d8d599186350878054",
+            "normalizedReplayStdoutHash": "sha256:aa9056db6b2beac4264a3b43ea7bdea3fec272682a3544d8d599186350878054",
+            "normalizedExpectedStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/reviewer-shared-core.ts",
+      "entryId": "reviewer-shared-core-ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/reviewer-shared-core.js",
+      "scenarioCount": 1,
+      "passedScenarioCount": 1,
+      "failedScenarioCount": 0,
+      "scenarios": [
+        {
+          "scenarioId": "g007_reviewer_shared_core_ts_no_args",
+          "originalReplay": {
+            "exitCode": 0,
+            "stdoutBytes": 0,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 0,
+            "stdoutBytes": 0,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g007_reviewer_shared_core_ts_no_args",
+            "originalEntryPoint": "scripts/reviewer-shared-core.ts",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-shared-core.ts",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 0,
+            "stdoutBytes": 0,
+            "stderrBytes": 0,
+            "normalizedExpectedStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedExpectedStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/run-confirmed-final-required-commands.js",
+      "entryId": "run-confirmed-final-required-commands-js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-confirmed-final-required-commands.js",
+      "scenarioCount": 2,
+      "passedScenarioCount": 2,
+      "failedScenarioCount": 0,
+      "scenarios": [
+        {
+          "scenarioId": "g007_run_confirmed_final_required_commands_js_no_args",
+          "originalReplay": {
+            "exitCode": 1,
+            "stdoutBytes": 130,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 1,
+            "stdoutBytes": 130,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g007_run_confirmed_final_required_commands_js_no_args",
+            "originalEntryPoint": "scripts/run-confirmed-final-required-commands.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-final-required-commands.js",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 1,
+            "stdoutBytes": 130,
+            "stderrBytes": 0,
+            "normalizedExpectedStdoutHash": "sha256:41784d6552875d7a2ba32db1eee6ac217a0efb36e6846bdd504dc3ea1ad763d2",
+            "normalizedReplayStdoutHash": "sha256:41784d6552875d7a2ba32db1eee6ac217a0efb36e6846bdd504dc3ea1ad763d2",
+            "normalizedExpectedStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        },
+        {
+          "scenarioId": "g007_run_confirmed_final_required_commands_js_flag_json",
+          "originalReplay": {
+            "exitCode": 1,
+            "stdoutBytes": 323,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 1,
+            "stdoutBytes": 323,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g007_run_confirmed_final_required_commands_js_flag_json",
+            "originalEntryPoint": "scripts/run-confirmed-final-required-commands.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-final-required-commands.js",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 1,
+            "stdoutBytes": 323,
+            "stderrBytes": 0,
+            "normalizedExpectedStdoutHash": "sha256:4c793d2c131dad7b43e9152567a7788a7e3f919eec49fd2e06e91082545fb77e",
+            "normalizedReplayStdoutHash": "sha256:4c793d2c131dad7b43e9152567a7788a7e3f919eec49fd2e06e91082545fb77e",
+            "normalizedExpectedStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/run-confirmed-trace-slice.js",
+      "entryId": "run-confirmed-trace-slice-js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-confirmed-trace-slice.js",
+      "scenarioCount": 6,
+      "passedScenarioCount": 6,
+      "failedScenarioCount": 0,
+      "scenarios": [
+        {
+          "scenarioId": "g007_run_confirmed_trace_slice_js_no_args",
+          "originalReplay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 62,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 62,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g007_run_confirmed_trace_slice_js_no_args",
+            "originalEntryPoint": "scripts/run-confirmed-trace-slice.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.js",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 62,
+            "normalizedExpectedStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedExpectedStderrHash": "sha256:ed27f17a39948d1bf8071db73f6f5a437787c47767ee9a303c1bdf2abe31d739",
+            "normalizedReplayStderrHash": "sha256:ed27f17a39948d1bf8071db73f6f5a437787c47767ee9a303c1bdf2abe31d739",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        },
+        {
+          "scenarioId": "g007_run_confirmed_trace_slice_js_flag_help",
+          "originalReplay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 84,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 84,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g007_run_confirmed_trace_slice_js_flag_help",
+            "originalEntryPoint": "scripts/run-confirmed-trace-slice.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.js",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 84,
+            "normalizedExpectedStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedExpectedStderrHash": "sha256:e3696959a90ad2a8d76dcbce6b27f3db80553e38200c1d8b18075a9539a5712b",
+            "normalizedReplayStderrHash": "sha256:e3696959a90ad2a8d76dcbce6b27f3db80553e38200c1d8b18075a9539a5712b",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        },
+        {
+          "scenarioId": "g007_run_confirmed_trace_slice_js_flag_json",
+          "originalReplay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 176,
+            "expectedFileArtifactCount": 1,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 175,
+            "expectedFileArtifactCount": 1,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g007_run_confirmed_trace_slice_js_flag_json",
+            "originalEntryPoint": "scripts/run-confirmed-trace-slice.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.js",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 175,
+            "normalizedExpectedStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedExpectedStderrHash": "sha256:b4c36f8c3c631ca93a58b7021e5cf6580d9a58412a04e6529716f7fd312d57f2",
+            "normalizedReplayStderrHash": "sha256:b4c36f8c3c631ca93a58b7021e5cf6580d9a58412a04e6529716f7fd312d57f2",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        },
+        {
+          "scenarioId": "g007_run_confirmed_trace_slice_js_flag_record",
+          "originalReplay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 62,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 62,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g007_run_confirmed_trace_slice_js_flag_record",
+            "originalEntryPoint": "scripts/run-confirmed-trace-slice.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.js",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 62,
+            "normalizedExpectedStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedExpectedStderrHash": "sha256:ed27f17a39948d1bf8071db73f6f5a437787c47767ee9a303c1bdf2abe31d739",
+            "normalizedReplayStderrHash": "sha256:ed27f17a39948d1bf8071db73f6f5a437787c47767ee9a303c1bdf2abe31d739",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        },
+        {
+          "scenarioId": "g007_run_confirmed_trace_slice_js_flag_source",
+          "originalReplay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 62,
+            "expectedFileArtifactCount": 1,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 62,
+            "expectedFileArtifactCount": 1,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g007_run_confirmed_trace_slice_js_flag_source",
+            "originalEntryPoint": "scripts/run-confirmed-trace-slice.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.js",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 62,
+            "normalizedExpectedStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedExpectedStderrHash": "sha256:ed27f17a39948d1bf8071db73f6f5a437787c47767ee9a303c1bdf2abe31d739",
+            "normalizedReplayStderrHash": "sha256:ed27f17a39948d1bf8071db73f6f5a437787c47767ee9a303c1bdf2abe31d739",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        },
+        {
+          "scenarioId": "g007_run_confirmed_trace_slice_js_flag_trace",
+          "originalReplay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 58,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 58,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g007_run_confirmed_trace_slice_js_flag_trace",
+            "originalEntryPoint": "scripts/run-confirmed-trace-slice.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.js",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 58,
+            "normalizedExpectedStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedExpectedStderrHash": "sha256:1526e29cf937a2f2279384ae02cb1c8b9543543add91e302a96388217b3facca",
+            "normalizedReplayStderrHash": "sha256:1526e29cf937a2f2279384ae02cb1c8b9543543add91e302a96388217b3facca",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/run-required-commands-from-ai-tdd-manifest.ts",
+      "entryId": "run-required-commands-from-ai-tdd-manifest-ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.js",
+      "scenarioCount": 9,
+      "passedScenarioCount": 9,
+      "failedScenarioCount": 0,
+      "scenarios": [
+        {
+          "scenarioId": "g007_run_required_commands_from_ai_tdd_manifest_ts_no_args",
+          "originalReplay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 118,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 118,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g007_run_required_commands_from_ai_tdd_manifest_ts_no_args",
+            "originalEntryPoint": "scripts/run-required-commands-from-ai-tdd-manifest.ts",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 118,
+            "normalizedExpectedStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedExpectedStderrHash": "sha256:128493bc7ba344eb8d86640a5d9c9e1c0f3fb5f41784e45a63eee76884c442a9",
+            "normalizedReplayStderrHash": "sha256:128493bc7ba344eb8d86640a5d9c9e1c0f3fb5f41784e45a63eee76884c442a9",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        },
+        {
+          "scenarioId": "g007_run_required_commands_from_ai_tdd_manifest_ts_flag_attempt_id",
+          "originalReplay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 118,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 118,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g007_run_required_commands_from_ai_tdd_manifest_ts_flag_attempt_id",
+            "originalEntryPoint": "scripts/run-required-commands-from-ai-tdd-manifest.ts",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 118,
+            "normalizedExpectedStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedExpectedStderrHash": "sha256:128493bc7ba344eb8d86640a5d9c9e1c0f3fb5f41784e45a63eee76884c442a9",
+            "normalizedReplayStderrHash": "sha256:128493bc7ba344eb8d86640a5d9c9e1c0f3fb5f41784e45a63eee76884c442a9",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        },
+        {
+          "scenarioId": "g007_run_required_commands_from_ai_tdd_manifest_ts_flag_evidence_dir",
+          "originalReplay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 118,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 118,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g007_run_required_commands_from_ai_tdd_manifest_ts_flag_evidence_dir",
+            "originalEntryPoint": "scripts/run-required-commands-from-ai-tdd-manifest.ts",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 118,
+            "normalizedExpectedStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedExpectedStderrHash": "sha256:128493bc7ba344eb8d86640a5d9c9e1c0f3fb5f41784e45a63eee76884c442a9",
+            "normalizedReplayStderrHash": "sha256:128493bc7ba344eb8d86640a5d9c9e1c0f3fb5f41784e45a63eee76884c442a9",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        },
+        {
+          "scenarioId": "g007_run_required_commands_from_ai_tdd_manifest_ts_flag_help",
+          "originalReplay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 84,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 84,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g007_run_required_commands_from_ai_tdd_manifest_ts_flag_help",
+            "originalEntryPoint": "scripts/run-required-commands-from-ai-tdd-manifest.ts",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 84,
+            "normalizedExpectedStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedExpectedStderrHash": "sha256:e3696959a90ad2a8d76dcbce6b27f3db80553e38200c1d8b18075a9539a5712b",
+            "normalizedReplayStderrHash": "sha256:e3696959a90ad2a8d76dcbce6b27f3db80553e38200c1d8b18075a9539a5712b",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        },
+        {
+          "scenarioId": "g007_run_required_commands_from_ai_tdd_manifest_ts_flag_json",
+          "originalReplay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 193,
+            "expectedFileArtifactCount": 1,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 192,
+            "expectedFileArtifactCount": 1,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g007_run_required_commands_from_ai_tdd_manifest_ts_flag_json",
+            "originalEntryPoint": "scripts/run-required-commands-from-ai-tdd-manifest.ts",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 192,
+            "normalizedExpectedStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedExpectedStderrHash": "sha256:b4c36f8c3c631ca93a58b7021e5cf6580d9a58412a04e6529716f7fd312d57f2",
+            "normalizedReplayStderrHash": "sha256:b4c36f8c3c631ca93a58b7021e5cf6580d9a58412a04e6529716f7fd312d57f2",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        },
+        {
+          "scenarioId": "g007_run_required_commands_from_ai_tdd_manifest_ts_flag_mode",
+          "originalReplay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 118,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 118,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g007_run_required_commands_from_ai_tdd_manifest_ts_flag_mode",
+            "originalEntryPoint": "scripts/run-required-commands-from-ai-tdd-manifest.ts",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 118,
+            "normalizedExpectedStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedExpectedStderrHash": "sha256:128493bc7ba344eb8d86640a5d9c9e1c0f3fb5f41784e45a63eee76884c442a9",
+            "normalizedReplayStderrHash": "sha256:128493bc7ba344eb8d86640a5d9c9e1c0f3fb5f41784e45a63eee76884c442a9",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        },
+        {
+          "scenarioId": "g007_run_required_commands_from_ai_tdd_manifest_ts_flag_requirement_record",
+          "originalReplay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 118,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 118,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g007_run_required_commands_from_ai_tdd_manifest_ts_flag_requirement_record",
+            "originalEntryPoint": "scripts/run-required-commands-from-ai-tdd-manifest.ts",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 118,
+            "normalizedExpectedStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedExpectedStderrHash": "sha256:128493bc7ba344eb8d86640a5d9c9e1c0f3fb5f41784e45a63eee76884c442a9",
+            "normalizedReplayStderrHash": "sha256:128493bc7ba344eb8d86640a5d9c9e1c0f3fb5f41784e45a63eee76884c442a9",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        },
+        {
+          "scenarioId": "g007_run_required_commands_from_ai_tdd_manifest_ts_flag_run_id",
+          "originalReplay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 118,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 118,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g007_run_required_commands_from_ai_tdd_manifest_ts_flag_run_id",
+            "originalEntryPoint": "scripts/run-required-commands-from-ai-tdd-manifest.ts",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 118,
+            "normalizedExpectedStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedExpectedStderrHash": "sha256:128493bc7ba344eb8d86640a5d9c9e1c0f3fb5f41784e45a63eee76884c442a9",
+            "normalizedReplayStderrHash": "sha256:128493bc7ba344eb8d86640a5d9c9e1c0f3fb5f41784e45a63eee76884c442a9",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        },
+        {
+          "scenarioId": "g007_run_required_commands_from_ai_tdd_manifest_ts_flag_source",
+          "originalReplay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 118,
+            "expectedFileArtifactCount": 1,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 118,
+            "expectedFileArtifactCount": 1,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g007_run_required_commands_from_ai_tdd_manifest_ts_flag_source",
+            "originalEntryPoint": "scripts/run-required-commands-from-ai-tdd-manifest.ts",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 2,
+            "stdoutBytes": 0,
+            "stderrBytes": 118,
+            "normalizedExpectedStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedExpectedStderrHash": "sha256:128493bc7ba344eb8d86640a5d9c9e1c0f3fb5f41784e45a63eee76884c442a9",
+            "normalizedReplayStderrHash": "sha256:128493bc7ba344eb8d86640a5d9c9e1c0f3fb5f41784e45a63eee76884c442a9",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/run-runtime-dashboard-forever.cjs",
+      "entryId": "run-runtime-dashboard-forever-cjs",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-runtime-dashboard-forever.cjs",
+      "scenarioCount": 6,
+      "passedScenarioCount": 6,
+      "failedScenarioCount": 0,
+      "scenarios": [
+        {
+          "scenarioId": "g007_run_runtime_dashboard_forever_cjs_no_args",
+          "originalReplay": {
+            "exitCode": 1,
+            "stdoutBytes": 292,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": true
+          },
+          "replay": {
+            "exitCode": 1,
+            "stdoutBytes": 292,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": true
+          },
+          "comparison": {
+            "scenarioId": "g007_run_runtime_dashboard_forever_cjs_no_args",
+            "originalEntryPoint": "scripts/run-runtime-dashboard-forever.cjs",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-runtime-dashboard-forever.cjs",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 1,
+            "stdoutBytes": 292,
+            "stderrBytes": 0,
+            "normalizedExpectedStdoutHash": "sha256:465e93f668fc1db1d6e1d9201d0462f3b61b940252de05e51d50aa102d7c3c8e",
+            "normalizedReplayStdoutHash": "sha256:465e93f668fc1db1d6e1d9201d0462f3b61b940252de05e51d50aa102d7c3c8e",
+            "normalizedExpectedStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": true
+          }
+        },
+        {
+          "scenarioId": "g007_run_runtime_dashboard_forever_cjs_env_runtime_dashboard_data_path",
+          "originalReplay": {
+            "exitCode": 1,
+            "stdoutBytes": 332,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": true
+          },
+          "replay": {
+            "exitCode": 1,
+            "stdoutBytes": 331,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": true
+          },
+          "comparison": {
+            "scenarioId": "g007_run_runtime_dashboard_forever_cjs_env_runtime_dashboard_data_path",
+            "originalEntryPoint": "scripts/run-runtime-dashboard-forever.cjs",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-runtime-dashboard-forever.cjs",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 1,
+            "stdoutBytes": 331,
+            "stderrBytes": 0,
+            "normalizedExpectedStdoutHash": "sha256:87888176becafed2d3ded66de81442490b213fa564e2a205ba1c45d3cb9f89dd",
+            "normalizedReplayStdoutHash": "sha256:87888176becafed2d3ded66de81442490b213fa564e2a205ba1c45d3cb9f89dd",
+            "normalizedExpectedStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": true
+          }
+        },
+        {
+          "scenarioId": "g007_run_runtime_dashboard_forever_cjs_env_runtime_dashboard_host",
+          "originalReplay": {
+            "exitCode": 1,
+            "stdoutBytes": 0,
+            "stderrBytes": 258,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 1,
+            "stdoutBytes": 0,
+            "stderrBytes": 258,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g007_run_runtime_dashboard_forever_cjs_env_runtime_dashboard_host",
+            "originalEntryPoint": "scripts/run-runtime-dashboard-forever.cjs",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-runtime-dashboard-forever.cjs",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 1,
+            "stdoutBytes": 0,
+            "stderrBytes": 258,
+            "normalizedExpectedStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedExpectedStderrHash": "sha256:4aaa61e434ac6b3cacf17363f1b96c2a82a59e14a718e4bb8a15d3ee2200afe8",
+            "normalizedReplayStderrHash": "sha256:4aaa61e434ac6b3cacf17363f1b96c2a82a59e14a718e4bb8a15d3ee2200afe8",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        },
+        {
+          "scenarioId": "g007_run_runtime_dashboard_forever_cjs_env_runtime_dashboard_launch_mode",
+          "originalReplay": {
+            "exitCode": 1,
+            "stdoutBytes": 329,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": true
+          },
+          "replay": {
+            "exitCode": 1,
+            "stdoutBytes": 329,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": true
+          },
+          "comparison": {
+            "scenarioId": "g007_run_runtime_dashboard_forever_cjs_env_runtime_dashboard_launch_mode",
+            "originalEntryPoint": "scripts/run-runtime-dashboard-forever.cjs",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-runtime-dashboard-forever.cjs",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 1,
+            "stdoutBytes": 329,
+            "stderrBytes": 0,
+            "normalizedExpectedStdoutHash": "sha256:43902f9da668c6f65a12c6432e6aded206ba62b1a55b51dbb59bba5bff5b48b4",
+            "normalizedReplayStdoutHash": "sha256:43902f9da668c6f65a12c6432e6aded206ba62b1a55b51dbb59bba5bff5b48b4",
+            "normalizedExpectedStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": true
+          }
+        },
+        {
+          "scenarioId": "g007_run_runtime_dashboard_forever_cjs_env_runtime_dashboard_port",
+          "originalReplay": {
+            "exitCode": 1,
+            "stdoutBytes": 0,
+            "stderrBytes": 865,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 1,
+            "stdoutBytes": 0,
+            "stderrBytes": 975,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g007_run_runtime_dashboard_forever_cjs_env_runtime_dashboard_port",
+            "originalEntryPoint": "scripts/run-runtime-dashboard-forever.cjs",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-runtime-dashboard-forever.cjs",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 1,
+            "stdoutBytes": 0,
+            "stderrBytes": 975,
+            "normalizedExpectedStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedExpectedStderrHash": "sha256:6cde5371ce80d59efb67cf28f6ef9477dff2338d2b032e856c6dc42cbf75e2fb",
+            "normalizedReplayStderrHash": "sha256:6cde5371ce80d59efb67cf28f6ef9477dff2338d2b032e856c6dc42cbf75e2fb",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        },
+        {
+          "scenarioId": "g007_run_runtime_dashboard_forever_cjs_env_runtime_dashboard_root",
+          "originalReplay": {
+            "exitCode": 1,
+            "stdoutBytes": 306,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": true
+          },
+          "replay": {
+            "exitCode": 1,
+            "stdoutBytes": 306,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": true
+          },
+          "comparison": {
+            "scenarioId": "g007_run_runtime_dashboard_forever_cjs_env_runtime_dashboard_root",
+            "originalEntryPoint": "scripts/run-runtime-dashboard-forever.cjs",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-runtime-dashboard-forever.cjs",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 1,
+            "stdoutBytes": 306,
+            "stderrBytes": 0,
+            "normalizedExpectedStdoutHash": "sha256:7d9da104ea24789983e0451da1d8d897afaf0db13fb0f28c0f43ac4a07e190cf",
+            "normalizedReplayStdoutHash": "sha256:7d9da104ea24789983e0451da1d8d897afaf0db13fb0f28c0f43ac4a07e190cf",
+            "normalizedExpectedStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": true
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/runtime-dashboard-server-state.cjs",
+      "entryId": "runtime-dashboard-server-state-cjs",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/runtime-dashboard-server-state.cjs",
+      "scenarioCount": 1,
+      "passedScenarioCount": 1,
+      "failedScenarioCount": 0,
+      "scenarios": [
+        {
+          "scenarioId": "g007_runtime_dashboard_server_state_cjs_no_args",
+          "originalReplay": {
+            "exitCode": 0,
+            "stdoutBytes": 0,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 0,
+            "stdoutBytes": 0,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g007_runtime_dashboard_server_state_cjs_no_args",
+            "originalEntryPoint": "scripts/runtime-dashboard-server-state.cjs",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-dashboard-server-state.cjs",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 0,
+            "stdoutBytes": 0,
+            "stderrBytes": 0,
+            "normalizedExpectedStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedExpectedStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        }
+      ]
+    }
+  ]
+}

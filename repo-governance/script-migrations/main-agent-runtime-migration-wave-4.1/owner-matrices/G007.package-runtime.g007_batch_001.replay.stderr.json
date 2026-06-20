@@ -1,0 +1,108 @@
+[
+  {
+    "originalPath": "scripts/architecture-confirmation-hash-recipe.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_architecture_confirmation_hash_recipe_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/bmad-help-five-layer-progress-marker.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_bmad_help_five_layer_progress_marker_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/bmad-help-routing-state.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_bmad_help_routing_state_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/bmad-state-reader.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_bmad_state_reader_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/bmad-state.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_bmad_state_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/bmad-sync-from-v6.ps1",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_bmad_sync_from_v6_ps1_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/bmad-sync-from-v6.sh",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_bmad_sync_from_v6_sh_no_args",
+        "expectedStderr": "<3>WSL (<relay> - Relay) ERROR: CreateProcessCommon:800: execvpe(/bin/bash) failed: No such file or directory\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/cleanup-packed-bmad.js",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_cleanup_packed_bmad_js_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/continue-state-contract.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_continue_state_contract_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/control-event-log-rebaseline.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_control_event_log_rebaseline_ts_no_args",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g007_control_event_log_rebaseline_ts_flag_help",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"Unexpected positional argument: source-derived-help\"\n}\n"
+      },
+      {
+        "scenarioId": "g007_control_event_log_rebaseline_ts_flag_json",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"Unexpected positional argument: <fixture-root>\\\\json.json\"\n}\n"
+      },
+      {
+        "scenarioId": "g007_control_event_log_rebaseline_ts_flag_reason",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g007_control_event_log_rebaseline_ts_flag_requirement_record",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"ENOENT: no such file or directory, open 'D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\source-derived-requirement-record'\"\n}\n"
+      }
+    ]
+  }
+]

@@ -1,0 +1,92 @@
+[
+  {
+    "originalPath": "scripts/i18n/language-policy.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_i18n_language_policy_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/i18n/load-manifest.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_i18n_load_manifest_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/i18n/materialize-facilitator-definition.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_i18n_materialize_facilitator_definition_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/i18n/party-mode-runtime-assets.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_i18n_party_mode_runtime_assets_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/i18n/placeholder-types.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_i18n_placeholder_types_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/i18n/protected-token-check.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_i18n_protected_token_check_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/i18n/render-field-view.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_i18n_render_field_view_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/i18n/resolve-for-session-cli.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_i18n_resolve_for_session_cli_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/i18n/resolve-for-session.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_i18n_resolve_for_session_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/i18n/resolve-localized-markdown-path.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_i18n_resolve_localized_markdown_path_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  }
+]

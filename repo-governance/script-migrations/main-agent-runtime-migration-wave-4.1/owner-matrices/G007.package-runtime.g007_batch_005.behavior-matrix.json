@@ -1,0 +1,4214 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-wave-4-1-owner-initial-behavior-matrix/v1",
+  "waveId": "main-agent-runtime-migration-wave-4.1",
+  "ownerTaskId": "G007",
+  "generatedAt": "2026-06-20T11:00:30.565Z",
+  "artifactSuffix": "g007_batch_005",
+  "timeoutMs": 30000,
+  "coverageDecision": "passed_full_original_behavior_coverage",
+  "eligibleOwnerRowCount": 74,
+  "selectedRowCount": 10,
+  "matrixRowCount": 10,
+  "scenarioCount": 24,
+  "fullCoverageStillRequired": false,
+  "rows": [
+    {
+      "originalPath": "scripts/i18n/sync-party-mode-mirrors.ts",
+      "entryId": "i18n-sync-party-mode-mirrors-ts",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/sync-party-mode-mirrors.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/sync-party-mode-mirrors.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/i18n/sync-party-mode-mirrors.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g007_i18n_sync_party_mode_mirrors_ts_no_args",
+          "originalEntryPoint": "scripts/i18n/sync-party-mode-mirrors.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/i18n/sync-party-mode-mirrors.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/sync-party-mode-mirrors.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/sync-party-mode-mirrors.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_i18n_sync_party_mode_mirrors_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g007_i18n_sync_party_mode_mirrors_ts_no_args-original-XQe7F6",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_i18n_sync_party_mode_mirrors_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g007_i18n_sync_party_mode_mirrors_ts_no_args-package-BrtJxd",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/i18n/sync-party-mode-mirrors.ts:no_args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/i18n/sync-party-mode-mirrors.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 37,
+                "anchor": "scripts/i18n/sync-party-mode-mirrors.ts:37",
+                "text": "export function stripGeneratedHeader(content: string): string {"
+              },
+              {
+                "line": 54,
+                "anchor": "scripts/i18n/sync-party-mode-mirrors.ts:54",
+                "text": "export function syncPartyModeMirrors(root: string = ROOT): void {"
+              },
+              {
+                "line": 71,
+                "anchor": "scripts/i18n/sync-party-mode-mirrors.ts:71",
+                "text": "if (require.main === module) {"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/i18n/sync-party-mode-mirrors.ts",
+                "to": "scripts/i18n/sync-party-mode-mirrors.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/sync-party-mode-mirrors.ts",
+                "to": "scripts/i18n/sync-party-mode-mirrors.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/sync-party-mode-mirrors.js",
+                "to": "scripts/i18n/sync-party-mode-mirrors.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/i18n/sync-party-mode-mirrors.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/i18n/validate-template-manifest.ts",
+      "entryId": "i18n-validate-template-manifest-ts",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/validate-template-manifest.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/validate-template-manifest.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/i18n/validate-template-manifest.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g007_i18n_validate_template_manifest_ts_no_args",
+          "originalEntryPoint": "scripts/i18n/validate-template-manifest.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/i18n/validate-template-manifest.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/validate-template-manifest.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/validate-template-manifest.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_i18n_validate_template_manifest_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g007_i18n_validate_template_manifest_ts_no_args-original-Qo04lJ",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_i18n_validate_template_manifest_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g007_i18n_validate_template_manifest_ts_no_args-package-SkO5fX",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/i18n/validate-template-manifest.ts:no_args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/i18n/validate-template-manifest.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 49,
+                "anchor": "scripts/i18n/validate-template-manifest.ts:49",
+                "text": "export function validateTemplateManifest("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/i18n/validate-template-manifest.ts",
+                "to": "scripts/i18n/validate-template-manifest.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/validate-template-manifest.ts",
+                "to": "scripts/i18n/validate-template-manifest.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/validate-template-manifest.js",
+                "to": "scripts/i18n/validate-template-manifest.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/i18n/validate-template-manifest.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/long-run-runtime-policy.ts",
+      "entryId": "long-run-runtime-policy-ts",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/long-run-runtime-policy.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/long-run-runtime-policy.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/long-run-runtime-policy.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 2,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 2,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [
+          "--json"
+        ],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>",
+          "--json <present>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>",
+          "--json <present>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 2,
+        "coveredScenarioDefinitionIds": [
+          "no_args",
+          "flag_json"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g007_long_run_runtime_policy_ts_no_args",
+          "originalEntryPoint": "scripts/long-run-runtime-policy.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/long-run-runtime-policy.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/long-run-runtime-policy.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/long-run-runtime-policy.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_long_run_runtime_policy_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g007_long_run_runtime_policy_ts_no_args-original-7TxVVj",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_long_run_runtime_policy_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g007_long_run_runtime_policy_ts_no_args-package-IAsKWg",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "{\n  \"policyVersion\": \"long-run-runtime-policy/v1\",\n  \"policyHash\": \"597a468a3d4b04e824ff85e84e1914db0f675a259484e46abab5092b11afaff0\",\n  \"requiredKeys\": [\n    \"tick_interval_ms\",\n    \"progress_probe_every_n_ticks\",\n    \"max_no_progress_ticks\",\n    \"lease_ttl_ms\",\n    \"heartbeat_interval_ms\",\n    \"heartbeat_timeout_ms\",\n    \"max_retries_by_error_class\",\n    \"cooldown_ms_by_error_class\",\n    \"degradation_policy\",\n    \"resume_policy\",\n    \"checkpoint_every_n_ticks\",\n    \"compaction_threshold_tokens\"\n  ]\n}\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/long-run-runtime-policy.ts:no_args",
+            "originalReplayArtifactHash": "sha256:1238da47035d4ea0156801d316cddbce2f6db29f2cda57e0599a1e2426d6ca8d",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/long-run-runtime-policy.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 83,
+                "anchor": "scripts/long-run-runtime-policy.ts:83",
+                "text": "export function hashLongRunPolicy(policy: LongRunPolicy = LONG_RUN_RUNTIME_POLICY): string {"
+              },
+              {
+                "line": 87,
+                "anchor": "scripts/long-run-runtime-policy.ts:87",
+                "text": "export function validateLongRunPolicy(policy: Partial<LongRunPolicy>): string[] {"
+              },
+              {
+                "line": 97,
+                "anchor": "scripts/long-run-runtime-policy.ts:97",
+                "text": "export function attachLeaseToPendingPacket("
+              },
+              {
+                "line": 118,
+                "anchor": "scripts/long-run-runtime-policy.ts:118",
+                "text": "export function applyLongRunPolicyToState("
+              },
+              {
+                "line": 158,
+                "anchor": "scripts/long-run-runtime-policy.ts:158",
+                "text": "export function main(argv: string[]): number {"
+              },
+              {
+                "line": 160,
+                "anchor": "scripts/long-run-runtime-policy.ts:160",
+                "text": "process.stdout.write(`${JSON.stringify(LONG_RUN_RUNTIME_POLICY, null, 2)}\\n`);"
+              },
+              {
+                "line": 163,
+                "anchor": "scripts/long-run-runtime-policy.ts:163",
+                "text": "process.stdout.write("
+              },
+              {
+                "line": 181,
+                "anchor": "scripts/long-run-runtime-policy.ts:181",
+                "text": "if (require.main === module && isDirectLongRunRuntimePolicyCli(process.argv[1])) {"
+              },
+              {
+                "line": 182,
+                "anchor": "scripts/long-run-runtime-policy.ts:182",
+                "text": "process.exitCode = main(process.argv.slice(2));"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/long-run-runtime-policy.ts",
+                "to": "scripts/long-run-runtime-policy.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/long-run-runtime-policy.ts",
+                "to": "scripts/long-run-runtime-policy.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/long-run-runtime-policy.js",
+                "to": "scripts/long-run-runtime-policy.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/long-run-runtime-policy.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 2,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 2,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--json"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--json <present>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--json <present>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 2,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_json"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g007_long_run_runtime_policy_ts_flag_json",
+          "originalEntryPoint": "scripts/long-run-runtime-policy.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/long-run-runtime-policy.ts --json",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/long-run-runtime-policy.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/long-run-runtime-policy.js --json",
+          "argumentCombination": "--json <present>",
+          "args": [
+            "--json"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_long_run_runtime_policy_ts_flag_json_original_fixture_root",
+              "path": "<tmp>/g007_long_run_runtime_policy_ts_flag_json-original-s4tCEa",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_long_run_runtime_policy_ts_flag_json_package_fixture_root",
+              "path": "<tmp>/g007_long_run_runtime_policy_ts_flag_json-package-UWcMvQ",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "{\n  \"version\": \"long-run-runtime-policy/v1\",\n  \"tick_interval_ms\": 30000,\n  \"progress_probe_every_n_ticks\": 4,\n  \"max_no_progress_ticks\": 8,\n  \"lease_ttl_ms\": 180000,\n  \"heartbeat_interval_ms\": 30000,\n  \"heartbeat_timeout_ms\": 120000,\n  \"max_retries_by_error_class\": {\n    \"transient_io\": 5,\n    \"gate_pending\": 12,\n    \"host_switch\": 3,\n    \"unrecoverable_contract\": 0\n  },\n  \"cooldown_ms_by_error_class\": {\n    \"transient_io\": 5000,\n    \"gate_pending\": 30000,\n    \"host_switch\": 15000,\n    \"unrecoverable_contract\": 0\n  },\n  \"degradation_policy\": {\n    \"no_progress\": \"soft_degrade_then_resume\",\n    \"lease_expired\": \"recover_stale_packet\",\n    \"unrecoverable\": \"hard_block\"\n  },\n  \"resume_policy\": {\n    \"preserve_loop_seq\": true,\n    \"preserve_retry_count\": true,\n    \"preserve_original_execution_packet_id\": true,\n    \"preserve_gates_loop\": true,\n    \"increment_resume_count\": true,\n    \"mark_resumed_from_checkpoint\": true\n  },\n  \"checkpoint_every_n_ticks\": 10,\n  \"compaction_threshold_tokens\": 120000\n}\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/long-run-runtime-policy.ts:flag_json",
+            "originalReplayArtifactHash": "sha256:23f035bc0b5e95bd216de33d606d5d1e1b37e237303cad56fd5ce0858a583a92",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/long-run-runtime-policy.ts:flag_json",
+            "sourceLineAnchors": [
+              {
+                "line": 83,
+                "anchor": "scripts/long-run-runtime-policy.ts:83",
+                "text": "export function hashLongRunPolicy(policy: LongRunPolicy = LONG_RUN_RUNTIME_POLICY): string {"
+              },
+              {
+                "line": 87,
+                "anchor": "scripts/long-run-runtime-policy.ts:87",
+                "text": "export function validateLongRunPolicy(policy: Partial<LongRunPolicy>): string[] {"
+              },
+              {
+                "line": 97,
+                "anchor": "scripts/long-run-runtime-policy.ts:97",
+                "text": "export function attachLeaseToPendingPacket("
+              },
+              {
+                "line": 118,
+                "anchor": "scripts/long-run-runtime-policy.ts:118",
+                "text": "export function applyLongRunPolicyToState("
+              },
+              {
+                "line": 158,
+                "anchor": "scripts/long-run-runtime-policy.ts:158",
+                "text": "export function main(argv: string[]): number {"
+              },
+              {
+                "line": 160,
+                "anchor": "scripts/long-run-runtime-policy.ts:160",
+                "text": "process.stdout.write(`${JSON.stringify(LONG_RUN_RUNTIME_POLICY, null, 2)}\\n`);"
+              },
+              {
+                "line": 163,
+                "anchor": "scripts/long-run-runtime-policy.ts:163",
+                "text": "process.stdout.write("
+              },
+              {
+                "line": 181,
+                "anchor": "scripts/long-run-runtime-policy.ts:181",
+                "text": "if (require.main === module && isDirectLongRunRuntimePolicyCli(process.argv[1])) {"
+              },
+              {
+                "line": 182,
+                "anchor": "scripts/long-run-runtime-policy.ts:182",
+                "text": "process.exitCode = main(process.argv.slice(2));"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/long-run-runtime-policy.ts",
+                "to": "scripts/long-run-runtime-policy.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/long-run-runtime-policy.ts",
+                "to": "scripts/long-run-runtime-policy.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/long-run-runtime-policy.js",
+                "to": "scripts/long-run-runtime-policy.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/long-run-runtime-policy.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 2,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 2,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--json"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--json <present>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--json <present>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 2,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_json"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/model-governance-hints-schema.ts",
+      "entryId": "model-governance-hints-schema-ts",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/model-governance-hints-schema.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/model-governance-hints-schema.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/model-governance-hints-schema.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g007_model_governance_hints_schema_ts_no_args",
+          "originalEntryPoint": "scripts/model-governance-hints-schema.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/model-governance-hints-schema.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/model-governance-hints-schema.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/model-governance-hints-schema.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_model_governance_hints_schema_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g007_model_governance_hints_schema_ts_no_args-original-1zNWdT",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_model_governance_hints_schema_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g007_model_governance_hints_schema_ts_no_args-package-qH5Tdx",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/model-governance-hints-schema.ts:no_args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/model-governance-hints-schema.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 271,
+                "anchor": "scripts/model-governance-hints-schema.ts:271",
+                "text": "export function assertValidModelGovernanceHintCandidate("
+              },
+              {
+                "line": 284,
+                "anchor": "scripts/model-governance-hints-schema.ts:284",
+                "text": "export function assertValidFilteredModelGovernanceHints("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/model-governance-hints-schema.ts",
+                "to": "scripts/model-governance-hints-schema.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/model-governance-hints-schema.ts",
+                "to": "scripts/model-governance-hints-schema.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/model-governance-hints-schema.js",
+                "to": "scripts/model-governance-hints-schema.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/model-governance-hints-schema.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/model-governance-policy-filter.ts",
+      "entryId": "model-governance-policy-filter",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/model-governance-policy-filter.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/model-governance-policy-filter.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/model-governance-policy-filter.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g007_model_governance_policy_filter_ts_no_args",
+          "originalEntryPoint": "scripts/model-governance-policy-filter.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/model-governance-policy-filter.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/model-governance-policy-filter.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/model-governance-policy-filter.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_model_governance_policy_filter_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g007_model_governance_policy_filter_ts_no_args-original-KuzFCE",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_model_governance_policy_filter_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g007_model_governance_policy_filter_ts_no_args-package-ZYej0e",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/model-governance-policy-filter.ts:no_args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/model-governance-policy-filter.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 54,
+                "anchor": "scripts/model-governance-policy-filter.ts:54",
+                "text": "export function filterModelGovernanceHintCandidate("
+              },
+              {
+                "line": 147,
+                "anchor": "scripts/model-governance-policy-filter.ts:147",
+                "text": "export function toPromptRoutingHintsCompat("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/model-governance-policy-filter.ts",
+                "to": "scripts/model-governance-policy-filter.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/model-governance-policy-filter.ts",
+                "to": "scripts/model-governance-policy-filter.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/model-governance-policy-filter.js",
+                "to": "scripts/model-governance-policy-filter.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/model-governance-policy-filter.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/monitor-push.sh",
+      "entryId": "monitor-push-sh",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/monitor-push.sh"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/monitor-push.sh",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/monitor-push.sh:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 1,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 1,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g007_monitor_push_sh_no_args",
+          "originalEntryPoint": "scripts/monitor-push.sh",
+          "originalEntryCommand": "bash scripts/monitor-push.sh",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/monitor-push.sh",
+          "packageEntryCommand": "bash packages/bmad-speckit/dist/main-agent/source-authority/scripts/monitor-push.sh",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_monitor_push_sh_no_args_original_fixture_root",
+              "path": "<tmp>/g007_monitor_push_sh_no_args-original-g1hFxs",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_monitor_push_sh_no_args_package_fixture_root",
+              "path": "<tmp>/g007_monitor_push_sh_no_args-package-xbEku1",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "<3>WSL (<relay> - Relay) ERROR: CreateProcessCommon:800: execvpe(/bin/bash) failed: No such file or directory\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "<3>WSL (<relay> - Relay) ERROR: CreateProcessCommon:800: execvpe(/bin/bash) failed: No such file or directory"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/monitor-push.sh:no_args",
+            "originalReplayArtifactHash": "sha256:49edb214f086cf5cb874ac113cc175868da9ca6a19c5d99ab0443032e6c5bb1f",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/monitor-push.sh:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 1,
+                "anchor": "scripts/monitor-push.sh:1",
+                "text": "#!/usr/bin/env bash"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/monitor-push.sh",
+                "to": "scripts/monitor-push.sh"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/monitor-push.sh",
+                "to": "scripts/monitor-push.sh"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/monitor-push.sh",
+                "to": "scripts/monitor-push.sh"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/monitor-push.sh",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/party-mode-runtime.ts",
+      "entryId": "party-mode-runtime",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/party-mode-runtime.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/party-mode-runtime.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 11,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 2,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 11,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 2,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [
+          "--meta-path",
+          "--min-rounds",
+          "--ratio-threshold",
+          "--session-key",
+          "--session-log-path",
+          "--tail-window",
+          "--write-all",
+          "--write-audit-verdict",
+          "--write-convergence-record",
+          "--write-snapshot"
+        ],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>",
+          "--meta-path <source-derived-safe-value>",
+          "--min-rounds <source-derived-safe-value>",
+          "--ratio-threshold <source-derived-safe-value>",
+          "--session-key <source-derived-safe-value>",
+          "--session-log-path <source-derived-safe-value>",
+          "--tail-window <source-derived-safe-value>",
+          "--write-all <source-derived-safe-value>",
+          "--write-audit-verdict <source-derived-safe-value>",
+          "--write-convergence-record <source-derived-safe-value>",
+          "--write-snapshot <source-derived-safe-value>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>",
+          "--meta-path <source-derived-safe-value>",
+          "--min-rounds <source-derived-safe-value>",
+          "--ratio-threshold <source-derived-safe-value>",
+          "--session-key <source-derived-safe-value>",
+          "--session-log-path <source-derived-safe-value>",
+          "--tail-window <source-derived-safe-value>",
+          "--write-all <source-derived-safe-value>",
+          "--write-audit-verdict <source-derived-safe-value>",
+          "--write-convergence-record <source-derived-safe-value>",
+          "--write-snapshot <source-derived-safe-value>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 11,
+        "coveredScenarioDefinitionIds": [
+          "no_args",
+          "flag_meta_path",
+          "flag_min_rounds",
+          "flag_ratio_threshold",
+          "flag_session_key",
+          "flag_session_log_path",
+          "flag_tail_window",
+          "flag_write_all",
+          "flag_write_audit_verdict",
+          "flag_write_convergence_record",
+          "flag_write_snapshot"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g007_party_mode_runtime_ts_no_args",
+          "originalEntryPoint": "scripts/party-mode-runtime.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/party-mode-runtime.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/party-mode-runtime.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_party_mode_runtime_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g007_party_mode_runtime_ts_no_args-original-zvMQh0",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_party_mode_runtime_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g007_party_mode_runtime_ts_no_args-package-la2kYi",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/party-mode-runtime.ts:no_args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/party-mode-runtime.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 339,
+                "anchor": "scripts/party-mode-runtime.ts:339",
+                "text": "export function requiresHighConfidenceFinalOutputs(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 343,
+                "anchor": "scripts/party-mode-runtime.ts:343",
+                "text": "export function requestsQuickProbe(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 347,
+                "anchor": "scripts/party-mode-runtime.ts:347",
+                "text": "export function isPartyModeFacilitatorIntent(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 351,
+                "anchor": "scripts/party-mode-runtime.ts:351",
+                "text": "export function buildPartyModeContractViolationMessage(inputText: string | undefined): string {"
+              },
+              {
+                "line": 363,
+                "anchor": "scripts/party-mode-runtime.ts:363",
+                "text": "export function inferGateProfileId(inputText: string | undefined): GateProfileId {"
+              },
+              {
+                "line": 373,
+                "anchor": "scripts/party-mode-runtime.ts:373",
+                "text": "export function detectExplicitGateProfileMatches(inputText: string | undefined): GateProfileId[] {"
+              },
+              {
+                "line": 380,
+                "anchor": "scripts/party-mode-runtime.ts:380",
+                "text": "export function detectExplicitGateProfileId(inputText: string | undefined): GateProfileId | null {"
+              },
+              {
+                "line": 385,
+                "anchor": "scripts/party-mode-runtime.ts:385",
+                "text": "export function hasConfirmedUserSelectionBlock(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 390,
+                "anchor": "scripts/party-mode-runtime.ts:390",
+                "text": "export function detectConfirmedGateProfileId(inputText: string | undefined): GateProfileId | null {"
+              },
+              {
+                "line": 402,
+                "anchor": "scripts/party-mode-runtime.ts:402",
+                "text": "export function hasAcknowledgedUserSelection(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 444,
+                "anchor": "scripts/party-mode-runtime.ts:444",
+                "text": "export function extractEmbeddedBootstrapJson("
+              },
+              {
+                "line": 484,
+                "anchor": "scripts/party-mode-runtime.ts:484",
+                "text": "export function buildIntensitySelectionPreflightMessage(inputText: string | undefined): string {"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/party-mode-runtime.ts",
+                "to": "scripts/party-mode-runtime.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime.ts",
+                "to": "scripts/party-mode-runtime.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/party-mode-runtime.js",
+                "to": "scripts/party-mode-runtime.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/party-mode-runtime.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 11,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 11,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--meta-path",
+              "--min-rounds",
+              "--ratio-threshold",
+              "--session-key",
+              "--session-log-path",
+              "--tail-window",
+              "--write-all",
+              "--write-audit-verdict",
+              "--write-convergence-record",
+              "--write-snapshot"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--meta-path <source-derived-safe-value>",
+              "--min-rounds <source-derived-safe-value>",
+              "--ratio-threshold <source-derived-safe-value>",
+              "--session-key <source-derived-safe-value>",
+              "--session-log-path <source-derived-safe-value>",
+              "--tail-window <source-derived-safe-value>",
+              "--write-all <source-derived-safe-value>",
+              "--write-audit-verdict <source-derived-safe-value>",
+              "--write-convergence-record <source-derived-safe-value>",
+              "--write-snapshot <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--meta-path <source-derived-safe-value>",
+              "--min-rounds <source-derived-safe-value>",
+              "--ratio-threshold <source-derived-safe-value>",
+              "--session-key <source-derived-safe-value>",
+              "--session-log-path <source-derived-safe-value>",
+              "--tail-window <source-derived-safe-value>",
+              "--write-all <source-derived-safe-value>",
+              "--write-audit-verdict <source-derived-safe-value>",
+              "--write-convergence-record <source-derived-safe-value>",
+              "--write-snapshot <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 11,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_meta_path",
+              "flag_min_rounds",
+              "flag_ratio_threshold",
+              "flag_session_key",
+              "flag_session_log_path",
+              "flag_tail_window",
+              "flag_write_all",
+              "flag_write_audit_verdict",
+              "flag_write_convergence_record",
+              "flag_write_snapshot"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g007_party_mode_runtime_ts_flag_meta_path",
+          "originalEntryPoint": "scripts/party-mode-runtime.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/party-mode-runtime.ts --meta-path <fixture-root>/meta-path.json",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/party-mode-runtime.js --meta-path <fixture-root>/meta-path.json",
+          "argumentCombination": "--meta-path <source-derived-safe-value>",
+          "args": [
+            "--meta-path",
+            "<fixture-root>/meta-path.json"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_party_mode_runtime_ts_flag_meta_path_original_fixture_root",
+              "path": "<tmp>/g007_party_mode_runtime_ts_flag_meta_path-original-NhQEJA",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_party_mode_runtime_ts_flag_meta_path_package_fixture_root",
+              "path": "<tmp>/g007_party_mode_runtime_ts_flag_meta_path-package-06T2T1",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [
+            {
+              "path": "meta-path.json",
+              "bytes": 3,
+              "sha256": "sha256:ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+              "rawBytes": 3,
+              "rawSha256": "sha256:ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+              "hashPolicy": "normalized_text_replay_hash",
+              "contentEncoding": "utf8"
+            }
+          ],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/party-mode-runtime.ts:flag_meta_path",
+            "originalReplayArtifactHash": "sha256:6eda3b411d63a19b6840668861cc7a98f9aef2bb9d4967ba961978287a4a745e",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/party-mode-runtime.ts:flag_meta_path",
+            "sourceLineAnchors": [
+              {
+                "line": 339,
+                "anchor": "scripts/party-mode-runtime.ts:339",
+                "text": "export function requiresHighConfidenceFinalOutputs(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 343,
+                "anchor": "scripts/party-mode-runtime.ts:343",
+                "text": "export function requestsQuickProbe(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 347,
+                "anchor": "scripts/party-mode-runtime.ts:347",
+                "text": "export function isPartyModeFacilitatorIntent(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 351,
+                "anchor": "scripts/party-mode-runtime.ts:351",
+                "text": "export function buildPartyModeContractViolationMessage(inputText: string | undefined): string {"
+              },
+              {
+                "line": 363,
+                "anchor": "scripts/party-mode-runtime.ts:363",
+                "text": "export function inferGateProfileId(inputText: string | undefined): GateProfileId {"
+              },
+              {
+                "line": 373,
+                "anchor": "scripts/party-mode-runtime.ts:373",
+                "text": "export function detectExplicitGateProfileMatches(inputText: string | undefined): GateProfileId[] {"
+              },
+              {
+                "line": 380,
+                "anchor": "scripts/party-mode-runtime.ts:380",
+                "text": "export function detectExplicitGateProfileId(inputText: string | undefined): GateProfileId | null {"
+              },
+              {
+                "line": 385,
+                "anchor": "scripts/party-mode-runtime.ts:385",
+                "text": "export function hasConfirmedUserSelectionBlock(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 390,
+                "anchor": "scripts/party-mode-runtime.ts:390",
+                "text": "export function detectConfirmedGateProfileId(inputText: string | undefined): GateProfileId | null {"
+              },
+              {
+                "line": 402,
+                "anchor": "scripts/party-mode-runtime.ts:402",
+                "text": "export function hasAcknowledgedUserSelection(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 444,
+                "anchor": "scripts/party-mode-runtime.ts:444",
+                "text": "export function extractEmbeddedBootstrapJson("
+              },
+              {
+                "line": 484,
+                "anchor": "scripts/party-mode-runtime.ts:484",
+                "text": "export function buildIntensitySelectionPreflightMessage(inputText: string | undefined): string {"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/party-mode-runtime.ts",
+                "to": "scripts/party-mode-runtime.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime.ts",
+                "to": "scripts/party-mode-runtime.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/party-mode-runtime.js",
+                "to": "scripts/party-mode-runtime.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/party-mode-runtime.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 11,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 1,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 11,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 1,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--meta-path",
+              "--min-rounds",
+              "--ratio-threshold",
+              "--session-key",
+              "--session-log-path",
+              "--tail-window",
+              "--write-all",
+              "--write-audit-verdict",
+              "--write-convergence-record",
+              "--write-snapshot"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--meta-path <source-derived-safe-value>",
+              "--min-rounds <source-derived-safe-value>",
+              "--ratio-threshold <source-derived-safe-value>",
+              "--session-key <source-derived-safe-value>",
+              "--session-log-path <source-derived-safe-value>",
+              "--tail-window <source-derived-safe-value>",
+              "--write-all <source-derived-safe-value>",
+              "--write-audit-verdict <source-derived-safe-value>",
+              "--write-convergence-record <source-derived-safe-value>",
+              "--write-snapshot <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--meta-path <source-derived-safe-value>",
+              "--min-rounds <source-derived-safe-value>",
+              "--ratio-threshold <source-derived-safe-value>",
+              "--session-key <source-derived-safe-value>",
+              "--session-log-path <source-derived-safe-value>",
+              "--tail-window <source-derived-safe-value>",
+              "--write-all <source-derived-safe-value>",
+              "--write-audit-verdict <source-derived-safe-value>",
+              "--write-convergence-record <source-derived-safe-value>",
+              "--write-snapshot <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 11,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_meta_path",
+              "flag_min_rounds",
+              "flag_ratio_threshold",
+              "flag_session_key",
+              "flag_session_log_path",
+              "flag_tail_window",
+              "flag_write_all",
+              "flag_write_audit_verdict",
+              "flag_write_convergence_record",
+              "flag_write_snapshot"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g007_party_mode_runtime_ts_flag_min_rounds",
+          "originalEntryPoint": "scripts/party-mode-runtime.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/party-mode-runtime.ts --min-rounds source-derived-min-rounds",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/party-mode-runtime.js --min-rounds source-derived-min-rounds",
+          "argumentCombination": "--min-rounds <source-derived-safe-value>",
+          "args": [
+            "--min-rounds",
+            "source-derived-min-rounds"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_party_mode_runtime_ts_flag_min_rounds_original_fixture_root",
+              "path": "<tmp>/g007_party_mode_runtime_ts_flag_min_rounds-original-PnukHD",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_party_mode_runtime_ts_flag_min_rounds_package_fixture_root",
+              "path": "<tmp>/g007_party_mode_runtime_ts_flag_min_rounds-package-MsimvQ",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/party-mode-runtime.ts:flag_min_rounds",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/party-mode-runtime.ts:flag_min_rounds",
+            "sourceLineAnchors": [
+              {
+                "line": 339,
+                "anchor": "scripts/party-mode-runtime.ts:339",
+                "text": "export function requiresHighConfidenceFinalOutputs(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 343,
+                "anchor": "scripts/party-mode-runtime.ts:343",
+                "text": "export function requestsQuickProbe(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 347,
+                "anchor": "scripts/party-mode-runtime.ts:347",
+                "text": "export function isPartyModeFacilitatorIntent(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 351,
+                "anchor": "scripts/party-mode-runtime.ts:351",
+                "text": "export function buildPartyModeContractViolationMessage(inputText: string | undefined): string {"
+              },
+              {
+                "line": 363,
+                "anchor": "scripts/party-mode-runtime.ts:363",
+                "text": "export function inferGateProfileId(inputText: string | undefined): GateProfileId {"
+              },
+              {
+                "line": 373,
+                "anchor": "scripts/party-mode-runtime.ts:373",
+                "text": "export function detectExplicitGateProfileMatches(inputText: string | undefined): GateProfileId[] {"
+              },
+              {
+                "line": 380,
+                "anchor": "scripts/party-mode-runtime.ts:380",
+                "text": "export function detectExplicitGateProfileId(inputText: string | undefined): GateProfileId | null {"
+              },
+              {
+                "line": 385,
+                "anchor": "scripts/party-mode-runtime.ts:385",
+                "text": "export function hasConfirmedUserSelectionBlock(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 390,
+                "anchor": "scripts/party-mode-runtime.ts:390",
+                "text": "export function detectConfirmedGateProfileId(inputText: string | undefined): GateProfileId | null {"
+              },
+              {
+                "line": 402,
+                "anchor": "scripts/party-mode-runtime.ts:402",
+                "text": "export function hasAcknowledgedUserSelection(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 444,
+                "anchor": "scripts/party-mode-runtime.ts:444",
+                "text": "export function extractEmbeddedBootstrapJson("
+              },
+              {
+                "line": 484,
+                "anchor": "scripts/party-mode-runtime.ts:484",
+                "text": "export function buildIntensitySelectionPreflightMessage(inputText: string | undefined): string {"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/party-mode-runtime.ts",
+                "to": "scripts/party-mode-runtime.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime.ts",
+                "to": "scripts/party-mode-runtime.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/party-mode-runtime.js",
+                "to": "scripts/party-mode-runtime.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/party-mode-runtime.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 11,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 11,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--meta-path",
+              "--min-rounds",
+              "--ratio-threshold",
+              "--session-key",
+              "--session-log-path",
+              "--tail-window",
+              "--write-all",
+              "--write-audit-verdict",
+              "--write-convergence-record",
+              "--write-snapshot"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--meta-path <source-derived-safe-value>",
+              "--min-rounds <source-derived-safe-value>",
+              "--ratio-threshold <source-derived-safe-value>",
+              "--session-key <source-derived-safe-value>",
+              "--session-log-path <source-derived-safe-value>",
+              "--tail-window <source-derived-safe-value>",
+              "--write-all <source-derived-safe-value>",
+              "--write-audit-verdict <source-derived-safe-value>",
+              "--write-convergence-record <source-derived-safe-value>",
+              "--write-snapshot <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--meta-path <source-derived-safe-value>",
+              "--min-rounds <source-derived-safe-value>",
+              "--ratio-threshold <source-derived-safe-value>",
+              "--session-key <source-derived-safe-value>",
+              "--session-log-path <source-derived-safe-value>",
+              "--tail-window <source-derived-safe-value>",
+              "--write-all <source-derived-safe-value>",
+              "--write-audit-verdict <source-derived-safe-value>",
+              "--write-convergence-record <source-derived-safe-value>",
+              "--write-snapshot <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 11,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_meta_path",
+              "flag_min_rounds",
+              "flag_ratio_threshold",
+              "flag_session_key",
+              "flag_session_log_path",
+              "flag_tail_window",
+              "flag_write_all",
+              "flag_write_audit_verdict",
+              "flag_write_convergence_record",
+              "flag_write_snapshot"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g007_party_mode_runtime_ts_flag_ratio_threshold",
+          "originalEntryPoint": "scripts/party-mode-runtime.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/party-mode-runtime.ts --ratio-threshold source-derived-ratio-threshold",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/party-mode-runtime.js --ratio-threshold source-derived-ratio-threshold",
+          "argumentCombination": "--ratio-threshold <source-derived-safe-value>",
+          "args": [
+            "--ratio-threshold",
+            "source-derived-ratio-threshold"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_party_mode_runtime_ts_flag_ratio_threshold_original_fixture_root",
+              "path": "<tmp>/g007_party_mode_runtime_ts_flag_ratio_threshold-original-s52cte",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_party_mode_runtime_ts_flag_ratio_threshold_package_fixture_root",
+              "path": "<tmp>/g007_party_mode_runtime_ts_flag_ratio_threshold-package-bjxpGy",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/party-mode-runtime.ts:flag_ratio_threshold",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/party-mode-runtime.ts:flag_ratio_threshold",
+            "sourceLineAnchors": [
+              {
+                "line": 339,
+                "anchor": "scripts/party-mode-runtime.ts:339",
+                "text": "export function requiresHighConfidenceFinalOutputs(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 343,
+                "anchor": "scripts/party-mode-runtime.ts:343",
+                "text": "export function requestsQuickProbe(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 347,
+                "anchor": "scripts/party-mode-runtime.ts:347",
+                "text": "export function isPartyModeFacilitatorIntent(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 351,
+                "anchor": "scripts/party-mode-runtime.ts:351",
+                "text": "export function buildPartyModeContractViolationMessage(inputText: string | undefined): string {"
+              },
+              {
+                "line": 363,
+                "anchor": "scripts/party-mode-runtime.ts:363",
+                "text": "export function inferGateProfileId(inputText: string | undefined): GateProfileId {"
+              },
+              {
+                "line": 373,
+                "anchor": "scripts/party-mode-runtime.ts:373",
+                "text": "export function detectExplicitGateProfileMatches(inputText: string | undefined): GateProfileId[] {"
+              },
+              {
+                "line": 380,
+                "anchor": "scripts/party-mode-runtime.ts:380",
+                "text": "export function detectExplicitGateProfileId(inputText: string | undefined): GateProfileId | null {"
+              },
+              {
+                "line": 385,
+                "anchor": "scripts/party-mode-runtime.ts:385",
+                "text": "export function hasConfirmedUserSelectionBlock(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 390,
+                "anchor": "scripts/party-mode-runtime.ts:390",
+                "text": "export function detectConfirmedGateProfileId(inputText: string | undefined): GateProfileId | null {"
+              },
+              {
+                "line": 402,
+                "anchor": "scripts/party-mode-runtime.ts:402",
+                "text": "export function hasAcknowledgedUserSelection(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 444,
+                "anchor": "scripts/party-mode-runtime.ts:444",
+                "text": "export function extractEmbeddedBootstrapJson("
+              },
+              {
+                "line": 484,
+                "anchor": "scripts/party-mode-runtime.ts:484",
+                "text": "export function buildIntensitySelectionPreflightMessage(inputText: string | undefined): string {"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/party-mode-runtime.ts",
+                "to": "scripts/party-mode-runtime.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime.ts",
+                "to": "scripts/party-mode-runtime.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/party-mode-runtime.js",
+                "to": "scripts/party-mode-runtime.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/party-mode-runtime.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 11,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 11,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--meta-path",
+              "--min-rounds",
+              "--ratio-threshold",
+              "--session-key",
+              "--session-log-path",
+              "--tail-window",
+              "--write-all",
+              "--write-audit-verdict",
+              "--write-convergence-record",
+              "--write-snapshot"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--meta-path <source-derived-safe-value>",
+              "--min-rounds <source-derived-safe-value>",
+              "--ratio-threshold <source-derived-safe-value>",
+              "--session-key <source-derived-safe-value>",
+              "--session-log-path <source-derived-safe-value>",
+              "--tail-window <source-derived-safe-value>",
+              "--write-all <source-derived-safe-value>",
+              "--write-audit-verdict <source-derived-safe-value>",
+              "--write-convergence-record <source-derived-safe-value>",
+              "--write-snapshot <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--meta-path <source-derived-safe-value>",
+              "--min-rounds <source-derived-safe-value>",
+              "--ratio-threshold <source-derived-safe-value>",
+              "--session-key <source-derived-safe-value>",
+              "--session-log-path <source-derived-safe-value>",
+              "--tail-window <source-derived-safe-value>",
+              "--write-all <source-derived-safe-value>",
+              "--write-audit-verdict <source-derived-safe-value>",
+              "--write-convergence-record <source-derived-safe-value>",
+              "--write-snapshot <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 11,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_meta_path",
+              "flag_min_rounds",
+              "flag_ratio_threshold",
+              "flag_session_key",
+              "flag_session_log_path",
+              "flag_tail_window",
+              "flag_write_all",
+              "flag_write_audit_verdict",
+              "flag_write_convergence_record",
+              "flag_write_snapshot"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g007_party_mode_runtime_ts_flag_session_key",
+          "originalEntryPoint": "scripts/party-mode-runtime.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/party-mode-runtime.ts --session-key source-derived-session-key",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/party-mode-runtime.js --session-key source-derived-session-key",
+          "argumentCombination": "--session-key <source-derived-safe-value>",
+          "args": [
+            "--session-key",
+            "source-derived-session-key"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_party_mode_runtime_ts_flag_session_key_original_fixture_root",
+              "path": "<tmp>/g007_party_mode_runtime_ts_flag_session_key-original-wNHkoH",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_party_mode_runtime_ts_flag_session_key_package_fixture_root",
+              "path": "<tmp>/g007_party_mode_runtime_ts_flag_session_key-package-wHsZQe",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/party-mode-runtime.ts:flag_session_key",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/party-mode-runtime.ts:flag_session_key",
+            "sourceLineAnchors": [
+              {
+                "line": 339,
+                "anchor": "scripts/party-mode-runtime.ts:339",
+                "text": "export function requiresHighConfidenceFinalOutputs(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 343,
+                "anchor": "scripts/party-mode-runtime.ts:343",
+                "text": "export function requestsQuickProbe(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 347,
+                "anchor": "scripts/party-mode-runtime.ts:347",
+                "text": "export function isPartyModeFacilitatorIntent(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 351,
+                "anchor": "scripts/party-mode-runtime.ts:351",
+                "text": "export function buildPartyModeContractViolationMessage(inputText: string | undefined): string {"
+              },
+              {
+                "line": 363,
+                "anchor": "scripts/party-mode-runtime.ts:363",
+                "text": "export function inferGateProfileId(inputText: string | undefined): GateProfileId {"
+              },
+              {
+                "line": 373,
+                "anchor": "scripts/party-mode-runtime.ts:373",
+                "text": "export function detectExplicitGateProfileMatches(inputText: string | undefined): GateProfileId[] {"
+              },
+              {
+                "line": 380,
+                "anchor": "scripts/party-mode-runtime.ts:380",
+                "text": "export function detectExplicitGateProfileId(inputText: string | undefined): GateProfileId | null {"
+              },
+              {
+                "line": 385,
+                "anchor": "scripts/party-mode-runtime.ts:385",
+                "text": "export function hasConfirmedUserSelectionBlock(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 390,
+                "anchor": "scripts/party-mode-runtime.ts:390",
+                "text": "export function detectConfirmedGateProfileId(inputText: string | undefined): GateProfileId | null {"
+              },
+              {
+                "line": 402,
+                "anchor": "scripts/party-mode-runtime.ts:402",
+                "text": "export function hasAcknowledgedUserSelection(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 444,
+                "anchor": "scripts/party-mode-runtime.ts:444",
+                "text": "export function extractEmbeddedBootstrapJson("
+              },
+              {
+                "line": 484,
+                "anchor": "scripts/party-mode-runtime.ts:484",
+                "text": "export function buildIntensitySelectionPreflightMessage(inputText: string | undefined): string {"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/party-mode-runtime.ts",
+                "to": "scripts/party-mode-runtime.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime.ts",
+                "to": "scripts/party-mode-runtime.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/party-mode-runtime.js",
+                "to": "scripts/party-mode-runtime.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/party-mode-runtime.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 11,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 11,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--meta-path",
+              "--min-rounds",
+              "--ratio-threshold",
+              "--session-key",
+              "--session-log-path",
+              "--tail-window",
+              "--write-all",
+              "--write-audit-verdict",
+              "--write-convergence-record",
+              "--write-snapshot"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--meta-path <source-derived-safe-value>",
+              "--min-rounds <source-derived-safe-value>",
+              "--ratio-threshold <source-derived-safe-value>",
+              "--session-key <source-derived-safe-value>",
+              "--session-log-path <source-derived-safe-value>",
+              "--tail-window <source-derived-safe-value>",
+              "--write-all <source-derived-safe-value>",
+              "--write-audit-verdict <source-derived-safe-value>",
+              "--write-convergence-record <source-derived-safe-value>",
+              "--write-snapshot <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--meta-path <source-derived-safe-value>",
+              "--min-rounds <source-derived-safe-value>",
+              "--ratio-threshold <source-derived-safe-value>",
+              "--session-key <source-derived-safe-value>",
+              "--session-log-path <source-derived-safe-value>",
+              "--tail-window <source-derived-safe-value>",
+              "--write-all <source-derived-safe-value>",
+              "--write-audit-verdict <source-derived-safe-value>",
+              "--write-convergence-record <source-derived-safe-value>",
+              "--write-snapshot <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 11,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_meta_path",
+              "flag_min_rounds",
+              "flag_ratio_threshold",
+              "flag_session_key",
+              "flag_session_log_path",
+              "flag_tail_window",
+              "flag_write_all",
+              "flag_write_audit_verdict",
+              "flag_write_convergence_record",
+              "flag_write_snapshot"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g007_party_mode_runtime_ts_flag_session_log_path",
+          "originalEntryPoint": "scripts/party-mode-runtime.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/party-mode-runtime.ts --session-log-path <fixture-root>/session-log-path.json",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/party-mode-runtime.js --session-log-path <fixture-root>/session-log-path.json",
+          "argumentCombination": "--session-log-path <source-derived-safe-value>",
+          "args": [
+            "--session-log-path",
+            "<fixture-root>/session-log-path.json"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_party_mode_runtime_ts_flag_session_log_path_original_fixture_root",
+              "path": "<tmp>/g007_party_mode_runtime_ts_flag_session_log_path-original-kKGzg0",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_party_mode_runtime_ts_flag_session_log_path_package_fixture_root",
+              "path": "<tmp>/g007_party_mode_runtime_ts_flag_session_log_path-package-WyG24Z",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [
+            {
+              "path": "session-log-path.json",
+              "bytes": 3,
+              "sha256": "sha256:ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+              "rawBytes": 3,
+              "rawSha256": "sha256:ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+              "hashPolicy": "normalized_text_replay_hash",
+              "contentEncoding": "utf8"
+            }
+          ],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/party-mode-runtime.ts:flag_session_log_path",
+            "originalReplayArtifactHash": "sha256:a7242fb95bdbb9995d80a8fb5050855bf7ede4e51d6d9ea4dab1772f60b8aeab",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/party-mode-runtime.ts:flag_session_log_path",
+            "sourceLineAnchors": [
+              {
+                "line": 339,
+                "anchor": "scripts/party-mode-runtime.ts:339",
+                "text": "export function requiresHighConfidenceFinalOutputs(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 343,
+                "anchor": "scripts/party-mode-runtime.ts:343",
+                "text": "export function requestsQuickProbe(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 347,
+                "anchor": "scripts/party-mode-runtime.ts:347",
+                "text": "export function isPartyModeFacilitatorIntent(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 351,
+                "anchor": "scripts/party-mode-runtime.ts:351",
+                "text": "export function buildPartyModeContractViolationMessage(inputText: string | undefined): string {"
+              },
+              {
+                "line": 363,
+                "anchor": "scripts/party-mode-runtime.ts:363",
+                "text": "export function inferGateProfileId(inputText: string | undefined): GateProfileId {"
+              },
+              {
+                "line": 373,
+                "anchor": "scripts/party-mode-runtime.ts:373",
+                "text": "export function detectExplicitGateProfileMatches(inputText: string | undefined): GateProfileId[] {"
+              },
+              {
+                "line": 380,
+                "anchor": "scripts/party-mode-runtime.ts:380",
+                "text": "export function detectExplicitGateProfileId(inputText: string | undefined): GateProfileId | null {"
+              },
+              {
+                "line": 385,
+                "anchor": "scripts/party-mode-runtime.ts:385",
+                "text": "export function hasConfirmedUserSelectionBlock(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 390,
+                "anchor": "scripts/party-mode-runtime.ts:390",
+                "text": "export function detectConfirmedGateProfileId(inputText: string | undefined): GateProfileId | null {"
+              },
+              {
+                "line": 402,
+                "anchor": "scripts/party-mode-runtime.ts:402",
+                "text": "export function hasAcknowledgedUserSelection(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 444,
+                "anchor": "scripts/party-mode-runtime.ts:444",
+                "text": "export function extractEmbeddedBootstrapJson("
+              },
+              {
+                "line": 484,
+                "anchor": "scripts/party-mode-runtime.ts:484",
+                "text": "export function buildIntensitySelectionPreflightMessage(inputText: string | undefined): string {"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/party-mode-runtime.ts",
+                "to": "scripts/party-mode-runtime.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime.ts",
+                "to": "scripts/party-mode-runtime.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/party-mode-runtime.js",
+                "to": "scripts/party-mode-runtime.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/party-mode-runtime.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 11,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 1,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 11,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 1,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--meta-path",
+              "--min-rounds",
+              "--ratio-threshold",
+              "--session-key",
+              "--session-log-path",
+              "--tail-window",
+              "--write-all",
+              "--write-audit-verdict",
+              "--write-convergence-record",
+              "--write-snapshot"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--meta-path <source-derived-safe-value>",
+              "--min-rounds <source-derived-safe-value>",
+              "--ratio-threshold <source-derived-safe-value>",
+              "--session-key <source-derived-safe-value>",
+              "--session-log-path <source-derived-safe-value>",
+              "--tail-window <source-derived-safe-value>",
+              "--write-all <source-derived-safe-value>",
+              "--write-audit-verdict <source-derived-safe-value>",
+              "--write-convergence-record <source-derived-safe-value>",
+              "--write-snapshot <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--meta-path <source-derived-safe-value>",
+              "--min-rounds <source-derived-safe-value>",
+              "--ratio-threshold <source-derived-safe-value>",
+              "--session-key <source-derived-safe-value>",
+              "--session-log-path <source-derived-safe-value>",
+              "--tail-window <source-derived-safe-value>",
+              "--write-all <source-derived-safe-value>",
+              "--write-audit-verdict <source-derived-safe-value>",
+              "--write-convergence-record <source-derived-safe-value>",
+              "--write-snapshot <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 11,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_meta_path",
+              "flag_min_rounds",
+              "flag_ratio_threshold",
+              "flag_session_key",
+              "flag_session_log_path",
+              "flag_tail_window",
+              "flag_write_all",
+              "flag_write_audit_verdict",
+              "flag_write_convergence_record",
+              "flag_write_snapshot"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g007_party_mode_runtime_ts_flag_tail_window",
+          "originalEntryPoint": "scripts/party-mode-runtime.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/party-mode-runtime.ts --tail-window source-derived-tail-window",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/party-mode-runtime.js --tail-window source-derived-tail-window",
+          "argumentCombination": "--tail-window <source-derived-safe-value>",
+          "args": [
+            "--tail-window",
+            "source-derived-tail-window"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_party_mode_runtime_ts_flag_tail_window_original_fixture_root",
+              "path": "<tmp>/g007_party_mode_runtime_ts_flag_tail_window-original-zHg79Q",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_party_mode_runtime_ts_flag_tail_window_package_fixture_root",
+              "path": "<tmp>/g007_party_mode_runtime_ts_flag_tail_window-package-CcITGn",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/party-mode-runtime.ts:flag_tail_window",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/party-mode-runtime.ts:flag_tail_window",
+            "sourceLineAnchors": [
+              {
+                "line": 339,
+                "anchor": "scripts/party-mode-runtime.ts:339",
+                "text": "export function requiresHighConfidenceFinalOutputs(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 343,
+                "anchor": "scripts/party-mode-runtime.ts:343",
+                "text": "export function requestsQuickProbe(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 347,
+                "anchor": "scripts/party-mode-runtime.ts:347",
+                "text": "export function isPartyModeFacilitatorIntent(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 351,
+                "anchor": "scripts/party-mode-runtime.ts:351",
+                "text": "export function buildPartyModeContractViolationMessage(inputText: string | undefined): string {"
+              },
+              {
+                "line": 363,
+                "anchor": "scripts/party-mode-runtime.ts:363",
+                "text": "export function inferGateProfileId(inputText: string | undefined): GateProfileId {"
+              },
+              {
+                "line": 373,
+                "anchor": "scripts/party-mode-runtime.ts:373",
+                "text": "export function detectExplicitGateProfileMatches(inputText: string | undefined): GateProfileId[] {"
+              },
+              {
+                "line": 380,
+                "anchor": "scripts/party-mode-runtime.ts:380",
+                "text": "export function detectExplicitGateProfileId(inputText: string | undefined): GateProfileId | null {"
+              },
+              {
+                "line": 385,
+                "anchor": "scripts/party-mode-runtime.ts:385",
+                "text": "export function hasConfirmedUserSelectionBlock(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 390,
+                "anchor": "scripts/party-mode-runtime.ts:390",
+                "text": "export function detectConfirmedGateProfileId(inputText: string | undefined): GateProfileId | null {"
+              },
+              {
+                "line": 402,
+                "anchor": "scripts/party-mode-runtime.ts:402",
+                "text": "export function hasAcknowledgedUserSelection(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 444,
+                "anchor": "scripts/party-mode-runtime.ts:444",
+                "text": "export function extractEmbeddedBootstrapJson("
+              },
+              {
+                "line": 484,
+                "anchor": "scripts/party-mode-runtime.ts:484",
+                "text": "export function buildIntensitySelectionPreflightMessage(inputText: string | undefined): string {"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/party-mode-runtime.ts",
+                "to": "scripts/party-mode-runtime.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime.ts",
+                "to": "scripts/party-mode-runtime.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/party-mode-runtime.js",
+                "to": "scripts/party-mode-runtime.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/party-mode-runtime.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 11,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 11,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--meta-path",
+              "--min-rounds",
+              "--ratio-threshold",
+              "--session-key",
+              "--session-log-path",
+              "--tail-window",
+              "--write-all",
+              "--write-audit-verdict",
+              "--write-convergence-record",
+              "--write-snapshot"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--meta-path <source-derived-safe-value>",
+              "--min-rounds <source-derived-safe-value>",
+              "--ratio-threshold <source-derived-safe-value>",
+              "--session-key <source-derived-safe-value>",
+              "--session-log-path <source-derived-safe-value>",
+              "--tail-window <source-derived-safe-value>",
+              "--write-all <source-derived-safe-value>",
+              "--write-audit-verdict <source-derived-safe-value>",
+              "--write-convergence-record <source-derived-safe-value>",
+              "--write-snapshot <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--meta-path <source-derived-safe-value>",
+              "--min-rounds <source-derived-safe-value>",
+              "--ratio-threshold <source-derived-safe-value>",
+              "--session-key <source-derived-safe-value>",
+              "--session-log-path <source-derived-safe-value>",
+              "--tail-window <source-derived-safe-value>",
+              "--write-all <source-derived-safe-value>",
+              "--write-audit-verdict <source-derived-safe-value>",
+              "--write-convergence-record <source-derived-safe-value>",
+              "--write-snapshot <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 11,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_meta_path",
+              "flag_min_rounds",
+              "flag_ratio_threshold",
+              "flag_session_key",
+              "flag_session_log_path",
+              "flag_tail_window",
+              "flag_write_all",
+              "flag_write_audit_verdict",
+              "flag_write_convergence_record",
+              "flag_write_snapshot"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g007_party_mode_runtime_ts_flag_write_all",
+          "originalEntryPoint": "scripts/party-mode-runtime.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/party-mode-runtime.ts --write-all source-derived-write-all",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/party-mode-runtime.js --write-all source-derived-write-all",
+          "argumentCombination": "--write-all <source-derived-safe-value>",
+          "args": [
+            "--write-all",
+            "source-derived-write-all"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_party_mode_runtime_ts_flag_write_all_original_fixture_root",
+              "path": "<tmp>/g007_party_mode_runtime_ts_flag_write_all-original-QCD2cj",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_party_mode_runtime_ts_flag_write_all_package_fixture_root",
+              "path": "<tmp>/g007_party_mode_runtime_ts_flag_write_all-package-InDdjv",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/party-mode-runtime.ts:flag_write_all",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/party-mode-runtime.ts:flag_write_all",
+            "sourceLineAnchors": [
+              {
+                "line": 339,
+                "anchor": "scripts/party-mode-runtime.ts:339",
+                "text": "export function requiresHighConfidenceFinalOutputs(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 343,
+                "anchor": "scripts/party-mode-runtime.ts:343",
+                "text": "export function requestsQuickProbe(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 347,
+                "anchor": "scripts/party-mode-runtime.ts:347",
+                "text": "export function isPartyModeFacilitatorIntent(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 351,
+                "anchor": "scripts/party-mode-runtime.ts:351",
+                "text": "export function buildPartyModeContractViolationMessage(inputText: string | undefined): string {"
+              },
+              {
+                "line": 363,
+                "anchor": "scripts/party-mode-runtime.ts:363",
+                "text": "export function inferGateProfileId(inputText: string | undefined): GateProfileId {"
+              },
+              {
+                "line": 373,
+                "anchor": "scripts/party-mode-runtime.ts:373",
+                "text": "export function detectExplicitGateProfileMatches(inputText: string | undefined): GateProfileId[] {"
+              },
+              {
+                "line": 380,
+                "anchor": "scripts/party-mode-runtime.ts:380",
+                "text": "export function detectExplicitGateProfileId(inputText: string | undefined): GateProfileId | null {"
+              },
+              {
+                "line": 385,
+                "anchor": "scripts/party-mode-runtime.ts:385",
+                "text": "export function hasConfirmedUserSelectionBlock(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 390,
+                "anchor": "scripts/party-mode-runtime.ts:390",
+                "text": "export function detectConfirmedGateProfileId(inputText: string | undefined): GateProfileId | null {"
+              },
+              {
+                "line": 402,
+                "anchor": "scripts/party-mode-runtime.ts:402",
+                "text": "export function hasAcknowledgedUserSelection(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 444,
+                "anchor": "scripts/party-mode-runtime.ts:444",
+                "text": "export function extractEmbeddedBootstrapJson("
+              },
+              {
+                "line": 484,
+                "anchor": "scripts/party-mode-runtime.ts:484",
+                "text": "export function buildIntensitySelectionPreflightMessage(inputText: string | undefined): string {"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/party-mode-runtime.ts",
+                "to": "scripts/party-mode-runtime.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime.ts",
+                "to": "scripts/party-mode-runtime.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/party-mode-runtime.js",
+                "to": "scripts/party-mode-runtime.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/party-mode-runtime.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 11,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 11,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--meta-path",
+              "--min-rounds",
+              "--ratio-threshold",
+              "--session-key",
+              "--session-log-path",
+              "--tail-window",
+              "--write-all",
+              "--write-audit-verdict",
+              "--write-convergence-record",
+              "--write-snapshot"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--meta-path <source-derived-safe-value>",
+              "--min-rounds <source-derived-safe-value>",
+              "--ratio-threshold <source-derived-safe-value>",
+              "--session-key <source-derived-safe-value>",
+              "--session-log-path <source-derived-safe-value>",
+              "--tail-window <source-derived-safe-value>",
+              "--write-all <source-derived-safe-value>",
+              "--write-audit-verdict <source-derived-safe-value>",
+              "--write-convergence-record <source-derived-safe-value>",
+              "--write-snapshot <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--meta-path <source-derived-safe-value>",
+              "--min-rounds <source-derived-safe-value>",
+              "--ratio-threshold <source-derived-safe-value>",
+              "--session-key <source-derived-safe-value>",
+              "--session-log-path <source-derived-safe-value>",
+              "--tail-window <source-derived-safe-value>",
+              "--write-all <source-derived-safe-value>",
+              "--write-audit-verdict <source-derived-safe-value>",
+              "--write-convergence-record <source-derived-safe-value>",
+              "--write-snapshot <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 11,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_meta_path",
+              "flag_min_rounds",
+              "flag_ratio_threshold",
+              "flag_session_key",
+              "flag_session_log_path",
+              "flag_tail_window",
+              "flag_write_all",
+              "flag_write_audit_verdict",
+              "flag_write_convergence_record",
+              "flag_write_snapshot"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g007_party_mode_runtime_ts_flag_write_audit_verdict",
+          "originalEntryPoint": "scripts/party-mode-runtime.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/party-mode-runtime.ts --write-audit-verdict source-derived-write-audit-verdict",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/party-mode-runtime.js --write-audit-verdict source-derived-write-audit-verdict",
+          "argumentCombination": "--write-audit-verdict <source-derived-safe-value>",
+          "args": [
+            "--write-audit-verdict",
+            "source-derived-write-audit-verdict"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_party_mode_runtime_ts_flag_write_audit_verdict_original_fixture_root",
+              "path": "<tmp>/g007_party_mode_runtime_ts_flag_write_audit_verdict-original-FI0cqG",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_party_mode_runtime_ts_flag_write_audit_verdict_package_fixture_root",
+              "path": "<tmp>/g007_party_mode_runtime_ts_flag_write_audit_verdict-package-mYjnAj",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/party-mode-runtime.ts:flag_write_audit_verdict",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/party-mode-runtime.ts:flag_write_audit_verdict",
+            "sourceLineAnchors": [
+              {
+                "line": 339,
+                "anchor": "scripts/party-mode-runtime.ts:339",
+                "text": "export function requiresHighConfidenceFinalOutputs(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 343,
+                "anchor": "scripts/party-mode-runtime.ts:343",
+                "text": "export function requestsQuickProbe(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 347,
+                "anchor": "scripts/party-mode-runtime.ts:347",
+                "text": "export function isPartyModeFacilitatorIntent(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 351,
+                "anchor": "scripts/party-mode-runtime.ts:351",
+                "text": "export function buildPartyModeContractViolationMessage(inputText: string | undefined): string {"
+              },
+              {
+                "line": 363,
+                "anchor": "scripts/party-mode-runtime.ts:363",
+                "text": "export function inferGateProfileId(inputText: string | undefined): GateProfileId {"
+              },
+              {
+                "line": 373,
+                "anchor": "scripts/party-mode-runtime.ts:373",
+                "text": "export function detectExplicitGateProfileMatches(inputText: string | undefined): GateProfileId[] {"
+              },
+              {
+                "line": 380,
+                "anchor": "scripts/party-mode-runtime.ts:380",
+                "text": "export function detectExplicitGateProfileId(inputText: string | undefined): GateProfileId | null {"
+              },
+              {
+                "line": 385,
+                "anchor": "scripts/party-mode-runtime.ts:385",
+                "text": "export function hasConfirmedUserSelectionBlock(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 390,
+                "anchor": "scripts/party-mode-runtime.ts:390",
+                "text": "export function detectConfirmedGateProfileId(inputText: string | undefined): GateProfileId | null {"
+              },
+              {
+                "line": 402,
+                "anchor": "scripts/party-mode-runtime.ts:402",
+                "text": "export function hasAcknowledgedUserSelection(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 444,
+                "anchor": "scripts/party-mode-runtime.ts:444",
+                "text": "export function extractEmbeddedBootstrapJson("
+              },
+              {
+                "line": 484,
+                "anchor": "scripts/party-mode-runtime.ts:484",
+                "text": "export function buildIntensitySelectionPreflightMessage(inputText: string | undefined): string {"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/party-mode-runtime.ts",
+                "to": "scripts/party-mode-runtime.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime.ts",
+                "to": "scripts/party-mode-runtime.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/party-mode-runtime.js",
+                "to": "scripts/party-mode-runtime.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/party-mode-runtime.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 11,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 11,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--meta-path",
+              "--min-rounds",
+              "--ratio-threshold",
+              "--session-key",
+              "--session-log-path",
+              "--tail-window",
+              "--write-all",
+              "--write-audit-verdict",
+              "--write-convergence-record",
+              "--write-snapshot"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--meta-path <source-derived-safe-value>",
+              "--min-rounds <source-derived-safe-value>",
+              "--ratio-threshold <source-derived-safe-value>",
+              "--session-key <source-derived-safe-value>",
+              "--session-log-path <source-derived-safe-value>",
+              "--tail-window <source-derived-safe-value>",
+              "--write-all <source-derived-safe-value>",
+              "--write-audit-verdict <source-derived-safe-value>",
+              "--write-convergence-record <source-derived-safe-value>",
+              "--write-snapshot <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--meta-path <source-derived-safe-value>",
+              "--min-rounds <source-derived-safe-value>",
+              "--ratio-threshold <source-derived-safe-value>",
+              "--session-key <source-derived-safe-value>",
+              "--session-log-path <source-derived-safe-value>",
+              "--tail-window <source-derived-safe-value>",
+              "--write-all <source-derived-safe-value>",
+              "--write-audit-verdict <source-derived-safe-value>",
+              "--write-convergence-record <source-derived-safe-value>",
+              "--write-snapshot <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 11,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_meta_path",
+              "flag_min_rounds",
+              "flag_ratio_threshold",
+              "flag_session_key",
+              "flag_session_log_path",
+              "flag_tail_window",
+              "flag_write_all",
+              "flag_write_audit_verdict",
+              "flag_write_convergence_record",
+              "flag_write_snapshot"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g007_party_mode_runtime_ts_flag_write_convergence_record",
+          "originalEntryPoint": "scripts/party-mode-runtime.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/party-mode-runtime.ts --write-convergence-record source-derived-write-convergence-record",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/party-mode-runtime.js --write-convergence-record source-derived-write-convergence-record",
+          "argumentCombination": "--write-convergence-record <source-derived-safe-value>",
+          "args": [
+            "--write-convergence-record",
+            "source-derived-write-convergence-record"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_party_mode_runtime_ts_flag_write_convergence_record_original_fixture_root",
+              "path": "<tmp>/g007_party_mode_runtime_ts_flag_write_convergence_record-original-JpRQ9s",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_party_mode_runtime_ts_flag_write_convergence_record_package_fixture_root",
+              "path": "<tmp>/g007_party_mode_runtime_ts_flag_write_convergence_record-package-T8mGH8",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/party-mode-runtime.ts:flag_write_convergence_record",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/party-mode-runtime.ts:flag_write_convergence_record",
+            "sourceLineAnchors": [
+              {
+                "line": 339,
+                "anchor": "scripts/party-mode-runtime.ts:339",
+                "text": "export function requiresHighConfidenceFinalOutputs(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 343,
+                "anchor": "scripts/party-mode-runtime.ts:343",
+                "text": "export function requestsQuickProbe(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 347,
+                "anchor": "scripts/party-mode-runtime.ts:347",
+                "text": "export function isPartyModeFacilitatorIntent(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 351,
+                "anchor": "scripts/party-mode-runtime.ts:351",
+                "text": "export function buildPartyModeContractViolationMessage(inputText: string | undefined): string {"
+              },
+              {
+                "line": 363,
+                "anchor": "scripts/party-mode-runtime.ts:363",
+                "text": "export function inferGateProfileId(inputText: string | undefined): GateProfileId {"
+              },
+              {
+                "line": 373,
+                "anchor": "scripts/party-mode-runtime.ts:373",
+                "text": "export function detectExplicitGateProfileMatches(inputText: string | undefined): GateProfileId[] {"
+              },
+              {
+                "line": 380,
+                "anchor": "scripts/party-mode-runtime.ts:380",
+                "text": "export function detectExplicitGateProfileId(inputText: string | undefined): GateProfileId | null {"
+              },
+              {
+                "line": 385,
+                "anchor": "scripts/party-mode-runtime.ts:385",
+                "text": "export function hasConfirmedUserSelectionBlock(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 390,
+                "anchor": "scripts/party-mode-runtime.ts:390",
+                "text": "export function detectConfirmedGateProfileId(inputText: string | undefined): GateProfileId | null {"
+              },
+              {
+                "line": 402,
+                "anchor": "scripts/party-mode-runtime.ts:402",
+                "text": "export function hasAcknowledgedUserSelection(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 444,
+                "anchor": "scripts/party-mode-runtime.ts:444",
+                "text": "export function extractEmbeddedBootstrapJson("
+              },
+              {
+                "line": 484,
+                "anchor": "scripts/party-mode-runtime.ts:484",
+                "text": "export function buildIntensitySelectionPreflightMessage(inputText: string | undefined): string {"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/party-mode-runtime.ts",
+                "to": "scripts/party-mode-runtime.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime.ts",
+                "to": "scripts/party-mode-runtime.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/party-mode-runtime.js",
+                "to": "scripts/party-mode-runtime.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/party-mode-runtime.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 11,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 11,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--meta-path",
+              "--min-rounds",
+              "--ratio-threshold",
+              "--session-key",
+              "--session-log-path",
+              "--tail-window",
+              "--write-all",
+              "--write-audit-verdict",
+              "--write-convergence-record",
+              "--write-snapshot"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--meta-path <source-derived-safe-value>",
+              "--min-rounds <source-derived-safe-value>",
+              "--ratio-threshold <source-derived-safe-value>",
+              "--session-key <source-derived-safe-value>",
+              "--session-log-path <source-derived-safe-value>",
+              "--tail-window <source-derived-safe-value>",
+              "--write-all <source-derived-safe-value>",
+              "--write-audit-verdict <source-derived-safe-value>",
+              "--write-convergence-record <source-derived-safe-value>",
+              "--write-snapshot <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--meta-path <source-derived-safe-value>",
+              "--min-rounds <source-derived-safe-value>",
+              "--ratio-threshold <source-derived-safe-value>",
+              "--session-key <source-derived-safe-value>",
+              "--session-log-path <source-derived-safe-value>",
+              "--tail-window <source-derived-safe-value>",
+              "--write-all <source-derived-safe-value>",
+              "--write-audit-verdict <source-derived-safe-value>",
+              "--write-convergence-record <source-derived-safe-value>",
+              "--write-snapshot <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 11,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_meta_path",
+              "flag_min_rounds",
+              "flag_ratio_threshold",
+              "flag_session_key",
+              "flag_session_log_path",
+              "flag_tail_window",
+              "flag_write_all",
+              "flag_write_audit_verdict",
+              "flag_write_convergence_record",
+              "flag_write_snapshot"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g007_party_mode_runtime_ts_flag_write_snapshot",
+          "originalEntryPoint": "scripts/party-mode-runtime.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/party-mode-runtime.ts --write-snapshot source-derived-write-snapshot",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/party-mode-runtime.js --write-snapshot source-derived-write-snapshot",
+          "argumentCombination": "--write-snapshot <source-derived-safe-value>",
+          "args": [
+            "--write-snapshot",
+            "source-derived-write-snapshot"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_party_mode_runtime_ts_flag_write_snapshot_original_fixture_root",
+              "path": "<tmp>/g007_party_mode_runtime_ts_flag_write_snapshot-original-v3MwGW",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_party_mode_runtime_ts_flag_write_snapshot_package_fixture_root",
+              "path": "<tmp>/g007_party_mode_runtime_ts_flag_write_snapshot-package-YA8JN6",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/party-mode-runtime.ts:flag_write_snapshot",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/party-mode-runtime.ts:flag_write_snapshot",
+            "sourceLineAnchors": [
+              {
+                "line": 339,
+                "anchor": "scripts/party-mode-runtime.ts:339",
+                "text": "export function requiresHighConfidenceFinalOutputs(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 343,
+                "anchor": "scripts/party-mode-runtime.ts:343",
+                "text": "export function requestsQuickProbe(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 347,
+                "anchor": "scripts/party-mode-runtime.ts:347",
+                "text": "export function isPartyModeFacilitatorIntent(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 351,
+                "anchor": "scripts/party-mode-runtime.ts:351",
+                "text": "export function buildPartyModeContractViolationMessage(inputText: string | undefined): string {"
+              },
+              {
+                "line": 363,
+                "anchor": "scripts/party-mode-runtime.ts:363",
+                "text": "export function inferGateProfileId(inputText: string | undefined): GateProfileId {"
+              },
+              {
+                "line": 373,
+                "anchor": "scripts/party-mode-runtime.ts:373",
+                "text": "export function detectExplicitGateProfileMatches(inputText: string | undefined): GateProfileId[] {"
+              },
+              {
+                "line": 380,
+                "anchor": "scripts/party-mode-runtime.ts:380",
+                "text": "export function detectExplicitGateProfileId(inputText: string | undefined): GateProfileId | null {"
+              },
+              {
+                "line": 385,
+                "anchor": "scripts/party-mode-runtime.ts:385",
+                "text": "export function hasConfirmedUserSelectionBlock(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 390,
+                "anchor": "scripts/party-mode-runtime.ts:390",
+                "text": "export function detectConfirmedGateProfileId(inputText: string | undefined): GateProfileId | null {"
+              },
+              {
+                "line": 402,
+                "anchor": "scripts/party-mode-runtime.ts:402",
+                "text": "export function hasAcknowledgedUserSelection(inputText: string | undefined): boolean {"
+              },
+              {
+                "line": 444,
+                "anchor": "scripts/party-mode-runtime.ts:444",
+                "text": "export function extractEmbeddedBootstrapJson("
+              },
+              {
+                "line": 484,
+                "anchor": "scripts/party-mode-runtime.ts:484",
+                "text": "export function buildIntensitySelectionPreflightMessage(inputText: string | undefined): string {"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/party-mode-runtime.ts",
+                "to": "scripts/party-mode-runtime.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime.ts",
+                "to": "scripts/party-mode-runtime.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/party-mode-runtime.js",
+                "to": "scripts/party-mode-runtime.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/party-mode-runtime.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 11,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 11,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--meta-path",
+              "--min-rounds",
+              "--ratio-threshold",
+              "--session-key",
+              "--session-log-path",
+              "--tail-window",
+              "--write-all",
+              "--write-audit-verdict",
+              "--write-convergence-record",
+              "--write-snapshot"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--meta-path <source-derived-safe-value>",
+              "--min-rounds <source-derived-safe-value>",
+              "--ratio-threshold <source-derived-safe-value>",
+              "--session-key <source-derived-safe-value>",
+              "--session-log-path <source-derived-safe-value>",
+              "--tail-window <source-derived-safe-value>",
+              "--write-all <source-derived-safe-value>",
+              "--write-audit-verdict <source-derived-safe-value>",
+              "--write-convergence-record <source-derived-safe-value>",
+              "--write-snapshot <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--meta-path <source-derived-safe-value>",
+              "--min-rounds <source-derived-safe-value>",
+              "--ratio-threshold <source-derived-safe-value>",
+              "--session-key <source-derived-safe-value>",
+              "--session-log-path <source-derived-safe-value>",
+              "--tail-window <source-derived-safe-value>",
+              "--write-all <source-derived-safe-value>",
+              "--write-audit-verdict <source-derived-safe-value>",
+              "--write-convergence-record <source-derived-safe-value>",
+              "--write-snapshot <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 11,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_meta_path",
+              "flag_min_rounds",
+              "flag_ratio_threshold",
+              "flag_session_key",
+              "flag_session_log_path",
+              "flag_tail_window",
+              "flag_write_all",
+              "flag_write_audit_verdict",
+              "flag_write_convergence_record",
+              "flag_write_snapshot"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/prepublish-check.js",
+      "entryId": "prepublish-check-js",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.js"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/prepublish-check.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/prepublish-check.js:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 3,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 3,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [
+          "BMAD_PACK_SESSION",
+          "BMAD_PACK_SESSION_LOCK_TIMEOUT_MS",
+          "BMAD_PREPUBLISH_SILENT"
+        ],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [
+          "BMAD_PACK_SESSION",
+          "BMAD_PACK_SESSION_LOCK_TIMEOUT_MS",
+          "BMAD_PREPUBLISH_SILENT"
+        ],
+        "scenarioDefinitionCount": 4,
+        "coveredScenarioDefinitionIds": [
+          "no_args",
+          "env_bmad_pack_session",
+          "env_bmad_pack_session_lock_timeout_ms",
+          "env_bmad_prepublish_silent"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g007_prepublish_check_js_no_args",
+          "originalEntryPoint": "scripts/prepublish-check.js",
+          "originalEntryCommand": "node scripts/prepublish-check.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.js",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/prepublish-check.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_prepublish_check_js_no_args_original_fixture_root",
+              "path": "<tmp>/g007_prepublish_check_js_no_args-original-zJQ8Ks",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_prepublish_check_js_no_args_package_fixture_root",
+              "path": "<tmp>/g007_prepublish_check_js_no_args-package-fA6AHX",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "同步 @bmad-speckit/schema → bmad-speckit/node_modules ...\n同步 @bmad-speckit/scoring → bmad-speckit/node_modules ...\n同步 @bmad-speckit/ralph-method → bmad-speckit/node_modules ...\n同步 @bmad-speckit/runtime-context → bmad-speckit/node_modules ...\n同步 @bmad-speckit/runtime-emit → bmad-speckit/node_modules ...\n同步 workspace scoped packages → packages/bmad-speckit/node_modules/@bmad-speckit ...\n同步 _bmad → packages/bmad-speckit/_bmad ...\n同步完成。\n\n  ✓ packages/schema/ 产物就绪\n  ✓ packages/bmad-speckit/node_modules/@bmad-speckit/schema 存在\n  ✓ packages/scoring/ 产物就绪\n  ✓ packages/scoring extra\n  ✓ packages/bmad-speckit/node_modules/@bmad-speckit/scoring 存在\n  ✓ packages/ralph-method/ 产物就绪\n  ✓ packages/bmad-speckit/node_modules/@bmad-speckit/ralph-method 存在\n  ✓ packages/runtime-context/ 产物就绪\n  ✓ packages/bmad-speckit/node_modules/@bmad-speckit/runtime-context 存在\n  ✓ packages/runtime-emit/ 产物就绪\n  ✓ packages/bmad-speckit/node_modules/@bmad-speckit/runtime-emit 存在\n  ✓ packages/bmad-speckit/_bmad 存在\n  ✓ packages/bmad-speckit/_bmad 含 hooks/*.cjs\n  ✓ tracked goal-contract release-gate fixture includes current coverageReceiptPath and unmappedSourceObligations proof\n  ✓ packages/bmad-speckit/package.json 包含 bundleDependencies（三项 @bmad-speckit/*）\n\n发布前检查全部通过 ✓\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/prepublish-check.js:no_args",
+            "originalReplayArtifactHash": "sha256:cbb36a58701ce912df5d20c133ab6ad00d065ae57340a7ba230e406e3b239916",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/prepublish-check.js:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 27,
+                "anchor": "scripts/prepublish-check.js:27",
+                "text": "if (!SILENT) console.log(message);"
+              },
+              {
+                "line": 502,
+                "anchor": "scripts/prepublish-check.js:502",
+                "text": "console.error('\\n发布前检查未通过，请修复上述问题后重试。');"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/prepublish-check.js",
+                "to": "scripts/prepublish-check.js"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.js",
+                "to": "scripts/prepublish-check.js"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/prepublish-check.js",
+                "to": "scripts/prepublish-check.js"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/prepublish-check.js",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 3,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 3,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [
+              "BMAD_PACK_SESSION",
+              "BMAD_PACK_SESSION_LOCK_TIMEOUT_MS",
+              "BMAD_PREPUBLISH_SILENT"
+            ],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [
+              "BMAD_PACK_SESSION",
+              "BMAD_PACK_SESSION_LOCK_TIMEOUT_MS",
+              "BMAD_PREPUBLISH_SILENT"
+            ],
+            "scenarioDefinitionCount": 4,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "env_bmad_pack_session",
+              "env_bmad_pack_session_lock_timeout_ms",
+              "env_bmad_prepublish_silent"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g007_prepublish_check_js_env_bmad_pack_session",
+          "originalEntryPoint": "scripts/prepublish-check.js",
+          "originalEntryCommand": "node scripts/prepublish-check.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.js",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/prepublish-check.js",
+          "argumentCombination": "env BMAD_PACK_SESSION=<source-derived-safe-value>",
+          "args": [],
+          "env": {
+            "BMAD_PACK_SESSION": "source-derived-bmad_pack_session"
+          },
+          "fixtures": [
+            {
+              "id": "g007_prepublish_check_js_env_bmad_pack_session_original_fixture_root",
+              "path": "<tmp>/g007_prepublish_check_js_env_bmad_pack_session-original-5KA3xl",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_prepublish_check_js_env_bmad_pack_session_package_fixture_root",
+              "path": "<tmp>/g007_prepublish_check_js_env_bmad_pack_session-package-A9xE9b",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "同步 @bmad-speckit/schema → bmad-speckit/node_modules ...\n同步 @bmad-speckit/scoring → bmad-speckit/node_modules ...\n同步 @bmad-speckit/ralph-method → bmad-speckit/node_modules ...\n同步 @bmad-speckit/runtime-context → bmad-speckit/node_modules ...\n同步 @bmad-speckit/runtime-emit → bmad-speckit/node_modules ...\n同步 workspace scoped packages → packages/bmad-speckit/node_modules/@bmad-speckit ...\n同步 _bmad → packages/bmad-speckit/_bmad ...\n同步完成。\n\n  ✓ packages/schema/ 产物就绪\n  ✓ packages/bmad-speckit/node_modules/@bmad-speckit/schema 存在\n  ✓ packages/scoring/ 产物就绪\n  ✓ packages/scoring extra\n  ✓ packages/bmad-speckit/node_modules/@bmad-speckit/scoring 存在\n  ✓ packages/ralph-method/ 产物就绪\n  ✓ packages/bmad-speckit/node_modules/@bmad-speckit/ralph-method 存在\n  ✓ packages/runtime-context/ 产物就绪\n  ✓ packages/bmad-speckit/node_modules/@bmad-speckit/runtime-context 存在\n  ✓ packages/runtime-emit/ 产物就绪\n  ✓ packages/bmad-speckit/node_modules/@bmad-speckit/runtime-emit 存在\n  ✓ packages/bmad-speckit/_bmad 存在\n  ✓ packages/bmad-speckit/_bmad 含 hooks/*.cjs\n  ✓ tracked goal-contract release-gate fixture includes current coverageReceiptPath and unmappedSourceObligations proof\n  ✓ packages/bmad-speckit/package.json 包含 bundleDependencies（三项 @bmad-speckit/*）\n\n发布前检查全部通过 ✓\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/prepublish-check.js:env_bmad_pack_session",
+            "originalReplayArtifactHash": "sha256:cbb36a58701ce912df5d20c133ab6ad00d065ae57340a7ba230e406e3b239916",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/prepublish-check.js:env_bmad_pack_session",
+            "sourceLineAnchors": [
+              {
+                "line": 27,
+                "anchor": "scripts/prepublish-check.js:27",
+                "text": "if (!SILENT) console.log(message);"
+              },
+              {
+                "line": 502,
+                "anchor": "scripts/prepublish-check.js:502",
+                "text": "console.error('\\n发布前检查未通过，请修复上述问题后重试。');"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/prepublish-check.js",
+                "to": "scripts/prepublish-check.js"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.js",
+                "to": "scripts/prepublish-check.js"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/prepublish-check.js",
+                "to": "scripts/prepublish-check.js"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/prepublish-check.js",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 3,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 3,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [
+              "BMAD_PACK_SESSION",
+              "BMAD_PACK_SESSION_LOCK_TIMEOUT_MS",
+              "BMAD_PREPUBLISH_SILENT"
+            ],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [
+              "BMAD_PACK_SESSION",
+              "BMAD_PACK_SESSION_LOCK_TIMEOUT_MS",
+              "BMAD_PREPUBLISH_SILENT"
+            ],
+            "scenarioDefinitionCount": 4,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "env_bmad_pack_session",
+              "env_bmad_pack_session_lock_timeout_ms",
+              "env_bmad_prepublish_silent"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g007_prepublish_check_js_env_bmad_pack_session_lock_timeout_ms",
+          "originalEntryPoint": "scripts/prepublish-check.js",
+          "originalEntryCommand": "node scripts/prepublish-check.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.js",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/prepublish-check.js",
+          "argumentCombination": "env BMAD_PACK_SESSION_LOCK_TIMEOUT_MS=<source-derived-safe-value>",
+          "args": [],
+          "env": {
+            "BMAD_PACK_SESSION_LOCK_TIMEOUT_MS": "source-derived-bmad_pack_session_lock_timeout_ms"
+          },
+          "fixtures": [
+            {
+              "id": "g007_prepublish_check_js_env_bmad_pack_session_lock_timeout_ms_original_fixture_root",
+              "path": "<tmp>/g007_prepublish_check_js_env_bmad_pack_session_lock_timeout_ms-original-rMuJ2a",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_prepublish_check_js_env_bmad_pack_session_lock_timeout_ms_package_fixture_root",
+              "path": "<tmp>/g007_prepublish_check_js_env_bmad_pack_session_lock_timeout_ms-package-aiCbQv",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "同步 @bmad-speckit/schema → bmad-speckit/node_modules ...\n同步 @bmad-speckit/scoring → bmad-speckit/node_modules ...\n同步 @bmad-speckit/ralph-method → bmad-speckit/node_modules ...\n同步 @bmad-speckit/runtime-context → bmad-speckit/node_modules ...\n同步 @bmad-speckit/runtime-emit → bmad-speckit/node_modules ...\n同步 workspace scoped packages → packages/bmad-speckit/node_modules/@bmad-speckit ...\n同步 _bmad → packages/bmad-speckit/_bmad ...\n同步完成。\n\n  ✓ packages/schema/ 产物就绪\n  ✓ packages/bmad-speckit/node_modules/@bmad-speckit/schema 存在\n  ✓ packages/scoring/ 产物就绪\n  ✓ packages/scoring extra\n  ✓ packages/bmad-speckit/node_modules/@bmad-speckit/scoring 存在\n  ✓ packages/ralph-method/ 产物就绪\n  ✓ packages/bmad-speckit/node_modules/@bmad-speckit/ralph-method 存在\n  ✓ packages/runtime-context/ 产物就绪\n  ✓ packages/bmad-speckit/node_modules/@bmad-speckit/runtime-context 存在\n  ✓ packages/runtime-emit/ 产物就绪\n  ✓ packages/bmad-speckit/node_modules/@bmad-speckit/runtime-emit 存在\n  ✓ packages/bmad-speckit/_bmad 存在\n  ✓ packages/bmad-speckit/_bmad 含 hooks/*.cjs\n  ✓ tracked goal-contract release-gate fixture includes current coverageReceiptPath and unmappedSourceObligations proof\n  ✓ packages/bmad-speckit/package.json 包含 bundleDependencies（三项 @bmad-speckit/*）\n\n发布前检查全部通过 ✓\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/prepublish-check.js:env_bmad_pack_session_lock_timeout_ms",
+            "originalReplayArtifactHash": "sha256:cbb36a58701ce912df5d20c133ab6ad00d065ae57340a7ba230e406e3b239916",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/prepublish-check.js:env_bmad_pack_session_lock_timeout_ms",
+            "sourceLineAnchors": [
+              {
+                "line": 27,
+                "anchor": "scripts/prepublish-check.js:27",
+                "text": "if (!SILENT) console.log(message);"
+              },
+              {
+                "line": 502,
+                "anchor": "scripts/prepublish-check.js:502",
+                "text": "console.error('\\n发布前检查未通过，请修复上述问题后重试。');"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/prepublish-check.js",
+                "to": "scripts/prepublish-check.js"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.js",
+                "to": "scripts/prepublish-check.js"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/prepublish-check.js",
+                "to": "scripts/prepublish-check.js"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/prepublish-check.js",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 3,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 3,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [
+              "BMAD_PACK_SESSION",
+              "BMAD_PACK_SESSION_LOCK_TIMEOUT_MS",
+              "BMAD_PREPUBLISH_SILENT"
+            ],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [
+              "BMAD_PACK_SESSION",
+              "BMAD_PACK_SESSION_LOCK_TIMEOUT_MS",
+              "BMAD_PREPUBLISH_SILENT"
+            ],
+            "scenarioDefinitionCount": 4,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "env_bmad_pack_session",
+              "env_bmad_pack_session_lock_timeout_ms",
+              "env_bmad_prepublish_silent"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g007_prepublish_check_js_env_bmad_prepublish_silent",
+          "originalEntryPoint": "scripts/prepublish-check.js",
+          "originalEntryCommand": "node scripts/prepublish-check.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.js",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/prepublish-check.js",
+          "argumentCombination": "env BMAD_PREPUBLISH_SILENT=<source-derived-safe-value>",
+          "args": [],
+          "env": {
+            "BMAD_PREPUBLISH_SILENT": "source-derived-bmad_prepublish_silent"
+          },
+          "fixtures": [
+            {
+              "id": "g007_prepublish_check_js_env_bmad_prepublish_silent_original_fixture_root",
+              "path": "<tmp>/g007_prepublish_check_js_env_bmad_prepublish_silent-original-2hwVqw",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_prepublish_check_js_env_bmad_prepublish_silent_package_fixture_root",
+              "path": "<tmp>/g007_prepublish_check_js_env_bmad_prepublish_silent-package-ULjTto",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "同步 @bmad-speckit/schema → bmad-speckit/node_modules ...\n同步 @bmad-speckit/scoring → bmad-speckit/node_modules ...\n同步 @bmad-speckit/ralph-method → bmad-speckit/node_modules ...\n同步 @bmad-speckit/runtime-context → bmad-speckit/node_modules ...\n同步 @bmad-speckit/runtime-emit → bmad-speckit/node_modules ...\n同步 workspace scoped packages → packages/bmad-speckit/node_modules/@bmad-speckit ...\n同步 _bmad → packages/bmad-speckit/_bmad ...\n同步完成。\n\n  ✓ packages/schema/ 产物就绪\n  ✓ packages/bmad-speckit/node_modules/@bmad-speckit/schema 存在\n  ✓ packages/scoring/ 产物就绪\n  ✓ packages/scoring extra\n  ✓ packages/bmad-speckit/node_modules/@bmad-speckit/scoring 存在\n  ✓ packages/ralph-method/ 产物就绪\n  ✓ packages/bmad-speckit/node_modules/@bmad-speckit/ralph-method 存在\n  ✓ packages/runtime-context/ 产物就绪\n  ✓ packages/bmad-speckit/node_modules/@bmad-speckit/runtime-context 存在\n  ✓ packages/runtime-emit/ 产物就绪\n  ✓ packages/bmad-speckit/node_modules/@bmad-speckit/runtime-emit 存在\n  ✓ packages/bmad-speckit/_bmad 存在\n  ✓ packages/bmad-speckit/_bmad 含 hooks/*.cjs\n  ✓ tracked goal-contract release-gate fixture includes current coverageReceiptPath and unmappedSourceObligations proof\n  ✓ packages/bmad-speckit/package.json 包含 bundleDependencies（三项 @bmad-speckit/*）\n\n发布前检查全部通过 ✓\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/prepublish-check.js:env_bmad_prepublish_silent",
+            "originalReplayArtifactHash": "sha256:cbb36a58701ce912df5d20c133ab6ad00d065ae57340a7ba230e406e3b239916",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/prepublish-check.js:env_bmad_prepublish_silent",
+            "sourceLineAnchors": [
+              {
+                "line": 27,
+                "anchor": "scripts/prepublish-check.js:27",
+                "text": "if (!SILENT) console.log(message);"
+              },
+              {
+                "line": 502,
+                "anchor": "scripts/prepublish-check.js:502",
+                "text": "console.error('\\n发布前检查未通过，请修复上述问题后重试。');"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/prepublish-check.js",
+                "to": "scripts/prepublish-check.js"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.js",
+                "to": "scripts/prepublish-check.js"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/prepublish-check.js",
+                "to": "scripts/prepublish-check.js"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/prepublish-check.js",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 3,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 3,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [
+              "BMAD_PACK_SESSION",
+              "BMAD_PACK_SESSION_LOCK_TIMEOUT_MS",
+              "BMAD_PREPUBLISH_SILENT"
+            ],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [
+              "BMAD_PACK_SESSION",
+              "BMAD_PACK_SESSION_LOCK_TIMEOUT_MS",
+              "BMAD_PREPUBLISH_SILENT"
+            ],
+            "scenarioDefinitionCount": 4,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "env_bmad_pack_session",
+              "env_bmad_pack_session_lock_timeout_ms",
+              "env_bmad_prepublish_silent"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/prompt-routing-governance.ts",
+      "entryId": "prompt-routing-governance",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/prompt-routing-governance.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/prompt-routing-governance.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/prompt-routing-governance.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g007_prompt_routing_governance_ts_no_args",
+          "originalEntryPoint": "scripts/prompt-routing-governance.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/prompt-routing-governance.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prompt-routing-governance.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/prompt-routing-governance.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_prompt_routing_governance_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g007_prompt_routing_governance_ts_no_args-original-XLJ6Cg",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_prompt_routing_governance_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g007_prompt_routing_governance_ts_no_args-package-y1YFgJ",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/prompt-routing-governance.ts:no_args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/prompt-routing-governance.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 981,
+                "anchor": "scripts/prompt-routing-governance.ts:981",
+                "text": "export function resolvePromptHintUsage(input: PromptRoutingGovernanceInput): PromptHintUsageRecord {"
+              },
+              {
+                "line": 1049,
+                "anchor": "scripts/prompt-routing-governance.ts:1049",
+                "text": "export function resolvePromptHintUsageFromText("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/prompt-routing-governance.ts",
+                "to": "scripts/prompt-routing-governance.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prompt-routing-governance.ts",
+                "to": "scripts/prompt-routing-governance.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/prompt-routing-governance.js",
+                "to": "scripts/prompt-routing-governance.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/prompt-routing-governance.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/prompt-routing-hints-schema.ts",
+      "entryId": "prompt-routing-hints-schema",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/prompt-routing-hints-schema.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/prompt-routing-hints-schema.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/prompt-routing-hints-schema.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g007_prompt_routing_hints_schema_ts_no_args",
+          "originalEntryPoint": "scripts/prompt-routing-hints-schema.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/prompt-routing-hints-schema.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prompt-routing-hints-schema.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/prompt-routing-hints-schema.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_prompt_routing_hints_schema_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g007_prompt_routing_hints_schema_ts_no_args-original-2ulzd0",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_prompt_routing_hints_schema_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g007_prompt_routing_hints_schema_ts_no_args-package-l6qhEN",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/prompt-routing-hints-schema.ts:no_args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/prompt-routing-hints-schema.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 202,
+                "anchor": "scripts/prompt-routing-hints-schema.ts:202",
+                "text": "export function assertValidPromptRoutingRuleSet("
+              },
+              {
+                "line": 214,
+                "anchor": "scripts/prompt-routing-hints-schema.ts:214",
+                "text": "export function assertValidPromptRoutingHints(hints: unknown): asserts hints is PromptRoutingHints {"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/prompt-routing-hints-schema.ts",
+                "to": "scripts/prompt-routing-hints-schema.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prompt-routing-hints-schema.ts",
+                "to": "scripts/prompt-routing-hints-schema.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/prompt-routing-hints-schema.js",
+                "to": "scripts/prompt-routing-hints-schema.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/prompt-routing-hints-schema.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -116,6 +116,17 @@ describe('main-agent wave 3.8 package runtime actions', () => {
         assert.equal(body.data.report.consumerRuntimeProof.usedRootScript, false);
         assert.equal(body.data.report.consumerRuntimeProof.usedCompiledFallback, false);
         assert.equal(body.data.report.consumerRuntimeProof.usedTypeScriptRunner, false);
+        assert.equal(
+          body.data.report.sourceAuthorityRuntimeProof.status,
+          'source_authority_runtime_replayed'
+        );
+        assert.match(
+          body.data.report.sourceAuthorityRuntimeProof.runtimePath,
+          /(?:dist|src)\/main-agent\/source-authority\//
+        );
+        assert.equal(body.data.report.sourceAuthorityRuntimeProof.usedRootScript, false);
+        assert.equal(body.data.report.sourceAuthorityRuntimeProof.usedCompiledFallback, false);
+        assert.equal(body.data.report.sourceAuthorityRuntimeProof.usedTypeScriptRunner, false);
       }
     } finally {
       fs.rmSync(root, { recursive: true, force: true });

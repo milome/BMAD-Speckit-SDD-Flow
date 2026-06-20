@@ -1,0 +1,312 @@
+[
+  {
+    "originalPath": "scripts/governance-packet-execution-store.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_governance_packet_execution_store_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/governance-packet-reconciler.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_governance_packet_reconciler_ts_no_args",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g007_governance_packet_reconciler_ts_env_bmad_disable_embedded_governance_clis",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/governance-remediation-artifact.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_no_args",
+        "expectedStderr": "scripts/governance-remediation-artifact.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-artifact.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_actualexecutor",
+        "expectedStderr": "scripts/governance-remediation-artifact.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-artifact.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_adapterpath",
+        "expectedStderr": "scripts/governance-remediation-artifact.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-artifact.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_attemptid",
+        "expectedStderr": "scripts/governance-remediation-artifact.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-artifact.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_blockerownershiplocked",
+        "expectedStderr": "scripts/governance-remediation-artifact.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-artifact.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_canonicalagent",
+        "expectedStderr": "scripts/governance-remediation-artifact.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-artifact.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_capabilityslot",
+        "expectedStderr": "scripts/governance-remediation-artifact.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-artifact.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_contradictionsdelta",
+        "expectedStderr": "scripts/governance-remediation-artifact.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-artifact.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_equivalentadaptercount",
+        "expectedStderr": "scripts/governance-remediation-artifact.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-artifact.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_expecteddelta",
+        "expectedStderr": "scripts/governance-remediation-artifact.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-artifact.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_externalproofadded",
+        "expectedStderr": "scripts/governance-remediation-artifact.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-artifact.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_gatefailureexists",
+        "expectedStderr": "scripts/governance-remediation-artifact.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-artifact.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_outcome",
+        "expectedStderr": "scripts/governance-remediation-artifact.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-artifact.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_outputpath",
+        "expectedStderr": "scripts/governance-remediation-artifact.ts:<line>\n<runtime-source-frame>\nError: Invalid --stageContextKnown: expected true|false\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_prompttext",
+        "expectedStderr": "scripts/governance-remediation-artifact.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-artifact.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_readytorerungate",
+        "expectedStderr": "scripts/governance-remediation-artifact.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-artifact.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_rerungate",
+        "expectedStderr": "scripts/governance-remediation-artifact.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-artifact.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_rerunowner",
+        "expectedStderr": "scripts/governance-remediation-artifact.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-artifact.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_roottargetlocked",
+        "expectedStderr": "scripts/governance-remediation-artifact.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-artifact.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_sharedartifactsupdated",
+        "expectedStderr": "scripts/governance-remediation-artifact.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-artifact.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_sourcegatefailureids",
+        "expectedStderr": "scripts/governance-remediation-artifact.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-artifact.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_stagecontextknown",
+        "expectedStderr": "scripts/governance-remediation-artifact.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-artifact.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_stopreason",
+        "expectedStderr": "scripts/governance-remediation-artifact.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-artifact.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_targetartifacts",
+        "expectedStderr": "scripts/governance-remediation-artifact.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-artifact.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_env_bmad_disable_embedded_governance_clis",
+        "expectedStderr": "scripts/governance-remediation-artifact.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-artifact.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/governance-remediation-config.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_governance_remediation_config_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/governance-remediation-runner.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_no_args",
+        "expectedStderr": "scripts/governance-remediation-runner.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-runner.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--projectRoot <path>] [--configPath <path>] [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_actualexecutor",
+        "expectedStderr": "scripts/governance-remediation-runner.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-runner.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--projectRoot <path>] [--configPath <path>] [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_adapterpath",
+        "expectedStderr": "scripts/governance-remediation-runner.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-runner.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--projectRoot <path>] [--configPath <path>] [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_attemptid",
+        "expectedStderr": "scripts/governance-remediation-runner.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-runner.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--projectRoot <path>] [--configPath <path>] [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_blockerownershiplocked",
+        "expectedStderr": "scripts/governance-remediation-runner.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-runner.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--projectRoot <path>] [--configPath <path>] [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_canonicalagent",
+        "expectedStderr": "scripts/governance-remediation-runner.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-runner.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--projectRoot <path>] [--configPath <path>] [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_capabilityslot",
+        "expectedStderr": "scripts/governance-remediation-runner.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-runner.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--projectRoot <path>] [--configPath <path>] [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_configpath",
+        "expectedStderr": "scripts/governance-remediation-runner.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-runner.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--projectRoot <path>] [--configPath <path>] [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_contradictionsdelta",
+        "expectedStderr": "scripts/governance-remediation-runner.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-runner.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--projectRoot <path>] [--configPath <path>] [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_equivalentadaptercount",
+        "expectedStderr": "scripts/governance-remediation-runner.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-runner.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--projectRoot <path>] [--configPath <path>] [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_expecteddelta",
+        "expectedStderr": "scripts/governance-remediation-runner.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-runner.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--projectRoot <path>] [--configPath <path>] [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_externalproofadded",
+        "expectedStderr": "scripts/governance-remediation-runner.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-runner.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--projectRoot <path>] [--configPath <path>] [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_gatefailureexists",
+        "expectedStderr": "scripts/governance-remediation-runner.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-runner.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--projectRoot <path>] [--configPath <path>] [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_jsoninputpath",
+        "expectedStderr": "scripts/governance-remediation-runner.ts:<line>\n<runtime-source-frame>\nTypeError: Cannot read properties of undefined (reading 'join')\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_loopstateid",
+        "expectedStderr": "scripts/governance-remediation-runner.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-runner.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--projectRoot <path>] [--configPath <path>] [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_maxattempts",
+        "expectedStderr": "scripts/governance-remediation-runner.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-runner.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--projectRoot <path>] [--configPath <path>] [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_maxnoprogressrepeats",
+        "expectedStderr": "scripts/governance-remediation-runner.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-runner.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--projectRoot <path>] [--configPath <path>] [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_outcome",
+        "expectedStderr": "scripts/governance-remediation-runner.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-runner.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--projectRoot <path>] [--configPath <path>] [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_outputpath",
+        "expectedStderr": "scripts/governance-remediation-runner.ts:<line>\n<runtime-source-frame>\nError: Invalid --stageContextKnown: expected true|false\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_projectroot",
+        "expectedStderr": "scripts/governance-remediation-runner.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-runner.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--projectRoot <path>] [--configPath <path>] [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_prompttext",
+        "expectedStderr": "scripts/governance-remediation-runner.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-runner.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--projectRoot <path>] [--configPath <path>] [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_readytorerungate",
+        "expectedStderr": "scripts/governance-remediation-runner.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-runner.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--projectRoot <path>] [--configPath <path>] [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_rerungate",
+        "expectedStderr": "scripts/governance-remediation-runner.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-runner.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--projectRoot <path>] [--configPath <path>] [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_rerunowner",
+        "expectedStderr": "scripts/governance-remediation-runner.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-runner.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--projectRoot <path>] [--configPath <path>] [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_roottargetlocked",
+        "expectedStderr": "scripts/governance-remediation-runner.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-runner.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--projectRoot <path>] [--configPath <path>] [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_sharedartifactsupdated",
+        "expectedStderr": "scripts/governance-remediation-runner.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-runner.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--projectRoot <path>] [--configPath <path>] [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_sourcegatefailureids",
+        "expectedStderr": "scripts/governance-remediation-runner.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-runner.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--projectRoot <path>] [--configPath <path>] [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_stagecontextknown",
+        "expectedStderr": "scripts/governance-remediation-runner.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-runner.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--projectRoot <path>] [--configPath <path>] [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_stopreason",
+        "expectedStderr": "scripts/governance-remediation-runner.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-runner.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--projectRoot <path>] [--configPath <path>] [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_targetartifacts",
+        "expectedStderr": "scripts/governance-remediation-runner.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-runner.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--projectRoot <path>] [--configPath <path>] [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_env_bmad_disable_embedded_governance_clis",
+        "expectedStderr": "scripts/governance-remediation-runner.ts:<line>\n<runtime-source-frame>\nError: Usage: npx ts-node --transpile-only scripts/governance-remediation-runner.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--projectRoot <path>] [--configPath <path>] [--promptText <text>] [--sourceGateFailureIds a,b] [--targetArtifacts a,b]\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/governance-transport-envelope.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_governance_transport_envelope_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/i18n/agent-display-names.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_i18n_agent_display_names_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/i18n/agent-manifest.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_i18n_agent_manifest_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/i18n/detect-language.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_i18n_detect_language_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/i18n/field-meta-types.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_i18n_field_meta_types_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  }
+]

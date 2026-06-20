@@ -1,0 +1,188 @@
+[
+  {
+    "originalPath": "scripts/adaptive-intake-governance-gate.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_adaptive_intake_governance_gate_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/adaptive-intake-proof-gate.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_adaptive_intake_proof_gate_ts_no_args",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_adaptive_intake_proof_gate_ts_cwd",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_adaptive_intake_proof_gate_ts_flag_contract_fixture",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/ai-tdd-contract-gate.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_ai_tdd_contract_gate_ts_no_args",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord, mode\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_ai_tdd_contract_gate_ts_flag_attempt_id",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord, mode\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_ai_tdd_contract_gate_ts_flag_execute_red_proof",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"Unexpected positional argument: source-derived-execute-red-proof\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_ai_tdd_contract_gate_ts_flag_help",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_ai_tdd_contract_gate_ts_flag_json",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord, mode\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_ai_tdd_contract_gate_ts_flag_mode",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord, mode\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_ai_tdd_contract_gate_ts_flag_report_path",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord, mode\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_ai_tdd_contract_gate_ts_flag_requirement_record",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord, mode\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_ai_tdd_contract_gate_ts_flag_source",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord, mode\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_ai_tdd_contract_gate_ts_env_home",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord, mode\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_ai_tdd_contract_gate_ts_env_userprofile",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord, mode\"\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/analytics-sft-extract.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_analytics_sft_extract_ts_no_args",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_analytics_sft_extract_ts_flag_datapath",
+        "expectedStderr": "Error: ENOTDIR: not a directory, scandir '<fixture-root>\\datapath.json'\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n  errno: -4052,\n  code: 'ENOTDIR',\n  syscall: 'scandir',\n  path: '<fixture-root>\\\\datapath.json'\n}\n"
+      },
+      {
+        "scenarioId": "g004_analytics_sft_extract_ts_flag_output",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/assert-implementation-entry.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_assert_implementation_entry_ts_no_args",
+        "expectedStderr": "assert-implementation-entry: requirement record flow invalid or missing: <missing>\n"
+      },
+      {
+        "scenarioId": "g004_assert_implementation_entry_ts_cwd",
+        "expectedStderr": "assert-implementation-entry: NO_ACTIVE_REQUIREMENT: no active requirement record found under <fixture-root>\\_bmad-output\\runtime\\requirement-records; nextRequiredAction=contract_authoring_required\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/audit-stage-routing.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_audit_stage_routing_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/auditor-post-actions.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_auditor_post_actions_ts_no_args",
+        "expectedStderr": "auditor-post-actions: usage --projectRoot <path> --reportPath <audit-report-path> [--stage <stage>]\n"
+      },
+      {
+        "scenarioId": "g004_auditor_post_actions_ts_flag_projectroot",
+        "expectedStderr": "auditor-post-actions: usage --projectRoot <path> --reportPath <audit-report-path> [--stage <stage>]\n"
+      },
+      {
+        "scenarioId": "g004_auditor_post_actions_ts_flag_reportpath",
+        "expectedStderr": "auditor-post-actions: usage --projectRoot <path> --reportPath <audit-report-path> [--stage <stage>]\n"
+      },
+      {
+        "scenarioId": "g004_auditor_post_actions_ts_flag_stage",
+        "expectedStderr": "auditor-post-actions: usage --projectRoot <path> --reportPath <audit-report-path> [--stage <stage>]\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/auditor-spec.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_auditor_spec_ts_no_args",
+        "expectedStderr": "Usage: npx ts-node scripts/auditor-spec.ts <spec-path> [iteration]\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/bmad-config.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_bmad_config_ts_no_args",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_bmad_config_ts_flag_audit_granularity",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_bmad_config_ts_flag_continue",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_bmad_config_ts_env_bmad_audit_granularity",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_bmad_config_ts_env_bmad_auto_continue",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_bmad_config_ts_env_bmad_platform",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_bmad_config_ts_env_claude_code_cli",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/bmad-runtime-worker.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_bmad_runtime_worker_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  }
+]

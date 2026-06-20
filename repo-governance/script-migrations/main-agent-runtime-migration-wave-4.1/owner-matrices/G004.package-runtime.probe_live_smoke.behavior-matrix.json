@@ -1,0 +1,1172 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-wave-4-1-owner-initial-behavior-matrix/v1",
+  "waveId": "main-agent-runtime-migration-wave-4.1",
+  "ownerTaskId": "G004",
+  "generatedAt": "2026-06-20T07:37:31.093Z",
+  "artifactSuffix": "probe_live_smoke",
+  "timeoutMs": 30000,
+  "coverageDecision": "failed_full_original_behavior_replay",
+  "eligibleOwnerRowCount": 91,
+  "selectedRowCount": 1,
+  "matrixRowCount": 1,
+  "scenarioCount": 8,
+  "fullCoverageStillRequired": false,
+  "rows": [
+    {
+      "originalPath": "scripts/live-smoke-main-agent-runtime.ts",
+      "entryId": "live-smoke-main-agent-runtime",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G004_STATIC_FULL:scripts/live-smoke-main-agent-runtime.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 8,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 8,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [
+          "--action",
+          "--cursor-host",
+          "--cwd",
+          "--dangerously-skip-permissions",
+          "--force",
+          "--output-format",
+          "--permission-mode"
+        ],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>",
+          "--cwd <fixture-root>",
+          "--action <source-derived-safe-value>",
+          "--cursor-host <source-derived-safe-value>",
+          "--dangerously-skip-permissions <source-derived-safe-value>",
+          "--force <present>",
+          "--output-format <source-derived-safe-value>",
+          "--permission-mode <source-derived-safe-value>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>",
+          "--cwd <fixture-root>",
+          "--action <source-derived-safe-value>",
+          "--cursor-host <source-derived-safe-value>",
+          "--dangerously-skip-permissions <source-derived-safe-value>",
+          "--force <present>",
+          "--output-format <source-derived-safe-value>",
+          "--permission-mode <source-derived-safe-value>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 8,
+        "coveredScenarioDefinitionIds": [
+          "no_args",
+          "cwd",
+          "flag_action",
+          "flag_cursor_host",
+          "flag_dangerously_skip_permissions",
+          "flag_force",
+          "flag_output_format",
+          "flag_permission_mode"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g004_live_smoke_main_agent_runtime_ts_no_args",
+          "originalEntryPoint": "scripts/live-smoke-main-agent-runtime.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/live-smoke-main-agent-runtime.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g004_live_smoke_main_agent_runtime_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g004_live_smoke_main_agent_runtime_ts_no_args-original-Z5I1SK",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g004_live_smoke_main_agent_runtime_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g004_live_smoke_main_agent_runtime_ts_no_args-package-JzODLc",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "{\n  \"generatedAt\": \"<iso-timestamp>\",\n  \"repoRoot\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\",\n  \"summary\": {\n    \"passed\": 1,\n    \"warned\": 1,\n    \"failed\": 6\n  },\n  \"results\": [\n    {\n      \"name\": \"host-binary:claude\",\n      \"status\": \"pass\",\n      \"details\": {\n        \"command\": \"claude\"\n      }\n    },\n    {\n      \"name\": \"host-binary:cursor\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"command\": \"cursor\"\n      }\n    },\n    {\n      \"name\": \"live-smoke:claude-cli-print\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"{\\\"type\\\":\\\"result\\\",\\\"subtype\\\":\\\"success\\\",\\\"is_error\\\":true,\\\"api_error_status\\\":400,\\\"duration_ms\\\":1337,\\\"duration_api_ms\\\":0,\\\"num_turns\\\":1,\\\"result\\\":\\\"Credit balance is too low\\\",\\\"stop_reason\\\":\\\"stop_sequence\\\",\\\"session_id\\\":\\\"<uuid>\\\",\\\"total_cost_usd\\\":0,\\\"usage\\\":{\\\"input_tokens\\\":0,\\\"cache_creation_input_tokens\\\":0,\\\"cache_read_input_tokens\\\":0,\\\"output_tokens\\\":0,\\\"server_tool_use\\\":{\\\"web_search_requests\\\":0,\\\"web_fetch_requests\\\":0},\\\"service_tier\\\":\\\"standard\\\",\\\"cache_creation\\\":{\\\"ephemeral_1h_input_tokens\\\":0,\\\"ephemeral_5m_input_tokens\\\":0},\\\"inference_geo\\\":\\\"\\\",\\\"iterations\\\":[],\\\"speed\\\":\\\"standard\\\"},\\\"modelUsage\\\":{},\\\"permission_denials\\\":[],\\\"terminal_reason\\\":\\\"completed\\\",\\\"fast_mode_state\\\":\\\"off\\\",\\\"uuid\\\":\\\"<uuid>\\\"}\",\n        \"stderr\": \"\",\n        \"error\": null\n      }\n    },\n    {\n      \"name\": \"live-smoke:cursor-terminal-agent\",\n      \"status\": \"warn\",\n      \"details\": {\n        \"status\": null,\n        \"stdout\": \"\",\n        \"stderr\": \"\",\n        \"error\": \"Error: spawnSync cursor.cmd EINVAL\"\n      }\n    },\n    {\n      \"name\": \"live-smoke:claude-hook-story\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"{\\\"systemMessage\\\":\\\"[emit-runtime-policy FAILED]\\\\nnode:internal/modules/cjs/loader:1386\\\\r\\\\n  throw err;\\\\r\\\\n  ^\\\\r\\\\n\\\\r\\\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\\\r\\\\nRequire stack:\\\\r\\\\n- D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs\\\\r\\\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\\\r\\\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\\\r\\\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\\\r\\\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\\\r\\\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\\\r\\\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\\\r\\\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\\\r\\\\n    at require (node:internal/modules/helpers:147:16)\\\\r\\\\n    at Object.<anonymous> (D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs:33557:35)\\\\r\\\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\\\r\\\\n  code: 'MODULE_NOT_FOUND',\\\\r\\\\n  requireStack: [\\\\r\\\\n    'D:\\\\\\\\\\\\\\\\Dev\\\\\\\\\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\\\\\\\\\packages\\\\\\\\\\\\\\\\runtime-emit\\\\\\\\\\\\\\\\dist\\\\\\\\\\\\\\\\emit-runtime-policy.cjs'\\\\r\\\\n  ]\\\\r\\\\n}\\\\r\\\\n\\\\r\\\\nNode.js v22.22.1\\\\r\\\\n\\\"}\",\n        \"stderr\": \"[emit-runtime-policy FAILED]\\nnode:internal/modules/cjs/loader:1386\\r\\n  throw err;\\r\\n  ^\\r\\n\\r\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\r\\nRequire stack:\\r\\n- D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs\\r\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\r\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\r\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\r\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\r\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\r\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\r\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\r\\n    at require (node:internal/modules/helpers:147:16)\\r\\n    at Object.<anonymous> (D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs:33557:35)\\r\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\r\\n  code: 'MODULE_NOT_FOUND',\\r\\n  requireStack: [\\r\\n    'D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs'\\r\\n  ]\\r\\n}\\r\\n\\r\\nNode.js v22.22.1\",\n        \"error\": null,\n        \"stateDirExists\": false,\n        \"packetDirExists\": false\n      }\n    },\n    {\n      \"name\": \"live-smoke:cursor-hook-story\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"{\\\"systemMessage\\\":\\\"[emit-runtime-policy FAILED]\\\\nnode:internal/modules/cjs/loader:1386\\\\r\\\\n  throw err;\\\\r\\\\n  ^\\\\r\\\\n\\\\r\\\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\\\r\\\\nRequire stack:\\\\r\\\\n- D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs\\\\r\\\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\\\r\\\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\\\r\\\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\\\r\\\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\\\r\\\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\\\r\\\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\\\r\\\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\\\r\\\\n    at require (node:internal/modules/helpers:147:16)\\\\r\\\\n    at Object.<anonymous> (D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs:33557:35)\\\\r\\\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\\\r\\\\n  code: 'MODULE_NOT_FOUND',\\\\r\\\\n  requireStack: [\\\\r\\\\n    'D:\\\\\\\\\\\\\\\\Dev\\\\\\\\\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\\\\\\\\\packages\\\\\\\\\\\\\\\\runtime-emit\\\\\\\\\\\\\\\\dist\\\\\\\\\\\\\\\\emit-runtime-policy.cjs'\\\\r\\\\n  ]\\\\r\\\\n}\\\\r\\\\n\\\\r\\\\nNode.js v22.22.1\\\\r\\\\n\\\"}\",\n        \"stderr\": \"[emit-runtime-policy FAILED]\\nnode:internal/modules/cjs/loader:1386\\r\\n  throw err;\\r\\n  ^\\r\\n\\r\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\r\\nRequire stack:\\r\\n- D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs\\r\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\r\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\r\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\r\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\r\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\r\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\r\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\r\\n    at require (node:internal/modules/helpers:147:16)\\r\\n    at Object.<anonymous> (D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs:33557:35)\\r\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\r\\n  code: 'MODULE_NOT_FOUND',\\r\\n  requireStack: [\\r\\n    'D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs'\\r\\n  ]\\r\\n}\\r\\n\\r\\nNode.js v22.22.1\",\n        \"error\": null,\n        \"stateDirExists\": false,\n        \"packetDirExists\": false\n      }\n    },\n    {\n      \"name\": \"live-smoke:cursor-hook-bugfix\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"{\\\"systemMessage\\\":\\\"[emit-runtime-policy FAILED]\\\\nnode:internal/modules/cjs/loader:1386\\\\r\\\\n  throw err;\\\\r\\\\n  ^\\\\r\\\\n\\\\r\\\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\\\r\\\\nRequire stack:\\\\r\\\\n- D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs\\\\r\\\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\\\r\\\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\\\r\\\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\\\r\\\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\\\r\\\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\\\r\\\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\\\r\\\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\\\r\\\\n    at require (node:internal/modules/helpers:147:16)\\\\r\\\\n    at Object.<anonymous> (D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs:33557:35)\\\\r\\\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\\\r\\\\n  code: 'MODULE_NOT_FOUND',\\\\r\\\\n  requireStack: [\\\\r\\\\n    'D:\\\\\\\\\\\\\\\\Dev\\\\\\\\\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\\\\\\\\\packages\\\\\\\\\\\\\\\\runtime-emit\\\\\\\\\\\\\\\\dist\\\\\\\\\\\\\\\\emit-runtime-policy.cjs'\\\\r\\\\n  ]\\\\r\\\\n}\\\\r\\\\n\\\\r\\\\nNode.js v22.22.1\\\\r\\\\n\\\"}\",\n        \"stderr\": \"[emit-runtime-policy FAILED]\\nnode:internal/modules/cjs/loader:1386\\r\\n  throw err;\\r\\n  ^\\r\\n\\r\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\r\\nRequire stack:\\r\\n- D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs\\r\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\r\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\r\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\r\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\r\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\r\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\r\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\r\\n    at require (node:internal/modules/helpers:147:16)\\r\\n    at Object.<anonymous> (D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs:33557:35)\\r\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\r\\n  code: 'MODULE_NOT_FOUND',\\r\\n  requireStack: [\\r\\n    'D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs'\\r\\n  ]\\r\\n}\\r\\n\\r\\nNode.js v22.22.1\",\n        \"error\": null,\n        \"stateDirExists\": false,\n        \"packetDirExists\": false\n      }\n    },\n    {\n      \"name\": \"live-smoke:main-agent-orchestration-script\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"> bmad-speckit-sdd-flow@2.0.2 main-agent-orchestration\\n> npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-orchestration.ts --cwd C:\\\\Users\\\\milome\\\\AppData\\\\Local\\\\Temp\\\\main-agent-live-smoke-story-yJ59W2 --action dispatch-plan\\n\\nnull\",\n        \"stderr\": \"\",\n        \"error\": null\n      }\n    }\n  ]\n}\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G004_ORIGINAL_REPLAY:scripts/live-smoke-main-agent-runtime.ts:no_args",
+            "originalReplayArtifactHash": "sha256:6acef1250c20e26b772e5b530814a34128e8313e0009dd1e7283cf6e94315830",
+            "sourceDerivedProofId": "G004_SOURCE_DERIVED:scripts/live-smoke-main-agent-runtime.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 327,
+                "anchor": "scripts/live-smoke-main-agent-runtime.ts:327",
+                "text": "function main() {"
+              },
+              {
+                "line": 349,
+                "anchor": "scripts/live-smoke-main-agent-runtime.ts:349",
+                "text": "process.stdout.write(`${JSON.stringify(report, null, 2)}\\n`);"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.ts",
+                "to": "scripts/live-smoke-main-agent-runtime.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.js",
+                "to": "scripts/live-smoke-main-agent-runtime.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G004_STATIC_FULL:scripts/live-smoke-main-agent-runtime.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 8,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 8,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--action",
+              "--cursor-host",
+              "--cwd",
+              "--dangerously-skip-permissions",
+              "--force",
+              "--output-format",
+              "--permission-mode"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--cwd <fixture-root>",
+              "--action <source-derived-safe-value>",
+              "--cursor-host <source-derived-safe-value>",
+              "--dangerously-skip-permissions <source-derived-safe-value>",
+              "--force <present>",
+              "--output-format <source-derived-safe-value>",
+              "--permission-mode <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--cwd <fixture-root>",
+              "--action <source-derived-safe-value>",
+              "--cursor-host <source-derived-safe-value>",
+              "--dangerously-skip-permissions <source-derived-safe-value>",
+              "--force <present>",
+              "--output-format <source-derived-safe-value>",
+              "--permission-mode <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 8,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "cwd",
+              "flag_action",
+              "flag_cursor_host",
+              "flag_dangerously_skip_permissions",
+              "flag_force",
+              "flag_output_format",
+              "flag_permission_mode"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g004_live_smoke_main_agent_runtime_ts_cwd",
+          "originalEntryPoint": "scripts/live-smoke-main-agent-runtime.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/live-smoke-main-agent-runtime.ts --cwd <fixture-root>",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.js --cwd <fixture-root>",
+          "argumentCombination": "--cwd <fixture-root>",
+          "args": [
+            "--cwd",
+            "<fixture-root>"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g004_live_smoke_main_agent_runtime_ts_cwd_original_fixture_root",
+              "path": "<tmp>/g004_live_smoke_main_agent_runtime_ts_cwd-original-uOGVM7",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g004_live_smoke_main_agent_runtime_ts_cwd_package_fixture_root",
+              "path": "<tmp>/g004_live_smoke_main_agent_runtime_ts_cwd-package-n5VxeH",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "{\n  \"generatedAt\": \"<iso-timestamp>\",\n  \"repoRoot\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\",\n  \"summary\": {\n    \"passed\": 1,\n    \"warned\": 1,\n    \"failed\": 6\n  },\n  \"results\": [\n    {\n      \"name\": \"host-binary:claude\",\n      \"status\": \"pass\",\n      \"details\": {\n        \"command\": \"claude\"\n      }\n    },\n    {\n      \"name\": \"host-binary:cursor\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"command\": \"cursor\"\n      }\n    },\n    {\n      \"name\": \"live-smoke:claude-cli-print\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"{\\\"type\\\":\\\"result\\\",\\\"subtype\\\":\\\"success\\\",\\\"is_error\\\":true,\\\"api_error_status\\\":400,\\\"duration_ms\\\":1739,\\\"duration_api_ms\\\":0,\\\"num_turns\\\":1,\\\"result\\\":\\\"Credit balance is too low\\\",\\\"stop_reason\\\":\\\"stop_sequence\\\",\\\"session_id\\\":\\\"<uuid>\\\",\\\"total_cost_usd\\\":0,\\\"usage\\\":{\\\"input_tokens\\\":0,\\\"cache_creation_input_tokens\\\":0,\\\"cache_read_input_tokens\\\":0,\\\"output_tokens\\\":0,\\\"server_tool_use\\\":{\\\"web_search_requests\\\":0,\\\"web_fetch_requests\\\":0},\\\"service_tier\\\":\\\"standard\\\",\\\"cache_creation\\\":{\\\"ephemeral_1h_input_tokens\\\":0,\\\"ephemeral_5m_input_tokens\\\":0},\\\"inference_geo\\\":\\\"\\\",\\\"iterations\\\":[],\\\"speed\\\":\\\"standard\\\"},\\\"modelUsage\\\":{},\\\"permission_denials\\\":[],\\\"terminal_reason\\\":\\\"completed\\\",\\\"fast_mode_state\\\":\\\"off\\\",\\\"uuid\\\":\\\"<uuid>\\\"}\",\n        \"stderr\": \"\",\n        \"error\": null\n      }\n    },\n    {\n      \"name\": \"live-smoke:cursor-terminal-agent\",\n      \"status\": \"warn\",\n      \"details\": {\n        \"status\": null,\n        \"stdout\": \"\",\n        \"stderr\": \"\",\n        \"error\": \"Error: spawnSync cursor.cmd EINVAL\"\n      }\n    },\n    {\n      \"name\": \"live-smoke:claude-hook-story\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"{\\\"systemMessage\\\":\\\"[emit-runtime-policy FAILED]\\\\nnode:internal/modules/cjs/loader:1386\\\\r\\\\n  throw err;\\\\r\\\\n  ^\\\\r\\\\n\\\\r\\\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\\\r\\\\nRequire stack:\\\\r\\\\n- D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs\\\\r\\\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\\\r\\\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\\\r\\\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\\\r\\\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\\\r\\\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\\\r\\\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\\\r\\\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\\\r\\\\n    at require (node:internal/modules/helpers:147:16)\\\\r\\\\n    at Object.<anonymous> (D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs:33557:35)\\\\r\\\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\\\r\\\\n  code: 'MODULE_NOT_FOUND',\\\\r\\\\n  requireStack: [\\\\r\\\\n    'D:\\\\\\\\\\\\\\\\Dev\\\\\\\\\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\\\\\\\\\packages\\\\\\\\\\\\\\\\runtime-emit\\\\\\\\\\\\\\\\dist\\\\\\\\\\\\\\\\emit-runtime-policy.cjs'\\\\r\\\\n  ]\\\\r\\\\n}\\\\r\\\\n\\\\r\\\\nNode.js v22.22.1\\\\r\\\\n\\\"}\",\n        \"stderr\": \"[emit-runtime-policy FAILED]\\nnode:internal/modules/cjs/loader:1386\\r\\n  throw err;\\r\\n  ^\\r\\n\\r\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\r\\nRequire stack:\\r\\n- D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs\\r\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\r\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\r\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\r\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\r\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\r\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\r\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\r\\n    at require (node:internal/modules/helpers:147:16)\\r\\n    at Object.<anonymous> (D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs:33557:35)\\r\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\r\\n  code: 'MODULE_NOT_FOUND',\\r\\n  requireStack: [\\r\\n    'D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs'\\r\\n  ]\\r\\n}\\r\\n\\r\\nNode.js v22.22.1\",\n        \"error\": null,\n        \"stateDirExists\": false,\n        \"packetDirExists\": false\n      }\n    },\n    {\n      \"name\": \"live-smoke:cursor-hook-story\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"{\\\"systemMessage\\\":\\\"[emit-runtime-policy FAILED]\\\\nnode:internal/modules/cjs/loader:1386\\\\r\\\\n  throw err;\\\\r\\\\n  ^\\\\r\\\\n\\\\r\\\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\\\r\\\\nRequire stack:\\\\r\\\\n- D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs\\\\r\\\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\\\r\\\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\\\r\\\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\\\r\\\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\\\r\\\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\\\r\\\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\\\r\\\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\\\r\\\\n    at require (node:internal/modules/helpers:147:16)\\\\r\\\\n    at Object.<anonymous> (D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs:33557:35)\\\\r\\\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\\\r\\\\n  code: 'MODULE_NOT_FOUND',\\\\r\\\\n  requireStack: [\\\\r\\\\n    'D:\\\\\\\\\\\\\\\\Dev\\\\\\\\\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\\\\\\\\\packages\\\\\\\\\\\\\\\\runtime-emit\\\\\\\\\\\\\\\\dist\\\\\\\\\\\\\\\\emit-runtime-policy.cjs'\\\\r\\\\n  ]\\\\r\\\\n}\\\\r\\\\n\\\\r\\\\nNode.js v22.22.1\\\\r\\\\n\\\"}\",\n        \"stderr\": \"[emit-runtime-policy FAILED]\\nnode:internal/modules/cjs/loader:1386\\r\\n  throw err;\\r\\n  ^\\r\\n\\r\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\r\\nRequire stack:\\r\\n- D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs\\r\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\r\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\r\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\r\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\r\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\r\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\r\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\r\\n    at require (node:internal/modules/helpers:147:16)\\r\\n    at Object.<anonymous> (D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs:33557:35)\\r\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\r\\n  code: 'MODULE_NOT_FOUND',\\r\\n  requireStack: [\\r\\n    'D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs'\\r\\n  ]\\r\\n}\\r\\n\\r\\nNode.js v22.22.1\",\n        \"error\": null,\n        \"stateDirExists\": false,\n        \"packetDirExists\": false\n      }\n    },\n    {\n      \"name\": \"live-smoke:cursor-hook-bugfix\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"{\\\"systemMessage\\\":\\\"[emit-runtime-policy FAILED]\\\\nnode:internal/modules/cjs/loader:1386\\\\r\\\\n  throw err;\\\\r\\\\n  ^\\\\r\\\\n\\\\r\\\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\\\r\\\\nRequire stack:\\\\r\\\\n- D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs\\\\r\\\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\\\r\\\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\\\r\\\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\\\r\\\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\\\r\\\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\\\r\\\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\\\r\\\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\\\r\\\\n    at require (node:internal/modules/helpers:147:16)\\\\r\\\\n    at Object.<anonymous> (D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs:33557:35)\\\\r\\\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\\\r\\\\n  code: 'MODULE_NOT_FOUND',\\\\r\\\\n  requireStack: [\\\\r\\\\n    'D:\\\\\\\\\\\\\\\\Dev\\\\\\\\\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\\\\\\\\\packages\\\\\\\\\\\\\\\\runtime-emit\\\\\\\\\\\\\\\\dist\\\\\\\\\\\\\\\\emit-runtime-policy.cjs'\\\\r\\\\n  ]\\\\r\\\\n}\\\\r\\\\n\\\\r\\\\nNode.js v22.22.1\\\\r\\\\n\\\"}\",\n        \"stderr\": \"[emit-runtime-policy FAILED]\\nnode:internal/modules/cjs/loader:1386\\r\\n  throw err;\\r\\n  ^\\r\\n\\r\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\r\\nRequire stack:\\r\\n- D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs\\r\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\r\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\r\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\r\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\r\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\r\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\r\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\r\\n    at require (node:internal/modules/helpers:147:16)\\r\\n    at Object.<anonymous> (D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs:33557:35)\\r\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\r\\n  code: 'MODULE_NOT_FOUND',\\r\\n  requireStack: [\\r\\n    'D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs'\\r\\n  ]\\r\\n}\\r\\n\\r\\nNode.js v22.22.1\",\n        \"error\": null,\n        \"stateDirExists\": false,\n        \"packetDirExists\": false\n      }\n    },\n    {\n      \"name\": \"live-smoke:main-agent-orchestration-script\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"> bmad-speckit-sdd-flow@2.0.2 main-agent-orchestration\\n> npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-orchestration.ts --cwd C:\\\\Users\\\\milome\\\\AppData\\\\Local\\\\Temp\\\\main-agent-live-smoke-story-63BOzD --action dispatch-plan\\n\\nnull\",\n        \"stderr\": \"\",\n        \"error\": null\n      }\n    }\n  ]\n}\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G004_ORIGINAL_REPLAY:scripts/live-smoke-main-agent-runtime.ts:cwd",
+            "originalReplayArtifactHash": "sha256:e6bfa8883782501a50c22d3c374d9abcf70820cf1619b1175a8c1fc5c3669040",
+            "sourceDerivedProofId": "G004_SOURCE_DERIVED:scripts/live-smoke-main-agent-runtime.ts:cwd",
+            "sourceLineAnchors": [
+              {
+                "line": 327,
+                "anchor": "scripts/live-smoke-main-agent-runtime.ts:327",
+                "text": "function main() {"
+              },
+              {
+                "line": 349,
+                "anchor": "scripts/live-smoke-main-agent-runtime.ts:349",
+                "text": "process.stdout.write(`${JSON.stringify(report, null, 2)}\\n`);"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.ts",
+                "to": "scripts/live-smoke-main-agent-runtime.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.js",
+                "to": "scripts/live-smoke-main-agent-runtime.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G004_STATIC_FULL:scripts/live-smoke-main-agent-runtime.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 8,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 8,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--action",
+              "--cursor-host",
+              "--cwd",
+              "--dangerously-skip-permissions",
+              "--force",
+              "--output-format",
+              "--permission-mode"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--cwd <fixture-root>",
+              "--action <source-derived-safe-value>",
+              "--cursor-host <source-derived-safe-value>",
+              "--dangerously-skip-permissions <source-derived-safe-value>",
+              "--force <present>",
+              "--output-format <source-derived-safe-value>",
+              "--permission-mode <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--cwd <fixture-root>",
+              "--action <source-derived-safe-value>",
+              "--cursor-host <source-derived-safe-value>",
+              "--dangerously-skip-permissions <source-derived-safe-value>",
+              "--force <present>",
+              "--output-format <source-derived-safe-value>",
+              "--permission-mode <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 8,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "cwd",
+              "flag_action",
+              "flag_cursor_host",
+              "flag_dangerously_skip_permissions",
+              "flag_force",
+              "flag_output_format",
+              "flag_permission_mode"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g004_live_smoke_main_agent_runtime_ts_flag_action",
+          "originalEntryPoint": "scripts/live-smoke-main-agent-runtime.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/live-smoke-main-agent-runtime.ts --cwd <fixture-root> --action source-derived-action",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.js --cwd <fixture-root> --action source-derived-action",
+          "argumentCombination": "--cwd <fixture-root> --action <source-derived-safe-value>",
+          "args": [
+            "--cwd",
+            "<fixture-root>",
+            "--action",
+            "source-derived-action"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g004_live_smoke_main_agent_runtime_ts_flag_action_original_fixture_root",
+              "path": "<tmp>/g004_live_smoke_main_agent_runtime_ts_flag_action-original-LSlEB2",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g004_live_smoke_main_agent_runtime_ts_flag_action_package_fixture_root",
+              "path": "<tmp>/g004_live_smoke_main_agent_runtime_ts_flag_action-package-ak3dnH",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "{\n  \"generatedAt\": \"<iso-timestamp>\",\n  \"repoRoot\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\",\n  \"summary\": {\n    \"passed\": 1,\n    \"warned\": 1,\n    \"failed\": 6\n  },\n  \"results\": [\n    {\n      \"name\": \"host-binary:claude\",\n      \"status\": \"pass\",\n      \"details\": {\n        \"command\": \"claude\"\n      }\n    },\n    {\n      \"name\": \"host-binary:cursor\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"command\": \"cursor\"\n      }\n    },\n    {\n      \"name\": \"live-smoke:claude-cli-print\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"{\\\"type\\\":\\\"result\\\",\\\"subtype\\\":\\\"success\\\",\\\"is_error\\\":true,\\\"api_error_status\\\":400,\\\"duration_ms\\\":1443,\\\"duration_api_ms\\\":0,\\\"num_turns\\\":1,\\\"result\\\":\\\"Credit balance is too low\\\",\\\"stop_reason\\\":\\\"stop_sequence\\\",\\\"session_id\\\":\\\"<uuid>\\\",\\\"total_cost_usd\\\":0,\\\"usage\\\":{\\\"input_tokens\\\":0,\\\"cache_creation_input_tokens\\\":0,\\\"cache_read_input_tokens\\\":0,\\\"output_tokens\\\":0,\\\"server_tool_use\\\":{\\\"web_search_requests\\\":0,\\\"web_fetch_requests\\\":0},\\\"service_tier\\\":\\\"standard\\\",\\\"cache_creation\\\":{\\\"ephemeral_1h_input_tokens\\\":0,\\\"ephemeral_5m_input_tokens\\\":0},\\\"inference_geo\\\":\\\"\\\",\\\"iterations\\\":[],\\\"speed\\\":\\\"standard\\\"},\\\"modelUsage\\\":{},\\\"permission_denials\\\":[],\\\"terminal_reason\\\":\\\"completed\\\",\\\"fast_mode_state\\\":\\\"off\\\",\\\"uuid\\\":\\\"<uuid>\\\"}\",\n        \"stderr\": \"\",\n        \"error\": null\n      }\n    },\n    {\n      \"name\": \"live-smoke:cursor-terminal-agent\",\n      \"status\": \"warn\",\n      \"details\": {\n        \"status\": null,\n        \"stdout\": \"\",\n        \"stderr\": \"\",\n        \"error\": \"Error: spawnSync cursor.cmd EINVAL\"\n      }\n    },\n    {\n      \"name\": \"live-smoke:claude-hook-story\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"{\\\"systemMessage\\\":\\\"[emit-runtime-policy FAILED]\\\\nnode:internal/modules/cjs/loader:1386\\\\r\\\\n  throw err;\\\\r\\\\n  ^\\\\r\\\\n\\\\r\\\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\\\r\\\\nRequire stack:\\\\r\\\\n- D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs\\\\r\\\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\\\r\\\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\\\r\\\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\\\r\\\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\\\r\\\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\\\r\\\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\\\r\\\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\\\r\\\\n    at require (node:internal/modules/helpers:147:16)\\\\r\\\\n    at Object.<anonymous> (D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs:33557:35)\\\\r\\\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\\\r\\\\n  code: 'MODULE_NOT_FOUND',\\\\r\\\\n  requireStack: [\\\\r\\\\n    'D:\\\\\\\\\\\\\\\\Dev\\\\\\\\\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\\\\\\\\\packages\\\\\\\\\\\\\\\\runtime-emit\\\\\\\\\\\\\\\\dist\\\\\\\\\\\\\\\\emit-runtime-policy.cjs'\\\\r\\\\n  ]\\\\r\\\\n}\\\\r\\\\n\\\\r\\\\nNode.js v22.22.1\\\\r\\\\n\\\"}\",\n        \"stderr\": \"[emit-runtime-policy FAILED]\\nnode:internal/modules/cjs/loader:1386\\r\\n  throw err;\\r\\n  ^\\r\\n\\r\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\r\\nRequire stack:\\r\\n- D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs\\r\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\r\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\r\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\r\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\r\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\r\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\r\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\r\\n    at require (node:internal/modules/helpers:147:16)\\r\\n    at Object.<anonymous> (D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs:33557:35)\\r\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\r\\n  code: 'MODULE_NOT_FOUND',\\r\\n  requireStack: [\\r\\n    'D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs'\\r\\n  ]\\r\\n}\\r\\n\\r\\nNode.js v22.22.1\",\n        \"error\": null,\n        \"stateDirExists\": false,\n        \"packetDirExists\": false\n      }\n    },\n    {\n      \"name\": \"live-smoke:cursor-hook-story\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"{\\\"systemMessage\\\":\\\"[emit-runtime-policy FAILED]\\\\nnode:internal/modules/cjs/loader:1386\\\\r\\\\n  throw err;\\\\r\\\\n  ^\\\\r\\\\n\\\\r\\\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\\\r\\\\nRequire stack:\\\\r\\\\n- D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs\\\\r\\\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\\\r\\\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\\\r\\\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\\\r\\\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\\\r\\\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\\\r\\\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\\\r\\\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\\\r\\\\n    at require (node:internal/modules/helpers:147:16)\\\\r\\\\n    at Object.<anonymous> (D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs:33557:35)\\\\r\\\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\\\r\\\\n  code: 'MODULE_NOT_FOUND',\\\\r\\\\n  requireStack: [\\\\r\\\\n    'D:\\\\\\\\\\\\\\\\Dev\\\\\\\\\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\\\\\\\\\packages\\\\\\\\\\\\\\\\runtime-emit\\\\\\\\\\\\\\\\dist\\\\\\\\\\\\\\\\emit-runtime-policy.cjs'\\\\r\\\\n  ]\\\\r\\\\n}\\\\r\\\\n\\\\r\\\\nNode.js v22.22.1\\\\r\\\\n\\\"}\",\n        \"stderr\": \"[emit-runtime-policy FAILED]\\nnode:internal/modules/cjs/loader:1386\\r\\n  throw err;\\r\\n  ^\\r\\n\\r\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\r\\nRequire stack:\\r\\n- D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs\\r\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\r\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\r\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\r\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\r\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\r\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\r\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\r\\n    at require (node:internal/modules/helpers:147:16)\\r\\n    at Object.<anonymous> (D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs:33557:35)\\r\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\r\\n  code: 'MODULE_NOT_FOUND',\\r\\n  requireStack: [\\r\\n    'D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs'\\r\\n  ]\\r\\n}\\r\\n\\r\\nNode.js v22.22.1\",\n        \"error\": null,\n        \"stateDirExists\": false,\n        \"packetDirExists\": false\n      }\n    },\n    {\n      \"name\": \"live-smoke:cursor-hook-bugfix\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"{\\\"systemMessage\\\":\\\"[emit-runtime-policy FAILED]\\\\nnode:internal/modules/cjs/loader:1386\\\\r\\\\n  throw err;\\\\r\\\\n  ^\\\\r\\\\n\\\\r\\\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\\\r\\\\nRequire stack:\\\\r\\\\n- D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs\\\\r\\\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\\\r\\\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\\\r\\\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\\\r\\\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\\\r\\\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\\\r\\\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\\\r\\\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\\\r\\\\n    at require (node:internal/modules/helpers:147:16)\\\\r\\\\n    at Object.<anonymous> (D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs:33557:35)\\\\r\\\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\\\r\\\\n  code: 'MODULE_NOT_FOUND',\\\\r\\\\n  requireStack: [\\\\r\\\\n    'D:\\\\\\\\\\\\\\\\Dev\\\\\\\\\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\\\\\\\\\packages\\\\\\\\\\\\\\\\runtime-emit\\\\\\\\\\\\\\\\dist\\\\\\\\\\\\\\\\emit-runtime-policy.cjs'\\\\r\\\\n  ]\\\\r\\\\n}\\\\r\\\\n\\\\r\\\\nNode.js v22.22.1\\\\r\\\\n\\\"}\",\n        \"stderr\": \"[emit-runtime-policy FAILED]\\nnode:internal/modules/cjs/loader:1386\\r\\n  throw err;\\r\\n  ^\\r\\n\\r\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\r\\nRequire stack:\\r\\n- D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs\\r\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\r\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\r\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\r\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\r\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\r\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\r\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\r\\n    at require (node:internal/modules/helpers:147:16)\\r\\n    at Object.<anonymous> (D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs:33557:35)\\r\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\r\\n  code: 'MODULE_NOT_FOUND',\\r\\n  requireStack: [\\r\\n    'D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs'\\r\\n  ]\\r\\n}\\r\\n\\r\\nNode.js v22.22.1\",\n        \"error\": null,\n        \"stateDirExists\": false,\n        \"packetDirExists\": false\n      }\n    },\n    {\n      \"name\": \"live-smoke:main-agent-orchestration-script\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"> bmad-speckit-sdd-flow@2.0.2 main-agent-orchestration\\n> npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-orchestration.ts --cwd C:\\\\Users\\\\milome\\\\AppData\\\\Local\\\\Temp\\\\main-agent-live-smoke-story-4jLQYz --action dispatch-plan\\n\\nnull\",\n        \"stderr\": \"\",\n        \"error\": null\n      }\n    }\n  ]\n}\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G004_ORIGINAL_REPLAY:scripts/live-smoke-main-agent-runtime.ts:flag_action",
+            "originalReplayArtifactHash": "sha256:b266f630b11b01957561a0c6d1a6a6f99084313563a1f123276f0fca71ff3454",
+            "sourceDerivedProofId": "G004_SOURCE_DERIVED:scripts/live-smoke-main-agent-runtime.ts:flag_action",
+            "sourceLineAnchors": [
+              {
+                "line": 327,
+                "anchor": "scripts/live-smoke-main-agent-runtime.ts:327",
+                "text": "function main() {"
+              },
+              {
+                "line": 349,
+                "anchor": "scripts/live-smoke-main-agent-runtime.ts:349",
+                "text": "process.stdout.write(`${JSON.stringify(report, null, 2)}\\n`);"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.ts",
+                "to": "scripts/live-smoke-main-agent-runtime.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.js",
+                "to": "scripts/live-smoke-main-agent-runtime.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G004_STATIC_FULL:scripts/live-smoke-main-agent-runtime.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 8,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 8,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--action",
+              "--cursor-host",
+              "--cwd",
+              "--dangerously-skip-permissions",
+              "--force",
+              "--output-format",
+              "--permission-mode"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--cwd <fixture-root>",
+              "--action <source-derived-safe-value>",
+              "--cursor-host <source-derived-safe-value>",
+              "--dangerously-skip-permissions <source-derived-safe-value>",
+              "--force <present>",
+              "--output-format <source-derived-safe-value>",
+              "--permission-mode <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--cwd <fixture-root>",
+              "--action <source-derived-safe-value>",
+              "--cursor-host <source-derived-safe-value>",
+              "--dangerously-skip-permissions <source-derived-safe-value>",
+              "--force <present>",
+              "--output-format <source-derived-safe-value>",
+              "--permission-mode <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 8,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "cwd",
+              "flag_action",
+              "flag_cursor_host",
+              "flag_dangerously_skip_permissions",
+              "flag_force",
+              "flag_output_format",
+              "flag_permission_mode"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g004_live_smoke_main_agent_runtime_ts_flag_cursor_host",
+          "originalEntryPoint": "scripts/live-smoke-main-agent-runtime.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/live-smoke-main-agent-runtime.ts --cwd <fixture-root> --cursor-host source-derived-cursor-host",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.js --cwd <fixture-root> --cursor-host source-derived-cursor-host",
+          "argumentCombination": "--cwd <fixture-root> --cursor-host <source-derived-safe-value>",
+          "args": [
+            "--cwd",
+            "<fixture-root>",
+            "--cursor-host",
+            "source-derived-cursor-host"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g004_live_smoke_main_agent_runtime_ts_flag_cursor_host_original_fixture_root",
+              "path": "<tmp>/g004_live_smoke_main_agent_runtime_ts_flag_cursor_host-original-rnbKFz",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g004_live_smoke_main_agent_runtime_ts_flag_cursor_host_package_fixture_root",
+              "path": "<tmp>/g004_live_smoke_main_agent_runtime_ts_flag_cursor_host-package-1VflVi",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "{\n  \"generatedAt\": \"<iso-timestamp>\",\n  \"repoRoot\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\",\n  \"summary\": {\n    \"passed\": 1,\n    \"warned\": 1,\n    \"failed\": 6\n  },\n  \"results\": [\n    {\n      \"name\": \"host-binary:claude\",\n      \"status\": \"pass\",\n      \"details\": {\n        \"command\": \"claude\"\n      }\n    },\n    {\n      \"name\": \"host-binary:cursor\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"command\": \"cursor\"\n      }\n    },\n    {\n      \"name\": \"live-smoke:claude-cli-print\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"{\\\"type\\\":\\\"result\\\",\\\"subtype\\\":\\\"success\\\",\\\"is_error\\\":true,\\\"api_error_status\\\":400,\\\"duration_ms\\\":1439,\\\"duration_api_ms\\\":0,\\\"num_turns\\\":1,\\\"result\\\":\\\"Credit balance is too low\\\",\\\"stop_reason\\\":\\\"stop_sequence\\\",\\\"session_id\\\":\\\"<uuid>\\\",\\\"total_cost_usd\\\":0,\\\"usage\\\":{\\\"input_tokens\\\":0,\\\"cache_creation_input_tokens\\\":0,\\\"cache_read_input_tokens\\\":0,\\\"output_tokens\\\":0,\\\"server_tool_use\\\":{\\\"web_search_requests\\\":0,\\\"web_fetch_requests\\\":0},\\\"service_tier\\\":\\\"standard\\\",\\\"cache_creation\\\":{\\\"ephemeral_1h_input_tokens\\\":0,\\\"ephemeral_5m_input_tokens\\\":0},\\\"inference_geo\\\":\\\"\\\",\\\"iterations\\\":[],\\\"speed\\\":\\\"standard\\\"},\\\"modelUsage\\\":{},\\\"permission_denials\\\":[],\\\"terminal_reason\\\":\\\"completed\\\",\\\"fast_mode_state\\\":\\\"off\\\",\\\"uuid\\\":\\\"<uuid>\\\"}\",\n        \"stderr\": \"\",\n        \"error\": null\n      }\n    },\n    {\n      \"name\": \"live-smoke:cursor-terminal-agent\",\n      \"status\": \"warn\",\n      \"details\": {\n        \"status\": null,\n        \"stdout\": \"\",\n        \"stderr\": \"\",\n        \"error\": \"Error: spawnSync cursor.cmd EINVAL\"\n      }\n    },\n    {\n      \"name\": \"live-smoke:claude-hook-story\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"{\\\"systemMessage\\\":\\\"[emit-runtime-policy FAILED]\\\\nnode:internal/modules/cjs/loader:1386\\\\r\\\\n  throw err;\\\\r\\\\n  ^\\\\r\\\\n\\\\r\\\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\\\r\\\\nRequire stack:\\\\r\\\\n- D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs\\\\r\\\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\\\r\\\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\\\r\\\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\\\r\\\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\\\r\\\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\\\r\\\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\\\r\\\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\\\r\\\\n    at require (node:internal/modules/helpers:147:16)\\\\r\\\\n    at Object.<anonymous> (D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs:33557:35)\\\\r\\\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\\\r\\\\n  code: 'MODULE_NOT_FOUND',\\\\r\\\\n  requireStack: [\\\\r\\\\n    'D:\\\\\\\\\\\\\\\\Dev\\\\\\\\\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\\\\\\\\\packages\\\\\\\\\\\\\\\\runtime-emit\\\\\\\\\\\\\\\\dist\\\\\\\\\\\\\\\\emit-runtime-policy.cjs'\\\\r\\\\n  ]\\\\r\\\\n}\\\\r\\\\n\\\\r\\\\nNode.js v22.22.1\\\\r\\\\n\\\"}\",\n        \"stderr\": \"[emit-runtime-policy FAILED]\\nnode:internal/modules/cjs/loader:1386\\r\\n  throw err;\\r\\n  ^\\r\\n\\r\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\r\\nRequire stack:\\r\\n- D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs\\r\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\r\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\r\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\r\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\r\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\r\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\r\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\r\\n    at require (node:internal/modules/helpers:147:16)\\r\\n    at Object.<anonymous> (D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs:33557:35)\\r\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\r\\n  code: 'MODULE_NOT_FOUND',\\r\\n  requireStack: [\\r\\n    'D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs'\\r\\n  ]\\r\\n}\\r\\n\\r\\nNode.js v22.22.1\",\n        \"error\": null,\n        \"stateDirExists\": false,\n        \"packetDirExists\": false\n      }\n    },\n    {\n      \"name\": \"live-smoke:cursor-hook-story\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"{\\\"systemMessage\\\":\\\"[emit-runtime-policy FAILED]\\\\nnode:internal/modules/cjs/loader:1386\\\\r\\\\n  throw err;\\\\r\\\\n  ^\\\\r\\\\n\\\\r\\\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\\\r\\\\nRequire stack:\\\\r\\\\n- D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs\\\\r\\\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\\\r\\\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\\\r\\\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\\\r\\\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\\\r\\\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\\\r\\\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\\\r\\\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\\\r\\\\n    at require (node:internal/modules/helpers:147:16)\\\\r\\\\n    at Object.<anonymous> (D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs:33557:35)\\\\r\\\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\\\r\\\\n  code: 'MODULE_NOT_FOUND',\\\\r\\\\n  requireStack: [\\\\r\\\\n    'D:\\\\\\\\\\\\\\\\Dev\\\\\\\\\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\\\\\\\\\packages\\\\\\\\\\\\\\\\runtime-emit\\\\\\\\\\\\\\\\dist\\\\\\\\\\\\\\\\emit-runtime-policy.cjs'\\\\r\\\\n  ]\\\\r\\\\n}\\\\r\\\\n\\\\r\\\\nNode.js v22.22.1\\\\r\\\\n\\\"}\",\n        \"stderr\": \"[emit-runtime-policy FAILED]\\nnode:internal/modules/cjs/loader:1386\\r\\n  throw err;\\r\\n  ^\\r\\n\\r\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\r\\nRequire stack:\\r\\n- D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs\\r\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\r\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\r\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\r\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\r\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\r\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\r\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\r\\n    at require (node:internal/modules/helpers:147:16)\\r\\n    at Object.<anonymous> (D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs:33557:35)\\r\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\r\\n  code: 'MODULE_NOT_FOUND',\\r\\n  requireStack: [\\r\\n    'D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs'\\r\\n  ]\\r\\n}\\r\\n\\r\\nNode.js v22.22.1\",\n        \"error\": null,\n        \"stateDirExists\": false,\n        \"packetDirExists\": false\n      }\n    },\n    {\n      \"name\": \"live-smoke:cursor-hook-bugfix\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"{\\\"systemMessage\\\":\\\"[emit-runtime-policy FAILED]\\\\nnode:internal/modules/cjs/loader:1386\\\\r\\\\n  throw err;\\\\r\\\\n  ^\\\\r\\\\n\\\\r\\\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\\\r\\\\nRequire stack:\\\\r\\\\n- D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs\\\\r\\\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\\\r\\\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\\\r\\\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\\\r\\\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\\\r\\\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\\\r\\\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\\\r\\\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\\\r\\\\n    at require (node:internal/modules/helpers:147:16)\\\\r\\\\n    at Object.<anonymous> (D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs:33557:35)\\\\r\\\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\\\r\\\\n  code: 'MODULE_NOT_FOUND',\\\\r\\\\n  requireStack: [\\\\r\\\\n    'D:\\\\\\\\\\\\\\\\Dev\\\\\\\\\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\\\\\\\\\packages\\\\\\\\\\\\\\\\runtime-emit\\\\\\\\\\\\\\\\dist\\\\\\\\\\\\\\\\emit-runtime-policy.cjs'\\\\r\\\\n  ]\\\\r\\\\n}\\\\r\\\\n\\\\r\\\\nNode.js v22.22.1\\\\r\\\\n\\\"}\",\n        \"stderr\": \"[emit-runtime-policy FAILED]\\nnode:internal/modules/cjs/loader:1386\\r\\n  throw err;\\r\\n  ^\\r\\n\\r\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\r\\nRequire stack:\\r\\n- D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs\\r\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\r\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\r\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\r\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\r\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\r\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\r\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\r\\n    at require (node:internal/modules/helpers:147:16)\\r\\n    at Object.<anonymous> (D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs:33557:35)\\r\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\r\\n  code: 'MODULE_NOT_FOUND',\\r\\n  requireStack: [\\r\\n    'D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs'\\r\\n  ]\\r\\n}\\r\\n\\r\\nNode.js v22.22.1\",\n        \"error\": null,\n        \"stateDirExists\": false,\n        \"packetDirExists\": false\n      }\n    },\n    {\n      \"name\": \"live-smoke:main-agent-orchestration-script\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"> bmad-speckit-sdd-flow@2.0.2 main-agent-orchestration\\n> npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-orchestration.ts --cwd C:\\\\Users\\\\milome\\\\AppData\\\\Local\\\\Temp\\\\main-agent-live-smoke-story-miCXw0 --action dispatch-plan\\n\\nnull\",\n        \"stderr\": \"\",\n        \"error\": null\n      }\n    }\n  ]\n}\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G004_ORIGINAL_REPLAY:scripts/live-smoke-main-agent-runtime.ts:flag_cursor_host",
+            "originalReplayArtifactHash": "sha256:dd5ef9eaffc61e0c3146784dc0832a59e8b4957980f90602bf034adabdc5bc67",
+            "sourceDerivedProofId": "G004_SOURCE_DERIVED:scripts/live-smoke-main-agent-runtime.ts:flag_cursor_host",
+            "sourceLineAnchors": [
+              {
+                "line": 327,
+                "anchor": "scripts/live-smoke-main-agent-runtime.ts:327",
+                "text": "function main() {"
+              },
+              {
+                "line": 349,
+                "anchor": "scripts/live-smoke-main-agent-runtime.ts:349",
+                "text": "process.stdout.write(`${JSON.stringify(report, null, 2)}\\n`);"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.ts",
+                "to": "scripts/live-smoke-main-agent-runtime.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.js",
+                "to": "scripts/live-smoke-main-agent-runtime.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G004_STATIC_FULL:scripts/live-smoke-main-agent-runtime.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 8,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 8,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--action",
+              "--cursor-host",
+              "--cwd",
+              "--dangerously-skip-permissions",
+              "--force",
+              "--output-format",
+              "--permission-mode"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--cwd <fixture-root>",
+              "--action <source-derived-safe-value>",
+              "--cursor-host <source-derived-safe-value>",
+              "--dangerously-skip-permissions <source-derived-safe-value>",
+              "--force <present>",
+              "--output-format <source-derived-safe-value>",
+              "--permission-mode <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--cwd <fixture-root>",
+              "--action <source-derived-safe-value>",
+              "--cursor-host <source-derived-safe-value>",
+              "--dangerously-skip-permissions <source-derived-safe-value>",
+              "--force <present>",
+              "--output-format <source-derived-safe-value>",
+              "--permission-mode <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 8,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "cwd",
+              "flag_action",
+              "flag_cursor_host",
+              "flag_dangerously_skip_permissions",
+              "flag_force",
+              "flag_output_format",
+              "flag_permission_mode"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g004_live_smoke_main_agent_runtime_ts_flag_dangerously_skip_permissions",
+          "originalEntryPoint": "scripts/live-smoke-main-agent-runtime.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/live-smoke-main-agent-runtime.ts --cwd <fixture-root> --dangerously-skip-permissions source-derived-dangerously-skip-permissions",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.js --cwd <fixture-root> --dangerously-skip-permissions source-derived-dangerously-skip-permissions",
+          "argumentCombination": "--cwd <fixture-root> --dangerously-skip-permissions <source-derived-safe-value>",
+          "args": [
+            "--cwd",
+            "<fixture-root>",
+            "--dangerously-skip-permissions",
+            "source-derived-dangerously-skip-permissions"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g004_live_smoke_main_agent_runtime_ts_flag_dangerously_skip_permissions_original_fixture_root",
+              "path": "<tmp>/g004_live_smoke_main_agent_runtime_ts_flag_dangerously_skip_permissions-original-ENtyfj",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g004_live_smoke_main_agent_runtime_ts_flag_dangerously_skip_permissions_package_fixture_root",
+              "path": "<tmp>/g004_live_smoke_main_agent_runtime_ts_flag_dangerously_skip_permissions-package-Uhq06C",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "{\n  \"generatedAt\": \"<iso-timestamp>\",\n  \"repoRoot\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\",\n  \"summary\": {\n    \"passed\": 1,\n    \"warned\": 1,\n    \"failed\": 6\n  },\n  \"results\": [\n    {\n      \"name\": \"host-binary:claude\",\n      \"status\": \"pass\",\n      \"details\": {\n        \"command\": \"claude\"\n      }\n    },\n    {\n      \"name\": \"host-binary:cursor\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"command\": \"cursor\"\n      }\n    },\n    {\n      \"name\": \"live-smoke:claude-cli-print\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"{\\\"type\\\":\\\"result\\\",\\\"subtype\\\":\\\"success\\\",\\\"is_error\\\":true,\\\"api_error_status\\\":400,\\\"duration_ms\\\":1336,\\\"duration_api_ms\\\":0,\\\"num_turns\\\":1,\\\"result\\\":\\\"Credit balance is too low\\\",\\\"stop_reason\\\":\\\"stop_sequence\\\",\\\"session_id\\\":\\\"<uuid>\\\",\\\"total_cost_usd\\\":0,\\\"usage\\\":{\\\"input_tokens\\\":0,\\\"cache_creation_input_tokens\\\":0,\\\"cache_read_input_tokens\\\":0,\\\"output_tokens\\\":0,\\\"server_tool_use\\\":{\\\"web_search_requests\\\":0,\\\"web_fetch_requests\\\":0},\\\"service_tier\\\":\\\"standard\\\",\\\"cache_creation\\\":{\\\"ephemeral_1h_input_tokens\\\":0,\\\"ephemeral_5m_input_tokens\\\":0},\\\"inference_geo\\\":\\\"\\\",\\\"iterations\\\":[],\\\"speed\\\":\\\"standard\\\"},\\\"modelUsage\\\":{},\\\"permission_denials\\\":[],\\\"terminal_reason\\\":\\\"completed\\\",\\\"fast_mode_state\\\":\\\"off\\\",\\\"uuid\\\":\\\"<uuid>\\\"}\",\n        \"stderr\": \"\",\n        \"error\": null\n      }\n    },\n    {\n      \"name\": \"live-smoke:cursor-terminal-agent\",\n      \"status\": \"warn\",\n      \"details\": {\n        \"status\": null,\n        \"stdout\": \"\",\n        \"stderr\": \"\",\n        \"error\": \"Error: spawnSync cursor.cmd EINVAL\"\n      }\n    },\n    {\n      \"name\": \"live-smoke:claude-hook-story\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"{\\\"systemMessage\\\":\\\"[emit-runtime-policy FAILED]\\\\nnode:internal/modules/cjs/loader:1386\\\\r\\\\n  throw err;\\\\r\\\\n  ^\\\\r\\\\n\\\\r\\\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\\\r\\\\nRequire stack:\\\\r\\\\n- D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs\\\\r\\\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\\\r\\\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\\\r\\\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\\\r\\\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\\\r\\\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\\\r\\\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\\\r\\\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\\\r\\\\n    at require (node:internal/modules/helpers:147:16)\\\\r\\\\n    at Object.<anonymous> (D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs:33557:35)\\\\r\\\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\\\r\\\\n  code: 'MODULE_NOT_FOUND',\\\\r\\\\n  requireStack: [\\\\r\\\\n    'D:\\\\\\\\\\\\\\\\Dev\\\\\\\\\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\\\\\\\\\packages\\\\\\\\\\\\\\\\runtime-emit\\\\\\\\\\\\\\\\dist\\\\\\\\\\\\\\\\emit-runtime-policy.cjs'\\\\r\\\\n  ]\\\\r\\\\n}\\\\r\\\\n\\\\r\\\\nNode.js v22.22.1\\\\r\\\\n\\\"}\",\n        \"stderr\": \"[emit-runtime-policy FAILED]\\nnode:internal/modules/cjs/loader:1386\\r\\n  throw err;\\r\\n  ^\\r\\n\\r\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\r\\nRequire stack:\\r\\n- D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs\\r\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\r\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\r\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\r\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\r\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\r\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\r\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\r\\n    at require (node:internal/modules/helpers:147:16)\\r\\n    at Object.<anonymous> (D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs:33557:35)\\r\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\r\\n  code: 'MODULE_NOT_FOUND',\\r\\n  requireStack: [\\r\\n    'D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs'\\r\\n  ]\\r\\n}\\r\\n\\r\\nNode.js v22.22.1\",\n        \"error\": null,\n        \"stateDirExists\": false,\n        \"packetDirExists\": false\n      }\n    },\n    {\n      \"name\": \"live-smoke:cursor-hook-story\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"{\\\"systemMessage\\\":\\\"[emit-runtime-policy FAILED]\\\\nnode:internal/modules/cjs/loader:1386\\\\r\\\\n  throw err;\\\\r\\\\n  ^\\\\r\\\\n\\\\r\\\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\\\r\\\\nRequire stack:\\\\r\\\\n- D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs\\\\r\\\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\\\r\\\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\\\r\\\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\\\r\\\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\\\r\\\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\\\r\\\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\\\r\\\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\\\r\\\\n    at require (node:internal/modules/helpers:147:16)\\\\r\\\\n    at Object.<anonymous> (D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs:33557:35)\\\\r\\\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\\\r\\\\n  code: 'MODULE_NOT_FOUND',\\\\r\\\\n  requireStack: [\\\\r\\\\n    'D:\\\\\\\\\\\\\\\\Dev\\\\\\\\\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\\\\\\\\\packages\\\\\\\\\\\\\\\\runtime-emit\\\\\\\\\\\\\\\\dist\\\\\\\\\\\\\\\\emit-runtime-policy.cjs'\\\\r\\\\n  ]\\\\r\\\\n}\\\\r\\\\n\\\\r\\\\nNode.js v22.22.1\\\\r\\\\n\\\"}\",\n        \"stderr\": \"[emit-runtime-policy FAILED]\\nnode:internal/modules/cjs/loader:1386\\r\\n  throw err;\\r\\n  ^\\r\\n\\r\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\r\\nRequire stack:\\r\\n- D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs\\r\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\r\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\r\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\r\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\r\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\r\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\r\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\r\\n    at require (node:internal/modules/helpers:147:16)\\r\\n    at Object.<anonymous> (D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs:33557:35)\\r\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\r\\n  code: 'MODULE_NOT_FOUND',\\r\\n  requireStack: [\\r\\n    'D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs'\\r\\n  ]\\r\\n}\\r\\n\\r\\nNode.js v22.22.1\",\n        \"error\": null,\n        \"stateDirExists\": false,\n        \"packetDirExists\": false\n      }\n    },\n    {\n      \"name\": \"live-smoke:cursor-hook-bugfix\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"{\\\"systemMessage\\\":\\\"[emit-runtime-policy FAILED]\\\\nnode:internal/modules/cjs/loader:1386\\\\r\\\\n  throw err;\\\\r\\\\n  ^\\\\r\\\\n\\\\r\\\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\\\r\\\\nRequire stack:\\\\r\\\\n- D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs\\\\r\\\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\\\r\\\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\\\r\\\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\\\r\\\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\\\r\\\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\\\r\\\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\\\r\\\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\\\r\\\\n    at require (node:internal/modules/helpers:147:16)\\\\r\\\\n    at Object.<anonymous> (D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs:33557:35)\\\\r\\\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\\\r\\\\n  code: 'MODULE_NOT_FOUND',\\\\r\\\\n  requireStack: [\\\\r\\\\n    'D:\\\\\\\\\\\\\\\\Dev\\\\\\\\\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\\\\\\\\\packages\\\\\\\\\\\\\\\\runtime-emit\\\\\\\\\\\\\\\\dist\\\\\\\\\\\\\\\\emit-runtime-policy.cjs'\\\\r\\\\n  ]\\\\r\\\\n}\\\\r\\\\n\\\\r\\\\nNode.js v22.22.1\\\\r\\\\n\\\"}\",\n        \"stderr\": \"[emit-runtime-policy FAILED]\\nnode:internal/modules/cjs/loader:1386\\r\\n  throw err;\\r\\n  ^\\r\\n\\r\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\r\\nRequire stack:\\r\\n- D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs\\r\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\r\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\r\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\r\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\r\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\r\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\r\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\r\\n    at require (node:internal/modules/helpers:147:16)\\r\\n    at Object.<anonymous> (D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs:33557:35)\\r\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\r\\n  code: 'MODULE_NOT_FOUND',\\r\\n  requireStack: [\\r\\n    'D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs'\\r\\n  ]\\r\\n}\\r\\n\\r\\nNode.js v22.22.1\",\n        \"error\": null,\n        \"stateDirExists\": false,\n        \"packetDirExists\": false\n      }\n    },\n    {\n      \"name\": \"live-smoke:main-agent-orchestration-script\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"> bmad-speckit-sdd-flow@2.0.2 main-agent-orchestration\\n> npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-orchestration.ts --cwd C:\\\\Users\\\\milome\\\\AppData\\\\Local\\\\Temp\\\\main-agent-live-smoke-story-Paqu7O --action dispatch-plan\\n\\nnull\",\n        \"stderr\": \"\",\n        \"error\": null\n      }\n    }\n  ]\n}\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G004_ORIGINAL_REPLAY:scripts/live-smoke-main-agent-runtime.ts:flag_dangerously_skip_permissions",
+            "originalReplayArtifactHash": "sha256:c9e3587f0009f18791db891c719e8db058eaeaaca538d449e7347544b334a377",
+            "sourceDerivedProofId": "G004_SOURCE_DERIVED:scripts/live-smoke-main-agent-runtime.ts:flag_dangerously_skip_permissions",
+            "sourceLineAnchors": [
+              {
+                "line": 327,
+                "anchor": "scripts/live-smoke-main-agent-runtime.ts:327",
+                "text": "function main() {"
+              },
+              {
+                "line": 349,
+                "anchor": "scripts/live-smoke-main-agent-runtime.ts:349",
+                "text": "process.stdout.write(`${JSON.stringify(report, null, 2)}\\n`);"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.ts",
+                "to": "scripts/live-smoke-main-agent-runtime.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.js",
+                "to": "scripts/live-smoke-main-agent-runtime.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G004_STATIC_FULL:scripts/live-smoke-main-agent-runtime.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 8,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 8,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--action",
+              "--cursor-host",
+              "--cwd",
+              "--dangerously-skip-permissions",
+              "--force",
+              "--output-format",
+              "--permission-mode"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--cwd <fixture-root>",
+              "--action <source-derived-safe-value>",
+              "--cursor-host <source-derived-safe-value>",
+              "--dangerously-skip-permissions <source-derived-safe-value>",
+              "--force <present>",
+              "--output-format <source-derived-safe-value>",
+              "--permission-mode <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--cwd <fixture-root>",
+              "--action <source-derived-safe-value>",
+              "--cursor-host <source-derived-safe-value>",
+              "--dangerously-skip-permissions <source-derived-safe-value>",
+              "--force <present>",
+              "--output-format <source-derived-safe-value>",
+              "--permission-mode <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 8,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "cwd",
+              "flag_action",
+              "flag_cursor_host",
+              "flag_dangerously_skip_permissions",
+              "flag_force",
+              "flag_output_format",
+              "flag_permission_mode"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g004_live_smoke_main_agent_runtime_ts_flag_force",
+          "originalEntryPoint": "scripts/live-smoke-main-agent-runtime.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/live-smoke-main-agent-runtime.ts --cwd <fixture-root> --force",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.js --cwd <fixture-root> --force",
+          "argumentCombination": "--cwd <fixture-root> --force <present>",
+          "args": [
+            "--cwd",
+            "<fixture-root>",
+            "--force"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g004_live_smoke_main_agent_runtime_ts_flag_force_original_fixture_root",
+              "path": "<tmp>/g004_live_smoke_main_agent_runtime_ts_flag_force-original-ALPSBA",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g004_live_smoke_main_agent_runtime_ts_flag_force_package_fixture_root",
+              "path": "<tmp>/g004_live_smoke_main_agent_runtime_ts_flag_force-package-T48ZXP",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "{\n  \"generatedAt\": \"<iso-timestamp>\",\n  \"repoRoot\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\",\n  \"summary\": {\n    \"passed\": 1,\n    \"warned\": 1,\n    \"failed\": 6\n  },\n  \"results\": [\n    {\n      \"name\": \"host-binary:claude\",\n      \"status\": \"pass\",\n      \"details\": {\n        \"command\": \"claude\"\n      }\n    },\n    {\n      \"name\": \"host-binary:cursor\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"command\": \"cursor\"\n      }\n    },\n    {\n      \"name\": \"live-smoke:claude-cli-print\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"{\\\"type\\\":\\\"result\\\",\\\"subtype\\\":\\\"success\\\",\\\"is_error\\\":true,\\\"api_error_status\\\":400,\\\"duration_ms\\\":1350,\\\"duration_api_ms\\\":0,\\\"num_turns\\\":1,\\\"result\\\":\\\"Credit balance is too low\\\",\\\"stop_reason\\\":\\\"stop_sequence\\\",\\\"session_id\\\":\\\"<uuid>\\\",\\\"total_cost_usd\\\":0,\\\"usage\\\":{\\\"input_tokens\\\":0,\\\"cache_creation_input_tokens\\\":0,\\\"cache_read_input_tokens\\\":0,\\\"output_tokens\\\":0,\\\"server_tool_use\\\":{\\\"web_search_requests\\\":0,\\\"web_fetch_requests\\\":0},\\\"service_tier\\\":\\\"standard\\\",\\\"cache_creation\\\":{\\\"ephemeral_1h_input_tokens\\\":0,\\\"ephemeral_5m_input_tokens\\\":0},\\\"inference_geo\\\":\\\"\\\",\\\"iterations\\\":[],\\\"speed\\\":\\\"standard\\\"},\\\"modelUsage\\\":{},\\\"permission_denials\\\":[],\\\"terminal_reason\\\":\\\"completed\\\",\\\"fast_mode_state\\\":\\\"off\\\",\\\"uuid\\\":\\\"<uuid>\\\"}\",\n        \"stderr\": \"\",\n        \"error\": null\n      }\n    },\n    {\n      \"name\": \"live-smoke:cursor-terminal-agent\",\n      \"status\": \"warn\",\n      \"details\": {\n        \"status\": null,\n        \"stdout\": \"\",\n        \"stderr\": \"\",\n        \"error\": \"Error: spawnSync cursor.cmd EINVAL\"\n      }\n    },\n    {\n      \"name\": \"live-smoke:claude-hook-story\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"{\\\"systemMessage\\\":\\\"[emit-runtime-policy FAILED]\\\\nnode:internal/modules/cjs/loader:1386\\\\r\\\\n  throw err;\\\\r\\\\n  ^\\\\r\\\\n\\\\r\\\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\\\r\\\\nRequire stack:\\\\r\\\\n- D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs\\\\r\\\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\\\r\\\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\\\r\\\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\\\r\\\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\\\r\\\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\\\r\\\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\\\r\\\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\\\r\\\\n    at require (node:internal/modules/helpers:147:16)\\\\r\\\\n    at Object.<anonymous> (D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs:33557:35)\\\\r\\\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\\\r\\\\n  code: 'MODULE_NOT_FOUND',\\\\r\\\\n  requireStack: [\\\\r\\\\n    'D:\\\\\\\\\\\\\\\\Dev\\\\\\\\\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\\\\\\\\\packages\\\\\\\\\\\\\\\\runtime-emit\\\\\\\\\\\\\\\\dist\\\\\\\\\\\\\\\\emit-runtime-policy.cjs'\\\\r\\\\n  ]\\\\r\\\\n}\\\\r\\\\n\\\\r\\\\nNode.js v22.22.1\\\\r\\\\n\\\"}\",\n        \"stderr\": \"[emit-runtime-policy FAILED]\\nnode:internal/modules/cjs/loader:1386\\r\\n  throw err;\\r\\n  ^\\r\\n\\r\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\r\\nRequire stack:\\r\\n- D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs\\r\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\r\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\r\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\r\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\r\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\r\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\r\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\r\\n    at require (node:internal/modules/helpers:147:16)\\r\\n    at Object.<anonymous> (D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs:33557:35)\\r\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\r\\n  code: 'MODULE_NOT_FOUND',\\r\\n  requireStack: [\\r\\n    'D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs'\\r\\n  ]\\r\\n}\\r\\n\\r\\nNode.js v22.22.1\",\n        \"error\": null,\n        \"stateDirExists\": false,\n        \"packetDirExists\": false\n      }\n    },\n    {\n      \"name\": \"live-smoke:cursor-hook-story\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"{\\\"systemMessage\\\":\\\"[emit-runtime-policy FAILED]\\\\nnode:internal/modules/cjs/loader:1386\\\\r\\\\n  throw err;\\\\r\\\\n  ^\\\\r\\\\n\\\\r\\\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\\\r\\\\nRequire stack:\\\\r\\\\n- D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs\\\\r\\\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\\\r\\\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\\\r\\\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\\\r\\\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\\\r\\\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\\\r\\\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\\\r\\\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\\\r\\\\n    at require (node:internal/modules/helpers:147:16)\\\\r\\\\n    at Object.<anonymous> (D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs:33557:35)\\\\r\\\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\\\r\\\\n  code: 'MODULE_NOT_FOUND',\\\\r\\\\n  requireStack: [\\\\r\\\\n    'D:\\\\\\\\\\\\\\\\Dev\\\\\\\\\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\\\\\\\\\packages\\\\\\\\\\\\\\\\runtime-emit\\\\\\\\\\\\\\\\dist\\\\\\\\\\\\\\\\emit-runtime-policy.cjs'\\\\r\\\\n  ]\\\\r\\\\n}\\\\r\\\\n\\\\r\\\\nNode.js v22.22.1\\\\r\\\\n\\\"}\",\n        \"stderr\": \"[emit-runtime-policy FAILED]\\nnode:internal/modules/cjs/loader:1386\\r\\n  throw err;\\r\\n  ^\\r\\n\\r\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\r\\nRequire stack:\\r\\n- D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs\\r\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\r\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\r\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\r\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\r\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\r\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\r\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\r\\n    at require (node:internal/modules/helpers:147:16)\\r\\n    at Object.<anonymous> (D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs:33557:35)\\r\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\r\\n  code: 'MODULE_NOT_FOUND',\\r\\n  requireStack: [\\r\\n    'D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs'\\r\\n  ]\\r\\n}\\r\\n\\r\\nNode.js v22.22.1\",\n        \"error\": null,\n        \"stateDirExists\": false,\n        \"packetDirExists\": false\n      }\n    },\n    {\n      \"name\": \"live-smoke:cursor-hook-bugfix\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"{\\\"systemMessage\\\":\\\"[emit-runtime-policy FAILED]\\\\nnode:internal/modules/cjs/loader:1386\\\\r\\\\n  throw err;\\\\r\\\\n  ^\\\\r\\\\n\\\\r\\\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\\\r\\\\nRequire stack:\\\\r\\\\n- D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs\\\\r\\\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\\\r\\\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\\\r\\\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\\\r\\\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\\\r\\\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\\\r\\\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\\\r\\\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\\\r\\\\n    at require (node:internal/modules/helpers:147:16)\\\\r\\\\n    at Object.<anonymous> (D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs:33557:35)\\\\r\\\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\\\r\\\\n  code: 'MODULE_NOT_FOUND',\\\\r\\\\n  requireStack: [\\\\r\\\\n    'D:\\\\\\\\\\\\\\\\Dev\\\\\\\\\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\\\\\\\\\packages\\\\\\\\\\\\\\\\runtime-emit\\\\\\\\\\\\\\\\dist\\\\\\\\\\\\\\\\emit-runtime-policy.cjs'\\\\r\\\\n  ]\\\\r\\\\n}\\\\r\\\\n\\\\r\\\\nNode.js v22.22.1\\\\r\\\\n\\\"}\",\n        \"stderr\": \"[emit-runtime-policy FAILED]\\nnode:internal/modules/cjs/loader:1386\\r\\n  throw err;\\r\\n  ^\\r\\n\\r\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\r\\nRequire stack:\\r\\n- D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs\\r\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\r\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\r\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\r\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\r\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\r\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\r\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\r\\n    at require (node:internal/modules/helpers:147:16)\\r\\n    at Object.<anonymous> (D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs:33557:35)\\r\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\r\\n  code: 'MODULE_NOT_FOUND',\\r\\n  requireStack: [\\r\\n    'D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs'\\r\\n  ]\\r\\n}\\r\\n\\r\\nNode.js v22.22.1\",\n        \"error\": null,\n        \"stateDirExists\": false,\n        \"packetDirExists\": false\n      }\n    },\n    {\n      \"name\": \"live-smoke:main-agent-orchestration-script\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"> bmad-speckit-sdd-flow@2.0.2 main-agent-orchestration\\n> npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-orchestration.ts --cwd C:\\\\Users\\\\milome\\\\AppData\\\\Local\\\\Temp\\\\main-agent-live-smoke-story-aC0sFM --action dispatch-plan\\n\\nnull\",\n        \"stderr\": \"\",\n        \"error\": null\n      }\n    }\n  ]\n}\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G004_ORIGINAL_REPLAY:scripts/live-smoke-main-agent-runtime.ts:flag_force",
+            "originalReplayArtifactHash": "sha256:7091c328f104a00016ace9e036e6f1db118d727af89291abfac54fafe3d18b62",
+            "sourceDerivedProofId": "G004_SOURCE_DERIVED:scripts/live-smoke-main-agent-runtime.ts:flag_force",
+            "sourceLineAnchors": [
+              {
+                "line": 327,
+                "anchor": "scripts/live-smoke-main-agent-runtime.ts:327",
+                "text": "function main() {"
+              },
+              {
+                "line": 349,
+                "anchor": "scripts/live-smoke-main-agent-runtime.ts:349",
+                "text": "process.stdout.write(`${JSON.stringify(report, null, 2)}\\n`);"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.ts",
+                "to": "scripts/live-smoke-main-agent-runtime.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.js",
+                "to": "scripts/live-smoke-main-agent-runtime.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G004_STATIC_FULL:scripts/live-smoke-main-agent-runtime.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 8,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 8,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--action",
+              "--cursor-host",
+              "--cwd",
+              "--dangerously-skip-permissions",
+              "--force",
+              "--output-format",
+              "--permission-mode"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--cwd <fixture-root>",
+              "--action <source-derived-safe-value>",
+              "--cursor-host <source-derived-safe-value>",
+              "--dangerously-skip-permissions <source-derived-safe-value>",
+              "--force <present>",
+              "--output-format <source-derived-safe-value>",
+              "--permission-mode <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--cwd <fixture-root>",
+              "--action <source-derived-safe-value>",
+              "--cursor-host <source-derived-safe-value>",
+              "--dangerously-skip-permissions <source-derived-safe-value>",
+              "--force <present>",
+              "--output-format <source-derived-safe-value>",
+              "--permission-mode <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 8,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "cwd",
+              "flag_action",
+              "flag_cursor_host",
+              "flag_dangerously_skip_permissions",
+              "flag_force",
+              "flag_output_format",
+              "flag_permission_mode"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g004_live_smoke_main_agent_runtime_ts_flag_output_format",
+          "originalEntryPoint": "scripts/live-smoke-main-agent-runtime.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/live-smoke-main-agent-runtime.ts --cwd <fixture-root> --output-format source-derived-output-format",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.js --cwd <fixture-root> --output-format source-derived-output-format",
+          "argumentCombination": "--cwd <fixture-root> --output-format <source-derived-safe-value>",
+          "args": [
+            "--cwd",
+            "<fixture-root>",
+            "--output-format",
+            "source-derived-output-format"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g004_live_smoke_main_agent_runtime_ts_flag_output_format_original_fixture_root",
+              "path": "<tmp>/g004_live_smoke_main_agent_runtime_ts_flag_output_format-original-Ms6RbM",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g004_live_smoke_main_agent_runtime_ts_flag_output_format_package_fixture_root",
+              "path": "<tmp>/g004_live_smoke_main_agent_runtime_ts_flag_output_format-package-zxyEnZ",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "{\n  \"generatedAt\": \"<iso-timestamp>\",\n  \"repoRoot\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\",\n  \"summary\": {\n    \"passed\": 1,\n    \"warned\": 1,\n    \"failed\": 6\n  },\n  \"results\": [\n    {\n      \"name\": \"host-binary:claude\",\n      \"status\": \"pass\",\n      \"details\": {\n        \"command\": \"claude\"\n      }\n    },\n    {\n      \"name\": \"host-binary:cursor\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"command\": \"cursor\"\n      }\n    },\n    {\n      \"name\": \"live-smoke:claude-cli-print\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"{\\\"type\\\":\\\"result\\\",\\\"subtype\\\":\\\"success\\\",\\\"is_error\\\":true,\\\"api_error_status\\\":400,\\\"duration_ms\\\":1475,\\\"duration_api_ms\\\":0,\\\"num_turns\\\":1,\\\"result\\\":\\\"Credit balance is too low\\\",\\\"stop_reason\\\":\\\"stop_sequence\\\",\\\"session_id\\\":\\\"<uuid>\\\",\\\"total_cost_usd\\\":0,\\\"usage\\\":{\\\"input_tokens\\\":0,\\\"cache_creation_input_tokens\\\":0,\\\"cache_read_input_tokens\\\":0,\\\"output_tokens\\\":0,\\\"server_tool_use\\\":{\\\"web_search_requests\\\":0,\\\"web_fetch_requests\\\":0},\\\"service_tier\\\":\\\"standard\\\",\\\"cache_creation\\\":{\\\"ephemeral_1h_input_tokens\\\":0,\\\"ephemeral_5m_input_tokens\\\":0},\\\"inference_geo\\\":\\\"\\\",\\\"iterations\\\":[],\\\"speed\\\":\\\"standard\\\"},\\\"modelUsage\\\":{},\\\"permission_denials\\\":[],\\\"terminal_reason\\\":\\\"completed\\\",\\\"fast_mode_state\\\":\\\"off\\\",\\\"uuid\\\":\\\"<uuid>\\\"}\",\n        \"stderr\": \"\",\n        \"error\": null\n      }\n    },\n    {\n      \"name\": \"live-smoke:cursor-terminal-agent\",\n      \"status\": \"warn\",\n      \"details\": {\n        \"status\": null,\n        \"stdout\": \"\",\n        \"stderr\": \"\",\n        \"error\": \"Error: spawnSync cursor.cmd EINVAL\"\n      }\n    },\n    {\n      \"name\": \"live-smoke:claude-hook-story\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"{\\\"systemMessage\\\":\\\"[emit-runtime-policy FAILED]\\\\nnode:internal/modules/cjs/loader:1386\\\\r\\\\n  throw err;\\\\r\\\\n  ^\\\\r\\\\n\\\\r\\\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\\\r\\\\nRequire stack:\\\\r\\\\n- D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs\\\\r\\\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\\\r\\\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\\\r\\\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\\\r\\\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\\\r\\\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\\\r\\\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\\\r\\\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\\\r\\\\n    at require (node:internal/modules/helpers:147:16)\\\\r\\\\n    at Object.<anonymous> (D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs:33557:35)\\\\r\\\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\\\r\\\\n  code: 'MODULE_NOT_FOUND',\\\\r\\\\n  requireStack: [\\\\r\\\\n    'D:\\\\\\\\\\\\\\\\Dev\\\\\\\\\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\\\\\\\\\packages\\\\\\\\\\\\\\\\runtime-emit\\\\\\\\\\\\\\\\dist\\\\\\\\\\\\\\\\emit-runtime-policy.cjs'\\\\r\\\\n  ]\\\\r\\\\n}\\\\r\\\\n\\\\r\\\\nNode.js v22.22.1\\\\r\\\\n\\\"}\",\n        \"stderr\": \"[emit-runtime-policy FAILED]\\nnode:internal/modules/cjs/loader:1386\\r\\n  throw err;\\r\\n  ^\\r\\n\\r\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\r\\nRequire stack:\\r\\n- D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs\\r\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\r\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\r\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\r\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\r\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\r\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\r\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\r\\n    at require (node:internal/modules/helpers:147:16)\\r\\n    at Object.<anonymous> (D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs:33557:35)\\r\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\r\\n  code: 'MODULE_NOT_FOUND',\\r\\n  requireStack: [\\r\\n    'D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs'\\r\\n  ]\\r\\n}\\r\\n\\r\\nNode.js v22.22.1\",\n        \"error\": null,\n        \"stateDirExists\": false,\n        \"packetDirExists\": false\n      }\n    },\n    {\n      \"name\": \"live-smoke:cursor-hook-story\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"{\\\"systemMessage\\\":\\\"[emit-runtime-policy FAILED]\\\\nnode:internal/modules/cjs/loader:1386\\\\r\\\\n  throw err;\\\\r\\\\n  ^\\\\r\\\\n\\\\r\\\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\\\r\\\\nRequire stack:\\\\r\\\\n- D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs\\\\r\\\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\\\r\\\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\\\r\\\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\\\r\\\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\\\r\\\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\\\r\\\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\\\r\\\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\\\r\\\\n    at require (node:internal/modules/helpers:147:16)\\\\r\\\\n    at Object.<anonymous> (D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs:33557:35)\\\\r\\\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\\\r\\\\n  code: 'MODULE_NOT_FOUND',\\\\r\\\\n  requireStack: [\\\\r\\\\n    'D:\\\\\\\\\\\\\\\\Dev\\\\\\\\\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\\\\\\\\\packages\\\\\\\\\\\\\\\\runtime-emit\\\\\\\\\\\\\\\\dist\\\\\\\\\\\\\\\\emit-runtime-policy.cjs'\\\\r\\\\n  ]\\\\r\\\\n}\\\\r\\\\n\\\\r\\\\nNode.js v22.22.1\\\\r\\\\n\\\"}\",\n        \"stderr\": \"[emit-runtime-policy FAILED]\\nnode:internal/modules/cjs/loader:1386\\r\\n  throw err;\\r\\n  ^\\r\\n\\r\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\r\\nRequire stack:\\r\\n- D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs\\r\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\r\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\r\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\r\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\r\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\r\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\r\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\r\\n    at require (node:internal/modules/helpers:147:16)\\r\\n    at Object.<anonymous> (D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs:33557:35)\\r\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\r\\n  code: 'MODULE_NOT_FOUND',\\r\\n  requireStack: [\\r\\n    'D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs'\\r\\n  ]\\r\\n}\\r\\n\\r\\nNode.js v22.22.1\",\n        \"error\": null,\n        \"stateDirExists\": false,\n        \"packetDirExists\": false\n      }\n    },\n    {\n      \"name\": \"live-smoke:cursor-hook-bugfix\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"{\\\"systemMessage\\\":\\\"[emit-runtime-policy FAILED]\\\\nnode:internal/modules/cjs/loader:1386\\\\r\\\\n  throw err;\\\\r\\\\n  ^\\\\r\\\\n\\\\r\\\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\\\r\\\\nRequire stack:\\\\r\\\\n- D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs\\\\r\\\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\\\r\\\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\\\r\\\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\\\r\\\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\\\r\\\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\\\r\\\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\\\r\\\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\\\r\\\\n    at require (node:internal/modules/helpers:147:16)\\\\r\\\\n    at Object.<anonymous> (D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs:33557:35)\\\\r\\\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\\\r\\\\n  code: 'MODULE_NOT_FOUND',\\\\r\\\\n  requireStack: [\\\\r\\\\n    'D:\\\\\\\\\\\\\\\\Dev\\\\\\\\\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\\\\\\\\\packages\\\\\\\\\\\\\\\\runtime-emit\\\\\\\\\\\\\\\\dist\\\\\\\\\\\\\\\\emit-runtime-policy.cjs'\\\\r\\\\n  ]\\\\r\\\\n}\\\\r\\\\n\\\\r\\\\nNode.js v22.22.1\\\\r\\\\n\\\"}\",\n        \"stderr\": \"[emit-runtime-policy FAILED]\\nnode:internal/modules/cjs/loader:1386\\r\\n  throw err;\\r\\n  ^\\r\\n\\r\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\r\\nRequire stack:\\r\\n- D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs\\r\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\r\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\r\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\r\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\r\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\r\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\r\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\r\\n    at require (node:internal/modules/helpers:147:16)\\r\\n    at Object.<anonymous> (D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs:33557:35)\\r\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\r\\n  code: 'MODULE_NOT_FOUND',\\r\\n  requireStack: [\\r\\n    'D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs'\\r\\n  ]\\r\\n}\\r\\n\\r\\nNode.js v22.22.1\",\n        \"error\": null,\n        \"stateDirExists\": false,\n        \"packetDirExists\": false\n      }\n    },\n    {\n      \"name\": \"live-smoke:main-agent-orchestration-script\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"> bmad-speckit-sdd-flow@2.0.2 main-agent-orchestration\\n> npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-orchestration.ts --cwd C:\\\\Users\\\\milome\\\\AppData\\\\Local\\\\Temp\\\\main-agent-live-smoke-story-exKAgc --action dispatch-plan\\n\\nnull\",\n        \"stderr\": \"\",\n        \"error\": null\n      }\n    }\n  ]\n}\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G004_ORIGINAL_REPLAY:scripts/live-smoke-main-agent-runtime.ts:flag_output_format",
+            "originalReplayArtifactHash": "sha256:61f36b10b1d1819ed65ff09676184d56749d613c36aaa3d468d8fddc6af0c509",
+            "sourceDerivedProofId": "G004_SOURCE_DERIVED:scripts/live-smoke-main-agent-runtime.ts:flag_output_format",
+            "sourceLineAnchors": [
+              {
+                "line": 327,
+                "anchor": "scripts/live-smoke-main-agent-runtime.ts:327",
+                "text": "function main() {"
+              },
+              {
+                "line": 349,
+                "anchor": "scripts/live-smoke-main-agent-runtime.ts:349",
+                "text": "process.stdout.write(`${JSON.stringify(report, null, 2)}\\n`);"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.ts",
+                "to": "scripts/live-smoke-main-agent-runtime.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.js",
+                "to": "scripts/live-smoke-main-agent-runtime.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G004_STATIC_FULL:scripts/live-smoke-main-agent-runtime.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 8,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 8,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--action",
+              "--cursor-host",
+              "--cwd",
+              "--dangerously-skip-permissions",
+              "--force",
+              "--output-format",
+              "--permission-mode"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--cwd <fixture-root>",
+              "--action <source-derived-safe-value>",
+              "--cursor-host <source-derived-safe-value>",
+              "--dangerously-skip-permissions <source-derived-safe-value>",
+              "--force <present>",
+              "--output-format <source-derived-safe-value>",
+              "--permission-mode <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--cwd <fixture-root>",
+              "--action <source-derived-safe-value>",
+              "--cursor-host <source-derived-safe-value>",
+              "--dangerously-skip-permissions <source-derived-safe-value>",
+              "--force <present>",
+              "--output-format <source-derived-safe-value>",
+              "--permission-mode <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 8,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "cwd",
+              "flag_action",
+              "flag_cursor_host",
+              "flag_dangerously_skip_permissions",
+              "flag_force",
+              "flag_output_format",
+              "flag_permission_mode"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g004_live_smoke_main_agent_runtime_ts_flag_permission_mode",
+          "originalEntryPoint": "scripts/live-smoke-main-agent-runtime.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/live-smoke-main-agent-runtime.ts --cwd <fixture-root> --permission-mode source-derived-permission-mode",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.js --cwd <fixture-root> --permission-mode source-derived-permission-mode",
+          "argumentCombination": "--cwd <fixture-root> --permission-mode <source-derived-safe-value>",
+          "args": [
+            "--cwd",
+            "<fixture-root>",
+            "--permission-mode",
+            "source-derived-permission-mode"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g004_live_smoke_main_agent_runtime_ts_flag_permission_mode_original_fixture_root",
+              "path": "<tmp>/g004_live_smoke_main_agent_runtime_ts_flag_permission_mode-original-l7XnWD",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g004_live_smoke_main_agent_runtime_ts_flag_permission_mode_package_fixture_root",
+              "path": "<tmp>/g004_live_smoke_main_agent_runtime_ts_flag_permission_mode-package-c0v8Pv",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "{\n  \"generatedAt\": \"<iso-timestamp>\",\n  \"repoRoot\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\",\n  \"summary\": {\n    \"passed\": 1,\n    \"warned\": 1,\n    \"failed\": 6\n  },\n  \"results\": [\n    {\n      \"name\": \"host-binary:claude\",\n      \"status\": \"pass\",\n      \"details\": {\n        \"command\": \"claude\"\n      }\n    },\n    {\n      \"name\": \"host-binary:cursor\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"command\": \"cursor\"\n      }\n    },\n    {\n      \"name\": \"live-smoke:claude-cli-print\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"{\\\"type\\\":\\\"result\\\",\\\"subtype\\\":\\\"success\\\",\\\"is_error\\\":true,\\\"api_error_status\\\":400,\\\"duration_ms\\\":1315,\\\"duration_api_ms\\\":0,\\\"num_turns\\\":1,\\\"result\\\":\\\"Credit balance is too low\\\",\\\"stop_reason\\\":\\\"stop_sequence\\\",\\\"session_id\\\":\\\"<uuid>\\\",\\\"total_cost_usd\\\":0,\\\"usage\\\":{\\\"input_tokens\\\":0,\\\"cache_creation_input_tokens\\\":0,\\\"cache_read_input_tokens\\\":0,\\\"output_tokens\\\":0,\\\"server_tool_use\\\":{\\\"web_search_requests\\\":0,\\\"web_fetch_requests\\\":0},\\\"service_tier\\\":\\\"standard\\\",\\\"cache_creation\\\":{\\\"ephemeral_1h_input_tokens\\\":0,\\\"ephemeral_5m_input_tokens\\\":0},\\\"inference_geo\\\":\\\"\\\",\\\"iterations\\\":[],\\\"speed\\\":\\\"standard\\\"},\\\"modelUsage\\\":{},\\\"permission_denials\\\":[],\\\"terminal_reason\\\":\\\"completed\\\",\\\"fast_mode_state\\\":\\\"off\\\",\\\"uuid\\\":\\\"<uuid>\\\"}\",\n        \"stderr\": \"\",\n        \"error\": null\n      }\n    },\n    {\n      \"name\": \"live-smoke:cursor-terminal-agent\",\n      \"status\": \"warn\",\n      \"details\": {\n        \"status\": null,\n        \"stdout\": \"\",\n        \"stderr\": \"\",\n        \"error\": \"Error: spawnSync cursor.cmd EINVAL\"\n      }\n    },\n    {\n      \"name\": \"live-smoke:claude-hook-story\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"{\\\"systemMessage\\\":\\\"[emit-runtime-policy FAILED]\\\\nnode:internal/modules/cjs/loader:1386\\\\r\\\\n  throw err;\\\\r\\\\n  ^\\\\r\\\\n\\\\r\\\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\\\r\\\\nRequire stack:\\\\r\\\\n- D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs\\\\r\\\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\\\r\\\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\\\r\\\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\\\r\\\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\\\r\\\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\\\r\\\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\\\r\\\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\\\r\\\\n    at require (node:internal/modules/helpers:147:16)\\\\r\\\\n    at Object.<anonymous> (D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs:33557:35)\\\\r\\\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\\\r\\\\n  code: 'MODULE_NOT_FOUND',\\\\r\\\\n  requireStack: [\\\\r\\\\n    'D:\\\\\\\\\\\\\\\\Dev\\\\\\\\\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\\\\\\\\\packages\\\\\\\\\\\\\\\\runtime-emit\\\\\\\\\\\\\\\\dist\\\\\\\\\\\\\\\\emit-runtime-policy.cjs'\\\\r\\\\n  ]\\\\r\\\\n}\\\\r\\\\n\\\\r\\\\nNode.js v22.22.1\\\\r\\\\n\\\"}\",\n        \"stderr\": \"[emit-runtime-policy FAILED]\\nnode:internal/modules/cjs/loader:1386\\r\\n  throw err;\\r\\n  ^\\r\\n\\r\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\r\\nRequire stack:\\r\\n- D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs\\r\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\r\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\r\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\r\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\r\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\r\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\r\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\r\\n    at require (node:internal/modules/helpers:147:16)\\r\\n    at Object.<anonymous> (D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs:33557:35)\\r\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\r\\n  code: 'MODULE_NOT_FOUND',\\r\\n  requireStack: [\\r\\n    'D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs'\\r\\n  ]\\r\\n}\\r\\n\\r\\nNode.js v22.22.1\",\n        \"error\": null,\n        \"stateDirExists\": false,\n        \"packetDirExists\": false\n      }\n    },\n    {\n      \"name\": \"live-smoke:cursor-hook-story\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"{\\\"systemMessage\\\":\\\"[emit-runtime-policy FAILED]\\\\nnode:internal/modules/cjs/loader:1386\\\\r\\\\n  throw err;\\\\r\\\\n  ^\\\\r\\\\n\\\\r\\\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\\\r\\\\nRequire stack:\\\\r\\\\n- D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs\\\\r\\\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\\\r\\\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\\\r\\\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\\\r\\\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\\\r\\\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\\\r\\\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\\\r\\\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\\\r\\\\n    at require (node:internal/modules/helpers:147:16)\\\\r\\\\n    at Object.<anonymous> (D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs:33557:35)\\\\r\\\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\\\r\\\\n  code: 'MODULE_NOT_FOUND',\\\\r\\\\n  requireStack: [\\\\r\\\\n    'D:\\\\\\\\\\\\\\\\Dev\\\\\\\\\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\\\\\\\\\packages\\\\\\\\\\\\\\\\runtime-emit\\\\\\\\\\\\\\\\dist\\\\\\\\\\\\\\\\emit-runtime-policy.cjs'\\\\r\\\\n  ]\\\\r\\\\n}\\\\r\\\\n\\\\r\\\\nNode.js v22.22.1\\\\r\\\\n\\\"}\",\n        \"stderr\": \"[emit-runtime-policy FAILED]\\nnode:internal/modules/cjs/loader:1386\\r\\n  throw err;\\r\\n  ^\\r\\n\\r\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\r\\nRequire stack:\\r\\n- D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs\\r\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\r\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\r\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\r\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\r\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\r\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\r\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\r\\n    at require (node:internal/modules/helpers:147:16)\\r\\n    at Object.<anonymous> (D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs:33557:35)\\r\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\r\\n  code: 'MODULE_NOT_FOUND',\\r\\n  requireStack: [\\r\\n    'D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs'\\r\\n  ]\\r\\n}\\r\\n\\r\\nNode.js v22.22.1\",\n        \"error\": null,\n        \"stateDirExists\": false,\n        \"packetDirExists\": false\n      }\n    },\n    {\n      \"name\": \"live-smoke:cursor-hook-bugfix\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"{\\\"systemMessage\\\":\\\"[emit-runtime-policy FAILED]\\\\nnode:internal/modules/cjs/loader:1386\\\\r\\\\n  throw err;\\\\r\\\\n  ^\\\\r\\\\n\\\\r\\\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\\\r\\\\nRequire stack:\\\\r\\\\n- D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs\\\\r\\\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\\\r\\\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\\\r\\\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\\\r\\\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\\\r\\\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\\\r\\\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\\\r\\\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\\\r\\\\n    at require (node:internal/modules/helpers:147:16)\\\\r\\\\n    at Object.<anonymous> (D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs:33557:35)\\\\r\\\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\\\r\\\\n  code: 'MODULE_NOT_FOUND',\\\\r\\\\n  requireStack: [\\\\r\\\\n    'D:\\\\\\\\\\\\\\\\Dev\\\\\\\\\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\\\\\\\\\packages\\\\\\\\\\\\\\\\runtime-emit\\\\\\\\\\\\\\\\dist\\\\\\\\\\\\\\\\emit-runtime-policy.cjs'\\\\r\\\\n  ]\\\\r\\\\n}\\\\r\\\\n\\\\r\\\\nNode.js v22.22.1\\\\r\\\\n\\\"}\",\n        \"stderr\": \"[emit-runtime-policy FAILED]\\nnode:internal/modules/cjs/loader:1386\\r\\n  throw err;\\r\\n  ^\\r\\n\\r\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\r\\nRequire stack:\\r\\n- D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs\\r\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\r\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\r\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\r\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\r\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\r\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\r\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\r\\n    at require (node:internal/modules/helpers:147:16)\\r\\n    at Object.<anonymous> (D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs:33557:35)\\r\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\r\\n  code: 'MODULE_NOT_FOUND',\\r\\n  requireStack: [\\r\\n    'D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs'\\r\\n  ]\\r\\n}\\r\\n\\r\\nNode.js v22.22.1\",\n        \"error\": null,\n        \"stateDirExists\": false,\n        \"packetDirExists\": false\n      }\n    },\n    {\n      \"name\": \"live-smoke:main-agent-orchestration-script\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"> bmad-speckit-sdd-flow@2.0.2 main-agent-orchestration\\n> npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-orchestration.ts --cwd C:\\\\Users\\\\milome\\\\AppData\\\\Local\\\\Temp\\\\main-agent-live-smoke-story-Ipxqua --action dispatch-plan\\n\\nnull\",\n        \"stderr\": \"\",\n        \"error\": null\n      }\n    }\n  ]\n}\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G004_ORIGINAL_REPLAY:scripts/live-smoke-main-agent-runtime.ts:flag_permission_mode",
+            "originalReplayArtifactHash": "sha256:8012a8407b9816281c92907c7a936c76531422aae763f2cb320e9ed0fb7158b2",
+            "sourceDerivedProofId": "G004_SOURCE_DERIVED:scripts/live-smoke-main-agent-runtime.ts:flag_permission_mode",
+            "sourceLineAnchors": [
+              {
+                "line": 327,
+                "anchor": "scripts/live-smoke-main-agent-runtime.ts:327",
+                "text": "function main() {"
+              },
+              {
+                "line": 349,
+                "anchor": "scripts/live-smoke-main-agent-runtime.ts:349",
+                "text": "process.stdout.write(`${JSON.stringify(report, null, 2)}\\n`);"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.ts",
+                "to": "scripts/live-smoke-main-agent-runtime.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.js",
+                "to": "scripts/live-smoke-main-agent-runtime.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G004_STATIC_FULL:scripts/live-smoke-main-agent-runtime.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 8,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 8,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--action",
+              "--cursor-host",
+              "--cwd",
+              "--dangerously-skip-permissions",
+              "--force",
+              "--output-format",
+              "--permission-mode"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--cwd <fixture-root>",
+              "--action <source-derived-safe-value>",
+              "--cursor-host <source-derived-safe-value>",
+              "--dangerously-skip-permissions <source-derived-safe-value>",
+              "--force <present>",
+              "--output-format <source-derived-safe-value>",
+              "--permission-mode <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--cwd <fixture-root>",
+              "--action <source-derived-safe-value>",
+              "--cursor-host <source-derived-safe-value>",
+              "--dangerously-skip-permissions <source-derived-safe-value>",
+              "--force <present>",
+              "--output-format <source-derived-safe-value>",
+              "--permission-mode <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 8,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "cwd",
+              "flag_action",
+              "flag_cursor_host",
+              "flag_dangerously_skip_permissions",
+              "flag_force",
+              "flag_output_format",
+              "flag_permission_mode"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

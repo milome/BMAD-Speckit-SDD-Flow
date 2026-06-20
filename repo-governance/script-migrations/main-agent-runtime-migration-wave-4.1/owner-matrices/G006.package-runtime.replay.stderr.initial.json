@@ -1,0 +1,22 @@
+[
+  {
+    "originalPath": "scripts/bmad-speckit-cli.js",
+    "scenarioId": "g004_bmad_speckit_cli_js_no_args",
+    "expectedStderr": "error: unknown option '--cwd'\n"
+  },
+  {
+    "originalPath": "scripts/run-auditor-host.ts",
+    "scenarioId": "g004_run_auditor_host_ts_no_args",
+    "expectedStderr": "run-auditor-host: usage --projectRoot <path> --stage <stage> --artifactPath <path> [--reportPath <path>] [--iterationCount <n>]\n"
+  },
+  {
+    "originalPath": "scripts/runtime-context-registry.ts",
+    "scenarioId": "g004_runtime_context_registry_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/write-runtime-context.cjs",
+    "scenarioId": "g004_write_runtime_context_cjs_no_args",
+    "expectedStderr": ""
+  }
+]

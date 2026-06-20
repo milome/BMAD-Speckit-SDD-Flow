@@ -1,0 +1,158 @@
+[
+  {
+    "originalPath": "scripts/trace-040-evidence-packet-generator.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_trace_040_evidence_packet_generator_ts_no_args",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_trace_040_evidence_packet_generator_ts_flag_attempt_id",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_trace_040_evidence_packet_generator_ts_flag_help",
+        "expectedStdout": "Usage: trace-040-evidence-packet-generator --template <json> --requirement-record <json> --run-dir <dir> --attempt-id <id> --out <json> [--json]\n"
+      },
+      {
+        "scenarioId": "g004_trace_040_evidence_packet_generator_ts_flag_json",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_trace_040_evidence_packet_generator_ts_flag_out",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_trace_040_evidence_packet_generator_ts_flag_requirement_record",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_trace_040_evidence_packet_generator_ts_flag_run_dir",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_trace_040_evidence_packet_generator_ts_flag_template",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/update-runtime-audit-index.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_update_runtime_audit_index_ts_no_args",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_update_runtime_audit_index_ts_flag_projectroot",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_update_runtime_audit_index_ts_flag_reportpath",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/user-story-mapping.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_user_story_mapping_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/validate-consumer-governance.ps1",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_validate_consumer_governance_ps1_no_args",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_validate_consumer_governance_ps1_flag_agent",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_validate_consumer_governance_ps1_flag_cursor_host",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_validate_consumer_governance_ps1_flag_force",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_validate_consumer_governance_ps1_flag_no_save",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/verify-cursor-audit-granularity.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_verify_cursor_audit_granularity_ts_no_args",
+        "expectedStdout": "========================================\nCursor Audit Granularity Verification\n========================================\nMode: full\nTool: mcp_task\nSubagent Type: generalPurpose\n\nStage Routing Matrix:\n- story_create: AUDIT (validation=null)\n- story_audit: AUDIT (validation=null)\n- specify: AUDIT (validation=null)\n- plan: AUDIT (validation=null)\n- gaps: AUDIT (validation=null)\n- tasks: AUDIT (validation=null)\n- implement: AUDIT (validation=null)\n- post_audit: AUDIT (validation=null)\n- epic_create: SKIP (validation=null)\n- epic_complete: SKIP (validation=null)\n\n✅ Cursor audit granularity verification passed\n"
+      },
+      {
+        "scenarioId": "g004_verify_cursor_audit_granularity_ts_flag_audit_granularity",
+        "expectedStdout": "========================================\nCursor Audit Granularity Verification\n========================================\nMode: full\nTool: mcp_task\nSubagent Type: generalPurpose\n\nStage Routing Matrix:\n- story_create: AUDIT (validation=null)\n- story_audit: AUDIT (validation=null)\n- specify: AUDIT (validation=null)\n- plan: AUDIT (validation=null)\n- gaps: AUDIT (validation=null)\n- tasks: AUDIT (validation=null)\n- implement: AUDIT (validation=null)\n- post_audit: AUDIT (validation=null)\n- epic_create: SKIP (validation=null)\n- epic_complete: SKIP (validation=null)\n\n✅ Cursor audit granularity verification passed\n"
+      },
+      {
+        "scenarioId": "g004_verify_cursor_audit_granularity_ts_env_bmad_platform",
+        "expectedStdout": "========================================\nCursor Audit Granularity Verification\n========================================\nMode: full\nTool: mcp_task\nSubagent Type: generalPurpose\n\nStage Routing Matrix:\n- story_create: AUDIT (validation=null)\n- story_audit: AUDIT (validation=null)\n- specify: AUDIT (validation=null)\n- plan: AUDIT (validation=null)\n- gaps: AUDIT (validation=null)\n- tasks: AUDIT (validation=null)\n- implement: AUDIT (validation=null)\n- post_audit: AUDIT (validation=null)\n- epic_create: SKIP (validation=null)\n- epic_complete: SKIP (validation=null)\n\n✅ Cursor audit granularity verification passed\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/verify-hooks-no-ts-node.js",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_verify_hooks_no_ts_node_js_no_args",
+        "expectedStdout": "\u001b[0m\n=== BMAD Hooks ts-node 依赖验证 ===\n\u001b[0m\nFound 20 hook files\n\n\u001b[32m✓ _bmad\\runtime\\hooks\\build-runtime-error-message.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\deferred-gap-governance.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\governance-packet-hard-closeout.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\governance-rerun-queue.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\governance-runner-summary-format.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\governance-runner-summary-presenter.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\governance-stage-event-emitter.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\hook-load-messages.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\party-mode-current-session.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\party-mode-read-current-session.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\party-mode-session-event.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\party-mode-session-runtime.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\party-mode-turn-lock.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\post-tool-use-core.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\pre-continue-check.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\run-emit-runtime-policy.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\runtime-dashboard-auto-start.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\runtime-policy-inject-core.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\runtime-step-state.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\should-skip-runtime-policy.cjs\u001b[0m\n\n\u001b[0m=== 总结 ===\u001b[0m\nTotal files: 20\n\u001b[32mPassed: 20\u001b[0m\n\u001b[32mFailed: 0\u001b[0m\n\u001b[32m\n✓ 所有 hooks 通过 ts-node 依赖验证！\n\u001b[0m\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/write-runtime-policy-snapshot-and-recovery-context.cjs",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_write_runtime_policy_snapshot_and_recovery_context_cjs_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/write-runtime-policy-snapshot-and-recovery-context.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_write_runtime_policy_snapshot_and_recovery_context_ts_no_args",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_write_runtime_policy_snapshot_and_recovery_context_ts_cwd",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_write_runtime_policy_snapshot_and_recovery_context_ts_flag_help",
+        "expectedStdout": "Usage: write-runtime-policy-snapshot-and-recovery-context --record-id <id> --requirement-set-id <id> [--json]\n"
+      },
+      {
+        "scenarioId": "g004_write_runtime_policy_snapshot_and_recovery_context_ts_flag_json",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_write_runtime_policy_snapshot_and_recovery_context_ts_flag_record_id",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_write_runtime_policy_snapshot_and_recovery_context_ts_flag_requirement_set_id",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_write_runtime_policy_snapshot_and_recovery_context_ts_flag_run_id",
+        "expectedStdout": ""
+      }
+    ]
+  }
+]

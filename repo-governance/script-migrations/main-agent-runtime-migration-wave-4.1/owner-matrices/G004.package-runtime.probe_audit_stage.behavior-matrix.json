@@ -1,0 +1,211 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-wave-4-1-owner-initial-behavior-matrix/v1",
+  "waveId": "main-agent-runtime-migration-wave-4.1",
+  "ownerTaskId": "G004",
+  "generatedAt": "2026-06-20T06:49:06.341Z",
+  "artifactSuffix": "probe_audit_stage",
+  "timeoutMs": 30000,
+  "coverageDecision": "failed_full_original_behavior_replay",
+  "eligibleOwnerRowCount": 91,
+  "selectedRowCount": 1,
+  "matrixRowCount": 1,
+  "scenarioCount": 1,
+  "fullCoverageStillRequired": false,
+  "rows": [
+    {
+      "originalPath": "scripts/audit-stage-routing.ts",
+      "entryId": "audit-stage-routing",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/audit-stage-routing.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/audit-stage-routing.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G004_STATIC_FULL:scripts/audit-stage-routing.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "--cwd <fixture-root>"
+        ],
+        "coveredArgumentCombinations": [
+          "--cwd <fixture-root>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "cwd"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g004_audit_stage_routing_ts_cwd",
+          "originalEntryPoint": "scripts/audit-stage-routing.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/audit-stage-routing.ts --cwd <fixture-root>",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/audit-stage-routing.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/audit-stage-routing.js --cwd <fixture-root>",
+          "argumentCombination": "--cwd <fixture-root>",
+          "args": [
+            "--cwd",
+            "<fixture-root>"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g004_audit_stage_routing_ts_cwd_original_fixture_root",
+              "path": "<tmp>/g004_audit_stage_routing_ts_cwd-original-gqrMBw",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g004_audit_stage_routing_ts_cwd_package_fixture_root",
+              "path": "<tmp>/g004_audit_stage_routing_ts_cwd-package-pLTG0l",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "🔍 开始审计 Stage Routing 逻辑...\n\n✅ 完成 17 项检查\n   通过: 4\n   失败: 11\n   警告: 2\n\n📝 审计报告已保存到: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\routing-audit-report.md\n\n❌ 发现以下问题：\n   - Stage Routing 章节存在性: 未找到 Stage Routing 章节\n   - 路由规则: null/new → story_create/bmad-story-create: 未找到路由规则: null/new → story_create/bmad-story-create\n   - 路由规则: story_created → story_audit/bmad-story-audit: 未找到路由规则: story_created → story_audit/bmad-story-audit\n   - 路由规则: story_audit_passed → specify: 未找到路由规则: story_audit_passed → specify\n   - 路由规则: plan_passed → gaps: 未找到路由规则: plan_passed → gaps\n   - 路由规则: gaps_passed → tasks: 未找到路由规则: gaps_passed → tasks\n   - 路由规则: tasks_passed → Story Type Detection: 未找到路由规则: tasks_passed → Story Type Detection\n   - 路由规则: implement_passed → commit_gate: 未找到路由规则: implement_passed → commit_gate\n   - 路由规则: document_audit_passed → commit_gate: 未找到路由规则: document_audit_passed → commit_gate\n   - Story Type Detection 逻辑: 未找到 Story Type Detection 逻辑\n   - Epic-Level Routing 支持: 未找到 Epic-Level Routing 章节\n\n⚠️ 发现以下警告：\n   - Auto-Continue 逻辑: 找到 Auto-Continue 逻辑 (第 133 行). enabled检查: true, action映射: false\n   - 三层审计结构引用: 未找到三层审计结构引用 (可能继承自通用协议)\n\n📊 JSON 结果:\n{\n  \"timestamp\": \"2026-06-20T06:49:07.114Z\",\n  \"fileAudited\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\.claude\\\\agents\\\\bmad-master.md\",\n  \"summary\": {\n    \"totalChecks\": 17,\n    \"passed\": 4,\n    \"failed\": 11,\n    \"warnings\": 2\n  },\n  \"results\": [\n    {\n      \"check\": \"Stage Routing 章节存在性\",\n      \"status\": \"FAIL\",\n      \"details\": \"未找到 Stage Routing 章节\",\n      \"lineNumber\": 0\n    },\n    {\n      \"check\": \"路由规则: null/new → story_create/bmad-story-create\",\n      \"status\": \"FAIL\",\n      \"details\": \"未找到路由规则: null/new → story_create/bmad-story-create\"\n    },\n    {\n      \"check\": \"路由规则: story_created → story_audit/bmad-story-audit\",\n      \"status\": \"FAIL\",\n      \"details\": \"未找到路由规则: story_created → story_audit/bmad-story-audit\"\n    },\n    {\n      \"check\": \"路由规则: story_audit_passed → specify\",\n      \"status\": \"FAIL\",\n      \"details\": \"未找到路由规则: story_audit_passed → specify\"\n    },\n    {\n      \"check\": \"路由规则: specify_passed → plan\",\n      \"status\": \"PASS\",\n      \"details\": \"找到路由规则 (第 197 行)\",\n      \"lineNumber\": 197\n    },\n    {\n      \"check\": \"路由规则: plan_passed → gaps\",\n      \"status\": \"FAIL\",\n      \"details\": \"未找到路由规则: plan_passed → gaps\",\n      \"lineNumber\": 199\n    },\n    {\n      \"check\": \"路由规则: gaps_passed → tasks\",\n      \"status\": \"FAIL\",\n      \"details\": \"未找到路由规则: gaps_passed → tasks\"\n    },\n    {\n      \"check\": \"路由规则: tasks_passed → Story Type Detection\",\n      \"status\": \"FAIL\",\n      \"details\": \"未找到路由规则: tasks_passed → Story Type Detection\",\n      \"lineNumber\": 201\n    },\n    {\n      \"check\": \"路由规则: implement_passed → commit_gate\",\n      \"status\": \"FAIL\",\n      \"details\": \"未找到路由规则: implement_passed → commit_gate\"\n    },\n    {\n      \"check\": \"路由规则: document_audit_passed → commit_gate\",\n      \"status\": \"FAIL\",\n      \"details\": \"未找到路由规则: document_audit_passed → commit_gate\"\n    },\n    {\n      \"check\": \"Story Type Detection 逻辑\",\n      \"status\": \"FAIL\",\n      \"details\": \"未找到 Story Type Detection 逻辑\",\n      \"lineNumber\": 0\n    },\n    {\n      \"check\": \"Epic-Level Routing 支持\",\n      \"status\": \"FAIL\",\n      \"details\": \"未找到 Epic-Level Routing 章节\",\n      \"lineNumber\": 0\n    },\n    {\n      \"check\": \"Auto-Continue 逻辑\",\n      \"status\": \"WARNING\",\n      \"details\": \"找到 Auto-Continue 逻辑 (第 133 行). enabled检查: true, action映射: false\",\n      \"lineNumber\": 133\n    },\n    {\n      \"check\": \"输出格式要求\",\n      \"status\": \"PASS\",\n      \"details\": \"找到输出格式要求 (allowed_action, follow_up, state_patch 等)\"\n    },\n    {\n      \"check\": \"三层审计结构引用\",\n      \"status\": \"WARNING\",\n      \"details\": \"未找到三层审计结构引用 (可能继承自通用协议)\"\n    },\n    {\n      \"check\": \"Auditor 文件存在性\",\n      \"status\": \"PASS\",\n      \"details\": \"所有 6 个 Auditor 文件均存在\"\n    },\n    {\n      \"check\": \"Layer 4 Agent Prerequisites 一致性\",\n      \"status\": \"PASS\",\n      \"details\": \"所有 4 个 Layer 4 Agent Prerequisites 与路由一致\"\n    }\n  ],\n  \"routingRules\": [\n    {\n      \"stage\": \"null/new\",\n      \"routeTo\": \"story_create/bmad-story-create\",\n      \"found\": false\n    },\n    {\n      \"stage\": \"story_created\",\n      \"routeTo\": \"story_audit/bmad-story-audit\",\n      \"found\": false\n    },\n    {\n      \"stage\": \"story_audit_passed\",\n      \"routeTo\": \"specify\",\n      \"found\": false\n    },\n    {\n      \"stage\": \"specify_passed\",\n      \"routeTo\": \"plan\",\n      \"found\": true,\n      \"lineNumber\": 197\n    },\n    {\n      \"stage\": \"plan_passed\",\n      \"routeTo\": \"gaps\",\n      \"found\": false,\n      \"lineNumber\": 199\n    },\n    {\n      \"stage\": \"gaps_passed\",\n      \"routeTo\": \"tasks\",\n      \"found\": false\n    },\n    {\n      \"stage\": \"tasks_passed\",\n      \"routeTo\": \"Story Type Detection\",\n      \"found\": false,\n      \"lineNumber\": 201\n    },\n    {\n      \"stage\": \"implement_passed\",\n      \"routeTo\": \"commit_gate\",\n      \"found\": false\n    },\n    {\n      \"stage\": \"document_audit_passed\",\n      \"routeTo\": \"commit_gate\",\n      \"found\": false\n    }\n  ],\n  \"storyTypeDetection\": {\n    \"found\": false,\n    \"lineNumber\": 0,\n    \"details\": \"code_flow: false, document_flow: false\"\n  },\n  \"epicLevelRouting\": {\n    \"found\": false,\n    \"lineNumber\": 0,\n    \"details\": \"章节: false, epic模式: false\"\n  },\n  \"autoContinueLogic\": {\n    \"found\": false,\n    \"lineNumber\": 133,\n    \"details\": \"auto_continue: true, enabled检查: true, action映射: false\"\n  }\n}\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G004_ORIGINAL_REPLAY:scripts/audit-stage-routing.ts:cwd",
+            "originalReplayArtifactHash": "sha256:0a66c00e705fb578f0a356acf6ccc5bb7949f45f18f35d01e2fab9611bf99ebf",
+            "sourceDerivedProofId": "G004_SOURCE_DERIVED:scripts/audit-stage-routing.ts:cwd",
+            "sourceLineAnchors": [
+              {
+                "line": 595,
+                "anchor": "scripts/audit-stage-routing.ts:595",
+                "text": "function main(): void {"
+              },
+              {
+                "line": 596,
+                "anchor": "scripts/audit-stage-routing.ts:596",
+                "text": "console.log('🔍 开始审计 Stage Routing 逻辑...\\n');"
+              },
+              {
+                "line": 600,
+                "anchor": "scripts/audit-stage-routing.ts:600",
+                "text": "console.log(`✅ 完成 ${report.summary.totalChecks} 项检查`);"
+              },
+              {
+                "line": 601,
+                "anchor": "scripts/audit-stage-routing.ts:601",
+                "text": "console.log(`   通过: ${report.summary.passed}`);"
+              },
+              {
+                "line": 602,
+                "anchor": "scripts/audit-stage-routing.ts:602",
+                "text": "console.log(`   失败: ${report.summary.failed}`);"
+              },
+              {
+                "line": 603,
+                "anchor": "scripts/audit-stage-routing.ts:603",
+                "text": "console.log(`   警告: ${report.summary.warnings}\\n`);"
+              },
+              {
+                "line": 618,
+                "anchor": "scripts/audit-stage-routing.ts:618",
+                "text": "console.log(`📝 审计报告已保存到: ${outputPath}\\n`);"
+              },
+              {
+                "line": 622,
+                "anchor": "scripts/audit-stage-routing.ts:622",
+                "text": "console.log('❌ 发现以下问题：');"
+              },
+              {
+                "line": 624,
+                "anchor": "scripts/audit-stage-routing.ts:624",
+                "text": "console.log(`   - ${result.check}: ${result.details}`);"
+              },
+              {
+                "line": 626,
+                "anchor": "scripts/audit-stage-routing.ts:626",
+                "text": "console.log('');"
+              },
+              {
+                "line": 630,
+                "anchor": "scripts/audit-stage-routing.ts:630",
+                "text": "console.log('⚠️ 发现以下警告：');"
+              },
+              {
+                "line": 632,
+                "anchor": "scripts/audit-stage-routing.ts:632",
+                "text": "console.log(`   - ${result.check}: ${result.details}`);"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/audit-stage-routing.ts",
+                "to": "scripts/audit-stage-routing.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/audit-stage-routing.js",
+                "to": "scripts/audit-stage-routing.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G004_STATIC_FULL:scripts/audit-stage-routing.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "--cwd <fixture-root>"
+            ],
+            "coveredArgumentCombinations": [
+              "--cwd <fixture-root>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "cwd"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

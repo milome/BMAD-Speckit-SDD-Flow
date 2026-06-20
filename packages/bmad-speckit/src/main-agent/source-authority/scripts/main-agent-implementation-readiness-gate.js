@@ -1,0 +1,715 @@
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.mainImplementationReadinessGate = mainImplementationReadinessGate;
+/* eslint-disable no-console */
+const node_child_process_1 = require("node:child_process");
+const fs = __importStar(require("node:fs"));
+const path = __importStar(require("node:path"));
+const architecture_confirmation_hash_recipe_1 = require("./architecture-confirmation-hash-recipe");
+const ai_tdd_contract_gate_1 = require("./ai-tdd-contract-gate");
+const requirement_record_control_store_1 = require("./requirement-record-control-store");
+const reconfirmation_runtime_1 = require("./reconfirmation-runtime");
+function isDirectImplementationReadinessGateCli(entry) {
+    return /(^|[\\/])main-agent-implementation-readiness-gate(\.[cm]?js|\.ts)?$/iu.test(entry ?? '');
+}
+function parseArgs(argv) {
+    const out = {};
+    for (let index = 0; index < argv.length; index += 1) {
+        const arg = argv[index];
+        if (arg === '--help' || arg === '-h')
+            out.help = true;
+        else if (arg === '--json')
+            out.json = true;
+        else if (arg.startsWith('--')) {
+            const key = arg.slice(2).replace(/-([a-z])/gu, (_, letter) => letter.toUpperCase());
+            const value = argv[index + 1];
+            if (!value || value.startsWith('--'))
+                throw new Error(`Missing value for ${arg}`);
+            out[key] = value;
+            index += 1;
+        }
+        else {
+            throw new Error(`Unexpected positional argument: ${arg}`);
+        }
+    }
+    return out;
+}
+function text(value) {
+    return typeof value === 'string' ? value.trim() : '';
+}
+function objects(value) {
+    return Array.isArray(value)
+        ? value.filter((item) => Boolean(item) && typeof item === 'object' && !Array.isArray(item))
+        : [];
+}
+function strings(value) {
+    return Array.isArray(value) ? value.map(text).filter(Boolean) : [];
+}
+function nested(value) {
+    return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+}
+function unique(values) {
+    return [...new Set(values.filter(Boolean))];
+}
+function readJson(file) {
+    const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        throw new Error(`JSON object expected: ${file}`);
+    }
+    return parsed;
+}
+function normalizePathForRecord(value) {
+    return value.replace(/\\/gu, '/');
+}
+function latestConfirmation(record) {
+    const history = objects(record.confirmationHistory);
+    return history.length > 0 ? history[history.length - 1] : null;
+}
+function hasBlockingOpenQuestion(record) {
+    const summary = record.contractSummary;
+    if (!summary || typeof summary !== 'object' || Array.isArray(summary))
+        return false;
+    return objects(summary.openQuestions).some((question) => question.blocksImplementation === true);
+}
+function latestArchitectureStateCheck(record) {
+    const checks = objects(record.architectureConfirmationStateChecks);
+    return checks.length > 0 ? checks[checks.length - 1] : null;
+}
+function architectureStateCurrent(record, resolvedRecipeHash) {
+    const state = nested(record.architectureConfirmationState);
+    const staleInputs = nested(state.staleInputs);
+    const currentHashes = {
+        sourceDocumentHash: text(record.sourceDocumentHash),
+        implementationConfirmationHash: text(record.implementationConfirmationHash),
+        targetPathsHash: text(staleInputs.targetPathsHash),
+        consumerImpactScanHash: text(staleInputs.consumerImpactScanHash),
+        governanceImpactScanHash: text(staleInputs.governanceImpactScanHash),
+        currentArtifactHash: text(state.currentArchitectureConfirmationHash),
+        resolvedRecipeHash,
+    };
+    const blockingReasons = [
+        text(state.status) === 'active' ? '' : 'architecture_confirmation_not_active',
+        text(state.currentArchitectureConfirmationHash) ? '' : 'architecture_confirmation_hash_missing',
+        text(staleInputs.sourceDocumentHash) === text(currentHashes.sourceDocumentHash)
+            ? ''
+            : 'architecture_confirmation_source_hash_not_current',
+        text(staleInputs.implementationConfirmationHash) ===
+            text(currentHashes.implementationConfirmationHash)
+            ? ''
+            : 'architecture_confirmation_implementation_hash_not_current',
+        text(state.resolvedRecipeHash) === resolvedRecipeHash
+            ? ''
+            : 'architecture_confirmation_resolved_recipe_hash_not_current',
+    ].filter(Boolean);
+    return {
+        passed: blockingReasons.length === 0,
+        blockingReasons,
+        currentHashes,
+        staleInputs,
+    };
+}
+function architectureConfirmationRequired(record) {
+    if (record.architectureConfirmationRequired === true)
+        return true;
+    const state = record.architectureConfirmationState;
+    if (state && typeof state === 'object' && !Array.isArray(state))
+        return true;
+    return (objects(record.architectureConfirmations).length > 0 ||
+        objects(record.architectureConfirmationStateChecks).length > 0);
+}
+function normalizeImplementationRunKind(value) {
+    const raw = text(value);
+    if (raw === 'first-implementation' || raw === 'first_implementation' || raw === 'first') {
+        return 'first-implementation';
+    }
+    if (raw === 'rerun' || raw === 're-run' || raw === 'resume')
+        return 'rerun';
+    return '';
+}
+function inferImplementationRunKind(record) {
+    const controlledHints = unique([
+        normalizeImplementationRunKind(record.implementationRunKind),
+        normalizeImplementationRunKind(nested(record.implementationEntryGate).implementationRunKind),
+    ]);
+    if (controlledHints.length > 1) {
+        return {
+            kind: '',
+            inferred: false,
+            evidence: controlledHints,
+            blockingReasons: ['implementation_run_kind_conflict'],
+        };
+    }
+    if (controlledHints.length === 1) {
+        return {
+            kind: controlledHints[0],
+            inferred: false,
+            evidence: controlledHints,
+            blockingReasons: [],
+        };
+    }
+    const evidence = [
+        objects(record.executionIterations).length > 0 ? 'executionIterations' : '',
+        objects(record.requirementClosures).length > 0 ? 'requirementClosures' : '',
+        objects(record.rerunLoops).length > 0 ? 'rerunLoops' : '',
+        objects(nested(record.closeout).attempts).length > 0 ? 'closeout.attempts' : '',
+        objects(nested(record.deliveryEvidence).requiredCommands).length > 0
+            ? 'deliveryEvidence.requiredCommands'
+            : '',
+        objects(record.artifactIndex).length > 0 ? 'artifactIndex' : '',
+    ].filter(Boolean);
+    return {
+        kind: evidence.length > 0 ? 'rerun' : 'first-implementation',
+        inferred: true,
+        evidence,
+        blockingReasons: [],
+    };
+}
+function resolveImplementationRunKind(record, explicit) {
+    const explicitKind = normalizeImplementationRunKind(explicit);
+    if (explicit && !explicitKind) {
+        return {
+            kind: '',
+            inferred: false,
+            evidence: [explicit],
+            blockingReasons: ['implementation_run_kind_invalid'],
+        };
+    }
+    if (explicitKind)
+        return { kind: explicitKind, inferred: false, evidence: ['cli'], blockingReasons: [] };
+    return inferImplementationRunKind(record);
+}
+function resolveSourcePath(record, explicit) {
+    const candidate = text(explicit) || text(record.sourcePath) || text(latestConfirmation(record)?.sourcePath);
+    if (!candidate)
+        return '';
+    const resolved = path.resolve(candidate);
+    return fs.existsSync(resolved) ? resolved : '';
+}
+function resolveRenderReportPath(record) {
+    const confirmation = latestConfirmation(record);
+    const candidates = [
+        text(confirmation?.renderReportPath),
+        text(nested(record.confirmationRender).reportPath),
+        text(record.renderReportPath),
+    ];
+    for (const candidate of candidates) {
+        if (!candidate)
+            continue;
+        const resolved = path.resolve(candidate);
+        if (fs.existsSync(resolved))
+            return resolved;
+    }
+    return '';
+}
+function resolveRequirementsContractAuthoringScript(cwd, relativeScript) {
+    const home = process.env.USERPROFILE || process.env.HOME || '';
+    const packageRoot = path.resolve(__dirname, '..');
+    const candidates = [
+        path.join(cwd, '.codex', 'skills', 'requirements-contract-authoring'),
+        path.join(cwd, '.cursor', 'skills', 'requirements-contract-authoring'),
+        path.join(cwd, '.claude', 'skills', 'requirements-contract-authoring'),
+        path.join(cwd, '_bmad', 'skills', 'requirements-contract-authoring'),
+        path.join(cwd, '.agents', 'skills', 'requirements-contract-authoring'),
+        path.join(packageRoot, '.codex', 'skills', 'requirements-contract-authoring'),
+        path.join(packageRoot, '.cursor', 'skills', 'requirements-contract-authoring'),
+        path.join(packageRoot, '.claude', 'skills', 'requirements-contract-authoring'),
+        path.join(packageRoot, '_bmad', 'skills', 'requirements-contract-authoring'),
+        ...(home
+            ? [
+                path.join(home, '.codex', 'skills', 'requirements-contract-authoring'),
+                path.join(home, '.cursor', 'skills', 'requirements-contract-authoring'),
+                path.join(home, '.claude', 'skills', 'requirements-contract-authoring'),
+                path.join(home, '.agents', 'skills', 'requirements-contract-authoring'),
+            ]
+            : []),
+    ];
+    for (const skillDir of candidates) {
+        if (!fs.existsSync(path.join(skillDir, 'SKILL.md')))
+            continue;
+        const scriptPath = path.join(skillDir, 'scripts', relativeScript);
+        if (fs.existsSync(scriptPath))
+            return scriptPath;
+    }
+    return path.join(candidates[0], 'scripts', relativeScript);
+}
+function runImplementationReadinessStageAudit(record, input) {
+    const cwd = input.cwd ? path.resolve(input.cwd) : process.cwd();
+    const scriptPath = resolveRequirementsContractAuthoringScript(cwd, 'audit_implementation_readiness.js');
+    const sourcePath = resolveSourcePath(record, input.sourcePath);
+    const renderReportPath = resolveRenderReportPath(record);
+    const missingReasons = [
+        fs.existsSync(scriptPath) ? '' : 'implementation_readiness_stage_audit_script_missing',
+        sourcePath ? '' : 'implementation_readiness_stage_audit_source_missing',
+        renderReportPath ? '' : 'implementation_readiness_stage_audit_render_report_missing',
+    ].filter(Boolean);
+    if (missingReasons.length > 0) {
+        return {
+            check: {
+                id: 'implementation-readiness-stage-audit',
+                passed: false,
+                scriptPath: normalizePathForRecord(scriptPath),
+                sourcePath: sourcePath ? normalizePathForRecord(sourcePath) : null,
+                renderReportPath: renderReportPath ? normalizePathForRecord(renderReportPath) : null,
+                blockingReasons: missingReasons,
+            },
+            blockingReasons: missingReasons,
+        };
+    }
+    const result = (0, node_child_process_1.spawnSync)(process.execPath, [scriptPath, sourcePath, '--render-report', renderReportPath, '--json'], {
+        cwd,
+        encoding: 'utf8',
+        env: {
+            ...process.env,
+            BMAD_SPECKIT_PACKAGE_ROOT: path.resolve(__dirname, '..'),
+            NODE_PATH: [path.join(path.resolve(__dirname, '..'), 'node_modules'), process.env.NODE_PATH]
+                .filter(Boolean)
+                .join(path.delimiter),
+        },
+        windowsHide: true,
+        maxBuffer: 64 * 1024 * 1024,
+    });
+    let report = null;
+    try {
+        const parsed = JSON.parse(result.stdout || '{}');
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            report = parsed;
+        }
+    }
+    catch {
+        report = null;
+    }
+    const failedChecks = strings(report?.failedChecks);
+    const currentHashes = nested(report?.currentHashes);
+    const hashMismatchReasons = [
+        text(currentHashes.sourceDocumentHash) === text(record.sourceDocumentHash)
+            ? ''
+            : 'implementation_readiness_stage_audit_source_hash_mismatch',
+        text(currentHashes.implementationConfirmationHash) ===
+            text(record.implementationConfirmationHash)
+            ? ''
+            : 'implementation_readiness_stage_audit_implementation_hash_mismatch',
+        text(currentHashes.reportConfirmationPageHash) === text(record.confirmationPageHash)
+            ? ''
+            : 'implementation_readiness_stage_audit_confirmation_page_hash_mismatch',
+    ].filter(Boolean);
+    const passed = result.status === 0 && text(report?.verdict) === 'PASS' && hashMismatchReasons.length === 0;
+    const blockingReasons = passed
+        ? []
+        : unique([
+            'implementation_readiness_stage_audit_failed',
+            ...failedChecks.map((check) => `stage_audit_${check}`),
+            ...hashMismatchReasons,
+        ]);
+    return {
+        check: {
+            id: 'implementation-readiness-stage-audit',
+            passed,
+            scriptPath: normalizePathForRecord(scriptPath),
+            sourcePath: normalizePathForRecord(sourcePath),
+            renderReportPath: normalizePathForRecord(renderReportPath),
+            exitCode: result.status ?? 2,
+            verdict: text(report?.verdict) || null,
+            failedChecks,
+            currentHashes,
+            stageAudit: nested(report?.stageAudit),
+            blockingReasons,
+            stderr: text(result.stderr) || undefined,
+        },
+        blockingReasons,
+    };
+}
+function hasReadinessAutoRemediationOverlay(record) {
+    return (text(nested(nested(record.aiTddContractGate).readinessAutoRemediationOverlay).schemaVersion) ===
+        'readiness-auto-remediation-overlay/v1');
+}
+function applyReadinessOverlayToStageAuditBlockers(record, stageAudit) {
+    if (!hasReadinessAutoRemediationOverlay(record))
+        return stageAudit;
+    const covered = new Set([
+        'implementation_readiness_stage_audit_failed',
+        'stage_audit_requirement_missing_acceptance_or_e2e_coverage',
+    ]);
+    const remaining = stageAudit.blockingReasons.filter((reason) => !covered.has(reason));
+    if (remaining.length === stageAudit.blockingReasons.length)
+        return stageAudit;
+    return {
+        check: {
+            ...stageAudit.check,
+            passed: remaining.length === 0,
+            blockingReasons: remaining,
+            readinessAutoRemediationOverlayApplied: true,
+            originalBlockingReasons: stageAudit.blockingReasons,
+        },
+        blockingReasons: remaining,
+    };
+}
+function evaluate(record, input) {
+    const checks = [];
+    const blockingReasons = [];
+    const openReconfirmations = (0, reconfirmation_runtime_1.openReconfirmationRequests)(record);
+    checks.push({
+        id: 'no-open-reconfirmation-request',
+        passed: openReconfirmations.length === 0,
+        openRequestIds: openReconfirmations.map((request) => text(request.requestId)).filter(Boolean),
+    });
+    if (openReconfirmations.length > 0) {
+        blockingReasons.push('open_reconfirmation_request_exists');
+    }
+    const runKind = resolveImplementationRunKind(record, input.implementationRunKind);
+    checks.push({
+        id: 'implementation-run-kind-resolved',
+        passed: runKind.blockingReasons.length === 0,
+        implementationRunKind: runKind.kind,
+        inferred: runKind.inferred,
+        evidence: runKind.evidence,
+        blockingReasons: runKind.blockingReasons,
+    });
+    blockingReasons.push(...runKind.blockingReasons);
+    const confirmation = latestConfirmation(record);
+    const confirmed = text(record.status) === 'user_confirmed';
+    checks.push({ id: 'record-status-user-confirmed', passed: confirmed });
+    if (!confirmed)
+        blockingReasons.push('record_not_user_confirmed');
+    const confirmationPresent = Boolean(confirmation);
+    checks.push({ id: 'latest-confirmation-history-present', passed: confirmationPresent });
+    if (!confirmationPresent)
+        blockingReasons.push('confirmation_history_missing');
+    const sourceHashMatches = confirmationPresent &&
+        text(confirmation?.sourceDocumentHash) === text(record.sourceDocumentHash);
+    checks.push({ id: 'source-document-hash-current', passed: sourceHashMatches });
+    if (!sourceHashMatches)
+        blockingReasons.push('source_document_hash_not_current');
+    const implementationHashMatches = confirmationPresent &&
+        text(confirmation?.implementationConfirmationHash) ===
+            text(record.implementationConfirmationHash);
+    checks.push({
+        id: 'implementation-confirmation-hash-current',
+        passed: implementationHashMatches,
+    });
+    if (!implementationHashMatches)
+        blockingReasons.push('implementation_confirmation_hash_not_current');
+    const confirmationPageHashPresent = confirmationPresent && Boolean(text(confirmation?.confirmationPageHash));
+    checks.push({ id: 'confirmation-page-hash-present', passed: confirmationPageHashPresent });
+    if (!confirmationPageHashPresent)
+        blockingReasons.push('confirmation_page_hash_missing');
+    const requiresArchitecture = architectureConfirmationRequired(record);
+    checks.push({
+        id: 'architecture-confirmation-required',
+        passed: true,
+        required: requiresArchitecture,
+    });
+    const architectureState = record.architectureConfirmationState;
+    const architectureActive = !requiresArchitecture ||
+        (architectureState &&
+            typeof architectureState === 'object' &&
+            !Array.isArray(architectureState) &&
+            text(architectureState.status) === 'active' &&
+            Boolean(text(architectureState.currentArchitectureConfirmationHash)));
+    checks.push({ id: 'architecture-confirmation-current', passed: Boolean(architectureActive) });
+    if (!architectureActive)
+        blockingReasons.push('architecture_confirmation_not_active');
+    let resolvedRecipeHash = '';
+    try {
+        resolvedRecipeHash = (0, architecture_confirmation_hash_recipe_1.resolveArchitectureConfirmationHashRecipe)().resolvedRecipeHash;
+    }
+    catch {
+        blockingReasons.push('architecture_hash_recipe_unresolved');
+    }
+    const architectureRecipeCurrent = !requiresArchitecture ||
+        (Boolean(resolvedRecipeHash) &&
+            text(architectureState?.resolvedRecipeHash) === resolvedRecipeHash);
+    checks.push({
+        id: 'architecture-confirmation-recipe-current',
+        passed: architectureRecipeCurrent,
+    });
+    if (!architectureRecipeCurrent)
+        blockingReasons.push('architecture_confirmation_resolved_recipe_hash_not_current');
+    const stateCurrent = architectureStateCurrent(record, resolvedRecipeHash);
+    const stateCheck = latestArchitectureStateCheck(record);
+    const legacyStateCheckPassed = Boolean(stateCheck) &&
+        text(stateCheck?.decision) === 'pass' &&
+        text(stateCheck?.stateTransition?.toStatus) === 'active' &&
+        text(stateCheck?.resolvedRecipeHash) === resolvedRecipeHash;
+    checks.push({
+        id: 'architecture-confirmation-state-current',
+        passed: !requiresArchitecture || stateCurrent.passed,
+        currentHashes: stateCurrent.currentHashes,
+        staleInputs: stateCurrent.staleInputs,
+        blockingReasons: requiresArchitecture ? stateCurrent.blockingReasons : [],
+    });
+    checks.push({
+        id: 'architecture-confirmation-state-check-current',
+        passed: !requiresArchitecture || stateCurrent.passed || legacyStateCheckPassed,
+        compatibilityOnly: true,
+        legacyEventType: 'architecture_confirmation_state_checked',
+    });
+    if (requiresArchitecture)
+        blockingReasons.push(...stateCurrent.blockingReasons);
+    const blockingQuestion = hasBlockingOpenQuestion(record);
+    checks.push({ id: 'no-blocking-open-questions', passed: !blockingQuestion });
+    if (blockingQuestion)
+        blockingReasons.push('blocking_open_question_exists');
+    const resolvedSourcePath = resolveSourcePath(record, input.sourcePath);
+    const stageAudit = applyReadinessOverlayToStageAuditBlockers(record, runImplementationReadinessStageAudit(record, {
+        sourcePath: input.sourcePath,
+    }));
+    checks.push(stageAudit.check);
+    blockingReasons.push(...stageAudit.blockingReasons);
+    if (!resolvedSourcePath) {
+        checks.push({
+            id: 'ai-tdd-contract-gate-source',
+            passed: false,
+            blockingReasons: ['ai_tdd_contract_gate_source_missing'],
+        });
+        blockingReasons.push('ai_tdd_contract_gate_source_missing');
+    }
+    else if (!runKind.kind || runKind.blockingReasons.length > 0) {
+        checks.push({
+            id: 'ai-tdd-contract-gate-run-kind',
+            passed: false,
+            blockingReasons: ['ai_tdd_contract_gate_run_kind_unresolved', ...runKind.blockingReasons],
+        });
+        blockingReasons.push('ai_tdd_contract_gate_run_kind_unresolved');
+    }
+    else {
+        const mode = runKind.kind === 'first-implementation' ? 'pre-implementation' : 'pre-rerun';
+        try {
+            const aiTddGate = (0, ai_tdd_contract_gate_1.evaluateAiTddContractGate)({
+                sourcePath: resolvedSourcePath,
+                record,
+                recordPath: input.recordPath,
+                mode,
+                attemptId: `implementation-readiness:${input.evaluatedAt}`,
+                evaluatedAt: input.evaluatedAt,
+                evaluatedBy: input.evaluatedBy,
+            });
+            const preImplementationReadiness = nested(aiTddGate.preImplementationReadinessReport);
+            const closeoutReadiness = nested(aiTddGate.closeoutReadinessReport);
+            const passed = runKind.kind === 'first-implementation'
+                ? preImplementationReadiness.ready === true
+                : text(aiTddGate.decision) === 'pass';
+            const aiTddBlockers = runKind.kind === 'first-implementation'
+                ? strings(preImplementationReadiness.blockingReasons)
+                : strings(aiTddGate.blockingReasons);
+            checks.push({
+                id: `ai-tdd-contract-gate-${mode}`,
+                passed,
+                implementationRunKind: runKind.kind,
+                mode,
+                decision: text(aiTddGate.decision),
+                closeoutReady: closeoutReadiness.ready === true,
+                preImplementationReady: preImplementationReadiness.ready === true,
+                blockingReasons: aiTddBlockers,
+            });
+            if (!passed) {
+                blockingReasons.push(runKind.kind === 'first-implementation'
+                    ? 'ai_tdd_pre_implementation_readiness_not_ready'
+                    : 'ai_tdd_pre_rerun_gate_not_passed', ...aiTddBlockers);
+            }
+        }
+        catch (error) {
+            checks.push({
+                id: 'ai-tdd-contract-gate-evaluation',
+                passed: false,
+                blockingReasons: ['ai_tdd_contract_gate_evaluation_failed'],
+                error: error instanceof Error ? error.message : String(error),
+            });
+            blockingReasons.push('ai_tdd_contract_gate_evaluation_failed');
+        }
+    }
+    return {
+        decision: blockingReasons.length === 0 ? 'pass' : 'blocked',
+        blockingReasons: unique(blockingReasons),
+        checks,
+    };
+}
+function updateRecord(record, input) {
+    const checkId = `implementation-readiness:${input.evaluatedAt}`;
+    const gateCheck = {
+        eventType: 'gate_check_recorded',
+        checkId,
+        gate: 'Implementation Readiness Gate',
+        decision: input.decision,
+        blockingReasons: input.blockingReasons,
+        checks: input.checks,
+        reportPath: normalizePathForRecord(input.reportPath),
+        sourceRefs: [
+            { sourceType: 'requirement_record', id: text(record.recordId) },
+            { sourceType: 'confirmation_history', id: text(latestConfirmation(record)?.confirmedAt) },
+        ].filter((item) => text(item.id)),
+        recordedAt: input.evaluatedAt,
+        recordedBy: input.evaluatedBy,
+    };
+    const previousSixModelResults = nested(record.sixModelResults);
+    return {
+        ...record,
+        gateChecks: [...objects(record.gateChecks), gateCheck],
+        sixModelResults: {
+            ...previousSixModelResults,
+            implementation_readiness: input.resultPayload,
+        },
+        readinessBaselineMetadata: nested(input.resultPayload.readinessBaselineMetadata),
+        currentMentalModel: text(record.currentMentalModel) || 'implementation_readiness',
+        lastEventType: 'implementation_readiness_result_recorded',
+        updatedAt: input.evaluatedAt,
+    };
+}
+function currentArchitectureHash(record) {
+    const state = record.architectureConfirmationState;
+    const currentHash = state && typeof state === 'object' && !Array.isArray(state)
+        ? text(state.currentArchitectureConfirmationHash)
+        : '';
+    return currentHash || 'not_required';
+}
+function mainImplementationReadinessGate(argv) {
+    const args = parseArgs(argv);
+    if (args.help) {
+        console.log('Usage: main-agent-implementation-readiness-gate --requirement-record <json> [--source <requirement.md>] [--implementation-run-kind <first-implementation|rerun>] [--json]');
+        return 0;
+    }
+    if (!args.requirementRecord)
+        throw new Error('missing required args: requirementRecord');
+    const recordPath = path.resolve(args.requirementRecord);
+    const record = readJson(recordPath);
+    const evaluatedAt = args.evaluatedAt ?? new Date().toISOString();
+    const evaluatedBy = args.evaluatedBy ?? 'agent';
+    const reportPath = path.resolve(args.reportPath ?? path.join(path.dirname(recordPath), 'implementation-readiness-report.json'));
+    const evaluation = evaluate(record, {
+        recordPath,
+        sourcePath: args.source,
+        implementationRunKind: args.implementationRunKind,
+        evaluatedAt,
+        evaluatedBy,
+    });
+    const report = {
+        reportType: 'implementation_readiness_report',
+        generatedAt: evaluatedAt,
+        recordId: text(record.recordId),
+        requirementSetId: text(record.requirementSetId),
+        implementationRunKind: normalizeImplementationRunKind(args.implementationRunKind) ||
+            inferImplementationRunKind(record).kind,
+        decision: evaluation.decision,
+        blockingReasons: evaluation.blockingReasons,
+        checks: evaluation.checks,
+    };
+    fs.mkdirSync(path.dirname(reportPath), { recursive: true });
+    fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+    const reportHash = (0, requirement_record_control_store_1.sha256Text)(fs.readFileSync(reportPath, 'utf8'));
+    const resultId = `implementation-readiness-result:${text(record.requirementSetId) || text(record.recordId)}:${evaluatedAt}`;
+    const readinessBaselineMetadata = {
+        baselineId: `readiness-baseline:${text(record.requirementSetId) || text(record.recordId)}`,
+        activationId: resultId,
+        status: evaluation.decision === 'pass' ? 'current' : 'not_established',
+        scoringRunId: `readiness-scoring:${text(record.requirementSetId) || text(record.recordId)}:${evaluatedAt}`,
+        scoringRecordPath: normalizePathForRecord(path.join(path.dirname(recordPath), 'readiness-scoring-record.json')),
+        sourceRequirementRecordHash: (0, requirement_record_control_store_1.sha256Text)(JSON.stringify(record)),
+        auditTraceHash: reportHash,
+        readinessGateRecipeVersion: 'implementation-readiness-gate/v1',
+        ...(evaluation.decision === 'pass'
+            ? {
+                establishedAt: evaluatedAt,
+                baselineCreatedByEventId: resultId,
+            }
+            : {}),
+    };
+    const resultPayload = {
+        payloadKind: 'model_result',
+        model: 'implementation_readiness',
+        recordId: text(record.recordId),
+        requirementSetId: text(record.requirementSetId) || text(record.recordId),
+        sourceDocumentHash: text(record.sourceDocumentHash),
+        implementationConfirmationHash: text(record.implementationConfirmationHash),
+        status: evaluation.decision,
+        resultRecordedAt: evaluatedAt,
+        resultRecordedBy: evaluatedBy,
+        blockingReasons: evaluation.blockingReasons,
+        sourceRefs: [
+            { sourceType: 'gate_check', id: `implementation-readiness:${evaluatedAt}` },
+            { sourceType: 'readiness_report', id: normalizePathForRecord(reportPath) },
+        ],
+        currentHashes: {
+            sourceDocumentHash: text(record.sourceDocumentHash),
+            implementationConfirmationHash: text(record.implementationConfirmationHash),
+            confirmationPageHash: text(record.confirmationPageHash),
+            architectureConfirmationHash: currentArchitectureHash(record),
+        },
+        readinessReportRef: {
+            path: normalizePathForRecord(reportPath),
+            contentHash: reportHash,
+        },
+        readinessBaselineMetadata,
+    };
+    const readinessPayload = {
+        ...evaluation,
+        reportPath,
+        reportHash,
+        evaluatedAt,
+        evaluatedBy,
+        resultPayload,
+    };
+    const commit = (0, requirement_record_control_store_1.appendControlEventAndReplay)({
+        recordPath,
+        writerId: 'implementation-readiness-gate-writer',
+        eventType: 'implementation_readiness_result_recorded',
+        recordedAt: evaluatedAt,
+        payload: resultPayload,
+        reduce: (currentRecord) => updateRecord(currentRecord, readinessPayload),
+    });
+    const output = {
+        ok: true,
+        reportPath: normalizePathForRecord(reportPath),
+        decision: evaluation.decision,
+        blockingReasons: evaluation.blockingReasons,
+        controlEventId: commit.event.eventId,
+        controlEventHash: commit.event.eventHash,
+        eventLogPath: normalizePathForRecord(commit.eventLogPath),
+        receiptPath: normalizePathForRecord(commit.receiptPath),
+        readinessBaselineMetadata,
+    };
+    process.stdout.write(args.json
+        ? `${JSON.stringify(output, null, 2)}\n`
+        : `implementation_readiness=${evaluation.decision}\n`);
+    return evaluation.decision === 'pass' ? 0 : 1;
+}
+if (require.main === module && isDirectImplementationReadinessGateCli(process.argv[1])) {
+    try {
+        process.exitCode = mainImplementationReadinessGate(process.argv.slice(2));
+    }
+    catch (error) {
+        console.error(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : String(error) }, null, 2));
+        process.exitCode = 2;
+    }
+}

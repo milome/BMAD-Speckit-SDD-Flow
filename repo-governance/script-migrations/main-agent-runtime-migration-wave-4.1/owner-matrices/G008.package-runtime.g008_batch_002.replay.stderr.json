@@ -1,0 +1,120 @@
+[
+  {
+    "originalPath": "scripts/critical-auditor-profile.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_critical_auditor_profile_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/dashboard-projection-mapping.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_dashboard_projection_mapping_ts_no_args",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"dashboard-projection-mapping requires --record-id\"\n}\n"
+      },
+      {
+        "scenarioId": "g008_dashboard_projection_mapping_ts_flag_help",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"Unexpected positional argument: source-derived-help\"\n}\n"
+      },
+      {
+        "scenarioId": "g008_dashboard_projection_mapping_ts_flag_json",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"Unexpected positional argument: <fixture-root>\\\\json.json\"\n}\n"
+      },
+      {
+        "scenarioId": "g008_dashboard_projection_mapping_ts_flag_out_dir",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"dashboard-projection-mapping requires --record-id\"\n}\n"
+      },
+      {
+        "scenarioId": "g008_dashboard_projection_mapping_ts_flag_record_id",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/deferred-gap-governance.cjs",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_deferred_gap_governance_cjs_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/deferred-gap-governance.d.cts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_deferred_gap_governance_d_cts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/diagnose-bmad-state.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_diagnose_bmad_state_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/ensure-governance-user-story-mapping-fixture.js",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_ensure_governance_user_story_mapping_fixture_js_no_args",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g008_ensure_governance_user_story_mapping_fixture_js_flag_force",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g008_ensure_governance_user_story_mapping_fixture_js_env_ci",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/eval-question-generate.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_eval_question_generate_ts_no_args",
+        "expectedStderr": "Usage: npx ts-node scripts/eval-question-generate.ts --run-id <id> | --input <path> [--version v1|v2] [--outputDir <dir>]\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/extract-npm-pack-json.js",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_extract_npm_pack_json_js_no_args",
+        "expectedStderr": "Usage: node scripts/extract-npm-pack-json.js <input> <output>\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/governance-host-dispatch-adapter.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_governance_host_dispatch_adapter_ts_no_args",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g008_governance_host_dispatch_adapter_ts_flag_output_format",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/host-runtime-mode.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_host_runtime_mode_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  }
+]

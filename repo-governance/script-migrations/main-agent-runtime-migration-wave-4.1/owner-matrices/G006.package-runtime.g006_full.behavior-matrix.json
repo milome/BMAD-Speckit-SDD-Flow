@@ -1,0 +1,1756 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-wave-4-1-owner-initial-behavior-matrix/v1",
+  "waveId": "main-agent-runtime-migration-wave-4.1",
+  "ownerTaskId": "G006",
+  "generatedAt": "2026-06-20T10:46:20.449Z",
+  "artifactSuffix": "g006_full",
+  "timeoutMs": 30000,
+  "coverageDecision": "passed_full_original_behavior_coverage",
+  "eligibleOwnerRowCount": 4,
+  "selectedRowCount": 4,
+  "matrixRowCount": 4,
+  "scenarioCount": 10,
+  "fullCoverageStillRequired": false,
+  "rows": [
+    {
+      "originalPath": "scripts/bmad-speckit-cli.js",
+      "entryId": "bmad-speckit-cli-js",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-speckit-cli.js"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/bmad-speckit-cli.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G006_STATIC_FULL:scripts/bmad-speckit-cli.js:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 1,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 2,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 1,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 2,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [
+          "NODE_PATH"
+        ],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [
+          "NODE_PATH"
+        ],
+        "scenarioDefinitionCount": 2,
+        "coveredScenarioDefinitionIds": [
+          "no_args",
+          "env_node_path"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g006_bmad_speckit_cli_js_no_args",
+          "originalEntryPoint": "scripts/bmad-speckit-cli.js",
+          "originalEntryCommand": "node scripts/bmad-speckit-cli.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-speckit-cli.js",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/bmad-speckit-cli.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g006_bmad_speckit_cli_js_no_args_original_fixture_root",
+              "path": "<tmp>/g006_bmad_speckit_cli_js_no_args-original-Oyeh7j",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g006_bmad_speckit_cli_js_no_args_package_fixture_root",
+              "path": "<tmp>/g006_bmad_speckit_cli_js_no_args-package-iDWN8A",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "Usage: bmad-speckit [options] [command]\n\nBMAD-Speckit: init, check, version, upgrade, uninstall, config, feedback\n\nOptions:\n  -V, --version                                     output the version number\n  -h, --help                                        display help for command\n\nCommands:\n  init [options] [project-name]                     Initialize a new bmad-speckit project\n  check [options]                                   Verify bmad-speckit setup (e.g. bmadPath when using worktree)\n  version [options]                                 Show CLI version, template version, Node version\n  upgrade [options]                                 Upgrade template version in initialized project\n  uninstall [options]                               Safely uninstall managed bmad-speckit install surface from current project\n  add-agent <ai>                                    Add AI agent infrastructure to an initialized project (e.g. bmad-speckit add-agent claude)\n  large-doc [options]                               Create, validate, safely promote, and clean up large generated document draft sessions\n  goal-contract [options]                           Generate source-covered goal execution contracts from source plans\n  feedback                                          Show feedback entry and full-flow compatible AI list\n  ralph                                             Ralph tracking runtime helpers\n  config                                            Get/set/list bmad-speckit config\n  score [options]                                   Parse audit report and write scoring record\n  check-score [options]                             Check if epic/story has scoring records\n  eval-question-generate [options]                  Generate eval question templates from coach diagnosis output\n  coach [options]                                   AI Coach diagnosis\n  dashboard [options]                               Generate project health dashboard\n  deferred-gap-audit [options]                      Audit readiness deferred gaps for drift, ownership, planning, and expiry\n  sft-extract [options]                             Extract SFT training dataset from scoring data (legacy JSONL or canonical bundle compatibility mode)\n  sft-preview [options]                             Preview accepted/rejected SFT dataset candidates\n  sft-validate [options]                            Validate canonical SFT samples and export compatibility\n  sft-bundle [options]                              Write a training-ready canonical SFT dataset bundle\n  scores [options]                                  Display scoring summary\n  ensure-run-runtime-context [options]              Generate or persist run-scoped runtime context (dev_story / post_audit)\n  sync-runtime-context-from-sprint [options]        Refresh runtime registry and project context from sprint-status.yaml\n  assert-implementation-entry [options]             Assert the current implementation-entry gate from registry-backed runtime context\n  runtime-mcp [options]                             Start the runtime dashboard MCP server over stdio\n  provider-smoke [options]                          Run a provider connectivity and response-shape smoke check\n  dashboard-start [options]                         Start or reuse a stable local runtime dashboard web server\n  dashboard-status                                  Inspect the stable runtime dashboard server state and health\n  dashboard-stop                                    Stop the stable runtime dashboard server and clear state\n  dashboard-live [options]                          Start the local live runtime dashboard web server\n  bmad-help [options]                               Render BMAD Method help guidance from the package runtime\n  bmads [options]                                   Render the BMAD-Speckit main-agent runtime console\n  bmads-auto [options]                              Deprecated compatibility alias for BMADS Auto source-repository orchestration\n  bmad-speckit [options]                            Alias for bmads: render the BMAD-Speckit main-agent runtime console\n  main-agent-orchestration                          Run the BMAD main-agent orchestration CLI surface\n  confirm-scope                                     Confirm requirement scope through controlled ingest after exact chat hash confirmation\n  main-agent:confirm-scope                          Run the BMAD confirmation ingest orchestration surface\n  main-agent:bmad-help-five-layer-matrix [options]  Deprecated compatibility alias; use bmad-help for stable user help rendering\n  main-agent:quality-gate                           Run the BMAD main-agent quality gate CLI surface\n  main-agent:host-matrix-pr-orchestrate [options]   Deprecated compatibility alias for source-repository host matrix orchestration\n  main-agent:release-gate                           Run the BMAD main-agent release gate CLI surface\n  main-agent:delivery-truth-gate                    Run the BMAD main-agent delivery truth gate CLI surface\n  write-runtime-context                             Run the BMAD runtime context writer CLI surface\n  run-auditor-host                                  Run the BMAD auditor host CLI surface\n  architecture-drift-check [options]                Run the package architecture drift check surface\n  coach-diagnose [options]                          Run the package coach diagnosis surface\n  emit-runtime-policy [options]                     Emit the package runtime policy surface\n  init-to-root [options]                            Run the package init-to-root surface\n  live-smoke-speckit-workflow [options]             Run the package live smoke workflow surface\n  setup [options]                                   Run the package setup surface\n  speckit-cli [options]                             Run the package Speckit CLI surface\n  validate-single-source-whitelist [options]        Run the package single-source whitelist validation surface\n  eval-questions [options]                          Deprecated compatibility alias for source-repository evaluation question tooling\n  main-agent [options] [action]                     Run stable package-local Main Agent runtime actions\n  help [command]                                    display help for command\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "Usage: bmad-speckit [options] [command]"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G006_ORIGINAL_REPLAY:scripts/bmad-speckit-cli.js:no_args",
+            "originalReplayArtifactHash": "sha256:0035b7183bb3a71ce663bd8201f69c2a5e6fc0800311a71df3d76beaee1a68b5",
+            "sourceDerivedProofId": "G006_SOURCE_DERIVED:scripts/bmad-speckit-cli.js:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 32,
+                "anchor": "scripts/bmad-speckit-cli.js:32",
+                "text": "process.stderr.write('bmad-speckit CLI entry not found. Run npm install first.\\n');"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/bmad-speckit-cli.js",
+                "to": "scripts/bmad-speckit-cli.js"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-speckit-cli.js",
+                "to": "scripts/bmad-speckit-cli.js"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/bmad-speckit-cli.js",
+                "to": "scripts/bmad-speckit-cli.js"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G006_STATIC_FULL:scripts/bmad-speckit-cli.js",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 1,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 1,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [
+              "NODE_PATH"
+            ],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [
+              "NODE_PATH"
+            ],
+            "scenarioDefinitionCount": 2,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "env_node_path"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g006_bmad_speckit_cli_js_env_node_path",
+          "originalEntryPoint": "scripts/bmad-speckit-cli.js",
+          "originalEntryCommand": "node scripts/bmad-speckit-cli.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-speckit-cli.js",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/bmad-speckit-cli.js",
+          "argumentCombination": "env NODE_PATH=<source-derived-safe-value>",
+          "args": [],
+          "env": {
+            "NODE_PATH": "<source-derived-safe-value>"
+          },
+          "fixtures": [
+            {
+              "id": "g006_bmad_speckit_cli_js_env_node_path_original_fixture_root",
+              "path": "<tmp>/g006_bmad_speckit_cli_js_env_node_path-original-5Govp2",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g006_bmad_speckit_cli_js_env_node_path_package_fixture_root",
+              "path": "<tmp>/g006_bmad_speckit_cli_js_env_node_path-package-naWKSn",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "Usage: bmad-speckit [options] [command]\n\nBMAD-Speckit: init, check, version, upgrade, uninstall, config, feedback\n\nOptions:\n  -V, --version                                     output the version number\n  -h, --help                                        display help for command\n\nCommands:\n  init [options] [project-name]                     Initialize a new bmad-speckit project\n  check [options]                                   Verify bmad-speckit setup (e.g. bmadPath when using worktree)\n  version [options]                                 Show CLI version, template version, Node version\n  upgrade [options]                                 Upgrade template version in initialized project\n  uninstall [options]                               Safely uninstall managed bmad-speckit install surface from current project\n  add-agent <ai>                                    Add AI agent infrastructure to an initialized project (e.g. bmad-speckit add-agent claude)\n  large-doc [options]                               Create, validate, safely promote, and clean up large generated document draft sessions\n  goal-contract [options]                           Generate source-covered goal execution contracts from source plans\n  feedback                                          Show feedback entry and full-flow compatible AI list\n  ralph                                             Ralph tracking runtime helpers\n  config                                            Get/set/list bmad-speckit config\n  score [options]                                   Parse audit report and write scoring record\n  check-score [options]                             Check if epic/story has scoring records\n  eval-question-generate [options]                  Generate eval question templates from coach diagnosis output\n  coach [options]                                   AI Coach diagnosis\n  dashboard [options]                               Generate project health dashboard\n  deferred-gap-audit [options]                      Audit readiness deferred gaps for drift, ownership, planning, and expiry\n  sft-extract [options]                             Extract SFT training dataset from scoring data (legacy JSONL or canonical bundle compatibility mode)\n  sft-preview [options]                             Preview accepted/rejected SFT dataset candidates\n  sft-validate [options]                            Validate canonical SFT samples and export compatibility\n  sft-bundle [options]                              Write a training-ready canonical SFT dataset bundle\n  scores [options]                                  Display scoring summary\n  ensure-run-runtime-context [options]              Generate or persist run-scoped runtime context (dev_story / post_audit)\n  sync-runtime-context-from-sprint [options]        Refresh runtime registry and project context from sprint-status.yaml\n  assert-implementation-entry [options]             Assert the current implementation-entry gate from registry-backed runtime context\n  runtime-mcp [options]                             Start the runtime dashboard MCP server over stdio\n  provider-smoke [options]                          Run a provider connectivity and response-shape smoke check\n  dashboard-start [options]                         Start or reuse a stable local runtime dashboard web server\n  dashboard-status                                  Inspect the stable runtime dashboard server state and health\n  dashboard-stop                                    Stop the stable runtime dashboard server and clear state\n  dashboard-live [options]                          Start the local live runtime dashboard web server\n  bmad-help [options]                               Render BMAD Method help guidance from the package runtime\n  bmads [options]                                   Render the BMAD-Speckit main-agent runtime console\n  bmads-auto [options]                              Deprecated compatibility alias for BMADS Auto source-repository orchestration\n  bmad-speckit [options]                            Alias for bmads: render the BMAD-Speckit main-agent runtime console\n  main-agent-orchestration                          Run the BMAD main-agent orchestration CLI surface\n  confirm-scope                                     Confirm requirement scope through controlled ingest after exact chat hash confirmation\n  main-agent:confirm-scope                          Run the BMAD confirmation ingest orchestration surface\n  main-agent:bmad-help-five-layer-matrix [options]  Deprecated compatibility alias; use bmad-help for stable user help rendering\n  main-agent:quality-gate                           Run the BMAD main-agent quality gate CLI surface\n  main-agent:host-matrix-pr-orchestrate [options]   Deprecated compatibility alias for source-repository host matrix orchestration\n  main-agent:release-gate                           Run the BMAD main-agent release gate CLI surface\n  main-agent:delivery-truth-gate                    Run the BMAD main-agent delivery truth gate CLI surface\n  write-runtime-context                             Run the BMAD runtime context writer CLI surface\n  run-auditor-host                                  Run the BMAD auditor host CLI surface\n  architecture-drift-check [options]                Run the package architecture drift check surface\n  coach-diagnose [options]                          Run the package coach diagnosis surface\n  emit-runtime-policy [options]                     Emit the package runtime policy surface\n  init-to-root [options]                            Run the package init-to-root surface\n  live-smoke-speckit-workflow [options]             Run the package live smoke workflow surface\n  setup [options]                                   Run the package setup surface\n  speckit-cli [options]                             Run the package Speckit CLI surface\n  validate-single-source-whitelist [options]        Run the package single-source whitelist validation surface\n  eval-questions [options]                          Deprecated compatibility alias for source-repository evaluation question tooling\n  main-agent [options] [action]                     Run stable package-local Main Agent runtime actions\n  help [command]                                    display help for command\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "Usage: bmad-speckit [options] [command]"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G006_ORIGINAL_REPLAY:scripts/bmad-speckit-cli.js:env_node_path",
+            "originalReplayArtifactHash": "sha256:0035b7183bb3a71ce663bd8201f69c2a5e6fc0800311a71df3d76beaee1a68b5",
+            "sourceDerivedProofId": "G006_SOURCE_DERIVED:scripts/bmad-speckit-cli.js:env_node_path",
+            "sourceLineAnchors": [
+              {
+                "line": 32,
+                "anchor": "scripts/bmad-speckit-cli.js:32",
+                "text": "process.stderr.write('bmad-speckit CLI entry not found. Run npm install first.\\n');"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/bmad-speckit-cli.js",
+                "to": "scripts/bmad-speckit-cli.js"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-speckit-cli.js",
+                "to": "scripts/bmad-speckit-cli.js"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/bmad-speckit-cli.js",
+                "to": "scripts/bmad-speckit-cli.js"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G006_STATIC_FULL:scripts/bmad-speckit-cli.js",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 1,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 1,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [
+              "NODE_PATH"
+            ],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [
+              "NODE_PATH"
+            ],
+            "scenarioDefinitionCount": 2,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "env_node_path"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/run-auditor-host.ts",
+      "entryId": "run-auditor-host",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-auditor-host.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-auditor-host.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G006_STATIC_FULL:scripts/run-auditor-host.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 6,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 2,
+        "errorPathCount": 6,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 6,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 2,
+        "coveredErrorPathCount": 6,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [
+          "--artifactPath",
+          "--iterationCount",
+          "--projectRoot",
+          "--reportPath",
+          "--stage"
+        ],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>",
+          "--artifactPath <source-derived-safe-value>",
+          "--iterationCount <source-derived-safe-value>",
+          "--projectRoot <source-derived-safe-value>",
+          "--reportPath <source-derived-safe-value>",
+          "--stage <source-derived-safe-value>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>",
+          "--artifactPath <source-derived-safe-value>",
+          "--iterationCount <source-derived-safe-value>",
+          "--projectRoot <source-derived-safe-value>",
+          "--reportPath <source-derived-safe-value>",
+          "--stage <source-derived-safe-value>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 6,
+        "coveredScenarioDefinitionIds": [
+          "no_args",
+          "flag_artifactpath",
+          "flag_iterationcount",
+          "flag_projectroot",
+          "flag_reportpath",
+          "flag_stage"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g006_run_auditor_host_ts_no_args",
+          "originalEntryPoint": "scripts/run-auditor-host.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/run-auditor-host.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-auditor-host.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-auditor-host.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g006_run_auditor_host_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g006_run_auditor_host_ts_no_args-original-Td0n0O",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g006_run_auditor_host_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g006_run_auditor_host_ts_no_args-package-PQHIlo",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "run-auditor-host: usage --projectRoot <path> --stage <stage> --artifactPath <path> [--reportPath <path>] [--iterationCount <n>]\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "run-auditor-host: usage --projectRoot <path> --stage <stage> --artifactPath <path> [--reportPath <path>] [--iterationCount <n>]"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G006_ORIGINAL_REPLAY:scripts/run-auditor-host.ts:no_args",
+            "originalReplayArtifactHash": "sha256:a589d773d07a43a61c5fe036f748c1fdf9a665edf330baef81183e1fd31e8135",
+            "sourceDerivedProofId": "G006_SOURCE_DERIVED:scripts/run-auditor-host.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 335,
+                "anchor": "scripts/run-auditor-host.ts:335",
+                "text": "console.warn(buildStorySpecVersionLockMessage(parsedStoryPath, storySpecVersionLock));"
+              },
+              {
+                "line": 369,
+                "anchor": "scripts/run-auditor-host.ts:369",
+                "text": "console.error(`run-auditor-host: score write failure blocks closeout: ${scoreError}`);"
+              },
+              {
+                "line": 503,
+                "anchor": "scripts/run-auditor-host.ts:503",
+                "text": "export async function mainRunAuditorHost(argv: string[]): Promise<number> {"
+              },
+              {
+                "line": 510,
+                "anchor": "scripts/run-auditor-host.ts:510",
+                "text": "console.error("
+              },
+              {
+                "line": 524,
+                "anchor": "scripts/run-auditor-host.ts:524",
+                "text": "process.stdout.write(JSON.stringify(result));"
+              },
+              {
+                "line": 527,
+                "anchor": "scripts/run-auditor-host.ts:527",
+                "text": "console.error(`run-auditor-host: ${error instanceof Error ? error.message : String(error)}`);"
+              },
+              {
+                "line": 536,
+                "anchor": "scripts/run-auditor-host.ts:536",
+                "text": "if (require.main === module && isDirectRunAuditorHostCli(process.argv[1])) {"
+              },
+              {
+                "line": 537,
+                "anchor": "scripts/run-auditor-host.ts:537",
+                "text": "mainRunAuditorHost(process.argv.slice(2)).then((code) => process.exit(code));"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/run-auditor-host.ts",
+                "to": "scripts/run-auditor-host.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-auditor-host.ts",
+                "to": "scripts/run-auditor-host.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-auditor-host.js",
+                "to": "scripts/run-auditor-host.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G006_STATIC_FULL:scripts/run-auditor-host.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 6,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 6,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--artifactPath",
+              "--iterationCount",
+              "--projectRoot",
+              "--reportPath",
+              "--stage"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--artifactPath <source-derived-safe-value>",
+              "--iterationCount <source-derived-safe-value>",
+              "--projectRoot <source-derived-safe-value>",
+              "--reportPath <source-derived-safe-value>",
+              "--stage <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--artifactPath <source-derived-safe-value>",
+              "--iterationCount <source-derived-safe-value>",
+              "--projectRoot <source-derived-safe-value>",
+              "--reportPath <source-derived-safe-value>",
+              "--stage <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 6,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_artifactpath",
+              "flag_iterationcount",
+              "flag_projectroot",
+              "flag_reportpath",
+              "flag_stage"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g006_run_auditor_host_ts_flag_artifactpath",
+          "originalEntryPoint": "scripts/run-auditor-host.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/run-auditor-host.ts --artifactPath <fixture-root>/artifactpath.json",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-auditor-host.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-auditor-host.js --artifactPath <fixture-root>/artifactpath.json",
+          "argumentCombination": "--artifactPath <source-derived-safe-value>",
+          "args": [
+            "--artifactPath",
+            "<fixture-root>/artifactpath.json"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g006_run_auditor_host_ts_flag_artifactpath_original_fixture_root",
+              "path": "<tmp>/g006_run_auditor_host_ts_flag_artifactpath-original-rPHgLD",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g006_run_auditor_host_ts_flag_artifactpath_package_fixture_root",
+              "path": "<tmp>/g006_run_auditor_host_ts_flag_artifactpath-package-gAAPm8",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "run-auditor-host: usage --projectRoot <path> --stage <stage> --artifactPath <path> [--reportPath <path>] [--iterationCount <n>]\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [
+            {
+              "path": "artifactpath.json",
+              "bytes": 3,
+              "sha256": "sha256:ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+              "rawBytes": 3,
+              "rawSha256": "sha256:ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+              "hashPolicy": "normalized_text_replay_hash",
+              "contentEncoding": "utf8"
+            }
+          ],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "run-auditor-host: usage --projectRoot <path> --stage <stage> --artifactPath <path> [--reportPath <path>] [--iterationCount <n>]"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G006_ORIGINAL_REPLAY:scripts/run-auditor-host.ts:flag_artifactpath",
+            "originalReplayArtifactHash": "sha256:1a7a1196fd644b250270b4fcc7eca4891377731e63787433a3c8cf0c529a05d7",
+            "sourceDerivedProofId": "G006_SOURCE_DERIVED:scripts/run-auditor-host.ts:flag_artifactpath",
+            "sourceLineAnchors": [
+              {
+                "line": 335,
+                "anchor": "scripts/run-auditor-host.ts:335",
+                "text": "console.warn(buildStorySpecVersionLockMessage(parsedStoryPath, storySpecVersionLock));"
+              },
+              {
+                "line": 369,
+                "anchor": "scripts/run-auditor-host.ts:369",
+                "text": "console.error(`run-auditor-host: score write failure blocks closeout: ${scoreError}`);"
+              },
+              {
+                "line": 503,
+                "anchor": "scripts/run-auditor-host.ts:503",
+                "text": "export async function mainRunAuditorHost(argv: string[]): Promise<number> {"
+              },
+              {
+                "line": 510,
+                "anchor": "scripts/run-auditor-host.ts:510",
+                "text": "console.error("
+              },
+              {
+                "line": 524,
+                "anchor": "scripts/run-auditor-host.ts:524",
+                "text": "process.stdout.write(JSON.stringify(result));"
+              },
+              {
+                "line": 527,
+                "anchor": "scripts/run-auditor-host.ts:527",
+                "text": "console.error(`run-auditor-host: ${error instanceof Error ? error.message : String(error)}`);"
+              },
+              {
+                "line": 536,
+                "anchor": "scripts/run-auditor-host.ts:536",
+                "text": "if (require.main === module && isDirectRunAuditorHostCli(process.argv[1])) {"
+              },
+              {
+                "line": 537,
+                "anchor": "scripts/run-auditor-host.ts:537",
+                "text": "mainRunAuditorHost(process.argv.slice(2)).then((code) => process.exit(code));"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/run-auditor-host.ts",
+                "to": "scripts/run-auditor-host.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-auditor-host.ts",
+                "to": "scripts/run-auditor-host.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-auditor-host.js",
+                "to": "scripts/run-auditor-host.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G006_STATIC_FULL:scripts/run-auditor-host.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 6,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 1,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 6,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 1,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--artifactPath",
+              "--iterationCount",
+              "--projectRoot",
+              "--reportPath",
+              "--stage"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--artifactPath <source-derived-safe-value>",
+              "--iterationCount <source-derived-safe-value>",
+              "--projectRoot <source-derived-safe-value>",
+              "--reportPath <source-derived-safe-value>",
+              "--stage <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--artifactPath <source-derived-safe-value>",
+              "--iterationCount <source-derived-safe-value>",
+              "--projectRoot <source-derived-safe-value>",
+              "--reportPath <source-derived-safe-value>",
+              "--stage <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 6,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_artifactpath",
+              "flag_iterationcount",
+              "flag_projectroot",
+              "flag_reportpath",
+              "flag_stage"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g006_run_auditor_host_ts_flag_iterationcount",
+          "originalEntryPoint": "scripts/run-auditor-host.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/run-auditor-host.ts --iterationCount source-derived-iterationcount",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-auditor-host.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-auditor-host.js --iterationCount source-derived-iterationcount",
+          "argumentCombination": "--iterationCount <source-derived-safe-value>",
+          "args": [
+            "--iterationCount",
+            "source-derived-iterationcount"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g006_run_auditor_host_ts_flag_iterationcount_original_fixture_root",
+              "path": "<tmp>/g006_run_auditor_host_ts_flag_iterationcount-original-RcA4Og",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g006_run_auditor_host_ts_flag_iterationcount_package_fixture_root",
+              "path": "<tmp>/g006_run_auditor_host_ts_flag_iterationcount-package-AqeO8d",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "run-auditor-host: usage --projectRoot <path> --stage <stage> --artifactPath <path> [--reportPath <path>] [--iterationCount <n>]\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "run-auditor-host: usage --projectRoot <path> --stage <stage> --artifactPath <path> [--reportPath <path>] [--iterationCount <n>]"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G006_ORIGINAL_REPLAY:scripts/run-auditor-host.ts:flag_iterationcount",
+            "originalReplayArtifactHash": "sha256:a589d773d07a43a61c5fe036f748c1fdf9a665edf330baef81183e1fd31e8135",
+            "sourceDerivedProofId": "G006_SOURCE_DERIVED:scripts/run-auditor-host.ts:flag_iterationcount",
+            "sourceLineAnchors": [
+              {
+                "line": 335,
+                "anchor": "scripts/run-auditor-host.ts:335",
+                "text": "console.warn(buildStorySpecVersionLockMessage(parsedStoryPath, storySpecVersionLock));"
+              },
+              {
+                "line": 369,
+                "anchor": "scripts/run-auditor-host.ts:369",
+                "text": "console.error(`run-auditor-host: score write failure blocks closeout: ${scoreError}`);"
+              },
+              {
+                "line": 503,
+                "anchor": "scripts/run-auditor-host.ts:503",
+                "text": "export async function mainRunAuditorHost(argv: string[]): Promise<number> {"
+              },
+              {
+                "line": 510,
+                "anchor": "scripts/run-auditor-host.ts:510",
+                "text": "console.error("
+              },
+              {
+                "line": 524,
+                "anchor": "scripts/run-auditor-host.ts:524",
+                "text": "process.stdout.write(JSON.stringify(result));"
+              },
+              {
+                "line": 527,
+                "anchor": "scripts/run-auditor-host.ts:527",
+                "text": "console.error(`run-auditor-host: ${error instanceof Error ? error.message : String(error)}`);"
+              },
+              {
+                "line": 536,
+                "anchor": "scripts/run-auditor-host.ts:536",
+                "text": "if (require.main === module && isDirectRunAuditorHostCli(process.argv[1])) {"
+              },
+              {
+                "line": 537,
+                "anchor": "scripts/run-auditor-host.ts:537",
+                "text": "mainRunAuditorHost(process.argv.slice(2)).then((code) => process.exit(code));"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/run-auditor-host.ts",
+                "to": "scripts/run-auditor-host.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-auditor-host.ts",
+                "to": "scripts/run-auditor-host.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-auditor-host.js",
+                "to": "scripts/run-auditor-host.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G006_STATIC_FULL:scripts/run-auditor-host.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 6,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 6,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--artifactPath",
+              "--iterationCount",
+              "--projectRoot",
+              "--reportPath",
+              "--stage"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--artifactPath <source-derived-safe-value>",
+              "--iterationCount <source-derived-safe-value>",
+              "--projectRoot <source-derived-safe-value>",
+              "--reportPath <source-derived-safe-value>",
+              "--stage <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--artifactPath <source-derived-safe-value>",
+              "--iterationCount <source-derived-safe-value>",
+              "--projectRoot <source-derived-safe-value>",
+              "--reportPath <source-derived-safe-value>",
+              "--stage <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 6,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_artifactpath",
+              "flag_iterationcount",
+              "flag_projectroot",
+              "flag_reportpath",
+              "flag_stage"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g006_run_auditor_host_ts_flag_projectroot",
+          "originalEntryPoint": "scripts/run-auditor-host.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/run-auditor-host.ts --projectRoot <fixture-root>/projectroot",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-auditor-host.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-auditor-host.js --projectRoot <fixture-root>/projectroot",
+          "argumentCombination": "--projectRoot <source-derived-safe-value>",
+          "args": [
+            "--projectRoot",
+            "<fixture-root>/projectroot"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g006_run_auditor_host_ts_flag_projectroot_original_fixture_root",
+              "path": "<tmp>/g006_run_auditor_host_ts_flag_projectroot-original-u4BHXe",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g006_run_auditor_host_ts_flag_projectroot_package_fixture_root",
+              "path": "<tmp>/g006_run_auditor_host_ts_flag_projectroot-package-FTDVlN",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "run-auditor-host: usage --projectRoot <path> --stage <stage> --artifactPath <path> [--reportPath <path>] [--iterationCount <n>]\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "run-auditor-host: usage --projectRoot <path> --stage <stage> --artifactPath <path> [--reportPath <path>] [--iterationCount <n>]"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G006_ORIGINAL_REPLAY:scripts/run-auditor-host.ts:flag_projectroot",
+            "originalReplayArtifactHash": "sha256:a589d773d07a43a61c5fe036f748c1fdf9a665edf330baef81183e1fd31e8135",
+            "sourceDerivedProofId": "G006_SOURCE_DERIVED:scripts/run-auditor-host.ts:flag_projectroot",
+            "sourceLineAnchors": [
+              {
+                "line": 335,
+                "anchor": "scripts/run-auditor-host.ts:335",
+                "text": "console.warn(buildStorySpecVersionLockMessage(parsedStoryPath, storySpecVersionLock));"
+              },
+              {
+                "line": 369,
+                "anchor": "scripts/run-auditor-host.ts:369",
+                "text": "console.error(`run-auditor-host: score write failure blocks closeout: ${scoreError}`);"
+              },
+              {
+                "line": 503,
+                "anchor": "scripts/run-auditor-host.ts:503",
+                "text": "export async function mainRunAuditorHost(argv: string[]): Promise<number> {"
+              },
+              {
+                "line": 510,
+                "anchor": "scripts/run-auditor-host.ts:510",
+                "text": "console.error("
+              },
+              {
+                "line": 524,
+                "anchor": "scripts/run-auditor-host.ts:524",
+                "text": "process.stdout.write(JSON.stringify(result));"
+              },
+              {
+                "line": 527,
+                "anchor": "scripts/run-auditor-host.ts:527",
+                "text": "console.error(`run-auditor-host: ${error instanceof Error ? error.message : String(error)}`);"
+              },
+              {
+                "line": 536,
+                "anchor": "scripts/run-auditor-host.ts:536",
+                "text": "if (require.main === module && isDirectRunAuditorHostCli(process.argv[1])) {"
+              },
+              {
+                "line": 537,
+                "anchor": "scripts/run-auditor-host.ts:537",
+                "text": "mainRunAuditorHost(process.argv.slice(2)).then((code) => process.exit(code));"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/run-auditor-host.ts",
+                "to": "scripts/run-auditor-host.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-auditor-host.ts",
+                "to": "scripts/run-auditor-host.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-auditor-host.js",
+                "to": "scripts/run-auditor-host.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G006_STATIC_FULL:scripts/run-auditor-host.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 6,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 6,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--artifactPath",
+              "--iterationCount",
+              "--projectRoot",
+              "--reportPath",
+              "--stage"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--artifactPath <source-derived-safe-value>",
+              "--iterationCount <source-derived-safe-value>",
+              "--projectRoot <source-derived-safe-value>",
+              "--reportPath <source-derived-safe-value>",
+              "--stage <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--artifactPath <source-derived-safe-value>",
+              "--iterationCount <source-derived-safe-value>",
+              "--projectRoot <source-derived-safe-value>",
+              "--reportPath <source-derived-safe-value>",
+              "--stage <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 6,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_artifactpath",
+              "flag_iterationcount",
+              "flag_projectroot",
+              "flag_reportpath",
+              "flag_stage"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g006_run_auditor_host_ts_flag_reportpath",
+          "originalEntryPoint": "scripts/run-auditor-host.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/run-auditor-host.ts --reportPath <fixture-root>/reportpath.json",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-auditor-host.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-auditor-host.js --reportPath <fixture-root>/reportpath.json",
+          "argumentCombination": "--reportPath <source-derived-safe-value>",
+          "args": [
+            "--reportPath",
+            "<fixture-root>/reportpath.json"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g006_run_auditor_host_ts_flag_reportpath_original_fixture_root",
+              "path": "<tmp>/g006_run_auditor_host_ts_flag_reportpath-original-XLNSgF",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g006_run_auditor_host_ts_flag_reportpath_package_fixture_root",
+              "path": "<tmp>/g006_run_auditor_host_ts_flag_reportpath-package-il0Dnb",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "run-auditor-host: usage --projectRoot <path> --stage <stage> --artifactPath <path> [--reportPath <path>] [--iterationCount <n>]\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [
+            {
+              "path": "reportpath.json",
+              "bytes": 3,
+              "sha256": "sha256:ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+              "rawBytes": 3,
+              "rawSha256": "sha256:ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+              "hashPolicy": "normalized_text_replay_hash",
+              "contentEncoding": "utf8"
+            }
+          ],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "run-auditor-host: usage --projectRoot <path> --stage <stage> --artifactPath <path> [--reportPath <path>] [--iterationCount <n>]"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G006_ORIGINAL_REPLAY:scripts/run-auditor-host.ts:flag_reportpath",
+            "originalReplayArtifactHash": "sha256:57e348c0bcef4707e256a75e723a5bc86fa9763a591c5ae69e61d5bbd5d1f4b9",
+            "sourceDerivedProofId": "G006_SOURCE_DERIVED:scripts/run-auditor-host.ts:flag_reportpath",
+            "sourceLineAnchors": [
+              {
+                "line": 335,
+                "anchor": "scripts/run-auditor-host.ts:335",
+                "text": "console.warn(buildStorySpecVersionLockMessage(parsedStoryPath, storySpecVersionLock));"
+              },
+              {
+                "line": 369,
+                "anchor": "scripts/run-auditor-host.ts:369",
+                "text": "console.error(`run-auditor-host: score write failure blocks closeout: ${scoreError}`);"
+              },
+              {
+                "line": 503,
+                "anchor": "scripts/run-auditor-host.ts:503",
+                "text": "export async function mainRunAuditorHost(argv: string[]): Promise<number> {"
+              },
+              {
+                "line": 510,
+                "anchor": "scripts/run-auditor-host.ts:510",
+                "text": "console.error("
+              },
+              {
+                "line": 524,
+                "anchor": "scripts/run-auditor-host.ts:524",
+                "text": "process.stdout.write(JSON.stringify(result));"
+              },
+              {
+                "line": 527,
+                "anchor": "scripts/run-auditor-host.ts:527",
+                "text": "console.error(`run-auditor-host: ${error instanceof Error ? error.message : String(error)}`);"
+              },
+              {
+                "line": 536,
+                "anchor": "scripts/run-auditor-host.ts:536",
+                "text": "if (require.main === module && isDirectRunAuditorHostCli(process.argv[1])) {"
+              },
+              {
+                "line": 537,
+                "anchor": "scripts/run-auditor-host.ts:537",
+                "text": "mainRunAuditorHost(process.argv.slice(2)).then((code) => process.exit(code));"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/run-auditor-host.ts",
+                "to": "scripts/run-auditor-host.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-auditor-host.ts",
+                "to": "scripts/run-auditor-host.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-auditor-host.js",
+                "to": "scripts/run-auditor-host.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G006_STATIC_FULL:scripts/run-auditor-host.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 6,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 1,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 6,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 1,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--artifactPath",
+              "--iterationCount",
+              "--projectRoot",
+              "--reportPath",
+              "--stage"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--artifactPath <source-derived-safe-value>",
+              "--iterationCount <source-derived-safe-value>",
+              "--projectRoot <source-derived-safe-value>",
+              "--reportPath <source-derived-safe-value>",
+              "--stage <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--artifactPath <source-derived-safe-value>",
+              "--iterationCount <source-derived-safe-value>",
+              "--projectRoot <source-derived-safe-value>",
+              "--reportPath <source-derived-safe-value>",
+              "--stage <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 6,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_artifactpath",
+              "flag_iterationcount",
+              "flag_projectroot",
+              "flag_reportpath",
+              "flag_stage"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g006_run_auditor_host_ts_flag_stage",
+          "originalEntryPoint": "scripts/run-auditor-host.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/run-auditor-host.ts --stage source-derived-stage",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-auditor-host.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-auditor-host.js --stage source-derived-stage",
+          "argumentCombination": "--stage <source-derived-safe-value>",
+          "args": [
+            "--stage",
+            "source-derived-stage"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g006_run_auditor_host_ts_flag_stage_original_fixture_root",
+              "path": "<tmp>/g006_run_auditor_host_ts_flag_stage-original-jb4R62",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g006_run_auditor_host_ts_flag_stage_package_fixture_root",
+              "path": "<tmp>/g006_run_auditor_host_ts_flag_stage-package-R6WMbM",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "run-auditor-host: usage --projectRoot <path> --stage <stage> --artifactPath <path> [--reportPath <path>] [--iterationCount <n>]\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "run-auditor-host: usage --projectRoot <path> --stage <stage> --artifactPath <path> [--reportPath <path>] [--iterationCount <n>]"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G006_ORIGINAL_REPLAY:scripts/run-auditor-host.ts:flag_stage",
+            "originalReplayArtifactHash": "sha256:a589d773d07a43a61c5fe036f748c1fdf9a665edf330baef81183e1fd31e8135",
+            "sourceDerivedProofId": "G006_SOURCE_DERIVED:scripts/run-auditor-host.ts:flag_stage",
+            "sourceLineAnchors": [
+              {
+                "line": 335,
+                "anchor": "scripts/run-auditor-host.ts:335",
+                "text": "console.warn(buildStorySpecVersionLockMessage(parsedStoryPath, storySpecVersionLock));"
+              },
+              {
+                "line": 369,
+                "anchor": "scripts/run-auditor-host.ts:369",
+                "text": "console.error(`run-auditor-host: score write failure blocks closeout: ${scoreError}`);"
+              },
+              {
+                "line": 503,
+                "anchor": "scripts/run-auditor-host.ts:503",
+                "text": "export async function mainRunAuditorHost(argv: string[]): Promise<number> {"
+              },
+              {
+                "line": 510,
+                "anchor": "scripts/run-auditor-host.ts:510",
+                "text": "console.error("
+              },
+              {
+                "line": 524,
+                "anchor": "scripts/run-auditor-host.ts:524",
+                "text": "process.stdout.write(JSON.stringify(result));"
+              },
+              {
+                "line": 527,
+                "anchor": "scripts/run-auditor-host.ts:527",
+                "text": "console.error(`run-auditor-host: ${error instanceof Error ? error.message : String(error)}`);"
+              },
+              {
+                "line": 536,
+                "anchor": "scripts/run-auditor-host.ts:536",
+                "text": "if (require.main === module && isDirectRunAuditorHostCli(process.argv[1])) {"
+              },
+              {
+                "line": 537,
+                "anchor": "scripts/run-auditor-host.ts:537",
+                "text": "mainRunAuditorHost(process.argv.slice(2)).then((code) => process.exit(code));"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/run-auditor-host.ts",
+                "to": "scripts/run-auditor-host.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-auditor-host.ts",
+                "to": "scripts/run-auditor-host.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-auditor-host.js",
+                "to": "scripts/run-auditor-host.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G006_STATIC_FULL:scripts/run-auditor-host.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 6,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 6,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--artifactPath",
+              "--iterationCount",
+              "--projectRoot",
+              "--reportPath",
+              "--stage"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--artifactPath <source-derived-safe-value>",
+              "--iterationCount <source-derived-safe-value>",
+              "--projectRoot <source-derived-safe-value>",
+              "--reportPath <source-derived-safe-value>",
+              "--stage <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--artifactPath <source-derived-safe-value>",
+              "--iterationCount <source-derived-safe-value>",
+              "--projectRoot <source-derived-safe-value>",
+              "--reportPath <source-derived-safe-value>",
+              "--stage <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 6,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_artifactpath",
+              "flag_iterationcount",
+              "flag_projectroot",
+              "flag_reportpath",
+              "flag_stage"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/runtime-context-registry.ts",
+      "entryId": "runtime-context-registry-ts",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/runtime-context-registry.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G006_STATIC_FULL:scripts/runtime-context-registry.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g006_runtime_context_registry_ts_no_args",
+          "originalEntryPoint": "scripts/runtime-context-registry.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/runtime-context-registry.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/runtime-context-registry.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g006_runtime_context_registry_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g006_runtime_context_registry_ts_no_args-original-bOdmB7",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g006_runtime_context_registry_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g006_runtime_context_registry_ts_no_args-package-hxybNH",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G006_ORIGINAL_REPLAY:scripts/runtime-context-registry.ts:no_args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G006_SOURCE_DERIVED:scripts/runtime-context-registry.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 107,
+                "anchor": "scripts/runtime-context-registry.ts:107",
+                "text": "export function runtimeContextRegistryPath(root: string): string {"
+              },
+              {
+                "line": 167,
+                "anchor": "scripts/runtime-context-registry.ts:167",
+                "text": "export function defaultRuntimeContextRegistry(root: string): RuntimeContextRegistry {"
+              },
+              {
+                "line": 206,
+                "anchor": "scripts/runtime-context-registry.ts:206",
+                "text": "export function writeRuntimeContextRegistry(root: string, registry: RuntimeContextRegistry): void {"
+              },
+              {
+                "line": 227,
+                "anchor": "scripts/runtime-context-registry.ts:227",
+                "text": "export function readRuntimeContextRegistry(root: string): RuntimeContextRegistry {"
+              },
+              {
+                "line": 265,
+                "anchor": "scripts/runtime-context-registry.ts:265",
+                "text": "export function readRegistryOrDefault(root: string): RuntimeContextRegistry {"
+              },
+              {
+                "line": 273,
+                "anchor": "scripts/runtime-context-registry.ts:273",
+                "text": "export function buildProjectRegistryFromSprintStatus("
+              },
+              {
+                "line": 292,
+                "anchor": "scripts/runtime-context-registry.ts:292",
+                "text": "export function buildEpicContextsFromSprintStatus("
+              },
+              {
+                "line": 314,
+                "anchor": "scripts/runtime-context-registry.ts:314",
+                "text": "export function buildStoryContextsFromSprintStatus("
+              },
+              {
+                "line": 358,
+                "anchor": "scripts/runtime-context-registry.ts:358",
+                "text": "export function buildRunContext("
+              },
+              {
+                "line": 402,
+                "anchor": "scripts/runtime-context-registry.ts:402",
+                "text": "export function resolveActiveScope("
+              },
+              {
+                "line": 409,
+                "anchor": "scripts/runtime-context-registry.ts:409",
+                "text": "export function resolveContextPathFromActiveScope("
+              },
+              {
+                "line": 512,
+                "anchor": "scripts/runtime-context-registry.ts:512",
+                "text": "export function syncAuditIndexFromReport(root: string, reportPath: string): RuntimeContextRegistry {"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/runtime-context-registry.ts",
+                "to": "scripts/runtime-context-registry.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry.ts",
+                "to": "scripts/runtime-context-registry.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/runtime-context-registry.js",
+                "to": "scripts/runtime-context-registry.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G006_STATIC_FULL:scripts/runtime-context-registry.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/write-runtime-context.cjs",
+      "entryId": "write-runtime-context",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/write-runtime-context.cjs"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/write-runtime-context.cjs",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G006_STATIC_FULL:scripts/write-runtime-context.cjs:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 1,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 1,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g006_write_runtime_context_cjs_no_args",
+          "originalEntryPoint": "scripts/write-runtime-context.cjs",
+          "originalEntryCommand": "node scripts/write-runtime-context.cjs",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/write-runtime-context.cjs",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/write-runtime-context.cjs",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g006_write_runtime_context_cjs_no_args_original_fixture_root",
+              "path": "<tmp>/g006_write_runtime_context_cjs_no_args-original-W2YnI0",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g006_write_runtime_context_cjs_no_args_package_fixture_root",
+              "path": "<tmp>/g006_write_runtime_context_cjs_no_args-package-YTCJdZ",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "Usage: node write-runtime-context.cjs <targetFile> [flow] [stage] [templateId?] [epicId] [storyId] [storySlug] [runId] [artifactRoot] [contextScope] [workflow] [step] [artifactPath]\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "Usage: node write-runtime-context.cjs <targetFile> [flow] [stage] [templateId?] [epicId] [storyId] [storySlug] [runId] [artifactRoot] [contextScope] [workflow] [step] [artifactPath]"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G006_ORIGINAL_REPLAY:scripts/write-runtime-context.cjs:no_args",
+            "originalReplayArtifactHash": "sha256:5bbfa36288be851ba9d92cacd8ef4c8c6a699b57831644b76f0adead54c2c258",
+            "sourceDerivedProofId": "G006_SOURCE_DERIVED:scripts/write-runtime-context.cjs:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 13,
+                "anchor": "scripts/write-runtime-context.cjs:13",
+                "text": "const targetFileArg = process.argv[2];"
+              },
+              {
+                "line": 15,
+                "anchor": "scripts/write-runtime-context.cjs:15",
+                "text": "console.error("
+              },
+              {
+                "line": 22,
+                "anchor": "scripts/write-runtime-context.cjs:22",
+                "text": "const flow = (process.argv[3] || 'story').trim();"
+              },
+              {
+                "line": 23,
+                "anchor": "scripts/write-runtime-context.cjs:23",
+                "text": "const stage = (process.argv[4] || 'specify').trim();"
+              },
+              {
+                "line": 24,
+                "anchor": "scripts/write-runtime-context.cjs:24",
+                "text": "const templateIdArg = process.argv[5];"
+              },
+              {
+                "line": 25,
+                "anchor": "scripts/write-runtime-context.cjs:25",
+                "text": "const epicIdArg = process.argv[6];"
+              },
+              {
+                "line": 26,
+                "anchor": "scripts/write-runtime-context.cjs:26",
+                "text": "const storyIdArg = process.argv[7];"
+              },
+              {
+                "line": 27,
+                "anchor": "scripts/write-runtime-context.cjs:27",
+                "text": "const storySlugArg = process.argv[8];"
+              },
+              {
+                "line": 28,
+                "anchor": "scripts/write-runtime-context.cjs:28",
+                "text": "const runIdArg = process.argv[9];"
+              },
+              {
+                "line": 29,
+                "anchor": "scripts/write-runtime-context.cjs:29",
+                "text": "const artifactRootArg = process.argv[10];"
+              },
+              {
+                "line": 30,
+                "anchor": "scripts/write-runtime-context.cjs:30",
+                "text": "const contextScopeArg = process.argv[11];"
+              },
+              {
+                "line": 31,
+                "anchor": "scripts/write-runtime-context.cjs:31",
+                "text": "const workflowArg = process.argv[12];"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/write-runtime-context.cjs",
+                "to": "scripts/write-runtime-context.cjs"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/write-runtime-context.cjs",
+                "to": "scripts/write-runtime-context.cjs"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/write-runtime-context.cjs",
+                "to": "scripts/write-runtime-context.cjs"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G006_STATIC_FULL:scripts/write-runtime-context.cjs",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

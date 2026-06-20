@@ -1,0 +1,276 @@
+[
+  {
+    "originalPath": "scripts/orchestration-governance-contract.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_orchestration_governance_contract_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/orchestration-state.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_orchestration_state_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/parse-and-write-score.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_no_args",
+        "expectedStderr": "Usage: npx ts-node scripts/parse-and-write-score.ts --reportPath <path> [--stage prd|arch|story|spec|plan|tasks|implement] [--runId <id>] [--epic N] [--story N] [--scenario real_dev|eval_question] [--writeMode single_file|jsonl|both] [--dataPath <path>] [--baseCommitHash <hash>] [--skipAutoHash true] [--sourceHashFilePath <path>] [--artifactDocPath <path>] [--host <host>] [--hostKind <kind>] [--providerId <id>] [--providerMode <mode>] [--toolTraceRef <hash>] [--toolTracePath <path>] [--event <event>] [--agent <cursor|claude-code>] [--source <cursor_command|claude_agent|claude_hook>] [--triggerStage <stage>] [--skipTriggerCheck true] [--questionVersion <ver>] [--iteration-count N] [--iterationReportPaths path1,path2,...]\n  --epic, --story: 可选；用于生成 runId=dev-e{epic}-s{story}-{stage}-{ts}；未传时尝试从 reportPath 解析（E6-S3、story-6-3- 等）\n  --iteration-count: 该 stage 审计未通过（fail）次数，0 表示一次通过；执行审计循环的 Agent 在 pass 时传入当前累计值\n  --iterationReportPaths: 逗号分隔的失败轮报告路径列表（不含验证轮）；仅 scenario=real_dev 时生效，pass 时一次性解析并写入 iteration_records\n"
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_agent",
+        "expectedStderr": "Usage: npx ts-node scripts/parse-and-write-score.ts --reportPath <path> [--stage prd|arch|story|spec|plan|tasks|implement] [--runId <id>] [--epic N] [--story N] [--scenario real_dev|eval_question] [--writeMode single_file|jsonl|both] [--dataPath <path>] [--baseCommitHash <hash>] [--skipAutoHash true] [--sourceHashFilePath <path>] [--artifactDocPath <path>] [--host <host>] [--hostKind <kind>] [--providerId <id>] [--providerMode <mode>] [--toolTraceRef <hash>] [--toolTracePath <path>] [--event <event>] [--agent <cursor|claude-code>] [--source <cursor_command|claude_agent|claude_hook>] [--triggerStage <stage>] [--skipTriggerCheck true] [--questionVersion <ver>] [--iteration-count N] [--iterationReportPaths path1,path2,...]\n  --epic, --story: 可选；用于生成 runId=dev-e{epic}-s{story}-{stage}-{ts}；未传时尝试从 reportPath 解析（E6-S3、story-6-3- 等）\n  --iteration-count: 该 stage 审计未通过（fail）次数，0 表示一次通过；执行审计循环的 Agent 在 pass 时传入当前累计值\n  --iterationReportPaths: 逗号分隔的失败轮报告路径列表（不含验证轮）；仅 scenario=real_dev 时生效，pass 时一次性解析并写入 iteration_records\n"
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_artifactdocpath",
+        "expectedStderr": "Usage: npx ts-node scripts/parse-and-write-score.ts --reportPath <path> [--stage prd|arch|story|spec|plan|tasks|implement] [--runId <id>] [--epic N] [--story N] [--scenario real_dev|eval_question] [--writeMode single_file|jsonl|both] [--dataPath <path>] [--baseCommitHash <hash>] [--skipAutoHash true] [--sourceHashFilePath <path>] [--artifactDocPath <path>] [--host <host>] [--hostKind <kind>] [--providerId <id>] [--providerMode <mode>] [--toolTraceRef <hash>] [--toolTracePath <path>] [--event <event>] [--agent <cursor|claude-code>] [--source <cursor_command|claude_agent|claude_hook>] [--triggerStage <stage>] [--skipTriggerCheck true] [--questionVersion <ver>] [--iteration-count N] [--iterationReportPaths path1,path2,...]\n  --epic, --story: 可选；用于生成 runId=dev-e{epic}-s{story}-{stage}-{ts}；未传时尝试从 reportPath 解析（E6-S3、story-6-3- 等）\n  --iteration-count: 该 stage 审计未通过（fail）次数，0 表示一次通过；执行审计循环的 Agent 在 pass 时传入当前累计值\n  --iterationReportPaths: 逗号分隔的失败轮报告路径列表（不含验证轮）；仅 scenario=real_dev 时生效，pass 时一次性解析并写入 iteration_records\n"
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_basecommithash",
+        "expectedStderr": "Usage: npx ts-node scripts/parse-and-write-score.ts --reportPath <path> [--stage prd|arch|story|spec|plan|tasks|implement] [--runId <id>] [--epic N] [--story N] [--scenario real_dev|eval_question] [--writeMode single_file|jsonl|both] [--dataPath <path>] [--baseCommitHash <hash>] [--skipAutoHash true] [--sourceHashFilePath <path>] [--artifactDocPath <path>] [--host <host>] [--hostKind <kind>] [--providerId <id>] [--providerMode <mode>] [--toolTraceRef <hash>] [--toolTracePath <path>] [--event <event>] [--agent <cursor|claude-code>] [--source <cursor_command|claude_agent|claude_hook>] [--triggerStage <stage>] [--skipTriggerCheck true] [--questionVersion <ver>] [--iteration-count N] [--iterationReportPaths path1,path2,...]\n  --epic, --story: 可选；用于生成 runId=dev-e{epic}-s{story}-{stage}-{ts}；未传时尝试从 reportPath 解析（E6-S3、story-6-3- 等）\n  --iteration-count: 该 stage 审计未通过（fail）次数，0 表示一次通过；执行审计循环的 Agent 在 pass 时传入当前累计值\n  --iterationReportPaths: 逗号分隔的失败轮报告路径列表（不含验证轮）；仅 scenario=real_dev 时生效，pass 时一次性解析并写入 iteration_records\n"
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_datapath",
+        "expectedStderr": "Usage: npx ts-node scripts/parse-and-write-score.ts --reportPath <path> [--stage prd|arch|story|spec|plan|tasks|implement] [--runId <id>] [--epic N] [--story N] [--scenario real_dev|eval_question] [--writeMode single_file|jsonl|both] [--dataPath <path>] [--baseCommitHash <hash>] [--skipAutoHash true] [--sourceHashFilePath <path>] [--artifactDocPath <path>] [--host <host>] [--hostKind <kind>] [--providerId <id>] [--providerMode <mode>] [--toolTraceRef <hash>] [--toolTracePath <path>] [--event <event>] [--agent <cursor|claude-code>] [--source <cursor_command|claude_agent|claude_hook>] [--triggerStage <stage>] [--skipTriggerCheck true] [--questionVersion <ver>] [--iteration-count N] [--iterationReportPaths path1,path2,...]\n  --epic, --story: 可选；用于生成 runId=dev-e{epic}-s{story}-{stage}-{ts}；未传时尝试从 reportPath 解析（E6-S3、story-6-3- 等）\n  --iteration-count: 该 stage 审计未通过（fail）次数，0 表示一次通过；执行审计循环的 Agent 在 pass 时传入当前累计值\n  --iterationReportPaths: 逗号分隔的失败轮报告路径列表（不含验证轮）；仅 scenario=real_dev 时生效，pass 时一次性解析并写入 iteration_records\n"
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_epic",
+        "expectedStderr": "Usage: npx ts-node scripts/parse-and-write-score.ts --reportPath <path> [--stage prd|arch|story|spec|plan|tasks|implement] [--runId <id>] [--epic N] [--story N] [--scenario real_dev|eval_question] [--writeMode single_file|jsonl|both] [--dataPath <path>] [--baseCommitHash <hash>] [--skipAutoHash true] [--sourceHashFilePath <path>] [--artifactDocPath <path>] [--host <host>] [--hostKind <kind>] [--providerId <id>] [--providerMode <mode>] [--toolTraceRef <hash>] [--toolTracePath <path>] [--event <event>] [--agent <cursor|claude-code>] [--source <cursor_command|claude_agent|claude_hook>] [--triggerStage <stage>] [--skipTriggerCheck true] [--questionVersion <ver>] [--iteration-count N] [--iterationReportPaths path1,path2,...]\n  --epic, --story: 可选；用于生成 runId=dev-e{epic}-s{story}-{stage}-{ts}；未传时尝试从 reportPath 解析（E6-S3、story-6-3- 等）\n  --iteration-count: 该 stage 审计未通过（fail）次数，0 表示一次通过；执行审计循环的 Agent 在 pass 时传入当前累计值\n  --iterationReportPaths: 逗号分隔的失败轮报告路径列表（不含验证轮）；仅 scenario=real_dev 时生效，pass 时一次性解析并写入 iteration_records\n"
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_event",
+        "expectedStderr": "Usage: npx ts-node scripts/parse-and-write-score.ts --reportPath <path> [--stage prd|arch|story|spec|plan|tasks|implement] [--runId <id>] [--epic N] [--story N] [--scenario real_dev|eval_question] [--writeMode single_file|jsonl|both] [--dataPath <path>] [--baseCommitHash <hash>] [--skipAutoHash true] [--sourceHashFilePath <path>] [--artifactDocPath <path>] [--host <host>] [--hostKind <kind>] [--providerId <id>] [--providerMode <mode>] [--toolTraceRef <hash>] [--toolTracePath <path>] [--event <event>] [--agent <cursor|claude-code>] [--source <cursor_command|claude_agent|claude_hook>] [--triggerStage <stage>] [--skipTriggerCheck true] [--questionVersion <ver>] [--iteration-count N] [--iterationReportPaths path1,path2,...]\n  --epic, --story: 可选；用于生成 runId=dev-e{epic}-s{story}-{stage}-{ts}；未传时尝试从 reportPath 解析（E6-S3、story-6-3- 等）\n  --iteration-count: 该 stage 审计未通过（fail）次数，0 表示一次通过；执行审计循环的 Agent 在 pass 时传入当前累计值\n  --iterationReportPaths: 逗号分隔的失败轮报告路径列表（不含验证轮）；仅 scenario=real_dev 时生效，pass 时一次性解析并写入 iteration_records\n"
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_host",
+        "expectedStderr": "Usage: npx ts-node scripts/parse-and-write-score.ts --reportPath <path> [--stage prd|arch|story|spec|plan|tasks|implement] [--runId <id>] [--epic N] [--story N] [--scenario real_dev|eval_question] [--writeMode single_file|jsonl|both] [--dataPath <path>] [--baseCommitHash <hash>] [--skipAutoHash true] [--sourceHashFilePath <path>] [--artifactDocPath <path>] [--host <host>] [--hostKind <kind>] [--providerId <id>] [--providerMode <mode>] [--toolTraceRef <hash>] [--toolTracePath <path>] [--event <event>] [--agent <cursor|claude-code>] [--source <cursor_command|claude_agent|claude_hook>] [--triggerStage <stage>] [--skipTriggerCheck true] [--questionVersion <ver>] [--iteration-count N] [--iterationReportPaths path1,path2,...]\n  --epic, --story: 可选；用于生成 runId=dev-e{epic}-s{story}-{stage}-{ts}；未传时尝试从 reportPath 解析（E6-S3、story-6-3- 等）\n  --iteration-count: 该 stage 审计未通过（fail）次数，0 表示一次通过；执行审计循环的 Agent 在 pass 时传入当前累计值\n  --iterationReportPaths: 逗号分隔的失败轮报告路径列表（不含验证轮）；仅 scenario=real_dev 时生效，pass 时一次性解析并写入 iteration_records\n"
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_hostkind",
+        "expectedStderr": "Usage: npx ts-node scripts/parse-and-write-score.ts --reportPath <path> [--stage prd|arch|story|spec|plan|tasks|implement] [--runId <id>] [--epic N] [--story N] [--scenario real_dev|eval_question] [--writeMode single_file|jsonl|both] [--dataPath <path>] [--baseCommitHash <hash>] [--skipAutoHash true] [--sourceHashFilePath <path>] [--artifactDocPath <path>] [--host <host>] [--hostKind <kind>] [--providerId <id>] [--providerMode <mode>] [--toolTraceRef <hash>] [--toolTracePath <path>] [--event <event>] [--agent <cursor|claude-code>] [--source <cursor_command|claude_agent|claude_hook>] [--triggerStage <stage>] [--skipTriggerCheck true] [--questionVersion <ver>] [--iteration-count N] [--iterationReportPaths path1,path2,...]\n  --epic, --story: 可选；用于生成 runId=dev-e{epic}-s{story}-{stage}-{ts}；未传时尝试从 reportPath 解析（E6-S3、story-6-3- 等）\n  --iteration-count: 该 stage 审计未通过（fail）次数，0 表示一次通过；执行审计循环的 Agent 在 pass 时传入当前累计值\n  --iterationReportPaths: 逗号分隔的失败轮报告路径列表（不含验证轮）；仅 scenario=real_dev 时生效，pass 时一次性解析并写入 iteration_records\n"
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_iteration_count",
+        "expectedStderr": "Usage: npx ts-node scripts/parse-and-write-score.ts --reportPath <path> [--stage prd|arch|story|spec|plan|tasks|implement] [--runId <id>] [--epic N] [--story N] [--scenario real_dev|eval_question] [--writeMode single_file|jsonl|both] [--dataPath <path>] [--baseCommitHash <hash>] [--skipAutoHash true] [--sourceHashFilePath <path>] [--artifactDocPath <path>] [--host <host>] [--hostKind <kind>] [--providerId <id>] [--providerMode <mode>] [--toolTraceRef <hash>] [--toolTracePath <path>] [--event <event>] [--agent <cursor|claude-code>] [--source <cursor_command|claude_agent|claude_hook>] [--triggerStage <stage>] [--skipTriggerCheck true] [--questionVersion <ver>] [--iteration-count N] [--iterationReportPaths path1,path2,...]\n  --epic, --story: 可选；用于生成 runId=dev-e{epic}-s{story}-{stage}-{ts}；未传时尝试从 reportPath 解析（E6-S3、story-6-3- 等）\n  --iteration-count: 该 stage 审计未通过（fail）次数，0 表示一次通过；执行审计循环的 Agent 在 pass 时传入当前累计值\n  --iterationReportPaths: 逗号分隔的失败轮报告路径列表（不含验证轮）；仅 scenario=real_dev 时生效，pass 时一次性解析并写入 iteration_records\n"
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_iterationreportpaths",
+        "expectedStderr": "Usage: npx ts-node scripts/parse-and-write-score.ts --reportPath <path> [--stage prd|arch|story|spec|plan|tasks|implement] [--runId <id>] [--epic N] [--story N] [--scenario real_dev|eval_question] [--writeMode single_file|jsonl|both] [--dataPath <path>] [--baseCommitHash <hash>] [--skipAutoHash true] [--sourceHashFilePath <path>] [--artifactDocPath <path>] [--host <host>] [--hostKind <kind>] [--providerId <id>] [--providerMode <mode>] [--toolTraceRef <hash>] [--toolTracePath <path>] [--event <event>] [--agent <cursor|claude-code>] [--source <cursor_command|claude_agent|claude_hook>] [--triggerStage <stage>] [--skipTriggerCheck true] [--questionVersion <ver>] [--iteration-count N] [--iterationReportPaths path1,path2,...]\n  --epic, --story: 可选；用于生成 runId=dev-e{epic}-s{story}-{stage}-{ts}；未传时尝试从 reportPath 解析（E6-S3、story-6-3- 等）\n  --iteration-count: 该 stage 审计未通过（fail）次数，0 表示一次通过；执行审计循环的 Agent 在 pass 时传入当前累计值\n  --iterationReportPaths: 逗号分隔的失败轮报告路径列表（不含验证轮）；仅 scenario=real_dev 时生效，pass 时一次性解析并写入 iteration_records\n"
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_providerid",
+        "expectedStderr": "Usage: npx ts-node scripts/parse-and-write-score.ts --reportPath <path> [--stage prd|arch|story|spec|plan|tasks|implement] [--runId <id>] [--epic N] [--story N] [--scenario real_dev|eval_question] [--writeMode single_file|jsonl|both] [--dataPath <path>] [--baseCommitHash <hash>] [--skipAutoHash true] [--sourceHashFilePath <path>] [--artifactDocPath <path>] [--host <host>] [--hostKind <kind>] [--providerId <id>] [--providerMode <mode>] [--toolTraceRef <hash>] [--toolTracePath <path>] [--event <event>] [--agent <cursor|claude-code>] [--source <cursor_command|claude_agent|claude_hook>] [--triggerStage <stage>] [--skipTriggerCheck true] [--questionVersion <ver>] [--iteration-count N] [--iterationReportPaths path1,path2,...]\n  --epic, --story: 可选；用于生成 runId=dev-e{epic}-s{story}-{stage}-{ts}；未传时尝试从 reportPath 解析（E6-S3、story-6-3- 等）\n  --iteration-count: 该 stage 审计未通过（fail）次数，0 表示一次通过；执行审计循环的 Agent 在 pass 时传入当前累计值\n  --iterationReportPaths: 逗号分隔的失败轮报告路径列表（不含验证轮）；仅 scenario=real_dev 时生效，pass 时一次性解析并写入 iteration_records\n"
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_providermode",
+        "expectedStderr": "Usage: npx ts-node scripts/parse-and-write-score.ts --reportPath <path> [--stage prd|arch|story|spec|plan|tasks|implement] [--runId <id>] [--epic N] [--story N] [--scenario real_dev|eval_question] [--writeMode single_file|jsonl|both] [--dataPath <path>] [--baseCommitHash <hash>] [--skipAutoHash true] [--sourceHashFilePath <path>] [--artifactDocPath <path>] [--host <host>] [--hostKind <kind>] [--providerId <id>] [--providerMode <mode>] [--toolTraceRef <hash>] [--toolTracePath <path>] [--event <event>] [--agent <cursor|claude-code>] [--source <cursor_command|claude_agent|claude_hook>] [--triggerStage <stage>] [--skipTriggerCheck true] [--questionVersion <ver>] [--iteration-count N] [--iterationReportPaths path1,path2,...]\n  --epic, --story: 可选；用于生成 runId=dev-e{epic}-s{story}-{stage}-{ts}；未传时尝试从 reportPath 解析（E6-S3、story-6-3- 等）\n  --iteration-count: 该 stage 审计未通过（fail）次数，0 表示一次通过；执行审计循环的 Agent 在 pass 时传入当前累计值\n  --iterationReportPaths: 逗号分隔的失败轮报告路径列表（不含验证轮）；仅 scenario=real_dev 时生效，pass 时一次性解析并写入 iteration_records\n"
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_questionversion",
+        "expectedStderr": "Usage: npx ts-node scripts/parse-and-write-score.ts --reportPath <path> [--stage prd|arch|story|spec|plan|tasks|implement] [--runId <id>] [--epic N] [--story N] [--scenario real_dev|eval_question] [--writeMode single_file|jsonl|both] [--dataPath <path>] [--baseCommitHash <hash>] [--skipAutoHash true] [--sourceHashFilePath <path>] [--artifactDocPath <path>] [--host <host>] [--hostKind <kind>] [--providerId <id>] [--providerMode <mode>] [--toolTraceRef <hash>] [--toolTracePath <path>] [--event <event>] [--agent <cursor|claude-code>] [--source <cursor_command|claude_agent|claude_hook>] [--triggerStage <stage>] [--skipTriggerCheck true] [--questionVersion <ver>] [--iteration-count N] [--iterationReportPaths path1,path2,...]\n  --epic, --story: 可选；用于生成 runId=dev-e{epic}-s{story}-{stage}-{ts}；未传时尝试从 reportPath 解析（E6-S3、story-6-3- 等）\n  --iteration-count: 该 stage 审计未通过（fail）次数，0 表示一次通过；执行审计循环的 Agent 在 pass 时传入当前累计值\n  --iterationReportPaths: 逗号分隔的失败轮报告路径列表（不含验证轮）；仅 scenario=real_dev 时生效，pass 时一次性解析并写入 iteration_records\n"
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_reportpath",
+        "expectedStderr": "Trigger check failed: stage not registered in call_mapping\n"
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_runid",
+        "expectedStderr": "Usage: npx ts-node scripts/parse-and-write-score.ts --reportPath <path> [--stage prd|arch|story|spec|plan|tasks|implement] [--runId <id>] [--epic N] [--story N] [--scenario real_dev|eval_question] [--writeMode single_file|jsonl|both] [--dataPath <path>] [--baseCommitHash <hash>] [--skipAutoHash true] [--sourceHashFilePath <path>] [--artifactDocPath <path>] [--host <host>] [--hostKind <kind>] [--providerId <id>] [--providerMode <mode>] [--toolTraceRef <hash>] [--toolTracePath <path>] [--event <event>] [--agent <cursor|claude-code>] [--source <cursor_command|claude_agent|claude_hook>] [--triggerStage <stage>] [--skipTriggerCheck true] [--questionVersion <ver>] [--iteration-count N] [--iterationReportPaths path1,path2,...]\n  --epic, --story: 可选；用于生成 runId=dev-e{epic}-s{story}-{stage}-{ts}；未传时尝试从 reportPath 解析（E6-S3、story-6-3- 等）\n  --iteration-count: 该 stage 审计未通过（fail）次数，0 表示一次通过；执行审计循环的 Agent 在 pass 时传入当前累计值\n  --iterationReportPaths: 逗号分隔的失败轮报告路径列表（不含验证轮）；仅 scenario=real_dev 时生效，pass 时一次性解析并写入 iteration_records\n"
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_scenario",
+        "expectedStderr": "Usage: npx ts-node scripts/parse-and-write-score.ts --reportPath <path> [--stage prd|arch|story|spec|plan|tasks|implement] [--runId <id>] [--epic N] [--story N] [--scenario real_dev|eval_question] [--writeMode single_file|jsonl|both] [--dataPath <path>] [--baseCommitHash <hash>] [--skipAutoHash true] [--sourceHashFilePath <path>] [--artifactDocPath <path>] [--host <host>] [--hostKind <kind>] [--providerId <id>] [--providerMode <mode>] [--toolTraceRef <hash>] [--toolTracePath <path>] [--event <event>] [--agent <cursor|claude-code>] [--source <cursor_command|claude_agent|claude_hook>] [--triggerStage <stage>] [--skipTriggerCheck true] [--questionVersion <ver>] [--iteration-count N] [--iterationReportPaths path1,path2,...]\n  --epic, --story: 可选；用于生成 runId=dev-e{epic}-s{story}-{stage}-{ts}；未传时尝试从 reportPath 解析（E6-S3、story-6-3- 等）\n  --iteration-count: 该 stage 审计未通过（fail）次数，0 表示一次通过；执行审计循环的 Agent 在 pass 时传入当前累计值\n  --iterationReportPaths: 逗号分隔的失败轮报告路径列表（不含验证轮）；仅 scenario=real_dev 时生效，pass 时一次性解析并写入 iteration_records\n"
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_skipautohash",
+        "expectedStderr": "Usage: npx ts-node scripts/parse-and-write-score.ts --reportPath <path> [--stage prd|arch|story|spec|plan|tasks|implement] [--runId <id>] [--epic N] [--story N] [--scenario real_dev|eval_question] [--writeMode single_file|jsonl|both] [--dataPath <path>] [--baseCommitHash <hash>] [--skipAutoHash true] [--sourceHashFilePath <path>] [--artifactDocPath <path>] [--host <host>] [--hostKind <kind>] [--providerId <id>] [--providerMode <mode>] [--toolTraceRef <hash>] [--toolTracePath <path>] [--event <event>] [--agent <cursor|claude-code>] [--source <cursor_command|claude_agent|claude_hook>] [--triggerStage <stage>] [--skipTriggerCheck true] [--questionVersion <ver>] [--iteration-count N] [--iterationReportPaths path1,path2,...]\n  --epic, --story: 可选；用于生成 runId=dev-e{epic}-s{story}-{stage}-{ts}；未传时尝试从 reportPath 解析（E6-S3、story-6-3- 等）\n  --iteration-count: 该 stage 审计未通过（fail）次数，0 表示一次通过；执行审计循环的 Agent 在 pass 时传入当前累计值\n  --iterationReportPaths: 逗号分隔的失败轮报告路径列表（不含验证轮）；仅 scenario=real_dev 时生效，pass 时一次性解析并写入 iteration_records\n"
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_skiptriggercheck",
+        "expectedStderr": "Usage: npx ts-node scripts/parse-and-write-score.ts --reportPath <path> [--stage prd|arch|story|spec|plan|tasks|implement] [--runId <id>] [--epic N] [--story N] [--scenario real_dev|eval_question] [--writeMode single_file|jsonl|both] [--dataPath <path>] [--baseCommitHash <hash>] [--skipAutoHash true] [--sourceHashFilePath <path>] [--artifactDocPath <path>] [--host <host>] [--hostKind <kind>] [--providerId <id>] [--providerMode <mode>] [--toolTraceRef <hash>] [--toolTracePath <path>] [--event <event>] [--agent <cursor|claude-code>] [--source <cursor_command|claude_agent|claude_hook>] [--triggerStage <stage>] [--skipTriggerCheck true] [--questionVersion <ver>] [--iteration-count N] [--iterationReportPaths path1,path2,...]\n  --epic, --story: 可选；用于生成 runId=dev-e{epic}-s{story}-{stage}-{ts}；未传时尝试从 reportPath 解析（E6-S3、story-6-3- 等）\n  --iteration-count: 该 stage 审计未通过（fail）次数，0 表示一次通过；执行审计循环的 Agent 在 pass 时传入当前累计值\n  --iterationReportPaths: 逗号分隔的失败轮报告路径列表（不含验证轮）；仅 scenario=real_dev 时生效，pass 时一次性解析并写入 iteration_records\n"
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_source",
+        "expectedStderr": "Usage: npx ts-node scripts/parse-and-write-score.ts --reportPath <path> [--stage prd|arch|story|spec|plan|tasks|implement] [--runId <id>] [--epic N] [--story N] [--scenario real_dev|eval_question] [--writeMode single_file|jsonl|both] [--dataPath <path>] [--baseCommitHash <hash>] [--skipAutoHash true] [--sourceHashFilePath <path>] [--artifactDocPath <path>] [--host <host>] [--hostKind <kind>] [--providerId <id>] [--providerMode <mode>] [--toolTraceRef <hash>] [--toolTracePath <path>] [--event <event>] [--agent <cursor|claude-code>] [--source <cursor_command|claude_agent|claude_hook>] [--triggerStage <stage>] [--skipTriggerCheck true] [--questionVersion <ver>] [--iteration-count N] [--iterationReportPaths path1,path2,...]\n  --epic, --story: 可选；用于生成 runId=dev-e{epic}-s{story}-{stage}-{ts}；未传时尝试从 reportPath 解析（E6-S3、story-6-3- 等）\n  --iteration-count: 该 stage 审计未通过（fail）次数，0 表示一次通过；执行审计循环的 Agent 在 pass 时传入当前累计值\n  --iterationReportPaths: 逗号分隔的失败轮报告路径列表（不含验证轮）；仅 scenario=real_dev 时生效，pass 时一次性解析并写入 iteration_records\n"
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_sourcehashfilepath",
+        "expectedStderr": "Usage: npx ts-node scripts/parse-and-write-score.ts --reportPath <path> [--stage prd|arch|story|spec|plan|tasks|implement] [--runId <id>] [--epic N] [--story N] [--scenario real_dev|eval_question] [--writeMode single_file|jsonl|both] [--dataPath <path>] [--baseCommitHash <hash>] [--skipAutoHash true] [--sourceHashFilePath <path>] [--artifactDocPath <path>] [--host <host>] [--hostKind <kind>] [--providerId <id>] [--providerMode <mode>] [--toolTraceRef <hash>] [--toolTracePath <path>] [--event <event>] [--agent <cursor|claude-code>] [--source <cursor_command|claude_agent|claude_hook>] [--triggerStage <stage>] [--skipTriggerCheck true] [--questionVersion <ver>] [--iteration-count N] [--iterationReportPaths path1,path2,...]\n  --epic, --story: 可选；用于生成 runId=dev-e{epic}-s{story}-{stage}-{ts}；未传时尝试从 reportPath 解析（E6-S3、story-6-3- 等）\n  --iteration-count: 该 stage 审计未通过（fail）次数，0 表示一次通过；执行审计循环的 Agent 在 pass 时传入当前累计值\n  --iterationReportPaths: 逗号分隔的失败轮报告路径列表（不含验证轮）；仅 scenario=real_dev 时生效，pass 时一次性解析并写入 iteration_records\n"
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_stage",
+        "expectedStderr": "Usage: npx ts-node scripts/parse-and-write-score.ts --reportPath <path> [--stage prd|arch|story|spec|plan|tasks|implement] [--runId <id>] [--epic N] [--story N] [--scenario real_dev|eval_question] [--writeMode single_file|jsonl|both] [--dataPath <path>] [--baseCommitHash <hash>] [--skipAutoHash true] [--sourceHashFilePath <path>] [--artifactDocPath <path>] [--host <host>] [--hostKind <kind>] [--providerId <id>] [--providerMode <mode>] [--toolTraceRef <hash>] [--toolTracePath <path>] [--event <event>] [--agent <cursor|claude-code>] [--source <cursor_command|claude_agent|claude_hook>] [--triggerStage <stage>] [--skipTriggerCheck true] [--questionVersion <ver>] [--iteration-count N] [--iterationReportPaths path1,path2,...]\n  --epic, --story: 可选；用于生成 runId=dev-e{epic}-s{story}-{stage}-{ts}；未传时尝试从 reportPath 解析（E6-S3、story-6-3- 等）\n  --iteration-count: 该 stage 审计未通过（fail）次数，0 表示一次通过；执行审计循环的 Agent 在 pass 时传入当前累计值\n  --iterationReportPaths: 逗号分隔的失败轮报告路径列表（不含验证轮）；仅 scenario=real_dev 时生效，pass 时一次性解析并写入 iteration_records\n"
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_story",
+        "expectedStderr": "Usage: npx ts-node scripts/parse-and-write-score.ts --reportPath <path> [--stage prd|arch|story|spec|plan|tasks|implement] [--runId <id>] [--epic N] [--story N] [--scenario real_dev|eval_question] [--writeMode single_file|jsonl|both] [--dataPath <path>] [--baseCommitHash <hash>] [--skipAutoHash true] [--sourceHashFilePath <path>] [--artifactDocPath <path>] [--host <host>] [--hostKind <kind>] [--providerId <id>] [--providerMode <mode>] [--toolTraceRef <hash>] [--toolTracePath <path>] [--event <event>] [--agent <cursor|claude-code>] [--source <cursor_command|claude_agent|claude_hook>] [--triggerStage <stage>] [--skipTriggerCheck true] [--questionVersion <ver>] [--iteration-count N] [--iterationReportPaths path1,path2,...]\n  --epic, --story: 可选；用于生成 runId=dev-e{epic}-s{story}-{stage}-{ts}；未传时尝试从 reportPath 解析（E6-S3、story-6-3- 等）\n  --iteration-count: 该 stage 审计未通过（fail）次数，0 表示一次通过；执行审计循环的 Agent 在 pass 时传入当前累计值\n  --iterationReportPaths: 逗号分隔的失败轮报告路径列表（不含验证轮）；仅 scenario=real_dev 时生效，pass 时一次性解析并写入 iteration_records\n"
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_tooltracepath",
+        "expectedStderr": "Usage: npx ts-node scripts/parse-and-write-score.ts --reportPath <path> [--stage prd|arch|story|spec|plan|tasks|implement] [--runId <id>] [--epic N] [--story N] [--scenario real_dev|eval_question] [--writeMode single_file|jsonl|both] [--dataPath <path>] [--baseCommitHash <hash>] [--skipAutoHash true] [--sourceHashFilePath <path>] [--artifactDocPath <path>] [--host <host>] [--hostKind <kind>] [--providerId <id>] [--providerMode <mode>] [--toolTraceRef <hash>] [--toolTracePath <path>] [--event <event>] [--agent <cursor|claude-code>] [--source <cursor_command|claude_agent|claude_hook>] [--triggerStage <stage>] [--skipTriggerCheck true] [--questionVersion <ver>] [--iteration-count N] [--iterationReportPaths path1,path2,...]\n  --epic, --story: 可选；用于生成 runId=dev-e{epic}-s{story}-{stage}-{ts}；未传时尝试从 reportPath 解析（E6-S3、story-6-3- 等）\n  --iteration-count: 该 stage 审计未通过（fail）次数，0 表示一次通过；执行审计循环的 Agent 在 pass 时传入当前累计值\n  --iterationReportPaths: 逗号分隔的失败轮报告路径列表（不含验证轮）；仅 scenario=real_dev 时生效，pass 时一次性解析并写入 iteration_records\n"
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_tooltraceref",
+        "expectedStderr": "Usage: npx ts-node scripts/parse-and-write-score.ts --reportPath <path> [--stage prd|arch|story|spec|plan|tasks|implement] [--runId <id>] [--epic N] [--story N] [--scenario real_dev|eval_question] [--writeMode single_file|jsonl|both] [--dataPath <path>] [--baseCommitHash <hash>] [--skipAutoHash true] [--sourceHashFilePath <path>] [--artifactDocPath <path>] [--host <host>] [--hostKind <kind>] [--providerId <id>] [--providerMode <mode>] [--toolTraceRef <hash>] [--toolTracePath <path>] [--event <event>] [--agent <cursor|claude-code>] [--source <cursor_command|claude_agent|claude_hook>] [--triggerStage <stage>] [--skipTriggerCheck true] [--questionVersion <ver>] [--iteration-count N] [--iterationReportPaths path1,path2,...]\n  --epic, --story: 可选；用于生成 runId=dev-e{epic}-s{story}-{stage}-{ts}；未传时尝试从 reportPath 解析（E6-S3、story-6-3- 等）\n  --iteration-count: 该 stage 审计未通过（fail）次数，0 表示一次通过；执行审计循环的 Agent 在 pass 时传入当前累计值\n  --iterationReportPaths: 逗号分隔的失败轮报告路径列表（不含验证轮）；仅 scenario=real_dev 时生效，pass 时一次性解析并写入 iteration_records\n"
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_triggerstage",
+        "expectedStderr": "Usage: npx ts-node scripts/parse-and-write-score.ts --reportPath <path> [--stage prd|arch|story|spec|plan|tasks|implement] [--runId <id>] [--epic N] [--story N] [--scenario real_dev|eval_question] [--writeMode single_file|jsonl|both] [--dataPath <path>] [--baseCommitHash <hash>] [--skipAutoHash true] [--sourceHashFilePath <path>] [--artifactDocPath <path>] [--host <host>] [--hostKind <kind>] [--providerId <id>] [--providerMode <mode>] [--toolTraceRef <hash>] [--toolTracePath <path>] [--event <event>] [--agent <cursor|claude-code>] [--source <cursor_command|claude_agent|claude_hook>] [--triggerStage <stage>] [--skipTriggerCheck true] [--questionVersion <ver>] [--iteration-count N] [--iterationReportPaths path1,path2,...]\n  --epic, --story: 可选；用于生成 runId=dev-e{epic}-s{story}-{stage}-{ts}；未传时尝试从 reportPath 解析（E6-S3、story-6-3- 等）\n  --iteration-count: 该 stage 审计未通过（fail）次数，0 表示一次通过；执行审计循环的 Agent 在 pass 时传入当前累计值\n  --iterationReportPaths: 逗号分隔的失败轮报告路径列表（不含验证轮）；仅 scenario=real_dev 时生效，pass 时一次性解析并写入 iteration_records\n"
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_writemode",
+        "expectedStderr": "Usage: npx ts-node scripts/parse-and-write-score.ts --reportPath <path> [--stage prd|arch|story|spec|plan|tasks|implement] [--runId <id>] [--epic N] [--story N] [--scenario real_dev|eval_question] [--writeMode single_file|jsonl|both] [--dataPath <path>] [--baseCommitHash <hash>] [--skipAutoHash true] [--sourceHashFilePath <path>] [--artifactDocPath <path>] [--host <host>] [--hostKind <kind>] [--providerId <id>] [--providerMode <mode>] [--toolTraceRef <hash>] [--toolTracePath <path>] [--event <event>] [--agent <cursor|claude-code>] [--source <cursor_command|claude_agent|claude_hook>] [--triggerStage <stage>] [--skipTriggerCheck true] [--questionVersion <ver>] [--iteration-count N] [--iterationReportPaths path1,path2,...]\n  --epic, --story: 可选；用于生成 runId=dev-e{epic}-s{story}-{stage}-{ts}；未传时尝试从 reportPath 解析（E6-S3、story-6-3- 等）\n  --iteration-count: 该 stage 审计未通过（fail）次数，0 表示一次通过；执行审计循环的 Agent 在 pass 时传入当前累计值\n  --iterationReportPaths: 逗号分隔的失败轮报告路径列表（不含验证轮）；仅 scenario=real_dev 时生效，pass 时一次性解析并写入 iteration_records\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/per-must-closure-evidence-index.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_per_must_closure_evidence_index_ts_no_args",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: modelPacket, requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_per_must_closure_evidence_index_ts_flag_attempt_id",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: modelPacket, requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_per_must_closure_evidence_index_ts_flag_help",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_per_must_closure_evidence_index_ts_flag_json",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: modelPacket, requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_per_must_closure_evidence_index_ts_flag_model_packet",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: modelPacket, requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_per_must_closure_evidence_index_ts_flag_out",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: modelPacket, requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_per_must_closure_evidence_index_ts_flag_requirement_record",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: modelPacket, requirementRecord\"\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/pre-rerun-anti-false-positive-gate.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_pre_rerun_anti_false_positive_gate_ts_no_args",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_pre_rerun_anti_false_positive_gate_ts_flag_attempt_id",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_pre_rerun_anti_false_positive_gate_ts_flag_help",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_pre_rerun_anti_false_positive_gate_ts_flag_json",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_pre_rerun_anti_false_positive_gate_ts_flag_report_path",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_pre_rerun_anti_false_positive_gate_ts_flag_requirement_record",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_pre_rerun_anti_false_positive_gate_ts_flag_source",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord\"\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/reconfirmation-runtime.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_reconfirmation_runtime_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/record-main-agent-inspect-readiness-closure.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_record_main_agent_inspect_readiness_closure_ts_no_args",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_record_main_agent_inspect_readiness_closure_ts_flag_entry_flow",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_record_main_agent_inspect_readiness_closure_ts_flag_language",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_record_main_agent_inspect_readiness_closure_ts_flag_mode",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_record_main_agent_inspect_readiness_closure_ts_flag_out",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_record_main_agent_inspect_readiness_closure_ts_flag_record_id",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_record_main_agent_inspect_readiness_closure_ts_flag_source",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/requirement-record-control-store.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_requirement_record_control_store_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/requirement-record-live-schema-gate.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_requirement_record_live_schema_gate_ts_no_args",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_requirement_record_live_schema_gate_ts_flag_help",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_requirement_record_live_schema_gate_ts_flag_json",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/requirement-record-schema-evolution.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_requirement_record_schema_evolution_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  }
+]

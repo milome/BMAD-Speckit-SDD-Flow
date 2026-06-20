@@ -1,0 +1,96 @@
+[
+  {
+    "originalPath": "scripts/i18n/bootstrap-skill-bilingual-files.mjs",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_i18n_bootstrap_skill_bilingual_files_mjs_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/i18n/han-outside-fences.mjs",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_i18n_han_outside_fences_mjs_no_args",
+        "expectedStderr": "Usage: node han-outside-fences.mjs <file>...\n"
+      },
+      {
+        "scenarioId": "g008_i18n_han_outside_fences_mjs_env_verbose",
+        "expectedStderr": "Usage: node han-outside-fences.mjs <file>...\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/i18n/phase3_translate_skill_en.py",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_i18n_phase3_translate_skill_en_py_no_args",
+        "expectedStderr": "Requested Python version (3) is not installed\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/i18n/phase3-skill-en-transform.mjs",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_i18n_phase3_skill_en_transform_mjs_no_args",
+        "expectedStderr": "Usage: node phase3-skill-en-transform.mjs <file>\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/i18n/resolve-audit-prompt-path.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_i18n_resolve_audit_prompt_path_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/normalize-pack-manifests.js",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_normalize_pack_manifests_js_no_args",
+        "expectedStderr": "Usage: node scripts/normalize-pack-manifests.js <prepare|restore>\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/parallel-mission-control.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_parallel_mission_control_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/parse-bmad-audit-result.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_parse_bmad_audit_result_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/party-mode-gate-check.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_party_mode_gate_check_ts_no_args",
+        "expectedStderr": "Missing required --session-key or --meta-path\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/ralph-method/pathing.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_ralph_method_pathing_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  }
+]

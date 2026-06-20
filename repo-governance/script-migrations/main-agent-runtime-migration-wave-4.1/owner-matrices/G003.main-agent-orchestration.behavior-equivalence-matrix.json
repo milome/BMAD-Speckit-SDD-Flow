@@ -1,0 +1,2293 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-wave-4-1-g003-behavior-equivalence-matrix/v1",
+  "waveId": "main-agent-runtime-migration-wave-4.1",
+  "ownerTaskId": "G003",
+  "entryId": "main-agent-orchestration",
+  "originalPath": "scripts/main-agent-orchestration.ts",
+  "packageImplementationSet": [
+    "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts"
+  ],
+  "generatedAt": "2026-06-20T04:58:23.868Z",
+  "generatedBeforeG009": true,
+  "sourceDiscoveryPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.main-agent-orchestration.discovery.json",
+  "sourceDiscoveryHash": "sha256:d09e960457f88b1e845dc651a738deacd09c96530a4f9705b2e7b2729160e9ad",
+  "sourceAuthorityManifestPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/source-authority/G003.main-agent-orchestration.package-source-manifest.json",
+  "sourceAuthorityManifestHash": "sha256:16a369e4b766a4aead189804ad84466e5b5d21877f74b14f14d8d1425049a957",
+  "sourceAuthorityEntryHash": "sha256:d5414b5d806ad3c12b751a1f7d3013c518024cc13c07f29a38970cca190f82d5",
+  "runtimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-orchestration.js",
+  "runtimeEntryPointHash": "sha256:3044a815d1c682167c974e8aa9911919489d870cb0788f69cd3a62c7aa7f4092",
+  "sourceAuthorityDependencyGraph": {
+    "sourceCount": 124,
+    "edgeCount": 328,
+    "manifestPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/source-authority/G003.main-agent-orchestration.package-source-manifest.json"
+  },
+  "sourceDerivedOriginalProof": {
+    "expectedSource": "source_derived_original",
+    "sourceDerivedProofId": "G003_SOURCE_DERIVED_MAIN_AGENT_ORCHESTRATION_ACTION_BRANCHES",
+    "sourceLineAnchors": [
+      {
+        "action": "inspect",
+        "anchor": "scripts/main-agent-orchestration.ts:7962",
+        "text": "'inspect';"
+      },
+      {
+        "action": "inspect",
+        "anchor": "scripts/main-agent-orchestration.ts:8626",
+        "text": "'inspect',"
+      },
+      {
+        "action": "inspect",
+        "anchor": "scripts/main-agent-orchestration.ts:11597",
+        "text": "const action = normalizeText(args.action) || 'inspect';"
+      },
+      {
+        "action": "inspect",
+        "anchor": "scripts/main-agent-orchestration.ts:11758",
+        "text": "case 'inspect': {"
+      },
+      {
+        "action": "inspect",
+        "anchor": "scripts/main-agent-orchestration.ts:11787",
+        "text": "case 'inspect': {"
+      },
+      {
+        "action": "inspect",
+        "anchor": "scripts/main-agent-orchestration.ts:11876",
+        "text": "const action = normalizeText(args.action) || 'inspect';"
+      },
+      {
+        "action": "dispatch-plan",
+        "anchor": "scripts/main-agent-orchestration.ts:8628",
+        "text": "'dispatch-plan',"
+      },
+      {
+        "action": "dispatch-plan",
+        "anchor": "scripts/main-agent-orchestration.ts:11168",
+        "text": "step: 'dispatch-plan',"
+      },
+      {
+        "action": "dispatch-plan",
+        "anchor": "scripts/main-agent-orchestration.ts:11180",
+        "text": "step: 'dispatch-plan',"
+      },
+      {
+        "action": "dispatch-plan",
+        "anchor": "scripts/main-agent-orchestration.ts:11763",
+        "text": "case 'dispatch-plan': {"
+      },
+      {
+        "action": "dispatch-plan",
+        "anchor": "scripts/main-agent-orchestration.ts:11792",
+        "text": "case 'dispatch-plan': {"
+      },
+      {
+        "action": "run-loop",
+        "anchor": "scripts/main-agent-orchestration.ts:8629",
+        "text": "'run-loop',"
+      },
+      {
+        "action": "run-loop",
+        "anchor": "scripts/main-agent-orchestration.ts:11767",
+        "text": "case 'run-loop': {"
+      },
+      {
+        "action": "run-loop",
+        "anchor": "scripts/main-agent-orchestration.ts:11806",
+        "text": "case 'run-loop': {"
+      },
+      {
+        "action": "run-loop",
+        "anchor": "scripts/main-agent-orchestration.ts:11877",
+        "text": "if (action === 'run-loop') {"
+      },
+      {
+        "action": "claim",
+        "anchor": "scripts/main-agent-orchestration.ts:8630",
+        "text": "'claim',"
+      },
+      {
+        "action": "claim",
+        "anchor": "scripts/main-agent-orchestration.ts:11193",
+        "text": "step: 'claim',"
+      },
+      {
+        "action": "claim",
+        "anchor": "scripts/main-agent-orchestration.ts:11839",
+        "text": "case 'claim': {"
+      },
+      {
+        "action": "dispatch",
+        "anchor": "scripts/main-agent-orchestration.ts:8631",
+        "text": "'dispatch',"
+      },
+      {
+        "action": "dispatch",
+        "anchor": "scripts/main-agent-orchestration.ts:11205",
+        "text": "step: 'dispatch',"
+      },
+      {
+        "action": "dispatch",
+        "anchor": "scripts/main-agent-orchestration.ts:11849",
+        "text": "case 'dispatch': {"
+      },
+      {
+        "action": "complete",
+        "anchor": "scripts/main-agent-orchestration.ts:3189",
+        "text": "coverageVerdict: 'complete',"
+      },
+      {
+        "action": "complete",
+        "anchor": "scripts/main-agent-orchestration.ts:3193",
+        "text": "completenessVerdict: 'complete',"
+      },
+      {
+        "action": "complete",
+        "anchor": "scripts/main-agent-orchestration.ts:3545",
+        "text": "coverageVerdict: 'complete',"
+      },
+      {
+        "action": "complete",
+        "anchor": "scripts/main-agent-orchestration.ts:3549",
+        "text": "completenessVerdict: 'complete',"
+      },
+      {
+        "action": "complete",
+        "anchor": "scripts/main-agent-orchestration.ts:8632",
+        "text": "'complete',"
+      },
+      {
+        "action": "complete",
+        "anchor": "scripts/main-agent-orchestration.ts:11855",
+        "text": "case 'complete': {"
+      },
+      {
+        "action": "invalidate",
+        "anchor": "scripts/main-agent-orchestration.ts:8633",
+        "text": "'invalidate',"
+      },
+      {
+        "action": "invalidate",
+        "anchor": "scripts/main-agent-orchestration.ts:11861",
+        "text": "case 'invalidate': {"
+      },
+      {
+        "action": "route-intake",
+        "anchor": "scripts/main-agent-orchestration.ts:8634",
+        "text": "'route-intake',"
+      },
+      {
+        "action": "route-intake",
+        "anchor": "scripts/main-agent-orchestration.ts:11599",
+        "text": "if (action === 'route-intake' || action === 'adaptive-intake') {"
+      },
+      {
+        "action": "adaptive-intake",
+        "anchor": "scripts/main-agent-orchestration.ts:8635",
+        "text": "'adaptive-intake',"
+      },
+      {
+        "action": "adaptive-intake",
+        "anchor": "scripts/main-agent-orchestration.ts:11599",
+        "text": "if (action === 'route-intake' || action === 'adaptive-intake') {"
+      },
+      {
+        "action": "confirm-scope",
+        "anchor": "scripts/main-agent-orchestration.ts:8636",
+        "text": "'confirm-scope',"
+      },
+      {
+        "action": "confirm-scope",
+        "anchor": "scripts/main-agent-orchestration.ts:8850",
+        "text": "| 'confirm-scope'"
+      },
+      {
+        "action": "confirm-scope",
+        "anchor": "scripts/main-agent-orchestration.ts:9086",
+        "text": "action: 'confirm-scope',"
+      },
+      {
+        "action": "confirm-scope",
+        "anchor": "scripts/main-agent-orchestration.ts:11618",
+        "text": "if (action === 'confirm-scope' || action === 'confirmation-ingest') {"
+      },
+      {
+        "action": "confirmation-ingest",
+        "anchor": "scripts/main-agent-orchestration.ts:8637",
+        "text": "'confirmation-ingest',"
+      },
+      {
+        "action": "confirmation-ingest",
+        "anchor": "scripts/main-agent-orchestration.ts:11618",
+        "text": "if (action === 'confirm-scope' || action === 'confirmation-ingest') {"
+      },
+      {
+        "action": "confirm-closeout-acceptance",
+        "anchor": "scripts/main-agent-orchestration.ts:8638",
+        "text": "'confirm-closeout-acceptance',"
+      },
+      {
+        "action": "confirm-closeout-acceptance",
+        "anchor": "scripts/main-agent-orchestration.ts:8851",
+        "text": "| 'confirm-closeout-acceptance'"
+      },
+      {
+        "action": "confirm-closeout-acceptance",
+        "anchor": "scripts/main-agent-orchestration.ts:8991",
+        "text": "'confirm-closeout-acceptance',"
+      },
+      {
+        "action": "confirm-closeout-acceptance",
+        "anchor": "scripts/main-agent-orchestration.ts:9026",
+        "text": "action: 'confirm-closeout-acceptance',"
+      },
+      {
+        "action": "confirm-closeout-acceptance",
+        "anchor": "scripts/main-agent-orchestration.ts:11633",
+        "text": "if (action === 'confirm-closeout-acceptance' || action === 'closeout-acceptance-ingest') {"
+      },
+      {
+        "action": "closeout-acceptance-ingest",
+        "anchor": "scripts/main-agent-orchestration.ts:8639",
+        "text": "'closeout-acceptance-ingest',"
+      },
+      {
+        "action": "closeout-acceptance-ingest",
+        "anchor": "scripts/main-agent-orchestration.ts:11633",
+        "text": "if (action === 'confirm-closeout-acceptance' || action === 'closeout-acceptance-ingest') {"
+      },
+      {
+        "action": "route-confirmation-drift",
+        "anchor": "scripts/main-agent-orchestration.ts:8641",
+        "text": "'route-confirmation-drift',"
+      },
+      {
+        "action": "route-confirmation-drift",
+        "anchor": "scripts/main-agent-orchestration.ts:8853",
+        "text": "| 'route-confirmation-drift';"
+      },
+      {
+        "action": "route-confirmation-drift",
+        "anchor": "scripts/main-agent-orchestration.ts:9237",
+        "text": "action: 'route-confirmation-drift',"
+      },
+      {
+        "action": "route-confirmation-drift",
+        "anchor": "scripts/main-agent-orchestration.ts:9251",
+        "text": "action: 'route-confirmation-drift',"
+      },
+      {
+        "action": "route-confirmation-drift",
+        "anchor": "scripts/main-agent-orchestration.ts:9264",
+        "text": "action: 'route-confirmation-drift',"
+      },
+      {
+        "action": "route-confirmation-drift",
+        "anchor": "scripts/main-agent-orchestration.ts:9283",
+        "text": "action: 'route-confirmation-drift',"
+      },
+      {
+        "action": "route-confirmation-drift",
+        "anchor": "scripts/main-agent-orchestration.ts:9304",
+        "text": "action: 'route-confirmation-drift',"
+      },
+      {
+        "action": "route-confirmation-drift",
+        "anchor": "scripts/main-agent-orchestration.ts:9321",
+        "text": "action: 'route-confirmation-drift',"
+      },
+      {
+        "action": "route-confirmation-drift",
+        "anchor": "scripts/main-agent-orchestration.ts:9342",
+        "text": "action: 'route-confirmation-drift',"
+      },
+      {
+        "action": "route-confirmation-drift",
+        "anchor": "scripts/main-agent-orchestration.ts:11648",
+        "text": "if (action === 'route-confirmation-drift' || action === 'confirmation-drift-route') {"
+      },
+      {
+        "action": "confirmation-drift-route",
+        "anchor": "scripts/main-agent-orchestration.ts:8642",
+        "text": "'confirmation-drift-route',"
+      },
+      {
+        "action": "confirmation-drift-route",
+        "anchor": "scripts/main-agent-orchestration.ts:11648",
+        "text": "if (action === 'route-confirmation-drift' || action === 'confirmation-drift-route') {"
+      },
+      {
+        "action": "repair-confirmation-bookkeeping",
+        "anchor": "scripts/main-agent-orchestration.ts:8643",
+        "text": "'repair-confirmation-bookkeeping',"
+      },
+      {
+        "action": "repair-confirmation-bookkeeping",
+        "anchor": "scripts/main-agent-orchestration.ts:8852",
+        "text": "| 'repair-confirmation-bookkeeping'"
+      },
+      {
+        "action": "repair-confirmation-bookkeeping",
+        "anchor": "scripts/main-agent-orchestration.ts:9144",
+        "text": "action: 'repair-confirmation-bookkeeping',"
+      },
+      {
+        "action": "repair-confirmation-bookkeeping",
+        "anchor": "scripts/main-agent-orchestration.ts:11664",
+        "text": "action === 'repair-confirmation-bookkeeping' ||"
+      },
+      {
+        "action": "confirmation-bookkeeping-repair",
+        "anchor": "scripts/main-agent-orchestration.ts:8644",
+        "text": "'confirmation-bookkeeping-repair',"
+      },
+      {
+        "action": "confirmation-bookkeeping-repair",
+        "anchor": "scripts/main-agent-orchestration.ts:11665",
+        "text": "action === 'confirmation-bookkeeping-repair'"
+      },
+      {
+        "action": "pre-confirmation-drilldown",
+        "anchor": "scripts/main-agent-orchestration.ts:8645",
+        "text": "'pre-confirmation-drilldown',"
+      },
+      {
+        "action": "pre-confirmation-drilldown",
+        "anchor": "scripts/main-agent-orchestration.ts:11682",
+        "text": "action === 'pre-confirmation-drilldown' ||"
+      },
+      {
+        "action": "pre-confirmation-drilldown",
+        "anchor": "scripts/main-agent-orchestration.ts:11703",
+        "text": ": 'pre-confirmation-drilldown';"
+      },
+      {
+        "action": "pre_confirmation_drilldown",
+        "anchor": "scripts/main-agent-orchestration.ts:241",
+        "text": "lane: 'pre_confirmation_drilldown';"
+      },
+      {
+        "action": "pre_confirmation_drilldown",
+        "anchor": "scripts/main-agent-orchestration.ts:3100",
+        "text": "lane: 'pre_confirmation_drilldown',"
+      },
+      {
+        "action": "pre_confirmation_drilldown",
+        "anchor": "scripts/main-agent-orchestration.ts:5498",
+        "text": "lane: 'pre_confirmation_drilldown',"
+      },
+      {
+        "action": "pre_confirmation_drilldown",
+        "anchor": "scripts/main-agent-orchestration.ts:5534",
+        "text": "lane: 'pre_confirmation_drilldown',"
+      },
+      {
+        "action": "pre_confirmation_drilldown",
+        "anchor": "scripts/main-agent-orchestration.ts:5876",
+        "text": "lane: 'pre_confirmation_drilldown',"
+      },
+      {
+        "action": "pre_confirmation_drilldown",
+        "anchor": "scripts/main-agent-orchestration.ts:6000",
+        "text": "lane: 'pre_confirmation_drilldown',"
+      },
+      {
+        "action": "pre_confirmation_drilldown",
+        "anchor": "scripts/main-agent-orchestration.ts:6151",
+        "text": "lane: 'pre_confirmation_drilldown',"
+      },
+      {
+        "action": "pre_confirmation_drilldown",
+        "anchor": "scripts/main-agent-orchestration.ts:6157",
+        "text": "lane: 'pre_confirmation_drilldown',"
+      },
+      {
+        "action": "pre_confirmation_drilldown",
+        "anchor": "scripts/main-agent-orchestration.ts:7505",
+        "text": "lane: 'pre_confirmation_drilldown',"
+      },
+      {
+        "action": "pre_confirmation_drilldown",
+        "anchor": "scripts/main-agent-orchestration.ts:7574",
+        "text": "? 'pre_confirmation_drilldown'"
+      },
+      {
+        "action": "pre_confirmation_drilldown",
+        "anchor": "scripts/main-agent-orchestration.ts:8646",
+        "text": "'pre_confirmation_drilldown',"
+      },
+      {
+        "action": "pre_confirmation_drilldown",
+        "anchor": "scripts/main-agent-orchestration.ts:11683",
+        "text": "action === 'pre_confirmation_drilldown' ||"
+      },
+      {
+        "action": "author-confirmation-ready-source",
+        "anchor": "scripts/main-agent-orchestration.ts:1628",
+        "text": "selectedAuthoringLane?: 'author-confirmation-ready-source';"
+      },
+      {
+        "action": "author-confirmation-ready-source",
+        "anchor": "scripts/main-agent-orchestration.ts:5834",
+        "text": "selectedAuthoringLane?: 'author-confirmation-ready-source';"
+      },
+      {
+        "action": "author-confirmation-ready-source",
+        "anchor": "scripts/main-agent-orchestration.ts:5853",
+        "text": "selectedAuthoringLane: input.selectedAuthoringLane ?? 'author-confirmation-ready-source',"
+      },
+      {
+        "action": "author-confirmation-ready-source",
+        "anchor": "scripts/main-agent-orchestration.ts:8647",
+        "text": "'author-confirmation-ready-source',"
+      },
+      {
+        "action": "author-confirmation-ready-source",
+        "anchor": "scripts/main-agent-orchestration.ts:11684",
+        "text": "action === 'author-confirmation-ready-source' ||"
+      },
+      {
+        "action": "author-confirmation-ready-source",
+        "anchor": "scripts/main-agent-orchestration.ts:11700",
+        "text": "action === 'author-confirmation-ready-source' ||"
+      },
+      {
+        "action": "author-confirmation-ready-source",
+        "anchor": "scripts/main-agent-orchestration.ts:11702",
+        "text": "? 'author-confirmation-ready-source'"
+      },
+      {
+        "action": "author_confirmation_ready_source",
+        "anchor": "scripts/main-agent-orchestration.ts:8648",
+        "text": "'author_confirmation_ready_source',"
+      },
+      {
+        "action": "author_confirmation_ready_source",
+        "anchor": "scripts/main-agent-orchestration.ts:11685",
+        "text": "action === 'author_confirmation_ready_source'"
+      },
+      {
+        "action": "author_confirmation_ready_source",
+        "anchor": "scripts/main-agent-orchestration.ts:11701",
+        "text": "action === 'author_confirmation_ready_source'"
+      },
+      {
+        "action": "authoring-repair",
+        "anchor": "scripts/main-agent-orchestration.ts:8649",
+        "text": "'authoring-repair',"
+      },
+      {
+        "action": "authoring-repair",
+        "anchor": "scripts/main-agent-orchestration.ts:11713",
+        "text": "if (action === 'authoring-repair' || action === 'authoring_repair') {"
+      },
+      {
+        "action": "authoring_repair",
+        "anchor": "scripts/main-agent-orchestration.ts:3483",
+        "text": "lane: 'authoring_repair',"
+      },
+      {
+        "action": "authoring_repair",
+        "anchor": "scripts/main-agent-orchestration.ts:4919",
+        "text": "'authoring_repair'"
+      },
+      {
+        "action": "authoring_repair",
+        "anchor": "scripts/main-agent-orchestration.ts:8650",
+        "text": "'authoring_repair',"
+      },
+      {
+        "action": "authoring_repair",
+        "anchor": "scripts/main-agent-orchestration.ts:11713",
+        "text": "if (action === 'authoring-repair' || action === 'authoring_repair') {"
+      },
+      {
+        "action": "post-close-defect-intake",
+        "anchor": "scripts/main-agent-orchestration.ts:8640",
+        "text": "'post-close-defect-intake',"
+      },
+      {
+        "action": "post-close-defect-intake",
+        "anchor": "scripts/main-agent-orchestration.ts:10442",
+        "text": "action: 'post-close-defect-intake',"
+      },
+      {
+        "action": "post-close-defect-intake",
+        "anchor": "scripts/main-agent-orchestration.ts:11734",
+        "text": "if (action === 'post-close-defect-intake') {"
+      },
+      {
+        "action": "controlled-readiness-audit",
+        "anchor": "scripts/main-agent-orchestration.ts:8651",
+        "text": "'controlled-readiness-audit',"
+      },
+      {
+        "action": "controlled-readiness-audit",
+        "anchor": "scripts/main-agent-orchestration.ts:11909",
+        "text": "if (action !== 'controlled-readiness-audit') {"
+      }
+    ]
+  },
+  "scenarioCoverageProof": {
+    "staticAnalysisCommandId": "G003_DISCOVERY_REQUIRED_ACTIONS",
+    "entryPointCount": 9,
+    "argCombinationCount": 25,
+    "envKeyCount": 0,
+    "fixtureCount": 25,
+    "fileArtifactCount": 0,
+    "errorPathCount": 24,
+    "coveredEntryPointCount": 9,
+    "coveredArgCombinationCount": 25,
+    "coveredEnvKeyCount": 0,
+    "coveredFixtureCount": 25,
+    "coveredFileArtifactCount": 0,
+    "coveredErrorPathCount": 24,
+    "coverageDecision": "passed_full_original_behavior_coverage"
+  },
+  "behaviorEquivalenceMatrix": [
+    {
+      "scenarioId": "g003_inspect",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommand": "node scripts/main-agent-orchestration.ts --action inspect --cwd <fixture-root>",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
+      "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-orchestration.js --action inspect --cwd <fixture-root>",
+      "argumentCombination": "--action inspect --cwd <fixture-root>",
+      "args": [
+        "--action",
+        "inspect",
+        "--cwd",
+        "<fixture-root>"
+      ],
+      "env": {},
+      "fixtures": [
+        {
+          "id": "g003_inspect_fixture_root",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-20T04-58-23-868Z/g003_inspect",
+          "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
+        }
+      ],
+      "expectedStdout": "{\n  \"source\": \"no_active_requirement\",\n  \"sessionId\": null,\n  \"orchestrationStatePath\": null,\n  \"orchestrationState\": null,\n  \"pendingPacketStatus\": \"none\",\n  \"pendingPacket\": null,\n  \"fourSignal\": null,\n  \"latestGate\": null,\n  \"gatesLoop\": null,\n  \"closeout\": null,\n  \"drift\": null,\n  \"diagnostics\": [\n    {\n      \"category\": \"active_requirement\",\n      \"authoritativeSource\": \"_bmad-output/runtime/requirement-records/index.json\",\n      \"sourceChecked\": [\n        \"_bmad-output/runtime/requirement-records/index.json\"\n      ],\n      \"repairAction\": \"contract_authoring_required\",\n      \"automaticRepairAvailable\": false,\n      \"nextCommand\": \"bmads\",\n      \"message\": \"NO_ACTIVE_REQUIREMENT: create or import a requirement contract and complete requirement confirmation before orchestration can continue.\"\n    }\n  ],\n  \"mainAgentCanContinue\": false,\n  \"continueDecision\": \"blocked\",\n  \"mainAgentNextAction\": \"contract_authoring_required\",\n  \"mainAgentReady\": false,\n  \"mainAgentStageSummary\": {\n    \"schemaVersion\": \"main-agent-stage-summary/v1\",\n    \"recordId\": null,\n    \"requirementSetId\": null,\n    \"currentMentalModel\": null,\n    \"currentMentalModelStatus\": \"no_active_requirement\",\n    \"currentStageOrdinal\": null,\n    \"totalStages\": 6,\n    \"nextAction\": \"contract_authoring_required\",\n    \"nextMentalModel\": \"requirement_confirmation\",\n    \"ready\": false,\n    \"blocked\": true,\n    \"blockingReasons\": [\n      \"no_active_requirement\",\n      \"contract_authoring_required\"\n    ],\n    \"lastEventType\": null,\n    \"userFacingMessage\": \"当前项目尚未创建需求契约。BMAD 不会把初始化占位状态当作真实需求。请先创建或导入一个可确认的需求源文档。\"\n  }\n}\n",
+      "expectedStderr": "",
+      "expectedExitCode": 0,
+      "expectedFileArtifacts": [],
+      "expectedErrorPaths": [],
+      "expectedOutputProvenance": {
+        "expectedSource": "source_derived_original",
+        "sourceDerivedProofId": "G003_SOURCE_DERIVED_g003_inspect",
+        "sourceLineAnchors": [
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:7962",
+            "text": "'inspect';"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:8626",
+            "text": "'inspect',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:11597",
+            "text": "const action = normalizeText(args.action) || 'inspect';"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:11758",
+            "text": "case 'inspect': {"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:11787",
+            "text": "case 'inspect': {"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:11876",
+            "text": "const action = normalizeText(args.action) || 'inspect';"
+          }
+        ]
+      },
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G003_DISCOVERY_REQUIRED_ACTIONS",
+        "entryPointCount": 9,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 9,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage"
+      }
+    },
+    {
+      "scenarioId": "g003_dispatch_plan",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommand": "node scripts/main-agent-orchestration.ts --action dispatch-plan --cwd <fixture-root>",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
+      "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-orchestration.js --action dispatch-plan --cwd <fixture-root>",
+      "argumentCombination": "--action dispatch-plan --cwd <fixture-root>",
+      "args": [
+        "--action",
+        "dispatch-plan",
+        "--cwd",
+        "<fixture-root>"
+      ],
+      "env": {},
+      "fixtures": [
+        {
+          "id": "g003_dispatch_plan_fixture_root",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-20T04-58-23-868Z/g003_dispatch_plan",
+          "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
+        }
+      ],
+      "expectedStdout": "null\n",
+      "expectedStderr": "",
+      "expectedExitCode": 1,
+      "expectedFileArtifacts": [],
+      "expectedErrorPaths": [
+        {
+          "channel": "exitCode",
+          "value": 1
+        }
+      ],
+      "expectedOutputProvenance": {
+        "expectedSource": "source_derived_original",
+        "sourceDerivedProofId": "G003_SOURCE_DERIVED_g003_dispatch_plan",
+        "sourceLineAnchors": [
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:8628",
+            "text": "'dispatch-plan',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:11168",
+            "text": "step: 'dispatch-plan',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:11180",
+            "text": "step: 'dispatch-plan',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:11763",
+            "text": "case 'dispatch-plan': {"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:11792",
+            "text": "case 'dispatch-plan': {"
+          }
+        ]
+      },
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G003_DISCOVERY_REQUIRED_ACTIONS",
+        "entryPointCount": 9,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 1,
+        "coveredEntryPointCount": 9,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 1,
+        "coverageDecision": "passed_full_original_behavior_coverage"
+      }
+    },
+    {
+      "scenarioId": "g003_run_loop",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommand": "node scripts/main-agent-orchestration.ts --action run-loop --cwd <fixture-root>",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
+      "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-orchestration.js --action run-loop --cwd <fixture-root>",
+      "argumentCombination": "--action run-loop --cwd <fixture-root>",
+      "args": [
+        "--action",
+        "run-loop",
+        "--cwd",
+        "<fixture-root>"
+      ],
+      "env": {},
+      "fixtures": [
+        {
+          "id": "g003_run_loop_fixture_root",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-20T04-58-23-868Z/g003_run_loop",
+          "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
+        }
+      ],
+      "expectedStdout": "{\n  \"runId\": \"main-agent-run-loop-1781931504089\",\n  \"status\": \"blocked\",\n  \"steps\": [\n    {\n      \"step\": \"inspect.initial\",\n      \"status\": \"fail\",\n      \"summary\": \"NO_ACTIVE_REQUIREMENT: contract_authoring_required\"\n    }\n  ],\n  \"dispatchInstruction\": null,\n  \"taskReport\": null,\n  \"finalSurface\": {\n    \"source\": \"no_active_requirement\",\n    \"sessionId\": null,\n    \"orchestrationStatePath\": null,\n    \"orchestrationState\": null,\n    \"pendingPacketStatus\": \"none\",\n    \"pendingPacket\": null,\n    \"fourSignal\": null,\n    \"latestGate\": null,\n    \"gatesLoop\": null,\n    \"closeout\": null,\n    \"drift\": null,\n    \"diagnostics\": [\n      {\n        \"category\": \"active_requirement\",\n        \"authoritativeSource\": \"_bmad-output/runtime/requirement-records/index.json\",\n        \"sourceChecked\": [\n          \"_bmad-output/runtime/requirement-records/index.json\"\n        ],\n        \"repairAction\": \"contract_authoring_required\",\n        \"automaticRepairAvailable\": false,\n        \"nextCommand\": \"bmads\",\n        \"message\": \"NO_ACTIVE_REQUIREMENT: create or import a requirement contract and complete requirement confirmation before orchestration can continue.\"\n      }\n    ],\n    \"mainAgentCanContinue\": false,\n    \"continueDecision\": \"blocked\",\n    \"mainAgentNextAction\": \"contract_authoring_required\",\n    \"mainAgentReady\": false,\n    \"mainAgentStageSummary\": {\n      \"schemaVersion\": \"main-agent-stage-summary/v1\",\n      \"recordId\": null,\n      \"requirementSetId\": null,\n      \"currentMentalModel\": null,\n      \"currentMentalModelStatus\": \"no_active_requirement\",\n      \"currentStageOrdinal\": null,\n      \"totalStages\": 6,\n      \"nextAction\": \"contract_authoring_required\",\n      \"nextMentalModel\": \"requirement_confirmation\",\n      \"ready\": false,\n      \"blocked\": true,\n      \"blockingReasons\": [\n        \"no_active_requirement\",\n        \"contract_authoring_required\"\n      ],\n      \"lastEventType\": null,\n      \"userFacingMessage\": \"当前项目尚未创建需求契约。BMAD 不会把初始化占位状态当作真实需求。请先创建或导入一个可确认的需求源文档。\"\n    }\n  },\n  \"mainAgentStageSummary\": {\n    \"schemaVersion\": \"main-agent-stage-summary/v1\",\n    \"recordId\": null,\n    \"requirementSetId\": null,\n    \"currentMentalModel\": null,\n    \"currentMentalModelStatus\": \"no_active_requirement\",\n    \"currentStageOrdinal\": null,\n    \"totalStages\": 6,\n    \"nextAction\": \"contract_authoring_required\",\n    \"nextMentalModel\": \"requirement_confirmation\",\n    \"ready\": false,\n    \"blocked\": true,\n    \"blockingReasons\": [\n      \"no_active_requirement\",\n      \"contract_authoring_required\"\n    ],\n    \"lastEventType\": null,\n    \"userFacingMessage\": \"当前项目尚未创建需求契约。BMAD 不会把初始化占位状态当作真实需求。请先创建或导入一个可确认的需求源文档。\"\n  }\n}\n",
+      "expectedStderr": "",
+      "expectedExitCode": 1,
+      "expectedFileArtifacts": [],
+      "expectedErrorPaths": [
+        {
+          "channel": "exitCode",
+          "value": 1
+        }
+      ],
+      "expectedOutputProvenance": {
+        "expectedSource": "source_derived_original",
+        "sourceDerivedProofId": "G003_SOURCE_DERIVED_g003_run_loop",
+        "sourceLineAnchors": [
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:8629",
+            "text": "'run-loop',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:11767",
+            "text": "case 'run-loop': {"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:11806",
+            "text": "case 'run-loop': {"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:11877",
+            "text": "if (action === 'run-loop') {"
+          }
+        ]
+      },
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G003_DISCOVERY_REQUIRED_ACTIONS",
+        "entryPointCount": 9,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 1,
+        "coveredEntryPointCount": 9,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 1,
+        "coverageDecision": "passed_full_original_behavior_coverage"
+      }
+    },
+    {
+      "scenarioId": "g003_claim",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommand": "node scripts/main-agent-orchestration.ts --action claim --cwd <fixture-root>",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
+      "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-orchestration.js --action claim --cwd <fixture-root>",
+      "argumentCombination": "--action claim --cwd <fixture-root>",
+      "args": [
+        "--action",
+        "claim",
+        "--cwd",
+        "<fixture-root>"
+      ],
+      "env": {},
+      "fixtures": [
+        {
+          "id": "g003_claim_fixture_root",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-20T04-58-23-868Z/g003_claim",
+          "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
+        }
+      ],
+      "expectedStdout": "{\n  \"source\": \"no_active_requirement\",\n  \"sessionId\": null,\n  \"orchestrationStatePath\": null,\n  \"orchestrationState\": null,\n  \"pendingPacketStatus\": \"none\",\n  \"pendingPacket\": null,\n  \"fourSignal\": null,\n  \"latestGate\": null,\n  \"gatesLoop\": null,\n  \"closeout\": null,\n  \"drift\": null,\n  \"diagnostics\": [\n    {\n      \"category\": \"active_requirement\",\n      \"authoritativeSource\": \"_bmad-output/runtime/requirement-records/index.json\",\n      \"sourceChecked\": [\n        \"_bmad-output/runtime/requirement-records/index.json\"\n      ],\n      \"repairAction\": \"contract_authoring_required\",\n      \"automaticRepairAvailable\": false,\n      \"nextCommand\": \"bmads\",\n      \"message\": \"NO_ACTIVE_REQUIREMENT: create or import a requirement contract and complete requirement confirmation before orchestration can continue.\"\n    }\n  ],\n  \"mainAgentCanContinue\": false,\n  \"continueDecision\": \"blocked\",\n  \"mainAgentNextAction\": \"contract_authoring_required\",\n  \"mainAgentReady\": false,\n  \"mainAgentStageSummary\": {\n    \"schemaVersion\": \"main-agent-stage-summary/v1\",\n    \"recordId\": null,\n    \"requirementSetId\": null,\n    \"currentMentalModel\": null,\n    \"currentMentalModelStatus\": \"no_active_requirement\",\n    \"currentStageOrdinal\": null,\n    \"totalStages\": 6,\n    \"nextAction\": \"contract_authoring_required\",\n    \"nextMentalModel\": \"requirement_confirmation\",\n    \"ready\": false,\n    \"blocked\": true,\n    \"blockingReasons\": [\n      \"no_active_requirement\",\n      \"contract_authoring_required\"\n    ],\n    \"lastEventType\": null,\n    \"userFacingMessage\": \"当前项目尚未创建需求契约。BMAD 不会把初始化占位状态当作真实需求。请先创建或导入一个可确认的需求源文档。\"\n  }\n}\n",
+      "expectedStderr": "",
+      "expectedExitCode": 1,
+      "expectedFileArtifacts": [],
+      "expectedErrorPaths": [
+        {
+          "channel": "exitCode",
+          "value": 1
+        }
+      ],
+      "expectedOutputProvenance": {
+        "expectedSource": "source_derived_original",
+        "sourceDerivedProofId": "G003_SOURCE_DERIVED_g003_claim",
+        "sourceLineAnchors": [
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:8630",
+            "text": "'claim',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:11193",
+            "text": "step: 'claim',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:11839",
+            "text": "case 'claim': {"
+          }
+        ]
+      },
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G003_DISCOVERY_REQUIRED_ACTIONS",
+        "entryPointCount": 9,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 1,
+        "coveredEntryPointCount": 9,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 1,
+        "coverageDecision": "passed_full_original_behavior_coverage"
+      }
+    },
+    {
+      "scenarioId": "g003_dispatch",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommand": "node scripts/main-agent-orchestration.ts --action dispatch --cwd <fixture-root>",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
+      "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-orchestration.js --action dispatch --cwd <fixture-root>",
+      "argumentCombination": "--action dispatch --cwd <fixture-root>",
+      "args": [
+        "--action",
+        "dispatch",
+        "--cwd",
+        "<fixture-root>"
+      ],
+      "env": {},
+      "fixtures": [
+        {
+          "id": "g003_dispatch_fixture_root",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-20T04-58-23-868Z/g003_dispatch",
+          "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
+        }
+      ],
+      "expectedStdout": "{\n  \"source\": \"no_active_requirement\",\n  \"sessionId\": null,\n  \"orchestrationStatePath\": null,\n  \"orchestrationState\": null,\n  \"pendingPacketStatus\": \"none\",\n  \"pendingPacket\": null,\n  \"fourSignal\": null,\n  \"latestGate\": null,\n  \"gatesLoop\": null,\n  \"closeout\": null,\n  \"drift\": null,\n  \"diagnostics\": [\n    {\n      \"category\": \"active_requirement\",\n      \"authoritativeSource\": \"_bmad-output/runtime/requirement-records/index.json\",\n      \"sourceChecked\": [\n        \"_bmad-output/runtime/requirement-records/index.json\"\n      ],\n      \"repairAction\": \"contract_authoring_required\",\n      \"automaticRepairAvailable\": false,\n      \"nextCommand\": \"bmads\",\n      \"message\": \"NO_ACTIVE_REQUIREMENT: create or import a requirement contract and complete requirement confirmation before orchestration can continue.\"\n    }\n  ],\n  \"mainAgentCanContinue\": false,\n  \"continueDecision\": \"blocked\",\n  \"mainAgentNextAction\": \"contract_authoring_required\",\n  \"mainAgentReady\": false,\n  \"mainAgentStageSummary\": {\n    \"schemaVersion\": \"main-agent-stage-summary/v1\",\n    \"recordId\": null,\n    \"requirementSetId\": null,\n    \"currentMentalModel\": null,\n    \"currentMentalModelStatus\": \"no_active_requirement\",\n    \"currentStageOrdinal\": null,\n    \"totalStages\": 6,\n    \"nextAction\": \"contract_authoring_required\",\n    \"nextMentalModel\": \"requirement_confirmation\",\n    \"ready\": false,\n    \"blocked\": true,\n    \"blockingReasons\": [\n      \"no_active_requirement\",\n      \"contract_authoring_required\"\n    ],\n    \"lastEventType\": null,\n    \"userFacingMessage\": \"当前项目尚未创建需求契约。BMAD 不会把初始化占位状态当作真实需求。请先创建或导入一个可确认的需求源文档。\"\n  }\n}\n",
+      "expectedStderr": "",
+      "expectedExitCode": 1,
+      "expectedFileArtifacts": [],
+      "expectedErrorPaths": [
+        {
+          "channel": "exitCode",
+          "value": 1
+        }
+      ],
+      "expectedOutputProvenance": {
+        "expectedSource": "source_derived_original",
+        "sourceDerivedProofId": "G003_SOURCE_DERIVED_g003_dispatch",
+        "sourceLineAnchors": [
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:8631",
+            "text": "'dispatch',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:11205",
+            "text": "step: 'dispatch',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:11849",
+            "text": "case 'dispatch': {"
+          }
+        ]
+      },
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G003_DISCOVERY_REQUIRED_ACTIONS",
+        "entryPointCount": 9,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 1,
+        "coveredEntryPointCount": 9,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 1,
+        "coverageDecision": "passed_full_original_behavior_coverage"
+      }
+    },
+    {
+      "scenarioId": "g003_complete",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommand": "node scripts/main-agent-orchestration.ts --action complete --cwd <fixture-root>",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
+      "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-orchestration.js --action complete --cwd <fixture-root>",
+      "argumentCombination": "--action complete --cwd <fixture-root>",
+      "args": [
+        "--action",
+        "complete",
+        "--cwd",
+        "<fixture-root>"
+      ],
+      "env": {},
+      "fixtures": [
+        {
+          "id": "g003_complete_fixture_root",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-20T04-58-23-868Z/g003_complete",
+          "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
+        }
+      ],
+      "expectedStdout": "{\n  \"source\": \"no_active_requirement\",\n  \"sessionId\": null,\n  \"orchestrationStatePath\": null,\n  \"orchestrationState\": null,\n  \"pendingPacketStatus\": \"none\",\n  \"pendingPacket\": null,\n  \"fourSignal\": null,\n  \"latestGate\": null,\n  \"gatesLoop\": null,\n  \"closeout\": null,\n  \"drift\": null,\n  \"diagnostics\": [\n    {\n      \"category\": \"active_requirement\",\n      \"authoritativeSource\": \"_bmad-output/runtime/requirement-records/index.json\",\n      \"sourceChecked\": [\n        \"_bmad-output/runtime/requirement-records/index.json\"\n      ],\n      \"repairAction\": \"contract_authoring_required\",\n      \"automaticRepairAvailable\": false,\n      \"nextCommand\": \"bmads\",\n      \"message\": \"NO_ACTIVE_REQUIREMENT: create or import a requirement contract and complete requirement confirmation before orchestration can continue.\"\n    }\n  ],\n  \"mainAgentCanContinue\": false,\n  \"continueDecision\": \"blocked\",\n  \"mainAgentNextAction\": \"contract_authoring_required\",\n  \"mainAgentReady\": false,\n  \"mainAgentStageSummary\": {\n    \"schemaVersion\": \"main-agent-stage-summary/v1\",\n    \"recordId\": null,\n    \"requirementSetId\": null,\n    \"currentMentalModel\": null,\n    \"currentMentalModelStatus\": \"no_active_requirement\",\n    \"currentStageOrdinal\": null,\n    \"totalStages\": 6,\n    \"nextAction\": \"contract_authoring_required\",\n    \"nextMentalModel\": \"requirement_confirmation\",\n    \"ready\": false,\n    \"blocked\": true,\n    \"blockingReasons\": [\n      \"no_active_requirement\",\n      \"contract_authoring_required\"\n    ],\n    \"lastEventType\": null,\n    \"userFacingMessage\": \"当前项目尚未创建需求契约。BMAD 不会把初始化占位状态当作真实需求。请先创建或导入一个可确认的需求源文档。\"\n  }\n}\n",
+      "expectedStderr": "",
+      "expectedExitCode": 1,
+      "expectedFileArtifacts": [],
+      "expectedErrorPaths": [
+        {
+          "channel": "exitCode",
+          "value": 1
+        }
+      ],
+      "expectedOutputProvenance": {
+        "expectedSource": "source_derived_original",
+        "sourceDerivedProofId": "G003_SOURCE_DERIVED_g003_complete",
+        "sourceLineAnchors": [
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:3189",
+            "text": "coverageVerdict: 'complete',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:3193",
+            "text": "completenessVerdict: 'complete',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:3545",
+            "text": "coverageVerdict: 'complete',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:3549",
+            "text": "completenessVerdict: 'complete',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:8632",
+            "text": "'complete',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:11855",
+            "text": "case 'complete': {"
+          }
+        ]
+      },
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G003_DISCOVERY_REQUIRED_ACTIONS",
+        "entryPointCount": 9,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 1,
+        "coveredEntryPointCount": 9,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 1,
+        "coverageDecision": "passed_full_original_behavior_coverage"
+      }
+    },
+    {
+      "scenarioId": "g003_invalidate",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommand": "node scripts/main-agent-orchestration.ts --action invalidate --cwd <fixture-root>",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
+      "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-orchestration.js --action invalidate --cwd <fixture-root>",
+      "argumentCombination": "--action invalidate --cwd <fixture-root>",
+      "args": [
+        "--action",
+        "invalidate",
+        "--cwd",
+        "<fixture-root>"
+      ],
+      "env": {},
+      "fixtures": [
+        {
+          "id": "g003_invalidate_fixture_root",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-20T04-58-23-868Z/g003_invalidate",
+          "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
+        }
+      ],
+      "expectedStdout": "{\n  \"source\": \"no_active_requirement\",\n  \"sessionId\": null,\n  \"orchestrationStatePath\": null,\n  \"orchestrationState\": null,\n  \"pendingPacketStatus\": \"none\",\n  \"pendingPacket\": null,\n  \"fourSignal\": null,\n  \"latestGate\": null,\n  \"gatesLoop\": null,\n  \"closeout\": null,\n  \"drift\": null,\n  \"diagnostics\": [\n    {\n      \"category\": \"active_requirement\",\n      \"authoritativeSource\": \"_bmad-output/runtime/requirement-records/index.json\",\n      \"sourceChecked\": [\n        \"_bmad-output/runtime/requirement-records/index.json\"\n      ],\n      \"repairAction\": \"contract_authoring_required\",\n      \"automaticRepairAvailable\": false,\n      \"nextCommand\": \"bmads\",\n      \"message\": \"NO_ACTIVE_REQUIREMENT: create or import a requirement contract and complete requirement confirmation before orchestration can continue.\"\n    }\n  ],\n  \"mainAgentCanContinue\": false,\n  \"continueDecision\": \"blocked\",\n  \"mainAgentNextAction\": \"contract_authoring_required\",\n  \"mainAgentReady\": false,\n  \"mainAgentStageSummary\": {\n    \"schemaVersion\": \"main-agent-stage-summary/v1\",\n    \"recordId\": null,\n    \"requirementSetId\": null,\n    \"currentMentalModel\": null,\n    \"currentMentalModelStatus\": \"no_active_requirement\",\n    \"currentStageOrdinal\": null,\n    \"totalStages\": 6,\n    \"nextAction\": \"contract_authoring_required\",\n    \"nextMentalModel\": \"requirement_confirmation\",\n    \"ready\": false,\n    \"blocked\": true,\n    \"blockingReasons\": [\n      \"no_active_requirement\",\n      \"contract_authoring_required\"\n    ],\n    \"lastEventType\": null,\n    \"userFacingMessage\": \"当前项目尚未创建需求契约。BMAD 不会把初始化占位状态当作真实需求。请先创建或导入一个可确认的需求源文档。\"\n  }\n}\n",
+      "expectedStderr": "",
+      "expectedExitCode": 1,
+      "expectedFileArtifacts": [],
+      "expectedErrorPaths": [
+        {
+          "channel": "exitCode",
+          "value": 1
+        }
+      ],
+      "expectedOutputProvenance": {
+        "expectedSource": "source_derived_original",
+        "sourceDerivedProofId": "G003_SOURCE_DERIVED_g003_invalidate",
+        "sourceLineAnchors": [
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:8633",
+            "text": "'invalidate',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:11861",
+            "text": "case 'invalidate': {"
+          }
+        ]
+      },
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G003_DISCOVERY_REQUIRED_ACTIONS",
+        "entryPointCount": 9,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 1,
+        "coveredEntryPointCount": 9,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 1,
+        "coverageDecision": "passed_full_original_behavior_coverage"
+      }
+    },
+    {
+      "scenarioId": "g003_route_intake",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommand": "node scripts/main-agent-orchestration.ts --action route-intake --cwd <fixture-root>",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
+      "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-orchestration.js --action route-intake --cwd <fixture-root>",
+      "argumentCombination": "--action route-intake --cwd <fixture-root>",
+      "args": [
+        "--action",
+        "route-intake",
+        "--cwd",
+        "<fixture-root>"
+      ],
+      "env": {},
+      "fixtures": [
+        {
+          "id": "g003_route_intake_fixture_root",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-20T04-58-23-868Z/g003_route_intake",
+          "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
+        }
+      ],
+      "expectedStdout": "",
+      "expectedStderr": "main-agent-orchestration: route-intake requires --input <json-file> or --payload <json>\n",
+      "expectedExitCode": 1,
+      "expectedFileArtifacts": [],
+      "expectedErrorPaths": [
+        {
+          "channel": "stderr",
+          "firstLine": "main-agent-orchestration: route-intake requires --input <json-file> or --payload <json>"
+        }
+      ],
+      "expectedOutputProvenance": {
+        "expectedSource": "source_derived_original",
+        "sourceDerivedProofId": "G003_SOURCE_DERIVED_g003_route_intake",
+        "sourceLineAnchors": [
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:8634",
+            "text": "'route-intake',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:11599",
+            "text": "if (action === 'route-intake' || action === 'adaptive-intake') {"
+          }
+        ]
+      },
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G003_DISCOVERY_REQUIRED_ACTIONS",
+        "entryPointCount": 9,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 1,
+        "coveredEntryPointCount": 9,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 1,
+        "coverageDecision": "passed_full_original_behavior_coverage"
+      }
+    },
+    {
+      "scenarioId": "g003_adaptive_intake",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommand": "node scripts/main-agent-orchestration.ts --action adaptive-intake --cwd <fixture-root>",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
+      "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-orchestration.js --action adaptive-intake --cwd <fixture-root>",
+      "argumentCombination": "--action adaptive-intake --cwd <fixture-root>",
+      "args": [
+        "--action",
+        "adaptive-intake",
+        "--cwd",
+        "<fixture-root>"
+      ],
+      "env": {},
+      "fixtures": [
+        {
+          "id": "g003_adaptive_intake_fixture_root",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-20T04-58-23-868Z/g003_adaptive_intake",
+          "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
+        }
+      ],
+      "expectedStdout": "",
+      "expectedStderr": "main-agent-orchestration: route-intake requires --input <json-file> or --payload <json>\n",
+      "expectedExitCode": 1,
+      "expectedFileArtifacts": [],
+      "expectedErrorPaths": [
+        {
+          "channel": "stderr",
+          "firstLine": "main-agent-orchestration: route-intake requires --input <json-file> or --payload <json>"
+        }
+      ],
+      "expectedOutputProvenance": {
+        "expectedSource": "source_derived_original",
+        "sourceDerivedProofId": "G003_SOURCE_DERIVED_g003_adaptive_intake",
+        "sourceLineAnchors": [
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:8635",
+            "text": "'adaptive-intake',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:11599",
+            "text": "if (action === 'route-intake' || action === 'adaptive-intake') {"
+          }
+        ]
+      },
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G003_DISCOVERY_REQUIRED_ACTIONS",
+        "entryPointCount": 9,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 1,
+        "coveredEntryPointCount": 9,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 1,
+        "coverageDecision": "passed_full_original_behavior_coverage"
+      }
+    },
+    {
+      "scenarioId": "g003_confirm_scope",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommand": "node scripts/main-agent-orchestration.ts --action confirm-scope --cwd <fixture-root>",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
+      "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-orchestration.js --action confirm-scope --cwd <fixture-root>",
+      "argumentCombination": "--action confirm-scope --cwd <fixture-root>",
+      "args": [
+        "--action",
+        "confirm-scope",
+        "--cwd",
+        "<fixture-root>"
+      ],
+      "env": {},
+      "fixtures": [
+        {
+          "id": "g003_confirm_scope_fixture_root",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-20T04-58-23-868Z/g003_confirm_scope",
+          "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
+        }
+      ],
+      "expectedStdout": "",
+      "expectedStderr": "main-agent-orchestration confirm-scope: controlled confirmation entry missing: D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-4.1\\owner-matrices\\G003.replay-fixtures\\2026-06-20T04-58-23-868Z\\g003_confirm_scope\\_bmad\\skills\\requirements-contract-authoring\\scripts\\confirm-requirements-scope.js\n",
+      "expectedExitCode": 1,
+      "expectedFileArtifacts": [],
+      "expectedErrorPaths": [
+        {
+          "channel": "stderr",
+          "firstLine": "main-agent-orchestration confirm-scope: controlled confirmation entry missing: D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-4.1\\owner-matrices\\G003.replay-fixtures\\2026-06-20T04-58-23-868Z\\g003_confirm_scope\\_bmad\\skills\\requirements-contract-authoring\\scripts\\confirm-requirements-scope.js"
+        }
+      ],
+      "expectedOutputProvenance": {
+        "expectedSource": "source_derived_original",
+        "sourceDerivedProofId": "G003_SOURCE_DERIVED_g003_confirm_scope",
+        "sourceLineAnchors": [
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:8636",
+            "text": "'confirm-scope',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:8850",
+            "text": "| 'confirm-scope'"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:9086",
+            "text": "action: 'confirm-scope',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:11618",
+            "text": "if (action === 'confirm-scope' || action === 'confirmation-ingest') {"
+          }
+        ]
+      },
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G003_DISCOVERY_REQUIRED_ACTIONS",
+        "entryPointCount": 9,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 1,
+        "coveredEntryPointCount": 9,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 1,
+        "coverageDecision": "passed_full_original_behavior_coverage"
+      }
+    },
+    {
+      "scenarioId": "g003_confirmation_ingest",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommand": "node scripts/main-agent-orchestration.ts --action confirmation-ingest --cwd <fixture-root>",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
+      "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-orchestration.js --action confirmation-ingest --cwd <fixture-root>",
+      "argumentCombination": "--action confirmation-ingest --cwd <fixture-root>",
+      "args": [
+        "--action",
+        "confirmation-ingest",
+        "--cwd",
+        "<fixture-root>"
+      ],
+      "env": {},
+      "fixtures": [
+        {
+          "id": "g003_confirmation_ingest_fixture_root",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-20T04-58-23-868Z/g003_confirmation_ingest",
+          "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
+        }
+      ],
+      "expectedStdout": "",
+      "expectedStderr": "main-agent-orchestration confirm-scope: controlled confirmation entry missing: D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-4.1\\owner-matrices\\G003.replay-fixtures\\2026-06-20T04-58-23-868Z\\g003_confirmation_ingest\\_bmad\\skills\\requirements-contract-authoring\\scripts\\confirm-requirements-scope.js\n",
+      "expectedExitCode": 1,
+      "expectedFileArtifacts": [],
+      "expectedErrorPaths": [
+        {
+          "channel": "stderr",
+          "firstLine": "main-agent-orchestration confirm-scope: controlled confirmation entry missing: D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-4.1\\owner-matrices\\G003.replay-fixtures\\2026-06-20T04-58-23-868Z\\g003_confirmation_ingest\\_bmad\\skills\\requirements-contract-authoring\\scripts\\confirm-requirements-scope.js"
+        }
+      ],
+      "expectedOutputProvenance": {
+        "expectedSource": "source_derived_original",
+        "sourceDerivedProofId": "G003_SOURCE_DERIVED_g003_confirmation_ingest",
+        "sourceLineAnchors": [
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:8637",
+            "text": "'confirmation-ingest',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:11618",
+            "text": "if (action === 'confirm-scope' || action === 'confirmation-ingest') {"
+          }
+        ]
+      },
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G003_DISCOVERY_REQUIRED_ACTIONS",
+        "entryPointCount": 9,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 1,
+        "coveredEntryPointCount": 9,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 1,
+        "coverageDecision": "passed_full_original_behavior_coverage"
+      }
+    },
+    {
+      "scenarioId": "g003_confirm_closeout_acceptance",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommand": "node scripts/main-agent-orchestration.ts --action confirm-closeout-acceptance --cwd <fixture-root>",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
+      "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-orchestration.js --action confirm-closeout-acceptance --cwd <fixture-root>",
+      "argumentCombination": "--action confirm-closeout-acceptance --cwd <fixture-root>",
+      "args": [
+        "--action",
+        "confirm-closeout-acceptance",
+        "--cwd",
+        "<fixture-root>"
+      ],
+      "env": {},
+      "fixtures": [
+        {
+          "id": "g003_confirm_closeout_acceptance_fixture_root",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-20T04-58-23-868Z/g003_confirm_closeout_acceptance",
+          "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
+        }
+      ],
+      "expectedStdout": "",
+      "expectedStderr": "main-agent-orchestration confirm-closeout-acceptance: controlled closeout acceptance entry missing: D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-4.1\\owner-matrices\\G003.replay-fixtures\\2026-06-20T04-58-23-868Z\\g003_confirm_closeout_acceptance\\_bmad\\skills\\requirements-contract-authoring\\scripts\\ingest-confirmation-event.js\n",
+      "expectedExitCode": 1,
+      "expectedFileArtifacts": [],
+      "expectedErrorPaths": [
+        {
+          "channel": "stderr",
+          "firstLine": "main-agent-orchestration confirm-closeout-acceptance: controlled closeout acceptance entry missing: D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-4.1\\owner-matrices\\G003.replay-fixtures\\2026-06-20T04-58-23-868Z\\g003_confirm_closeout_acceptance\\_bmad\\skills\\requirements-contract-authoring\\scripts\\ingest-confirmation-event.js"
+        }
+      ],
+      "expectedOutputProvenance": {
+        "expectedSource": "source_derived_original",
+        "sourceDerivedProofId": "G003_SOURCE_DERIVED_g003_confirm_closeout_acceptance",
+        "sourceLineAnchors": [
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:8638",
+            "text": "'confirm-closeout-acceptance',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:8851",
+            "text": "| 'confirm-closeout-acceptance'"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:8991",
+            "text": "'confirm-closeout-acceptance',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:9026",
+            "text": "action: 'confirm-closeout-acceptance',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:11633",
+            "text": "if (action === 'confirm-closeout-acceptance' || action === 'closeout-acceptance-ingest') {"
+          }
+        ]
+      },
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G003_DISCOVERY_REQUIRED_ACTIONS",
+        "entryPointCount": 9,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 1,
+        "coveredEntryPointCount": 9,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 1,
+        "coverageDecision": "passed_full_original_behavior_coverage"
+      }
+    },
+    {
+      "scenarioId": "g003_closeout_acceptance_ingest",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommand": "node scripts/main-agent-orchestration.ts --action closeout-acceptance-ingest --cwd <fixture-root>",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
+      "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-orchestration.js --action closeout-acceptance-ingest --cwd <fixture-root>",
+      "argumentCombination": "--action closeout-acceptance-ingest --cwd <fixture-root>",
+      "args": [
+        "--action",
+        "closeout-acceptance-ingest",
+        "--cwd",
+        "<fixture-root>"
+      ],
+      "env": {},
+      "fixtures": [
+        {
+          "id": "g003_closeout_acceptance_ingest_fixture_root",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-20T04-58-23-868Z/g003_closeout_acceptance_ingest",
+          "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
+        }
+      ],
+      "expectedStdout": "",
+      "expectedStderr": "main-agent-orchestration confirm-closeout-acceptance: controlled closeout acceptance entry missing: D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-4.1\\owner-matrices\\G003.replay-fixtures\\2026-06-20T04-58-23-868Z\\g003_closeout_acceptance_ingest\\_bmad\\skills\\requirements-contract-authoring\\scripts\\ingest-confirmation-event.js\n",
+      "expectedExitCode": 1,
+      "expectedFileArtifacts": [],
+      "expectedErrorPaths": [
+        {
+          "channel": "stderr",
+          "firstLine": "main-agent-orchestration confirm-closeout-acceptance: controlled closeout acceptance entry missing: D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-4.1\\owner-matrices\\G003.replay-fixtures\\2026-06-20T04-58-23-868Z\\g003_closeout_acceptance_ingest\\_bmad\\skills\\requirements-contract-authoring\\scripts\\ingest-confirmation-event.js"
+        }
+      ],
+      "expectedOutputProvenance": {
+        "expectedSource": "source_derived_original",
+        "sourceDerivedProofId": "G003_SOURCE_DERIVED_g003_closeout_acceptance_ingest",
+        "sourceLineAnchors": [
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:8639",
+            "text": "'closeout-acceptance-ingest',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:11633",
+            "text": "if (action === 'confirm-closeout-acceptance' || action === 'closeout-acceptance-ingest') {"
+          }
+        ]
+      },
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G003_DISCOVERY_REQUIRED_ACTIONS",
+        "entryPointCount": 9,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 1,
+        "coveredEntryPointCount": 9,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 1,
+        "coverageDecision": "passed_full_original_behavior_coverage"
+      }
+    },
+    {
+      "scenarioId": "g003_route_confirmation_drift",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommand": "node scripts/main-agent-orchestration.ts --action route-confirmation-drift --cwd <fixture-root>",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
+      "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-orchestration.js --action route-confirmation-drift --cwd <fixture-root>",
+      "argumentCombination": "--action route-confirmation-drift --cwd <fixture-root>",
+      "args": [
+        "--action",
+        "route-confirmation-drift",
+        "--cwd",
+        "<fixture-root>"
+      ],
+      "env": {},
+      "fixtures": [
+        {
+          "id": "g003_route_confirmation_drift_fixture_root",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-20T04-58-23-868Z/g003_route_confirmation_drift",
+          "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
+        }
+      ],
+      "expectedStdout": "",
+      "expectedStderr": "main-agent-orchestration route-confirmation-drift: route-confirmation-drift requires --source <source-document.md>\n",
+      "expectedExitCode": 1,
+      "expectedFileArtifacts": [],
+      "expectedErrorPaths": [
+        {
+          "channel": "stderr",
+          "firstLine": "main-agent-orchestration route-confirmation-drift: route-confirmation-drift requires --source <source-document.md>"
+        }
+      ],
+      "expectedOutputProvenance": {
+        "expectedSource": "source_derived_original",
+        "sourceDerivedProofId": "G003_SOURCE_DERIVED_g003_route_confirmation_drift",
+        "sourceLineAnchors": [
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:8641",
+            "text": "'route-confirmation-drift',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:8853",
+            "text": "| 'route-confirmation-drift';"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:9237",
+            "text": "action: 'route-confirmation-drift',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:9251",
+            "text": "action: 'route-confirmation-drift',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:9264",
+            "text": "action: 'route-confirmation-drift',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:9283",
+            "text": "action: 'route-confirmation-drift',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:9304",
+            "text": "action: 'route-confirmation-drift',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:9321",
+            "text": "action: 'route-confirmation-drift',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:9342",
+            "text": "action: 'route-confirmation-drift',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:11648",
+            "text": "if (action === 'route-confirmation-drift' || action === 'confirmation-drift-route') {"
+          }
+        ]
+      },
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G003_DISCOVERY_REQUIRED_ACTIONS",
+        "entryPointCount": 9,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 1,
+        "coveredEntryPointCount": 9,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 1,
+        "coverageDecision": "passed_full_original_behavior_coverage"
+      }
+    },
+    {
+      "scenarioId": "g003_confirmation_drift_route",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommand": "node scripts/main-agent-orchestration.ts --action confirmation-drift-route --cwd <fixture-root>",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
+      "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-orchestration.js --action confirmation-drift-route --cwd <fixture-root>",
+      "argumentCombination": "--action confirmation-drift-route --cwd <fixture-root>",
+      "args": [
+        "--action",
+        "confirmation-drift-route",
+        "--cwd",
+        "<fixture-root>"
+      ],
+      "env": {},
+      "fixtures": [
+        {
+          "id": "g003_confirmation_drift_route_fixture_root",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-20T04-58-23-868Z/g003_confirmation_drift_route",
+          "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
+        }
+      ],
+      "expectedStdout": "",
+      "expectedStderr": "main-agent-orchestration route-confirmation-drift: route-confirmation-drift requires --source <source-document.md>\n",
+      "expectedExitCode": 1,
+      "expectedFileArtifacts": [],
+      "expectedErrorPaths": [
+        {
+          "channel": "stderr",
+          "firstLine": "main-agent-orchestration route-confirmation-drift: route-confirmation-drift requires --source <source-document.md>"
+        }
+      ],
+      "expectedOutputProvenance": {
+        "expectedSource": "source_derived_original",
+        "sourceDerivedProofId": "G003_SOURCE_DERIVED_g003_confirmation_drift_route",
+        "sourceLineAnchors": [
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:8642",
+            "text": "'confirmation-drift-route',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:11648",
+            "text": "if (action === 'route-confirmation-drift' || action === 'confirmation-drift-route') {"
+          }
+        ]
+      },
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G003_DISCOVERY_REQUIRED_ACTIONS",
+        "entryPointCount": 9,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 1,
+        "coveredEntryPointCount": 9,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 1,
+        "coverageDecision": "passed_full_original_behavior_coverage"
+      }
+    },
+    {
+      "scenarioId": "g003_repair_confirmation_bookkeeping",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommand": "node scripts/main-agent-orchestration.ts --action repair-confirmation-bookkeeping --cwd <fixture-root>",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
+      "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-orchestration.js --action repair-confirmation-bookkeeping --cwd <fixture-root>",
+      "argumentCombination": "--action repair-confirmation-bookkeeping --cwd <fixture-root>",
+      "args": [
+        "--action",
+        "repair-confirmation-bookkeeping",
+        "--cwd",
+        "<fixture-root>"
+      ],
+      "env": {},
+      "fixtures": [
+        {
+          "id": "g003_repair_confirmation_bookkeeping_fixture_root",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-20T04-58-23-868Z/g003_repair_confirmation_bookkeeping",
+          "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
+        }
+      ],
+      "expectedStdout": "",
+      "expectedStderr": "main-agent-orchestration repair-confirmation-bookkeeping: controlled confirmation repair entry missing: D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-4.1\\owner-matrices\\G003.replay-fixtures\\2026-06-20T04-58-23-868Z\\g003_repair_confirmation_bookkeeping\\_bmad\\skills\\requirements-contract-authoring\\scripts\\confirm-requirements-scope.js\n",
+      "expectedExitCode": 1,
+      "expectedFileArtifacts": [],
+      "expectedErrorPaths": [
+        {
+          "channel": "stderr",
+          "firstLine": "main-agent-orchestration repair-confirmation-bookkeeping: controlled confirmation repair entry missing: D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-4.1\\owner-matrices\\G003.replay-fixtures\\2026-06-20T04-58-23-868Z\\g003_repair_confirmation_bookkeeping\\_bmad\\skills\\requirements-contract-authoring\\scripts\\confirm-requirements-scope.js"
+        }
+      ],
+      "expectedOutputProvenance": {
+        "expectedSource": "source_derived_original",
+        "sourceDerivedProofId": "G003_SOURCE_DERIVED_g003_repair_confirmation_bookkeeping",
+        "sourceLineAnchors": [
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:8643",
+            "text": "'repair-confirmation-bookkeeping',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:8852",
+            "text": "| 'repair-confirmation-bookkeeping'"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:9144",
+            "text": "action: 'repair-confirmation-bookkeeping',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:11664",
+            "text": "action === 'repair-confirmation-bookkeeping' ||"
+          }
+        ]
+      },
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G003_DISCOVERY_REQUIRED_ACTIONS",
+        "entryPointCount": 9,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 1,
+        "coveredEntryPointCount": 9,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 1,
+        "coverageDecision": "passed_full_original_behavior_coverage"
+      }
+    },
+    {
+      "scenarioId": "g003_confirmation_bookkeeping_repair",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommand": "node scripts/main-agent-orchestration.ts --action confirmation-bookkeeping-repair --cwd <fixture-root>",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
+      "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-orchestration.js --action confirmation-bookkeeping-repair --cwd <fixture-root>",
+      "argumentCombination": "--action confirmation-bookkeeping-repair --cwd <fixture-root>",
+      "args": [
+        "--action",
+        "confirmation-bookkeeping-repair",
+        "--cwd",
+        "<fixture-root>"
+      ],
+      "env": {},
+      "fixtures": [
+        {
+          "id": "g003_confirmation_bookkeeping_repair_fixture_root",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-20T04-58-23-868Z/g003_confirmation_bookkeeping_repair",
+          "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
+        }
+      ],
+      "expectedStdout": "",
+      "expectedStderr": "main-agent-orchestration repair-confirmation-bookkeeping: controlled confirmation repair entry missing: D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-4.1\\owner-matrices\\G003.replay-fixtures\\2026-06-20T04-58-23-868Z\\g003_confirmation_bookkeeping_repair\\_bmad\\skills\\requirements-contract-authoring\\scripts\\confirm-requirements-scope.js\n",
+      "expectedExitCode": 1,
+      "expectedFileArtifacts": [],
+      "expectedErrorPaths": [
+        {
+          "channel": "stderr",
+          "firstLine": "main-agent-orchestration repair-confirmation-bookkeeping: controlled confirmation repair entry missing: D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-4.1\\owner-matrices\\G003.replay-fixtures\\2026-06-20T04-58-23-868Z\\g003_confirmation_bookkeeping_repair\\_bmad\\skills\\requirements-contract-authoring\\scripts\\confirm-requirements-scope.js"
+        }
+      ],
+      "expectedOutputProvenance": {
+        "expectedSource": "source_derived_original",
+        "sourceDerivedProofId": "G003_SOURCE_DERIVED_g003_confirmation_bookkeeping_repair",
+        "sourceLineAnchors": [
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:8644",
+            "text": "'confirmation-bookkeeping-repair',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:11665",
+            "text": "action === 'confirmation-bookkeeping-repair'"
+          }
+        ]
+      },
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G003_DISCOVERY_REQUIRED_ACTIONS",
+        "entryPointCount": 9,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 1,
+        "coveredEntryPointCount": 9,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 1,
+        "coverageDecision": "passed_full_original_behavior_coverage"
+      }
+    },
+    {
+      "scenarioId": "g003_pre_confirmation_drilldown",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommand": "node scripts/main-agent-orchestration.ts --action pre-confirmation-drilldown --cwd <fixture-root>",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
+      "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-orchestration.js --action pre-confirmation-drilldown --cwd <fixture-root>",
+      "argumentCombination": "--action pre-confirmation-drilldown --cwd <fixture-root>",
+      "args": [
+        "--action",
+        "pre-confirmation-drilldown",
+        "--cwd",
+        "<fixture-root>"
+      ],
+      "env": {},
+      "fixtures": [
+        {
+          "id": "g003_pre_confirmation_drilldown_fixture_root",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-20T04-58-23-868Z/g003_pre_confirmation_drilldown",
+          "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
+        }
+      ],
+      "expectedStdout": "",
+      "expectedStderr": "main-agent-orchestration pre-confirmation-drilldown: pre-confirmation-drilldown requires --source <source-document.md>\n",
+      "expectedExitCode": 1,
+      "expectedFileArtifacts": [],
+      "expectedErrorPaths": [
+        {
+          "channel": "stderr",
+          "firstLine": "main-agent-orchestration pre-confirmation-drilldown: pre-confirmation-drilldown requires --source <source-document.md>"
+        }
+      ],
+      "expectedOutputProvenance": {
+        "expectedSource": "source_derived_original",
+        "sourceDerivedProofId": "G003_SOURCE_DERIVED_g003_pre_confirmation_drilldown",
+        "sourceLineAnchors": [
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:8645",
+            "text": "'pre-confirmation-drilldown',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:11682",
+            "text": "action === 'pre-confirmation-drilldown' ||"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:11703",
+            "text": ": 'pre-confirmation-drilldown';"
+          }
+        ]
+      },
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G003_DISCOVERY_REQUIRED_ACTIONS",
+        "entryPointCount": 9,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 1,
+        "coveredEntryPointCount": 9,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 1,
+        "coverageDecision": "passed_full_original_behavior_coverage"
+      }
+    },
+    {
+      "scenarioId": "g003_pre_confirmation_drilldown",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommand": "node scripts/main-agent-orchestration.ts --action pre_confirmation_drilldown --cwd <fixture-root>",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
+      "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-orchestration.js --action pre_confirmation_drilldown --cwd <fixture-root>",
+      "argumentCombination": "--action pre_confirmation_drilldown --cwd <fixture-root>",
+      "args": [
+        "--action",
+        "pre_confirmation_drilldown",
+        "--cwd",
+        "<fixture-root>"
+      ],
+      "env": {},
+      "fixtures": [
+        {
+          "id": "g003_pre_confirmation_drilldown_fixture_root",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-20T04-58-23-868Z/g003_pre_confirmation_drilldown",
+          "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
+        }
+      ],
+      "expectedStdout": "",
+      "expectedStderr": "main-agent-orchestration pre-confirmation-drilldown: pre-confirmation-drilldown requires --source <source-document.md>\n",
+      "expectedExitCode": 1,
+      "expectedFileArtifacts": [],
+      "expectedErrorPaths": [
+        {
+          "channel": "stderr",
+          "firstLine": "main-agent-orchestration pre-confirmation-drilldown: pre-confirmation-drilldown requires --source <source-document.md>"
+        }
+      ],
+      "expectedOutputProvenance": {
+        "expectedSource": "source_derived_original",
+        "sourceDerivedProofId": "G003_SOURCE_DERIVED_g003_pre_confirmation_drilldown",
+        "sourceLineAnchors": [
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:241",
+            "text": "lane: 'pre_confirmation_drilldown';"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:3100",
+            "text": "lane: 'pre_confirmation_drilldown',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:5498",
+            "text": "lane: 'pre_confirmation_drilldown',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:5534",
+            "text": "lane: 'pre_confirmation_drilldown',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:5876",
+            "text": "lane: 'pre_confirmation_drilldown',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:6000",
+            "text": "lane: 'pre_confirmation_drilldown',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:6151",
+            "text": "lane: 'pre_confirmation_drilldown',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:6157",
+            "text": "lane: 'pre_confirmation_drilldown',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:7505",
+            "text": "lane: 'pre_confirmation_drilldown',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:7574",
+            "text": "? 'pre_confirmation_drilldown'"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:8646",
+            "text": "'pre_confirmation_drilldown',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:11683",
+            "text": "action === 'pre_confirmation_drilldown' ||"
+          }
+        ]
+      },
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G003_DISCOVERY_REQUIRED_ACTIONS",
+        "entryPointCount": 9,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 1,
+        "coveredEntryPointCount": 9,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 1,
+        "coverageDecision": "passed_full_original_behavior_coverage"
+      }
+    },
+    {
+      "scenarioId": "g003_author_confirmation_ready_source",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommand": "node scripts/main-agent-orchestration.ts --action author-confirmation-ready-source --cwd <fixture-root>",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
+      "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-orchestration.js --action author-confirmation-ready-source --cwd <fixture-root>",
+      "argumentCombination": "--action author-confirmation-ready-source --cwd <fixture-root>",
+      "args": [
+        "--action",
+        "author-confirmation-ready-source",
+        "--cwd",
+        "<fixture-root>"
+      ],
+      "env": {},
+      "fixtures": [
+        {
+          "id": "g003_author_confirmation_ready_source_fixture_root",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-20T04-58-23-868Z/g003_author_confirmation_ready_source",
+          "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
+        }
+      ],
+      "expectedStdout": "",
+      "expectedStderr": "main-agent-orchestration author-confirmation-ready-source: pre-confirmation-drilldown requires --source <source-document.md>\n",
+      "expectedExitCode": 1,
+      "expectedFileArtifacts": [],
+      "expectedErrorPaths": [
+        {
+          "channel": "stderr",
+          "firstLine": "main-agent-orchestration author-confirmation-ready-source: pre-confirmation-drilldown requires --source <source-document.md>"
+        }
+      ],
+      "expectedOutputProvenance": {
+        "expectedSource": "source_derived_original",
+        "sourceDerivedProofId": "G003_SOURCE_DERIVED_g003_author_confirmation_ready_source",
+        "sourceLineAnchors": [
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:1628",
+            "text": "selectedAuthoringLane?: 'author-confirmation-ready-source';"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:5834",
+            "text": "selectedAuthoringLane?: 'author-confirmation-ready-source';"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:5853",
+            "text": "selectedAuthoringLane: input.selectedAuthoringLane ?? 'author-confirmation-ready-source',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:8647",
+            "text": "'author-confirmation-ready-source',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:11684",
+            "text": "action === 'author-confirmation-ready-source' ||"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:11700",
+            "text": "action === 'author-confirmation-ready-source' ||"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:11702",
+            "text": "? 'author-confirmation-ready-source'"
+          }
+        ]
+      },
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G003_DISCOVERY_REQUIRED_ACTIONS",
+        "entryPointCount": 9,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 1,
+        "coveredEntryPointCount": 9,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 1,
+        "coverageDecision": "passed_full_original_behavior_coverage"
+      }
+    },
+    {
+      "scenarioId": "g003_author_confirmation_ready_source",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommand": "node scripts/main-agent-orchestration.ts --action author_confirmation_ready_source --cwd <fixture-root>",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
+      "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-orchestration.js --action author_confirmation_ready_source --cwd <fixture-root>",
+      "argumentCombination": "--action author_confirmation_ready_source --cwd <fixture-root>",
+      "args": [
+        "--action",
+        "author_confirmation_ready_source",
+        "--cwd",
+        "<fixture-root>"
+      ],
+      "env": {},
+      "fixtures": [
+        {
+          "id": "g003_author_confirmation_ready_source_fixture_root",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-20T04-58-23-868Z/g003_author_confirmation_ready_source",
+          "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
+        }
+      ],
+      "expectedStdout": "",
+      "expectedStderr": "main-agent-orchestration author-confirmation-ready-source: pre-confirmation-drilldown requires --source <source-document.md>\n",
+      "expectedExitCode": 1,
+      "expectedFileArtifacts": [],
+      "expectedErrorPaths": [
+        {
+          "channel": "stderr",
+          "firstLine": "main-agent-orchestration author-confirmation-ready-source: pre-confirmation-drilldown requires --source <source-document.md>"
+        }
+      ],
+      "expectedOutputProvenance": {
+        "expectedSource": "source_derived_original",
+        "sourceDerivedProofId": "G003_SOURCE_DERIVED_g003_author_confirmation_ready_source",
+        "sourceLineAnchors": [
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:8648",
+            "text": "'author_confirmation_ready_source',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:11685",
+            "text": "action === 'author_confirmation_ready_source'"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:11701",
+            "text": "action === 'author_confirmation_ready_source'"
+          }
+        ]
+      },
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G003_DISCOVERY_REQUIRED_ACTIONS",
+        "entryPointCount": 9,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 1,
+        "coveredEntryPointCount": 9,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 1,
+        "coverageDecision": "passed_full_original_behavior_coverage"
+      }
+    },
+    {
+      "scenarioId": "g003_authoring_repair",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommand": "node scripts/main-agent-orchestration.ts --action authoring-repair --cwd <fixture-root>",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
+      "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-orchestration.js --action authoring-repair --cwd <fixture-root>",
+      "argumentCombination": "--action authoring-repair --cwd <fixture-root>",
+      "args": [
+        "--action",
+        "authoring-repair",
+        "--cwd",
+        "<fixture-root>"
+      ],
+      "env": {},
+      "fixtures": [
+        {
+          "id": "g003_authoring_repair_fixture_root",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-20T04-58-23-868Z/g003_authoring_repair",
+          "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
+        }
+      ],
+      "expectedStdout": "",
+      "expectedStderr": "main-agent-orchestration authoring-repair: authoring-repair requires --source <source-document.md>\n",
+      "expectedExitCode": 1,
+      "expectedFileArtifacts": [],
+      "expectedErrorPaths": [
+        {
+          "channel": "stderr",
+          "firstLine": "main-agent-orchestration authoring-repair: authoring-repair requires --source <source-document.md>"
+        }
+      ],
+      "expectedOutputProvenance": {
+        "expectedSource": "source_derived_original",
+        "sourceDerivedProofId": "G003_SOURCE_DERIVED_g003_authoring_repair",
+        "sourceLineAnchors": [
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:8649",
+            "text": "'authoring-repair',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:11713",
+            "text": "if (action === 'authoring-repair' || action === 'authoring_repair') {"
+          }
+        ]
+      },
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G003_DISCOVERY_REQUIRED_ACTIONS",
+        "entryPointCount": 9,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 1,
+        "coveredEntryPointCount": 9,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 1,
+        "coverageDecision": "passed_full_original_behavior_coverage"
+      }
+    },
+    {
+      "scenarioId": "g003_authoring_repair",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommand": "node scripts/main-agent-orchestration.ts --action authoring_repair --cwd <fixture-root>",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
+      "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-orchestration.js --action authoring_repair --cwd <fixture-root>",
+      "argumentCombination": "--action authoring_repair --cwd <fixture-root>",
+      "args": [
+        "--action",
+        "authoring_repair",
+        "--cwd",
+        "<fixture-root>"
+      ],
+      "env": {},
+      "fixtures": [
+        {
+          "id": "g003_authoring_repair_fixture_root",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-20T04-58-23-868Z/g003_authoring_repair",
+          "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
+        }
+      ],
+      "expectedStdout": "",
+      "expectedStderr": "main-agent-orchestration authoring-repair: authoring-repair requires --source <source-document.md>\n",
+      "expectedExitCode": 1,
+      "expectedFileArtifacts": [],
+      "expectedErrorPaths": [
+        {
+          "channel": "stderr",
+          "firstLine": "main-agent-orchestration authoring-repair: authoring-repair requires --source <source-document.md>"
+        }
+      ],
+      "expectedOutputProvenance": {
+        "expectedSource": "source_derived_original",
+        "sourceDerivedProofId": "G003_SOURCE_DERIVED_g003_authoring_repair",
+        "sourceLineAnchors": [
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:3483",
+            "text": "lane: 'authoring_repair',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:4919",
+            "text": "'authoring_repair'"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:8650",
+            "text": "'authoring_repair',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:11713",
+            "text": "if (action === 'authoring-repair' || action === 'authoring_repair') {"
+          }
+        ]
+      },
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G003_DISCOVERY_REQUIRED_ACTIONS",
+        "entryPointCount": 9,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 1,
+        "coveredEntryPointCount": 9,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 1,
+        "coverageDecision": "passed_full_original_behavior_coverage"
+      }
+    },
+    {
+      "scenarioId": "g003_post_close_defect_intake",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommand": "node scripts/main-agent-orchestration.ts --action post-close-defect-intake --cwd <fixture-root>",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
+      "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-orchestration.js --action post-close-defect-intake --cwd <fixture-root>",
+      "argumentCombination": "--action post-close-defect-intake --cwd <fixture-root>",
+      "args": [
+        "--action",
+        "post-close-defect-intake",
+        "--cwd",
+        "<fixture-root>"
+      ],
+      "env": {},
+      "fixtures": [
+        {
+          "id": "g003_post_close_defect_intake_fixture_root",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-20T04-58-23-868Z/g003_post_close_defect_intake",
+          "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
+        }
+      ],
+      "expectedStdout": "",
+      "expectedStderr": "main-agent-orchestration post-close-defect-intake: post-close-defect-intake requires --source <source-document.md>\n",
+      "expectedExitCode": 1,
+      "expectedFileArtifacts": [],
+      "expectedErrorPaths": [
+        {
+          "channel": "stderr",
+          "firstLine": "main-agent-orchestration post-close-defect-intake: post-close-defect-intake requires --source <source-document.md>"
+        }
+      ],
+      "expectedOutputProvenance": {
+        "expectedSource": "source_derived_original",
+        "sourceDerivedProofId": "G003_SOURCE_DERIVED_g003_post_close_defect_intake",
+        "sourceLineAnchors": [
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:8640",
+            "text": "'post-close-defect-intake',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:10442",
+            "text": "action: 'post-close-defect-intake',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:11734",
+            "text": "if (action === 'post-close-defect-intake') {"
+          }
+        ]
+      },
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G003_DISCOVERY_REQUIRED_ACTIONS",
+        "entryPointCount": 9,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 1,
+        "coveredEntryPointCount": 9,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 1,
+        "coverageDecision": "passed_full_original_behavior_coverage"
+      }
+    },
+    {
+      "scenarioId": "g003_controlled_readiness_audit",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommand": "node scripts/main-agent-orchestration.ts --action controlled-readiness-audit --cwd <fixture-root>",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
+      "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-orchestration.js --action controlled-readiness-audit --cwd <fixture-root>",
+      "argumentCombination": "--action controlled-readiness-audit --cwd <fixture-root>",
+      "args": [
+        "--action",
+        "controlled-readiness-audit",
+        "--cwd",
+        "<fixture-root>"
+      ],
+      "env": {},
+      "fixtures": [
+        {
+          "id": "g003_controlled_readiness_audit_fixture_root",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-20T04-58-23-868Z/g003_controlled_readiness_audit",
+          "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
+        }
+      ],
+      "expectedStdout": "",
+      "expectedStderr": "main-agent-orchestration controlled-readiness-audit: NO_ACTIVE_REQUIREMENT: no active requirement record found under D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-4.1\\owner-matrices\\G003.replay-fixtures\\2026-06-20T04-58-23-868Z\\g003_controlled_readiness_audit\\_bmad-output\\runtime\\requirement-records; nextRequiredAction=contract_authoring_required\n",
+      "expectedExitCode": 1,
+      "expectedFileArtifacts": [],
+      "expectedErrorPaths": [
+        {
+          "channel": "stderr",
+          "firstLine": "main-agent-orchestration controlled-readiness-audit: NO_ACTIVE_REQUIREMENT: no active requirement record found under D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-4.1\\owner-matrices\\G003.replay-fixtures\\2026-06-20T04-58-23-868Z\\g003_controlled_readiness_audit\\_bmad-output\\runtime\\requirement-records; nextRequiredAction=contract_authoring_required"
+        }
+      ],
+      "expectedOutputProvenance": {
+        "expectedSource": "source_derived_original",
+        "sourceDerivedProofId": "G003_SOURCE_DERIVED_g003_controlled_readiness_audit",
+        "sourceLineAnchors": [
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:8651",
+            "text": "'controlled-readiness-audit',"
+          },
+          {
+            "anchor": "scripts/main-agent-orchestration.ts:11909",
+            "text": "if (action !== 'controlled-readiness-audit') {"
+          }
+        ]
+      },
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G003_DISCOVERY_REQUIRED_ACTIONS",
+        "entryPointCount": 9,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 1,
+        "coveredEntryPointCount": 9,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 1,
+        "coverageDecision": "passed_full_original_behavior_coverage"
+      }
+    }
+  ]
+}

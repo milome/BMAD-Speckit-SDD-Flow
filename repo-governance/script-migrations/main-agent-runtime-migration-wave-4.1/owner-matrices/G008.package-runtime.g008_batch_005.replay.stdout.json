@@ -1,0 +1,100 @@
+[
+  {
+    "originalPath": "scripts/reviewer-contract.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g008_reviewer_contract_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/reviewer-registry.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g008_reviewer_registry_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/reviewer-rollout-gate.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g008_reviewer_rollout_gate_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/reviewer-runtime-definition.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g008_reviewer_runtime_definition_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/reviewer-schema.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g008_reviewer_schema_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/run-ci-release-gate-fixture.js",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g008_run_ci_release_gate_fixture_js_no_args",
+        "expectedStdout": "[governance-fixture] existing mapping is usable: _bmad-output/runtime/requirement-records/index.json\n{\n  \"report_path\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\gates\\\\main-agent-release-gate-report.json\",\n  \"critical_failures\": 0,\n  \"blocked_sprint_status_update\": false\n}\n"
+      },
+      {
+        "scenarioId": "g008_run_ci_release_gate_fixture_js_flag_pass",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/run-fresh-regression-matrix.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g008_run_fresh_regression_matrix_ts_no_args",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g008_run_fresh_regression_matrix_ts_env_fresh_regression_root",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/runtime-context.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g008_runtime_context_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/scores-summary.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g008_scores_summary_ts_no_args",
+        "expectedStdout": "| run_id | epic | story | stage | phase_score | phase_weight | timestamp |\n|-------|------|-------|-------|-------------|--------------|-----------|\n| dev-e15-s2-implement-post-audit-check | 15 | 2 | implement | 93.1 | 0.25 | <iso-timestamp> |\n| cli-<run-id> | - | - | implement | 0 | 0.25 | <iso-timestamp> |\n| cli-<run-id> | - | - | implement | 0 | 0.25 | <iso-timestamp> |\n| REQ-AI-TDD-MANIFEST-CLOSEOUT-RUNNER-readiness-<run-id> | - | - | implementation_readiness | 100 | 0.2 | <iso-timestamp> |\n| REQ-REQ-TRACE-AI-TDD-PACKET-COMPILER-readiness-<run-id> | - | - | implementation_readiness | 100 | 0.2 | <iso-timestamp> |\n| REQ-REQ-TRACE-AI-TDD-PACKET-COMPILER-readiness-<run-id> | - | - | implementation_readiness | 100 | 0.2 | <iso-timestamp> |\n| gov-run-epic-create-<run-id> | - | - | epics | 100 | 0 | <iso-timestamp> |\n| gov-e7-s1-story-<run-id> | 7 | 1 | story | 100 | 0 | <iso-timestamp> |\n| gov-e9-s2-post_impl-<run-id> | 9 | 2 | post_impl | 100 | 0 | <iso-timestamp> |\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/start-dashboard.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g008_start_dashboard_ts_no_args",
+        "expectedStdout": "RUN_ID:<uuid>\nDashboard URL: http://127.0.0.1:<port>\n"
+      }
+    ]
+  }
+]

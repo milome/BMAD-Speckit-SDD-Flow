@@ -1,0 +1,244 @@
+[
+  {
+    "originalPath": "scripts/check-sprint-ready.ps1",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_check_sprint_ready_ps1_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/check-sprint-ready.sh",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_check_sprint_ready_sh_no_args",
+        "expectedStderr": "<3>WSL (<relay> - Relay) ERROR: CreateProcessCommon:800: execvpe(/bin/bash) failed: No such file or directory\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/dashboard-generate.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_dashboard_generate_ts_no_args",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_dashboard_generate_ts_flag_datapath",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_dashboard_generate_ts_flag_epic",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_dashboard_generate_ts_flag_output",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_dashboard_generate_ts_flag_story",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_dashboard_generate_ts_flag_strategy",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_dashboard_generate_ts_flag_windowhours",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/e2e-dual-host-journey-runner.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_e2e_dual_host_journey_runner_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/e2e-host-matrix-journey-runner.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_e2e_host_matrix_journey_runner_ts_no_args",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_e2e_host_matrix_journey_runner_ts_cwd",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_e2e_host_matrix_journey_runner_ts_flag_action",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_e2e_host_matrix_journey_runner_ts_flag_evidencebundleid",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_e2e_host_matrix_journey_runner_ts_flag_hosts",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_e2e_host_matrix_journey_runner_ts_flag_mode",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_e2e_host_matrix_journey_runner_ts_flag_project",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_e2e_host_matrix_journey_runner_ts_flag_project_root",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_e2e_host_matrix_journey_runner_ts_flag_record_id",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_e2e_host_matrix_journey_runner_ts_flag_report_path",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_e2e_host_matrix_journey_runner_ts_flag_requirement_set_id",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_e2e_host_matrix_journey_runner_ts_flag_run_id",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_e2e_host_matrix_journey_runner_ts_flag_runid",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_e2e_host_matrix_journey_runner_ts_flag_smoke",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_e2e_host_matrix_journey_runner_ts_flag_story_key",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_e2e_host_matrix_journey_runner_ts_flag_transpile_only",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_e2e_host_matrix_journey_runner_ts_flag_version",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_e2e_host_matrix_journey_runner_ts_flag_write_sprint_status",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/final-closeout-evidence-runner.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_final_closeout_evidence_runner_ts_no_args",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirement-record\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_final_closeout_evidence_runner_ts_flag_attempt_id",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirement-record\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_final_closeout_evidence_runner_ts_flag_evidence_dir",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirement-record\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_final_closeout_evidence_runner_ts_flag_help",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_final_closeout_evidence_runner_ts_flag_json",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirement-record\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_final_closeout_evidence_runner_ts_flag_mode",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirement-record\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_final_closeout_evidence_runner_ts_flag_project",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirement-record\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_final_closeout_evidence_runner_ts_flag_record_closeout_receipt",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"Unexpected positional argument: source-derived-record-closeout-receipt\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_final_closeout_evidence_runner_ts_flag_requirement_record",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"ENOENT: no such file or directory, open 'D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\source-derived-requirement-record'\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_final_closeout_evidence_runner_ts_flag_run_id",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirement-record\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_final_closeout_evidence_runner_ts_flag_source",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirement-record\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_final_closeout_evidence_runner_ts_flag_source_document",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirement-record\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_final_closeout_evidence_runner_ts_flag_strict_proof_only",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"Unexpected positional argument: source-derived-strict-proof-only\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_final_closeout_evidence_runner_ts_flag_transpile_only",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirement-record\"\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/governance-execution-result-ingestor.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_governance_execution_result_ingestor_ts_no_args",
+        "expectedStderr": "Usage: node governance-execution-result-ingestor.cjs <json-payload>\n"
+      },
+      {
+        "scenarioId": "g004_governance_execution_result_ingestor_ts_env_bmad_disable_embedded_governance_clis",
+        "expectedStderr": "Usage: node governance-execution-result-ingestor.cjs <json-payload>\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/governance-hook-types.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_governance_hook_types_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/governance-packet-dispatch-worker.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_governance_packet_dispatch_worker_ts_no_args",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_governance_packet_dispatch_worker_ts_env_bmad_disable_embedded_governance_clis",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/governance-provider-adapter.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_governance_provider_adapter_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  }
+]

@@ -1,0 +1,126 @@
+[
+  {
+    "originalPath": "scripts/start-runtime-dashboard-server.cjs",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_start_runtime_dashboard_server_cjs_no_args",
+        "expectedStderr": "Error: runtime dashboard launch blocked by current session restrictions: detached child processes are not allowed here. Retry from a normal host shell, Cursor/Claude session hook, or another unrestricted bootstrap context.\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    ... 6 lines matching cause stack trace ...\n    at <runtime-stack-frame>\n  code: 'DASHBOARD_SESSION_RESTRICTED',\n  cause: Error: background spawn restricted by session environment flag\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n}\n"
+      },
+      {
+        "scenarioId": "g008_start_runtime_dashboard_server_cjs_env_bmad_session_restrict_background",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g008_start_runtime_dashboard_server_cjs_env_cursor_sandbox",
+        "expectedStderr": "Error: runtime dashboard launch blocked by current session restrictions: detached child processes are not allowed here. Retry from a normal host shell, Cursor/Claude session hook, or another unrestricted bootstrap context.\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    ... 6 lines matching cause stack trace ...\n    at <runtime-stack-frame>\n  code: 'DASHBOARD_SESSION_RESTRICTED',\n  cause: Error: background spawn restricted by session environment flag\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n}\n"
+      },
+      {
+        "scenarioId": "g008_start_runtime_dashboard_server_cjs_env_runtime_dashboard_data_path",
+        "expectedStderr": "Error: runtime dashboard launch blocked by current session restrictions: detached child processes are not allowed here. Retry from a normal host shell, Cursor/Claude session hook, or another unrestricted bootstrap context.\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    ... 6 lines matching cause stack trace ...\n    at <runtime-stack-frame>\n  code: 'DASHBOARD_SESSION_RESTRICTED',\n  cause: Error: background spawn restricted by session environment flag\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n}\n"
+      },
+      {
+        "scenarioId": "g008_start_runtime_dashboard_server_cjs_env_runtime_dashboard_host",
+        "expectedStderr": "Error: runtime dashboard launch blocked by current session restrictions: detached child processes are not allowed here. Retry from a normal host shell, Cursor/Claude session hook, or another unrestricted bootstrap context.\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    ... 6 lines matching cause stack trace ...\n    at <runtime-stack-frame>\n  code: 'DASHBOARD_SESSION_RESTRICTED',\n  cause: Error: background spawn restricted by session environment flag\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n}\n"
+      },
+      {
+        "scenarioId": "g008_start_runtime_dashboard_server_cjs_env_runtime_dashboard_open",
+        "expectedStderr": "Error: runtime dashboard launch blocked by current session restrictions: detached child processes are not allowed here. Retry from a normal host shell, Cursor/Claude session hook, or another unrestricted bootstrap context.\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    ... 6 lines matching cause stack trace ...\n    at <runtime-stack-frame>\n  code: 'DASHBOARD_SESSION_RESTRICTED',\n  cause: Error: background spawn restricted by session environment flag\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n}\n"
+      },
+      {
+        "scenarioId": "g008_start_runtime_dashboard_server_cjs_env_runtime_dashboard_port",
+        "expectedStderr": "Error: runtime dashboard launch blocked by current session restrictions: detached child processes are not allowed here. Retry from a normal host shell, Cursor/Claude session hook, or another unrestricted bootstrap context.\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    ... 6 lines matching cause stack trace ...\n    at <runtime-stack-frame>\n  code: 'DASHBOARD_SESSION_RESTRICTED',\n  cause: Error: background spawn restricted by session environment flag\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/subagent-evidence-envelope.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_subagent_evidence_envelope_ts_no_args",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: envelope, requirement-record, schema-out, report-out\"\n}\n"
+      },
+      {
+        "scenarioId": "g008_subagent_evidence_envelope_ts_flag_envelope",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: envelope, requirement-record, schema-out, report-out\"\n}\n"
+      },
+      {
+        "scenarioId": "g008_subagent_evidence_envelope_ts_flag_help",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"Unexpected positional argument: source-derived-help\"\n}\n"
+      },
+      {
+        "scenarioId": "g008_subagent_evidence_envelope_ts_flag_json",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"Unexpected positional argument: <fixture-root>\\\\json.json\"\n}\n"
+      },
+      {
+        "scenarioId": "g008_subagent_evidence_envelope_ts_flag_project_root",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: envelope, requirement-record, schema-out, report-out\"\n}\n"
+      },
+      {
+        "scenarioId": "g008_subagent_evidence_envelope_ts_flag_report_out",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: envelope, requirement-record, schema-out, report-out\"\n}\n"
+      },
+      {
+        "scenarioId": "g008_subagent_evidence_envelope_ts_flag_requirement_record",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: envelope, requirement-record, schema-out, report-out\"\n}\n"
+      },
+      {
+        "scenarioId": "g008_subagent_evidence_envelope_ts_flag_schema_out",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: envelope, requirement-record, schema-out, report-out\"\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/supervised-worker-runtime.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_supervised_worker_runtime_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/test-locks.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_test_locks_ts_no_args",
+        "expectedStderr": "RangeError: Maximum call stack size exceeded\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/test-story-flow.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_test_story_flow_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/verify-score-auto-scoped-bundle.cjs",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_verify_score_auto_scoped_bundle_cjs_no_args",
+        "expectedStderr": "WARN: implement/post_impl stage report is missing Structured Drift Signal Block; implementation verdict is not trustworthy until re-readiness evidence is regenerated.\nWARN: implement stage effective verdict is blocked_pending_rereadiness. Missing structured drift signal block for implementation verdict; re-readiness evidence is required.\nTypeError: fetch failed\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/verify-skill-architecture.sh",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_verify_skill_architecture_sh_no_args",
+        "expectedStderr": "<3>WSL (<relay> - Relay) ERROR: CreateProcessCommon:800: execvpe(/bin/bash) failed: No such file or directory\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/verify-speckit-mirror-sync.js",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_verify_speckit_mirror_sync_js_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  }
+]

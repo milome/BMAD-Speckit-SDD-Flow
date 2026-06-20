@@ -1,0 +1,105 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-wave-4-1-install-matrix/v1",
+  "waveId": "main-agent-runtime-migration-wave-4.1",
+  "mode": "init-sync-consumer",
+  "status": "passed",
+  "createdAt": "2026-06-20T13:49:27.812Z",
+  "packageTarballSha256": "sha256:5e6be8cf9a6ea70a04ceab48c73a4bea0050fd746fa4ee2303f4ad01702514d0",
+  "commandRows": [
+    {
+      "command": "npm run build:main-agent-dist",
+      "cwd": "packages/bmad-speckit",
+      "exitCode": 0,
+      "stdoutHash": "sha256:ead04c01019b66a9d0c51a10c6cdbe07f91f4de466f6ad1f1553c6cb511f4005",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "startedAt": "2026-06-20T13:48:26.679Z",
+      "completedAt": "2026-06-20T13:48:32.352Z",
+      "status": "passed",
+      "stdoutPreview": "\n> bmad-speckit@2.0.2 build:main-agent-dist\n> node scripts/build-main-agent-dist.cjs\n\nbuilt dist/main-agent files=244 sourceAuthorityTsRuntime=301 sourceAuthorityTsDeclarations=1 package files=1 runtime asset dirs=4 sourceAuthority asset dirs=11 sourceAuthority asset files=4\n",
+      "stderrPreview": ""
+    },
+    {
+      "command": "npm pack --pack-destination C:\\Users\\milome\\AppData\\Local\\Temp\\wave-4-1-init-sync-consumer-lEIt8A\\pack --json --ignore-scripts",
+      "cwd": "packages/bmad-speckit",
+      "exitCode": 0,
+      "stdoutHash": "sha256:2f534dc52f387224f3191cdef8c731deb395ad10da47a99105bd79478c3e8b9d",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "startedAt": "2026-06-20T13:48:32.353Z",
+      "completedAt": "2026-06-20T13:48:54.912Z",
+      "status": "passed",
+      "stdoutPreview": "[\n  {\n    \"id\": \"bmad-speckit@2.0.2\",\n    \"name\": \"bmad-speckit\",\n    \"version\": \"2.0.2\",\n    \"size\": 11497727,\n    \"unpackedSize\": 67136338,\n    \"shasum\": \"6bff0cb252648fb52966ca36b7a52078d0b7f809\",\n    \"integrity\": \"sha512-05aaSRs7DlAdp4Zd1fbBmSYDmCwbkgQG/BNwpGuo3IBSzTaqQ51rG2V+/JNx8wD689BDMlGeMpuFThDenvd9Cg==\",\n    \"filename\": \"bmad-speckit-2.0.2.tgz\",\n    \"files\": [\n      {\n        \"path\": \"_bmad/_config/agent-manifest.csv\",\n        \"size\": 17971,\n        \"mode\": 420\n      },\n      {\n        \"path\": \"_bmad/_config/agents/bmb-agent-builder.customize.yaml\",\n        \"size\": 908,\n        \"mode\": 420\n      },\n      {\n        \"path\": \"_bmad/_config/agents/bmb-module-builder.customize.yaml\",\n        \"size\": 908,\n        \"mode\": 420\n      },\n      {\n        \"path\": \"_bmad/_config/agents/bmb-workflow-builder.customize.yaml\",\n        \"size\": 908,\n        \"mode\": 420\n      },\n      {\n        \"path\": \"_bmad/_config/agents/bmm-analyst.customize.yaml\",\n        \"size\": 908,\n        \"mode\": 420\n      },\n      {\n        \"path\": \"_bmad/_config/agents/bmm-architect.customize.yaml\",\n        \"size\": 908,\n        \"mode\": 420\n      },\n      {\n        \"path\": \"_bmad/_config/agents/bmm-dev.customize.ya",
+      "stderrPreview": ""
+    },
+    {
+      "command": "npm install --no-save C:\\Users\\milome\\AppData\\Local\\Temp\\wave-4-1-init-sync-consumer-lEIt8A\\pack\\bmad-speckit-2.0.2.tgz --ignore-scripts --no-audit --fund=false",
+      "cwd": "C:/Users/milome/AppData/Local/Temp/wave-4-1-init-sync-consumer-lEIt8A/consumer",
+      "exitCode": 0,
+      "stdoutHash": "sha256:dae8e9f486abcb15d07e149baa4b44f37f32b5c3ff18e1d3e7df9e7021a581a9",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "startedAt": "2026-06-20T13:48:54.929Z",
+      "completedAt": "2026-06-20T13:49:21.459Z",
+      "status": "passed",
+      "stdoutPreview": "\nadded 101 packages in 26s\n",
+      "stderrPreview": ""
+    },
+    {
+      "command": "npx --no-install bmad-speckit init wave-4-1-init --yes --no-git --offline --ai codex --bmad-path C:\\Users\\milome\\AppData\\Local\\Temp\\wave-4-1-init-sync-consumer-lEIt8A\\consumer\\node_modules\\bmad-speckit\\_bmad",
+      "cwd": "C:/Users/milome/AppData/Local/Temp/wave-4-1-init-sync-consumer-lEIt8A/consumer",
+      "exitCode": 0,
+      "stdoutHash": "sha256:86052b9a141602d65d967bff62d93b149f53f5503940034e29e66979d912d028",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "startedAt": "2026-06-20T13:49:21.459Z",
+      "completedAt": "2026-06-20T13:49:26.341Z",
+      "status": "passed",
+      "stdoutPreview": "\n✓ Initialized (worktree) at C:\\Users\\milome\\AppData\\Local\\Temp\\wave-4-1-init-sync-consumer-lEIt8A\\consumer\\wave-4-1-init [codex]\nInit complete. Run `/bmad-help` in your AI IDE for next steps, or start Spec-Driven Development with `speckit.constitution`.\nFeedback: run `bmad-speckit feedback` to get the feedback entry.\n",
+      "stderrPreview": ""
+    },
+    {
+      "command": "npx --no-install bmad-speckit check --json --ignore-agent-tools",
+      "cwd": "C:/Users/milome/AppData/Local/Temp/wave-4-1-init-sync-consumer-lEIt8A/consumer/wave-4-1-init",
+      "exitCode": 0,
+      "stdoutHash": "sha256:00ee54a65cfb8f23d4f62fa87c8011b747b09f882666e93f20b87f0ce7fd3b97",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "startedAt": "2026-06-20T13:49:26.341Z",
+      "completedAt": "2026-06-20T13:49:27.142Z",
+      "status": "passed",
+      "stdoutPreview": "{\"cliVersion\":\"2.0.2\",\"templateVersion\":\"latest\",\"selectedAI\":\"codex\",\"subagentSupport\":\"native\",\"envVars\":{\"HOME\":\"C:\\\\Users\\\\milome\"},\"aiToolsInstalled\":[]}\n",
+      "stderrPreview": ""
+    },
+    {
+      "command": "npx --no-install bmad-speckit main-agent --json --cwd C:\\Users\\milome\\AppData\\Local\\Temp\\wave-4-1-init-sync-consumer-lEIt8A\\consumer\\wave-4-1-init",
+      "cwd": "C:/Users/milome/AppData/Local/Temp/wave-4-1-init-sync-consumer-lEIt8A/consumer",
+      "exitCode": 0,
+      "stdoutHash": "sha256:88e5173a6b435d03e21316a9bea9d2543fd1f96e3ed5a8e8cbda2a510aebc3f8",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "startedAt": "2026-06-20T13:49:27.142Z",
+      "completedAt": "2026-06-20T13:49:27.812Z",
+      "status": "passed",
+      "stdoutPreview": "{\n  \"schemaVersion\": \"main-agent-package-runtime/v1\",\n  \"action\": \"inspect\",\n  \"cwd\": \"C:\\\\Users\\\\milome\\\\AppData\\\\Local\\\\Temp\\\\wave-4-1-init-sync-consumer-lEIt8A\\\\consumer\\\\wave-4-1-init\",\n  \"status\": \"ok\",\n  \"exitCode\": 0,\n  \"errors\": [],\n  \"data\": {\n    \"source\": \"none\",\n    \"indexPath\": null,\n    \"active\": null,\n    \"activeRecordPath\": null,\n    \"activeRecord\": null,\n    \"inventory\": {\n      \"hasRequirementIndex\": false\n    }\n  }\n}\n",
+      "stderrPreview": ""
+    }
+  ],
+  "probe": {
+    "commandSurface": "npx --no-install bmad-speckit init --offline && check && main-agent --json",
+    "stdoutHash": "sha256:88e5173a6b435d03e21316a9bea9d2543fd1f96e3ed5a8e8cbda2a510aebc3f8",
+    "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "parsedStatus": "ok",
+    "parsedSchemaVersion": "main-agent-package-runtime/v1"
+  },
+  "usedRootScript": false,
+  "usedTsx": false,
+  "usedTsNode": false,
+  "usedCompiledFallback": false,
+  "rootScriptDependencyCount": 0,
+  "forbiddenRuntimeTokenHits": [],
+  "reworkRequired": false,
+  "assertions": [
+    "installed consumer command executed package binary",
+    "main-agent probe returned main-agent-package-runtime/v1 JSON",
+    "rootScriptDependencyCount=0",
+    "usedRootScript=false",
+    "usedTsx=false",
+    "usedTsNode=false",
+    "usedCompiledFallback=false"
+  ]
+}

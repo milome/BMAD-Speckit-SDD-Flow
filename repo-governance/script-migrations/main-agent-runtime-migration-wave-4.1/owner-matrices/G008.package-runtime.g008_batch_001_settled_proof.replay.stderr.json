@@ -1,0 +1,152 @@
+[
+  {
+    "originalPath": "scripts/analytics-cluster.ts",
+    "scenarioId": "g008_analytics_cluster_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/analytics-prompt-optimize.ts",
+    "scenarioId": "g008_analytics_prompt_optimize_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/analytics-rule-suggest.ts",
+    "scenarioId": "g008_analytics_rule_suggest_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/audit-scoring-convergence-policy.ts",
+    "scenarioId": "g008_audit_scoring_convergence_policy_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/audit-triad-orchestrator.ts",
+    "scenarioId": "g008_audit_triad_orchestrator_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/check-story-score-written.ts",
+    "scenarioId": "g008_check_story_score_written_ts_no_args",
+    "expectedStderr": "Usage: npx ts-node scripts/check-story-score-written.ts --epic N --story N [--dataPath path] [--stage story|implement]\n"
+  },
+  {
+    "originalPath": "scripts/compare-bmad-help-upstream.js",
+    "scenarioId": "g008_compare_bmad_help_upstream_js_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/controlled-readiness-audit-bridge.ts",
+    "scenarioId": "g008_controlled_readiness_audit_bridge_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/create-second-story.ts",
+    "scenarioId": "g008_create_second_story_ts_no_args",
+    "expectedStderr": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\bmad-state.ts:115\n  if (existing) throw new Error(`Story ${epic}-${story} already exists`);\n                      ^\nError: Story E001-S002 already exists\n    at createStory (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\bmad-state.ts:115:23)\n    at Object.<anonymous> (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\create-second-story.ts:4:27)\n    at Module._compile (node:internal/modules/cjs/loader:1705:14)\n    at Module.m._compile (D:\\Dev\\BMAD-Speckit-SDD-Flow\\node_modules\\ts-node\\src\\index.ts:1618:23)\n    at node:internal/modules/cjs/loader:1838:10\n    at Object.require.extensions.<computed> [as .ts] (D:\\Dev\\BMAD-Speckit-SDD-Flow\\node_modules\\ts-node\\src\\index.ts:1621:12)\n    at Module.load (node:internal/modules/cjs/loader:1441:32)\n    at Function._load (node:internal/modules/cjs/loader:1263:12)\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\n"
+  },
+  {
+    "originalPath": "scripts/create-test-story.ts",
+    "scenarioId": "g008_create_test_story_ts_no_args",
+    "expectedStderr": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\bmad-state.ts:115\n  if (existing) throw new Error(`Story ${epic}-${story} already exists`);\n                      ^\nError: Story E001-S001 already exists\n    at createStory (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\bmad-state.ts:115:23)\n    at Object.<anonymous> (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\create-test-story.ts:5:26)\n    at Module._compile (node:internal/modules/cjs/loader:1705:14)\n    at Module.m._compile (D:\\Dev\\BMAD-Speckit-SDD-Flow\\node_modules\\ts-node\\src\\index.ts:1618:23)\n    at node:internal/modules/cjs/loader:1838:10\n    at Object.require.extensions.<computed> [as .ts] (D:\\Dev\\BMAD-Speckit-SDD-Flow\\node_modules\\ts-node\\src\\index.ts:1621:12)\n    at Module.load (node:internal/modules/cjs/loader:1441:32)\n    at Function._load (node:internal/modules/cjs/loader:1263:12)\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\n"
+  },
+  {
+    "originalPath": "scripts/critical-auditor-profile.ts",
+    "scenarioId": "g008_critical_auditor_profile_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/dashboard-projection-mapping.ts",
+    "scenarioId": "g008_dashboard_projection_mapping_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"dashboard-projection-mapping requires --record-id\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/deferred-gap-governance.cjs",
+    "scenarioId": "g008_deferred_gap_governance_cjs_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/deferred-gap-governance.d.cts",
+    "scenarioId": "g008_deferred_gap_governance_d_cts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/diagnose-bmad-state.ts",
+    "scenarioId": "g008_diagnose_bmad_state_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/ensure-governance-user-story-mapping-fixture.js",
+    "scenarioId": "g008_ensure_governance_user_story_mapping_fixture_js_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/eval-question-generate.ts",
+    "scenarioId": "g008_eval_question_generate_ts_no_args",
+    "expectedStderr": "Usage: npx ts-node scripts/eval-question-generate.ts --run-id <id> | --input <path> [--version v1|v2] [--outputDir <dir>]\n"
+  },
+  {
+    "originalPath": "scripts/extract-npm-pack-json.js",
+    "scenarioId": "g008_extract_npm_pack_json_js_no_args",
+    "expectedStderr": "No npm pack JSON array found in --cwd\n"
+  },
+  {
+    "originalPath": "scripts/governance-host-dispatch-adapter.ts",
+    "scenarioId": "g008_governance_host_dispatch_adapter_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/host-runtime-mode.ts",
+    "scenarioId": "g008_host_runtime_mode_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/i18n/bootstrap-skill-bilingual-files.mjs",
+    "scenarioId": "g008_i18n_bootstrap_skill_bilingual_files_mjs_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/i18n/han-outside-fences.mjs",
+    "scenarioId": "g008_i18n_han_outside_fences_mjs_no_args",
+    "expectedStderr": "node:fs:440\n    return binding.readFileUtf8(path, stringToFlags(options.flag));\n                   ^\n\nError: EISDIR: illegal operation on a directory, read\n    at Object.readFileSync (node:fs:440:20)\n    at file:///D:/Dev/BMAD-Speckit-SDD-Flow/scripts/i18n/han-outside-fences.mjs:16:16\n    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)\n    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26)\n    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5) {\n  errno: -4068,\n  code: 'EISDIR',\n  syscall: 'read'\n}\n\nNode.js v22.22.1\n"
+  },
+  {
+    "originalPath": "scripts/i18n/phase3_translate_skill_en.py",
+    "scenarioId": "g008_i18n_phase3_translate_skill_en_py_no_args",
+    "expectedStderr": "Requested Python version (3) is not installed\n"
+  },
+  {
+    "originalPath": "scripts/i18n/phase3-skill-en-transform.mjs",
+    "scenarioId": "g008_i18n_phase3_skill_en_transform_mjs_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/i18n/resolve-audit-prompt-path.ts",
+    "scenarioId": "g008_i18n_resolve_audit_prompt_path_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/normalize-pack-manifests.js",
+    "scenarioId": "g008_normalize_pack_manifests_js_no_args",
+    "expectedStderr": "Usage: node scripts/normalize-pack-manifests.js <prepare|restore>\n"
+  },
+  {
+    "originalPath": "scripts/parallel-mission-control.ts",
+    "scenarioId": "g008_parallel_mission_control_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/parse-bmad-audit-result.ts",
+    "scenarioId": "g008_parse_bmad_audit_result_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/party-mode-gate-check.ts",
+    "scenarioId": "g008_party_mode_gate_check_ts_no_args",
+    "expectedStderr": "Unknown argument: --cwd\n"
+  },
+  {
+    "originalPath": "scripts/ralph-method/pathing.ts",
+    "scenarioId": "g008_ralph_method_pathing_ts_no_args",
+    "expectedStderr": ""
+  }
+]

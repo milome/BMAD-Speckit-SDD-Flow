@@ -1,0 +1,96 @@
+[
+  {
+    "originalPath": "scripts/ralph-method/progress-format.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_ralph_method_progress_format_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/ralph-method/schema.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_ralph_method_schema_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/ralph-method/speckit-implement.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_ralph_method_speckit_implement_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/ralph-method/types.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_ralph_method_types_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/ralph-method/verify-pass-consistency.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_ralph_method_verify_pass_consistency_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/ralph-method/verify-ralph-compliance.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_ralph_method_verify_ralph_compliance_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/ralph-method/verify-tdd-trace.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_ralph_method_verify_tdd_trace_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/ralph-method/write-tracking-files.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_ralph_method_write_tracking_files_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/README.md",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_readme_md_no_args",
+        "expectedStderr": "scripts/README.md:<line>\n<runtime-source-frame>\nSyntaxError: Invalid or unexpected token\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/render-upstream-bmad-help-baseline.js",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_render_upstream_bmad_help_baseline_js_no_args",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g008_render_upstream_bmad_help_baseline_js_env_bmad_help_upstream_commit",
+        "expectedStderr": "fatal: invalid object name 'source-derived-bmad_help_upstream_commit'.\nnode:child_process:955\n    throw err;\n    ^\n\nError: Command failed: git show source-derived-bmad_help_upstream_commit:_bmad/_config/bmad-help.csv\nfatal: invalid object name 'source-derived-bmad_help_upstream_commit'.\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n  status: 128,\n  signal: null,\n  output: [\n    null,\n    '',\n    \"fatal: invalid object name 'source-derived-bmad_help_upstream_commit'.\\n\"\n  ],\n  pid: <pid>,\n  stdout: '',\n  stderr: \"fatal: invalid object name 'source-derived-bmad_help_upstream_commit'.\\n\"\n}\n"
+      }
+    ]
+  }
+]

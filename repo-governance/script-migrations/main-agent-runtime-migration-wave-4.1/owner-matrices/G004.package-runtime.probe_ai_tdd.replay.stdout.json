@@ -1,0 +1,51 @@
+[
+  {
+    "originalPath": "scripts/ai-tdd-contract-gate.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_ai_tdd_contract_gate_ts_cwd",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_ai_tdd_contract_gate_ts_flag_attempt_id",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_ai_tdd_contract_gate_ts_flag_execute_red_proof",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_ai_tdd_contract_gate_ts_flag_help",
+        "expectedStdout": "Usage: ai-tdd-contract-gate --source <requirement.md> --requirement-record <json> --mode <pre-implementation|pre-rerun|iteration|closeout> [--attempt-id <id>] [--report-path <json>] [--json]\n"
+      },
+      {
+        "scenarioId": "g004_ai_tdd_contract_gate_ts_flag_json",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_ai_tdd_contract_gate_ts_flag_mode",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_ai_tdd_contract_gate_ts_flag_report_path",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_ai_tdd_contract_gate_ts_flag_requirement_record",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_ai_tdd_contract_gate_ts_flag_source",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_ai_tdd_contract_gate_ts_env_home",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_ai_tdd_contract_gate_ts_env_userprofile",
+        "expectedStdout": ""
+      }
+    ]
+  }
+]

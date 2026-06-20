@@ -1,0 +1,566 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-wave-4-1-owner-initial-replay-results/v1",
+  "waveId": "main-agent-runtime-migration-wave-4.1",
+  "ownerTaskId": "G005",
+  "generatedAt": "2026-06-20T10:40:09.824Z",
+  "artifactSuffix": "g005_batch_003",
+  "timeoutMs": 30000,
+  "matrixPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G005.package-runtime.g005_batch_003.behavior-matrix.json",
+  "matrixHash": "sha256:d5a4a19384bf10c52d7c30f0f9a3ebe483ea447440d0a5d12aaa9c99e5a5f627",
+  "matrixRowCount": 3,
+  "scenarioCount": 13,
+  "passedScenarioCount": 13,
+  "failedScenarioCount": 0,
+  "replayRows": [
+    {
+      "originalPath": "scripts/main-agent-bmad-help-five-layer-matrix.ts",
+      "entryId": "main-agent-bmad-help-five-layer-matrix",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-bmad-help-five-layer-matrix.js",
+      "scenarioCount": 1,
+      "passedScenarioCount": 1,
+      "failedScenarioCount": 0,
+      "scenarios": [
+        {
+          "scenarioId": "g005_main_agent_bmad_help_five_layer_matrix_ts_no_args",
+          "originalReplay": {
+            "exitCode": 0,
+            "stdoutBytes": 13443,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 0,
+            "stdoutBytes": 13443,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g005_main_agent_bmad_help_five_layer_matrix_ts_no_args",
+            "originalEntryPoint": "scripts/main-agent-bmad-help-five-layer-matrix.ts",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-bmad-help-five-layer-matrix.ts",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 0,
+            "stdoutBytes": 13443,
+            "stderrBytes": 0,
+            "normalizedExpectedStdoutHash": "sha256:1344ff363202ab0c23c7c345ba0f86e821f6fa56cc2c760c93152b0b58d6c7e9",
+            "normalizedReplayStdoutHash": "sha256:1344ff363202ab0c23c7c345ba0f86e821f6fa56cc2c760c93152b0b58d6c7e9",
+            "normalizedExpectedStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+      "entryId": "main-agent-host-matrix-pr-orchestrate",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.js",
+      "scenarioCount": 11,
+      "passedScenarioCount": 11,
+      "failedScenarioCount": 0,
+      "scenarios": [
+        {
+          "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_no_args",
+          "originalReplay": {
+            "exitCode": 0,
+            "stdoutBytes": 2127,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 0,
+            "stdoutBytes": 2127,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_no_args",
+            "originalEntryPoint": "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.ts",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 0,
+            "stdoutBytes": 2127,
+            "stderrBytes": 0,
+            "normalizedExpectedStdoutHash": "sha256:cbe80020046c5f270cff260de4ea053c1a542cdf5e0ba7e3d5762c18eef97890",
+            "normalizedReplayStdoutHash": "sha256:cbe80020046c5f270cff260de4ea053c1a542cdf5e0ba7e3d5762c18eef97890",
+            "normalizedExpectedStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        },
+        {
+          "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_enablerealprapi",
+          "originalReplay": {
+            "exitCode": 0,
+            "stdoutBytes": 2127,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 0,
+            "stdoutBytes": 2127,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_enablerealprapi",
+            "originalEntryPoint": "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.ts",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 0,
+            "stdoutBytes": 2127,
+            "stderrBytes": 0,
+            "normalizedExpectedStdoutHash": "sha256:cbe80020046c5f270cff260de4ea053c1a542cdf5e0ba7e3d5762c18eef97890",
+            "normalizedReplayStdoutHash": "sha256:cbe80020046c5f270cff260de4ea053c1a542cdf5e0ba7e3d5762c18eef97890",
+            "normalizedExpectedStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        },
+        {
+          "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_evidencebundleid",
+          "originalReplay": {
+            "exitCode": 0,
+            "stdoutBytes": 2101,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 0,
+            "stdoutBytes": 2101,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_evidencebundleid",
+            "originalEntryPoint": "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.ts",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 0,
+            "stdoutBytes": 2101,
+            "stderrBytes": 0,
+            "normalizedExpectedStdoutHash": "sha256:ddee963787d867adc10d06bddf2f0457b88e8137d124fe2d3dd4deab3c4a3de8",
+            "normalizedReplayStdoutHash": "sha256:ddee963787d867adc10d06bddf2f0457b88e8137d124fe2d3dd4deab3c4a3de8",
+            "normalizedExpectedStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        },
+        {
+          "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_projectroot",
+          "originalReplay": {
+            "exitCode": 1,
+            "stdoutBytes": 2047,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 16,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 1,
+            "stdoutBytes": 2046,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 16,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_projectroot",
+            "originalEntryPoint": "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.ts",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 1,
+            "stdoutBytes": 2046,
+            "stderrBytes": 0,
+            "normalizedExpectedStdoutHash": "sha256:a1a5baff3fb586d91f71215d30018b4c48a3dac2b98ea37ca95ca2b7fe1f5e04",
+            "normalizedReplayStdoutHash": "sha256:a1a5baff3fb586d91f71215d30018b4c48a3dac2b98ea37ca95ca2b7fe1f5e04",
+            "normalizedExpectedStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        },
+        {
+          "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_provider",
+          "originalReplay": {
+            "exitCode": 0,
+            "stdoutBytes": 2127,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 0,
+            "stdoutBytes": 2127,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_provider",
+            "originalEntryPoint": "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.ts",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 0,
+            "stdoutBytes": 2127,
+            "stderrBytes": 0,
+            "normalizedExpectedStdoutHash": "sha256:cbe80020046c5f270cff260de4ea053c1a542cdf5e0ba7e3d5762c18eef97890",
+            "normalizedReplayStdoutHash": "sha256:cbe80020046c5f270cff260de4ea053c1a542cdf5e0ba7e3d5762c18eef97890",
+            "normalizedExpectedStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        },
+        {
+          "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_prtopologypath",
+          "originalReplay": {
+            "exitCode": 0,
+            "stdoutBytes": 2127,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 1,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 0,
+            "stdoutBytes": 2127,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 1,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_prtopologypath",
+            "originalEntryPoint": "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.ts",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 0,
+            "stdoutBytes": 2127,
+            "stderrBytes": 0,
+            "normalizedExpectedStdoutHash": "sha256:cbe80020046c5f270cff260de4ea053c1a542cdf5e0ba7e3d5762c18eef97890",
+            "normalizedReplayStdoutHash": "sha256:cbe80020046c5f270cff260de4ea053c1a542cdf5e0ba7e3d5762c18eef97890",
+            "normalizedExpectedStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        },
+        {
+          "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_record_id",
+          "originalReplay": {
+            "exitCode": 1,
+            "stdoutBytes": 2129,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 1,
+            "stdoutBytes": 2129,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_record_id",
+            "originalEntryPoint": "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.ts",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 1,
+            "stdoutBytes": 2129,
+            "stderrBytes": 0,
+            "normalizedExpectedStdoutHash": "sha256:a384d074527c67444dffe69f1cde97d703a29988c88e2a497eadffa9be4f7033",
+            "normalizedReplayStdoutHash": "sha256:a384d074527c67444dffe69f1cde97d703a29988c88e2a497eadffa9be4f7033",
+            "normalizedExpectedStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        },
+        {
+          "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_reportpath",
+          "originalReplay": {
+            "exitCode": 0,
+            "stdoutBytes": 2127,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 1,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 0,
+            "stdoutBytes": 2127,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 1,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_reportpath",
+            "originalEntryPoint": "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.ts",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 0,
+            "stdoutBytes": 2127,
+            "stderrBytes": 0,
+            "normalizedExpectedStdoutHash": "sha256:cbe80020046c5f270cff260de4ea053c1a542cdf5e0ba7e3d5762c18eef97890",
+            "normalizedReplayStdoutHash": "sha256:cbe80020046c5f270cff260de4ea053c1a542cdf5e0ba7e3d5762c18eef97890",
+            "normalizedExpectedStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        },
+        {
+          "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_requirement_set_id",
+          "originalReplay": {
+            "exitCode": 1,
+            "stdoutBytes": 2129,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 1,
+            "stdoutBytes": 2129,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_requirement_set_id",
+            "originalEntryPoint": "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.ts",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 1,
+            "stdoutBytes": 2129,
+            "stderrBytes": 0,
+            "normalizedExpectedStdoutHash": "sha256:a384d074527c67444dffe69f1cde97d703a29988c88e2a497eadffa9be4f7033",
+            "normalizedReplayStdoutHash": "sha256:a384d074527c67444dffe69f1cde97d703a29988c88e2a497eadffa9be4f7033",
+            "normalizedExpectedStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        },
+        {
+          "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_runid",
+          "originalReplay": {
+            "exitCode": 0,
+            "stdoutBytes": 2059,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 0,
+            "stdoutBytes": 2059,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_runid",
+            "originalEntryPoint": "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.ts",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 0,
+            "stdoutBytes": 2059,
+            "stderrBytes": 0,
+            "normalizedExpectedStdoutHash": "sha256:01c5efb2eab1364bfd2b21da09011bf77edefcf5bf65829258ee34d986dcc817",
+            "normalizedReplayStdoutHash": "sha256:01c5efb2eab1364bfd2b21da09011bf77edefcf5bf65829258ee34d986dcc817",
+            "normalizedExpectedStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        },
+        {
+          "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_storykey",
+          "originalReplay": {
+            "exitCode": 0,
+            "stdoutBytes": 2145,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 0,
+            "stdoutBytes": 2145,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_storykey",
+            "originalEntryPoint": "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.ts",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 0,
+            "stdoutBytes": 2145,
+            "stderrBytes": 0,
+            "normalizedExpectedStdoutHash": "sha256:2208498ff5230d89dc10c87db2bebe9d81fb95ad3441867bec77bf4fc7819b50",
+            "normalizedReplayStdoutHash": "sha256:2208498ff5230d89dc10c87db2bebe9d81fb95ad3441867bec77bf4fc7819b50",
+            "normalizedExpectedStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/setup.ps1",
+      "entryId": "setup-ps1",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/setup.ps1",
+      "scenarioCount": 1,
+      "passedScenarioCount": 1,
+      "failedScenarioCount": 0,
+      "scenarios": [
+        {
+          "scenarioId": "g005_setup_ps1_no_args",
+          "originalReplay": {
+            "exitCode": 1,
+            "stdoutBytes": 0,
+            "stderrBytes": 218,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 1,
+            "stdoutBytes": 0,
+            "stderrBytes": 273,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g005_setup_ps1_no_args",
+            "originalEntryPoint": "scripts/setup.ps1",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/setup.ps1",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 1,
+            "stdoutBytes": 0,
+            "stderrBytes": 273,
+            "normalizedExpectedStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedExpectedStderrHash": "sha256:98cf770d6192a481c36a40e05ca40505c2dc5c04de4acf086fcf1566d1b0f447",
+            "normalizedReplayStderrHash": "sha256:98cf770d6192a481c36a40e05ca40505c2dc5c04de4acf086fcf1566d1b0f447",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        }
+      ]
+    }
+  ]
+}

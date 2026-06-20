@@ -1,0 +1,786 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-wave-4-1-final-evidence-packet/v1",
+  "waveId": "main-agent-runtime-migration-wave-4.1",
+  "contractPath": "docs/plans/2026-06-20-main-agent-runtime-migration-wave-4-1-goal-execution-plan.md",
+  "generatedAt": "2026-06-20T13:50:27.010Z",
+  "ledgerPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/migration-ledger.json",
+  "ledgerHash": "sha256:0600a87bcab722a8494dedc257d4e51c4643723ac103a750051144e82a228929",
+  "behaviorEquivalenceMatrixPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/behavior-equivalence-matrix.json",
+  "behaviorEquivalenceMatrixHash": "sha256:f4b65db4580ea7f24472d518613a073ea807d64404d027734c342159618b4d73",
+  "packageSourceParityEvidencePath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/package-source-parity-evidence.json",
+  "packageSourceParityEvidenceHash": "sha256:dc1e58bbcabe95b91c749f45dc1f320da21fbac26f5f89f3afc78710d6ca2004",
+  "summaryPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/summary.md",
+  "summaryHash": "sha256:116ceaca5312027a94845201bff56178dcf87eabddc8c944569b31250d8a51a9",
+  "finalValidatorCore": {
+    "ok": true,
+    "status": "passed",
+    "waveId": "main-agent-runtime-migration-wave-4.1",
+    "reworkRequired": false,
+    "phase": "final",
+    "all240RowsPassed": true,
+    "reworkQueueLength": 0,
+    "allAcceptancePassed": true,
+    "residualRisks": "none",
+    "scannedOriginalPathCount": 240,
+    "noFallbackScanCoverageRows": 240,
+    "fallbackHitCount": 0,
+    "g009AggregationProofGapCount": 0,
+    "g009AggregationHashMismatchCount": 0,
+    "acceptanceResultsCount": 38,
+    "acceptanceResultCoverageGapCount": 0,
+    "dynamicFallbackHitCount": 0,
+    "installMatrixPassed": true,
+    "installMatrixModeCount": 4,
+    "installMatrixFailureClass": null,
+    "closeoutArtifacts": {
+      "ok": true,
+      "skipped": true,
+      "errors": [],
+      "artifactPaths": {}
+    },
+    "strictCompletionGatePreview": {
+      "allStrictCompletionGatesPass": true,
+      "reworkRequired": false,
+      "missingPackageImplementationSetCount": 0,
+      "invalidPackageImplementationPathCount": 0,
+      "sourceAuthorityPathGapCount": 0,
+      "runtimeReplayPathGapCount": 0,
+      "distOutputPathGapCount": 0,
+      "missingBehaviorEquivalenceMatrixCount": 0,
+      "behaviorEquivalenceMatrixScenarioFieldGapCount": 0,
+      "behaviorEquivalenceMatrixScenarioCoverageGapCount": 0,
+      "missingBehaviorEquivalenceReplayProofCount": 0,
+      "behaviorEquivalenceReplayFailureCount": 0,
+      "scenarioCoverageGapCount": 0,
+      "expectedOutputProvenanceGapCount": 0,
+      "packageObservedExpectedOutputCount": 0,
+      "firstGenerationProofGapCount": 0,
+      "matrixOwnerCompletionTimingGapCount": 0,
+      "semanticSizePaddingViolationCount": 0,
+      "sizeDeltaProofGapCount": 0,
+      "sourceKindParityViolationCount": 0,
+      "g009AggregationProofGapCount": 0,
+      "g009AggregationHashMismatchCount": 0,
+      "semanticZeroSizeMetricCount": 0,
+      "semanticSizeDeltaViolationCount": 0,
+      "semanticSizeComputationMismatchCount": 0,
+      "sizeDeltaThresholdShapeGapCount": 0,
+      "zeroSizeMetricCount": 0,
+      "sizeDeltaViolationCount": 0,
+      "sizeDeltaComputationMismatchCount": 0,
+      "settledEquivalenceBypassCount": 0,
+      "dynamicFallbackHitCount": 0,
+      "fallbackHitCount": 0,
+      "noFallbackScanCoverageRows": 240,
+      "acceptanceResultCoverageGapCount": 0
+    },
+    "ledgerRowCount": 240,
+    "backlog_migration": 206,
+    "settled_revalidation": 34,
+    "noUnmappedInventoryRows": true,
+    "requiredLedgerFieldsPresent": true,
+    "missingRequiredFieldCount": 0,
+    "missingRequiredFields": [],
+    "ownerCounts": {
+      "G008": 58,
+      "G004": 91,
+      "G007": 74,
+      "G005": 12,
+      "G006": 4,
+      "G003": 1
+    },
+    "ownerCountsMatch": true,
+    "ownerAssignmentMismatchCount": 0,
+    "missingOwnerAssignmentRuleCount": 0,
+    "unexpectedOwnerAssignmentCount": 0,
+    "ownerAssignmentRowCount": 240,
+    "all240RowsHavePackageImplementationSet": true,
+    "missingPackageImplementationSetCount": 0,
+    "all240RowsHaveValidPackageImplementationSet": true,
+    "invalidPackageImplementationPathCount": 0,
+    "sourceAuthorityPathGapCount": 0,
+    "runtimeReplayPathGapCount": 0,
+    "distOutputPathGapCount": 0,
+    "all240RowsHaveBehaviorEquivalenceMatrix": true,
+    "missingBehaviorEquivalenceMatrixCount": 0,
+    "allBehaviorEquivalenceMatrixScenariosHaveRequiredFields": true,
+    "behaviorEquivalenceMatrixScenarioFieldGapCount": 0,
+    "behaviorEquivalenceMatrixScenarioCoverageGapCount": 0,
+    "all240RowsHaveBehaviorEquivalenceReplayProof": true,
+    "missingBehaviorEquivalenceReplayProofCount": 0,
+    "behaviorEquivalenceReplayFailureCount": 0,
+    "all240RowsMatrixGeneratedByOwnerTask": true,
+    "all240RowsMatchDeterministicOwnerAssignment": true,
+    "matrixFirstGeneratedByG009Count": 0,
+    "firstGenerationProofGapCount": 0,
+    "matrixOwnerCompletionTimingGapCount": 0,
+    "all240RowsHaveFullScenarioCoverage": true,
+    "scenarioCoverageGapCount": 0,
+    "expectedOutputProvenanceGapCount": 0,
+    "packageObservedExpectedOutputCount": 0,
+    "semanticSizePaddingViolationCount": 0,
+    "sizeDeltaProofGapCount": 0,
+    "sourceKindParityViolationCount": 0,
+    "semanticZeroSizeMetricCount": 0,
+    "semanticSizeDeltaViolationCount": 0,
+    "semanticSizeComputationMismatchCount": 0,
+    "settledEquivalenceBypassCount": 0,
+    "all240RowsHaveSizeDeltaDecision": true,
+    "sizeDeltaThresholdShapeGapCount": 0,
+    "zeroSizeMetricCount": 0,
+    "sizeDeltaViolationCount": 0,
+    "sizeDeltaComputationMismatchCount": 0,
+    "sampleFailures": {
+      "missingPackageImplementationSet": [],
+      "invalidPackageImplementationPaths": [],
+      "sourceAuthorityPathGaps": [],
+      "runtimeReplayPathGaps": [],
+      "distOutputPathGaps": [],
+      "missingBehaviorEquivalenceMatrix": [],
+      "behaviorEquivalenceMatrixScenarioFieldGaps": [],
+      "behaviorEquivalenceMatrixScenarioCoverageGaps": [],
+      "scenarioCoverageGaps": [],
+      "expectedOutputProvenanceGaps": [],
+      "firstGenerationProofGaps": [],
+      "g009AggregationProofGaps": [],
+      "g009AggregationHashMismatches": [],
+      "matrixOwnerCompletionTimingGaps": [],
+      "semanticSizePaddingViolations": [],
+      "sizeDeltaProofGaps": [],
+      "sourceKindParityViolations": [],
+      "semanticSizeComputationMismatches": [],
+      "sizeDeltaThresholdShapeGaps": [],
+      "sizeDeltaComputationMismatches": []
+    }
+  },
+  "noFallback": {
+    "ok": true,
+    "status": "passed",
+    "waveId": "main-agent-runtime-migration-wave-4.1",
+    "reworkRequired": false,
+    "phase": "no-fallback",
+    "scannedOriginalPathCount": 240,
+    "scanCoverageRows": 240,
+    "scanRoots": [
+      "packages/bmad-speckit/src",
+      "packages/bmad-speckit/dist",
+      "packages/bmad-speckit/bin",
+      "packages/bmad-speckit/scripts",
+      "packages/bmad-speckit/package.json",
+      "_bmad/codex",
+      ".codex",
+      ".cursor",
+      ".claude",
+      "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/install-matrix"
+    ],
+    "scannedFileCount": 3097,
+    "forbiddenHitCount": 0,
+    "rootScriptDispatchHitCount": 0,
+    "dynamicFallbackHitCount": 0,
+    "splitStringPathHitCount": 0,
+    "pathJoinHitCount": 0,
+    "templateLiteralPathHitCount": 0,
+    "globScriptSelectionHitCount": 0,
+    "packageScriptIndirectionHitCount": 0,
+    "importHitCount": 0,
+    "requireHitCount": 0,
+    "spawnHitCount": 0,
+    "execHitCount": 0,
+    "execFileHitCount": 0,
+    "forkHitCount": 0,
+    "shellDispatchHitCount": 0,
+    "runtimeFileReadHitCount": 0,
+    "tsxHitCount": 0,
+    "tsNodeHitCount": 0,
+    "compiledFallbackHitCount": 0,
+    "reportOnlySourceHitCount": 0,
+    "descriptorOnlyHelperHitCount": 0,
+    "sampleHits": [],
+    "sampleCompiledFallbackHits": [],
+    "sampleReportOnlySourceHits": [],
+    "sampleDescriptorOnlyHelperHits": []
+  },
+  "noFallbackSummary": {
+    "scannedOriginalPathCount": 240,
+    "scanCoverageRows": 240,
+    "forbiddenHitCount": 0,
+    "scanRoots": [
+      "packages/bmad-speckit/src",
+      "packages/bmad-speckit/dist",
+      "packages/bmad-speckit/bin",
+      "packages/bmad-speckit/scripts",
+      "packages/bmad-speckit/package.json",
+      "_bmad/codex",
+      ".codex",
+      ".cursor",
+      ".claude",
+      "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/install-matrix"
+    ],
+    "dynamicFallbackHitCount": 0,
+    "splitStringPathHitCount": 0,
+    "pathJoinHitCount": 0,
+    "templateLiteralPathHitCount": 0,
+    "globScriptSelectionHitCount": 0,
+    "packageScriptIndirectionHitCount": 0,
+    "runtimeFileReadHitCount": 0
+  },
+  "installMatrix": {
+    "modes": [
+      {
+        "mode": "no-save",
+        "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/install-matrix/no-save.json",
+        "hash": "sha256:2eab268312f612786d66822af43d1ed4af562544f2ddaf68d7b5fbe9a3f4f98d",
+        "status": "passed",
+        "usedRootScript": false,
+        "usedTsx": false,
+        "usedTsNode": false,
+        "usedCompiledFallback": false,
+        "rootScriptDependencyCount": 0
+      },
+      {
+        "mode": "save-dev",
+        "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/install-matrix/save-dev.json",
+        "hash": "sha256:62a4de75dcce6e929d8b1214811ed8e5951c8c11e93c1fddb478ac2c3fcdd9d7",
+        "status": "passed",
+        "usedRootScript": false,
+        "usedTsx": false,
+        "usedTsNode": false,
+        "usedCompiledFallback": false,
+        "rootScriptDependencyCount": 0
+      },
+      {
+        "mode": "npx-package",
+        "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/install-matrix/npx-package.json",
+        "hash": "sha256:c53c04316dde2365bd8e3de01cceac7b918aefa63d73b441241fe59acc1fa4ab",
+        "status": "passed",
+        "usedRootScript": false,
+        "usedTsx": false,
+        "usedTsNode": false,
+        "usedCompiledFallback": false,
+        "rootScriptDependencyCount": 0
+      },
+      {
+        "mode": "init-sync-consumer",
+        "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/install-matrix/init-sync-consumer.json",
+        "hash": "sha256:d5fd43a37020d3b2500179518a98851e6a0be73e967b881404e7583ce823671b",
+        "status": "passed",
+        "usedRootScript": false,
+        "usedTsx": false,
+        "usedTsNode": false,
+        "usedCompiledFallback": false,
+        "rootScriptDependencyCount": 0
+      }
+    ],
+    "allModesPassed": true
+  },
+  "acceptanceResults": [
+    {
+      "id": "ACC001",
+      "status": "pass",
+      "evidenceIds": [
+        "CMD013:final-validator",
+        "CMD008:no-fallback-validator",
+        "LEDGER:migration-ledger",
+        "MATRIX:behavior-equivalence-matrix",
+        "REPLAY:owner-matrix-replay-results"
+      ]
+    },
+    {
+      "id": "ACC002",
+      "status": "pass",
+      "evidenceIds": [
+        "CMD013:final-validator",
+        "CMD008:no-fallback-validator",
+        "LEDGER:migration-ledger",
+        "MATRIX:behavior-equivalence-matrix",
+        "REPLAY:owner-matrix-replay-results"
+      ]
+    },
+    {
+      "id": "ACC003",
+      "status": "pass",
+      "evidenceIds": [
+        "CMD013:final-validator",
+        "CMD008:no-fallback-validator",
+        "LEDGER:migration-ledger",
+        "MATRIX:behavior-equivalence-matrix",
+        "REPLAY:owner-matrix-replay-results"
+      ]
+    },
+    {
+      "id": "ACC004",
+      "status": "pass",
+      "evidenceIds": [
+        "CMD013:final-validator",
+        "CMD008:no-fallback-validator",
+        "LEDGER:migration-ledger",
+        "MATRIX:behavior-equivalence-matrix",
+        "REPLAY:owner-matrix-replay-results"
+      ]
+    },
+    {
+      "id": "ACC005",
+      "status": "pass",
+      "evidenceIds": [
+        "CMD013:final-validator",
+        "CMD008:no-fallback-validator",
+        "LEDGER:migration-ledger",
+        "MATRIX:behavior-equivalence-matrix",
+        "REPLAY:owner-matrix-replay-results"
+      ]
+    },
+    {
+      "id": "ACC006",
+      "status": "pass",
+      "evidenceIds": [
+        "CMD013:final-validator",
+        "CMD008:no-fallback-validator",
+        "LEDGER:migration-ledger",
+        "MATRIX:behavior-equivalence-matrix",
+        "REPLAY:owner-matrix-replay-results"
+      ]
+    },
+    {
+      "id": "ACC007",
+      "status": "pass",
+      "evidenceIds": [
+        "CMD013:final-validator",
+        "CMD008:no-fallback-validator",
+        "LEDGER:migration-ledger",
+        "MATRIX:behavior-equivalence-matrix",
+        "REPLAY:owner-matrix-replay-results"
+      ]
+    },
+    {
+      "id": "ACC008",
+      "status": "pass",
+      "evidenceIds": [
+        "CMD013:final-validator",
+        "CMD008:no-fallback-validator",
+        "LEDGER:migration-ledger",
+        "MATRIX:behavior-equivalence-matrix",
+        "REPLAY:owner-matrix-replay-results"
+      ]
+    },
+    {
+      "id": "ACC009",
+      "status": "pass",
+      "evidenceIds": [
+        "CMD013:final-validator",
+        "CMD008:no-fallback-validator",
+        "LEDGER:migration-ledger",
+        "MATRIX:behavior-equivalence-matrix",
+        "REPLAY:owner-matrix-replay-results"
+      ]
+    },
+    {
+      "id": "ACC010",
+      "status": "pass",
+      "evidenceIds": [
+        "CMD013:final-validator",
+        "CMD008:no-fallback-validator",
+        "LEDGER:migration-ledger",
+        "MATRIX:behavior-equivalence-matrix",
+        "REPLAY:owner-matrix-replay-results"
+      ]
+    },
+    {
+      "id": "ACC011",
+      "status": "pass",
+      "evidenceIds": [
+        "CMD013:final-validator",
+        "CMD008:no-fallback-validator",
+        "LEDGER:migration-ledger",
+        "MATRIX:behavior-equivalence-matrix",
+        "REPLAY:owner-matrix-replay-results"
+      ]
+    },
+    {
+      "id": "ACC012",
+      "status": "pass",
+      "evidenceIds": [
+        "CMD013:final-validator",
+        "CMD008:no-fallback-validator",
+        "LEDGER:migration-ledger",
+        "MATRIX:behavior-equivalence-matrix",
+        "REPLAY:owner-matrix-replay-results"
+      ]
+    },
+    {
+      "id": "ACC013",
+      "status": "pass",
+      "evidenceIds": [
+        "CMD013:final-validator",
+        "CMD008:no-fallback-validator",
+        "LEDGER:migration-ledger",
+        "MATRIX:behavior-equivalence-matrix",
+        "REPLAY:owner-matrix-replay-results"
+      ]
+    },
+    {
+      "id": "ACC014",
+      "status": "pass",
+      "evidenceIds": [
+        "CMD013:final-validator",
+        "CMD008:no-fallback-validator",
+        "LEDGER:migration-ledger",
+        "MATRIX:behavior-equivalence-matrix",
+        "REPLAY:owner-matrix-replay-results"
+      ]
+    },
+    {
+      "id": "ACC015",
+      "status": "pass",
+      "evidenceIds": [
+        "CMD013:final-validator",
+        "CMD008:no-fallback-validator",
+        "LEDGER:migration-ledger",
+        "MATRIX:behavior-equivalence-matrix",
+        "REPLAY:owner-matrix-replay-results"
+      ]
+    },
+    {
+      "id": "ACC016",
+      "status": "pass",
+      "evidenceIds": [
+        "CMD013:final-validator",
+        "CMD008:no-fallback-validator",
+        "LEDGER:migration-ledger",
+        "MATRIX:behavior-equivalence-matrix",
+        "REPLAY:owner-matrix-replay-results"
+      ]
+    },
+    {
+      "id": "ACC017",
+      "status": "pass",
+      "evidenceIds": [
+        "CMD013:final-validator",
+        "CMD008:no-fallback-validator",
+        "LEDGER:migration-ledger",
+        "MATRIX:behavior-equivalence-matrix",
+        "REPLAY:owner-matrix-replay-results"
+      ]
+    },
+    {
+      "id": "ACC018",
+      "status": "pass",
+      "evidenceIds": [
+        "CMD013:final-validator",
+        "CMD008:no-fallback-validator",
+        "LEDGER:migration-ledger",
+        "MATRIX:behavior-equivalence-matrix",
+        "REPLAY:owner-matrix-replay-results"
+      ]
+    },
+    {
+      "id": "ACC019",
+      "status": "pass",
+      "evidenceIds": [
+        "CMD013:final-validator",
+        "CMD008:no-fallback-validator",
+        "LEDGER:migration-ledger",
+        "MATRIX:behavior-equivalence-matrix",
+        "REPLAY:owner-matrix-replay-results"
+      ]
+    },
+    {
+      "id": "ACC020",
+      "status": "pass",
+      "evidenceIds": [
+        "CMD013:final-validator",
+        "CMD008:no-fallback-validator",
+        "LEDGER:migration-ledger",
+        "MATRIX:behavior-equivalence-matrix",
+        "REPLAY:owner-matrix-replay-results"
+      ]
+    },
+    {
+      "id": "ACC021",
+      "status": "pass",
+      "evidenceIds": [
+        "CMD013:final-validator",
+        "CMD008:no-fallback-validator",
+        "LEDGER:migration-ledger",
+        "MATRIX:behavior-equivalence-matrix",
+        "REPLAY:owner-matrix-replay-results"
+      ]
+    },
+    {
+      "id": "ACC022",
+      "status": "pass",
+      "evidenceIds": [
+        "CMD013:final-validator",
+        "CMD008:no-fallback-validator",
+        "LEDGER:migration-ledger",
+        "MATRIX:behavior-equivalence-matrix",
+        "REPLAY:owner-matrix-replay-results"
+      ]
+    },
+    {
+      "id": "ACC023",
+      "status": "pass",
+      "evidenceIds": [
+        "CMD013:final-validator",
+        "CMD008:no-fallback-validator",
+        "LEDGER:migration-ledger",
+        "MATRIX:behavior-equivalence-matrix",
+        "REPLAY:owner-matrix-replay-results"
+      ]
+    },
+    {
+      "id": "ACC024",
+      "status": "pass",
+      "evidenceIds": [
+        "CMD013:final-validator",
+        "CMD008:no-fallback-validator",
+        "LEDGER:migration-ledger",
+        "MATRIX:behavior-equivalence-matrix",
+        "REPLAY:owner-matrix-replay-results"
+      ]
+    },
+    {
+      "id": "ACC025",
+      "status": "pass",
+      "evidenceIds": [
+        "CMD013:final-validator",
+        "CMD008:no-fallback-validator",
+        "LEDGER:migration-ledger",
+        "MATRIX:behavior-equivalence-matrix",
+        "REPLAY:owner-matrix-replay-results"
+      ]
+    },
+    {
+      "id": "ACC026",
+      "status": "pass",
+      "evidenceIds": [
+        "CMD013:final-validator",
+        "CMD008:no-fallback-validator",
+        "LEDGER:migration-ledger",
+        "MATRIX:behavior-equivalence-matrix",
+        "REPLAY:owner-matrix-replay-results"
+      ]
+    },
+    {
+      "id": "ACC027",
+      "status": "pass",
+      "evidenceIds": [
+        "CMD013:final-validator",
+        "CMD008:no-fallback-validator",
+        "LEDGER:migration-ledger",
+        "MATRIX:behavior-equivalence-matrix",
+        "REPLAY:owner-matrix-replay-results"
+      ]
+    },
+    {
+      "id": "ACC028",
+      "status": "pass",
+      "evidenceIds": [
+        "CMD013:final-validator",
+        "CMD008:no-fallback-validator",
+        "LEDGER:migration-ledger",
+        "MATRIX:behavior-equivalence-matrix",
+        "REPLAY:owner-matrix-replay-results"
+      ]
+    },
+    {
+      "id": "ACC029",
+      "status": "pass",
+      "evidenceIds": [
+        "CMD013:final-validator",
+        "CMD008:no-fallback-validator",
+        "LEDGER:migration-ledger",
+        "MATRIX:behavior-equivalence-matrix",
+        "REPLAY:owner-matrix-replay-results"
+      ]
+    },
+    {
+      "id": "ACC030",
+      "status": "pass",
+      "evidenceIds": [
+        "CMD013:final-validator",
+        "CMD008:no-fallback-validator",
+        "LEDGER:migration-ledger",
+        "MATRIX:behavior-equivalence-matrix",
+        "REPLAY:owner-matrix-replay-results"
+      ]
+    },
+    {
+      "id": "ACC031",
+      "status": "pass",
+      "evidenceIds": [
+        "CMD013:final-validator",
+        "CMD008:no-fallback-validator",
+        "LEDGER:migration-ledger",
+        "MATRIX:behavior-equivalence-matrix",
+        "REPLAY:owner-matrix-replay-results"
+      ]
+    },
+    {
+      "id": "ACC032",
+      "status": "pass",
+      "evidenceIds": [
+        "CMD013:final-validator",
+        "CMD008:no-fallback-validator",
+        "LEDGER:migration-ledger",
+        "MATRIX:behavior-equivalence-matrix",
+        "REPLAY:owner-matrix-replay-results"
+      ]
+    },
+    {
+      "id": "ACC033",
+      "status": "pass",
+      "evidenceIds": [
+        "CMD013:final-validator",
+        "CMD008:no-fallback-validator",
+        "LEDGER:migration-ledger",
+        "MATRIX:behavior-equivalence-matrix",
+        "REPLAY:owner-matrix-replay-results"
+      ]
+    },
+    {
+      "id": "ACC034",
+      "status": "pass",
+      "evidenceIds": [
+        "CMD013:final-validator",
+        "CMD008:no-fallback-validator",
+        "LEDGER:migration-ledger",
+        "MATRIX:behavior-equivalence-matrix",
+        "REPLAY:owner-matrix-replay-results"
+      ]
+    },
+    {
+      "id": "ACC035",
+      "status": "pass",
+      "evidenceIds": [
+        "CMD013:final-validator",
+        "CMD008:no-fallback-validator",
+        "LEDGER:migration-ledger",
+        "MATRIX:behavior-equivalence-matrix",
+        "REPLAY:owner-matrix-replay-results"
+      ]
+    },
+    {
+      "id": "ACC036",
+      "status": "pass",
+      "evidenceIds": [
+        "CMD013:final-validator",
+        "CMD008:no-fallback-validator",
+        "LEDGER:migration-ledger",
+        "MATRIX:behavior-equivalence-matrix",
+        "REPLAY:owner-matrix-replay-results"
+      ]
+    },
+    {
+      "id": "ACC037",
+      "status": "pass",
+      "evidenceIds": [
+        "CMD013:final-validator",
+        "CMD008:no-fallback-validator",
+        "LEDGER:migration-ledger",
+        "MATRIX:behavior-equivalence-matrix",
+        "REPLAY:owner-matrix-replay-results"
+      ]
+    },
+    {
+      "id": "ACC038",
+      "status": "pass",
+      "evidenceIds": [
+        "CMD013:final-validator",
+        "CMD008:no-fallback-validator",
+        "LEDGER:migration-ledger",
+        "MATRIX:behavior-equivalence-matrix",
+        "REPLAY:owner-matrix-replay-results"
+      ]
+    }
+  ],
+  "packageImplementationSetSummary": {
+    "all240RowsHavePackageImplementationSet": true,
+    "all240RowsHaveValidPackageImplementationSet": true,
+    "missingPackageImplementationSetCount": 0,
+    "invalidPackageImplementationPathCount": 0,
+    "sourceAuthorityPathGapCount": 0,
+    "runtimeReplayPathGapCount": 0,
+    "distOutputPathGapCount": 0
+  },
+  "behaviorEquivalenceSummary": {
+    "all240RowsHaveBehaviorEquivalenceMatrix": true,
+    "allBehaviorEquivalenceMatrixScenariosHaveRequiredFields": true,
+    "behaviorEquivalenceMatrixScenarioFieldGapCount": 0,
+    "behaviorEquivalenceMatrixScenarioCoverageGapCount": 0,
+    "all240RowsHaveBehaviorEquivalenceReplayProof": true,
+    "all240RowsMatrixGeneratedByOwnerTask": true,
+    "all240RowsMatchDeterministicOwnerAssignment": true,
+    "matrixOwnerCompletionTimingGapCount": 0,
+    "all240RowsHaveFullScenarioCoverage": true,
+    "scenarioCoverageGapCount": 0,
+    "expectedOutputProvenanceGapCount": 0,
+    "matrixFirstGeneratedByG009Count": 0,
+    "behaviorEquivalenceReplayFailureCount": 0,
+    "packageObservedExpectedOutputCount": 0,
+    "firstGenerationProofGapCount": 0,
+    "g009AggregationProofGapCount": 0,
+    "g009AggregationHashMismatchCount": 0,
+    "matrixRowCount": 240,
+    "matrixScenarioCount": 816
+  },
+  "distCompilationSummary": {
+    "checkedTypeScriptSourcePathCount": 197,
+    "checkedTypeScriptFamilySourcePathCount": 197,
+    "checkedTypeScriptRuntimeSourcePathCount": 196,
+    "checkedTypeScriptDeclarationSourcePathCount": 1,
+    "failedTypeScriptSourcePathCount": 0,
+    "failedTypeScriptRuntimeSourcePathCount": 0,
+    "failedTypeScriptDeclarationSourcePathCount": 0,
+    "allTypeScriptRuntimeSourceAuthorityPathsHaveDistJs": true,
+    "allTypeScriptDeclarationSourceAuthorityPathsHaveDistDeclarations": true,
+    "allTypeScriptSourceAuthorityPathsHaveDistProof": true,
+    "allTypeScriptSourceAuthorityPathsHaveDistJs": true,
+    "sampleFailures": []
+  },
+  "sizeDeltaSummary": {
+    "all240RowsHaveSizeDeltaDecision": true,
+    "zeroSizeMetricCount": 0,
+    "sizeDeltaViolationCount": 0,
+    "sizeDeltaComputationMismatchCount": 0,
+    "semanticZeroSizeMetricCount": 0,
+    "semanticSizeDeltaViolationCount": 0,
+    "semanticSizeComputationMismatchCount": 0,
+    "semanticSizePaddingViolationCount": 0,
+    "sizeDeltaProofGapCount": 0,
+    "sourceKindParityViolationCount": 0,
+    "byteRatioRange": "0.90..1.10",
+    "locRatioRange": "0.90..1.10",
+    "semanticByteRatioRange": "0.90..1.10",
+    "semanticLocRatioRange": "0.90..1.10"
+  },
+  "reworkSummary": {
+    "reworkQueueLength": 0,
+    "reworkRequired": false
+  },
+  "residualRisks": "none",
+  "settledEquivalenceSummary": {
+    "settledRowCount": 34,
+    "settledEquivalenceBypassCount": 0,
+    "allSettledRowsHaveReplayProof": true
+  },
+  "acceptanceResultSummary": {
+    "acceptanceResultsCount": 38,
+    "acceptanceResultCoverageGapCount": 0,
+    "missingAcceptanceIds": [],
+    "extraAcceptanceIds": []
+  },
+  "receipts": {
+    "packageSourceParityEvidence": {
+      "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/package-source-parity-evidence.json",
+      "bytes": 768071,
+      "hash": "sha256:dc1e58bbcabe95b91c749f45dc1f320da21fbac26f5f89f3afc78710d6ca2004",
+      "backupPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/package-source-parity-evidence.json.backup-41688-1781963427004"
+    },
+    "summary": {
+      "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/summary.md",
+      "bytes": 2299,
+      "hash": "sha256:116ceaca5312027a94845201bff56178dcf87eabddc8c944569b31250d8a51a9",
+      "backupPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/summary.md.backup-41688-1781963427008"
+    }
+  }
+}

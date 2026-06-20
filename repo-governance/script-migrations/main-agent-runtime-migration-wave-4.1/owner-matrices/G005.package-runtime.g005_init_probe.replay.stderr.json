@@ -1,0 +1,47 @@
+[
+  {
+    "originalPath": "scripts/init-to-root.js",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g005_init_to_root_js_no_args",
+        "expectedStderr": "Target exists, merging: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\n"
+      },
+      {
+        "scenarioId": "g005_init_to_root_js_flag_agent",
+        "expectedStderr": "Unsupported --agent value: source-derived-agent. Valid: cursor, claude-code, codex, cursor-agent, claude\n"
+      },
+      {
+        "scenarioId": "g005_init_to_root_js_flag_full",
+        "expectedStderr": "Target exists, merging: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\n"
+      },
+      {
+        "scenarioId": "g005_init_to_root_js_flag_no_package_json",
+        "expectedStderr": "Target exists, merging: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\n"
+      },
+      {
+        "scenarioId": "g005_init_to_root_js_flag_with_mcp",
+        "expectedStderr": "Target exists, merging: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\n"
+      },
+      {
+        "scenarioId": "g005_init_to_root_js_flag_with_package_json",
+        "expectedStderr": "Target exists, merging: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\n"
+      },
+      {
+        "scenarioId": "g005_init_to_root_js_env_bmad_skip_consumer_mcp_install",
+        "expectedStderr": "Target exists, merging: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\n"
+      },
+      {
+        "scenarioId": "g005_init_to_root_js_env_init_cwd",
+        "expectedStderr": "Target exists, merging: D:\\Dev\\BMAD-Speckit-SDD-Flow\\source-derived-init_cwd\\_bmad\n"
+      },
+      {
+        "scenarioId": "g005_init_to_root_js_env_node_env",
+        "expectedStderr": "Target exists, merging: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\n"
+      },
+      {
+        "scenarioId": "g005_init_to_root_js_env_vitest",
+        "expectedStderr": "Target exists, merging: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\n"
+      }
+    ]
+  }
+]

@@ -1,0 +1,138 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-wave-4-1-scope-baseline/v1",
+  "waveId": "main-agent-runtime-migration-wave-4.1",
+  "contractPath": "docs/plans/2026-06-20-main-agent-runtime-migration-wave-4-1-goal-execution-plan.md",
+  "capturedAt": "2026-06-20T00:35:50.472Z",
+  "sourceHashes": {
+    "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.0-rebaseline/source-inventory.json": {
+      "expected": "sha256:897c403b25e2bf78b9bb1498a550294e4b990b71125b095b85ef7eb752a44c31",
+      "actual": "sha256:897c403b25e2bf78b9bb1498a550294e4b990b71125b095b85ef7eb752a44c31",
+      "ok": true
+    },
+    "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.0-rebaseline/migration-queue.json": {
+      "expected": "sha256:3b3ccf1b1a88d9f7dd559413e4bcb502d0cdf7305b308b64e2b12f26ac42ddb5",
+      "actual": "sha256:3b3ccf1b1a88d9f7dd559413e4bcb502d0cdf7305b308b64e2b12f26ac42ddb5",
+      "ok": true
+    },
+    "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.0-rebaseline/package-source-parity-baseline.json": {
+      "expected": "sha256:9d69564dc665ba50eb40fab76a955a8880602963dd57667f6b8d308074629dee",
+      "actual": "sha256:9d69564dc665ba50eb40fab76a955a8880602963dd57667f6b8d308074629dee",
+      "ok": true
+    },
+    "repo-governance/script-migration-registry.yaml": {
+      "expected": "sha256:9c86cac253049e18b4c126994817c6786f7d115800884eac0348e4d18ad8cf33",
+      "actual": "sha256:9c86cac253049e18b4c126994817c6786f7d115800884eac0348e4d18ad8cf33",
+      "ok": true
+    }
+  },
+  "sourceFacts": {
+    "inventory": {
+      "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.0-rebaseline/source-inventory.json",
+      "bytes": 735064,
+      "lines": 22288,
+      "sha256": "sha256:897c403b25e2bf78b9bb1498a550294e4b990b71125b095b85ef7eb752a44c31"
+    },
+    "queue": {
+      "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.0-rebaseline/migration-queue.json",
+      "bytes": 264685,
+      "lines": 5665,
+      "sha256": "sha256:3b3ccf1b1a88d9f7dd559413e4bcb502d0cdf7305b308b64e2b12f26ac42ddb5"
+    },
+    "parity": {
+      "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.0-rebaseline/package-source-parity-baseline.json",
+      "bytes": 345123,
+      "lines": 7983,
+      "sha256": "sha256:9d69564dc665ba50eb40fab76a955a8880602963dd57667f6b8d308074629dee"
+    },
+    "registry": {
+      "path": "repo-governance/script-migration-registry.yaml",
+      "bytes": 364823,
+      "lines": 7093,
+      "sha256": "sha256:9c86cac253049e18b4c126994817c6786f7d115800884eac0348e4d18ad8cf33"
+    }
+  },
+  "fullUniverseTotals": {
+    "allScripts": 240,
+    "parityRows": 240,
+    "allInventoryRowsHaveParityRows": true,
+    "backlog_migration": 206,
+    "settled_revalidation": 34
+  },
+  "backlogQueueTotals": {
+    "allScripts": 240,
+    "backlog": 206,
+    "byPriority": {
+      "P1-real-package-source-required": 107,
+      "P3-parity-evidence-and-size-ledger": 18,
+      "P2-helper-and-functional-evidence": 80,
+      "P0-core-source-authority": 1
+    },
+    "byStrategy": {
+      "package_runtime_module": 96,
+      "durable_helper_copy": 85,
+      "public_cli_de_surface": 14,
+      "compatibility_alias": 10,
+      "runtime_emit_cjs": 1
+    },
+    "blockerKinds": 233
+  },
+  "deterministicOwnerAssignmentCounts": {
+    "G003": 1,
+    "G004": 91,
+    "G005": 12,
+    "G006": 4,
+    "G007": 74,
+    "G008": 58
+  },
+  "dirtyWorktreeSnapshot": {
+    "command": "git status --short",
+    "exitCode": 0,
+    "stdout": [
+      " M docs/plans/2026-06-20-main-agent-runtime-migration-wave-4-1-goal-execution-plan.coverage-receipt.json",
+      " M docs/plans/2026-06-20-main-agent-runtime-migration-wave-4-1-goal-execution-plan.generation-receipt.json",
+      " M docs/plans/2026-06-20-main-agent-runtime-migration-wave-4-1-goal-execution-plan.md",
+      "?? docs/.obsidian/",
+      "?? repo-governance/script-migration-registry.yaml.backup-40476-1781878692991",
+      "?? repo-governance/script-migration-registry.yaml.backup-wave4-38480-1781880161269",
+      "?? repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/install-matrix.json.backup-123852-1780712027602",
+      "?? repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/install-matrix.json.backup-399880-1780712474772",
+      "?? repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/install-matrix.json.backup-407412-1780705597432",
+      "?? repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/install-matrix/init-sync-consumer.json.backup-399880-1780712474192",
+      "?? repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/install-matrix/no-save.json.backup-123852-1780711970239",
+      "?? repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/install-matrix/no-save.json.backup-399880-1780712422147",
+      "?? repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/install-matrix/no-save.json.backup-407412-1780705544540",
+      "?? repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/install-matrix/npx-package.json.backup-123852-1780712012253",
+      "?? repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/install-matrix/npx-package.json.backup-399880-1780712460176",
+      "?? repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/install-matrix/npx-package.json.backup-407412-1780705583475",
+      "?? repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/install-matrix/save-dev.json.backup-123852-1780711957723",
+      "?? repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/install-matrix/save-dev.json.backup-399880-1780712408809",
+      "?? repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/install-matrix/save-dev.json.backup-407412-1780705532082",
+      "?? repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/safe-write-receipts.json.backup-123852-1780711957729",
+      "?? repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/safe-write-receipts.json.backup-123852-1780711970243",
+      "?? repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/safe-write-receipts.json.backup-123852-1780712012258",
+      "?? repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/safe-write-receipts.json.backup-123852-1780712027016",
+      "?? repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/safe-write-receipts.json.backup-123852-1780712027607",
+      "?? repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/safe-write-receipts.json.backup-399388-1780704990019",
+      "?? repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/safe-write-receipts.json.backup-399388-1780705003309",
+      "?? repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/safe-write-receipts.json.backup-399388-1780705047225",
+      "?? repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/safe-write-receipts.json.backup-399388-1780705061145",
+      "?? repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/safe-write-receipts.json.backup-399880-1780712408814",
+      "?? repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/safe-write-receipts.json.backup-399880-1780712422151",
+      "?? repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/safe-write-receipts.json.backup-399880-1780712460180",
+      "?? repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/safe-write-receipts.json.backup-399880-1780712474198",
+      "?? repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/safe-write-receipts.json.backup-399880-1780712474777",
+      "?? repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/safe-write-receipts.json.backup-407412-1780705532089",
+      "?? repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/safe-write-receipts.json.backup-407412-1780705544546",
+      "?? repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/safe-write-receipts.json.backup-407412-1780705583480",
+      "?? repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/safe-write-receipts.json.backup-407412-1780705597438",
+      "?? repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/tmp/",
+      "?? repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/",
+      "?? tests/acceptance/main-agent-runtime-migration-wave-4-1-contract.test.ts",
+      "?? tools/script-migration/main-agent-wave-4-1-utils.cjs",
+      "?? tools/script-migration/run-main-agent-wave-4-1-install-matrix.cjs",
+      "?? tools/script-migration/validate-main-agent-runtime-migration-wave-4-1.cjs",
+      "?? tools/script-migration/write-main-agent-wave-4-1-evidence.cjs"
+    ],
+    "stderr": []
+  }
+}

@@ -10,6 +10,21 @@ const BUILD_SCRIPT = path.join(PACKAGE_ROOT, 'scripts', 'build-main-agent-dist.c
 const PACKAGE_JSON = path.join(PACKAGE_ROOT, 'package.json');
 const RELEASE_WORKFLOW = path.join(REPO_ROOT, '.github', 'workflows', 'release.yml');
 const DIST_ROOT = path.join(PACKAGE_ROOT, 'dist', 'main-agent');
+const WAVE_4_1_LEDGER = path.join(
+  REPO_ROOT,
+  'repo-governance',
+  'script-migrations',
+  'main-agent-runtime-migration-wave-4.1',
+  'migration-ledger.json'
+);
+const { sourceAuthorityPathToDistRuntimePath } = require(path.join(
+  REPO_ROOT,
+  'tools',
+  'script-migration',
+  'main-agent-wave-4-1-utils.cjs'
+));
+const TYPE_SCRIPT_FAMILY_SOURCE_RE = /\.(?:ts|tsx|cts|mts)$/u;
+const TYPE_SCRIPT_DECLARATION_SOURCE_RE = /\.d\.(?:ts|cts|mts)$/u;
 const EXPECTED_PACKAGE_RUNTIME_ASSETS = [
   '_bmad/core/agents/code-reviewer/base-prompt.md',
   '_bmad/core/agents/code-reviewer/metadata.json',
@@ -43,7 +58,6 @@ const EXPECTED_DIST_FILES = [
   'actions/delivery-truth-gate.js',
   'actions/soak-runner.js',
   'actions/unified-ingress.js',
-  'compiled/main-agent-orchestration.cjs',
   'auditor-host/run-auditor-host.cjs',
   'helpers/bmad-state-reader.js',
   'helpers/e2e-verify-paths.js',
@@ -52,6 +66,71 @@ const EXPECTED_DIST_FILES = [
   'helpers/verify-agent-files.js',
   'helpers/write-runtime-context.cjs',
 ];
+const EXPECTED_SOURCE_AUTHORITY_RUNTIME_IMPORTS = [
+  {
+    file: 'source-authority/scripts/query-validate.js',
+    forbidden: '../packages/scoring/query',
+    required: '../packages/scoring/dist/query',
+    runtimeTarget: 'source-authority/packages/scoring/dist/query/index.js',
+  },
+  {
+    file: 'source-authority/scripts/bmad-help-routing-state.js',
+    forbidden: '../packages/runtime-context/src/context',
+    required: '../packages/runtime-context/dist/context',
+    runtimeTarget: 'source-authority/packages/runtime-context/dist/context.js',
+  },
+  {
+    file: 'source-authority/scripts/ralph-method/schema.js',
+    forbidden: '../../packages/ralph-method/src/schema',
+    required: '../../packages/ralph-method/dist/schema',
+    runtimeTarget: 'source-authority/packages/ralph-method/dist/schema.js',
+  },
+];
+const EXPECTED_SOURCE_AUTHORITY_ASSETS = [
+  '.specify/templates/agent-file-template.md',
+  '_bmad-output/runtime/requirement-records/index.json',
+  '_bmad-output/runtime/requirement-records/REQ-CI-GOVERNANCE-MAPPING-FIXTURE/requirement-record.json',
+];
+
+function isTypeScriptRuntimeSourcePath(relativePath) {
+  return TYPE_SCRIPT_FAMILY_SOURCE_RE.test(relativePath) && !TYPE_SCRIPT_DECLARATION_SOURCE_RE.test(relativePath);
+}
+
+function sourceAuthorityRelativeToDistRelativePath(relativePath) {
+  const sourcePath = `packages/bmad-speckit/src/main-agent/source-authority/${relativePath}`;
+  const distPath = sourceAuthorityPathToDistRuntimePath(sourcePath);
+  const prefix = 'packages/bmad-speckit/dist/main-agent/';
+  assert.ok(distPath && distPath.startsWith(prefix), `invalid source-authority dist mapping: ${sourcePath}`);
+  return distPath.slice(prefix.length);
+}
+
+function collectSourceAuthorityTypeScriptFiles(dir, base = dir) {
+  const collected = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      collected.push(...collectSourceAuthorityTypeScriptFiles(fullPath, base));
+      continue;
+    }
+    if (!entry.isFile() || !isTypeScriptRuntimeSourcePath(entry.name)) continue;
+    collected.push(path.relative(base, fullPath).replace(/\\/g, '/'));
+  }
+  return collected.sort();
+}
+
+function collectPackageJsonFiles(dir, base = dir) {
+  const collected = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      collected.push(...collectPackageJsonFiles(fullPath, base));
+      continue;
+    }
+    if (!entry.isFile() || entry.name !== 'package.json') continue;
+    collected.push(path.relative(base, fullPath).replace(/\\/g, '/'));
+  }
+  return collected.sort();
+}
 
 describe('main-agent dist build', () => {
   it('declares package build and pack surface for main-agent dist', () => {
@@ -85,15 +164,156 @@ describe('main-agent dist build', () => {
       const distFile = path.join(DIST_ROOT, relativePath);
       assert.equal(fs.existsSync(distFile), true, `missing ${relativePath}`);
       const source = fs.readFileSync(distFile, 'utf8');
-      if (relativePath !== 'compiled/main-agent-orchestration.cjs') {
-        assert.doesNotMatch(source, /scripts[\\/]main-agent-orchestration\.ts/);
+      assert.doesNotMatch(source, /scripts[\\/]main-agent-orchestration\.ts/);
+      assert.doesNotMatch(source, /compiled[\\/]main-agent-orchestration\.cjs/);
+    }
+
+    assert.equal(
+      fs.existsSync(path.join(DIST_ROOT, 'compiled', 'main-agent-orchestration.cjs')),
+      false,
+      'compiled orchestration fallback must not be emitted to dist'
+    );
+
+    const sourceAuthorityRoot = path.join(PACKAGE_ROOT, 'src', 'main-agent', 'source-authority');
+    const sourceAuthorityTypeScriptFiles = collectSourceAuthorityTypeScriptFiles(sourceAuthorityRoot);
+    assert.ok(
+      sourceAuthorityTypeScriptFiles.length > 0,
+      'source-authority TypeScript inventory must not be empty'
+    );
+    for (const relativePath of sourceAuthorityTypeScriptFiles) {
+      const distRelativePath = sourceAuthorityRelativeToDistRelativePath(relativePath);
+      const distFile = path.join(DIST_ROOT, distRelativePath);
+      assert.equal(
+        fs.existsSync(distFile),
+        true,
+        `source-authority TypeScript file was not compiled to dist JS: ${relativePath}`
+      );
+    }
+
+    const ledger = JSON.parse(fs.readFileSync(WAVE_4_1_LEDGER, 'utf8'));
+    const typeScriptReplayChecks = [];
+    const typeScriptOriginalsWithoutTypeScriptSource = [];
+    for (const entry of ledger.entries) {
+      const sourcePaths = new Set([
+        ...(entry.packageImplementationSet || []),
+        ...(entry.sourceAuthorityPaths || []),
+      ]);
+      const typeScriptSourcePaths = Array.from(sourcePaths).filter((sourcePath) =>
+        TYPE_SCRIPT_FAMILY_SOURCE_RE.test(sourcePath)
+      );
+      if (TYPE_SCRIPT_FAMILY_SOURCE_RE.test(entry.originalPath) && typeScriptSourcePaths.length === 0) {
+        typeScriptOriginalsWithoutTypeScriptSource.push(entry.originalPath);
       }
-      if (
-        relativePath !== 'compiled/main-agent-orchestration.cjs' &&
-        relativePath !== 'actions/full-orchestration.js'
-      ) {
-        assert.doesNotMatch(source, /compiled[\\/]main-agent-orchestration\.cjs/);
+      for (const sourcePath of typeScriptSourcePaths) {
+        const distRuntimePath = sourceAuthorityPathToDistRuntimePath(sourcePath);
+        typeScriptReplayChecks.push({ entry, sourcePath, distRuntimePath });
+        assert.ok(
+          distRuntimePath,
+          `missing dist runtime mapping for ${entry.originalPath}: ${sourcePath}`
+        );
+        assert.equal(
+          fs.existsSync(path.join(REPO_ROOT, distRuntimePath)),
+          true,
+          `ledger TypeScript-family source has no dist proof for ${entry.originalPath}: ${sourcePath}`
+        );
+        if (TYPE_SCRIPT_DECLARATION_SOURCE_RE.test(sourcePath)) {
+          assert.match(
+            distRuntimePath,
+            /\.d\.(?:ts|cts|mts)$/u,
+            `declaration-only TypeScript source must keep declaration dist proof instead of fake JS replay: ${sourcePath}`
+          );
+          continue;
+        }
+        assert.match(
+          distRuntimePath,
+          /\.js$/u,
+          `runtime TypeScript source must compile to dist JS for ${entry.originalPath}: ${sourcePath}`
+        );
+        assert.ok(
+          entry.runtimeReplayPaths.includes(distRuntimePath),
+          `ledger runtimeReplayPaths missing compiled dist JS for ${entry.originalPath}: ${distRuntimePath}`
+        );
+        assert.ok(
+          entry.distOutputPaths.includes(distRuntimePath),
+          `ledger distOutputPaths missing compiled dist JS for ${entry.originalPath}: ${distRuntimePath}`
+        );
       }
+    }
+    assert.deepEqual(
+      typeScriptOriginalsWithoutTypeScriptSource,
+      [],
+      'every TypeScript original script must expose package TypeScript source authority'
+    );
+    assert.ok(
+      typeScriptReplayChecks.length >=
+        ledger.entries.filter((entry) => TYPE_SCRIPT_FAMILY_SOURCE_RE.test(entry.originalPath)).length,
+      'every migrated TypeScript-family source authority path must have dist proof'
+    );
+
+    for (const expectedImport of EXPECTED_SOURCE_AUTHORITY_RUNTIME_IMPORTS) {
+      const distFile = path.join(DIST_ROOT, expectedImport.file);
+      const source = fs.readFileSync(distFile, 'utf8');
+      assert.doesNotMatch(
+        source,
+        new RegExp(expectedImport.forbidden.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
+        `${expectedImport.file} must not require TS-only workspace package source`
+      );
+      assert.match(
+        source,
+        new RegExp(expectedImport.required.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
+        `${expectedImport.file} must require package dist JS`
+      );
+      assert.equal(
+        fs.existsSync(path.join(DIST_ROOT, expectedImport.runtimeTarget)),
+        true,
+        `missing rewritten runtime target ${expectedImport.runtimeTarget}`
+      );
+    }
+
+    const releaseGateFixture = fs.readFileSync(
+      path.join(DIST_ROOT, 'source-authority/scripts/run-ci-release-gate-fixture.js'),
+      'utf8'
+    );
+    assert.doesNotMatch(releaseGateFixture, /ts-node/);
+    assert.doesNotMatch(releaseGateFixture, /main-agent-release-gate\.ts/);
+    assert.match(releaseGateFixture, /main-agent-release-gate\.js/);
+
+    const freshRegressionMatrix = fs.readFileSync(
+      path.join(DIST_ROOT, 'source-authority/scripts/run-fresh-regression-matrix.js'),
+      'utf8'
+    );
+    assert.match(freshRegressionMatrix, /process\.cwd\(\)/);
+
+    const sourceAuthorityDistRoot = path.join(DIST_ROOT, 'source-authority');
+    const sourceAuthorityPackageJsonFiles = collectPackageJsonFiles(sourceAuthorityDistRoot);
+    assert.ok(
+      sourceAuthorityPackageJsonFiles.length > 0,
+      'source-authority package manifest inventory must not be empty'
+    );
+    for (const relativePath of sourceAuthorityPackageJsonFiles) {
+      const manifestText = fs.readFileSync(path.join(sourceAuthorityDistRoot, relativePath), 'utf8');
+      const manifest = JSON.parse(manifestText);
+      assert.equal(manifest.scripts, undefined, `${relativePath} must not expose package scripts`);
+      assert.equal(manifest.bin, undefined, `${relativePath} must not expose package bins`);
+      assert.equal(manifest.devDependencies, undefined, `${relativePath} must not expose dev dependencies`);
+      assert.equal(manifest.dependencies?.tsx, undefined, `${relativePath} must not depend on tsx`);
+      assert.equal(manifest.dependencies?.['ts-node'], undefined, `${relativePath} must not depend on ts-node`);
+      assert.doesNotMatch(
+        manifestText,
+        /\b(?:tsx|ts-node)\b/i,
+        `${relativePath} must not contain runtime fallback tokens`
+      );
+    }
+
+    for (const relativePath of EXPECTED_SOURCE_AUTHORITY_ASSETS) {
+      const distAsset = path.join(DIST_ROOT, 'source-authority', relativePath);
+      const repoAsset = path.join(REPO_ROOT, relativePath);
+      assert.equal(fs.existsSync(distAsset), true, `missing source-authority asset ${relativePath}`);
+      assert.equal(
+        fs.readFileSync(distAsset, 'utf8'),
+        fs.readFileSync(repoAsset, 'utf8'),
+        `source-authority asset drifted from canonical source: ${relativePath}`
+      );
     }
 
     for (const relativePath of EXPECTED_PACKAGE_RUNTIME_ASSETS) {

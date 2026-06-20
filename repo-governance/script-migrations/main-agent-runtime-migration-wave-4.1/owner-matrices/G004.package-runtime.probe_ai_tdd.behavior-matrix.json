@@ -1,0 +1,2123 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-wave-4-1-owner-initial-behavior-matrix/v1",
+  "waveId": "main-agent-runtime-migration-wave-4.1",
+  "ownerTaskId": "G004",
+  "generatedAt": "2026-06-20T06:50:12.493Z",
+  "artifactSuffix": "probe_ai_tdd",
+  "timeoutMs": 30000,
+  "coverageDecision": "passed_full_original_behavior_coverage",
+  "eligibleOwnerRowCount": 91,
+  "selectedRowCount": 1,
+  "matrixRowCount": 1,
+  "scenarioCount": 11,
+  "fullCoverageStillRequired": false,
+  "rows": [
+    {
+      "originalPath": "scripts/ai-tdd-contract-gate.ts",
+      "entryId": "ai-tdd-contract-gate",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ai-tdd-contract-gate.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G004_STATIC_FULL:scripts/ai-tdd-contract-gate.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 9,
+        "envKeyCount": 2,
+        "fixtureCount": 1,
+        "fileArtifactCount": 2,
+        "errorPathCount": 10,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 9,
+        "coveredEnvKeyCount": 2,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 2,
+        "coveredErrorPathCount": 10,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [
+          "--attempt-id",
+          "--execute-red-proof",
+          "--help",
+          "--json",
+          "--mode",
+          "--report-path",
+          "--requirement-record",
+          "--source"
+        ],
+        "discoveredEnvKeys": [
+          "HOME",
+          "USERPROFILE"
+        ],
+        "requiredArgumentCombinations": [
+          "--cwd <fixture-root>",
+          "--attempt-id <source-derived-safe-value>",
+          "--execute-red-proof <source-derived-safe-value>",
+          "--help <present>",
+          "--json <present>",
+          "--mode <source-derived-safe-value>",
+          "--report-path <source-derived-safe-value>",
+          "--requirement-record <source-derived-safe-value>",
+          "--source <source-derived-safe-value>"
+        ],
+        "coveredArgumentCombinations": [
+          "--cwd <fixture-root>",
+          "--attempt-id <source-derived-safe-value>",
+          "--execute-red-proof <source-derived-safe-value>",
+          "--help <present>",
+          "--json <present>",
+          "--mode <source-derived-safe-value>",
+          "--report-path <source-derived-safe-value>",
+          "--requirement-record <source-derived-safe-value>",
+          "--source <source-derived-safe-value>"
+        ],
+        "coveredEnvKeys": [
+          "HOME",
+          "USERPROFILE"
+        ],
+        "scenarioDefinitionCount": 11,
+        "coveredScenarioDefinitionIds": [
+          "cwd",
+          "flag_attempt_id",
+          "flag_execute_red_proof",
+          "flag_help",
+          "flag_json",
+          "flag_mode",
+          "flag_report_path",
+          "flag_requirement_record",
+          "flag_source",
+          "env_home",
+          "env_userprofile"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g004_ai_tdd_contract_gate_ts_cwd",
+          "originalEntryPoint": "scripts/ai-tdd-contract-gate.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/ai-tdd-contract-gate.ts --cwd <fixture-root>",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/ai-tdd-contract-gate.js --cwd <fixture-root>",
+          "argumentCombination": "--cwd <fixture-root>",
+          "args": [
+            "--cwd",
+            "<fixture-root>"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g004_ai_tdd_contract_gate_ts_cwd_original_fixture_root",
+              "path": "<tmp>/g004_ai_tdd_contract_gate_ts_cwd-original-WCVhhE",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g004_ai_tdd_contract_gate_ts_cwd_package_fixture_root",
+              "path": "<tmp>/g004_ai_tdd_contract_gate_ts_cwd-package-EEi4LB",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord, mode\"\n}\n",
+          "expectedExitCode": 2,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "{"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G004_ORIGINAL_REPLAY:scripts/ai-tdd-contract-gate.ts:cwd",
+            "originalReplayArtifactHash": "sha256:2c0df7c200dc2d56f358775e71dfaeeabd3c94cf4b6360a9c3da5fa7d2b4287f",
+            "sourceDerivedProofId": "G004_SOURCE_DERIVED:scripts/ai-tdd-contract-gate.ts:cwd",
+            "sourceLineAnchors": [
+              {
+                "line": 2629,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2629",
+                "text": "export function evaluateAiTddContractGate(input: {"
+              },
+              {
+                "line": 2761,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2761",
+                "text": "export function mainAiTddContractGate(argv: string[]): number {"
+              },
+              {
+                "line": 2764,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2764",
+                "text": "console.log("
+              },
+              {
+                "line": 2800,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2800",
+                "text": "process.stdout.write("
+              },
+              {
+                "line": 2806,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2806",
+                "text": "export function aiTddContractGateRequired(record: JsonObject, sourcePath?: string): boolean {"
+              },
+              {
+                "line": 2817,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2817",
+                "text": "if (require.main === module && isDirectAiTddContractGateCli(process.argv[1])) {"
+              },
+              {
+                "line": 2819,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2819",
+                "text": "process.exitCode = mainAiTddContractGate(process.argv.slice(2));"
+              },
+              {
+                "line": 2821,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2821",
+                "text": "console.error("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts",
+                "to": "scripts/ai-tdd-contract-gate.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ai-tdd-contract-gate.js",
+                "to": "scripts/ai-tdd-contract-gate.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G004_STATIC_FULL:scripts/ai-tdd-contract-gate.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 9,
+            "envKeyCount": 2,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 9,
+            "coveredEnvKeyCount": 2,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--attempt-id",
+              "--execute-red-proof",
+              "--help",
+              "--json",
+              "--mode",
+              "--report-path",
+              "--requirement-record",
+              "--source"
+            ],
+            "discoveredEnvKeys": [
+              "HOME",
+              "USERPROFILE"
+            ],
+            "requiredArgumentCombinations": [
+              "--cwd <fixture-root>",
+              "--attempt-id <source-derived-safe-value>",
+              "--execute-red-proof <source-derived-safe-value>",
+              "--help <present>",
+              "--json <present>",
+              "--mode <source-derived-safe-value>",
+              "--report-path <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>",
+              "--source <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "--cwd <fixture-root>",
+              "--attempt-id <source-derived-safe-value>",
+              "--execute-red-proof <source-derived-safe-value>",
+              "--help <present>",
+              "--json <present>",
+              "--mode <source-derived-safe-value>",
+              "--report-path <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>",
+              "--source <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [
+              "HOME",
+              "USERPROFILE"
+            ],
+            "scenarioDefinitionCount": 11,
+            "coveredScenarioDefinitionIds": [
+              "cwd",
+              "flag_attempt_id",
+              "flag_execute_red_proof",
+              "flag_help",
+              "flag_json",
+              "flag_mode",
+              "flag_report_path",
+              "flag_requirement_record",
+              "flag_source",
+              "env_home",
+              "env_userprofile"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g004_ai_tdd_contract_gate_ts_flag_attempt_id",
+          "originalEntryPoint": "scripts/ai-tdd-contract-gate.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/ai-tdd-contract-gate.ts --cwd <fixture-root> --attempt-id source-derived-attempt-id",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/ai-tdd-contract-gate.js --cwd <fixture-root> --attempt-id source-derived-attempt-id",
+          "argumentCombination": "--attempt-id <source-derived-safe-value>",
+          "args": [
+            "--cwd",
+            "<fixture-root>",
+            "--attempt-id",
+            "source-derived-attempt-id"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g004_ai_tdd_contract_gate_ts_flag_attempt_id_original_fixture_root",
+              "path": "<tmp>/g004_ai_tdd_contract_gate_ts_flag_attempt_id-original-nNX6S3",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g004_ai_tdd_contract_gate_ts_flag_attempt_id_package_fixture_root",
+              "path": "<tmp>/g004_ai_tdd_contract_gate_ts_flag_attempt_id-package-CwOutz",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord, mode\"\n}\n",
+          "expectedExitCode": 2,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "{"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G004_ORIGINAL_REPLAY:scripts/ai-tdd-contract-gate.ts:flag_attempt_id",
+            "originalReplayArtifactHash": "sha256:2c0df7c200dc2d56f358775e71dfaeeabd3c94cf4b6360a9c3da5fa7d2b4287f",
+            "sourceDerivedProofId": "G004_SOURCE_DERIVED:scripts/ai-tdd-contract-gate.ts:flag_attempt_id",
+            "sourceLineAnchors": [
+              {
+                "line": 2629,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2629",
+                "text": "export function evaluateAiTddContractGate(input: {"
+              },
+              {
+                "line": 2761,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2761",
+                "text": "export function mainAiTddContractGate(argv: string[]): number {"
+              },
+              {
+                "line": 2764,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2764",
+                "text": "console.log("
+              },
+              {
+                "line": 2800,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2800",
+                "text": "process.stdout.write("
+              },
+              {
+                "line": 2806,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2806",
+                "text": "export function aiTddContractGateRequired(record: JsonObject, sourcePath?: string): boolean {"
+              },
+              {
+                "line": 2817,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2817",
+                "text": "if (require.main === module && isDirectAiTddContractGateCli(process.argv[1])) {"
+              },
+              {
+                "line": 2819,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2819",
+                "text": "process.exitCode = mainAiTddContractGate(process.argv.slice(2));"
+              },
+              {
+                "line": 2821,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2821",
+                "text": "console.error("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts",
+                "to": "scripts/ai-tdd-contract-gate.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ai-tdd-contract-gate.js",
+                "to": "scripts/ai-tdd-contract-gate.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G004_STATIC_FULL:scripts/ai-tdd-contract-gate.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 9,
+            "envKeyCount": 2,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 9,
+            "coveredEnvKeyCount": 2,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--attempt-id",
+              "--execute-red-proof",
+              "--help",
+              "--json",
+              "--mode",
+              "--report-path",
+              "--requirement-record",
+              "--source"
+            ],
+            "discoveredEnvKeys": [
+              "HOME",
+              "USERPROFILE"
+            ],
+            "requiredArgumentCombinations": [
+              "--cwd <fixture-root>",
+              "--attempt-id <source-derived-safe-value>",
+              "--execute-red-proof <source-derived-safe-value>",
+              "--help <present>",
+              "--json <present>",
+              "--mode <source-derived-safe-value>",
+              "--report-path <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>",
+              "--source <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "--cwd <fixture-root>",
+              "--attempt-id <source-derived-safe-value>",
+              "--execute-red-proof <source-derived-safe-value>",
+              "--help <present>",
+              "--json <present>",
+              "--mode <source-derived-safe-value>",
+              "--report-path <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>",
+              "--source <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [
+              "HOME",
+              "USERPROFILE"
+            ],
+            "scenarioDefinitionCount": 11,
+            "coveredScenarioDefinitionIds": [
+              "cwd",
+              "flag_attempt_id",
+              "flag_execute_red_proof",
+              "flag_help",
+              "flag_json",
+              "flag_mode",
+              "flag_report_path",
+              "flag_requirement_record",
+              "flag_source",
+              "env_home",
+              "env_userprofile"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g004_ai_tdd_contract_gate_ts_flag_execute_red_proof",
+          "originalEntryPoint": "scripts/ai-tdd-contract-gate.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/ai-tdd-contract-gate.ts --cwd <fixture-root> --execute-red-proof source-derived-execute-red-proof",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/ai-tdd-contract-gate.js --cwd <fixture-root> --execute-red-proof source-derived-execute-red-proof",
+          "argumentCombination": "--execute-red-proof <source-derived-safe-value>",
+          "args": [
+            "--cwd",
+            "<fixture-root>",
+            "--execute-red-proof",
+            "source-derived-execute-red-proof"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g004_ai_tdd_contract_gate_ts_flag_execute_red_proof_original_fixture_root",
+              "path": "<tmp>/g004_ai_tdd_contract_gate_ts_flag_execute_red_proof-original-Rewkyx",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g004_ai_tdd_contract_gate_ts_flag_execute_red_proof_package_fixture_root",
+              "path": "<tmp>/g004_ai_tdd_contract_gate_ts_flag_execute_red_proof-package-PfGYew",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"Unexpected positional argument: source-derived-execute-red-proof\"\n}\n",
+          "expectedExitCode": 2,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "{"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G004_ORIGINAL_REPLAY:scripts/ai-tdd-contract-gate.ts:flag_execute_red_proof",
+            "originalReplayArtifactHash": "sha256:3b59d9304efbf9b91422d7dfaab4beb2b62713e5d44dd3baa84d16e08fba5ad9",
+            "sourceDerivedProofId": "G004_SOURCE_DERIVED:scripts/ai-tdd-contract-gate.ts:flag_execute_red_proof",
+            "sourceLineAnchors": [
+              {
+                "line": 2629,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2629",
+                "text": "export function evaluateAiTddContractGate(input: {"
+              },
+              {
+                "line": 2761,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2761",
+                "text": "export function mainAiTddContractGate(argv: string[]): number {"
+              },
+              {
+                "line": 2764,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2764",
+                "text": "console.log("
+              },
+              {
+                "line": 2800,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2800",
+                "text": "process.stdout.write("
+              },
+              {
+                "line": 2806,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2806",
+                "text": "export function aiTddContractGateRequired(record: JsonObject, sourcePath?: string): boolean {"
+              },
+              {
+                "line": 2817,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2817",
+                "text": "if (require.main === module && isDirectAiTddContractGateCli(process.argv[1])) {"
+              },
+              {
+                "line": 2819,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2819",
+                "text": "process.exitCode = mainAiTddContractGate(process.argv.slice(2));"
+              },
+              {
+                "line": 2821,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2821",
+                "text": "console.error("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts",
+                "to": "scripts/ai-tdd-contract-gate.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ai-tdd-contract-gate.js",
+                "to": "scripts/ai-tdd-contract-gate.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G004_STATIC_FULL:scripts/ai-tdd-contract-gate.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 9,
+            "envKeyCount": 2,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 9,
+            "coveredEnvKeyCount": 2,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--attempt-id",
+              "--execute-red-proof",
+              "--help",
+              "--json",
+              "--mode",
+              "--report-path",
+              "--requirement-record",
+              "--source"
+            ],
+            "discoveredEnvKeys": [
+              "HOME",
+              "USERPROFILE"
+            ],
+            "requiredArgumentCombinations": [
+              "--cwd <fixture-root>",
+              "--attempt-id <source-derived-safe-value>",
+              "--execute-red-proof <source-derived-safe-value>",
+              "--help <present>",
+              "--json <present>",
+              "--mode <source-derived-safe-value>",
+              "--report-path <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>",
+              "--source <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "--cwd <fixture-root>",
+              "--attempt-id <source-derived-safe-value>",
+              "--execute-red-proof <source-derived-safe-value>",
+              "--help <present>",
+              "--json <present>",
+              "--mode <source-derived-safe-value>",
+              "--report-path <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>",
+              "--source <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [
+              "HOME",
+              "USERPROFILE"
+            ],
+            "scenarioDefinitionCount": 11,
+            "coveredScenarioDefinitionIds": [
+              "cwd",
+              "flag_attempt_id",
+              "flag_execute_red_proof",
+              "flag_help",
+              "flag_json",
+              "flag_mode",
+              "flag_report_path",
+              "flag_requirement_record",
+              "flag_source",
+              "env_home",
+              "env_userprofile"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g004_ai_tdd_contract_gate_ts_flag_help",
+          "originalEntryPoint": "scripts/ai-tdd-contract-gate.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/ai-tdd-contract-gate.ts --cwd <fixture-root> --help",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/ai-tdd-contract-gate.js --cwd <fixture-root> --help",
+          "argumentCombination": "--help <present>",
+          "args": [
+            "--cwd",
+            "<fixture-root>",
+            "--help"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g004_ai_tdd_contract_gate_ts_flag_help_original_fixture_root",
+              "path": "<tmp>/g004_ai_tdd_contract_gate_ts_flag_help-original-WB276E",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g004_ai_tdd_contract_gate_ts_flag_help_package_fixture_root",
+              "path": "<tmp>/g004_ai_tdd_contract_gate_ts_flag_help-package-oNVrSg",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "Usage: ai-tdd-contract-gate --source <requirement.md> --requirement-record <json> --mode <pre-implementation|pre-rerun|iteration|closeout> [--attempt-id <id>] [--report-path <json>] [--json]\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G004_ORIGINAL_REPLAY:scripts/ai-tdd-contract-gate.ts:flag_help",
+            "originalReplayArtifactHash": "sha256:29560e4b24c6c4f7fb89d0ddea68447605e8a6f1083f4c7e86c1cb556dba04e9",
+            "sourceDerivedProofId": "G004_SOURCE_DERIVED:scripts/ai-tdd-contract-gate.ts:flag_help",
+            "sourceLineAnchors": [
+              {
+                "line": 2629,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2629",
+                "text": "export function evaluateAiTddContractGate(input: {"
+              },
+              {
+                "line": 2761,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2761",
+                "text": "export function mainAiTddContractGate(argv: string[]): number {"
+              },
+              {
+                "line": 2764,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2764",
+                "text": "console.log("
+              },
+              {
+                "line": 2800,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2800",
+                "text": "process.stdout.write("
+              },
+              {
+                "line": 2806,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2806",
+                "text": "export function aiTddContractGateRequired(record: JsonObject, sourcePath?: string): boolean {"
+              },
+              {
+                "line": 2817,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2817",
+                "text": "if (require.main === module && isDirectAiTddContractGateCli(process.argv[1])) {"
+              },
+              {
+                "line": 2819,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2819",
+                "text": "process.exitCode = mainAiTddContractGate(process.argv.slice(2));"
+              },
+              {
+                "line": 2821,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2821",
+                "text": "console.error("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts",
+                "to": "scripts/ai-tdd-contract-gate.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ai-tdd-contract-gate.js",
+                "to": "scripts/ai-tdd-contract-gate.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G004_STATIC_FULL:scripts/ai-tdd-contract-gate.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 9,
+            "envKeyCount": 2,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 9,
+            "coveredEnvKeyCount": 2,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--attempt-id",
+              "--execute-red-proof",
+              "--help",
+              "--json",
+              "--mode",
+              "--report-path",
+              "--requirement-record",
+              "--source"
+            ],
+            "discoveredEnvKeys": [
+              "HOME",
+              "USERPROFILE"
+            ],
+            "requiredArgumentCombinations": [
+              "--cwd <fixture-root>",
+              "--attempt-id <source-derived-safe-value>",
+              "--execute-red-proof <source-derived-safe-value>",
+              "--help <present>",
+              "--json <present>",
+              "--mode <source-derived-safe-value>",
+              "--report-path <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>",
+              "--source <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "--cwd <fixture-root>",
+              "--attempt-id <source-derived-safe-value>",
+              "--execute-red-proof <source-derived-safe-value>",
+              "--help <present>",
+              "--json <present>",
+              "--mode <source-derived-safe-value>",
+              "--report-path <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>",
+              "--source <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [
+              "HOME",
+              "USERPROFILE"
+            ],
+            "scenarioDefinitionCount": 11,
+            "coveredScenarioDefinitionIds": [
+              "cwd",
+              "flag_attempt_id",
+              "flag_execute_red_proof",
+              "flag_help",
+              "flag_json",
+              "flag_mode",
+              "flag_report_path",
+              "flag_requirement_record",
+              "flag_source",
+              "env_home",
+              "env_userprofile"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g004_ai_tdd_contract_gate_ts_flag_json",
+          "originalEntryPoint": "scripts/ai-tdd-contract-gate.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/ai-tdd-contract-gate.ts --cwd <fixture-root> --json",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/ai-tdd-contract-gate.js --cwd <fixture-root> --json",
+          "argumentCombination": "--json <present>",
+          "args": [
+            "--cwd",
+            "<fixture-root>",
+            "--json"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g004_ai_tdd_contract_gate_ts_flag_json_original_fixture_root",
+              "path": "<tmp>/g004_ai_tdd_contract_gate_ts_flag_json-original-GmY7M2",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g004_ai_tdd_contract_gate_ts_flag_json_package_fixture_root",
+              "path": "<tmp>/g004_ai_tdd_contract_gate_ts_flag_json-package-uEUlCg",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord, mode\"\n}\n",
+          "expectedExitCode": 2,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "{"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G004_ORIGINAL_REPLAY:scripts/ai-tdd-contract-gate.ts:flag_json",
+            "originalReplayArtifactHash": "sha256:2c0df7c200dc2d56f358775e71dfaeeabd3c94cf4b6360a9c3da5fa7d2b4287f",
+            "sourceDerivedProofId": "G004_SOURCE_DERIVED:scripts/ai-tdd-contract-gate.ts:flag_json",
+            "sourceLineAnchors": [
+              {
+                "line": 2629,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2629",
+                "text": "export function evaluateAiTddContractGate(input: {"
+              },
+              {
+                "line": 2761,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2761",
+                "text": "export function mainAiTddContractGate(argv: string[]): number {"
+              },
+              {
+                "line": 2764,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2764",
+                "text": "console.log("
+              },
+              {
+                "line": 2800,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2800",
+                "text": "process.stdout.write("
+              },
+              {
+                "line": 2806,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2806",
+                "text": "export function aiTddContractGateRequired(record: JsonObject, sourcePath?: string): boolean {"
+              },
+              {
+                "line": 2817,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2817",
+                "text": "if (require.main === module && isDirectAiTddContractGateCli(process.argv[1])) {"
+              },
+              {
+                "line": 2819,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2819",
+                "text": "process.exitCode = mainAiTddContractGate(process.argv.slice(2));"
+              },
+              {
+                "line": 2821,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2821",
+                "text": "console.error("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts",
+                "to": "scripts/ai-tdd-contract-gate.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ai-tdd-contract-gate.js",
+                "to": "scripts/ai-tdd-contract-gate.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G004_STATIC_FULL:scripts/ai-tdd-contract-gate.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 9,
+            "envKeyCount": 2,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 9,
+            "coveredEnvKeyCount": 2,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--attempt-id",
+              "--execute-red-proof",
+              "--help",
+              "--json",
+              "--mode",
+              "--report-path",
+              "--requirement-record",
+              "--source"
+            ],
+            "discoveredEnvKeys": [
+              "HOME",
+              "USERPROFILE"
+            ],
+            "requiredArgumentCombinations": [
+              "--cwd <fixture-root>",
+              "--attempt-id <source-derived-safe-value>",
+              "--execute-red-proof <source-derived-safe-value>",
+              "--help <present>",
+              "--json <present>",
+              "--mode <source-derived-safe-value>",
+              "--report-path <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>",
+              "--source <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "--cwd <fixture-root>",
+              "--attempt-id <source-derived-safe-value>",
+              "--execute-red-proof <source-derived-safe-value>",
+              "--help <present>",
+              "--json <present>",
+              "--mode <source-derived-safe-value>",
+              "--report-path <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>",
+              "--source <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [
+              "HOME",
+              "USERPROFILE"
+            ],
+            "scenarioDefinitionCount": 11,
+            "coveredScenarioDefinitionIds": [
+              "cwd",
+              "flag_attempt_id",
+              "flag_execute_red_proof",
+              "flag_help",
+              "flag_json",
+              "flag_mode",
+              "flag_report_path",
+              "flag_requirement_record",
+              "flag_source",
+              "env_home",
+              "env_userprofile"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g004_ai_tdd_contract_gate_ts_flag_mode",
+          "originalEntryPoint": "scripts/ai-tdd-contract-gate.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/ai-tdd-contract-gate.ts --cwd <fixture-root> --mode source-derived-mode",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/ai-tdd-contract-gate.js --cwd <fixture-root> --mode source-derived-mode",
+          "argumentCombination": "--mode <source-derived-safe-value>",
+          "args": [
+            "--cwd",
+            "<fixture-root>",
+            "--mode",
+            "source-derived-mode"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g004_ai_tdd_contract_gate_ts_flag_mode_original_fixture_root",
+              "path": "<tmp>/g004_ai_tdd_contract_gate_ts_flag_mode-original-fBVLtG",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g004_ai_tdd_contract_gate_ts_flag_mode_package_fixture_root",
+              "path": "<tmp>/g004_ai_tdd_contract_gate_ts_flag_mode-package-VFDtcF",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord, mode\"\n}\n",
+          "expectedExitCode": 2,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "{"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G004_ORIGINAL_REPLAY:scripts/ai-tdd-contract-gate.ts:flag_mode",
+            "originalReplayArtifactHash": "sha256:2c0df7c200dc2d56f358775e71dfaeeabd3c94cf4b6360a9c3da5fa7d2b4287f",
+            "sourceDerivedProofId": "G004_SOURCE_DERIVED:scripts/ai-tdd-contract-gate.ts:flag_mode",
+            "sourceLineAnchors": [
+              {
+                "line": 2629,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2629",
+                "text": "export function evaluateAiTddContractGate(input: {"
+              },
+              {
+                "line": 2761,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2761",
+                "text": "export function mainAiTddContractGate(argv: string[]): number {"
+              },
+              {
+                "line": 2764,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2764",
+                "text": "console.log("
+              },
+              {
+                "line": 2800,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2800",
+                "text": "process.stdout.write("
+              },
+              {
+                "line": 2806,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2806",
+                "text": "export function aiTddContractGateRequired(record: JsonObject, sourcePath?: string): boolean {"
+              },
+              {
+                "line": 2817,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2817",
+                "text": "if (require.main === module && isDirectAiTddContractGateCli(process.argv[1])) {"
+              },
+              {
+                "line": 2819,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2819",
+                "text": "process.exitCode = mainAiTddContractGate(process.argv.slice(2));"
+              },
+              {
+                "line": 2821,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2821",
+                "text": "console.error("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts",
+                "to": "scripts/ai-tdd-contract-gate.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ai-tdd-contract-gate.js",
+                "to": "scripts/ai-tdd-contract-gate.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G004_STATIC_FULL:scripts/ai-tdd-contract-gate.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 9,
+            "envKeyCount": 2,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 9,
+            "coveredEnvKeyCount": 2,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--attempt-id",
+              "--execute-red-proof",
+              "--help",
+              "--json",
+              "--mode",
+              "--report-path",
+              "--requirement-record",
+              "--source"
+            ],
+            "discoveredEnvKeys": [
+              "HOME",
+              "USERPROFILE"
+            ],
+            "requiredArgumentCombinations": [
+              "--cwd <fixture-root>",
+              "--attempt-id <source-derived-safe-value>",
+              "--execute-red-proof <source-derived-safe-value>",
+              "--help <present>",
+              "--json <present>",
+              "--mode <source-derived-safe-value>",
+              "--report-path <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>",
+              "--source <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "--cwd <fixture-root>",
+              "--attempt-id <source-derived-safe-value>",
+              "--execute-red-proof <source-derived-safe-value>",
+              "--help <present>",
+              "--json <present>",
+              "--mode <source-derived-safe-value>",
+              "--report-path <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>",
+              "--source <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [
+              "HOME",
+              "USERPROFILE"
+            ],
+            "scenarioDefinitionCount": 11,
+            "coveredScenarioDefinitionIds": [
+              "cwd",
+              "flag_attempt_id",
+              "flag_execute_red_proof",
+              "flag_help",
+              "flag_json",
+              "flag_mode",
+              "flag_report_path",
+              "flag_requirement_record",
+              "flag_source",
+              "env_home",
+              "env_userprofile"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g004_ai_tdd_contract_gate_ts_flag_report_path",
+          "originalEntryPoint": "scripts/ai-tdd-contract-gate.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/ai-tdd-contract-gate.ts --cwd <fixture-root> --report-path <fixture-root>/report-path.json",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/ai-tdd-contract-gate.js --cwd <fixture-root> --report-path <fixture-root>/report-path.json",
+          "argumentCombination": "--report-path <source-derived-safe-value>",
+          "args": [
+            "--cwd",
+            "<fixture-root>",
+            "--report-path",
+            "<fixture-root>/report-path.json"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g004_ai_tdd_contract_gate_ts_flag_report_path_original_fixture_root",
+              "path": "<tmp>/g004_ai_tdd_contract_gate_ts_flag_report_path-original-N0s7r1",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g004_ai_tdd_contract_gate_ts_flag_report_path_package_fixture_root",
+              "path": "<tmp>/g004_ai_tdd_contract_gate_ts_flag_report_path-package-WHKKA3",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord, mode\"\n}\n",
+          "expectedExitCode": 2,
+          "expectedFileArtifacts": [
+            {
+              "path": "report-path.json",
+              "bytes": 3,
+              "sha256": "sha256:ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356"
+            }
+          ],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "{"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G004_ORIGINAL_REPLAY:scripts/ai-tdd-contract-gate.ts:flag_report_path",
+            "originalReplayArtifactHash": "sha256:f25e0162efb2f3838f884fb500ae2cdad000b97931167576ab7a66573092ace8",
+            "sourceDerivedProofId": "G004_SOURCE_DERIVED:scripts/ai-tdd-contract-gate.ts:flag_report_path",
+            "sourceLineAnchors": [
+              {
+                "line": 2629,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2629",
+                "text": "export function evaluateAiTddContractGate(input: {"
+              },
+              {
+                "line": 2761,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2761",
+                "text": "export function mainAiTddContractGate(argv: string[]): number {"
+              },
+              {
+                "line": 2764,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2764",
+                "text": "console.log("
+              },
+              {
+                "line": 2800,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2800",
+                "text": "process.stdout.write("
+              },
+              {
+                "line": 2806,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2806",
+                "text": "export function aiTddContractGateRequired(record: JsonObject, sourcePath?: string): boolean {"
+              },
+              {
+                "line": 2817,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2817",
+                "text": "if (require.main === module && isDirectAiTddContractGateCli(process.argv[1])) {"
+              },
+              {
+                "line": 2819,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2819",
+                "text": "process.exitCode = mainAiTddContractGate(process.argv.slice(2));"
+              },
+              {
+                "line": 2821,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2821",
+                "text": "console.error("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts",
+                "to": "scripts/ai-tdd-contract-gate.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ai-tdd-contract-gate.js",
+                "to": "scripts/ai-tdd-contract-gate.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G004_STATIC_FULL:scripts/ai-tdd-contract-gate.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 9,
+            "envKeyCount": 2,
+            "fixtureCount": 1,
+            "fileArtifactCount": 1,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 9,
+            "coveredEnvKeyCount": 2,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 1,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--attempt-id",
+              "--execute-red-proof",
+              "--help",
+              "--json",
+              "--mode",
+              "--report-path",
+              "--requirement-record",
+              "--source"
+            ],
+            "discoveredEnvKeys": [
+              "HOME",
+              "USERPROFILE"
+            ],
+            "requiredArgumentCombinations": [
+              "--cwd <fixture-root>",
+              "--attempt-id <source-derived-safe-value>",
+              "--execute-red-proof <source-derived-safe-value>",
+              "--help <present>",
+              "--json <present>",
+              "--mode <source-derived-safe-value>",
+              "--report-path <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>",
+              "--source <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "--cwd <fixture-root>",
+              "--attempt-id <source-derived-safe-value>",
+              "--execute-red-proof <source-derived-safe-value>",
+              "--help <present>",
+              "--json <present>",
+              "--mode <source-derived-safe-value>",
+              "--report-path <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>",
+              "--source <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [
+              "HOME",
+              "USERPROFILE"
+            ],
+            "scenarioDefinitionCount": 11,
+            "coveredScenarioDefinitionIds": [
+              "cwd",
+              "flag_attempt_id",
+              "flag_execute_red_proof",
+              "flag_help",
+              "flag_json",
+              "flag_mode",
+              "flag_report_path",
+              "flag_requirement_record",
+              "flag_source",
+              "env_home",
+              "env_userprofile"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g004_ai_tdd_contract_gate_ts_flag_requirement_record",
+          "originalEntryPoint": "scripts/ai-tdd-contract-gate.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/ai-tdd-contract-gate.ts --cwd <fixture-root> --requirement-record source-derived-requirement-record",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/ai-tdd-contract-gate.js --cwd <fixture-root> --requirement-record source-derived-requirement-record",
+          "argumentCombination": "--requirement-record <source-derived-safe-value>",
+          "args": [
+            "--cwd",
+            "<fixture-root>",
+            "--requirement-record",
+            "source-derived-requirement-record"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g004_ai_tdd_contract_gate_ts_flag_requirement_record_original_fixture_root",
+              "path": "<tmp>/g004_ai_tdd_contract_gate_ts_flag_requirement_record-original-Eume9v",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g004_ai_tdd_contract_gate_ts_flag_requirement_record_package_fixture_root",
+              "path": "<tmp>/g004_ai_tdd_contract_gate_ts_flag_requirement_record-package-WhPToE",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord, mode\"\n}\n",
+          "expectedExitCode": 2,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "{"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G004_ORIGINAL_REPLAY:scripts/ai-tdd-contract-gate.ts:flag_requirement_record",
+            "originalReplayArtifactHash": "sha256:2c0df7c200dc2d56f358775e71dfaeeabd3c94cf4b6360a9c3da5fa7d2b4287f",
+            "sourceDerivedProofId": "G004_SOURCE_DERIVED:scripts/ai-tdd-contract-gate.ts:flag_requirement_record",
+            "sourceLineAnchors": [
+              {
+                "line": 2629,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2629",
+                "text": "export function evaluateAiTddContractGate(input: {"
+              },
+              {
+                "line": 2761,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2761",
+                "text": "export function mainAiTddContractGate(argv: string[]): number {"
+              },
+              {
+                "line": 2764,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2764",
+                "text": "console.log("
+              },
+              {
+                "line": 2800,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2800",
+                "text": "process.stdout.write("
+              },
+              {
+                "line": 2806,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2806",
+                "text": "export function aiTddContractGateRequired(record: JsonObject, sourcePath?: string): boolean {"
+              },
+              {
+                "line": 2817,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2817",
+                "text": "if (require.main === module && isDirectAiTddContractGateCli(process.argv[1])) {"
+              },
+              {
+                "line": 2819,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2819",
+                "text": "process.exitCode = mainAiTddContractGate(process.argv.slice(2));"
+              },
+              {
+                "line": 2821,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2821",
+                "text": "console.error("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts",
+                "to": "scripts/ai-tdd-contract-gate.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ai-tdd-contract-gate.js",
+                "to": "scripts/ai-tdd-contract-gate.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G004_STATIC_FULL:scripts/ai-tdd-contract-gate.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 9,
+            "envKeyCount": 2,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 9,
+            "coveredEnvKeyCount": 2,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--attempt-id",
+              "--execute-red-proof",
+              "--help",
+              "--json",
+              "--mode",
+              "--report-path",
+              "--requirement-record",
+              "--source"
+            ],
+            "discoveredEnvKeys": [
+              "HOME",
+              "USERPROFILE"
+            ],
+            "requiredArgumentCombinations": [
+              "--cwd <fixture-root>",
+              "--attempt-id <source-derived-safe-value>",
+              "--execute-red-proof <source-derived-safe-value>",
+              "--help <present>",
+              "--json <present>",
+              "--mode <source-derived-safe-value>",
+              "--report-path <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>",
+              "--source <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "--cwd <fixture-root>",
+              "--attempt-id <source-derived-safe-value>",
+              "--execute-red-proof <source-derived-safe-value>",
+              "--help <present>",
+              "--json <present>",
+              "--mode <source-derived-safe-value>",
+              "--report-path <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>",
+              "--source <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [
+              "HOME",
+              "USERPROFILE"
+            ],
+            "scenarioDefinitionCount": 11,
+            "coveredScenarioDefinitionIds": [
+              "cwd",
+              "flag_attempt_id",
+              "flag_execute_red_proof",
+              "flag_help",
+              "flag_json",
+              "flag_mode",
+              "flag_report_path",
+              "flag_requirement_record",
+              "flag_source",
+              "env_home",
+              "env_userprofile"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g004_ai_tdd_contract_gate_ts_flag_source",
+          "originalEntryPoint": "scripts/ai-tdd-contract-gate.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/ai-tdd-contract-gate.ts --cwd <fixture-root> --source <fixture-root>/source.json",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/ai-tdd-contract-gate.js --cwd <fixture-root> --source <fixture-root>/source.json",
+          "argumentCombination": "--source <source-derived-safe-value>",
+          "args": [
+            "--cwd",
+            "<fixture-root>",
+            "--source",
+            "<fixture-root>/source.json"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g004_ai_tdd_contract_gate_ts_flag_source_original_fixture_root",
+              "path": "<tmp>/g004_ai_tdd_contract_gate_ts_flag_source-original-ADcFT9",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g004_ai_tdd_contract_gate_ts_flag_source_package_fixture_root",
+              "path": "<tmp>/g004_ai_tdd_contract_gate_ts_flag_source-package-2bZVzw",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord, mode\"\n}\n",
+          "expectedExitCode": 2,
+          "expectedFileArtifacts": [
+            {
+              "path": "source.json",
+              "bytes": 3,
+              "sha256": "sha256:ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356"
+            }
+          ],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "{"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G004_ORIGINAL_REPLAY:scripts/ai-tdd-contract-gate.ts:flag_source",
+            "originalReplayArtifactHash": "sha256:f8db2354ba9cd7e678ec751810e58520ba91144cbef3aa08e5f4605d6e590acb",
+            "sourceDerivedProofId": "G004_SOURCE_DERIVED:scripts/ai-tdd-contract-gate.ts:flag_source",
+            "sourceLineAnchors": [
+              {
+                "line": 2629,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2629",
+                "text": "export function evaluateAiTddContractGate(input: {"
+              },
+              {
+                "line": 2761,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2761",
+                "text": "export function mainAiTddContractGate(argv: string[]): number {"
+              },
+              {
+                "line": 2764,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2764",
+                "text": "console.log("
+              },
+              {
+                "line": 2800,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2800",
+                "text": "process.stdout.write("
+              },
+              {
+                "line": 2806,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2806",
+                "text": "export function aiTddContractGateRequired(record: JsonObject, sourcePath?: string): boolean {"
+              },
+              {
+                "line": 2817,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2817",
+                "text": "if (require.main === module && isDirectAiTddContractGateCli(process.argv[1])) {"
+              },
+              {
+                "line": 2819,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2819",
+                "text": "process.exitCode = mainAiTddContractGate(process.argv.slice(2));"
+              },
+              {
+                "line": 2821,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2821",
+                "text": "console.error("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts",
+                "to": "scripts/ai-tdd-contract-gate.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ai-tdd-contract-gate.js",
+                "to": "scripts/ai-tdd-contract-gate.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G004_STATIC_FULL:scripts/ai-tdd-contract-gate.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 9,
+            "envKeyCount": 2,
+            "fixtureCount": 1,
+            "fileArtifactCount": 1,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 9,
+            "coveredEnvKeyCount": 2,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 1,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--attempt-id",
+              "--execute-red-proof",
+              "--help",
+              "--json",
+              "--mode",
+              "--report-path",
+              "--requirement-record",
+              "--source"
+            ],
+            "discoveredEnvKeys": [
+              "HOME",
+              "USERPROFILE"
+            ],
+            "requiredArgumentCombinations": [
+              "--cwd <fixture-root>",
+              "--attempt-id <source-derived-safe-value>",
+              "--execute-red-proof <source-derived-safe-value>",
+              "--help <present>",
+              "--json <present>",
+              "--mode <source-derived-safe-value>",
+              "--report-path <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>",
+              "--source <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "--cwd <fixture-root>",
+              "--attempt-id <source-derived-safe-value>",
+              "--execute-red-proof <source-derived-safe-value>",
+              "--help <present>",
+              "--json <present>",
+              "--mode <source-derived-safe-value>",
+              "--report-path <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>",
+              "--source <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [
+              "HOME",
+              "USERPROFILE"
+            ],
+            "scenarioDefinitionCount": 11,
+            "coveredScenarioDefinitionIds": [
+              "cwd",
+              "flag_attempt_id",
+              "flag_execute_red_proof",
+              "flag_help",
+              "flag_json",
+              "flag_mode",
+              "flag_report_path",
+              "flag_requirement_record",
+              "flag_source",
+              "env_home",
+              "env_userprofile"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g004_ai_tdd_contract_gate_ts_env_home",
+          "originalEntryPoint": "scripts/ai-tdd-contract-gate.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/ai-tdd-contract-gate.ts --cwd <fixture-root>",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/ai-tdd-contract-gate.js --cwd <fixture-root>",
+          "argumentCombination": "--cwd <fixture-root> env HOME=<source-derived-safe-value>",
+          "args": [
+            "--cwd",
+            "<fixture-root>"
+          ],
+          "env": {
+            "HOME": "<source-derived-safe-value>"
+          },
+          "fixtures": [
+            {
+              "id": "g004_ai_tdd_contract_gate_ts_env_home_original_fixture_root",
+              "path": "<tmp>/g004_ai_tdd_contract_gate_ts_env_home-original-Cgss5Z",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g004_ai_tdd_contract_gate_ts_env_home_package_fixture_root",
+              "path": "<tmp>/g004_ai_tdd_contract_gate_ts_env_home-package-bZ3ytl",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord, mode\"\n}\n",
+          "expectedExitCode": 2,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "{"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G004_ORIGINAL_REPLAY:scripts/ai-tdd-contract-gate.ts:env_home",
+            "originalReplayArtifactHash": "sha256:2c0df7c200dc2d56f358775e71dfaeeabd3c94cf4b6360a9c3da5fa7d2b4287f",
+            "sourceDerivedProofId": "G004_SOURCE_DERIVED:scripts/ai-tdd-contract-gate.ts:env_home",
+            "sourceLineAnchors": [
+              {
+                "line": 2629,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2629",
+                "text": "export function evaluateAiTddContractGate(input: {"
+              },
+              {
+                "line": 2761,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2761",
+                "text": "export function mainAiTddContractGate(argv: string[]): number {"
+              },
+              {
+                "line": 2764,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2764",
+                "text": "console.log("
+              },
+              {
+                "line": 2800,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2800",
+                "text": "process.stdout.write("
+              },
+              {
+                "line": 2806,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2806",
+                "text": "export function aiTddContractGateRequired(record: JsonObject, sourcePath?: string): boolean {"
+              },
+              {
+                "line": 2817,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2817",
+                "text": "if (require.main === module && isDirectAiTddContractGateCli(process.argv[1])) {"
+              },
+              {
+                "line": 2819,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2819",
+                "text": "process.exitCode = mainAiTddContractGate(process.argv.slice(2));"
+              },
+              {
+                "line": 2821,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2821",
+                "text": "console.error("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts",
+                "to": "scripts/ai-tdd-contract-gate.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ai-tdd-contract-gate.js",
+                "to": "scripts/ai-tdd-contract-gate.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G004_STATIC_FULL:scripts/ai-tdd-contract-gate.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 9,
+            "envKeyCount": 2,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 9,
+            "coveredEnvKeyCount": 2,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--attempt-id",
+              "--execute-red-proof",
+              "--help",
+              "--json",
+              "--mode",
+              "--report-path",
+              "--requirement-record",
+              "--source"
+            ],
+            "discoveredEnvKeys": [
+              "HOME",
+              "USERPROFILE"
+            ],
+            "requiredArgumentCombinations": [
+              "--cwd <fixture-root>",
+              "--attempt-id <source-derived-safe-value>",
+              "--execute-red-proof <source-derived-safe-value>",
+              "--help <present>",
+              "--json <present>",
+              "--mode <source-derived-safe-value>",
+              "--report-path <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>",
+              "--source <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "--cwd <fixture-root>",
+              "--attempt-id <source-derived-safe-value>",
+              "--execute-red-proof <source-derived-safe-value>",
+              "--help <present>",
+              "--json <present>",
+              "--mode <source-derived-safe-value>",
+              "--report-path <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>",
+              "--source <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [
+              "HOME",
+              "USERPROFILE"
+            ],
+            "scenarioDefinitionCount": 11,
+            "coveredScenarioDefinitionIds": [
+              "cwd",
+              "flag_attempt_id",
+              "flag_execute_red_proof",
+              "flag_help",
+              "flag_json",
+              "flag_mode",
+              "flag_report_path",
+              "flag_requirement_record",
+              "flag_source",
+              "env_home",
+              "env_userprofile"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g004_ai_tdd_contract_gate_ts_env_userprofile",
+          "originalEntryPoint": "scripts/ai-tdd-contract-gate.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/ai-tdd-contract-gate.ts --cwd <fixture-root>",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/ai-tdd-contract-gate.js --cwd <fixture-root>",
+          "argumentCombination": "--cwd <fixture-root> env USERPROFILE=<source-derived-safe-value>",
+          "args": [
+            "--cwd",
+            "<fixture-root>"
+          ],
+          "env": {
+            "USERPROFILE": "<source-derived-safe-value>"
+          },
+          "fixtures": [
+            {
+              "id": "g004_ai_tdd_contract_gate_ts_env_userprofile_original_fixture_root",
+              "path": "<tmp>/g004_ai_tdd_contract_gate_ts_env_userprofile-original-FVkfPb",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g004_ai_tdd_contract_gate_ts_env_userprofile_package_fixture_root",
+              "path": "<tmp>/g004_ai_tdd_contract_gate_ts_env_userprofile-package-BLGmSg",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord, mode\"\n}\n",
+          "expectedExitCode": 2,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "{"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G004_ORIGINAL_REPLAY:scripts/ai-tdd-contract-gate.ts:env_userprofile",
+            "originalReplayArtifactHash": "sha256:2c0df7c200dc2d56f358775e71dfaeeabd3c94cf4b6360a9c3da5fa7d2b4287f",
+            "sourceDerivedProofId": "G004_SOURCE_DERIVED:scripts/ai-tdd-contract-gate.ts:env_userprofile",
+            "sourceLineAnchors": [
+              {
+                "line": 2629,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2629",
+                "text": "export function evaluateAiTddContractGate(input: {"
+              },
+              {
+                "line": 2761,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2761",
+                "text": "export function mainAiTddContractGate(argv: string[]): number {"
+              },
+              {
+                "line": 2764,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2764",
+                "text": "console.log("
+              },
+              {
+                "line": 2800,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2800",
+                "text": "process.stdout.write("
+              },
+              {
+                "line": 2806,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2806",
+                "text": "export function aiTddContractGateRequired(record: JsonObject, sourcePath?: string): boolean {"
+              },
+              {
+                "line": 2817,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2817",
+                "text": "if (require.main === module && isDirectAiTddContractGateCli(process.argv[1])) {"
+              },
+              {
+                "line": 2819,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2819",
+                "text": "process.exitCode = mainAiTddContractGate(process.argv.slice(2));"
+              },
+              {
+                "line": 2821,
+                "anchor": "scripts/ai-tdd-contract-gate.ts:2821",
+                "text": "console.error("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts",
+                "to": "scripts/ai-tdd-contract-gate.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ai-tdd-contract-gate.js",
+                "to": "scripts/ai-tdd-contract-gate.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G004_STATIC_FULL:scripts/ai-tdd-contract-gate.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 9,
+            "envKeyCount": 2,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 9,
+            "coveredEnvKeyCount": 2,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--attempt-id",
+              "--execute-red-proof",
+              "--help",
+              "--json",
+              "--mode",
+              "--report-path",
+              "--requirement-record",
+              "--source"
+            ],
+            "discoveredEnvKeys": [
+              "HOME",
+              "USERPROFILE"
+            ],
+            "requiredArgumentCombinations": [
+              "--cwd <fixture-root>",
+              "--attempt-id <source-derived-safe-value>",
+              "--execute-red-proof <source-derived-safe-value>",
+              "--help <present>",
+              "--json <present>",
+              "--mode <source-derived-safe-value>",
+              "--report-path <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>",
+              "--source <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "--cwd <fixture-root>",
+              "--attempt-id <source-derived-safe-value>",
+              "--execute-red-proof <source-derived-safe-value>",
+              "--help <present>",
+              "--json <present>",
+              "--mode <source-derived-safe-value>",
+              "--report-path <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>",
+              "--source <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [
+              "HOME",
+              "USERPROFILE"
+            ],
+            "scenarioDefinitionCount": 11,
+            "coveredScenarioDefinitionIds": [
+              "cwd",
+              "flag_attempt_id",
+              "flag_execute_red_proof",
+              "flag_help",
+              "flag_json",
+              "flag_mode",
+              "flag_report_path",
+              "flag_requirement_record",
+              "flag_source",
+              "env_home",
+              "env_userprofile"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

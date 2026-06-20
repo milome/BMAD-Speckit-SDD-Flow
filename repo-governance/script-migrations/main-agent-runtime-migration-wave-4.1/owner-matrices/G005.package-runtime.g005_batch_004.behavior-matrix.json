@@ -1,0 +1,888 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-wave-4-1-owner-initial-behavior-matrix/v1",
+  "waveId": "main-agent-runtime-migration-wave-4.1",
+  "ownerTaskId": "G005",
+  "generatedAt": "2026-06-20T10:42:39.925Z",
+  "artifactSuffix": "g005_batch_004",
+  "timeoutMs": 30000,
+  "coverageDecision": "passed_full_original_behavior_coverage",
+  "eligibleOwnerRowCount": 12,
+  "selectedRowCount": 3,
+  "matrixRowCount": 3,
+  "scenarioCount": 5,
+  "fullCoverageStillRequired": false,
+  "rows": [
+    {
+      "originalPath": "scripts/setup.sh",
+      "entryId": "setup-sh",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/setup.sh"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/setup.sh",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/setup.sh:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 1,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 1,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g005_setup_sh_no_args",
+          "originalEntryPoint": "scripts/setup.sh",
+          "originalEntryCommand": "bash scripts/setup.sh",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/setup.sh",
+          "packageEntryCommand": "bash packages/bmad-speckit/dist/main-agent/source-authority/scripts/setup.sh",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g005_setup_sh_no_args_original_fixture_root",
+              "path": "<tmp>/g005_setup_sh_no_args-original-5UfIWY",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_setup_sh_no_args_package_fixture_root",
+              "path": "<tmp>/g005_setup_sh_no_args-package-nbsfqf",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "<3>WSL (<relay> - Relay) ERROR: CreateProcessCommon:800: execvpe(/bin/bash) failed: No such file or directory\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "<3>WSL (<relay> - Relay) ERROR: CreateProcessCommon:800: execvpe(/bin/bash) failed: No such file or directory"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/setup.sh:no_args",
+            "originalReplayArtifactHash": "sha256:49edb214f086cf5cb874ac113cc175868da9ca6a19c5d99ab0443032e6c5bb1f",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/setup.sh:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 1,
+                "anchor": "scripts/setup.sh:1",
+                "text": "#!/usr/bin/env bash"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/setup.sh",
+                "to": "scripts/setup.sh"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/setup.sh",
+                "to": "scripts/setup.sh"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/setup.sh",
+                "to": "scripts/setup.sh"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/setup.sh",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/speckit-cli.ts",
+      "entryId": "speckit-cli-ts",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/speckit-cli.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/speckit-cli.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/speckit-cli.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 3,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 3,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [
+          "--help",
+          "--version"
+        ],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>",
+          "--help <present>",
+          "--version <present>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>",
+          "--help <present>",
+          "--version <present>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 3,
+        "coveredScenarioDefinitionIds": [
+          "no_args",
+          "flag_help",
+          "flag_version"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g005_speckit_cli_ts_no_args",
+          "originalEntryPoint": "scripts/speckit-cli.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/speckit-cli.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/speckit-cli.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/speckit-cli.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g005_speckit_cli_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g005_speckit_cli_ts_no_args-original-jLBsn0",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_speckit_cli_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g005_speckit_cli_ts_no_args-package-vW0sFN",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "\nSpeckit CLI - Unified command entry for speckit-workflow\nVersion: 2.0.1\n\nUsage: npx ts-node scripts/speckit-cli.ts <command> [options]\n\nCommands:\n  constitution §0.5 Establish project principles\n  specify      §1 Generate spec.md with requirements mapping\n  plan         §2 Generate plan.md with architecture\n  gaps         §3 Generate IMPLEMENTATION_GAPS.md\n  tasks        §4 Generate tasks.md with acceptance criteria\n  implement    §5 Execute tasks with TDD red-green-refactor\n  clarify      §1.2 Clarify ambiguous spec (embedded)\n  checklist    §2.2 Quality checklist for complex plans (embedded)\n  analyze      §4.2 Cross-artifact analysis (embedded)\n  audit        Run standalone audit for any stage\n  validate     Validate speckit configuration\n  version      Show version info\n\nGlobal Options:\n  --help        Show this help message\n  --version     Show version info\n\nExamples:\n  npx ts-node scripts/speckit-cli.ts constitution --projectPath ./\n  npx ts-node scripts/speckit-cli.ts specify --epic 4 --story 1\n  npx ts-node scripts/speckit-cli.ts plan --epic 4 --story 1 --specPath specs/.../spec.md\n  npx ts-node scripts/speckit-cli.ts implement --tasksPath specs/.../tasks.md\n\nSee docs/speckit-cli-complete-mapping.md for full documentation.\n\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/speckit-cli.ts:no_args",
+            "originalReplayArtifactHash": "sha256:b307ccb67f275c351413ee9852639aad14494ba7f1a456a067adc1ac72ccc53f",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/speckit-cli.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 153,
+                "anchor": "scripts/speckit-cli.ts:153",
+                "text": "console.log(`\\nUsage: npx ts-node scripts/speckit-cli.ts ${command} [options]\\n`);"
+              },
+              {
+                "line": 154,
+                "anchor": "scripts/speckit-cli.ts:154",
+                "text": "console.log(`Description: ${config.description}\\n`);"
+              },
+              {
+                "line": 155,
+                "anchor": "scripts/speckit-cli.ts:155",
+                "text": "console.log('Required Arguments:');"
+              },
+              {
+                "line": 157,
+                "anchor": "scripts/speckit-cli.ts:157",
+                "text": "console.log(`  --${arg} <value>`);"
+              },
+              {
+                "line": 160,
+                "anchor": "scripts/speckit-cli.ts:160",
+                "text": "console.log('\\nOptional Arguments:');"
+              },
+              {
+                "line": 162,
+                "anchor": "scripts/speckit-cli.ts:162",
+                "text": "console.log(`  --${arg} <value>`);"
+              },
+              {
+                "line": 165,
+                "anchor": "scripts/speckit-cli.ts:165",
+                "text": "console.log('\\nAgent File:');"
+              },
+              {
+                "line": 166,
+                "anchor": "scripts/speckit-cli.ts:166",
+                "text": "console.log(`  ${config.agentFile}`);"
+              },
+              {
+                "line": 167,
+                "anchor": "scripts/speckit-cli.ts:167",
+                "text": "console.log('');"
+              },
+              {
+                "line": 169,
+                "anchor": "scripts/speckit-cli.ts:169",
+                "text": "console.log(`"
+              },
+              {
+                "line": 255,
+                "anchor": "scripts/speckit-cli.ts:255",
+                "text": "export function prepareImplementRalphTracking("
+              },
+              {
+                "line": 276,
+                "anchor": "scripts/speckit-cli.ts:276",
+                "text": "export function verifyImplementRalphTracking("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/speckit-cli.ts",
+                "to": "scripts/speckit-cli.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/speckit-cli.ts",
+                "to": "scripts/speckit-cli.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/speckit-cli.js",
+                "to": "scripts/speckit-cli.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/speckit-cli.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 3,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 3,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--help",
+              "--version"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--help <present>",
+              "--version <present>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--help <present>",
+              "--version <present>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 3,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_help",
+              "flag_version"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g005_speckit_cli_ts_flag_help",
+          "originalEntryPoint": "scripts/speckit-cli.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/speckit-cli.ts --help",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/speckit-cli.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/speckit-cli.js --help",
+          "argumentCombination": "--help <present>",
+          "args": [
+            "--help"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g005_speckit_cli_ts_flag_help_original_fixture_root",
+              "path": "<tmp>/g005_speckit_cli_ts_flag_help-original-Dl03iJ",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_speckit_cli_ts_flag_help_package_fixture_root",
+              "path": "<tmp>/g005_speckit_cli_ts_flag_help-package-ii8Ns6",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "\nSpeckit CLI - Unified command entry for speckit-workflow\nVersion: 2.0.1\n\nUsage: npx ts-node scripts/speckit-cli.ts <command> [options]\n\nCommands:\n  constitution §0.5 Establish project principles\n  specify      §1 Generate spec.md with requirements mapping\n  plan         §2 Generate plan.md with architecture\n  gaps         §3 Generate IMPLEMENTATION_GAPS.md\n  tasks        §4 Generate tasks.md with acceptance criteria\n  implement    §5 Execute tasks with TDD red-green-refactor\n  clarify      §1.2 Clarify ambiguous spec (embedded)\n  checklist    §2.2 Quality checklist for complex plans (embedded)\n  analyze      §4.2 Cross-artifact analysis (embedded)\n  audit        Run standalone audit for any stage\n  validate     Validate speckit configuration\n  version      Show version info\n\nGlobal Options:\n  --help        Show this help message\n  --version     Show version info\n\nExamples:\n  npx ts-node scripts/speckit-cli.ts constitution --projectPath ./\n  npx ts-node scripts/speckit-cli.ts specify --epic 4 --story 1\n  npx ts-node scripts/speckit-cli.ts plan --epic 4 --story 1 --specPath specs/.../spec.md\n  npx ts-node scripts/speckit-cli.ts implement --tasksPath specs/.../tasks.md\n\nSee docs/speckit-cli-complete-mapping.md for full documentation.\n\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/speckit-cli.ts:flag_help",
+            "originalReplayArtifactHash": "sha256:b307ccb67f275c351413ee9852639aad14494ba7f1a456a067adc1ac72ccc53f",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/speckit-cli.ts:flag_help",
+            "sourceLineAnchors": [
+              {
+                "line": 153,
+                "anchor": "scripts/speckit-cli.ts:153",
+                "text": "console.log(`\\nUsage: npx ts-node scripts/speckit-cli.ts ${command} [options]\\n`);"
+              },
+              {
+                "line": 154,
+                "anchor": "scripts/speckit-cli.ts:154",
+                "text": "console.log(`Description: ${config.description}\\n`);"
+              },
+              {
+                "line": 155,
+                "anchor": "scripts/speckit-cli.ts:155",
+                "text": "console.log('Required Arguments:');"
+              },
+              {
+                "line": 157,
+                "anchor": "scripts/speckit-cli.ts:157",
+                "text": "console.log(`  --${arg} <value>`);"
+              },
+              {
+                "line": 160,
+                "anchor": "scripts/speckit-cli.ts:160",
+                "text": "console.log('\\nOptional Arguments:');"
+              },
+              {
+                "line": 162,
+                "anchor": "scripts/speckit-cli.ts:162",
+                "text": "console.log(`  --${arg} <value>`);"
+              },
+              {
+                "line": 165,
+                "anchor": "scripts/speckit-cli.ts:165",
+                "text": "console.log('\\nAgent File:');"
+              },
+              {
+                "line": 166,
+                "anchor": "scripts/speckit-cli.ts:166",
+                "text": "console.log(`  ${config.agentFile}`);"
+              },
+              {
+                "line": 167,
+                "anchor": "scripts/speckit-cli.ts:167",
+                "text": "console.log('');"
+              },
+              {
+                "line": 169,
+                "anchor": "scripts/speckit-cli.ts:169",
+                "text": "console.log(`"
+              },
+              {
+                "line": 255,
+                "anchor": "scripts/speckit-cli.ts:255",
+                "text": "export function prepareImplementRalphTracking("
+              },
+              {
+                "line": 276,
+                "anchor": "scripts/speckit-cli.ts:276",
+                "text": "export function verifyImplementRalphTracking("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/speckit-cli.ts",
+                "to": "scripts/speckit-cli.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/speckit-cli.ts",
+                "to": "scripts/speckit-cli.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/speckit-cli.js",
+                "to": "scripts/speckit-cli.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/speckit-cli.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 3,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 3,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--help",
+              "--version"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--help <present>",
+              "--version <present>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--help <present>",
+              "--version <present>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 3,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_help",
+              "flag_version"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g005_speckit_cli_ts_flag_version",
+          "originalEntryPoint": "scripts/speckit-cli.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/speckit-cli.ts --version",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/speckit-cli.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/speckit-cli.js --version",
+          "argumentCombination": "--version <present>",
+          "args": [
+            "--version"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g005_speckit_cli_ts_flag_version_original_fixture_root",
+              "path": "<tmp>/g005_speckit_cli_ts_flag_version-original-dvB7gx",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_speckit_cli_ts_flag_version_package_fixture_root",
+              "path": "<tmp>/g005_speckit_cli_ts_flag_version-package-amLMMf",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "Speckit CLI v2.0.1\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/speckit-cli.ts:flag_version",
+            "originalReplayArtifactHash": "sha256:6d46005cf322f1c4e771ecce7c0ce3068473a2a68fa6973d70b55efb1f6dba31",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/speckit-cli.ts:flag_version",
+            "sourceLineAnchors": [
+              {
+                "line": 153,
+                "anchor": "scripts/speckit-cli.ts:153",
+                "text": "console.log(`\\nUsage: npx ts-node scripts/speckit-cli.ts ${command} [options]\\n`);"
+              },
+              {
+                "line": 154,
+                "anchor": "scripts/speckit-cli.ts:154",
+                "text": "console.log(`Description: ${config.description}\\n`);"
+              },
+              {
+                "line": 155,
+                "anchor": "scripts/speckit-cli.ts:155",
+                "text": "console.log('Required Arguments:');"
+              },
+              {
+                "line": 157,
+                "anchor": "scripts/speckit-cli.ts:157",
+                "text": "console.log(`  --${arg} <value>`);"
+              },
+              {
+                "line": 160,
+                "anchor": "scripts/speckit-cli.ts:160",
+                "text": "console.log('\\nOptional Arguments:');"
+              },
+              {
+                "line": 162,
+                "anchor": "scripts/speckit-cli.ts:162",
+                "text": "console.log(`  --${arg} <value>`);"
+              },
+              {
+                "line": 165,
+                "anchor": "scripts/speckit-cli.ts:165",
+                "text": "console.log('\\nAgent File:');"
+              },
+              {
+                "line": 166,
+                "anchor": "scripts/speckit-cli.ts:166",
+                "text": "console.log(`  ${config.agentFile}`);"
+              },
+              {
+                "line": 167,
+                "anchor": "scripts/speckit-cli.ts:167",
+                "text": "console.log('');"
+              },
+              {
+                "line": 169,
+                "anchor": "scripts/speckit-cli.ts:169",
+                "text": "console.log(`"
+              },
+              {
+                "line": 255,
+                "anchor": "scripts/speckit-cli.ts:255",
+                "text": "export function prepareImplementRalphTracking("
+              },
+              {
+                "line": 276,
+                "anchor": "scripts/speckit-cli.ts:276",
+                "text": "export function verifyImplementRalphTracking("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/speckit-cli.ts",
+                "to": "scripts/speckit-cli.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/speckit-cli.ts",
+                "to": "scripts/speckit-cli.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/speckit-cli.js",
+                "to": "scripts/speckit-cli.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/speckit-cli.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 3,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 3,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--help",
+              "--version"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--help <present>",
+              "--version <present>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--help <present>",
+              "--version <present>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 3,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_help",
+              "flag_version"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/validate-single-source-whitelist.ts",
+      "entryId": "validate-single-source-whitelist-ts",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/validate-single-source-whitelist.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/validate-single-source-whitelist.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/validate-single-source-whitelist.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 1,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 1,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g005_validate_single_source_whitelist_ts_no_args",
+          "originalEntryPoint": "scripts/validate-single-source-whitelist.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/validate-single-source-whitelist.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/validate-single-source-whitelist.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/validate-single-source-whitelist.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g005_validate_single_source_whitelist_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g005_validate_single_source_whitelist_ts_no_args-original-2HkIRX",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_validate_single_source_whitelist_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g005_validate_single_source_whitelist_ts_no_args-package-APJTaw",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "single-source whitelist validation failed\n- _bmad-output/runtime/requirement-records/index.json: field is not whitelisted: active\n- _bmad-output/runtime/requirement-records/index.json: field is not whitelisted: records\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "single-source whitelist validation failed"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/validate-single-source-whitelist.ts:no_args",
+            "originalReplayArtifactHash": "sha256:1e341f67c7e097a2f365b2bdf3e78289e7defe8400730aa41ec3b639a25f14ed",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/validate-single-source-whitelist.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 166,
+                "anchor": "scripts/validate-single-source-whitelist.ts:166",
+                "text": "function main(): number {"
+              },
+              {
+                "line": 176,
+                "anchor": "scripts/validate-single-source-whitelist.ts:176",
+                "text": "console.error('single-source whitelist validation failed');"
+              },
+              {
+                "line": 178,
+                "anchor": "scripts/validate-single-source-whitelist.ts:178",
+                "text": "console.error(`- ${failure}`);"
+              },
+              {
+                "line": 183,
+                "anchor": "scripts/validate-single-source-whitelist.ts:183",
+                "text": "console.log('single-source whitelist validation passed');"
+              },
+              {
+                "line": 184,
+                "anchor": "scripts/validate-single-source-whitelist.ts:184",
+                "text": "console.log(`contract: ${CONTRACT_PATH}`);"
+              },
+              {
+                "line": 185,
+                "anchor": "scripts/validate-single-source-whitelist.ts:185",
+                "text": "console.log(`mapping: ${MAPPING_PATH}`);"
+              },
+              {
+                "line": 189,
+                "anchor": "scripts/validate-single-source-whitelist.ts:189",
+                "text": "if (require.main === module) {"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/validate-single-source-whitelist.ts",
+                "to": "scripts/validate-single-source-whitelist.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/validate-single-source-whitelist.ts",
+                "to": "scripts/validate-single-source-whitelist.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/validate-single-source-whitelist.js",
+                "to": "scripts/validate-single-source-whitelist.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/validate-single-source-whitelist.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

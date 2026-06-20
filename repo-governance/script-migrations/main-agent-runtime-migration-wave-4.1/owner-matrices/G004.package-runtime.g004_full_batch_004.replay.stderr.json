@@ -1,0 +1,364 @@
+[
+  {
+    "originalPath": "scripts/main-agent-audit-review-gate.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_main_agent_audit_review_gate_ts_no_args",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_audit_review_gate_ts_flag_attempt_id",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_audit_review_gate_ts_flag_help",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_audit_review_gate_ts_flag_json",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_audit_review_gate_ts_flag_plan",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_audit_review_gate_ts_flag_requirement_record",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"ENOENT: no such file or directory, open 'D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\source-derived-requirement-record'\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_audit_review_gate_ts_flag_round",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_audit_review_gate_ts_flag_rounds",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/main-agent-bmad-artifact-hardcut.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_main_agent_bmad_artifact_hardcut_ts_no_args",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_bmad_artifact_hardcut_ts_flag_help",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_bmad_artifact_hardcut_ts_flag_json",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_bmad_artifact_hardcut_ts_flag_out",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_bmad_artifact_hardcut_ts_flag_requirement_record",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"ENOENT: no such file or directory, open 'D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\source-derived-requirement-record'\"\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/main-agent-chaos-scenarios.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_main_agent_chaos_scenarios_ts_no_args",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_chaos_scenarios_ts_flag_projectroot",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/main-agent-codex-worker-adapter.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_main_agent_codex_worker_adapter_ts_no_args",
+        "expectedStderr": "main-agent-codex-worker-adapter: --packetPath is required\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_codex_worker_adapter_ts_flag_cached",
+        "expectedStderr": "main-agent-codex-worker-adapter: --packetPath is required\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_codex_worker_adapter_ts_flag_cd",
+        "expectedStderr": "main-agent-codex-worker-adapter: --packetPath is required\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_codex_worker_adapter_ts_flag_exclude_standard",
+        "expectedStderr": "main-agent-codex-worker-adapter: --packetPath is required\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_codex_worker_adapter_ts_flag_others",
+        "expectedStderr": "main-agent-codex-worker-adapter: --packetPath is required\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_codex_worker_adapter_ts_flag_packetpath",
+        "expectedStderr": "scripts/main-agent-codex-worker-adapter.ts:<line>\n<runtime-source-frame>\nTypeError: Cannot read properties of undefined (reading 'replace')\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_codex_worker_adapter_ts_flag_sandbox",
+        "expectedStderr": "main-agent-codex-worker-adapter: --packetPath is required\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_codex_worker_adapter_ts_flag_smoke",
+        "expectedStderr": "main-agent-codex-worker-adapter: --packetPath is required\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_codex_worker_adapter_ts_env_codex_worker_adapter_bin",
+        "expectedStderr": "main-agent-codex-worker-adapter: --packetPath is required\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_codex_worker_adapter_ts_env_main_agent_allow_codex_bin_override",
+        "expectedStderr": "main-agent-codex-worker-adapter: --packetPath is required\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/main-agent-compiled-prompt-runner.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_main_agent_compiled_prompt_runner_ts_no_args",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_compiled_prompt_runner_ts_flag_execution_discipline_profile_ref",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_compiled_prompt_runner_ts_flag_execution_host",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_compiled_prompt_runner_ts_flag_goal_command_available",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_compiled_prompt_runner_ts_flag_human_prompt_profile",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_compiled_prompt_runner_ts_flag_json",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_compiled_prompt_runner_ts_flag_out_dir",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_compiled_prompt_runner_ts_flag_packet_id",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_compiled_prompt_runner_ts_flag_prompt_language",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_compiled_prompt_runner_ts_flag_requirement_record",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_compiled_prompt_runner_ts_flag_source_document",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_compiled_prompt_runner_ts_flag_task_report_path",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_compiled_prompt_runner_ts_env_home",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_compiled_prompt_runner_ts_env_userprofile",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/main-agent-control-plane-isolation-check.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_main_agent_control_plane_isolation_check_ts_no_args",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_control_plane_isolation_check_ts_flag_help",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_control_plane_isolation_check_ts_flag_json",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_control_plane_isolation_check_ts_flag_requirement_record",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"ENOENT: no such file or directory, open 'D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\source-derived-requirement-record'\"\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/main-agent-data-governance-gate.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_main_agent_data_governance_gate_ts_no_args",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_data_governance_gate_ts_flag_data_dir",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_data_governance_gate_ts_flag_help",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_data_governance_gate_ts_flag_json",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_data_governance_gate_ts_flag_out_dir",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_data_governance_gate_ts_flag_requirement_record",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"ENOENT: no such file or directory, open 'D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\source-derived-requirement-record'\"\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/main-agent-dataset-release-gate.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_main_agent_dataset_release_gate_ts_no_args",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_dataset_release_gate_ts_flag_eval_report",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_dataset_release_gate_ts_flag_help",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_dataset_release_gate_ts_flag_json",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_dataset_release_gate_ts_flag_requirement_record",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"ENOENT: no such file or directory, open 'D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\source-derived-requirement-record'\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_dataset_release_gate_ts_flag_training_run",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/main-agent-decision-field-check.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_main_agent_decision_field_check_ts_no_args",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_decision_field_check_ts_flag_help",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_decision_field_check_ts_flag_json",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_decision_field_check_ts_flag_requirement_record",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"ENOENT: no such file or directory, open 'D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\source-derived-requirement-record'\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_decision_field_check_ts_flag_target",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/main-agent-delivery-closeout-gate.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_main_agent_delivery_closeout_gate_ts_no_args",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_closeout_gate_ts_flag_action",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_closeout_gate_ts_flag_allow_existing_attempt",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"Unexpected positional argument: source-derived-allow-existing-attempt\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_closeout_gate_ts_flag_attempt_id",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_closeout_gate_ts_flag_closeout_report",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_closeout_gate_ts_flag_confirmation_text_file",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_closeout_gate_ts_flag_entry_flow",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_closeout_gate_ts_flag_help",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_closeout_gate_ts_flag_json",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_closeout_gate_ts_flag_language",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_closeout_gate_ts_flag_mode",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_closeout_gate_ts_flag_out",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_closeout_gate_ts_flag_record_id",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_closeout_gate_ts_flag_render_report",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_closeout_gate_ts_flag_requirement_record",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"ENOENT: no such file or directory, open 'D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\source-derived-requirement-record'\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_closeout_gate_ts_flag_requirement_set_id",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_closeout_gate_ts_flag_source",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_closeout_gate_ts_flag_strict",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      }
+    ]
+  }
+]

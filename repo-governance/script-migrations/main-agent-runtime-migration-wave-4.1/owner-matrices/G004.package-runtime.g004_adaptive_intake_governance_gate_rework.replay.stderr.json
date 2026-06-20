@@ -1,0 +1,7 @@
+[
+  {
+    "originalPath": "scripts/adaptive-intake-governance-gate.ts",
+    "scenarioId": "g004_adaptive_intake_governance_gate_ts_no_args",
+    "expectedStderr": ""
+  }
+]

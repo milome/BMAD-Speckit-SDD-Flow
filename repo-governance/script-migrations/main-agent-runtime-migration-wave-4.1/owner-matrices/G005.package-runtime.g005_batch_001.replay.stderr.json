@@ -1,0 +1,89 @@
+[
+  {
+    "originalPath": "scripts/architecture-drift-check.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g005_architecture_drift_check_ts_no_args",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g005_architecture_drift_check_ts_cwd",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/coach-diagnose.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g005_coach_diagnose_ts_no_args",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g005_coach_diagnose_ts_flag_epic",
+        "expectedStderr": "Invalid --epic value: source-derived-epic. Expected positive integer.\n"
+      },
+      {
+        "scenarioId": "g005_coach_diagnose_ts_flag_format",
+        "expectedStderr": "Invalid --format value: source-derived-format. Expected json or markdown.\n"
+      },
+      {
+        "scenarioId": "g005_coach_diagnose_ts_flag_limit",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g005_coach_diagnose_ts_flag_run_id",
+        "expectedStderr": "{\n  \"error\": \"run_not_found\",\n  \"run_id\": \"source-derived-run-id\"\n}\n"
+      },
+      {
+        "scenarioId": "g005_coach_diagnose_ts_flag_scenario",
+        "expectedStderr": "Invalid --scenario value: source-derived-scenario. Expected real_dev, eval_question, or all.\n"
+      },
+      {
+        "scenarioId": "g005_coach_diagnose_ts_flag_story",
+        "expectedStderr": "Invalid --story value: source-derived-story. Expected X.Y (e.g. 3.3).\n"
+      },
+      {
+        "scenarioId": "g005_coach_diagnose_ts_env_coach_discovery_limit",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g005_coach_diagnose_ts_env_format",
+        "expectedStderr": "Invalid --format value: source-derived-format. Expected json or markdown.\n"
+      },
+      {
+        "scenarioId": "g005_coach_diagnose_ts_env_run_id",
+        "expectedStderr": "{\n  \"error\": \"run_not_found\",\n  \"run_id\": \"source-derived-run_id\"\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/emit-runtime-policy.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g005_emit_runtime_policy_ts_no_args",
+        "expectedStderr": "emit-runtime-policy: requirement record flow invalid or missing: <missing>\n"
+      },
+      {
+        "scenarioId": "g005_emit_runtime_policy_ts_cwd",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g005_emit_runtime_policy_ts_flag_legacy_registry_bridge",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g005_emit_runtime_policy_ts_flag_record_id",
+        "expectedStderr": "emit-runtime-policy: blocked_missing_active_requirement: no controlled requirement-record candidates; projection=<fixture-root>\\_bmad-output\\runtime\\requirement-records\\index-repair-projection.json\n"
+      },
+      {
+        "scenarioId": "g005_emit_runtime_policy_ts_flag_requirement_set_id",
+        "expectedStderr": "emit-runtime-policy: blocked_missing_active_requirement: no controlled requirement-record candidates; projection=<fixture-root>\\_bmad-output\\runtime\\requirement-records\\index-repair-projection.json\n"
+      },
+      {
+        "scenarioId": "g005_emit_runtime_policy_ts_flag_run_id",
+        "expectedStderr": "emit-runtime-policy: blocked_missing_active_requirement: no controlled requirement-record candidates; projection=<fixture-root>\\_bmad-output\\runtime\\requirement-records\\index-repair-projection.json\n"
+      }
+    ]
+  }
+]

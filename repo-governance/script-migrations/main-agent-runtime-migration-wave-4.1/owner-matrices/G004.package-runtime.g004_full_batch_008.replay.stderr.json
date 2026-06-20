@@ -1,0 +1,184 @@
+[
+  {
+    "originalPath": "scripts/resolve-active-requirement.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_resolve_active_requirement_ts_no_args",
+        "expectedStderr": "resolve-active-requirement: requirement record flow invalid or missing: <missing>\n"
+      },
+      {
+        "scenarioId": "g004_resolve_active_requirement_ts_cwd",
+        "expectedStderr": "resolve-active-requirement: NO_ACTIVE_REQUIREMENT: no active requirement record found under <fixture-root>\\_bmad-output\\runtime\\requirement-records; nextRequiredAction=contract_authoring_required\n"
+      },
+      {
+        "scenarioId": "g004_resolve_active_requirement_ts_flag_json",
+        "expectedStderr": "resolve-active-requirement: NO_ACTIVE_REQUIREMENT: no active requirement record found under <fixture-root>\\_bmad-output\\runtime\\requirement-records; nextRequiredAction=contract_authoring_required\n"
+      },
+      {
+        "scenarioId": "g004_resolve_active_requirement_ts_flag_record_id",
+        "expectedStderr": "resolve-active-requirement: blocked_missing_active_requirement: no controlled requirement-record candidates; projection=<fixture-root>\\_bmad-output\\runtime\\requirement-records\\index-repair-projection.json\n"
+      },
+      {
+        "scenarioId": "g004_resolve_active_requirement_ts_flag_requirement_set_id",
+        "expectedStderr": "resolve-active-requirement: blocked_missing_active_requirement: no controlled requirement-record candidates; projection=<fixture-root>\\_bmad-output\\runtime\\requirement-records\\index-repair-projection.json\n"
+      },
+      {
+        "scenarioId": "g004_resolve_active_requirement_ts_flag_run_id",
+        "expectedStderr": "resolve-active-requirement: blocked_missing_active_requirement: no controlled requirement-record candidates; projection=<fixture-root>\\_bmad-output\\runtime\\requirement-records\\index-repair-projection.json\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/runtime-governance-registry.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_runtime_governance_registry_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/runtime-governance-template-schema.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_runtime_governance_template_schema_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/runtime-governance.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_runtime_governance_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/runtime-scoring-data-path.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_runtime_scoring_data_path_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/sft-extract.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_sft_extract_ts_no_args",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_sft_extract_ts_flag_min_score",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_sft_extract_ts_flag_output",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/six-model-runtime-decision.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_six_model_runtime_decision_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/skill-orchestration-audit.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_skill_orchestration_audit_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/strict-closeout-proof-gate.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_strict_closeout_proof_gate_ts_no_args",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_strict_closeout_proof_gate_ts_flag_attempt_id",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_strict_closeout_proof_gate_ts_flag_help",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_strict_closeout_proof_gate_ts_flag_json",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_strict_closeout_proof_gate_ts_flag_report_path",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_strict_closeout_proof_gate_ts_flag_requirement_record",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"ENOENT: no such file or directory, open 'D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\source-derived-requirement-record'\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_strict_closeout_proof_gate_ts_flag_source",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/target-artifact-realization-gate.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_target_artifact_realization_gate_ts_no_args",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord, attemptId\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_target_artifact_realization_gate_ts_flag_attempt_id",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord, attemptId\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_target_artifact_realization_gate_ts_flag_help",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_target_artifact_realization_gate_ts_flag_json",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord, attemptId\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_target_artifact_realization_gate_ts_flag_mode",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord, attemptId\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_target_artifact_realization_gate_ts_flag_report_path",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord, attemptId\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_target_artifact_realization_gate_ts_flag_requirement_record",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord, attemptId\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_target_artifact_realization_gate_ts_flag_source",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord, attemptId\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_target_artifact_realization_gate_ts_flag_version",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"Missing value for --version\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_target_artifact_realization_gate_ts_env_home",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord, attemptId\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_target_artifact_realization_gate_ts_env_userprofile",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord, attemptId\"\n}\n"
+      }
+    ]
+  }
+]

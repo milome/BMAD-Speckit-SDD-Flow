@@ -1,0 +1,292 @@
+[
+  {
+    "originalPath": "scripts/README.md",
+    "scenarioId": "g004_readme_md_no_args",
+    "expectedStderr": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\README.md:1\n# scripts\n^\n\nSyntaxError: Invalid or unexpected token\n    at wrapSafe (node:internal/modules/cjs/loader:1637:18)\n    at Module._compile (node:internal/modules/cjs/loader:1679:20)\n    at Object..js (node:internal/modules/cjs/loader:1838:10)\n    at Module.load (node:internal/modules/cjs/loader:1441:32)\n    at Function._load (node:internal/modules/cjs/loader:1263:12)\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.22.1\n"
+  },
+  {
+    "originalPath": "scripts/analytics-cluster.ts",
+    "scenarioId": "g004_analytics_cluster_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/analytics-prompt-optimize.ts",
+    "scenarioId": "g004_analytics_prompt_optimize_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/analytics-rule-suggest.ts",
+    "scenarioId": "g004_analytics_rule_suggest_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/audit-scoring-convergence-policy.ts",
+    "scenarioId": "g004_audit_scoring_convergence_policy_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/audit-triad-orchestrator.ts",
+    "scenarioId": "g004_audit_triad_orchestrator_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/check-story-score-written.ts",
+    "scenarioId": "g004_check_story_score_written_ts_no_args",
+    "expectedStderr": "Usage: npx ts-node scripts/check-story-score-written.ts --epic N --story N [--dataPath path] [--stage story|implement]\n"
+  },
+  {
+    "originalPath": "scripts/compare-bmad-help-upstream.js",
+    "scenarioId": "g004_compare_bmad_help_upstream_js_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/controlled-readiness-audit-bridge.ts",
+    "scenarioId": "g004_controlled_readiness_audit_bridge_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/create-second-story.ts",
+    "scenarioId": "g004_create_second_story_ts_no_args",
+    "expectedStderr": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\bmad-state.ts:115\n  if (existing) throw new Error(`Story ${epic}-${story} already exists`);\n                      ^\nError: Story E001-S002 already exists\n    at createStory (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\bmad-state.ts:115:23)\n    at Object.<anonymous> (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\create-second-story.ts:4:27)\n    at Module._compile (node:internal/modules/cjs/loader:1705:14)\n    at Module.m._compile (D:\\Dev\\BMAD-Speckit-SDD-Flow\\node_modules\\ts-node\\src\\index.ts:1618:23)\n    at node:internal/modules/cjs/loader:1838:10\n    at Object.require.extensions.<computed> [as .ts] (D:\\Dev\\BMAD-Speckit-SDD-Flow\\node_modules\\ts-node\\src\\index.ts:1621:12)\n    at Module.load (node:internal/modules/cjs/loader:1441:32)\n    at Function._load (node:internal/modules/cjs/loader:1263:12)\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\n"
+  },
+  {
+    "originalPath": "scripts/create-test-story.ts",
+    "scenarioId": "g004_create_test_story_ts_no_args",
+    "expectedStderr": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\bmad-state.ts:115\n  if (existing) throw new Error(`Story ${epic}-${story} already exists`);\n                      ^\nError: Story E001-S001 already exists\n    at createStory (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\bmad-state.ts:115:23)\n    at Object.<anonymous> (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\create-test-story.ts:5:26)\n    at Module._compile (node:internal/modules/cjs/loader:1705:14)\n    at Module.m._compile (D:\\Dev\\BMAD-Speckit-SDD-Flow\\node_modules\\ts-node\\src\\index.ts:1618:23)\n    at node:internal/modules/cjs/loader:1838:10\n    at Object.require.extensions.<computed> [as .ts] (D:\\Dev\\BMAD-Speckit-SDD-Flow\\node_modules\\ts-node\\src\\index.ts:1621:12)\n    at Module.load (node:internal/modules/cjs/loader:1441:32)\n    at Function._load (node:internal/modules/cjs/loader:1263:12)\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\n"
+  },
+  {
+    "originalPath": "scripts/critical-auditor-profile.ts",
+    "scenarioId": "g004_critical_auditor_profile_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/dashboard-projection-mapping.ts",
+    "scenarioId": "g004_dashboard_projection_mapping_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"dashboard-projection-mapping requires --record-id\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/deferred-gap-governance.cjs",
+    "scenarioId": "g004_deferred_gap_governance_cjs_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/deferred-gap-governance.d.cts",
+    "scenarioId": "g004_deferred_gap_governance_d_cts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/diagnose-bmad-state.ts",
+    "scenarioId": "g004_diagnose_bmad_state_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/ensure-governance-user-story-mapping-fixture.js",
+    "scenarioId": "g004_ensure_governance_user_story_mapping_fixture_js_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/eval-question-generate.ts",
+    "scenarioId": "g004_eval_question_generate_ts_no_args",
+    "expectedStderr": "Usage: npx ts-node scripts/eval-question-generate.ts --run-id <id> | --input <path> [--version v1|v2] [--outputDir <dir>]\n"
+  },
+  {
+    "originalPath": "scripts/extract-npm-pack-json.js",
+    "scenarioId": "g004_extract_npm_pack_json_js_no_args",
+    "expectedStderr": "No npm pack JSON array found in --cwd\n"
+  },
+  {
+    "originalPath": "scripts/governance-host-dispatch-adapter.ts",
+    "scenarioId": "g004_governance_host_dispatch_adapter_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/host-runtime-mode.ts",
+    "scenarioId": "g004_host_runtime_mode_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/i18n/bootstrap-skill-bilingual-files.mjs",
+    "scenarioId": "g004_i18n_bootstrap_skill_bilingual_files_mjs_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/i18n/han-outside-fences.mjs",
+    "scenarioId": "g004_i18n_han_outside_fences_mjs_no_args",
+    "expectedStderr": "node:fs:440\n    return binding.readFileUtf8(path, stringToFlags(options.flag));\n                   ^\n\nError: EISDIR: illegal operation on a directory, read\n    at Object.readFileSync (node:fs:440:20)\n    at file:///D:/Dev/BMAD-Speckit-SDD-Flow/scripts/i18n/han-outside-fences.mjs:16:16\n    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)\n    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26)\n    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5) {\n  errno: -4068,\n  code: 'EISDIR',\n  syscall: 'read'\n}\n\nNode.js v22.22.1\n"
+  },
+  {
+    "originalPath": "scripts/i18n/phase3-skill-en-transform.mjs",
+    "scenarioId": "g004_i18n_phase3_skill_en_transform_mjs_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/i18n/phase3_translate_skill_en.py",
+    "scenarioId": "g004_i18n_phase3_translate_skill_en_py_no_args",
+    "expectedStderr": "Requested Python version (3) is not installed\n"
+  },
+  {
+    "originalPath": "scripts/i18n/resolve-audit-prompt-path.ts",
+    "scenarioId": "g004_i18n_resolve_audit_prompt_path_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/normalize-pack-manifests.js",
+    "scenarioId": "g004_normalize_pack_manifests_js_no_args",
+    "expectedStderr": "Usage: node scripts/normalize-pack-manifests.js <prepare|restore>\n"
+  },
+  {
+    "originalPath": "scripts/parallel-mission-control.ts",
+    "scenarioId": "g004_parallel_mission_control_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/parse-bmad-audit-result.ts",
+    "scenarioId": "g004_parse_bmad_audit_result_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/party-mode-gate-check.ts",
+    "scenarioId": "g004_party_mode_gate_check_ts_no_args",
+    "expectedStderr": "Unknown argument: --cwd\n"
+  },
+  {
+    "originalPath": "scripts/ralph-method/pathing.ts",
+    "scenarioId": "g004_ralph_method_pathing_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/ralph-method/progress-format.ts",
+    "scenarioId": "g004_ralph_method_progress_format_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/ralph-method/schema.ts",
+    "scenarioId": "g004_ralph_method_schema_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/ralph-method/speckit-implement.ts",
+    "scenarioId": "g004_ralph_method_speckit_implement_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/ralph-method/types.ts",
+    "scenarioId": "g004_ralph_method_types_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/ralph-method/verify-pass-consistency.ts",
+    "scenarioId": "g004_ralph_method_verify_pass_consistency_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/ralph-method/verify-ralph-compliance.ts",
+    "scenarioId": "g004_ralph_method_verify_ralph_compliance_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/ralph-method/verify-tdd-trace.ts",
+    "scenarioId": "g004_ralph_method_verify_tdd_trace_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/ralph-method/write-tracking-files.ts",
+    "scenarioId": "g004_ralph_method_write_tracking_files_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/render-upstream-bmad-help-baseline.js",
+    "scenarioId": "g004_render_upstream_bmad_help_baseline_js_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/reviewer-contract.ts",
+    "scenarioId": "g004_reviewer_contract_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/reviewer-registry.ts",
+    "scenarioId": "g004_reviewer_registry_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/reviewer-rollout-gate.ts",
+    "scenarioId": "g004_reviewer_rollout_gate_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/reviewer-runtime-definition.ts",
+    "scenarioId": "g004_reviewer_runtime_definition_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/reviewer-schema.ts",
+    "scenarioId": "g004_reviewer_schema_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/run-ci-release-gate-fixture.js",
+    "scenarioId": "g004_run_ci_release_gate_fixture_js_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/run-fresh-regression-matrix.ts",
+    "scenarioId": "g004_run_fresh_regression_matrix_ts_no_args",
+    "expectedStderr": "Target exists, merging: D:\\Dev\\BMAD-Speckit-SDD-Flow-01-fresh-regression\\_bmad\nTarget exists, merging: D:\\Dev\\BMAD-Speckit-SDD-Flow-01-fresh-regression\\_bmad\nstderr | tests/acceptance/runtime-dashboard-mcp-server.test.ts > runtime dashboard mcp server > boots over stdio and exposes summary-first runtime tools\nWARN: implement stage report has no parseable dimension_scores. Expected dimensions (name_en from modes.code): Functionality, Code Quality, Test Coverage, Security. Check report parseable block matches modes.code.dimensions.\n\nstderr | tests/acceptance/runtime-dashboard-score-projection.test.ts > runtime dashboard score projection wiring > correlates runtime context events with score.written events in one run projection\nWARN: implement stage report has no parseable dimension_scores. Expected dimensions (name_en from modes.code): Functionality, Code Quality, Test Coverage, Security. Check report parseable block matches modes.code.dimensions.\n\nstderr | tests/acceptance/runtime-dashboard-live-server.test.ts > runtime dashboard live server > boots on an ephemeral port and serves the static UI\nWARN: implement stage report has no parseable dimension_scores. Expected dimensions (name_en from modes.code): Functionality, Code Quality, Test Coverage, Security. Check report parseable block matches modes.code.dimensions.\n\nstderr | tests/acceptance/runtime-dashboard-live-api.test.ts > runtime dashboard live api > serves overview, runtime, timeline, score detail, and sft summary from the shared query core\nWARN: implement stage report has no parseable dimension_scores. Expected dimensions (name_en from modes.code): Functionality, Code Quality, Test Coverage, Security. Check report parseable block matches modes.code.dimensions.\n\nstderr | tests/acceptance/runtime-dashboard-mcp-fallback.test.ts > runtime dashboard fallback behavior > keeps the live dashboard usable when no MCP process is running\nWARN: implement stage report has no parseable dimension_scores. Expected dimensions (name_en from modes.code): Functionality, Code Quality, Test Coverage, Security. Check report parseable block matches modes.code.dimensions.\n\nstderr | packages/scoring/orchestrator/__tests__/parse-and-write.test.ts > parseAndWriteScore > T1: stage=implement + artifactDocPath=tasks path → source_path=reportPath\nWARN: implement stage report has no parseable dimension_scores. Expected dimensions (name_en from modes.code): Functionality, Code Quality, Test Coverage, Security. Check report parseable block matches modes.code.dimensions.\n\nstderr | packages/scoring/orchestrator/__tests__/parse-and-write.test.ts > parseAndWriteScore > T1: stage=implement + artifactDocPath=BUGFIX path → source_path=artifactDocPath\nWARN: implement stage report has no parseable dimension_scores. Expected dimensions (name_en from modes.code): Functionality, Code Quality, Test Coverage, Security. Check report parseable block matches modes.code.dimensions.\n\nstderr | packages/scoring/orchestrator/__tests__/parse-and-write.test.ts > parseAndWriteScore > T1: stage=implement + artifactDocPath not passed → no source_path\nWARN: implement stage report has no parseable dimension_scores. Expected dimensions (name_en from modes.code): Functionality, Code Quality, Test Coverage, Security. Check report parseable block matches modes.code.dimensions.\n\nnpm error code E404\nnpm error 404 Not Found - GET https://registry.npmjs.org/bmad-speckit - Not found\nnpm error 404\nnpm error 404  'bmad-speckit@*' is not in this registry.\nnpm error 404\nnpm error 404 Note that you can also install from a\nnpm error 404 tarball, folder, http url, or git url.\nnpm error A complete log of this run can be found in: C:\\Users\\milome\\AppData\\Local\\npm-cache\\_logs\\2026-06-20T04_39_46_819Z-debug-0.log\nstderr | packages/scoring/orchestrator/__tests__/parse-and-write.test.ts > parseAndWriteScore > T1: stage=implement + artifactDocPath=tasks path → source_path=reportPath\nWARN: implement stage report has no parseable dimension_scores. Expected dimensions (name_en from modes.code): Functionality, Code Quality, Test Coverage, Security. Check report parseable block matches modes.code.dimensions.\n\nstderr | packages/scoring/orchestrator/__tests__/parse-and-write.test.ts > parseAndWriteScore > T1: stage=implement + artifactDocPath=BUGFIX path → source_path=artifactDocPath\nWARN: implement stage report has no parseable dimension_scores. Expected dimensions (name_en from modes.code): Functionality, Code Quality, Test Coverage, Security. Check report parseable block matches modes.code.dimensions.\n\nstderr | packages/scoring/orchestrator/__tests__/parse-and-write.test.ts > parseAndWriteScore > T1: stage=implement + artifactDocPath not provided → no source_path\nWARN: implement stage report has no parseable dimension_scores. Expected dimensions (name_en from modes.code): Functionality, Code Quality, Test Coverage, Security. Check report parseable block matches modes.code.dimensions.\n\nnpm error code E404\nnpm error 404 Not Found - GET https://registry.npmjs.org/bmad-speckit - Not found\nnpm error 404\nnpm error 404  'bmad-speckit@*' is not in this registry.\nnpm error 404\nnpm error 404 Note that you can also install from a\nnpm error 404 tarball, folder, http url, or git url.\nnpm error A complete log of this run can be found in: C:\\Users\\milome\\AppData\\Local\\npm-cache\\_logs\\2026-06-20T04_39_54_724Z-debug-0.log\nError: --title 必填\nUsage: npx ts-node scripts/eval-questions-cli.ts add --title \"题目标题\" [--version v1|v2]\n"
+  },
+  {
+    "originalPath": "scripts/runtime-context.ts",
+    "scenarioId": "g004_runtime_context_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/scores-summary.ts",
+    "scenarioId": "g004_scores_summary_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/start-dashboard.ts",
+    "scenarioId": "g004_start_dashboard_ts_no_args",
+    "expectedStderr": "WARN: implement/post_impl stage report is missing Structured Drift Signal Block; implementation verdict is not trustworthy until re-readiness evidence is regenerated.\nWARN: implement stage effective verdict is blocked_pending_rereadiness. Missing structured drift signal block for implementation verdict; re-readiness evidence is required.\n"
+  },
+  {
+    "originalPath": "scripts/start-runtime-dashboard-server.cjs",
+    "scenarioId": "g004_start_runtime_dashboard_server_cjs_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/subagent-evidence-envelope.ts",
+    "scenarioId": "g004_subagent_evidence_envelope_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: envelope, requirement-record, schema-out, report-out\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/supervised-worker-runtime.ts",
+    "scenarioId": "g004_supervised_worker_runtime_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/test-locks.ts",
+    "scenarioId": "g004_test_locks_ts_no_args",
+    "expectedStderr": "RangeError: Maximum call stack size exceeded\n    at Object.normalize (node:path:365:12)\n    at join (node:path:613:18)\n    at getLockPath (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\bmad-state.ts:201:14)\n    at getLock (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\bmad-state.ts:205:16)\n    at releaseLock (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\bmad-state.ts:258:20)\n    at getLock (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\bmad-state.ts:219:5)\n    at releaseLock (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\bmad-state.ts:258:20)\n    at getLock (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\bmad-state.ts:219:5)\n    at releaseLock (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\bmad-state.ts:258:20)\n    at getLock (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\bmad-state.ts:219:5)\n"
+  },
+  {
+    "originalPath": "scripts/test-story-flow.ts",
+    "scenarioId": "g004_test_story_flow_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/verify-score-auto-scoped-bundle.cjs",
+    "scenarioId": "g004_verify_score_auto_scoped_bundle_cjs_no_args",
+    "expectedStderr": "WARN: implement/post_impl stage report is missing Structured Drift Signal Block; implementation verdict is not trustworthy until re-readiness evidence is regenerated.\nWARN: implement stage effective verdict is blocked_pending_rereadiness. Missing structured drift signal block for implementation verdict; re-readiness evidence is required.\nTypeError: fetch failed\n    at node:internal/deps/undici/undici:14902:13\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async main (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\verify-score-auto-scoped-bundle.cjs:73:20)\n"
+  },
+  {
+    "originalPath": "scripts/verify-skill-architecture.sh",
+    "scenarioId": "g004_verify_skill_architecture_sh_no_args",
+    "expectedStderr": "<3>WSL (<relay> - Relay) ERROR: CreateProcessCommon:800: execvpe(/bin/bash) failed: No such file or directory\n"
+  },
+  {
+    "originalPath": "scripts/verify-speckit-mirror-sync.js",
+    "scenarioId": "g004_verify_speckit_mirror_sync_js_no_args",
+    "expectedStderr": ""
+  }
+]

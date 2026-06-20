@@ -1,0 +1,65 @@
+[
+  {
+    "originalPath": "scripts/eval-questions-cli.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g005_eval_questions_cli_ts_no_args",
+        "expectedStderr": "Usage:\n  npx ts-node scripts/eval-questions-cli.ts list [--version v1|v2]\n  npx ts-node scripts/eval-questions-cli.ts add --title \"xxx\" [--version v1|v2]\n  npx ts-node scripts/eval-questions-cli.ts run --id <id> --version v1|v2 [--reportPath <path>] [--no-agent]\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/init-to-root.js",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g005_init_to_root_js_no_args",
+        "expectedStderr": "Target exists, merging: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\n"
+      },
+      {
+        "scenarioId": "g005_init_to_root_js_flag_agent",
+        "expectedStderr": "Unsupported --agent value: source-derived-agent. Valid: cursor, claude-code, codex, cursor-agent, claude\n"
+      },
+      {
+        "scenarioId": "g005_init_to_root_js_flag_full",
+        "expectedStderr": "Target exists, merging: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\n"
+      },
+      {
+        "scenarioId": "g005_init_to_root_js_flag_no_package_json",
+        "expectedStderr": "Target exists, merging: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\n"
+      },
+      {
+        "scenarioId": "g005_init_to_root_js_flag_with_mcp",
+        "expectedStderr": "Target exists, merging: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\n"
+      },
+      {
+        "scenarioId": "g005_init_to_root_js_flag_with_package_json",
+        "expectedStderr": "Target exists, merging: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\n"
+      },
+      {
+        "scenarioId": "g005_init_to_root_js_env_bmad_skip_consumer_mcp_install",
+        "expectedStderr": "Target exists, merging: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\n"
+      },
+      {
+        "scenarioId": "g005_init_to_root_js_env_init_cwd",
+        "expectedStderr": "Target exists, merging: D:\\Dev\\BMAD-Speckit-SDD-Flow\\source-derived-init_cwd\\_bmad\n"
+      },
+      {
+        "scenarioId": "g005_init_to_root_js_env_node_env",
+        "expectedStderr": "Target exists, merging: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\n"
+      },
+      {
+        "scenarioId": "g005_init_to_root_js_env_vitest",
+        "expectedStderr": "Target exists, merging: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/live-smoke-speckit-workflow.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g005_live_smoke_speckit_workflow_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  }
+]

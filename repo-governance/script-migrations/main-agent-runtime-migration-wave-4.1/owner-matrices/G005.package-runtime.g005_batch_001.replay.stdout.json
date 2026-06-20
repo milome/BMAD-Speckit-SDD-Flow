@@ -1,0 +1,89 @@
+[
+  {
+    "originalPath": "scripts/architecture-drift-check.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g005_architecture_drift_check_ts_no_args",
+        "expectedStdout": "{\n  \"passed\": true,\n  \"failures\": []\n}\n"
+      },
+      {
+        "scenarioId": "g005_architecture_drift_check_ts_cwd",
+        "expectedStdout": "{\n  \"passed\": true,\n  \"failures\": []\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/coach-diagnose.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g005_coach_diagnose_ts_no_args",
+        "expectedStdout": "# AI Coach Diagnosis\n\n## Summary\nFallback diagnosis complete (run_id=dev-e15-s2-implement-post-audit-check). Output is based on existing score records. Role boundary: AI Code Coach + Iteration Gate Keeper; consumes existing scoring only.\n\n## Phase Scores\n- implement: 93.1 pts, remediation iterations: 0\n\n`phase_score` uses tiered deduction from remediation iteration counts.\n\n## Remediation iterations per stage\n\nCount of failed-audit rounds; 0 = passed first time; post-pass confirmation rounds do not count.\n\nAll 0 (passed on first try)\n\n## Weak Areas\n- (none)\n\n## Recommendations\n- Fallback mode: end-to-end Skill unavailable; diagnosis uses existing scoring data only.\n- No veto this run: continue improving stability and maintainability of lower-scoring stages.\n- 只消费已有审计与 scoring 数据，不替代 Reviewer。\n\n## Iteration Passed\ntrue\n"
+      },
+      {
+        "scenarioId": "g005_coach_diagnose_ts_flag_epic",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g005_coach_diagnose_ts_flag_format",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g005_coach_diagnose_ts_flag_limit",
+        "expectedStdout": "# AI Coach Diagnosis\n\n## Summary\nFallback diagnosis complete (run_id=dev-e15-s2-implement-post-audit-check). Output is based on existing score records. Role boundary: AI Code Coach + Iteration Gate Keeper; consumes existing scoring only.\n\n## Phase Scores\n- implement: 93.1 pts, remediation iterations: 0\n\n`phase_score` uses tiered deduction from remediation iteration counts.\n\n## Remediation iterations per stage\n\nCount of failed-audit rounds; 0 = passed first time; post-pass confirmation rounds do not count.\n\nAll 0 (passed on first try)\n\n## Weak Areas\n- (none)\n\n## Recommendations\n- Fallback mode: end-to-end Skill unavailable; diagnosis uses existing scoring data only.\n- No veto this run: continue improving stability and maintainability of lower-scoring stages.\n- 只消费已有审计与 scoring 数据，不替代 Reviewer。\n\n## Iteration Passed\ntrue\n"
+      },
+      {
+        "scenarioId": "g005_coach_diagnose_ts_flag_run_id",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g005_coach_diagnose_ts_flag_scenario",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g005_coach_diagnose_ts_flag_story",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g005_coach_diagnose_ts_env_coach_discovery_limit",
+        "expectedStdout": "# AI Coach Diagnosis\n\n## Summary\nFallback diagnosis complete (run_id=dev-e15-s2-implement-post-audit-check). Output is based on existing score records. Role boundary: AI Code Coach + Iteration Gate Keeper; consumes existing scoring only.\n\n## Phase Scores\n- implement: 93.1 pts, remediation iterations: 0\n\n`phase_score` uses tiered deduction from remediation iteration counts.\n\n## Remediation iterations per stage\n\nCount of failed-audit rounds; 0 = passed first time; post-pass confirmation rounds do not count.\n\nAll 0 (passed on first try)\n\n## Weak Areas\n- (none)\n\n## Recommendations\n- Fallback mode: end-to-end Skill unavailable; diagnosis uses existing scoring data only.\n- No veto this run: continue improving stability and maintainability of lower-scoring stages.\n- 只消费已有审计与 scoring 数据，不替代 Reviewer。\n\n## Iteration Passed\ntrue\n"
+      },
+      {
+        "scenarioId": "g005_coach_diagnose_ts_env_format",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g005_coach_diagnose_ts_env_run_id",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/emit-runtime-policy.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g005_emit_runtime_policy_ts_no_args",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g005_emit_runtime_policy_ts_cwd",
+        "expectedStdout": "{\"activeRequirement\":null,\"decision\":\"contract_authoring_required\",\"flow\":null,\"nextRequiredAction\":\"contract_authoring_required\",\"projectRoot\":\"<fixture-root>\",\"quickStart\":{\"entries\":[\"创建产品/功能需求契约\",\"创建 Bugfix 需求契约\",\"创建独立任务契约\",\"导入已有需求文档\",\"查看当前阻塞原因\"],\"message\":\"当前项目尚未创建需求契约。BMAD 不会把初始化占位状态当作真实需求。请先创建或导入一个可确认的需求源文档。\"},\"schemaVersion\":\"runtime-policy/no-active-requirement/v1\",\"stage\":null,\"status\":\"no_active_requirement\"}\n"
+      },
+      {
+        "scenarioId": "g005_emit_runtime_policy_ts_flag_legacy_registry_bridge",
+        "expectedStdout": "{\"activeRequirement\":null,\"decision\":\"contract_authoring_required\",\"flow\":null,\"nextRequiredAction\":\"contract_authoring_required\",\"projectRoot\":\"<fixture-root>\",\"quickStart\":{\"entries\":[\"创建产品/功能需求契约\",\"创建 Bugfix 需求契约\",\"创建独立任务契约\",\"导入已有需求文档\",\"查看当前阻塞原因\"],\"message\":\"当前项目尚未创建需求契约。BMAD 不会把初始化占位状态当作真实需求。请先创建或导入一个可确认的需求源文档。\"},\"schemaVersion\":\"runtime-policy/no-active-requirement/v1\",\"stage\":null,\"status\":\"no_active_requirement\"}\n"
+      },
+      {
+        "scenarioId": "g005_emit_runtime_policy_ts_flag_record_id",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g005_emit_runtime_policy_ts_flag_requirement_set_id",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g005_emit_runtime_policy_ts_flag_run_id",
+        "expectedStdout": ""
+      }
+    ]
+  }
+]

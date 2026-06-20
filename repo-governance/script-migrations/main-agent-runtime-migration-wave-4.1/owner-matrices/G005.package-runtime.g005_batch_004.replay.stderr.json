@@ -1,0 +1,37 @@
+[
+  {
+    "originalPath": "scripts/setup.sh",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g005_setup_sh_no_args",
+        "expectedStderr": "<3>WSL (<relay> - Relay) ERROR: CreateProcessCommon:800: execvpe(/bin/bash) failed: No such file or directory\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/speckit-cli.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g005_speckit_cli_ts_no_args",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g005_speckit_cli_ts_flag_help",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g005_speckit_cli_ts_flag_version",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/validate-single-source-whitelist.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g005_validate_single_source_whitelist_ts_no_args",
+        "expectedStderr": "single-source whitelist validation failed\n- _bmad-output/runtime/requirement-records/index.json: field is not whitelisted: active\n- _bmad-output/runtime/requirement-records/index.json: field is not whitelisted: records\n"
+      }
+    ]
+  }
+]

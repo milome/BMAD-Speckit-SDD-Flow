@@ -1,0 +1,53 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-wave-4-1-owner-initial-replay-results/v1",
+  "waveId": "main-agent-runtime-migration-wave-4.1",
+  "ownerTaskId": "G004",
+  "generatedAt": "2026-06-20T05:44:39.796Z",
+  "artifactSuffix": "g004_adaptive_intake_governance_gate_rework",
+  "timeoutMs": 10000,
+  "matrixPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G004.package-runtime.g004_adaptive_intake_governance_gate_rework.behavior-matrix.json",
+  "matrixHash": "sha256:f10cfa48e7dd71933cb798d7e1b3805b74d1fbaa455e6c9247b30357ccff3327",
+  "scenarioCount": 1,
+  "passedScenarioCount": 1,
+  "failedScenarioCount": 0,
+  "replayRows": [
+    {
+      "originalPath": "scripts/adaptive-intake-governance-gate.ts",
+      "entryId": "adaptive-intake-governance-gate",
+      "scenarioId": "g004_adaptive_intake_governance_gate_ts_no_args",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/adaptive-intake-governance-gate.ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/adaptive-intake-governance-gate.js",
+      "originalReplay": {
+        "exitCode": 0,
+        "stdoutBytes": 76,
+        "stderrBytes": 0,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 0,
+        "timedOut": false
+      },
+      "replay": {
+        "exitCode": 0,
+        "stdoutBytes": 76,
+        "stderrBytes": 0,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 0,
+        "timedOut": false
+      },
+      "comparison": {
+        "scenarioId": "g004_adaptive_intake_governance_gate_ts_no_args",
+        "originalEntryPoint": "scripts/adaptive-intake-governance-gate.ts",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/adaptive-intake-governance-gate.ts",
+        "stdoutMatches": true,
+        "stderrMatches": true,
+        "exitCodeMatches": true,
+        "fileArtifactsMatch": true,
+        "errorPathsMatch": true,
+        "passed": true,
+        "exitCode": 0,
+        "stdoutBytes": 76,
+        "stderrBytes": 0,
+        "timedOut": false
+      }
+    }
+  ]
+}

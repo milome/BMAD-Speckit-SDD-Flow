@@ -1,0 +1,62 @@
+[
+  {
+    "originalPath": "scripts/architecture-drift-check.ts",
+    "scenarioId": "g004_architecture_drift_check_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/coach-diagnose.ts",
+    "scenarioId": "g004_coach_diagnose_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/emit-runtime-policy.ts",
+    "scenarioId": "g004_emit_runtime_policy_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/eval-questions-cli.ts",
+    "scenarioId": "g004_eval_questions_cli_ts_no_args",
+    "expectedStderr": "Usage:\n  npx ts-node scripts/eval-questions-cli.ts list [--version v1|v2]\n  npx ts-node scripts/eval-questions-cli.ts add --title \"xxx\" [--version v1|v2]\n  npx ts-node scripts/eval-questions-cli.ts run --id <id> --version v1|v2 [--reportPath <path>] [--no-agent]\n"
+  },
+  {
+    "originalPath": "scripts/init-to-root.js",
+    "scenarioId": "g004_init_to_root_js_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/live-smoke-speckit-workflow.ts",
+    "scenarioId": "g004_live_smoke_speckit_workflow_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-bmad-help-five-layer-matrix.ts",
+    "scenarioId": "g004_main_agent_bmad_help_five_layer_matrix_ts_no_args",
+    "expectedStderr": "Error: ENOENT: no such file or directory, open '<fixture-root>\\_bmad\\commands\\bmad-help.md'\n    at Object.readFileSync (node:fs:440:20)\n    at validateBmadHelpEntry (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\main-agent-bmad-help-five-layer-matrix.ts:378:22)\n    at runBmadHelpFiveLayerMatrix (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\main-agent-bmad-help-five-layer-matrix.ts:575:25)\n    at main (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\main-agent-bmad-help-five-layer-matrix.ts:613:18)\n    at Object.<anonymous> (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\main-agent-bmad-help-five-layer-matrix.ts:633:22)\n    at Module._compile (node:internal/modules/cjs/loader:1705:14)\n    at Module.m._compile (D:\\Dev\\BMAD-Speckit-SDD-Flow\\node_modules\\ts-node\\src\\index.ts:1618:23)\n    at node:internal/modules/cjs/loader:1838:10\n    at Object.require.extensions.<computed> [as .ts] (D:\\Dev\\BMAD-Speckit-SDD-Flow\\node_modules\\ts-node\\src\\index.ts:1621:12)\n    at Module.load (node:internal/modules/cjs/loader:1441:32) {\n  errno: -4058,\n  code: 'ENOENT',\n  syscall: 'open',\n  path: '<fixture-root>\\\\_bmad\\\\commands\\\\bmad-help.md'\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+    "scenarioId": "g004_main_agent_host_matrix_pr_orchestrator_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/setup.ps1",
+    "scenarioId": "g004_setup_ps1_no_args",
+    "expectedStderr": "setup.ps1: A parameter cannot be found that matches parameter name '-cwd'.\n"
+  },
+  {
+    "originalPath": "scripts/setup.sh",
+    "scenarioId": "g004_setup_sh_no_args",
+    "expectedStderr": "<3>WSL (<relay> - Relay) ERROR: CreateProcessCommon:800: execvpe(/bin/bash) failed: No such file or directory\n"
+  },
+  {
+    "originalPath": "scripts/speckit-cli.ts",
+    "scenarioId": "g004_speckit_cli_ts_no_args",
+    "expectedStderr": "Error: No command specified\n\n"
+  },
+  {
+    "originalPath": "scripts/validate-single-source-whitelist.ts",
+    "scenarioId": "g004_validate_single_source_whitelist_ts_no_args",
+    "expectedStderr": "single-source whitelist validation failed\n- _bmad-output/runtime/requirement-records/index.json: field is not whitelisted: active\n- _bmad-output/runtime/requirement-records/index.json: field is not whitelisted: records\n"
+  }
+]

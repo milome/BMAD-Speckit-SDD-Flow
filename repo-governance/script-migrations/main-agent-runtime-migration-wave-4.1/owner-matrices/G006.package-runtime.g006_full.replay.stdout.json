@@ -1,0 +1,62 @@
+[
+  {
+    "originalPath": "scripts/bmad-speckit-cli.js",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g006_bmad_speckit_cli_js_no_args",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g006_bmad_speckit_cli_js_env_node_path",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/run-auditor-host.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g006_run_auditor_host_ts_no_args",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g006_run_auditor_host_ts_flag_artifactpath",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g006_run_auditor_host_ts_flag_iterationcount",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g006_run_auditor_host_ts_flag_projectroot",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g006_run_auditor_host_ts_flag_reportpath",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g006_run_auditor_host_ts_flag_stage",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/runtime-context-registry.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g006_runtime_context_registry_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/write-runtime-context.cjs",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g006_write_runtime_context_cjs_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  }
+]

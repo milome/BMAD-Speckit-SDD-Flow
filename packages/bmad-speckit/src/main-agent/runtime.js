@@ -34,7 +34,6 @@ const { e2eDualHostJourneyRunnerAction } = require('./actions/e2e-dual-host-jour
 const { e2eHostMatrixJourneyRunnerAction } = require('./actions/e2e-host-matrix-journey-runner');
 const { finalCloseoutEvidenceRunnerAction } = require('./actions/final-closeout-evidence-runner');
 const { functionalResumeCheckAction } = require('./actions/functional-resume-check');
-const { emitFullOrchestration } = require('./actions/full-orchestration');
 const { governedDataProductsAction } = require('./actions/governed-data-products');
 const { governancePacketDispatchWorkerAction } = require('./actions/governance-packet-dispatch-worker');
 const { implementationReadinessGateAction } = require('./actions/implementation-readiness-gate');
@@ -67,6 +66,7 @@ const { scoringGatesCheckAction } = require('./actions/scoring-gates-check');
 const { skillOrchestrationAuditAction } = require('./actions/skill-orchestration-audit');
 const { sixModelRuntimeDecisionAction } = require('./actions/six-model-runtime-decision');
 const { soakRunnerAction } = require('./actions/soak-runner');
+const { emitPackageOrchestration } = require('./actions/source-authority-orchestration');
 const { renderAuditBlockCliAction } = require('./actions/render-audit-block-cli');
 const { strictCloseoutProofGateAction } = require('./actions/strict-closeout-proof-gate');
 const { targetArtifactRealizationGateAction } = require('./actions/target-artifact-realization-gate');
@@ -203,6 +203,34 @@ const SUPPORTED_ACTIONS = new Set([
   ...Object.keys(PACKAGE_RUNTIME_READY_ACTIONS),
   ...Object.keys(WAVE_3_12_PACKAGE_RUNTIME_ACTIONS),
 ]);
+const ORCHESTRATION_ACTIONS = new Set([
+  'inspect',
+  'step',
+  'dispatch-plan',
+  'run-loop',
+  'claim',
+  'dispatch',
+  'complete',
+  'invalidate',
+  'route-intake',
+  'adaptive-intake',
+  'confirm-scope',
+  'confirmation-ingest',
+  'confirm-closeout-acceptance',
+  'closeout-acceptance-ingest',
+  'route-confirmation-drift',
+  'confirmation-drift-route',
+  'repair-confirmation-bookkeeping',
+  'confirmation-bookkeeping-repair',
+  'pre-confirmation-drilldown',
+  'pre_confirmation_drilldown',
+  'author-confirmation-ready-source',
+  'author_confirmation_ready_source',
+  'authoring-repair',
+  'authoring_repair',
+  'post-close-defect-intake',
+  'controlled-readiness-audit',
+]);
 
 function loadWave312PackageRuntimeAction(action) {
   const definition = WAVE_3_12_PACKAGE_RUNTIME_ACTIONS[action];
@@ -312,8 +340,16 @@ function requireRuntimeState(context) {
 }
 
 async function runMainAgentRuntime(context) {
-  if (context.legacyOrchestration && (context.action === 'run-loop' || !SUPPORTED_ACTIONS.has(context.action))) {
-    return emitFullOrchestration(context);
+  if (
+    context.legacyOrchestration &&
+    ORCHESTRATION_ACTIONS.has(context.action) &&
+    (context.action === 'run-loop' || !SUPPORTED_ACTIONS.has(context.action))
+  ) {
+    return emitPackageOrchestration(context);
+  }
+
+  if (!SUPPORTED_ACTIONS.has(context.action) && ORCHESTRATION_ACTIONS.has(context.action)) {
+    return emitPackageOrchestration(context);
   }
 
   if (!SUPPORTED_ACTIONS.has(context.action)) {
@@ -354,7 +390,7 @@ async function runMainAgentRuntime(context) {
   }
 
   if (context.action === 'run-loop') {
-    return emitFullOrchestration(context);
+    return emitPackageOrchestration(context);
   }
 
   if (context.action === 'release-gate') {

@@ -1,0 +1,148 @@
+[
+  {
+    "originalPath": "scripts/i18n/sync-party-mode-mirrors.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_i18n_sync_party_mode_mirrors_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/i18n/validate-template-manifest.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_i18n_validate_template_manifest_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/long-run-runtime-policy.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_long_run_runtime_policy_ts_no_args",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g007_long_run_runtime_policy_ts_flag_json",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/model-governance-hints-schema.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_model_governance_hints_schema_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/model-governance-policy-filter.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_model_governance_policy_filter_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/monitor-push.sh",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_monitor_push_sh_no_args",
+        "expectedStderr": "<3>WSL (<relay> - Relay) ERROR: CreateProcessCommon:800: execvpe(/bin/bash) failed: No such file or directory\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/party-mode-runtime.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_party_mode_runtime_ts_no_args",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g007_party_mode_runtime_ts_flag_meta_path",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g007_party_mode_runtime_ts_flag_min_rounds",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g007_party_mode_runtime_ts_flag_ratio_threshold",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g007_party_mode_runtime_ts_flag_session_key",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g007_party_mode_runtime_ts_flag_session_log_path",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g007_party_mode_runtime_ts_flag_tail_window",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g007_party_mode_runtime_ts_flag_write_all",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g007_party_mode_runtime_ts_flag_write_audit_verdict",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g007_party_mode_runtime_ts_flag_write_convergence_record",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g007_party_mode_runtime_ts_flag_write_snapshot",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/prepublish-check.js",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_prepublish_check_js_no_args",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g007_prepublish_check_js_env_bmad_pack_session",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g007_prepublish_check_js_env_bmad_pack_session_lock_timeout_ms",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g007_prepublish_check_js_env_bmad_prepublish_silent",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/prompt-routing-governance.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_prompt_routing_governance_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/prompt-routing-hints-schema.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_prompt_routing_hints_schema_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  }
+]

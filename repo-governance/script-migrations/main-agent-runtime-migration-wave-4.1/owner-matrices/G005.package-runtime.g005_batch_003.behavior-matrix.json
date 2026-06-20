@@ -1,0 +1,2416 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-wave-4-1-owner-initial-behavior-matrix/v1",
+  "waveId": "main-agent-runtime-migration-wave-4.1",
+  "ownerTaskId": "G005",
+  "generatedAt": "2026-06-20T10:40:09.824Z",
+  "artifactSuffix": "g005_batch_003",
+  "timeoutMs": 30000,
+  "coverageDecision": "passed_full_original_behavior_coverage",
+  "eligibleOwnerRowCount": 12,
+  "selectedRowCount": 3,
+  "matrixRowCount": 3,
+  "scenarioCount": 13,
+  "fullCoverageStillRequired": false,
+  "rows": [
+    {
+      "originalPath": "scripts/main-agent-bmad-help-five-layer-matrix.ts",
+      "entryId": "main-agent-bmad-help-five-layer-matrix",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-bmad-help-five-layer-matrix.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-bmad-help-five-layer-matrix.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/main-agent-bmad-help-five-layer-matrix.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g005_main_agent_bmad_help_five_layer_matrix_ts_no_args",
+          "originalEntryPoint": "scripts/main-agent-bmad-help-five-layer-matrix.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-bmad-help-five-layer-matrix.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-bmad-help-five-layer-matrix.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-bmad-help-five-layer-matrix.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g005_main_agent_bmad_help_five_layer_matrix_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g005_main_agent_bmad_help_five_layer_matrix_ts_no_args-original-s5SKcb",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_main_agent_bmad_help_five_layer_matrix_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g005_main_agent_bmad_help_five_layer_matrix_ts_no_args-package-2WZ6rA",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "{\n  \"reportPath\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\e2e\\\\bmad-help-five-layer-main-agent-matrix.json\",\n  \"reportType\": \"bmad_help_five_layer_main_agent_matrix\",\n  \"generatedAt\": \"<iso-timestamp>\",\n  \"projectRoot\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\",\n  \"bmadHelpEntry\": {\n    \"command\": \"bmad-help\",\n    \"firstScreenPolicy\": \"recommended_or_blocked_state_aware\",\n    \"catalogLoaded\": true,\n    \"canonicalHelpWorkflow\": true,\n    \"codexFirstClass\": true,\n    \"fiveLayerCatalog\": true,\n    \"docsExposeCodex\": true,\n    \"bmadsRuntimeContract\": true,\n    \"bmadHelpIsUpstreamOnly\": true\n  },\n  \"progressState\": {\n    \"currentLayer\": \"layer_3\",\n    \"currentStage\": \"story_create\",\n    \"nextRequiredLayer\": \"layer_3\",\n    \"completedLayers\": [\n      \"layer_1\",\n      \"layer_2\"\n    ],\n    \"stageStatuses\": [\n      {\n        \"layer\": \"layer_1\",\n        \"stage\": \"prd\",\n        \"completed\": true,\n        \"evidenceKind\": \"upstream_artifact\",\n        \"evidencePath\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\context\\\\layer_1-prd.complete.json\"\n      },\n      {\n        \"layer\": \"layer_2\",\n        \"stage\": \"arch\",\n        \"completed\": true,\n        \"evidenceKind\": \"upstream_artifact\",\n        \"evidencePath\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\docs\\\\architecture\\\\layer_2-arch.complete.json\"\n      },\n      {\n        \"layer\": \"layer_3\",\n        \"stage\": \"epics\",\n        \"completed\": true,\n        \"evidenceKind\": \"upstream_artifact\",\n        \"evidencePath\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\docs\\\\stories\\\\layer_3-epics.complete.json\"\n      },\n      {\n        \"layer\": \"layer_3\",\n        \"stage\": \"story_create\",\n        \"completed\": false,\n        \"evidenceKind\": \"missing\",\n        \"evidencePath\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\docs\\\\stories\\\\layer_3-story_create.complete.json\"\n      },\n      {\n        \"layer\": \"layer_4\",\n        \"stage\": \"specify\",\n        \"completed\": false,\n        \"evidenceKind\": \"missing\",\n        \"evidencePath\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\specs\\\\layer_4-specify.complete.json\"\n      },\n      {\n        \"layer\": \"layer_4\",\n        \"stage\": \"plan\",\n        \"completed\": false,\n        \"evidenceKind\": \"missing\",\n        \"evidencePath\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\specs\\\\layer_4-plan.complete.json\"\n      },\n      {\n        \"layer\": \"layer_4\",\n        \"stage\": \"gaps\",\n        \"completed\": false,\n        \"evidenceKind\": \"missing\",\n        \"evidencePath\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\specs\\\\layer_4-gaps.complete.json\"\n      },\n      {\n        \"layer\": \"layer_4\",\n        \"stage\": \"tasks\",\n        \"completed\": false,\n        \"evidenceKind\": \"missing\",\n        \"evidencePath\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\specs\\\\layer_4-tasks.complete.json\"\n      },\n      {\n        \"layer\": \"layer_4\",\n        \"stage\": \"implement\",\n        \"completed\": false,\n        \"evidenceKind\": \"missing\",\n        \"evidencePath\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\specs\\\\layer_4-implement.complete.json\"\n      },\n      {\n        \"layer\": \"layer_5\",\n        \"stage\": \"post_audit\",\n        \"completed\": false,\n        \"evidenceKind\": \"missing\",\n        \"evidencePath\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\gates\\\\layer_5-post_audit.complete.json\"\n      },\n      {\n        \"layer\": \"layer_5\",\n        \"stage\": \"pr_review\",\n        \"completed\": false,\n        \"evidenceKind\": \"missing\",\n        \"evidencePath\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\gates\\\\layer_5-pr_review.complete.json\"\n      },\n      {\n        \"layer\": \"layer_5\",\n        \"stage\": \"release_gate\",\n        \"completed\": false,\n        \"evidenceKind\": \"missing\",\n        \"evidencePath\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\gates\\\\layer_5-release_gate.complete.json\"\n      },\n      {\n        \"layer\": \"layer_5\",\n        \"stage\": \"delivery_truth_gate\",\n        \"completed\": false,\n        \"evidenceKind\": \"missing\",\n        \"evidencePath\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\gates\\\\layer_5-delivery_truth_gate.complete.json\"\n      }\n    ]\n  },\n  \"layers\": [\n    {\n      \"id\": \"layer_1\",\n      \"name\": \"Product Definition Layer\",\n      \"stages\": [\n        \"prd\"\n      ],\n      \"passed\": true\n    },\n    {\n      \"id\": \"layer_2\",\n      \"name\": \"Architecture Layer\",\n      \"stages\": [\n        \"arch\"\n      ],\n      \"passed\": true\n    },\n    {\n      \"id\": \"layer_3\",\n      \"name\": \"Epic/Story Planning Layer\",\n      \"stages\": [\n        \"epics\",\n        \"story_create\"\n      ],\n      \"passed\": true\n    },\n    {\n      \"id\": \"layer_4\",\n      \"name\": \"Technical Implementation Layer\",\n      \"stages\": [\n        \"specify\",\n        \"plan\",\n        \"gaps\",\n        \"tasks\",\n        \"implement\"\n      ],\n      \"passed\": true\n    },\n    {\n      \"id\": \"layer_5\",\n      \"name\": \"Closeout Layer\",\n      \"stages\": [\n        \"post_audit\",\n        \"pr_review\",\n        \"release_gate\",\n        \"delivery_truth_gate\"\n      ],\n      \"passed\": true\n    }\n  ],\n  \"steps\": [\n    {\n      \"id\": \"layer_1-prd\",\n      \"layer\": \"layer_1\",\n      \"stage\": \"prd\",\n      \"passed\": true,\n      \"recommendationLabel\": \"blocked\",\n      \"orchestration\": {\n        \"initialNextAction\": \"dispatch_remediation\",\n        \"packetId\": \"remediate-<run-id>\",\n        \"runLoopStatus\": \"completed\",\n        \"finalNextAction\": \"dispatch_implement\",\n        \"pendingPacketStatus\": \"completed\"\n      },\n      \"evidence\": [\n        \"recommendation=blocked\",\n        \"initial=dispatch_remediation\",\n        \"packet=remediate-<run-id>\",\n        \"run=main-agent-run-loop-<run-id>\",\n        \"final=dispatch_implement\"\n      ]\n    },\n    {\n      \"id\": \"layer_2-arch\",\n      \"layer\": \"layer_2\",\n      \"stage\": \"arch\",\n      \"passed\": true,\n      \"recommendationLabel\": \"blocked\",\n      \"orchestration\": {\n        \"initialNextAction\": \"dispatch_remediation\",\n        \"packetId\": \"remediate-<run-id>\",\n        \"runLoopStatus\": \"completed\",\n        \"finalNextAction\": \"dispatch_implement\",\n        \"pendingPacketStatus\": \"completed\"\n      },\n      \"evidence\": [\n        \"recommendation=blocked\",\n        \"initial=dispatch_remediation\",\n        \"packet=remediate-<run-id>\",\n        \"run=main-agent-run-loop-<run-id>\",\n        \"final=dispatch_implement\"\n      ]\n    },\n    {\n      \"id\": \"layer_3-epics\",\n      \"layer\": \"layer_3\",\n      \"stage\": \"epics\",\n      \"passed\": true,\n      \"recommendationLabel\": \"blocked\",\n      \"orchestration\": {\n        \"initialNextAction\": \"dispatch_remediation\",\n        \"packetId\": \"remediate-<run-id>\",\n        \"runLoopStatus\": \"completed\",\n        \"finalNextAction\": \"dispatch_implement\",\n        \"pendingPacketStatus\": \"completed\"\n      },\n      \"evidence\": [\n        \"recommendation=blocked\",\n        \"initial=dispatch_remediation\",\n        \"packet=remediate-<run-id>\",\n        \"run=main-agent-run-loop-<run-id>\",\n        \"final=dispatch_implement\"\n      ]\n    },\n    {\n      \"id\": \"layer_3-story_create\",\n      \"layer\": \"layer_3\",\n      \"stage\": \"story_create\",\n      \"passed\": true,\n      \"recommendationLabel\": \"blocked\",\n      \"orchestration\": {\n        \"initialNextAction\": \"dispatch_remediation\",\n        \"packetId\": \"remediate-<run-id>\",\n        \"runLoopStatus\": \"completed\",\n        \"finalNextAction\": \"dispatch_implement\",\n        \"pendingPacketStatus\": \"completed\"\n      },\n      \"evidence\": [\n        \"recommendation=blocked\",\n        \"initial=dispatch_remediation\",\n        \"packet=remediate-<run-id>\",\n        \"run=main-agent-run-loop-<run-id>\",\n        \"final=dispatch_implement\"\n      ]\n    },\n    {\n      \"id\": \"layer_4-specify\",\n      \"layer\": \"layer_4\",\n      \"stage\": \"specify\",\n      \"passed\": true,\n      \"recommendationLabel\": \"blocked\",\n      \"orchestration\": {\n        \"initialNextAction\": \"dispatch_remediation\",\n        \"packetId\": \"remediate-<run-id>\",\n        \"runLoopStatus\": \"completed\",\n        \"finalNextAction\": \"dispatch_implement\",\n        \"pendingPacketStatus\": \"completed\"\n      },\n      \"evidence\": [\n        \"recommendation=blocked\",\n        \"initial=dispatch_remediation\",\n        \"packet=remediate-<run-id>\",\n        \"run=main-agent-run-loop-<run-id>\",\n        \"final=dispatch_implement\"\n      ]\n    },\n    {\n      \"id\": \"layer_4-plan\",\n      \"layer\": \"layer_4\",\n      \"stage\": \"plan\",\n      \"passed\": true,\n      \"recommendationLabel\": \"blocked\",\n      \"orchestration\": {\n        \"initialNextAction\": \"dispatch_remediation\",\n        \"packetId\": \"remediate-<run-id>\",\n        \"runLoopStatus\": \"completed\",\n        \"finalNextAction\": \"dispatch_implement\",\n        \"pendingPacketStatus\": \"completed\"\n      },\n      \"evidence\": [\n        \"recommendation=blocked\",\n        \"initial=dispatch_remediation\",\n        \"packet=remediate-<run-id>\",\n        \"run=main-agent-run-loop-<run-id>\",\n        \"final=dispatch_implement\"\n      ]\n    },\n    {\n      \"id\": \"layer_4-gaps\",\n      \"layer\": \"layer_4\",\n      \"stage\": \"gaps\",\n      \"passed\": true,\n      \"recommendationLabel\": \"blocked\",\n      \"orchestration\": {\n        \"initialNextAction\": \"dispatch_remediation\",\n        \"packetId\": \"remediate-<run-id>\",\n        \"runLoopStatus\": \"completed\",\n        \"finalNextAction\": \"dispatch_implement\",\n        \"pendingPacketStatus\": \"completed\"\n      },\n      \"evidence\": [\n        \"recommendation=blocked\",\n        \"initial=dispatch_remediation\",\n        \"packet=remediate-<run-id>\",\n        \"run=main-agent-run-loop-<run-id>\",\n        \"final=dispatch_implement\"\n      ]\n    },\n    {\n      \"id\": \"layer_4-tasks\",\n      \"layer\": \"layer_4\",\n      \"stage\": \"tasks\",\n      \"passed\": true,\n      \"recommendationLabel\": \"blocked\",\n      \"orchestration\": {\n        \"initialNextAction\": \"dispatch_remediation\",\n        \"packetId\": \"remediate-<run-id>\",\n        \"runLoopStatus\": \"completed\",\n        \"finalNextAction\": \"dispatch_implement\",\n        \"pendingPacketStatus\": \"completed\"\n      },\n      \"evidence\": [\n        \"recommendation=blocked\",\n        \"initial=dispatch_remediation\",\n        \"packet=remediate-<run-id>\",\n        \"run=main-agent-run-loop-<run-id>\",\n        \"final=dispatch_implement\"\n      ]\n    },\n    {\n      \"id\": \"layer_4-implement\",\n      \"layer\": \"layer_4\",\n      \"stage\": \"implement\",\n      \"passed\": true,\n      \"recommendationLabel\": \"blocked\",\n      \"orchestration\": {\n        \"initialNextAction\": \"dispatch_remediation\",\n        \"packetId\": \"remediate-<run-id>\",\n        \"runLoopStatus\": \"completed\",\n        \"finalNextAction\": \"dispatch_implement\",\n        \"pendingPacketStatus\": \"completed\"\n      },\n      \"evidence\": [\n        \"recommendation=blocked\",\n        \"initial=dispatch_remediation\",\n        \"packet=remediate-<run-id>\",\n        \"run=main-agent-run-loop-<run-id>\",\n        \"final=dispatch_implement\"\n      ]\n    },\n    {\n      \"id\": \"layer_5-post_audit\",\n      \"layer\": \"layer_5\",\n      \"stage\": \"post_audit\",\n      \"passed\": true,\n      \"recommendationLabel\": \"blocked\",\n      \"orchestration\": {\n        \"initialNextAction\": \"dispatch_remediation\",\n        \"packetId\": \"remediate-<run-id>\",\n        \"runLoopStatus\": \"completed\",\n        \"finalNextAction\": \"dispatch_implement\",\n        \"pendingPacketStatus\": \"completed\"\n      },\n      \"evidence\": [\n        \"recommendation=blocked\",\n        \"initial=dispatch_remediation\",\n        \"packet=remediate-<run-id>\",\n        \"run=main-agent-run-loop-<run-id>\",\n        \"final=dispatch_implement\"\n      ]\n    },\n    {\n      \"id\": \"layer_5-pr_review\",\n      \"layer\": \"layer_5\",\n      \"stage\": \"pr_review\",\n      \"passed\": true,\n      \"recommendationLabel\": \"blocked\",\n      \"orchestration\": {\n        \"initialNextAction\": \"dispatch_remediation\",\n        \"packetId\": \"remediate-<run-id>\",\n        \"runLoopStatus\": \"completed\",\n        \"finalNextAction\": \"dispatch_implement\",\n        \"pendingPacketStatus\": \"completed\"\n      },\n      \"evidence\": [\n        \"recommendation=blocked\",\n        \"initial=dispatch_remediation\",\n        \"packet=remediate-<run-id>\",\n        \"run=main-agent-run-loop-<run-id>\",\n        \"final=dispatch_implement\"\n      ]\n    },\n    {\n      \"id\": \"layer_5-release_gate\",\n      \"layer\": \"layer_5\",\n      \"stage\": \"release_gate\",\n      \"passed\": true,\n      \"recommendationLabel\": \"blocked\",\n      \"orchestration\": {\n        \"initialNextAction\": \"dispatch_remediation\",\n        \"packetId\": \"remediate-<run-id>\",\n        \"runLoopStatus\": \"completed\",\n        \"finalNextAction\": \"dispatch_implement\",\n        \"pendingPacketStatus\": \"completed\"\n      },\n      \"evidence\": [\n        \"recommendation=blocked\",\n        \"initial=dispatch_remediation\",\n        \"packet=remediate-<run-id>\",\n        \"run=main-agent-run-loop-<run-id>\",\n        \"final=dispatch_implement\"\n      ]\n    },\n    {\n      \"id\": \"layer_5-delivery_truth_gate\",\n      \"layer\": \"layer_5\",\n      \"stage\": \"delivery_truth_gate\",\n      \"passed\": true,\n      \"recommendationLabel\": \"blocked\",\n      \"orchestration\": {\n        \"initialNextAction\": \"dispatch_remediation\",\n        \"packetId\": \"remediate-<run-id>\",\n        \"runLoopStatus\": \"completed\",\n        \"finalNextAction\": \"dispatch_implement\",\n        \"pendingPacketStatus\": \"completed\"\n      },\n      \"evidence\": [\n        \"recommendation=blocked\",\n        \"initial=dispatch_remediation\",\n        \"packet=remediate-<run-id>\",\n        \"run=main-agent-run-loop-<run-id>\",\n        \"final=dispatch_implement\"\n      ]\n    }\n  ],\n  \"allPassed\": true\n}\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/main-agent-bmad-help-five-layer-matrix.ts:no_args",
+            "originalReplayArtifactHash": "sha256:c91e9019e7a730055686bddc6a2d1bf8d2907e9628b53cceda5489e5444b574f",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/main-agent-bmad-help-five-layer-matrix.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 291,
+                "anchor": "scripts/main-agent-bmad-help-five-layer-matrix.ts:291",
+                "text": "export function markBmadHelpFiveLayerStageComplete(input: {"
+              },
+              {
+                "line": 322,
+                "anchor": "scripts/main-agent-bmad-help-five-layer-matrix.ts:322",
+                "text": "export function resolveBmadHelpFiveLayerProgressState(input: {"
+              },
+              {
+                "line": 571,
+                "anchor": "scripts/main-agent-bmad-help-five-layer-matrix.ts:571",
+                "text": "export function runBmadHelpFiveLayerMatrix(input: {"
+              },
+              {
+                "line": 611,
+                "anchor": "scripts/main-agent-bmad-help-five-layer-matrix.ts:611",
+                "text": "export function main(argv: string[]): number {"
+              },
+              {
+                "line": 628,
+                "anchor": "scripts/main-agent-bmad-help-five-layer-matrix.ts:628",
+                "text": "console.log(JSON.stringify({ reportPath, ...report }, null, 2));"
+              },
+              {
+                "line": 632,
+                "anchor": "scripts/main-agent-bmad-help-five-layer-matrix.ts:632",
+                "text": "if (require.main === module) {"
+              },
+              {
+                "line": 633,
+                "anchor": "scripts/main-agent-bmad-help-five-layer-matrix.ts:633",
+                "text": "process.exitCode = main(process.argv.slice(2));"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/main-agent-bmad-help-five-layer-matrix.ts",
+                "to": "scripts/main-agent-bmad-help-five-layer-matrix.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-bmad-help-five-layer-matrix.ts",
+                "to": "scripts/main-agent-bmad-help-five-layer-matrix.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-bmad-help-five-layer-matrix.js",
+                "to": "scripts/main-agent-bmad-help-five-layer-matrix.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/main-agent-bmad-help-five-layer-matrix.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+      "entryId": "main-agent-host-matrix-pr-orchestrate",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/main-agent-host-matrix-pr-orchestrator.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 11,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 18,
+        "errorPathCount": 3,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 11,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 18,
+        "coveredErrorPathCount": 3,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [
+          "--enableRealPrApi",
+          "--evidenceBundleId",
+          "--projectRoot",
+          "--provider",
+          "--prTopologyPath",
+          "--record-id",
+          "--reportPath",
+          "--requirement-set-id",
+          "--runId",
+          "--storyKey"
+        ],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>",
+          "--enableRealPrApi <source-derived-safe-value>",
+          "--evidenceBundleId <source-derived-safe-value>",
+          "--projectRoot <source-derived-safe-value>",
+          "--provider <source-derived-safe-value>",
+          "--prTopologyPath <source-derived-safe-value>",
+          "--record-id <source-derived-safe-value>",
+          "--reportPath <source-derived-safe-value>",
+          "--requirement-set-id <source-derived-safe-value>",
+          "--runId <source-derived-safe-value>",
+          "--storyKey <source-derived-safe-value>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>",
+          "--enableRealPrApi <source-derived-safe-value>",
+          "--evidenceBundleId <source-derived-safe-value>",
+          "--projectRoot <source-derived-safe-value>",
+          "--provider <source-derived-safe-value>",
+          "--prTopologyPath <source-derived-safe-value>",
+          "--record-id <source-derived-safe-value>",
+          "--reportPath <source-derived-safe-value>",
+          "--requirement-set-id <source-derived-safe-value>",
+          "--runId <source-derived-safe-value>",
+          "--storyKey <source-derived-safe-value>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 11,
+        "coveredScenarioDefinitionIds": [
+          "no_args",
+          "flag_enablerealprapi",
+          "flag_evidencebundleid",
+          "flag_projectroot",
+          "flag_provider",
+          "flag_prtopologypath",
+          "flag_record_id",
+          "flag_reportpath",
+          "flag_requirement_set_id",
+          "flag_runid",
+          "flag_storykey"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_no_args",
+          "originalEntryPoint": "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-host-matrix-pr-orchestrator.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g005_main_agent_host_matrix_pr_orchestrator_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g005_main_agent_host_matrix_pr_orchestrator_ts_no_args-original-3bsg1x",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_main_agent_host_matrix_pr_orchestrator_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g005_main_agent_host_matrix_pr_orchestrator_ts_no_args-package-nACu9j",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "{\n  \"reportFile\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\e2e\\\\host-matrix-pr-journey.json\",\n  \"finalPassed\": true\n}\n{\n  \"reportType\": \"main_agent_host_matrix_pr_orchestration\",\n  \"evidence_provenance\": {\n    \"runId\": \"host-matrix-pr-<run-id>\",\n    \"storyKey\": \"S-release-gate\",\n    \"evidenceBundleId\": \"host-matrix-pr-<run-id>:bundle\",\n    \"contractHash\": \"498a9a928ed28ca02e3f18050be427ccca2a96fa42f9f1343d983741f89a80fc\",\n    \"gateReportHash\": \"0a6bde5c2505777d91a44913a30a042ff46571ab8089f8245a7468628b6640bb\"\n  },\n  \"provider\": \"mock\",\n  \"journeyMode\": \"mock\",\n  \"journeyE2EPassed\": true,\n  \"hostsPassed\": {\n    \"claude\": true,\n    \"codex\": true\n  },\n  \"hostMatrix\": {\n    \"matrixType\": \"main_agent_multi_host_matrix\",\n    \"requiredHosts\": [\n      \"cursor\",\n      \"claude\",\n      \"codex\"\n    ],\n    \"hostsPassed\": {\n      \"cursor\": true,\n      \"claude\": true,\n      \"codex\": true\n    },\n    \"allRequiredHostsPassed\": true,\n    \"legacyDualHostPassed\": true\n  },\n  \"prTopology\": {\n    \"version\": 1,\n    \"batch_id\": \"host-matrix-pr-batch\",\n    \"evidence_provenance\": {\n      \"runId\": \"host-matrix-pr-<run-id>\",\n      \"storyKey\": \"S-release-gate\",\n      \"evidenceBundleId\": \"host-matrix-pr-<run-id>:bundle\",\n      \"contractHash\": \"498a9a928ed28ca02e3f18050be427ccca2a96fa42f9f1343d983741f89a80fc\",\n      \"gateReportHash\": \"0a6bde5c2505777d91a44913a30a042ff46571ab8089f8245a7468628b6640bb\"\n    },\n    \"required_nodes\": [\n      {\n        \"node_id\": \"claude-node\",\n        \"target_pr\": \"PR-CLAUDE\",\n        \"depends_on\": [],\n        \"state\": \"merged\"\n      },\n      {\n        \"node_id\": \"codex-node\",\n        \"target_pr\": \"PR-CODEX\",\n        \"depends_on\": [\n          \"claude-node\"\n        ],\n        \"state\": \"closed_not_needed\"\n      }\n    ],\n    \"all_affected_stories_passed\": true\n  },\n  \"providerPreflight\": [\n    {\n      \"id\": \"mock-provider\",\n      \"passed\": true,\n      \"detail\": \"deterministic local provider\"\n    }\n  ],\n  \"githubPrApi\": {\n    \"attempted\": false,\n    \"passed\": true,\n    \"steps\": [],\n    \"prUrl\": null\n  },\n  \"finalPassed\": true\n}\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/main-agent-host-matrix-pr-orchestrator.ts:no_args",
+            "originalReplayArtifactHash": "sha256:23d1814675adb4f1172f1addbaf9fd200b1706b78cf9984020f3b899d6be83e2",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/main-agent-host-matrix-pr-orchestrator.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 373,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:373",
+                "text": "export function runHostMatrixPrOrchestration(input: {"
+              },
+              {
+                "line": 539,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:539",
+                "text": "export function main(argv: string[]): number {"
+              },
+              {
+                "line": 581,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:581",
+                "text": "console.log(JSON.stringify(report, null, 2));"
+              },
+              {
+                "line": 585,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:585",
+                "text": "if (require.main === module) {"
+              },
+              {
+                "line": 586,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:586",
+                "text": "process.exitCode = main(process.argv.slice(2));"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+                "to": "scripts/main-agent-host-matrix-pr-orchestrator.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.ts",
+                "to": "scripts/main-agent-host-matrix-pr-orchestrator.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.js",
+                "to": "scripts/main-agent-host-matrix-pr-orchestrator.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/main-agent-host-matrix-pr-orchestrator.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 11,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 11,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--enableRealPrApi",
+              "--evidenceBundleId",
+              "--projectRoot",
+              "--provider",
+              "--prTopologyPath",
+              "--record-id",
+              "--reportPath",
+              "--requirement-set-id",
+              "--runId",
+              "--storyKey"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--enableRealPrApi <source-derived-safe-value>",
+              "--evidenceBundleId <source-derived-safe-value>",
+              "--projectRoot <source-derived-safe-value>",
+              "--provider <source-derived-safe-value>",
+              "--prTopologyPath <source-derived-safe-value>",
+              "--record-id <source-derived-safe-value>",
+              "--reportPath <source-derived-safe-value>",
+              "--requirement-set-id <source-derived-safe-value>",
+              "--runId <source-derived-safe-value>",
+              "--storyKey <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--enableRealPrApi <source-derived-safe-value>",
+              "--evidenceBundleId <source-derived-safe-value>",
+              "--projectRoot <source-derived-safe-value>",
+              "--provider <source-derived-safe-value>",
+              "--prTopologyPath <source-derived-safe-value>",
+              "--record-id <source-derived-safe-value>",
+              "--reportPath <source-derived-safe-value>",
+              "--requirement-set-id <source-derived-safe-value>",
+              "--runId <source-derived-safe-value>",
+              "--storyKey <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 11,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_enablerealprapi",
+              "flag_evidencebundleid",
+              "flag_projectroot",
+              "flag_provider",
+              "flag_prtopologypath",
+              "flag_record_id",
+              "flag_reportpath",
+              "flag_requirement_set_id",
+              "flag_runid",
+              "flag_storykey"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_enablerealprapi",
+          "originalEntryPoint": "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-host-matrix-pr-orchestrator.ts --enableRealPrApi source-derived-enablerealprapi",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.js --enableRealPrApi source-derived-enablerealprapi",
+          "argumentCombination": "--enableRealPrApi <source-derived-safe-value>",
+          "args": [
+            "--enableRealPrApi",
+            "source-derived-enablerealprapi"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_enablerealprapi_original_fixture_root",
+              "path": "<tmp>/g005_main_agent_host_matrix_pr_orchestrator_ts_flag_enablerealprapi-original-NQsnKC",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_enablerealprapi_package_fixture_root",
+              "path": "<tmp>/g005_main_agent_host_matrix_pr_orchestrator_ts_flag_enablerealprapi-package-Lv63Ez",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "{\n  \"reportFile\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\e2e\\\\host-matrix-pr-journey.json\",\n  \"finalPassed\": true\n}\n{\n  \"reportType\": \"main_agent_host_matrix_pr_orchestration\",\n  \"evidence_provenance\": {\n    \"runId\": \"host-matrix-pr-<run-id>\",\n    \"storyKey\": \"S-release-gate\",\n    \"evidenceBundleId\": \"host-matrix-pr-<run-id>:bundle\",\n    \"contractHash\": \"498a9a928ed28ca02e3f18050be427ccca2a96fa42f9f1343d983741f89a80fc\",\n    \"gateReportHash\": \"0a6bde5c2505777d91a44913a30a042ff46571ab8089f8245a7468628b6640bb\"\n  },\n  \"provider\": \"mock\",\n  \"journeyMode\": \"mock\",\n  \"journeyE2EPassed\": true,\n  \"hostsPassed\": {\n    \"claude\": true,\n    \"codex\": true\n  },\n  \"hostMatrix\": {\n    \"matrixType\": \"main_agent_multi_host_matrix\",\n    \"requiredHosts\": [\n      \"cursor\",\n      \"claude\",\n      \"codex\"\n    ],\n    \"hostsPassed\": {\n      \"cursor\": true,\n      \"claude\": true,\n      \"codex\": true\n    },\n    \"allRequiredHostsPassed\": true,\n    \"legacyDualHostPassed\": true\n  },\n  \"prTopology\": {\n    \"version\": 1,\n    \"batch_id\": \"host-matrix-pr-batch\",\n    \"evidence_provenance\": {\n      \"runId\": \"host-matrix-pr-<run-id>\",\n      \"storyKey\": \"S-release-gate\",\n      \"evidenceBundleId\": \"host-matrix-pr-<run-id>:bundle\",\n      \"contractHash\": \"498a9a928ed28ca02e3f18050be427ccca2a96fa42f9f1343d983741f89a80fc\",\n      \"gateReportHash\": \"0a6bde5c2505777d91a44913a30a042ff46571ab8089f8245a7468628b6640bb\"\n    },\n    \"required_nodes\": [\n      {\n        \"node_id\": \"claude-node\",\n        \"target_pr\": \"PR-CLAUDE\",\n        \"depends_on\": [],\n        \"state\": \"merged\"\n      },\n      {\n        \"node_id\": \"codex-node\",\n        \"target_pr\": \"PR-CODEX\",\n        \"depends_on\": [\n          \"claude-node\"\n        ],\n        \"state\": \"closed_not_needed\"\n      }\n    ],\n    \"all_affected_stories_passed\": true\n  },\n  \"providerPreflight\": [\n    {\n      \"id\": \"mock-provider\",\n      \"passed\": true,\n      \"detail\": \"deterministic local provider\"\n    }\n  ],\n  \"githubPrApi\": {\n    \"attempted\": false,\n    \"passed\": true,\n    \"steps\": [],\n    \"prUrl\": null\n  },\n  \"finalPassed\": true\n}\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/main-agent-host-matrix-pr-orchestrator.ts:flag_enablerealprapi",
+            "originalReplayArtifactHash": "sha256:23d1814675adb4f1172f1addbaf9fd200b1706b78cf9984020f3b899d6be83e2",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/main-agent-host-matrix-pr-orchestrator.ts:flag_enablerealprapi",
+            "sourceLineAnchors": [
+              {
+                "line": 373,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:373",
+                "text": "export function runHostMatrixPrOrchestration(input: {"
+              },
+              {
+                "line": 539,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:539",
+                "text": "export function main(argv: string[]): number {"
+              },
+              {
+                "line": 581,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:581",
+                "text": "console.log(JSON.stringify(report, null, 2));"
+              },
+              {
+                "line": 585,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:585",
+                "text": "if (require.main === module) {"
+              },
+              {
+                "line": 586,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:586",
+                "text": "process.exitCode = main(process.argv.slice(2));"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+                "to": "scripts/main-agent-host-matrix-pr-orchestrator.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.ts",
+                "to": "scripts/main-agent-host-matrix-pr-orchestrator.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.js",
+                "to": "scripts/main-agent-host-matrix-pr-orchestrator.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/main-agent-host-matrix-pr-orchestrator.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 11,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 11,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--enableRealPrApi",
+              "--evidenceBundleId",
+              "--projectRoot",
+              "--provider",
+              "--prTopologyPath",
+              "--record-id",
+              "--reportPath",
+              "--requirement-set-id",
+              "--runId",
+              "--storyKey"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--enableRealPrApi <source-derived-safe-value>",
+              "--evidenceBundleId <source-derived-safe-value>",
+              "--projectRoot <source-derived-safe-value>",
+              "--provider <source-derived-safe-value>",
+              "--prTopologyPath <source-derived-safe-value>",
+              "--record-id <source-derived-safe-value>",
+              "--reportPath <source-derived-safe-value>",
+              "--requirement-set-id <source-derived-safe-value>",
+              "--runId <source-derived-safe-value>",
+              "--storyKey <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--enableRealPrApi <source-derived-safe-value>",
+              "--evidenceBundleId <source-derived-safe-value>",
+              "--projectRoot <source-derived-safe-value>",
+              "--provider <source-derived-safe-value>",
+              "--prTopologyPath <source-derived-safe-value>",
+              "--record-id <source-derived-safe-value>",
+              "--reportPath <source-derived-safe-value>",
+              "--requirement-set-id <source-derived-safe-value>",
+              "--runId <source-derived-safe-value>",
+              "--storyKey <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 11,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_enablerealprapi",
+              "flag_evidencebundleid",
+              "flag_projectroot",
+              "flag_provider",
+              "flag_prtopologypath",
+              "flag_record_id",
+              "flag_reportpath",
+              "flag_requirement_set_id",
+              "flag_runid",
+              "flag_storykey"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_evidencebundleid",
+          "originalEntryPoint": "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-host-matrix-pr-orchestrator.ts --evidenceBundleId source-derived-evidencebundleid",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.js --evidenceBundleId source-derived-evidencebundleid",
+          "argumentCombination": "--evidenceBundleId <source-derived-safe-value>",
+          "args": [
+            "--evidenceBundleId",
+            "source-derived-evidencebundleid"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_evidencebundleid_original_fixture_root",
+              "path": "<tmp>/g005_main_agent_host_matrix_pr_orchestrator_ts_flag_evidencebundleid-original-4qjDUc",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_evidencebundleid_package_fixture_root",
+              "path": "<tmp>/g005_main_agent_host_matrix_pr_orchestrator_ts_flag_evidencebundleid-package-c8bb63",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "{\n  \"reportFile\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\e2e\\\\host-matrix-pr-journey.json\",\n  \"finalPassed\": true\n}\n{\n  \"reportType\": \"main_agent_host_matrix_pr_orchestration\",\n  \"evidence_provenance\": {\n    \"runId\": \"host-matrix-pr-<run-id>\",\n    \"storyKey\": \"S-release-gate\",\n    \"evidenceBundleId\": \"source-derived-evidencebundleid\",\n    \"contractHash\": \"498a9a928ed28ca02e3f18050be427ccca2a96fa42f9f1343d983741f89a80fc\",\n    \"gateReportHash\": \"0a6bde5c2505777d91a44913a30a042ff46571ab8089f8245a7468628b6640bb\"\n  },\n  \"provider\": \"mock\",\n  \"journeyMode\": \"mock\",\n  \"journeyE2EPassed\": true,\n  \"hostsPassed\": {\n    \"claude\": true,\n    \"codex\": true\n  },\n  \"hostMatrix\": {\n    \"matrixType\": \"main_agent_multi_host_matrix\",\n    \"requiredHosts\": [\n      \"cursor\",\n      \"claude\",\n      \"codex\"\n    ],\n    \"hostsPassed\": {\n      \"cursor\": true,\n      \"claude\": true,\n      \"codex\": true\n    },\n    \"allRequiredHostsPassed\": true,\n    \"legacyDualHostPassed\": true\n  },\n  \"prTopology\": {\n    \"version\": 1,\n    \"batch_id\": \"host-matrix-pr-batch\",\n    \"evidence_provenance\": {\n      \"runId\": \"host-matrix-pr-<run-id>\",\n      \"storyKey\": \"S-release-gate\",\n      \"evidenceBundleId\": \"source-derived-evidencebundleid\",\n      \"contractHash\": \"498a9a928ed28ca02e3f18050be427ccca2a96fa42f9f1343d983741f89a80fc\",\n      \"gateReportHash\": \"0a6bde5c2505777d91a44913a30a042ff46571ab8089f8245a7468628b6640bb\"\n    },\n    \"required_nodes\": [\n      {\n        \"node_id\": \"claude-node\",\n        \"target_pr\": \"PR-CLAUDE\",\n        \"depends_on\": [],\n        \"state\": \"merged\"\n      },\n      {\n        \"node_id\": \"codex-node\",\n        \"target_pr\": \"PR-CODEX\",\n        \"depends_on\": [\n          \"claude-node\"\n        ],\n        \"state\": \"closed_not_needed\"\n      }\n    ],\n    \"all_affected_stories_passed\": true\n  },\n  \"providerPreflight\": [\n    {\n      \"id\": \"mock-provider\",\n      \"passed\": true,\n      \"detail\": \"deterministic local provider\"\n    }\n  ],\n  \"githubPrApi\": {\n    \"attempted\": false,\n    \"passed\": true,\n    \"steps\": [],\n    \"prUrl\": null\n  },\n  \"finalPassed\": true\n}\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/main-agent-host-matrix-pr-orchestrator.ts:flag_evidencebundleid",
+            "originalReplayArtifactHash": "sha256:436febd2c88af0e1ecb13b4a68089f0b8a173ad6c3c615c3d9011553db2c635a",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/main-agent-host-matrix-pr-orchestrator.ts:flag_evidencebundleid",
+            "sourceLineAnchors": [
+              {
+                "line": 373,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:373",
+                "text": "export function runHostMatrixPrOrchestration(input: {"
+              },
+              {
+                "line": 539,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:539",
+                "text": "export function main(argv: string[]): number {"
+              },
+              {
+                "line": 581,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:581",
+                "text": "console.log(JSON.stringify(report, null, 2));"
+              },
+              {
+                "line": 585,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:585",
+                "text": "if (require.main === module) {"
+              },
+              {
+                "line": 586,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:586",
+                "text": "process.exitCode = main(process.argv.slice(2));"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+                "to": "scripts/main-agent-host-matrix-pr-orchestrator.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.ts",
+                "to": "scripts/main-agent-host-matrix-pr-orchestrator.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.js",
+                "to": "scripts/main-agent-host-matrix-pr-orchestrator.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/main-agent-host-matrix-pr-orchestrator.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 11,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 11,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--enableRealPrApi",
+              "--evidenceBundleId",
+              "--projectRoot",
+              "--provider",
+              "--prTopologyPath",
+              "--record-id",
+              "--reportPath",
+              "--requirement-set-id",
+              "--runId",
+              "--storyKey"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--enableRealPrApi <source-derived-safe-value>",
+              "--evidenceBundleId <source-derived-safe-value>",
+              "--projectRoot <source-derived-safe-value>",
+              "--provider <source-derived-safe-value>",
+              "--prTopologyPath <source-derived-safe-value>",
+              "--record-id <source-derived-safe-value>",
+              "--reportPath <source-derived-safe-value>",
+              "--requirement-set-id <source-derived-safe-value>",
+              "--runId <source-derived-safe-value>",
+              "--storyKey <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--enableRealPrApi <source-derived-safe-value>",
+              "--evidenceBundleId <source-derived-safe-value>",
+              "--projectRoot <source-derived-safe-value>",
+              "--provider <source-derived-safe-value>",
+              "--prTopologyPath <source-derived-safe-value>",
+              "--record-id <source-derived-safe-value>",
+              "--reportPath <source-derived-safe-value>",
+              "--requirement-set-id <source-derived-safe-value>",
+              "--runId <source-derived-safe-value>",
+              "--storyKey <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 11,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_enablerealprapi",
+              "flag_evidencebundleid",
+              "flag_projectroot",
+              "flag_provider",
+              "flag_prtopologypath",
+              "flag_record_id",
+              "flag_reportpath",
+              "flag_requirement_set_id",
+              "flag_runid",
+              "flag_storykey"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_projectroot",
+          "originalEntryPoint": "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-host-matrix-pr-orchestrator.ts --projectRoot <fixture-root>/projectroot",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.js --projectRoot <fixture-root>/projectroot",
+          "argumentCombination": "--projectRoot <source-derived-safe-value>",
+          "args": [
+            "--projectRoot",
+            "<fixture-root>/projectroot"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_projectroot_original_fixture_root",
+              "path": "<tmp>/g005_main_agent_host_matrix_pr_orchestrator_ts_flag_projectroot-original-xZO0lE",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_projectroot_package_fixture_root",
+              "path": "<tmp>/g005_main_agent_host_matrix_pr_orchestrator_ts_flag_projectroot-package-kecdwz",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "{\n  \"reportFile\": \"<fixture-root>\\\\projectroot\\\\_bmad-output\\\\runtime\\\\e2e\\\\host-matrix-pr-journey.json\",\n  \"finalPassed\": false\n}\n{\n  \"reportType\": \"main_agent_host_matrix_pr_orchestration\",\n  \"evidence_provenance\": {\n    \"runId\": \"host-matrix-pr-<run-id>\",\n    \"storyKey\": \"S-release-gate\",\n    \"evidenceBundleId\": \"host-matrix-pr-<run-id>:bundle\",\n    \"gateReportHash\": \"d00272f8da9831bd6dcb8801ad3652f9214e29d275b13c98264ed2b45e309248\"\n  },\n  \"provider\": \"mock\",\n  \"journeyMode\": \"mock\",\n  \"journeyE2EPassed\": false,\n  \"hostsPassed\": {\n    \"claude\": true,\n    \"codex\": true\n  },\n  \"hostMatrix\": {\n    \"matrixType\": \"main_agent_multi_host_matrix\",\n    \"requiredHosts\": [\n      \"cursor\",\n      \"claude\",\n      \"codex\"\n    ],\n    \"hostsPassed\": {\n      \"cursor\": true,\n      \"claude\": true,\n      \"codex\": true\n    },\n    \"allRequiredHostsPassed\": true,\n    \"legacyDualHostPassed\": true\n  },\n  \"prTopology\": {\n    \"version\": 1,\n    \"batch_id\": \"host-matrix-pr-batch\",\n    \"evidence_provenance\": {\n      \"runId\": \"host-matrix-pr-<run-id>\",\n      \"storyKey\": \"S-release-gate\",\n      \"evidenceBundleId\": \"host-matrix-pr-<run-id>:bundle\",\n      \"gateReportHash\": \"d00272f8da9831bd6dcb8801ad3652f9214e29d275b13c98264ed2b45e309248\"\n    },\n    \"required_nodes\": [\n      {\n        \"node_id\": \"claude-node\",\n        \"target_pr\": \"PR-CLAUDE\",\n        \"depends_on\": [],\n        \"state\": \"blocked\"\n      },\n      {\n        \"node_id\": \"codex-node\",\n        \"target_pr\": \"PR-CODEX\",\n        \"depends_on\": [\n          \"claude-node\"\n        ],\n        \"state\": \"blocked\"\n      }\n    ],\n    \"all_affected_stories_passed\": false\n  },\n  \"providerPreflight\": [\n    {\n      \"id\": \"mock-provider\",\n      \"passed\": true,\n      \"detail\": \"deterministic local provider\"\n    }\n  ],\n  \"githubPrApi\": {\n    \"attempted\": false,\n    \"passed\": true,\n    \"steps\": [],\n    \"prUrl\": null\n  },\n  \"finalPassed\": false\n}\n",
+          "expectedStderr": "",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [
+            {
+              "path": "projectroot/_bmad-output/runtime/context/project.json",
+              "bytes": 154,
+              "sha256": "sha256:91b9fc01c9b288e3396e2d86a0e19a124d4acf150f5e8875bb04a6768c4bb646",
+              "rawBytes": 163,
+              "rawSha256": "sha256:29f4104c3825249f0358ef82d7ddc83a12a95b74fde671491fd02ec03b408547",
+              "hashPolicy": "normalized_text_replay_hash",
+              "contentEncoding": "utf8"
+            },
+            {
+              "path": "projectroot/_bmad-output/runtime/e2e/host-matrix-native-goal/claude/goal_execution.md",
+              "bytes": 30,
+              "sha256": "sha256:51386a3b4fb7d74e73148e8bc03a050fc87ae469e37e9f673029551e0acf4b3d",
+              "rawBytes": 30,
+              "rawSha256": "sha256:51386a3b4fb7d74e73148e8bc03a050fc87ae469e37e9f673029551e0acf4b3d",
+              "hashPolicy": "normalized_text_replay_hash",
+              "contentEncoding": "utf8"
+            },
+            {
+              "path": "projectroot/_bmad-output/runtime/e2e/host-matrix-native-goal/claude/stderr.log",
+              "bytes": 0,
+              "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "rawBytes": 0,
+              "rawSha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "hashPolicy": "normalized_text_replay_hash",
+              "contentEncoding": "utf8"
+            },
+            {
+              "path": "projectroot/_bmad-output/runtime/e2e/host-matrix-native-goal/claude/stdout.log",
+              "bytes": 31,
+              "sha256": "sha256:7e2d93af5246f56788a9e9d0e3fa11f06f53a35fcf5fcba38f7ebf6c0efe25ae",
+              "rawBytes": 31,
+              "rawSha256": "sha256:7e2d93af5246f56788a9e9d0e3fa11f06f53a35fcf5fcba38f7ebf6c0efe25ae",
+              "hashPolicy": "normalized_text_replay_hash",
+              "contentEncoding": "utf8"
+            },
+            {
+              "path": "projectroot/_bmad-output/runtime/e2e/host-matrix-native-goal/claude/task-report.json",
+              "bytes": 305,
+              "sha256": "sha256:d8446d3fe8f5036c9f95ba375f4c6d1a704f687841d848227f1e712a30774b70",
+              "rawBytes": 305,
+              "rawSha256": "sha256:d8446d3fe8f5036c9f95ba375f4c6d1a704f687841d848227f1e712a30774b70",
+              "hashPolicy": "normalized_text_replay_hash",
+              "contentEncoding": "utf8"
+            },
+            {
+              "path": "projectroot/_bmad-output/runtime/e2e/host-matrix-native-goal/codex/goal_execution.md",
+              "bytes": 29,
+              "sha256": "sha256:2415158a9562381992a8b84c74d994259a5744fffbb607c89bce8d3e26402cfd",
+              "rawBytes": 29,
+              "rawSha256": "sha256:2415158a9562381992a8b84c74d994259a5744fffbb607c89bce8d3e26402cfd",
+              "hashPolicy": "normalized_text_replay_hash",
+              "contentEncoding": "utf8"
+            },
+            {
+              "path": "projectroot/_bmad-output/runtime/e2e/host-matrix-native-goal/codex/stderr.log",
+              "bytes": 0,
+              "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "rawBytes": 0,
+              "rawSha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "hashPolicy": "normalized_text_replay_hash",
+              "contentEncoding": "utf8"
+            },
+            {
+              "path": "projectroot/_bmad-output/runtime/e2e/host-matrix-native-goal/codex/stdout.log",
+              "bytes": 30,
+              "sha256": "sha256:5715e0edd3020021e81ecb1bf895460e1fed454f35ba79c35d818be775f01afa",
+              "rawBytes": 30,
+              "rawSha256": "sha256:5715e0edd3020021e81ecb1bf895460e1fed454f35ba79c35d818be775f01afa",
+              "hashPolicy": "normalized_text_replay_hash",
+              "contentEncoding": "utf8"
+            },
+            {
+              "path": "projectroot/_bmad-output/runtime/e2e/host-matrix-native-goal/codex/task-report.json",
+              "bytes": 301,
+              "sha256": "sha256:eb943930b378a1613c6cebf2f4d2056e8a6c72bf76b30be250cd05a5cd725a6d",
+              "rawBytes": 301,
+              "rawSha256": "sha256:eb943930b378a1613c6cebf2f4d2056e8a6c72bf76b30be250cd05a5cd725a6d",
+              "hashPolicy": "normalized_text_replay_hash",
+              "contentEncoding": "utf8"
+            },
+            {
+              "path": "projectroot/_bmad-output/runtime/e2e/host-matrix-pr-journey.json",
+              "bytes": 13422,
+              "sha256": "sha256:366c0f2909a067616f91581b32d180fd84db5ce2c7d1b7d2d21a580f65159a95",
+              "rawBytes": 15397,
+              "rawSha256": "sha256:7ceb03565adf60e12d1a3fd2cc4d3a75369f19dfe03e80dd15c92b55a2325cd8",
+              "hashPolicy": "normalized_text_replay_hash",
+              "contentEncoding": "utf8"
+            },
+            {
+              "path": "projectroot/_bmad-output/runtime/e2e/host-matrix-pr-orchestration-report.json",
+              "bytes": 1754,
+              "sha256": "sha256:5deed15ca5c94971f70e106fbbdb2810d2df697df8ef9e5403e84997df3339e0",
+              "rawBytes": 1810,
+              "rawSha256": "sha256:e9f89f056ae2e28958066a91b0e5bdb8214cf4085ae12257f48d1f764f82c3f9",
+              "hashPolicy": "normalized_text_replay_hash",
+              "contentEncoding": "utf8"
+            },
+            {
+              "path": "projectroot/_bmad-output/runtime/e2e/multi-host-pr-orchestration-report.json",
+              "bytes": 1754,
+              "sha256": "sha256:5deed15ca5c94971f70e106fbbdb2810d2df697df8ef9e5403e84997df3339e0",
+              "rawBytes": 1810,
+              "rawSha256": "sha256:e9f89f056ae2e28958066a91b0e5bdb8214cf4085ae12257f48d1f764f82c3f9",
+              "hashPolicy": "normalized_text_replay_hash",
+              "contentEncoding": "utf8"
+            },
+            {
+              "path": "projectroot/_bmad-output/runtime/pr/pr_topology.json",
+              "bytes": 655,
+              "sha256": "sha256:147df72b8ef682f78e9d1fe29c9505a8db4a75eb84b8be2ed48c2055cb8996ba",
+              "rawBytes": 683,
+              "rawSha256": "sha256:00a952680075550ed3862f2287d6aa98fc2ca2bb6b7f6dfe1b9ae7130ff83df9",
+              "hashPolicy": "normalized_text_replay_hash",
+              "contentEncoding": "utf8"
+            },
+            {
+              "path": "projectroot/_bmad-output/runtime/registry.json",
+              "bytes": 972,
+              "sha256": "sha256:fdd5cf1243a3d3f2b32bd45ae5ef456b02bb6f87d52d6af3478e1545ecf2829b",
+              "rawBytes": 1096,
+              "rawSha256": "sha256:30b55fd035873357502b2fbf69c16bec99334405c40c55e745f8c8dc02723e3d",
+              "hashPolicy": "normalized_text_replay_hash",
+              "contentEncoding": "utf8"
+            },
+            {
+              "path": "projectroot/_bmad-output/runtime/requirement-records/host-matrix-claude/runtime-mode/host-matrix-claude-mock/native-goal-invocation-receipt.json",
+              "bytes": 1073,
+              "sha256": "sha256:cbec239a0a62955ed69571bc65effd62faf54138fe14b011564603c032294320",
+              "rawBytes": 1571,
+              "rawSha256": "sha256:812c30ddfefcf3812de9ca9d8ae2ca442841cb54b4d76d9c314075a6363d67c6",
+              "hashPolicy": "normalized_text_replay_hash",
+              "contentEncoding": "utf8"
+            },
+            {
+              "path": "projectroot/_bmad-output/runtime/requirement-records/host-matrix-codex/runtime-mode/host-matrix-codex-mock/native-goal-invocation-receipt.json",
+              "bytes": 1055,
+              "sha256": "sha256:7af2f0e92b2b0bd39a5acaa83f6a54e71ad5a9f9e32ce1dfcd63ad959e4e69be",
+              "rawBytes": 1553,
+              "rawSha256": "sha256:9240b4c47ed3f613ca499e38bf4e93db512d8485cb947c922265da3a24f4e0b8",
+              "hashPolicy": "normalized_text_replay_hash",
+              "contentEncoding": "utf8"
+            }
+          ],
+          "expectedErrorPaths": [
+            {
+              "channel": "exitCode",
+              "value": 1
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/main-agent-host-matrix-pr-orchestrator.ts:flag_projectroot",
+            "originalReplayArtifactHash": "sha256:24aae494701e582197dec331d086dcacbebf907fc2e46ba063a8ac0976f50971",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/main-agent-host-matrix-pr-orchestrator.ts:flag_projectroot",
+            "sourceLineAnchors": [
+              {
+                "line": 373,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:373",
+                "text": "export function runHostMatrixPrOrchestration(input: {"
+              },
+              {
+                "line": 539,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:539",
+                "text": "export function main(argv: string[]): number {"
+              },
+              {
+                "line": 581,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:581",
+                "text": "console.log(JSON.stringify(report, null, 2));"
+              },
+              {
+                "line": 585,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:585",
+                "text": "if (require.main === module) {"
+              },
+              {
+                "line": 586,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:586",
+                "text": "process.exitCode = main(process.argv.slice(2));"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+                "to": "scripts/main-agent-host-matrix-pr-orchestrator.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.ts",
+                "to": "scripts/main-agent-host-matrix-pr-orchestrator.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.js",
+                "to": "scripts/main-agent-host-matrix-pr-orchestrator.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/main-agent-host-matrix-pr-orchestrator.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 11,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 16,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 11,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 16,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--enableRealPrApi",
+              "--evidenceBundleId",
+              "--projectRoot",
+              "--provider",
+              "--prTopologyPath",
+              "--record-id",
+              "--reportPath",
+              "--requirement-set-id",
+              "--runId",
+              "--storyKey"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--enableRealPrApi <source-derived-safe-value>",
+              "--evidenceBundleId <source-derived-safe-value>",
+              "--projectRoot <source-derived-safe-value>",
+              "--provider <source-derived-safe-value>",
+              "--prTopologyPath <source-derived-safe-value>",
+              "--record-id <source-derived-safe-value>",
+              "--reportPath <source-derived-safe-value>",
+              "--requirement-set-id <source-derived-safe-value>",
+              "--runId <source-derived-safe-value>",
+              "--storyKey <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--enableRealPrApi <source-derived-safe-value>",
+              "--evidenceBundleId <source-derived-safe-value>",
+              "--projectRoot <source-derived-safe-value>",
+              "--provider <source-derived-safe-value>",
+              "--prTopologyPath <source-derived-safe-value>",
+              "--record-id <source-derived-safe-value>",
+              "--reportPath <source-derived-safe-value>",
+              "--requirement-set-id <source-derived-safe-value>",
+              "--runId <source-derived-safe-value>",
+              "--storyKey <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 11,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_enablerealprapi",
+              "flag_evidencebundleid",
+              "flag_projectroot",
+              "flag_provider",
+              "flag_prtopologypath",
+              "flag_record_id",
+              "flag_reportpath",
+              "flag_requirement_set_id",
+              "flag_runid",
+              "flag_storykey"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_provider",
+          "originalEntryPoint": "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-host-matrix-pr-orchestrator.ts --provider source-derived-provider",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.js --provider source-derived-provider",
+          "argumentCombination": "--provider <source-derived-safe-value>",
+          "args": [
+            "--provider",
+            "source-derived-provider"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_provider_original_fixture_root",
+              "path": "<tmp>/g005_main_agent_host_matrix_pr_orchestrator_ts_flag_provider-original-Ih7RTm",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_provider_package_fixture_root",
+              "path": "<tmp>/g005_main_agent_host_matrix_pr_orchestrator_ts_flag_provider-package-Y6QUr9",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "{\n  \"reportFile\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\e2e\\\\host-matrix-pr-journey.json\",\n  \"finalPassed\": true\n}\n{\n  \"reportType\": \"main_agent_host_matrix_pr_orchestration\",\n  \"evidence_provenance\": {\n    \"runId\": \"host-matrix-pr-<run-id>\",\n    \"storyKey\": \"S-release-gate\",\n    \"evidenceBundleId\": \"host-matrix-pr-<run-id>:bundle\",\n    \"contractHash\": \"498a9a928ed28ca02e3f18050be427ccca2a96fa42f9f1343d983741f89a80fc\",\n    \"gateReportHash\": \"0a6bde5c2505777d91a44913a30a042ff46571ab8089f8245a7468628b6640bb\"\n  },\n  \"provider\": \"mock\",\n  \"journeyMode\": \"mock\",\n  \"journeyE2EPassed\": true,\n  \"hostsPassed\": {\n    \"claude\": true,\n    \"codex\": true\n  },\n  \"hostMatrix\": {\n    \"matrixType\": \"main_agent_multi_host_matrix\",\n    \"requiredHosts\": [\n      \"cursor\",\n      \"claude\",\n      \"codex\"\n    ],\n    \"hostsPassed\": {\n      \"cursor\": true,\n      \"claude\": true,\n      \"codex\": true\n    },\n    \"allRequiredHostsPassed\": true,\n    \"legacyDualHostPassed\": true\n  },\n  \"prTopology\": {\n    \"version\": 1,\n    \"batch_id\": \"host-matrix-pr-batch\",\n    \"evidence_provenance\": {\n      \"runId\": \"host-matrix-pr-<run-id>\",\n      \"storyKey\": \"S-release-gate\",\n      \"evidenceBundleId\": \"host-matrix-pr-<run-id>:bundle\",\n      \"contractHash\": \"498a9a928ed28ca02e3f18050be427ccca2a96fa42f9f1343d983741f89a80fc\",\n      \"gateReportHash\": \"0a6bde5c2505777d91a44913a30a042ff46571ab8089f8245a7468628b6640bb\"\n    },\n    \"required_nodes\": [\n      {\n        \"node_id\": \"claude-node\",\n        \"target_pr\": \"PR-CLAUDE\",\n        \"depends_on\": [],\n        \"state\": \"merged\"\n      },\n      {\n        \"node_id\": \"codex-node\",\n        \"target_pr\": \"PR-CODEX\",\n        \"depends_on\": [\n          \"claude-node\"\n        ],\n        \"state\": \"closed_not_needed\"\n      }\n    ],\n    \"all_affected_stories_passed\": true\n  },\n  \"providerPreflight\": [\n    {\n      \"id\": \"mock-provider\",\n      \"passed\": true,\n      \"detail\": \"deterministic local provider\"\n    }\n  ],\n  \"githubPrApi\": {\n    \"attempted\": false,\n    \"passed\": true,\n    \"steps\": [],\n    \"prUrl\": null\n  },\n  \"finalPassed\": true\n}\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/main-agent-host-matrix-pr-orchestrator.ts:flag_provider",
+            "originalReplayArtifactHash": "sha256:23d1814675adb4f1172f1addbaf9fd200b1706b78cf9984020f3b899d6be83e2",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/main-agent-host-matrix-pr-orchestrator.ts:flag_provider",
+            "sourceLineAnchors": [
+              {
+                "line": 373,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:373",
+                "text": "export function runHostMatrixPrOrchestration(input: {"
+              },
+              {
+                "line": 539,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:539",
+                "text": "export function main(argv: string[]): number {"
+              },
+              {
+                "line": 581,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:581",
+                "text": "console.log(JSON.stringify(report, null, 2));"
+              },
+              {
+                "line": 585,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:585",
+                "text": "if (require.main === module) {"
+              },
+              {
+                "line": 586,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:586",
+                "text": "process.exitCode = main(process.argv.slice(2));"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+                "to": "scripts/main-agent-host-matrix-pr-orchestrator.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.ts",
+                "to": "scripts/main-agent-host-matrix-pr-orchestrator.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.js",
+                "to": "scripts/main-agent-host-matrix-pr-orchestrator.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/main-agent-host-matrix-pr-orchestrator.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 11,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 11,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--enableRealPrApi",
+              "--evidenceBundleId",
+              "--projectRoot",
+              "--provider",
+              "--prTopologyPath",
+              "--record-id",
+              "--reportPath",
+              "--requirement-set-id",
+              "--runId",
+              "--storyKey"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--enableRealPrApi <source-derived-safe-value>",
+              "--evidenceBundleId <source-derived-safe-value>",
+              "--projectRoot <source-derived-safe-value>",
+              "--provider <source-derived-safe-value>",
+              "--prTopologyPath <source-derived-safe-value>",
+              "--record-id <source-derived-safe-value>",
+              "--reportPath <source-derived-safe-value>",
+              "--requirement-set-id <source-derived-safe-value>",
+              "--runId <source-derived-safe-value>",
+              "--storyKey <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--enableRealPrApi <source-derived-safe-value>",
+              "--evidenceBundleId <source-derived-safe-value>",
+              "--projectRoot <source-derived-safe-value>",
+              "--provider <source-derived-safe-value>",
+              "--prTopologyPath <source-derived-safe-value>",
+              "--record-id <source-derived-safe-value>",
+              "--reportPath <source-derived-safe-value>",
+              "--requirement-set-id <source-derived-safe-value>",
+              "--runId <source-derived-safe-value>",
+              "--storyKey <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 11,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_enablerealprapi",
+              "flag_evidencebundleid",
+              "flag_projectroot",
+              "flag_provider",
+              "flag_prtopologypath",
+              "flag_record_id",
+              "flag_reportpath",
+              "flag_requirement_set_id",
+              "flag_runid",
+              "flag_storykey"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_prtopologypath",
+          "originalEntryPoint": "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-host-matrix-pr-orchestrator.ts --prTopologyPath <fixture-root>/prtopologypath.json",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.js --prTopologyPath <fixture-root>/prtopologypath.json",
+          "argumentCombination": "--prTopologyPath <source-derived-safe-value>",
+          "args": [
+            "--prTopologyPath",
+            "<fixture-root>/prtopologypath.json"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_prtopologypath_original_fixture_root",
+              "path": "<tmp>/g005_main_agent_host_matrix_pr_orchestrator_ts_flag_prtopologypath-original-nqii0d",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_prtopologypath_package_fixture_root",
+              "path": "<tmp>/g005_main_agent_host_matrix_pr_orchestrator_ts_flag_prtopologypath-package-Pf7PxT",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "{\n  \"reportFile\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\e2e\\\\host-matrix-pr-journey.json\",\n  \"finalPassed\": true\n}\n{\n  \"reportType\": \"main_agent_host_matrix_pr_orchestration\",\n  \"evidence_provenance\": {\n    \"runId\": \"host-matrix-pr-<run-id>\",\n    \"storyKey\": \"S-release-gate\",\n    \"evidenceBundleId\": \"host-matrix-pr-<run-id>:bundle\",\n    \"contractHash\": \"498a9a928ed28ca02e3f18050be427ccca2a96fa42f9f1343d983741f89a80fc\",\n    \"gateReportHash\": \"0a6bde5c2505777d91a44913a30a042ff46571ab8089f8245a7468628b6640bb\"\n  },\n  \"provider\": \"mock\",\n  \"journeyMode\": \"mock\",\n  \"journeyE2EPassed\": true,\n  \"hostsPassed\": {\n    \"claude\": true,\n    \"codex\": true\n  },\n  \"hostMatrix\": {\n    \"matrixType\": \"main_agent_multi_host_matrix\",\n    \"requiredHosts\": [\n      \"cursor\",\n      \"claude\",\n      \"codex\"\n    ],\n    \"hostsPassed\": {\n      \"cursor\": true,\n      \"claude\": true,\n      \"codex\": true\n    },\n    \"allRequiredHostsPassed\": true,\n    \"legacyDualHostPassed\": true\n  },\n  \"prTopology\": {\n    \"version\": 1,\n    \"batch_id\": \"host-matrix-pr-batch\",\n    \"evidence_provenance\": {\n      \"runId\": \"host-matrix-pr-<run-id>\",\n      \"storyKey\": \"S-release-gate\",\n      \"evidenceBundleId\": \"host-matrix-pr-<run-id>:bundle\",\n      \"contractHash\": \"498a9a928ed28ca02e3f18050be427ccca2a96fa42f9f1343d983741f89a80fc\",\n      \"gateReportHash\": \"0a6bde5c2505777d91a44913a30a042ff46571ab8089f8245a7468628b6640bb\"\n    },\n    \"required_nodes\": [\n      {\n        \"node_id\": \"claude-node\",\n        \"target_pr\": \"PR-CLAUDE\",\n        \"depends_on\": [],\n        \"state\": \"merged\"\n      },\n      {\n        \"node_id\": \"codex-node\",\n        \"target_pr\": \"PR-CODEX\",\n        \"depends_on\": [\n          \"claude-node\"\n        ],\n        \"state\": \"closed_not_needed\"\n      }\n    ],\n    \"all_affected_stories_passed\": true\n  },\n  \"providerPreflight\": [\n    {\n      \"id\": \"mock-provider\",\n      \"passed\": true,\n      \"detail\": \"deterministic local provider\"\n    }\n  ],\n  \"githubPrApi\": {\n    \"attempted\": false,\n    \"passed\": true,\n    \"steps\": [],\n    \"prUrl\": null\n  },\n  \"finalPassed\": true\n}\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [
+            {
+              "path": "prtopologypath.json",
+              "bytes": 751,
+              "sha256": "sha256:7ef5163ef0f3d9b37cd7c1453519593aa9072ea402c5771777067b5989bcbe74",
+              "rawBytes": 779,
+              "rawSha256": "sha256:6f8b4d4c8c7b42629b1f0e1a39c03d0c8be6590dc902d4b7d0b3862c7a376861",
+              "hashPolicy": "normalized_text_replay_hash",
+              "contentEncoding": "utf8"
+            }
+          ],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/main-agent-host-matrix-pr-orchestrator.ts:flag_prtopologypath",
+            "originalReplayArtifactHash": "sha256:a2d57edcf14bf10b649627a9d9b447cfc1a521b2f7cf2ec96ce0537a891238b6",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/main-agent-host-matrix-pr-orchestrator.ts:flag_prtopologypath",
+            "sourceLineAnchors": [
+              {
+                "line": 373,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:373",
+                "text": "export function runHostMatrixPrOrchestration(input: {"
+              },
+              {
+                "line": 539,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:539",
+                "text": "export function main(argv: string[]): number {"
+              },
+              {
+                "line": 581,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:581",
+                "text": "console.log(JSON.stringify(report, null, 2));"
+              },
+              {
+                "line": 585,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:585",
+                "text": "if (require.main === module) {"
+              },
+              {
+                "line": 586,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:586",
+                "text": "process.exitCode = main(process.argv.slice(2));"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+                "to": "scripts/main-agent-host-matrix-pr-orchestrator.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.ts",
+                "to": "scripts/main-agent-host-matrix-pr-orchestrator.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.js",
+                "to": "scripts/main-agent-host-matrix-pr-orchestrator.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/main-agent-host-matrix-pr-orchestrator.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 11,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 1,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 11,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 1,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--enableRealPrApi",
+              "--evidenceBundleId",
+              "--projectRoot",
+              "--provider",
+              "--prTopologyPath",
+              "--record-id",
+              "--reportPath",
+              "--requirement-set-id",
+              "--runId",
+              "--storyKey"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--enableRealPrApi <source-derived-safe-value>",
+              "--evidenceBundleId <source-derived-safe-value>",
+              "--projectRoot <source-derived-safe-value>",
+              "--provider <source-derived-safe-value>",
+              "--prTopologyPath <source-derived-safe-value>",
+              "--record-id <source-derived-safe-value>",
+              "--reportPath <source-derived-safe-value>",
+              "--requirement-set-id <source-derived-safe-value>",
+              "--runId <source-derived-safe-value>",
+              "--storyKey <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--enableRealPrApi <source-derived-safe-value>",
+              "--evidenceBundleId <source-derived-safe-value>",
+              "--projectRoot <source-derived-safe-value>",
+              "--provider <source-derived-safe-value>",
+              "--prTopologyPath <source-derived-safe-value>",
+              "--record-id <source-derived-safe-value>",
+              "--reportPath <source-derived-safe-value>",
+              "--requirement-set-id <source-derived-safe-value>",
+              "--runId <source-derived-safe-value>",
+              "--storyKey <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 11,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_enablerealprapi",
+              "flag_evidencebundleid",
+              "flag_projectroot",
+              "flag_provider",
+              "flag_prtopologypath",
+              "flag_record_id",
+              "flag_reportpath",
+              "flag_requirement_set_id",
+              "flag_runid",
+              "flag_storykey"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_record_id",
+          "originalEntryPoint": "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-host-matrix-pr-orchestrator.ts --record-id source-derived-record-id",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.js --record-id source-derived-record-id",
+          "argumentCombination": "--record-id <source-derived-safe-value>",
+          "args": [
+            "--record-id",
+            "source-derived-record-id"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_record_id_original_fixture_root",
+              "path": "<tmp>/g005_main_agent_host_matrix_pr_orchestrator_ts_flag_record_id-original-TcEzdp",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_record_id_package_fixture_root",
+              "path": "<tmp>/g005_main_agent_host_matrix_pr_orchestrator_ts_flag_record_id-package-ZBn6aA",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "{\n  \"reportFile\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\e2e\\\\host-matrix-pr-journey.json\",\n  \"finalPassed\": false\n}\n{\n  \"reportType\": \"main_agent_host_matrix_pr_orchestration\",\n  \"evidence_provenance\": {\n    \"runId\": \"host-matrix-pr-<run-id>\",\n    \"storyKey\": \"S-release-gate\",\n    \"evidenceBundleId\": \"host-matrix-pr-<run-id>:bundle\",\n    \"contractHash\": \"498a9a928ed28ca02e3f18050be427ccca2a96fa42f9f1343d983741f89a80fc\",\n    \"gateReportHash\": \"dc210c6b1d829f14fc5224f00e667eb1ce7d477a03909b736dc5cf98a18e865e\"\n  },\n  \"provider\": \"mock\",\n  \"journeyMode\": \"mock\",\n  \"journeyE2EPassed\": false,\n  \"hostsPassed\": {\n    \"claude\": false,\n    \"codex\": false\n  },\n  \"hostMatrix\": {\n    \"matrixType\": \"main_agent_multi_host_matrix\",\n    \"requiredHosts\": [\n      \"cursor\",\n      \"claude\",\n      \"codex\"\n    ],\n    \"hostsPassed\": {\n      \"cursor\": false,\n      \"claude\": false,\n      \"codex\": false\n    },\n    \"allRequiredHostsPassed\": false,\n    \"legacyDualHostPassed\": false\n  },\n  \"prTopology\": {\n    \"version\": 1,\n    \"batch_id\": \"host-matrix-pr-batch\",\n    \"evidence_provenance\": {\n      \"runId\": \"host-matrix-pr-<run-id>\",\n      \"storyKey\": \"S-release-gate\",\n      \"evidenceBundleId\": \"host-matrix-pr-<run-id>:bundle\",\n      \"contractHash\": \"498a9a928ed28ca02e3f18050be427ccca2a96fa42f9f1343d983741f89a80fc\",\n      \"gateReportHash\": \"dc210c6b1d829f14fc5224f00e667eb1ce7d477a03909b736dc5cf98a18e865e\"\n    },\n    \"required_nodes\": [\n      {\n        \"node_id\": \"claude-node\",\n        \"target_pr\": \"PR-CLAUDE\",\n        \"depends_on\": [],\n        \"state\": \"blocked\"\n      },\n      {\n        \"node_id\": \"codex-node\",\n        \"target_pr\": \"PR-CODEX\",\n        \"depends_on\": [\n          \"claude-node\"\n        ],\n        \"state\": \"blocked\"\n      }\n    ],\n    \"all_affected_stories_passed\": false\n  },\n  \"providerPreflight\": [\n    {\n      \"id\": \"mock-provider\",\n      \"passed\": true,\n      \"detail\": \"deterministic local provider\"\n    }\n  ],\n  \"githubPrApi\": {\n    \"attempted\": false,\n    \"passed\": true,\n    \"steps\": [],\n    \"prUrl\": null\n  },\n  \"finalPassed\": false\n}\n",
+          "expectedStderr": "",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "exitCode",
+              "value": 1
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/main-agent-host-matrix-pr-orchestrator.ts:flag_record_id",
+            "originalReplayArtifactHash": "sha256:25d837952d2bc5fada0ccdef1bf37f91f679403a20499e0a186b61466665f253",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/main-agent-host-matrix-pr-orchestrator.ts:flag_record_id",
+            "sourceLineAnchors": [
+              {
+                "line": 373,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:373",
+                "text": "export function runHostMatrixPrOrchestration(input: {"
+              },
+              {
+                "line": 539,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:539",
+                "text": "export function main(argv: string[]): number {"
+              },
+              {
+                "line": 581,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:581",
+                "text": "console.log(JSON.stringify(report, null, 2));"
+              },
+              {
+                "line": 585,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:585",
+                "text": "if (require.main === module) {"
+              },
+              {
+                "line": 586,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:586",
+                "text": "process.exitCode = main(process.argv.slice(2));"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+                "to": "scripts/main-agent-host-matrix-pr-orchestrator.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.ts",
+                "to": "scripts/main-agent-host-matrix-pr-orchestrator.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.js",
+                "to": "scripts/main-agent-host-matrix-pr-orchestrator.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/main-agent-host-matrix-pr-orchestrator.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 11,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 11,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--enableRealPrApi",
+              "--evidenceBundleId",
+              "--projectRoot",
+              "--provider",
+              "--prTopologyPath",
+              "--record-id",
+              "--reportPath",
+              "--requirement-set-id",
+              "--runId",
+              "--storyKey"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--enableRealPrApi <source-derived-safe-value>",
+              "--evidenceBundleId <source-derived-safe-value>",
+              "--projectRoot <source-derived-safe-value>",
+              "--provider <source-derived-safe-value>",
+              "--prTopologyPath <source-derived-safe-value>",
+              "--record-id <source-derived-safe-value>",
+              "--reportPath <source-derived-safe-value>",
+              "--requirement-set-id <source-derived-safe-value>",
+              "--runId <source-derived-safe-value>",
+              "--storyKey <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--enableRealPrApi <source-derived-safe-value>",
+              "--evidenceBundleId <source-derived-safe-value>",
+              "--projectRoot <source-derived-safe-value>",
+              "--provider <source-derived-safe-value>",
+              "--prTopologyPath <source-derived-safe-value>",
+              "--record-id <source-derived-safe-value>",
+              "--reportPath <source-derived-safe-value>",
+              "--requirement-set-id <source-derived-safe-value>",
+              "--runId <source-derived-safe-value>",
+              "--storyKey <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 11,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_enablerealprapi",
+              "flag_evidencebundleid",
+              "flag_projectroot",
+              "flag_provider",
+              "flag_prtopologypath",
+              "flag_record_id",
+              "flag_reportpath",
+              "flag_requirement_set_id",
+              "flag_runid",
+              "flag_storykey"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_reportpath",
+          "originalEntryPoint": "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-host-matrix-pr-orchestrator.ts --reportPath <fixture-root>/reportpath.json",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.js --reportPath <fixture-root>/reportpath.json",
+          "argumentCombination": "--reportPath <source-derived-safe-value>",
+          "args": [
+            "--reportPath",
+            "<fixture-root>/reportpath.json"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_reportpath_original_fixture_root",
+              "path": "<tmp>/g005_main_agent_host_matrix_pr_orchestrator_ts_flag_reportpath-original-eZUeyg",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_reportpath_package_fixture_root",
+              "path": "<tmp>/g005_main_agent_host_matrix_pr_orchestrator_ts_flag_reportpath-package-sYCfjo",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "{\n  \"reportFile\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\e2e\\\\host-matrix-pr-journey.json\",\n  \"finalPassed\": true\n}\n{\n  \"reportType\": \"main_agent_host_matrix_pr_orchestration\",\n  \"evidence_provenance\": {\n    \"runId\": \"host-matrix-pr-<run-id>\",\n    \"storyKey\": \"S-release-gate\",\n    \"evidenceBundleId\": \"host-matrix-pr-<run-id>:bundle\",\n    \"contractHash\": \"498a9a928ed28ca02e3f18050be427ccca2a96fa42f9f1343d983741f89a80fc\",\n    \"gateReportHash\": \"0a6bde5c2505777d91a44913a30a042ff46571ab8089f8245a7468628b6640bb\"\n  },\n  \"provider\": \"mock\",\n  \"journeyMode\": \"mock\",\n  \"journeyE2EPassed\": true,\n  \"hostsPassed\": {\n    \"claude\": true,\n    \"codex\": true\n  },\n  \"hostMatrix\": {\n    \"matrixType\": \"main_agent_multi_host_matrix\",\n    \"requiredHosts\": [\n      \"cursor\",\n      \"claude\",\n      \"codex\"\n    ],\n    \"hostsPassed\": {\n      \"cursor\": true,\n      \"claude\": true,\n      \"codex\": true\n    },\n    \"allRequiredHostsPassed\": true,\n    \"legacyDualHostPassed\": true\n  },\n  \"prTopology\": {\n    \"version\": 1,\n    \"batch_id\": \"host-matrix-pr-batch\",\n    \"evidence_provenance\": {\n      \"runId\": \"host-matrix-pr-<run-id>\",\n      \"storyKey\": \"S-release-gate\",\n      \"evidenceBundleId\": \"host-matrix-pr-<run-id>:bundle\",\n      \"contractHash\": \"498a9a928ed28ca02e3f18050be427ccca2a96fa42f9f1343d983741f89a80fc\",\n      \"gateReportHash\": \"0a6bde5c2505777d91a44913a30a042ff46571ab8089f8245a7468628b6640bb\"\n    },\n    \"required_nodes\": [\n      {\n        \"node_id\": \"claude-node\",\n        \"target_pr\": \"PR-CLAUDE\",\n        \"depends_on\": [],\n        \"state\": \"merged\"\n      },\n      {\n        \"node_id\": \"codex-node\",\n        \"target_pr\": \"PR-CODEX\",\n        \"depends_on\": [\n          \"claude-node\"\n        ],\n        \"state\": \"closed_not_needed\"\n      }\n    ],\n    \"all_affected_stories_passed\": true\n  },\n  \"providerPreflight\": [\n    {\n      \"id\": \"mock-provider\",\n      \"passed\": true,\n      \"detail\": \"deterministic local provider\"\n    }\n  ],\n  \"githubPrApi\": {\n    \"attempted\": false,\n    \"passed\": true,\n    \"steps\": [],\n    \"prUrl\": null\n  },\n  \"finalPassed\": true\n}\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [
+            {
+              "path": "reportpath.json",
+              "bytes": 1938,
+              "sha256": "sha256:63ff8a0c1effbc9d472ba62c77e9e0d46d13cd01bc476a4d6a4e48c9d6714b7b",
+              "rawBytes": 1994,
+              "rawSha256": "sha256:fb87048667337159672012834f1d0bd623b823c6f5622b6775488479e6d84ece",
+              "hashPolicy": "normalized_text_replay_hash",
+              "contentEncoding": "utf8"
+            }
+          ],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/main-agent-host-matrix-pr-orchestrator.ts:flag_reportpath",
+            "originalReplayArtifactHash": "sha256:c14fd38f354d4f1c9afabdb090980ad134f0a76eda6ac7f66380eb5912909b0a",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/main-agent-host-matrix-pr-orchestrator.ts:flag_reportpath",
+            "sourceLineAnchors": [
+              {
+                "line": 373,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:373",
+                "text": "export function runHostMatrixPrOrchestration(input: {"
+              },
+              {
+                "line": 539,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:539",
+                "text": "export function main(argv: string[]): number {"
+              },
+              {
+                "line": 581,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:581",
+                "text": "console.log(JSON.stringify(report, null, 2));"
+              },
+              {
+                "line": 585,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:585",
+                "text": "if (require.main === module) {"
+              },
+              {
+                "line": 586,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:586",
+                "text": "process.exitCode = main(process.argv.slice(2));"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+                "to": "scripts/main-agent-host-matrix-pr-orchestrator.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.ts",
+                "to": "scripts/main-agent-host-matrix-pr-orchestrator.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.js",
+                "to": "scripts/main-agent-host-matrix-pr-orchestrator.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/main-agent-host-matrix-pr-orchestrator.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 11,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 1,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 11,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 1,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--enableRealPrApi",
+              "--evidenceBundleId",
+              "--projectRoot",
+              "--provider",
+              "--prTopologyPath",
+              "--record-id",
+              "--reportPath",
+              "--requirement-set-id",
+              "--runId",
+              "--storyKey"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--enableRealPrApi <source-derived-safe-value>",
+              "--evidenceBundleId <source-derived-safe-value>",
+              "--projectRoot <source-derived-safe-value>",
+              "--provider <source-derived-safe-value>",
+              "--prTopologyPath <source-derived-safe-value>",
+              "--record-id <source-derived-safe-value>",
+              "--reportPath <source-derived-safe-value>",
+              "--requirement-set-id <source-derived-safe-value>",
+              "--runId <source-derived-safe-value>",
+              "--storyKey <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--enableRealPrApi <source-derived-safe-value>",
+              "--evidenceBundleId <source-derived-safe-value>",
+              "--projectRoot <source-derived-safe-value>",
+              "--provider <source-derived-safe-value>",
+              "--prTopologyPath <source-derived-safe-value>",
+              "--record-id <source-derived-safe-value>",
+              "--reportPath <source-derived-safe-value>",
+              "--requirement-set-id <source-derived-safe-value>",
+              "--runId <source-derived-safe-value>",
+              "--storyKey <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 11,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_enablerealprapi",
+              "flag_evidencebundleid",
+              "flag_projectroot",
+              "flag_provider",
+              "flag_prtopologypath",
+              "flag_record_id",
+              "flag_reportpath",
+              "flag_requirement_set_id",
+              "flag_runid",
+              "flag_storykey"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_requirement_set_id",
+          "originalEntryPoint": "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-host-matrix-pr-orchestrator.ts --requirement-set-id source-derived-requirement-set-id",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.js --requirement-set-id source-derived-requirement-set-id",
+          "argumentCombination": "--requirement-set-id <source-derived-safe-value>",
+          "args": [
+            "--requirement-set-id",
+            "source-derived-requirement-set-id"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_requirement_set_id_original_fixture_root",
+              "path": "<tmp>/g005_main_agent_host_matrix_pr_orchestrator_ts_flag_requirement_set_id-original-CsjcRV",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_requirement_set_id_package_fixture_root",
+              "path": "<tmp>/g005_main_agent_host_matrix_pr_orchestrator_ts_flag_requirement_set_id-package-LZlwEv",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "{\n  \"reportFile\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\e2e\\\\host-matrix-pr-journey.json\",\n  \"finalPassed\": false\n}\n{\n  \"reportType\": \"main_agent_host_matrix_pr_orchestration\",\n  \"evidence_provenance\": {\n    \"runId\": \"host-matrix-pr-<run-id>\",\n    \"storyKey\": \"S-release-gate\",\n    \"evidenceBundleId\": \"host-matrix-pr-<run-id>:bundle\",\n    \"contractHash\": \"498a9a928ed28ca02e3f18050be427ccca2a96fa42f9f1343d983741f89a80fc\",\n    \"gateReportHash\": \"dc210c6b1d829f14fc5224f00e667eb1ce7d477a03909b736dc5cf98a18e865e\"\n  },\n  \"provider\": \"mock\",\n  \"journeyMode\": \"mock\",\n  \"journeyE2EPassed\": false,\n  \"hostsPassed\": {\n    \"claude\": false,\n    \"codex\": false\n  },\n  \"hostMatrix\": {\n    \"matrixType\": \"main_agent_multi_host_matrix\",\n    \"requiredHosts\": [\n      \"cursor\",\n      \"claude\",\n      \"codex\"\n    ],\n    \"hostsPassed\": {\n      \"cursor\": false,\n      \"claude\": false,\n      \"codex\": false\n    },\n    \"allRequiredHostsPassed\": false,\n    \"legacyDualHostPassed\": false\n  },\n  \"prTopology\": {\n    \"version\": 1,\n    \"batch_id\": \"host-matrix-pr-batch\",\n    \"evidence_provenance\": {\n      \"runId\": \"host-matrix-pr-<run-id>\",\n      \"storyKey\": \"S-release-gate\",\n      \"evidenceBundleId\": \"host-matrix-pr-<run-id>:bundle\",\n      \"contractHash\": \"498a9a928ed28ca02e3f18050be427ccca2a96fa42f9f1343d983741f89a80fc\",\n      \"gateReportHash\": \"dc210c6b1d829f14fc5224f00e667eb1ce7d477a03909b736dc5cf98a18e865e\"\n    },\n    \"required_nodes\": [\n      {\n        \"node_id\": \"claude-node\",\n        \"target_pr\": \"PR-CLAUDE\",\n        \"depends_on\": [],\n        \"state\": \"blocked\"\n      },\n      {\n        \"node_id\": \"codex-node\",\n        \"target_pr\": \"PR-CODEX\",\n        \"depends_on\": [\n          \"claude-node\"\n        ],\n        \"state\": \"blocked\"\n      }\n    ],\n    \"all_affected_stories_passed\": false\n  },\n  \"providerPreflight\": [\n    {\n      \"id\": \"mock-provider\",\n      \"passed\": true,\n      \"detail\": \"deterministic local provider\"\n    }\n  ],\n  \"githubPrApi\": {\n    \"attempted\": false,\n    \"passed\": true,\n    \"steps\": [],\n    \"prUrl\": null\n  },\n  \"finalPassed\": false\n}\n",
+          "expectedStderr": "",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "exitCode",
+              "value": 1
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/main-agent-host-matrix-pr-orchestrator.ts:flag_requirement_set_id",
+            "originalReplayArtifactHash": "sha256:25d837952d2bc5fada0ccdef1bf37f91f679403a20499e0a186b61466665f253",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/main-agent-host-matrix-pr-orchestrator.ts:flag_requirement_set_id",
+            "sourceLineAnchors": [
+              {
+                "line": 373,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:373",
+                "text": "export function runHostMatrixPrOrchestration(input: {"
+              },
+              {
+                "line": 539,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:539",
+                "text": "export function main(argv: string[]): number {"
+              },
+              {
+                "line": 581,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:581",
+                "text": "console.log(JSON.stringify(report, null, 2));"
+              },
+              {
+                "line": 585,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:585",
+                "text": "if (require.main === module) {"
+              },
+              {
+                "line": 586,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:586",
+                "text": "process.exitCode = main(process.argv.slice(2));"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+                "to": "scripts/main-agent-host-matrix-pr-orchestrator.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.ts",
+                "to": "scripts/main-agent-host-matrix-pr-orchestrator.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.js",
+                "to": "scripts/main-agent-host-matrix-pr-orchestrator.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/main-agent-host-matrix-pr-orchestrator.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 11,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 11,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--enableRealPrApi",
+              "--evidenceBundleId",
+              "--projectRoot",
+              "--provider",
+              "--prTopologyPath",
+              "--record-id",
+              "--reportPath",
+              "--requirement-set-id",
+              "--runId",
+              "--storyKey"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--enableRealPrApi <source-derived-safe-value>",
+              "--evidenceBundleId <source-derived-safe-value>",
+              "--projectRoot <source-derived-safe-value>",
+              "--provider <source-derived-safe-value>",
+              "--prTopologyPath <source-derived-safe-value>",
+              "--record-id <source-derived-safe-value>",
+              "--reportPath <source-derived-safe-value>",
+              "--requirement-set-id <source-derived-safe-value>",
+              "--runId <source-derived-safe-value>",
+              "--storyKey <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--enableRealPrApi <source-derived-safe-value>",
+              "--evidenceBundleId <source-derived-safe-value>",
+              "--projectRoot <source-derived-safe-value>",
+              "--provider <source-derived-safe-value>",
+              "--prTopologyPath <source-derived-safe-value>",
+              "--record-id <source-derived-safe-value>",
+              "--reportPath <source-derived-safe-value>",
+              "--requirement-set-id <source-derived-safe-value>",
+              "--runId <source-derived-safe-value>",
+              "--storyKey <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 11,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_enablerealprapi",
+              "flag_evidencebundleid",
+              "flag_projectroot",
+              "flag_provider",
+              "flag_prtopologypath",
+              "flag_record_id",
+              "flag_reportpath",
+              "flag_requirement_set_id",
+              "flag_runid",
+              "flag_storykey"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_runid",
+          "originalEntryPoint": "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-host-matrix-pr-orchestrator.ts --runId source-derived-runid",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.js --runId source-derived-runid",
+          "argumentCombination": "--runId <source-derived-safe-value>",
+          "args": [
+            "--runId",
+            "source-derived-runid"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_runid_original_fixture_root",
+              "path": "<tmp>/g005_main_agent_host_matrix_pr_orchestrator_ts_flag_runid-original-5UzHFg",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_runid_package_fixture_root",
+              "path": "<tmp>/g005_main_agent_host_matrix_pr_orchestrator_ts_flag_runid-package-x8T1D8",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "{\n  \"reportFile\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\e2e\\\\host-matrix-pr-journey.json\",\n  \"finalPassed\": true\n}\n{\n  \"reportType\": \"main_agent_host_matrix_pr_orchestration\",\n  \"evidence_provenance\": {\n    \"runId\": \"source-derived-runid\",\n    \"storyKey\": \"S-release-gate\",\n    \"evidenceBundleId\": \"source-derived-runid:bundle\",\n    \"contractHash\": \"498a9a928ed28ca02e3f18050be427ccca2a96fa42f9f1343d983741f89a80fc\",\n    \"gateReportHash\": \"0a6bde5c2505777d91a44913a30a042ff46571ab8089f8245a7468628b6640bb\"\n  },\n  \"provider\": \"mock\",\n  \"journeyMode\": \"mock\",\n  \"journeyE2EPassed\": true,\n  \"hostsPassed\": {\n    \"claude\": true,\n    \"codex\": true\n  },\n  \"hostMatrix\": {\n    \"matrixType\": \"main_agent_multi_host_matrix\",\n    \"requiredHosts\": [\n      \"cursor\",\n      \"claude\",\n      \"codex\"\n    ],\n    \"hostsPassed\": {\n      \"cursor\": true,\n      \"claude\": true,\n      \"codex\": true\n    },\n    \"allRequiredHostsPassed\": true,\n    \"legacyDualHostPassed\": true\n  },\n  \"prTopology\": {\n    \"version\": 1,\n    \"batch_id\": \"host-matrix-pr-batch\",\n    \"evidence_provenance\": {\n      \"runId\": \"source-derived-runid\",\n      \"storyKey\": \"S-release-gate\",\n      \"evidenceBundleId\": \"source-derived-runid:bundle\",\n      \"contractHash\": \"498a9a928ed28ca02e3f18050be427ccca2a96fa42f9f1343d983741f89a80fc\",\n      \"gateReportHash\": \"0a6bde5c2505777d91a44913a30a042ff46571ab8089f8245a7468628b6640bb\"\n    },\n    \"required_nodes\": [\n      {\n        \"node_id\": \"claude-node\",\n        \"target_pr\": \"PR-CLAUDE\",\n        \"depends_on\": [],\n        \"state\": \"merged\"\n      },\n      {\n        \"node_id\": \"codex-node\",\n        \"target_pr\": \"PR-CODEX\",\n        \"depends_on\": [\n          \"claude-node\"\n        ],\n        \"state\": \"closed_not_needed\"\n      }\n    ],\n    \"all_affected_stories_passed\": true\n  },\n  \"providerPreflight\": [\n    {\n      \"id\": \"mock-provider\",\n      \"passed\": true,\n      \"detail\": \"deterministic local provider\"\n    }\n  ],\n  \"githubPrApi\": {\n    \"attempted\": false,\n    \"passed\": true,\n    \"steps\": [],\n    \"prUrl\": null\n  },\n  \"finalPassed\": true\n}\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/main-agent-host-matrix-pr-orchestrator.ts:flag_runid",
+            "originalReplayArtifactHash": "sha256:3810bf51749ba2e83a29c69834906b2a47df4c43a521ad5b45021eec784d2e6a",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/main-agent-host-matrix-pr-orchestrator.ts:flag_runid",
+            "sourceLineAnchors": [
+              {
+                "line": 373,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:373",
+                "text": "export function runHostMatrixPrOrchestration(input: {"
+              },
+              {
+                "line": 539,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:539",
+                "text": "export function main(argv: string[]): number {"
+              },
+              {
+                "line": 581,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:581",
+                "text": "console.log(JSON.stringify(report, null, 2));"
+              },
+              {
+                "line": 585,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:585",
+                "text": "if (require.main === module) {"
+              },
+              {
+                "line": 586,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:586",
+                "text": "process.exitCode = main(process.argv.slice(2));"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+                "to": "scripts/main-agent-host-matrix-pr-orchestrator.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.ts",
+                "to": "scripts/main-agent-host-matrix-pr-orchestrator.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.js",
+                "to": "scripts/main-agent-host-matrix-pr-orchestrator.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/main-agent-host-matrix-pr-orchestrator.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 11,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 11,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--enableRealPrApi",
+              "--evidenceBundleId",
+              "--projectRoot",
+              "--provider",
+              "--prTopologyPath",
+              "--record-id",
+              "--reportPath",
+              "--requirement-set-id",
+              "--runId",
+              "--storyKey"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--enableRealPrApi <source-derived-safe-value>",
+              "--evidenceBundleId <source-derived-safe-value>",
+              "--projectRoot <source-derived-safe-value>",
+              "--provider <source-derived-safe-value>",
+              "--prTopologyPath <source-derived-safe-value>",
+              "--record-id <source-derived-safe-value>",
+              "--reportPath <source-derived-safe-value>",
+              "--requirement-set-id <source-derived-safe-value>",
+              "--runId <source-derived-safe-value>",
+              "--storyKey <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--enableRealPrApi <source-derived-safe-value>",
+              "--evidenceBundleId <source-derived-safe-value>",
+              "--projectRoot <source-derived-safe-value>",
+              "--provider <source-derived-safe-value>",
+              "--prTopologyPath <source-derived-safe-value>",
+              "--record-id <source-derived-safe-value>",
+              "--reportPath <source-derived-safe-value>",
+              "--requirement-set-id <source-derived-safe-value>",
+              "--runId <source-derived-safe-value>",
+              "--storyKey <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 11,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_enablerealprapi",
+              "flag_evidencebundleid",
+              "flag_projectroot",
+              "flag_provider",
+              "flag_prtopologypath",
+              "flag_record_id",
+              "flag_reportpath",
+              "flag_requirement_set_id",
+              "flag_runid",
+              "flag_storykey"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_storykey",
+          "originalEntryPoint": "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-host-matrix-pr-orchestrator.ts --storyKey source-derived-storykey",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.js --storyKey source-derived-storykey",
+          "argumentCombination": "--storyKey <source-derived-safe-value>",
+          "args": [
+            "--storyKey",
+            "source-derived-storykey"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_storykey_original_fixture_root",
+              "path": "<tmp>/g005_main_agent_host_matrix_pr_orchestrator_ts_flag_storykey-original-S3YYzX",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_storykey_package_fixture_root",
+              "path": "<tmp>/g005_main_agent_host_matrix_pr_orchestrator_ts_flag_storykey-package-ZJs4PX",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "{\n  \"reportFile\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\e2e\\\\host-matrix-pr-journey.json\",\n  \"finalPassed\": true\n}\n{\n  \"reportType\": \"main_agent_host_matrix_pr_orchestration\",\n  \"evidence_provenance\": {\n    \"runId\": \"host-matrix-pr-<run-id>\",\n    \"storyKey\": \"source-derived-storykey\",\n    \"evidenceBundleId\": \"host-matrix-pr-<run-id>:bundle\",\n    \"contractHash\": \"498a9a928ed28ca02e3f18050be427ccca2a96fa42f9f1343d983741f89a80fc\",\n    \"gateReportHash\": \"0a6bde5c2505777d91a44913a30a042ff46571ab8089f8245a7468628b6640bb\"\n  },\n  \"provider\": \"mock\",\n  \"journeyMode\": \"mock\",\n  \"journeyE2EPassed\": true,\n  \"hostsPassed\": {\n    \"claude\": true,\n    \"codex\": true\n  },\n  \"hostMatrix\": {\n    \"matrixType\": \"main_agent_multi_host_matrix\",\n    \"requiredHosts\": [\n      \"cursor\",\n      \"claude\",\n      \"codex\"\n    ],\n    \"hostsPassed\": {\n      \"cursor\": true,\n      \"claude\": true,\n      \"codex\": true\n    },\n    \"allRequiredHostsPassed\": true,\n    \"legacyDualHostPassed\": true\n  },\n  \"prTopology\": {\n    \"version\": 1,\n    \"batch_id\": \"host-matrix-pr-batch\",\n    \"evidence_provenance\": {\n      \"runId\": \"host-matrix-pr-<run-id>\",\n      \"storyKey\": \"source-derived-storykey\",\n      \"evidenceBundleId\": \"host-matrix-pr-<run-id>:bundle\",\n      \"contractHash\": \"498a9a928ed28ca02e3f18050be427ccca2a96fa42f9f1343d983741f89a80fc\",\n      \"gateReportHash\": \"0a6bde5c2505777d91a44913a30a042ff46571ab8089f8245a7468628b6640bb\"\n    },\n    \"required_nodes\": [\n      {\n        \"node_id\": \"claude-node\",\n        \"target_pr\": \"PR-CLAUDE\",\n        \"depends_on\": [],\n        \"state\": \"merged\"\n      },\n      {\n        \"node_id\": \"codex-node\",\n        \"target_pr\": \"PR-CODEX\",\n        \"depends_on\": [\n          \"claude-node\"\n        ],\n        \"state\": \"closed_not_needed\"\n      }\n    ],\n    \"all_affected_stories_passed\": true\n  },\n  \"providerPreflight\": [\n    {\n      \"id\": \"mock-provider\",\n      \"passed\": true,\n      \"detail\": \"deterministic local provider\"\n    }\n  ],\n  \"githubPrApi\": {\n    \"attempted\": false,\n    \"passed\": true,\n    \"steps\": [],\n    \"prUrl\": null\n  },\n  \"finalPassed\": true\n}\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/main-agent-host-matrix-pr-orchestrator.ts:flag_storykey",
+            "originalReplayArtifactHash": "sha256:73a5a92ae2674e4fd914b7918c662522de62856f756d95ef421f09333344fecb",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/main-agent-host-matrix-pr-orchestrator.ts:flag_storykey",
+            "sourceLineAnchors": [
+              {
+                "line": 373,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:373",
+                "text": "export function runHostMatrixPrOrchestration(input: {"
+              },
+              {
+                "line": 539,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:539",
+                "text": "export function main(argv: string[]): number {"
+              },
+              {
+                "line": 581,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:581",
+                "text": "console.log(JSON.stringify(report, null, 2));"
+              },
+              {
+                "line": 585,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:585",
+                "text": "if (require.main === module) {"
+              },
+              {
+                "line": 586,
+                "anchor": "scripts/main-agent-host-matrix-pr-orchestrator.ts:586",
+                "text": "process.exitCode = main(process.argv.slice(2));"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+                "to": "scripts/main-agent-host-matrix-pr-orchestrator.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.ts",
+                "to": "scripts/main-agent-host-matrix-pr-orchestrator.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.js",
+                "to": "scripts/main-agent-host-matrix-pr-orchestrator.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/main-agent-host-matrix-pr-orchestrator.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 11,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 11,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--enableRealPrApi",
+              "--evidenceBundleId",
+              "--projectRoot",
+              "--provider",
+              "--prTopologyPath",
+              "--record-id",
+              "--reportPath",
+              "--requirement-set-id",
+              "--runId",
+              "--storyKey"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--enableRealPrApi <source-derived-safe-value>",
+              "--evidenceBundleId <source-derived-safe-value>",
+              "--projectRoot <source-derived-safe-value>",
+              "--provider <source-derived-safe-value>",
+              "--prTopologyPath <source-derived-safe-value>",
+              "--record-id <source-derived-safe-value>",
+              "--reportPath <source-derived-safe-value>",
+              "--requirement-set-id <source-derived-safe-value>",
+              "--runId <source-derived-safe-value>",
+              "--storyKey <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--enableRealPrApi <source-derived-safe-value>",
+              "--evidenceBundleId <source-derived-safe-value>",
+              "--projectRoot <source-derived-safe-value>",
+              "--provider <source-derived-safe-value>",
+              "--prTopologyPath <source-derived-safe-value>",
+              "--record-id <source-derived-safe-value>",
+              "--reportPath <source-derived-safe-value>",
+              "--requirement-set-id <source-derived-safe-value>",
+              "--runId <source-derived-safe-value>",
+              "--storyKey <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 11,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_enablerealprapi",
+              "flag_evidencebundleid",
+              "flag_projectroot",
+              "flag_provider",
+              "flag_prtopologypath",
+              "flag_record_id",
+              "flag_reportpath",
+              "flag_requirement_set_id",
+              "flag_runid",
+              "flag_storykey"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/setup.ps1",
+      "entryId": "setup-ps1",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/setup.ps1"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/setup.ps1",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/setup.ps1:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 1,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 1,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g005_setup_ps1_no_args",
+          "originalEntryPoint": "scripts/setup.ps1",
+          "originalEntryCommand": "pwsh -NoLogo -NoProfile -File scripts/setup.ps1",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/setup.ps1",
+          "packageEntryCommand": "pwsh -NoLogo -NoProfile -File packages/bmad-speckit/dist/main-agent/source-authority/scripts/setup.ps1",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g005_setup_ps1_no_args_original_fixture_root",
+              "path": "<tmp>/g005_setup_ps1_no_args-original-blZPjv",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_setup_ps1_no_args_package_fixture_root",
+              "path": "<tmp>/g005_setup_ps1_no_args-package-O3AV6O",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "Write-Error: scripts/setup.ps1:<line>\nLine |\n  99 |      Write-Error 'Must specify -Target <path>'\n     |      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n     | Must specify -Target <path>\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "Write-Error: scripts/setup.ps1:<line>"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/setup.ps1:no_args",
+            "originalReplayArtifactHash": "sha256:7082985e9b4b1e1edc142c0c412c2b48a45b7bf283020b7216008ca4cbb01cc9",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/setup.ps1:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 1,
+                "anchor": "scripts/setup.ps1:1",
+                "text": "#!/usr/bin/env pwsh"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/setup.ps1",
+                "to": "scripts/setup.ps1"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/setup.ps1",
+                "to": "scripts/setup.ps1"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/setup.ps1",
+                "to": "scripts/setup.ps1"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/setup.ps1",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

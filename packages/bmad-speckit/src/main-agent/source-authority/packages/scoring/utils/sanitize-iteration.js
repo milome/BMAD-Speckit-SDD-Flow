@@ -1,0 +1,16 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.sanitizeIterationCount = sanitizeIterationCount;
+/**
+ * 展示前 sanitize iteration_count：NaN/负/小数 处理
+ * TASKS_iteration_count_display US-005
+ * @param {number | undefined | null} val - 原始迭代次数，可为 NaN、负数或小数
+ * @returns {number} 处理后的非负整数
+ */
+function sanitizeIterationCount(val) {
+    if (val == null)
+        return 0;
+    if (Number.isNaN(val))
+        return 0;
+    return Math.max(0, Math.round(val));
+}

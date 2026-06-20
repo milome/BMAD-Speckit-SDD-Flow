@@ -1,0 +1,157 @@
+[
+  {
+    "originalPath": "scripts/mcp/consumer/verify-consumer-mcp.sh",
+    "scenarioId": "g004_mcp_consumer_verify_consumer_mcp_sh_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/model-governance-hint-resolver.ts",
+    "scenarioId": "g004_model_governance_hint_resolver_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/orchestration-dispatch-contract.ts",
+    "scenarioId": "g004_orchestration_dispatch_contract_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/orchestration-governance-contract.ts",
+    "scenarioId": "g004_orchestration_governance_contract_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/orchestration-state.ts",
+    "scenarioId": "g004_orchestration_state_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/parse-and-write-score.ts",
+    "scenarioId": "g004_parse_and_write_score_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/per-must-closure-evidence-index.ts",
+    "scenarioId": "g004_per_must_closure_evidence_index_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/pre-rerun-anti-false-positive-gate.ts",
+    "scenarioId": "g004_pre_rerun_anti_false_positive_gate_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/reconfirmation-runtime.ts",
+    "scenarioId": "g004_reconfirmation_runtime_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/record-main-agent-inspect-readiness-closure.ts",
+    "scenarioId": "g004_record_main_agent_inspect_readiness_closure_ts_no_args",
+    "expectedStdout": "{\n  \"ok\": true,\n  \"eventId\": \"trace_runtime_closure_recorded:2026-06-20T05:49:32.462Z:792cf1a10dea\",\n  \"eventHash\": \"sha256:cab24fa20f1bb98370e43705b4ac328f132eb57691fd85735bed18675c745e2f\",\n  \"receiptPath\": \"D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-INSPECT-READINESS-BASELINE-SELF-HEALING/events/receipts/trace_runtime_closure_recorded_2026-06-20T05_49_32.462Z_792cf1a10dea.json\",\n  \"afterRecordHash\": \"sha256:68d75b4e39182e60e7da4345fb8aae8dba6edd2223a697c7379dd11f7fb79953\",\n  \"closedIds\": 26\n}\n"
+  },
+  {
+    "originalPath": "scripts/requirement-record-control-store.ts",
+    "scenarioId": "g004_requirement_record_control_store_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/requirement-record-live-schema-gate.ts",
+    "scenarioId": "g004_requirement_record_live_schema_gate_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/requirement-record-schema-evolution.ts",
+    "scenarioId": "g004_requirement_record_schema_evolution_ts_no_args",
+    "expectedStdout": "{\n  \"ok\": true,\n  \"policy\": {\n    \"schemaVersion\": \"requirement-record-schema-evolution/v1\",\n    \"upcasterRegistry\": [\n      \"requirement-record/v1\"\n    ],\n    \"migrationEventTypes\": [\n      \"control_commit_recovery_recorded\",\n      \"closeout_attempt_invalidated\"\n    ],\n    \"compatibilityMatrix\": [\n      \"control-event-envelope/v1 -> requirement-record/v1\"\n    ],\n    \"snapshotOnlyBackfillAllowed\": false,\n    \"eventLogRewriteAllowed\": false\n  }\n}\n"
+  },
+  {
+    "originalPath": "scripts/resolve-active-requirement.ts",
+    "scenarioId": "g004_resolve_active_requirement_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/runtime-governance-registry.ts",
+    "scenarioId": "g004_runtime_governance_registry_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/runtime-governance-template-schema.ts",
+    "scenarioId": "g004_runtime_governance_template_schema_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/runtime-governance.ts",
+    "scenarioId": "g004_runtime_governance_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/runtime-scoring-data-path.ts",
+    "scenarioId": "g004_runtime_scoring_data_path_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/sft-extract.ts",
+    "scenarioId": "g004_sft_extract_ts_no_args",
+    "expectedStdout": "共提取 0 条，覆盖 0 个 Story；跳过 7 条（原因：无 §1/§4 且审计报告解析失败: 4; 无 source_path: 3）\n"
+  },
+  {
+    "originalPath": "scripts/six-model-runtime-decision.ts",
+    "scenarioId": "g004_six_model_runtime_decision_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/skill-orchestration-audit.ts",
+    "scenarioId": "g004_skill_orchestration_audit_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/strict-closeout-proof-gate.ts",
+    "scenarioId": "g004_strict_closeout_proof_gate_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/target-artifact-realization-gate.ts",
+    "scenarioId": "g004_target_artifact_realization_gate_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/trace-040-evidence-packet-generator.ts",
+    "scenarioId": "g004_trace_040_evidence_packet_generator_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/update-runtime-audit-index.ts",
+    "scenarioId": "g004_update_runtime_audit_index_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/user-story-mapping.ts",
+    "scenarioId": "g004_user_story_mapping_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/validate-consumer-governance.ps1",
+    "scenarioId": "g004_validate_consumer_governance_ps1_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/verify-cursor-audit-granularity.ts",
+    "scenarioId": "g004_verify_cursor_audit_granularity_ts_no_args",
+    "expectedStdout": "========================================\nCursor Audit Granularity Verification\n========================================\nMode: full\nTool: mcp_task\nSubagent Type: generalPurpose\n\nStage Routing Matrix:\n- story_create: AUDIT (validation=null)\n- story_audit: AUDIT (validation=null)\n- specify: AUDIT (validation=null)\n- plan: AUDIT (validation=null)\n- gaps: AUDIT (validation=null)\n- tasks: AUDIT (validation=null)\n- implement: AUDIT (validation=null)\n- post_audit: AUDIT (validation=null)\n- epic_create: SKIP (validation=null)\n- epic_complete: SKIP (validation=null)\n\n✅ Cursor audit granularity verification passed\n"
+  },
+  {
+    "originalPath": "scripts/verify-hooks-no-ts-node.js",
+    "scenarioId": "g004_verify_hooks_no_ts_node_js_no_args",
+    "expectedStdout": "\u001b[0m\n=== BMAD Hooks ts-node 依赖验证 ===\n\u001b[0m\nFound 20 hook files\n\n\u001b[32m✓ _bmad\\runtime\\hooks\\build-runtime-error-message.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\deferred-gap-governance.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\governance-packet-hard-closeout.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\governance-rerun-queue.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\governance-runner-summary-format.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\governance-runner-summary-presenter.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\governance-stage-event-emitter.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\hook-load-messages.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\party-mode-current-session.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\party-mode-read-current-session.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\party-mode-session-event.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\party-mode-session-runtime.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\party-mode-turn-lock.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\post-tool-use-core.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\pre-continue-check.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\run-emit-runtime-policy.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\runtime-dashboard-auto-start.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\runtime-policy-inject-core.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\runtime-step-state.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\should-skip-runtime-policy.cjs\u001b[0m\n\n\u001b[0m=== 总结 ===\u001b[0m\nTotal files: 20\n\u001b[32mPassed: 20\u001b[0m\n\u001b[32mFailed: 0\u001b[0m\n\u001b[32m\n✓ 所有 hooks 通过 ts-node 依赖验证！\n\u001b[0m\n"
+  },
+  {
+    "originalPath": "scripts/write-runtime-policy-snapshot-and-recovery-context.cjs",
+    "scenarioId": "g004_write_runtime_policy_snapshot_and_recovery_context_cjs_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/write-runtime-policy-snapshot-and-recovery-context.ts",
+    "scenarioId": "g004_write_runtime_policy_snapshot_and_recovery_context_ts_no_args",
+    "expectedStdout": ""
+  }
+]

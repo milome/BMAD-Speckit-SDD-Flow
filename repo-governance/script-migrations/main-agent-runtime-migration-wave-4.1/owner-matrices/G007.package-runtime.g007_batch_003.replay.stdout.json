@@ -1,0 +1,312 @@
+[
+  {
+    "originalPath": "scripts/governance-packet-execution-store.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_governance_packet_execution_store_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/governance-packet-reconciler.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_governance_packet_reconciler_ts_no_args",
+        "expectedStdout": "{\n  \"reconciledAt\": \"<iso-timestamp>\",\n  \"updatedRecordIds\": [],\n  \"orphanPacketPaths\": [],\n  \"orphanExecutionRecordIds\": []\n}"
+      },
+      {
+        "scenarioId": "g007_governance_packet_reconciler_ts_env_bmad_disable_embedded_governance_clis",
+        "expectedStdout": "{\n  \"reconciledAt\": \"<iso-timestamp>\",\n  \"updatedRecordIds\": [],\n  \"orphanPacketPaths\": [],\n  \"orphanExecutionRecordIds\": []\n}"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/governance-remediation-artifact.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_no_args",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_actualexecutor",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_adapterpath",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_attemptid",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_blockerownershiplocked",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_canonicalagent",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_capabilityslot",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_contradictionsdelta",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_equivalentadaptercount",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_expecteddelta",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_externalproofadded",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_gatefailureexists",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_outcome",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_outputpath",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_prompttext",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_readytorerungate",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_rerungate",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_rerunowner",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_roottargetlocked",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_sharedartifactsupdated",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_sourcegatefailureids",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_stagecontextknown",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_stopreason",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_flag_targetartifacts",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_artifact_ts_env_bmad_disable_embedded_governance_clis",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/governance-remediation-config.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_governance_remediation_config_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/governance-remediation-runner.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_no_args",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_actualexecutor",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_adapterpath",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_attemptid",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_blockerownershiplocked",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_canonicalagent",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_capabilityslot",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_configpath",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_contradictionsdelta",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_equivalentadaptercount",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_expecteddelta",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_externalproofadded",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_gatefailureexists",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_jsoninputpath",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_loopstateid",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_maxattempts",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_maxnoprogressrepeats",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_outcome",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_outputpath",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_projectroot",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_prompttext",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_readytorerungate",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_rerungate",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_rerunowner",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_roottargetlocked",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_sharedartifactsupdated",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_sourcegatefailureids",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_stagecontextknown",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_stopreason",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_flag_targetartifacts",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_governance_remediation_runner_ts_env_bmad_disable_embedded_governance_clis",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/governance-transport-envelope.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_governance_transport_envelope_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/i18n/agent-display-names.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_i18n_agent_display_names_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/i18n/agent-manifest.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_i18n_agent_manifest_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/i18n/detect-language.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_i18n_detect_language_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/i18n/field-meta-types.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_i18n_field_meta_types_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  }
+]

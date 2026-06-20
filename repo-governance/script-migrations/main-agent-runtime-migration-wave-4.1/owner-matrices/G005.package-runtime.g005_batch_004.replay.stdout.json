@@ -1,0 +1,37 @@
+[
+  {
+    "originalPath": "scripts/setup.sh",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g005_setup_sh_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/speckit-cli.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g005_speckit_cli_ts_no_args",
+        "expectedStdout": "\nSpeckit CLI - Unified command entry for speckit-workflow\nVersion: 2.0.1\n\nUsage: npx ts-node scripts/speckit-cli.ts <command> [options]\n\nCommands:\n  constitution §0.5 Establish project principles\n  specify      §1 Generate spec.md with requirements mapping\n  plan         §2 Generate plan.md with architecture\n  gaps         §3 Generate IMPLEMENTATION_GAPS.md\n  tasks        §4 Generate tasks.md with acceptance criteria\n  implement    §5 Execute tasks with TDD red-green-refactor\n  clarify      §1.2 Clarify ambiguous spec (embedded)\n  checklist    §2.2 Quality checklist for complex plans (embedded)\n  analyze      §4.2 Cross-artifact analysis (embedded)\n  audit        Run standalone audit for any stage\n  validate     Validate speckit configuration\n  version      Show version info\n\nGlobal Options:\n  --help        Show this help message\n  --version     Show version info\n\nExamples:\n  npx ts-node scripts/speckit-cli.ts constitution --projectPath ./\n  npx ts-node scripts/speckit-cli.ts specify --epic 4 --story 1\n  npx ts-node scripts/speckit-cli.ts plan --epic 4 --story 1 --specPath specs/.../spec.md\n  npx ts-node scripts/speckit-cli.ts implement --tasksPath specs/.../tasks.md\n\nSee docs/speckit-cli-complete-mapping.md for full documentation.\n\n"
+      },
+      {
+        "scenarioId": "g005_speckit_cli_ts_flag_help",
+        "expectedStdout": "\nSpeckit CLI - Unified command entry for speckit-workflow\nVersion: 2.0.1\n\nUsage: npx ts-node scripts/speckit-cli.ts <command> [options]\n\nCommands:\n  constitution §0.5 Establish project principles\n  specify      §1 Generate spec.md with requirements mapping\n  plan         §2 Generate plan.md with architecture\n  gaps         §3 Generate IMPLEMENTATION_GAPS.md\n  tasks        §4 Generate tasks.md with acceptance criteria\n  implement    §5 Execute tasks with TDD red-green-refactor\n  clarify      §1.2 Clarify ambiguous spec (embedded)\n  checklist    §2.2 Quality checklist for complex plans (embedded)\n  analyze      §4.2 Cross-artifact analysis (embedded)\n  audit        Run standalone audit for any stage\n  validate     Validate speckit configuration\n  version      Show version info\n\nGlobal Options:\n  --help        Show this help message\n  --version     Show version info\n\nExamples:\n  npx ts-node scripts/speckit-cli.ts constitution --projectPath ./\n  npx ts-node scripts/speckit-cli.ts specify --epic 4 --story 1\n  npx ts-node scripts/speckit-cli.ts plan --epic 4 --story 1 --specPath specs/.../spec.md\n  npx ts-node scripts/speckit-cli.ts implement --tasksPath specs/.../tasks.md\n\nSee docs/speckit-cli-complete-mapping.md for full documentation.\n\n"
+      },
+      {
+        "scenarioId": "g005_speckit_cli_ts_flag_version",
+        "expectedStdout": "Speckit CLI v2.0.1\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/validate-single-source-whitelist.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g005_validate_single_source_whitelist_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  }
+]

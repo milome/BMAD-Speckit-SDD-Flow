@@ -1,0 +1,81 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-wave-4-1-install-matrix/v1",
+  "waveId": "main-agent-runtime-migration-wave-4.1",
+  "mode": "save-dev",
+  "status": "passed",
+  "createdAt": "2026-06-20T13:47:03.242Z",
+  "packageTarballSha256": "sha256:5e6be8cf9a6ea70a04ceab48c73a4bea0050fd746fa4ee2303f4ad01702514d0",
+  "commandRows": [
+    {
+      "command": "npm run build:main-agent-dist",
+      "cwd": "packages/bmad-speckit",
+      "exitCode": 0,
+      "stdoutHash": "sha256:ead04c01019b66a9d0c51a10c6cdbe07f91f4de466f6ad1f1553c6cb511f4005",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "startedAt": "2026-06-20T13:46:06.404Z",
+      "completedAt": "2026-06-20T13:46:12.192Z",
+      "status": "passed",
+      "stdoutPreview": "\n> bmad-speckit@2.0.2 build:main-agent-dist\n> node scripts/build-main-agent-dist.cjs\n\nbuilt dist/main-agent files=244 sourceAuthorityTsRuntime=301 sourceAuthorityTsDeclarations=1 package files=1 runtime asset dirs=4 sourceAuthority asset dirs=11 sourceAuthority asset files=4\n",
+      "stderrPreview": ""
+    },
+    {
+      "command": "npm pack --pack-destination C:\\Users\\milome\\AppData\\Local\\Temp\\wave-4-1-save-dev-mXUldH\\pack --json --ignore-scripts",
+      "cwd": "packages/bmad-speckit",
+      "exitCode": 0,
+      "stdoutHash": "sha256:2f534dc52f387224f3191cdef8c731deb395ad10da47a99105bd79478c3e8b9d",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "startedAt": "2026-06-20T13:46:12.193Z",
+      "completedAt": "2026-06-20T13:46:34.030Z",
+      "status": "passed",
+      "stdoutPreview": "[\n  {\n    \"id\": \"bmad-speckit@2.0.2\",\n    \"name\": \"bmad-speckit\",\n    \"version\": \"2.0.2\",\n    \"size\": 11497727,\n    \"unpackedSize\": 67136338,\n    \"shasum\": \"6bff0cb252648fb52966ca36b7a52078d0b7f809\",\n    \"integrity\": \"sha512-05aaSRs7DlAdp4Zd1fbBmSYDmCwbkgQG/BNwpGuo3IBSzTaqQ51rG2V+/JNx8wD689BDMlGeMpuFThDenvd9Cg==\",\n    \"filename\": \"bmad-speckit-2.0.2.tgz\",\n    \"files\": [\n      {\n        \"path\": \"_bmad/_config/agent-manifest.csv\",\n        \"size\": 17971,\n        \"mode\": 420\n      },\n      {\n        \"path\": \"_bmad/_config/agents/bmb-agent-builder.customize.yaml\",\n        \"size\": 908,\n        \"mode\": 420\n      },\n      {\n        \"path\": \"_bmad/_config/agents/bmb-module-builder.customize.yaml\",\n        \"size\": 908,\n        \"mode\": 420\n      },\n      {\n        \"path\": \"_bmad/_config/agents/bmb-workflow-builder.customize.yaml\",\n        \"size\": 908,\n        \"mode\": 420\n      },\n      {\n        \"path\": \"_bmad/_config/agents/bmm-analyst.customize.yaml\",\n        \"size\": 908,\n        \"mode\": 420\n      },\n      {\n        \"path\": \"_bmad/_config/agents/bmm-architect.customize.yaml\",\n        \"size\": 908,\n        \"mode\": 420\n      },\n      {\n        \"path\": \"_bmad/_config/agents/bmm-dev.customize.ya",
+      "stderrPreview": ""
+    },
+    {
+      "command": "npm install --save-dev C:\\Users\\milome\\AppData\\Local\\Temp\\wave-4-1-save-dev-mXUldH\\pack\\bmad-speckit-2.0.2.tgz --ignore-scripts --no-audit --fund=false",
+      "cwd": "C:/Users/milome/AppData/Local/Temp/wave-4-1-save-dev-mXUldH/consumer",
+      "exitCode": 0,
+      "stdoutHash": "sha256:dae8e9f486abcb15d07e149baa4b44f37f32b5c3ff18e1d3e7df9e7021a581a9",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "startedAt": "2026-06-20T13:46:34.047Z",
+      "completedAt": "2026-06-20T13:47:00.647Z",
+      "status": "passed",
+      "stdoutPreview": "\nadded 101 packages in 26s\n",
+      "stderrPreview": ""
+    },
+    {
+      "command": "npx --no-install bmad-speckit main-agent --json --cwd C:\\Users\\milome\\AppData\\Local\\Temp\\wave-4-1-save-dev-mXUldH\\consumer",
+      "cwd": "C:/Users/milome/AppData/Local/Temp/wave-4-1-save-dev-mXUldH/consumer",
+      "exitCode": 0,
+      "stdoutHash": "sha256:04871eea867c5900a745c62bbe3cd845004a4d12b21c76e752e73062a9ccb825",
+      "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "startedAt": "2026-06-20T13:47:00.648Z",
+      "completedAt": "2026-06-20T13:47:03.241Z",
+      "status": "passed",
+      "stdoutPreview": "{\n  \"schemaVersion\": \"main-agent-package-runtime/v1\",\n  \"action\": \"inspect\",\n  \"cwd\": \"C:\\\\Users\\\\milome\\\\AppData\\\\Local\\\\Temp\\\\wave-4-1-save-dev-mXUldH\\\\consumer\",\n  \"status\": \"ok\",\n  \"exitCode\": 0,\n  \"errors\": [],\n  \"data\": {\n    \"source\": \"none\",\n    \"indexPath\": null,\n    \"active\": null,\n    \"activeRecordPath\": null,\n    \"activeRecord\": null,\n    \"inventory\": {\n      \"hasRequirementIndex\": false\n    }\n  }\n}\n",
+      "stderrPreview": ""
+    }
+  ],
+  "probe": {
+    "commandSurface": "npx --no-install bmad-speckit main-agent --json",
+    "stdoutHash": "sha256:04871eea867c5900a745c62bbe3cd845004a4d12b21c76e752e73062a9ccb825",
+    "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "parsedStatus": "ok",
+    "parsedSchemaVersion": "main-agent-package-runtime/v1"
+  },
+  "usedRootScript": false,
+  "usedTsx": false,
+  "usedTsNode": false,
+  "usedCompiledFallback": false,
+  "rootScriptDependencyCount": 0,
+  "forbiddenRuntimeTokenHits": [],
+  "reworkRequired": false,
+  "assertions": [
+    "installed consumer command executed package binary",
+    "main-agent probe returned main-agent-package-runtime/v1 JSON",
+    "rootScriptDependencyCount=0",
+    "usedRootScript=false",
+    "usedTsx=false",
+    "usedTsNode=false",
+    "usedCompiledFallback=false"
+  ]
+}

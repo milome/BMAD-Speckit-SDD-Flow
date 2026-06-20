@@ -1,0 +1,276 @@
+[
+  {
+    "originalPath": "scripts/orchestration-governance-contract.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_orchestration_governance_contract_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/orchestration-state.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_orchestration_state_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/parse-and-write-score.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_no_args",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_agent",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_artifactdocpath",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_basecommithash",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_datapath",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_epic",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_event",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_host",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_hostkind",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_iteration_count",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_iterationreportpaths",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_providerid",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_providermode",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_questionversion",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_reportpath",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_runid",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_scenario",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_skipautohash",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_skiptriggercheck",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_source",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_sourcehashfilepath",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_stage",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_story",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_tooltracepath",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_tooltraceref",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_triggerstage",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_parse_and_write_score_ts_flag_writemode",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/per-must-closure-evidence-index.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_per_must_closure_evidence_index_ts_no_args",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_per_must_closure_evidence_index_ts_flag_attempt_id",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_per_must_closure_evidence_index_ts_flag_help",
+        "expectedStdout": "Usage: per-must-closure-evidence-index --model-packet <json> --requirement-record <json> [--attempt-id <id>] [--out <json>] [--json]\n"
+      },
+      {
+        "scenarioId": "g004_per_must_closure_evidence_index_ts_flag_json",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_per_must_closure_evidence_index_ts_flag_model_packet",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_per_must_closure_evidence_index_ts_flag_out",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_per_must_closure_evidence_index_ts_flag_requirement_record",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/pre-rerun-anti-false-positive-gate.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_pre_rerun_anti_false_positive_gate_ts_no_args",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_pre_rerun_anti_false_positive_gate_ts_flag_attempt_id",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_pre_rerun_anti_false_positive_gate_ts_flag_help",
+        "expectedStdout": "Usage: pre-rerun-anti-false-positive-gate --source <requirement.md> --requirement-record <json> [--attempt-id <id>] [--report-path <json>] [--json]\n"
+      },
+      {
+        "scenarioId": "g004_pre_rerun_anti_false_positive_gate_ts_flag_json",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_pre_rerun_anti_false_positive_gate_ts_flag_report_path",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_pre_rerun_anti_false_positive_gate_ts_flag_requirement_record",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_pre_rerun_anti_false_positive_gate_ts_flag_source",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/reconfirmation-runtime.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_reconfirmation_runtime_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/record-main-agent-inspect-readiness-closure.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_record_main_agent_inspect_readiness_closure_ts_no_args",
+        "expectedStdout": "{\n  \"ok\": true,\n  \"eventId\": \"trace_runtime_closure_recorded:<iso-timestamp>:<event-id-hash>\",\n  \"eventHash\": \"sha256:<sha256>\",\n  \"receiptPath\": \"D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-INSPECT-READINESS-BASELINE-SELF-HEALING/events/receipts/trace_runtime_closure_recorded_<receipt-event-id>.json\",\n  \"afterRecordHash\": \"sha256:<sha256>\",\n  \"closedIds\": 26\n}\n"
+      },
+      {
+        "scenarioId": "g004_record_main_agent_inspect_readiness_closure_ts_flag_entry_flow",
+        "expectedStdout": "{\n  \"ok\": true,\n  \"eventId\": \"trace_runtime_closure_recorded:<iso-timestamp>:<event-id-hash>\",\n  \"eventHash\": \"sha256:<sha256>\",\n  \"receiptPath\": \"D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-INSPECT-READINESS-BASELINE-SELF-HEALING/events/receipts/trace_runtime_closure_recorded_<receipt-event-id>.json\",\n  \"afterRecordHash\": \"sha256:<sha256>\",\n  \"closedIds\": 26\n}\n"
+      },
+      {
+        "scenarioId": "g004_record_main_agent_inspect_readiness_closure_ts_flag_language",
+        "expectedStdout": "{\n  \"ok\": true,\n  \"eventId\": \"trace_runtime_closure_recorded:<iso-timestamp>:<event-id-hash>\",\n  \"eventHash\": \"sha256:<sha256>\",\n  \"receiptPath\": \"D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-INSPECT-READINESS-BASELINE-SELF-HEALING/events/receipts/trace_runtime_closure_recorded_<receipt-event-id>.json\",\n  \"afterRecordHash\": \"sha256:<sha256>\",\n  \"closedIds\": 26\n}\n"
+      },
+      {
+        "scenarioId": "g004_record_main_agent_inspect_readiness_closure_ts_flag_mode",
+        "expectedStdout": "{\n  \"ok\": true,\n  \"eventId\": \"trace_runtime_closure_recorded:<iso-timestamp>:<event-id-hash>\",\n  \"eventHash\": \"sha256:<sha256>\",\n  \"receiptPath\": \"D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-INSPECT-READINESS-BASELINE-SELF-HEALING/events/receipts/trace_runtime_closure_recorded_<receipt-event-id>.json\",\n  \"afterRecordHash\": \"sha256:<sha256>\",\n  \"closedIds\": 26\n}\n"
+      },
+      {
+        "scenarioId": "g004_record_main_agent_inspect_readiness_closure_ts_flag_out",
+        "expectedStdout": "{\n  \"ok\": true,\n  \"eventId\": \"trace_runtime_closure_recorded:<iso-timestamp>:<event-id-hash>\",\n  \"eventHash\": \"sha256:<sha256>\",\n  \"receiptPath\": \"D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-INSPECT-READINESS-BASELINE-SELF-HEALING/events/receipts/trace_runtime_closure_recorded_<receipt-event-id>.json\",\n  \"afterRecordHash\": \"sha256:<sha256>\",\n  \"closedIds\": 26\n}\n"
+      },
+      {
+        "scenarioId": "g004_record_main_agent_inspect_readiness_closure_ts_flag_record_id",
+        "expectedStdout": "{\n  \"ok\": true,\n  \"eventId\": \"trace_runtime_closure_recorded:<iso-timestamp>:<event-id-hash>\",\n  \"eventHash\": \"sha256:<sha256>\",\n  \"receiptPath\": \"D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-INSPECT-READINESS-BASELINE-SELF-HEALING/events/receipts/trace_runtime_closure_recorded_<receipt-event-id>.json\",\n  \"afterRecordHash\": \"sha256:<sha256>\",\n  \"closedIds\": 26\n}\n"
+      },
+      {
+        "scenarioId": "g004_record_main_agent_inspect_readiness_closure_ts_flag_source",
+        "expectedStdout": "{\n  \"ok\": true,\n  \"eventId\": \"trace_runtime_closure_recorded:<iso-timestamp>:<event-id-hash>\",\n  \"eventHash\": \"sha256:<sha256>\",\n  \"receiptPath\": \"D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-INSPECT-READINESS-BASELINE-SELF-HEALING/events/receipts/trace_runtime_closure_recorded_<receipt-event-id>.json\",\n  \"afterRecordHash\": \"sha256:<sha256>\",\n  \"closedIds\": 26\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/requirement-record-control-store.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_requirement_record_control_store_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/requirement-record-live-schema-gate.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_requirement_record_live_schema_gate_ts_no_args",
+        "expectedStdout": "Usage: requirement-record-live-schema-gate <requirement-record.json> [--json]\n"
+      },
+      {
+        "scenarioId": "g004_requirement_record_live_schema_gate_ts_flag_help",
+        "expectedStdout": "Usage: requirement-record-live-schema-gate <requirement-record.json> [--json]\n"
+      },
+      {
+        "scenarioId": "g004_requirement_record_live_schema_gate_ts_flag_json",
+        "expectedStdout": "Usage: requirement-record-live-schema-gate <requirement-record.json> [--json]\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/requirement-record-schema-evolution.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_requirement_record_schema_evolution_ts_no_args",
+        "expectedStdout": "{\n  \"ok\": true,\n  \"policy\": {\n    \"schemaVersion\": \"requirement-record-schema-evolution/v1\",\n    \"upcasterRegistry\": [\n      \"requirement-record/v1\"\n    ],\n    \"migrationEventTypes\": [\n      \"control_commit_recovery_recorded\",\n      \"closeout_attempt_invalidated\"\n    ],\n    \"compatibilityMatrix\": [\n      \"control-event-envelope/v1 -> requirement-record/v1\"\n    ],\n    \"snapshotOnlyBackfillAllowed\": false,\n    \"eventLogRewriteAllowed\": false\n  }\n}\n"
+      }
+    ]
+  }
+]

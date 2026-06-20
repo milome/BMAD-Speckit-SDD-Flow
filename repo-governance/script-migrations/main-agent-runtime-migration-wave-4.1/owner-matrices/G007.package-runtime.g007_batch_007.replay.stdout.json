@@ -1,0 +1,188 @@
+[
+  {
+    "originalPath": "scripts/runtime-step-state.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_runtime_step_state_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/sdd-artifact-manifest.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_sdd_artifact_manifest_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/skill-inventory-provider.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_skill_inventory_provider_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/skill-semantic-features-config.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_skill_semantic_features_config_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/sprint-status-authorized-update.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_sprint_status_authorized_update_ts_no_args",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_sprint_status_authorized_update_ts_flag_storykey",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/stable-runtime-policy-json.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_stable_runtime_policy_json_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/strict-command-resolution-preflight.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_strict_command_resolution_preflight_ts_no_args",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_strict_command_resolution_preflight_ts_flag_help",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_strict_command_resolution_preflight_ts_flag_json",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_strict_command_resolution_preflight_ts_flag_requirement_record",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_strict_command_resolution_preflight_ts_flag_source",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_strict_command_resolution_preflight_ts_env_home",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_strict_command_resolution_preflight_ts_env_userprofile",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/subagent-current-attempt-revalidation.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_subagent_current_attempt_revalidation_ts_no_args",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_subagent_current_attempt_revalidation_ts_flag_current_closeout_attempt_id",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_subagent_current_attempt_revalidation_ts_flag_current_command_evidence",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_subagent_current_attempt_revalidation_ts_flag_envelope",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_subagent_current_attempt_revalidation_ts_flag_help",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_subagent_current_attempt_revalidation_ts_flag_json",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_subagent_current_attempt_revalidation_ts_flag_project_root",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_subagent_current_attempt_revalidation_ts_flag_report_out",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_subagent_current_attempt_revalidation_ts_flag_requirement_record",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/subagent-surface-inventory.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_subagent_surface_inventory_ts_no_args",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_subagent_surface_inventory_ts_flag_help",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_subagent_surface_inventory_ts_flag_json",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_subagent_surface_inventory_ts_flag_out",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_subagent_surface_inventory_ts_flag_requirement_record",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_subagent_surface_inventory_ts_flag_source",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/trace-closure-matrix.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_trace_closure_matrix_ts_no_args",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_trace_closure_matrix_ts_flag_help",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_trace_closure_matrix_ts_flag_json",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_trace_closure_matrix_ts_flag_out",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_trace_closure_matrix_ts_flag_requirement_record",
+        "expectedStdout": ""
+      }
+    ]
+  }
+]

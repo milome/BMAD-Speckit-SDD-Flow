@@ -1,0 +1,112 @@
+[
+  {
+    "originalPath": "scripts/controlled-ingest-atomic-committer.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_controlled_ingest_atomic_committer_ts_no_args",
+        "expectedStdout": "{\n  \"ok\": true,\n  \"committer\": \"requirement-record-control-store/v1\",\n  \"api\": \"import appendControlEventAndReplay from requirement-record-control-store\"\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/e2e-verify-paths.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_e2e_verify_paths_ts_no_args",
+        "expectedStdout": "=== 路径与结构验证 ===\n\n【测试 1】目录结构可创建性\n  ✅ 目录可创建: .claude/state/stories\n  ✅ 目录可创建: specs/epic-TEST-test-epic/story-001-test-story\n  ✅ 目录可创建: _bmad-output/implementation-artifacts/epic-TEST-test-epic/story-001-test-story\n\n【测试 2】Agent 文件引用完整性\n  ✅ .claude/agents/bmad-master.md\n  ✅ .claude/agents/bmad-story-create.md\n  ✅ .claude/agents/bmad-story-audit.md\n  ✅ .claude/agents/speckit-specify.md\n  ✅ .claude/agents/speckit-plan.md\n  ✅ .claude/agents/speckit-gaps.md\n  ✅ .claude/agents/speckit-tasks.md\n  ✅ .claude/agents/layers/bmad-layer4-speckit-specify.md\n  ✅ .claude/agents/layers/bmad-layer4-speckit-plan.md\n  ✅ .claude/agents/layers/bmad-layer4-speckit-gaps.md\n  ✅ .claude/agents/layers/bmad-layer4-speckit-tasks.md\n  ✅ .claude/agents/layers/bmad-layer4-speckit-implement.md\n  ✅ .claude/agents/auditors/auditor-spec.md\n  ✅ .claude/agents/auditors/auditor-plan.md\n  ✅ .claude/agents/auditors/auditor-gaps.md\n  ✅ .claude/agents/auditors/auditor-tasks.md\n  ✅ .claude/agents/auditors/auditor-implement.md\n  ✅ .claude/agents/auditors/auditor-document.md\n\n【测试 3】路由→前置条件一致性\n  ✅ plan: Prerequisites 应为 specify_passed\n  ✅ gaps: Prerequisites 应为 plan_passed\n  ✅ tasks: Prerequisites 应为 gaps_passed\n  ✅ implement: Prerequisites 应为 tasks_passed\n\n=== 结果汇总: 25 通过, 0 失败 ===\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/ensure-runtime-dashboard-server.cjs",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_ensure_runtime_dashboard_server_cjs_no_args",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_ensure_runtime_dashboard_server_cjs_flag_open",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_ensure_runtime_dashboard_server_cjs_env_runtime_dashboard_data_path",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_ensure_runtime_dashboard_server_cjs_env_runtime_dashboard_host",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_ensure_runtime_dashboard_server_cjs_env_runtime_dashboard_port",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/evidence-provenance.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_evidence_provenance_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/execution-discipline-profiles.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_execution_discipline_profiles_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/execution-intent-schema.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_execution_intent_schema_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/execution-strategy-selection.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_execution_strategy_selection_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/facilitator-registry.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_facilitator_registry_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/facilitator-runtime-definition.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_facilitator_runtime_definition_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/generate-codex-agents-from-claude.js",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_generate_codex_agents_from_claude_js_no_args",
+        "expectedStdout": "{\n  \"ok\": true,\n  \"generatedCount\": 40,\n  \"changed\": 0,\n  \"stale\": [],\n  \"missingDependencies\": []\n}\n"
+      },
+      {
+        "scenarioId": "g007_generate_codex_agents_from_claude_js_flag_check",
+        "expectedStdout": "{\n  \"ok\": true,\n  \"generatedCount\": 40,\n  \"changed\": 0,\n  \"stale\": [],\n  \"missingDependencies\": []\n}\n"
+      }
+    ]
+  }
+]

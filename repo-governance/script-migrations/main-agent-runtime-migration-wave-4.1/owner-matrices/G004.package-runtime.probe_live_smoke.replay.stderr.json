@@ -1,0 +1,39 @@
+[
+  {
+    "originalPath": "scripts/live-smoke-main-agent-runtime.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_live_smoke_main_agent_runtime_ts_no_args",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_live_smoke_main_agent_runtime_ts_cwd",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_live_smoke_main_agent_runtime_ts_flag_action",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_live_smoke_main_agent_runtime_ts_flag_cursor_host",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_live_smoke_main_agent_runtime_ts_flag_dangerously_skip_permissions",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_live_smoke_main_agent_runtime_ts_flag_force",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_live_smoke_main_agent_runtime_ts_flag_output_format",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_live_smoke_main_agent_runtime_ts_flag_permission_mode",
+        "expectedStderr": ""
+      }
+    ]
+  }
+]

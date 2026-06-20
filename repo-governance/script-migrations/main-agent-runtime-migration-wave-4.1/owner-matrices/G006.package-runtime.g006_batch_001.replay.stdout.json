@@ -1,0 +1,22 @@
+[
+  {
+    "originalPath": "scripts/bmad-speckit-cli.js",
+    "scenarioId": "g006_bmad_speckit_cli_js_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/run-auditor-host.ts",
+    "scenarioId": "g006_run_auditor_host_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/runtime-context-registry.ts",
+    "scenarioId": "g006_runtime_context_registry_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/write-runtime-context.cjs",
+    "scenarioId": "g006_write_runtime_context_cjs_no_args",
+    "expectedStdout": "Wrote D:\\Dev\\BMAD-Speckit-SDD-Flow\\--cwd\n"
+  }
+]

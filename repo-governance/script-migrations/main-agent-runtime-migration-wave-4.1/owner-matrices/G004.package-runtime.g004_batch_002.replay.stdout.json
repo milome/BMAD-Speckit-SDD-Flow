@@ -1,0 +1,152 @@
+[
+  {
+    "originalPath": "scripts/main-agent-audit-review-gate.ts",
+    "scenarioId": "g004_main_agent_audit_review_gate_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-bmad-artifact-hardcut.ts",
+    "scenarioId": "g004_main_agent_bmad_artifact_hardcut_ts_no_args",
+    "expectedStdout": "bmad_artifact_hardcut=pass\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-chaos-scenarios.ts",
+    "scenarioId": "g004_main_agent_chaos_scenarios_ts_no_args",
+    "expectedStdout": "{\n  \"reportType\": \"main_agent_chaos_recovery\",\n  \"recoveryRate\": 1,\n  \"scenarios\": [\n    {\n      \"id\": \"pending_packet_loss\",\n      \"recovered\": true,\n      \"finalState\": {\n        \"pendingPacketStatus\": \"ready_for_main_agent\",\n        \"closeoutApproved\": false,\n        \"rerunGateStatus\": \"none\",\n        \"sessionRecovered\": true,\n        \"hostMode\": \"cursor\",\n        \"nextAction\": \"continue_ready\"\n      },\n      \"evidence\": [\n        \"deleted packet artifact:D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\chaos\\\\packet-loss.json\",\n        \"detected missing packet file\",\n        \"recreated packet artifact:D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\chaos\\\\packet-loss.json\",\n        \"re-materialized dispatch packet\"\n      ]\n    },\n    {\n      \"id\": \"closeout_failure\",\n      \"recovered\": true,\n      \"finalState\": {\n        \"pendingPacketStatus\": \"completed\",\n        \"closeoutApproved\": true,\n        \"rerunGateStatus\": \"none\",\n        \"sessionRecovered\": true,\n        \"hostMode\": \"cursor\",\n        \"nextAction\": \"continue_ready\"\n      },\n      \"evidence\": [\n        \"blocked sprint update before closeout approval\",\n        \"closeout approved after rerun\"\n      ]\n    },\n    {\n      \"id\": \"rerun_gate_pending\",\n      \"recovered\": true,\n      \"finalState\": {\n        \"pendingPacketStatus\": \"ready_for_main_agent\",\n        \"closeoutApproved\": false,\n        \"rerunGateStatus\": \"pass\",\n        \"sessionRecovered\": true,\n        \"hostMode\": \"cursor\",\n        \"nextAction\": \"continue_ready\"\n      },\n      \"evidence\": [\n        \"rerun gate pending converted to remediation dispatch\",\n        \"rerun gate pass ingested\"\n      ]\n    },\n    {\n      \"id\": \"session_recovery\",\n      \"recovered\": true,\n      \"finalState\": {\n        \"pendingPacketStatus\": \"ready_for_main_agent\",\n        \"closeoutApproved\": false,\n        \"rerunGateStatus\": \"none\",\n        \"sessionRecovered\": true,\n        \"hostMode\": \"cursor\",\n        \"nextAction\": \"continue_ready\"\n      },\n      \"evidence\": [\n        \"session state dropped\",\n        \"session recovered from state artifacts\"\n      ]\n    },\n    {\n      \"id\": \"host_switching\",\n      \"recovered\": true,\n      \"finalState\": {\n        \"pendingPacketStatus\": \"ready_for_main_agent\",\n        \"closeoutApproved\": false,\n        \"rerunGateStatus\": \"none\",\n        \"sessionRecovered\": true,\n        \"hostMode\": \"claude\",\n        \"nextAction\": \"continue_ready\"\n      },\n      \"evidence\": [\n        \"no-hooks ingress selected without changing control plane\",\n        \"host switched while preserving continue semantics\"\n      ]\n    }\n  ]\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-codex-worker-adapter.ts",
+    "scenarioId": "g004_main_agent_codex_worker_adapter_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-compiled-prompt-runner.ts",
+    "scenarioId": "g004_main_agent_compiled_prompt_runner_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-control-plane-isolation-check.ts",
+    "scenarioId": "g004_main_agent_control_plane_isolation_check_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-data-governance-gate.ts",
+    "scenarioId": "g004_main_agent_data_governance_gate_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-dataset-release-gate.ts",
+    "scenarioId": "g004_main_agent_dataset_release_gate_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-decision-field-check.ts",
+    "scenarioId": "g004_main_agent_decision_field_check_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-delivery-closeout-gate.ts",
+    "scenarioId": "g004_main_agent_delivery_closeout_gate_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-delivery-evidence-run.ts",
+    "scenarioId": "g004_main_agent_delivery_evidence_run_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-delivery-truth-gate.ts",
+    "scenarioId": "g004_main_agent_delivery_truth_gate_ts_no_args",
+    "expectedStdout": "{\n  \"reportType\": \"main_agent_delivery_truth_gate\",\n  \"generatedAt\": \"2026-06-20T05:47:38.123Z\",\n  \"completionAllowed\": false,\n  \"deliveryStatus\": \"blocked\",\n  \"completionLanguage\": \"blocked_only\",\n  \"missingEvidence\": [\n    \"releaseGate: <fixture-root>\\\\_bmad-output\\\\runtime\\\\gates\\\\main-agent-release-gate-report.json\",\n    \"hostMatrix: <fixture-root>\\\\_bmad-output\\\\runtime\\\\e2e\\\\multi-host-pr-orchestration-report.json\",\n    \"prTopology: <fixture-root>\\\\_bmad-output\\\\runtime\\\\pr\\\\pr_topology.json\",\n    \"sprintAudit: <fixture-root>\\\\_bmad-output\\\\runtime\\\\governance\\\\sprint-status-update-audit.json\",\n    \"qualityGate: <fixture-root>\\\\_bmad-output\\\\runtime\\\\gates\\\\main-agent-quality-gate-report.json\"\n  ],\n  \"failedEvidence\": [\n    \"release-gate: missing\",\n    \"multi-host-host-matrix: missing\",\n    \"pr-topology-closed: missing\",\n    \"authorized-sprint-status-write: missing\",\n    \"quality-gate: missing\",\n    \"same-run-evidence-provenance: missing evidence_provenance on all delivery artifacts\"\n  ],\n  \"evidencePaths\": {\n    \"releaseGate\": \"<fixture-root>\\\\_bmad-output\\\\runtime\\\\gates\\\\main-agent-release-gate-report.json\",\n    \"hostMatrix\": \"<fixture-root>\\\\_bmad-output\\\\runtime\\\\e2e\\\\multi-host-pr-orchestration-report.json\",\n    \"prTopology\": \"<fixture-root>\\\\_bmad-output\\\\runtime\\\\pr\\\\pr_topology.json\",\n    \"sprintAudit\": \"<fixture-root>\\\\_bmad-output\\\\runtime\\\\governance\\\\sprint-status-update-audit.json\",\n    \"qualityGate\": \"<fixture-root>\\\\_bmad-output\\\\runtime\\\\gates\\\\main-agent-quality-gate-report.json\"\n  },\n  \"checks\": [\n    {\n      \"id\": \"release-gate\",\n      \"passed\": false,\n      \"summary\": \"missing\"\n    },\n    {\n      \"id\": \"multi-host-host-matrix\",\n      \"passed\": false,\n      \"summary\": \"missing\"\n    },\n    {\n      \"id\": \"pr-topology-closed\",\n      \"passed\": false,\n      \"summary\": \"missing\"\n    },\n    {\n      \"id\": \"authorized-sprint-status-write\",\n      \"passed\": false,\n      \"summary\": \"missing\"\n    },\n    {\n      \"id\": \"quality-gate\",\n      \"passed\": false,\n      \"summary\": \"missing\"\n    },\n    {\n      \"id\": \"same-run-evidence-provenance\",\n      \"passed\": false,\n      \"summary\": \"missing evidence_provenance on all delivery artifacts\"\n    },\n    {\n      \"id\": \"test-dev-seams-disabled\",\n      \"passed\": true,\n      \"summary\": \"test/dev seams disabled\"\n    }\n  ]\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-development-journey-matrix.ts",
+    "scenarioId": "g004_main_agent_development_journey_matrix_ts_no_args",
+    "expectedStdout": "{\n  \"reportFile\": \"<fixture-root>\\\\_bmad-output\\\\runtime\\\\journey-matrix\\\\host-matrix\\\\_bmad-output\\\\runtime\\\\e2e\\\\host-matrix-pr-journey.json\",\n  \"finalPassed\": true\n}\n{\n  \"reportPath\": \"<fixture-root>\\\\_bmad-output\\\\runtime\\\\e2e\\\\development-journey-matrix.json\",\n  \"reportType\": \"main_agent_development_journey_matrix\",\n  \"generatedAt\": \"2026-06-20T05:47:47.000Z\",\n  \"projectRoot\": \"<fixture-root>\",\n  \"steps\": [\n    {\n      \"id\": \"bmad-help-five-layer-main-agent\",\n      \"sequence\": \"BH1-L1-L5\",\n      \"passed\": false,\n      \"evidence\": \"layer_1:passed,layer_2:passed,layer_3:passed,layer_4:passed,layer_5:passed\"\n    },\n    {\n      \"id\": \"ingress-cursor\",\n      \"sequence\": \"S3c-S3e\",\n      \"passed\": false,\n      \"evidence\": \"hooks_enabled/hook_ingress/main-agent-run-loop-1781934462036\"\n    },\n    {\n      \"id\": \"ingress-claude\",\n      \"sequence\": \"S3c-S3e\",\n      \"passed\": false,\n      \"evidence\": \"hooks_enabled/hook_ingress/main-agent-run-loop-1781934462050\"\n    },\n    {\n      \"id\": \"ingress-codex\",\n      \"sequence\": \"S3c-S3e\",\n      \"passed\": false,\n      \"evidence\": \"no_hooks/cli_ingress/main-agent-run-loop-1781934462063\"\n    },\n    {\n      \"id\": \"multi-host-host-matrix\",\n      \"sequence\": \"S31-S32\",\n      \"passed\": true,\n      \"evidence\": \"mock/true/{\\\"cursor\\\":true,\\\"claude\\\":true,\\\"codex\\\":true}\"\n    },\n    {\n      \"id\": \"pr-topology\",\n      \"sequence\": \"S37-S38\",\n      \"passed\": true,\n      \"evidence\": \"claude-node:merged,codex-node:closed_not_needed\"\n    },\n    {\n      \"id\": \"delivery-truth-live\",\n      \"sequence\": \"R1-R10/S39-S43\",\n      \"passed\": false,\n      \"evidence\": \"not synthesized; run main-agent:delivery-truth-gate with real evidence bundle for completion verdict\"\n    }\n  ],\n  \"allPassed\": false\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-dual-host-pr-orchestrator.ts",
+    "scenarioId": "g004_main_agent_dual_host_pr_orchestrator_ts_no_args",
+    "expectedStdout": "{\n  \"reportFile\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\e2e\\\\host-matrix-pr-journey.json\",\n  \"finalPassed\": true\n}\n{\n  \"reportType\": \"main_agent_host_matrix_pr_orchestration\",\n  \"evidence_provenance\": {\n    \"runId\": \"host-matrix-pr-1781934479782-f001d6c8\",\n    \"storyKey\": \"S-release-gate\",\n    \"evidenceBundleId\": \"host-matrix-pr-1781934479782-f001d6c8:bundle\",\n    \"contractHash\": \"498a9a928ed28ca02e3f18050be427ccca2a96fa42f9f1343d983741f89a80fc\",\n    \"gateReportHash\": \"0a6bde5c2505777d91a44913a30a042ff46571ab8089f8245a7468628b6640bb\"\n  },\n  \"provider\": \"mock\",\n  \"journeyMode\": \"mock\",\n  \"journeyE2EPassed\": true,\n  \"hostsPassed\": {\n    \"claude\": true,\n    \"codex\": true\n  },\n  \"hostMatrix\": {\n    \"matrixType\": \"main_agent_multi_host_matrix\",\n    \"requiredHosts\": [\n      \"cursor\",\n      \"claude\",\n      \"codex\"\n    ],\n    \"hostsPassed\": {\n      \"cursor\": true,\n      \"claude\": true,\n      \"codex\": true\n    },\n    \"allRequiredHostsPassed\": true,\n    \"legacyDualHostPassed\": true\n  },\n  \"prTopology\": {\n    \"version\": 1,\n    \"batch_id\": \"host-matrix-pr-batch\",\n    \"evidence_provenance\": {\n      \"runId\": \"host-matrix-pr-1781934479782-f001d6c8\",\n      \"storyKey\": \"S-release-gate\",\n      \"evidenceBundleId\": \"host-matrix-pr-1781934479782-f001d6c8:bundle\",\n      \"contractHash\": \"498a9a928ed28ca02e3f18050be427ccca2a96fa42f9f1343d983741f89a80fc\",\n      \"gateReportHash\": \"0a6bde5c2505777d91a44913a30a042ff46571ab8089f8245a7468628b6640bb\"\n    },\n    \"required_nodes\": [\n      {\n        \"node_id\": \"claude-node\",\n        \"target_pr\": \"PR-CLAUDE\",\n        \"depends_on\": [],\n        \"state\": \"merged\"\n      },\n      {\n        \"node_id\": \"codex-node\",\n        \"target_pr\": \"PR-CODEX\",\n        \"depends_on\": [\n          \"claude-node\"\n        ],\n        \"state\": \"closed_not_needed\"\n      }\n    ],\n    \"all_affected_stories_passed\": true\n  },\n  \"providerPreflight\": [\n    {\n      \"id\": \"mock-provider\",\n      \"passed\": true,\n      \"detail\": \"deterministic local provider\"\n    }\n  ],\n  \"githubPrApi\": {\n    \"attempted\": false,\n    \"passed\": true,\n    \"steps\": [],\n    \"prUrl\": null\n  },\n  \"finalPassed\": true\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-entryflow-traceability-check.ts",
+    "scenarioId": "g004_main_agent_entryflow_traceability_check_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-execution-closure-gate.ts",
+    "scenarioId": "g004_main_agent_execution_closure_gate_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-functional-resume-check.ts",
+    "scenarioId": "g004_main_agent_functional_resume_check_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-governed-data-products.ts",
+    "scenarioId": "g004_main_agent_governed_data_products_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-implementation-readiness-gate.ts",
+    "scenarioId": "g004_main_agent_implementation_readiness_gate_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-production-loop-ready-check.ts",
+    "scenarioId": "g004_main_agent_production_loop_ready_check_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-quality-gate.ts",
+    "scenarioId": "g004_main_agent_quality_gate_ts_no_args",
+    "expectedStdout": "{\n  \"reportType\": \"main_agent_quality_gate\",\n  \"thresholdsPath\": \"_bmad/_config/main-agent-quality-gate.thresholds.json\",\n  \"evidence_provenance\": {\n    \"runId\": \"quality-gate-1781934495411-30f5299c\",\n    \"storyKey\": \"S-release-gate\",\n    \"evidenceBundleId\": \"quality-gate-1781934495411-30f5299c:bundle\",\n    \"contractHash\": \"498a9a928ed28ca02e3f18050be427ccca2a96fa42f9f1343d983741f89a80fc\",\n    \"gateReportHash\": \"e302a1a6e0cdb2007281469cfd3325d1c8a36e065bc7174702ce687e62897d5e\"\n  },\n  \"critical_failures\": 0,\n  \"checks\": [\n    {\n      \"id\": \"threshold-version\",\n      \"passed\": true,\n      \"summary\": \"threshold version=1, gateId=main-agent-quality-gate\"\n    },\n    {\n      \"id\": \"missing-key-paths\",\n      \"passed\": true,\n      \"summary\": \"all required key paths exist\"\n    },\n    {\n      \"id\": \"acceptance-coverage\",\n      \"passed\": true,\n      \"summary\": \"all required acceptance tests exist\"\n    },\n    {\n      \"id\": \"codex-parity-proof-artifacts\",\n      \"passed\": true,\n      \"summary\": \"all required Codex proof artifacts exist\"\n    },\n    {\n      \"id\": \"todo-stub-markers\",\n      \"passed\": true,\n      \"summary\": \"no forbidden TODO stub markers found\"\n    }\n  ]\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-release-gate.ts",
+    "scenarioId": "g004_main_agent_release_gate_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-runtime-policy-snapshot-check.ts",
+    "scenarioId": "g004_main_agent_runtime_policy_snapshot_check_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-scoring-gates-check.ts",
+    "scenarioId": "g004_main_agent_scoring_gates_check_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-soak-runner.ts",
+    "scenarioId": "g004_main_agent_soak_runner_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-trace-status-policy-check.ts",
+    "scenarioId": "g004_main_agent_trace_status_policy_check_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-unified-ingress.ts",
+    "scenarioId": "g004_main_agent_unified_ingress_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/mcp/consumer/install-consumer-mcp.ps1",
+    "scenarioId": "g004_mcp_consumer_install_consumer_mcp_ps1_no_args",
+    "expectedStdout": "Consumer MCP server entry prepared: D:\\Dev\\BMAD-Speckit-SDD-Flow\\.runtime-mcp\\server\\dist\\index.cjs\nConsumer MCP layout generated at: D:\\Dev\\BMAD-Speckit-SDD-Flow\nProject MCP config: D:\\Dev\\BMAD-Speckit-SDD-Flow\\.mcp.json\nServer entry: D:\\Dev\\BMAD-Speckit-SDD-Flow\\.runtime-mcp\\server\\dist\\index.cjs\n"
+  },
+  {
+    "originalPath": "scripts/mcp/consumer/install-consumer-mcp.sh",
+    "scenarioId": "g004_mcp_consumer_install_consumer_mcp_sh_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/mcp/consumer/verify-consumer-mcp.ps1",
+    "scenarioId": "g004_mcp_consumer_verify_consumer_mcp_ps1_no_args",
+    "expectedStdout": "{\"ok\":true,\"mode\":\"smoke\",\"projectRoot\":\"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\",\"configPath\":\"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\.runtime-mcp\\\\server\\\\config\\\\server.config.json\",\"configExists\":true,\"runtimeContextPath\":\"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\context\\\\project.json\",\"runtimeContextExists\":true,\"serverConfig\":{\"name\":\"bmad-runtime\",\"transport\":\"stdio\",\"projectRoot\":\".\",\"bmadRoot\":\"_bmad\",\"outputRoot\":\"_bmad-output\",\"logDir\":\"logs\",\"tmpDir\":\"tmp\",\"features\":{\"readRuntimeContext\":true,\"readPolicies\":true,\"readScoringArtifacts\":true,\"emitSessionHints\":true}}}\n"
+  }
+]

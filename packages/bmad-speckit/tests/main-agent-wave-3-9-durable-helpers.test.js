@@ -108,6 +108,17 @@ describe('main-agent wave 3.9 durable helpers', () => {
         assert.equal(descriptor.consumerRuntimeProof.usedRootScript, false);
         assert.equal(descriptor.consumerRuntimeProof.usedCompiledFallback, false);
         assert.equal(descriptor.consumerRuntimeProof.usedTypeScriptRunner, false);
+        assert.equal(
+          descriptor.sourceAuthorityRuntimeProof.status,
+          'source_authority_helper_loaded'
+        );
+        assert.match(
+          descriptor.sourceAuthorityRuntimeProof.runtimePath,
+          /(?:dist|src)\/main-agent\/source-authority\//
+        );
+        assert.equal(descriptor.sourceAuthorityRuntimeProof.usedRootScript, false);
+        assert.equal(descriptor.sourceAuthorityRuntimeProof.usedCompiledFallback, false);
+        assert.equal(descriptor.sourceAuthorityRuntimeProof.usedTypeScriptRunner, false);
       }
     } finally {
       fs.rmSync(root, { recursive: true, force: true });

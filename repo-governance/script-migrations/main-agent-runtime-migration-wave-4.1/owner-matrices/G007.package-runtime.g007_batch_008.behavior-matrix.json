@@ -1,0 +1,720 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-wave-4-1-owner-initial-behavior-matrix/v1",
+  "waveId": "main-agent-runtime-migration-wave-4.1",
+  "ownerTaskId": "G007",
+  "generatedAt": "2026-06-20T11:25:13.111Z",
+  "artifactSuffix": "g007_batch_008",
+  "timeoutMs": 30000,
+  "coverageDecision": "passed_full_original_behavior_coverage",
+  "eligibleOwnerRowCount": 74,
+  "selectedRowCount": 4,
+  "matrixRowCount": 4,
+  "scenarioCount": 4,
+  "fullCoverageStillRequired": false,
+  "rows": [
+    {
+      "originalPath": "scripts/update-specify-passed.ts",
+      "entryId": "update-specify-passed-ts",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/update-specify-passed.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/update-specify-passed.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/update-specify-passed.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g007_update_specify_passed_ts_no_args",
+          "originalEntryPoint": "scripts/update-specify-passed.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/update-specify-passed.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/update-specify-passed.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/update-specify-passed.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_update_specify_passed_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g007_update_specify_passed_ts_no_args-original-hoJVcf",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_update_specify_passed_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g007_update_specify_passed_ts_no_args-package-yzt2rQ",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "Story state updated:\n{\n  \"version\": \"2.0\",\n  \"epic\": \"E001\",\n  \"story\": \"S001\",\n  \"story_slug\": \"email-validator\",\n  \"layer\": 4,\n  \"stage\": \"specify_passed\",\n  \"audit_status\": \"pass\",\n  \"artifacts\": {\n    \"spec\": \"specs/epic-E001-e001/story-S001-email-validator/spec-E001-S001.md\",\n    \"audit\": \"specs/epic-E001-e001/story-S001-email-validator/AUDIT_spec-E001-S001.md\"\n  },\n  \"scores\": {\n    \"spec\": {\n      \"rating\": \"A\",\n      \"dimensions\": {\n        \"需求完整性\": 95,\n        \"可测试性\": 92,\n        \"一致性\": 90,\n        \"可追溯性\": 93\n      }\n    }\n  },\n  \"git_control\": {\n    \"commit_allowed\": false\n  },\n  \"runtime\": {\n    \"last_action\": \"specify_audit_passed\"\n  }\n}\n\n--- Current State ---\n{\n  version: '2.0',\n  epic: 'E001',\n  story: 'S001',\n  story_slug: 'email-validator',\n  layer: 4,\n  stage: 'specify_passed',\n  audit_status: 'pass',\n  artifacts: {\n    spec: 'specs/epic-E001-e001/story-S001-email-validator/spec-E001-S001.md',\n    audit: 'specs/epic-E001-e001/story-S001-email-validator/AUDIT_spec-E001-S001.md'\n  },\n  scores: { spec: { rating: 'A', dimensions: [Object] } },\n  git_control: { commit_allowed: false },\n  runtime: { last_action: 'specify_audit_passed' }\n}\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/update-specify-passed.ts:no_args",
+            "originalReplayArtifactHash": "sha256:b03bffc5a28c90d02ae647016521b5b565ec05139dd9810332b5f704a661d74f",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/update-specify-passed.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 27,
+                "anchor": "scripts/update-specify-passed.ts:27",
+                "text": "console.log('Story state updated:');"
+              },
+              {
+                "line": 28,
+                "anchor": "scripts/update-specify-passed.ts:28",
+                "text": "console.log(JSON.stringify(updated, null, 2));"
+              },
+              {
+                "line": 30,
+                "anchor": "scripts/update-specify-passed.ts:30",
+                "text": "console.log('\\n--- Current State ---');"
+              },
+              {
+                "line": 31,
+                "anchor": "scripts/update-specify-passed.ts:31",
+                "text": "console.log(getStoryState('E001', 'S001'));"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/update-specify-passed.ts",
+                "to": "scripts/update-specify-passed.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/update-specify-passed.ts",
+                "to": "scripts/update-specify-passed.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/update-specify-passed.js",
+                "to": "scripts/update-specify-passed.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/update-specify-passed.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/verify-agent-files.ts",
+      "entryId": "verify-agent-files",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-agent-files.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/verify-agent-files.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/verify-agent-files.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g007_verify_agent_files_ts_no_args",
+          "originalEntryPoint": "scripts/verify-agent-files.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/verify-agent-files.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-agent-files.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/verify-agent-files.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_verify_agent_files_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g007_verify_agent_files_ts_no_args-original-YSOdrg",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_verify_agent_files_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g007_verify_agent_files_ts_no_args-package-PW5TZQ",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "=== Agent 文件完整性验证 ===\n\n【检查 1】Layer 4 执行体:\n✅ bmad-master: .claude/agents/bmad-master.md\n✅ bmad-story-create: .claude/agents/bmad-story-create.md\n✅ bmad-story-audit: .claude/agents/bmad-story-audit.md\n✅ bmad-layer4-speckit-specify: .claude/agents/layers/bmad-layer4-speckit-specify.md\n✅ bmad-layer4-speckit-plan: .claude/agents/layers/bmad-layer4-speckit-plan.md\n   ✅ Prerequisites 包含 specify_passed\n✅ bmad-layer4-speckit-gaps: .claude/agents/layers/bmad-layer4-speckit-gaps.md\n   ✅ Prerequisites 包含 plan_passed\n✅ bmad-layer4-speckit-tasks: .claude/agents/layers/bmad-layer4-speckit-tasks.md\n   ✅ Prerequisites 包含 gaps_passed\n✅ bmad-layer4-speckit-implement: .claude/agents/layers/bmad-layer4-speckit-implement.md\n   ✅ Prerequisites 包含 tasks_passed\n\n【检查 1.5】Speckit 顶层 alias:\n✅ speckit-specify: .claude/agents/speckit-specify.md\n✅ speckit-plan: .claude/agents/speckit-plan.md\n✅ speckit-gaps: .claude/agents/speckit-gaps.md\n✅ speckit-tasks: .claude/agents/speckit-tasks.md\n\n【检查 2】Auditor 执行体:\n✅ auditor-spec: .claude/agents/auditors/auditor-spec.md\n✅ auditor-plan: .claude/agents/auditors/auditor-plan.md\n✅ auditor-gaps: .claude/agents/auditors/auditor-gaps.md\n✅ auditor-tasks: .claude/agents/auditors/auditor-tasks.md\n✅ auditor-implement: .claude/agents/auditors/auditor-implement.md\n✅ auditor-document: .claude/agents/auditors/auditor-document.md\n✅ auditor-bugfix: .claude/agents/auditors/auditor-bugfix.md\n\n=== 验证结果: ✅ 全部通过 ===\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/verify-agent-files.ts:no_args",
+            "originalReplayArtifactHash": "sha256:d3ee397c93dd2796367c68ff3bda8293e72894ba690a2757ecb4c6e9a1ae2ce6",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/verify-agent-files.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 60,
+                "anchor": "scripts/verify-agent-files.ts:60",
+                "text": "console.log('=== Agent 文件完整性验证 ===\\n');"
+              },
+              {
+                "line": 62,
+                "anchor": "scripts/verify-agent-files.ts:62",
+                "text": "console.log('【检查 1】Layer 4 执行体:');"
+              },
+              {
+                "line": 65,
+                "anchor": "scripts/verify-agent-files.ts:65",
+                "text": "console.log(`✅ ${agent.name}: ${agent.path}`);"
+              },
+              {
+                "line": 70,
+                "anchor": "scripts/verify-agent-files.ts:70",
+                "text": "console.log(`   ✅ Prerequisites 包含 ${agent.expectedPrerequisite}`);"
+              },
+              {
+                "line": 72,
+                "anchor": "scripts/verify-agent-files.ts:72",
+                "text": "console.log(`   ❌ Prerequisites 未包含 ${agent.expectedPrerequisite} — 可能是 Bug`);"
+              },
+              {
+                "line": 77,
+                "anchor": "scripts/verify-agent-files.ts:77",
+                "text": "console.log(`❌ ${agent.name}: ${agent.path} — 文件缺失`);"
+              },
+              {
+                "line": 82,
+                "anchor": "scripts/verify-agent-files.ts:82",
+                "text": "console.log('\\n【检查 1.5】Speckit 顶层 alias:');"
+              },
+              {
+                "line": 85,
+                "anchor": "scripts/verify-agent-files.ts:85",
+                "text": "console.log(`✅ ${agent.name}: ${agent.path}`);"
+              },
+              {
+                "line": 87,
+                "anchor": "scripts/verify-agent-files.ts:87",
+                "text": "console.log(`❌ ${agent.name}: ${agent.path} — 文件缺失`);"
+              },
+              {
+                "line": 92,
+                "anchor": "scripts/verify-agent-files.ts:92",
+                "text": "console.log('\\n【检查 2】Auditor 执行体:');"
+              },
+              {
+                "line": 95,
+                "anchor": "scripts/verify-agent-files.ts:95",
+                "text": "console.log(`✅ ${agent.name}: ${agent.path}`);"
+              },
+              {
+                "line": 97,
+                "anchor": "scripts/verify-agent-files.ts:97",
+                "text": "console.log(`❌ ${agent.name}: ${agent.path} — 文件缺失`);"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/verify-agent-files.ts",
+                "to": "scripts/verify-agent-files.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-agent-files.ts",
+                "to": "scripts/verify-agent-files.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/verify-agent-files.js",
+                "to": "scripts/verify-agent-files.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/verify-agent-files.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/verify-story-mode.ts",
+      "entryId": "verify-story-mode-ts",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-story-mode.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/verify-story-mode.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/verify-story-mode.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 1,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 1,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g007_verify_story_mode_ts_no_args",
+          "originalEntryPoint": "scripts/verify-story-mode.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/verify-story-mode.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-story-mode.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/verify-story-mode.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_verify_story_mode_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g007_verify_story_mode_ts_no_args-original-pqjWag",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_verify_story_mode_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g007_verify_story_mode_ts_no_args-package-znWh7H",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "========================================\nBMAD Story Mode 工作流程验证\n========================================\n\n配置模式: full\n子代理工具: mcp_task\n子代理类型: generalPurpose\n\n",
+          "expectedStderr": "❌ 错误: 当前不是 story 模式，无法进行验证\n当前模式: full，期望模式: story\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "❌ 错误: 当前不是 story 模式，无法进行验证"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/verify-story-mode.ts:no_args",
+            "originalReplayArtifactHash": "sha256:de2f30120a5380bf1ef6f4d04519947ceaf3c08837421f4f5402273925709aa7",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/verify-story-mode.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 85,
+                "anchor": "scripts/verify-story-mode.ts:85",
+                "text": "console.log('========================================');"
+              },
+              {
+                "line": 86,
+                "anchor": "scripts/verify-story-mode.ts:86",
+                "text": "console.log('BMAD Story Mode 工作流程验证');"
+              },
+              {
+                "line": 87,
+                "anchor": "scripts/verify-story-mode.ts:87",
+                "text": "console.log('========================================\\n');"
+              },
+              {
+                "line": 93,
+                "anchor": "scripts/verify-story-mode.ts:93",
+                "text": "console.log(`配置模式: ${currentMode}`);"
+              },
+              {
+                "line": 94,
+                "anchor": "scripts/verify-story-mode.ts:94",
+                "text": "console.log(`子代理工具: ${subagentParams.tool}`);"
+              },
+              {
+                "line": 95,
+                "anchor": "scripts/verify-story-mode.ts:95",
+                "text": "console.log(`子代理类型: ${subagentParams.subagent_type}\\n`);"
+              },
+              {
+                "line": 98,
+                "anchor": "scripts/verify-story-mode.ts:98",
+                "text": "console.error('❌ 错误: 当前不是 story 模式，无法进行验证');"
+              },
+              {
+                "line": 99,
+                "anchor": "scripts/verify-story-mode.ts:99",
+                "text": "console.error(`当前模式: ${currentMode}，期望模式: story`);"
+              },
+              {
+                "line": 103,
+                "anchor": "scripts/verify-story-mode.ts:103",
+                "text": "console.log('========================================');"
+              },
+              {
+                "line": 104,
+                "anchor": "scripts/verify-story-mode.ts:104",
+                "text": "console.log('阶段验证结果');"
+              },
+              {
+                "line": 105,
+                "anchor": "scripts/verify-story-mode.ts:105",
+                "text": "console.log('========================================\\n');"
+              },
+              {
+                "line": 144,
+                "anchor": "scripts/verify-story-mode.ts:144",
+                "text": "console.log(`${status} | ${stageDef.name}`);"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/verify-story-mode.ts",
+                "to": "scripts/verify-story-mode.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-story-mode.ts",
+                "to": "scripts/verify-story-mode.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/verify-story-mode.js",
+                "to": "scripts/verify-story-mode.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/verify-story-mode.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/write-runtime-registry.js",
+      "entryId": "write-runtime-registry-js",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/write-runtime-registry.js"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/write-runtime-registry.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/write-runtime-registry.js:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 1,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 1,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g007_write_runtime_registry_js_no_args",
+          "originalEntryPoint": "scripts/write-runtime-registry.js",
+          "originalEntryCommand": "node scripts/write-runtime-registry.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/write-runtime-registry.js",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/write-runtime-registry.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_write_runtime_registry_js_no_args_original_fixture_root",
+              "path": "<tmp>/g007_write_runtime_registry_js_no_args-original-MNAjk3",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_write_runtime_registry_js_no_args_package_fixture_root",
+              "path": "<tmp>/g007_write_runtime_registry_js_no_args-package-g46Cmt",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "write-runtime-registry: targetDir required\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "write-runtime-registry: targetDir required"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/write-runtime-registry.js:no_args",
+            "originalReplayArtifactHash": "sha256:4263abe99c2be105e8c9dfe6c31401441c41c2ef2ef3f776dfd5fcf18ac8bbd3",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/write-runtime-registry.js:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 100,
+                "anchor": "scripts/write-runtime-registry.js:100",
+                "text": "const targetDir = process.argv[2];"
+              },
+              {
+                "line": 102,
+                "anchor": "scripts/write-runtime-registry.js:102",
+                "text": "process.stderr.write('write-runtime-registry: targetDir required\\n');"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/write-runtime-registry.js",
+                "to": "scripts/write-runtime-registry.js"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/write-runtime-registry.js",
+                "to": "scripts/write-runtime-registry.js"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/write-runtime-registry.js",
+                "to": "scripts/write-runtime-registry.js"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/write-runtime-registry.js",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

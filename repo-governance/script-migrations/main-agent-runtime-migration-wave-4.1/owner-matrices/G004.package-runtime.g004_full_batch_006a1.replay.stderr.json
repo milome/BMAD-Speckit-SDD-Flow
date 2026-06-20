@@ -1,0 +1,27 @@
+[
+  {
+    "originalPath": "scripts/main-agent-quality-gate.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_main_agent_quality_gate_ts_no_args",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_quality_gate_ts_flag_codexproofpath",
+        "expectedStderr": "[main-agent-quality-gate] BLOCKED: quality thresholds failed\n- codex-run-scoped-proof: run-scoped Codex proof requires --runId, --storyKey, --evidenceBundleId, and --codexProofPath\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_quality_gate_ts_flag_evidencebundleid",
+        "expectedStderr": "[main-agent-quality-gate] BLOCKED: quality thresholds failed\n- codex-run-scoped-proof: run-scoped Codex proof requires --runId, --storyKey, --evidenceBundleId, and --codexProofPath\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_quality_gate_ts_flag_runid",
+        "expectedStderr": "[main-agent-quality-gate] BLOCKED: quality thresholds failed\n- codex-run-scoped-proof: run-scoped Codex proof requires --runId, --storyKey, --evidenceBundleId, and --codexProofPath\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_quality_gate_ts_flag_storykey",
+        "expectedStderr": "[main-agent-quality-gate] BLOCKED: quality thresholds failed\n- codex-run-scoped-proof: run-scoped Codex proof requires --runId, --storyKey, --evidenceBundleId, and --codexProofPath\n"
+      }
+    ]
+  }
+]

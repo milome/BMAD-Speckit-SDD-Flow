@@ -1,4 +1,7 @@
-const path = require('node:path');
+const {
+  capturePackageOrchestration,
+  emitPackageOrchestration,
+} = require('./source-authority-orchestration');
 
 function withoutRuntimeOnlyFlags(argv) {
   return argv.filter((arg) => {
@@ -17,48 +20,15 @@ function ensureCwd(argv, cwd) {
   return [...argv, '--cwd', cwd];
 }
 
-function compiledOrchestrationModule() {
-  return require(path.join('..', 'compiled', 'main-agent-orchestration.cjs'));
-}
-
 async function captureFullOrchestration(argv, cwd) {
-  const compiled = compiledOrchestrationModule();
-  const forwardedArgv = ensureCwd(withoutRuntimeOnlyFlags(argv), cwd);
-  let stdout = '';
-  let stderr = '';
-  const originalStdoutWrite = process.stdout.write;
-  const originalStderrWrite = process.stderr.write;
-  process.stdout.write = function writeStdout(chunk, ...rest) {
-    stdout += String(chunk);
-    const callback = rest.find((value) => typeof value === 'function');
-    if (callback) callback();
-    return true;
-  };
-  process.stderr.write = function writeStderr(chunk, ...rest) {
-    stderr += String(chunk);
-    const callback = rest.find((value) => typeof value === 'function');
-    if (callback) callback();
-    return true;
-  };
-  try {
-    const exitCode = await compiled.mainMainAgentOrchestrationAsync(forwardedArgv);
-    return {
-      exitCode: typeof exitCode === 'number' ? exitCode : 0,
-      stdout,
-      stderr,
-      forwardedArgv,
-    };
-  } finally {
-    process.stdout.write = originalStdoutWrite;
-    process.stderr.write = originalStderrWrite;
-  }
+  return capturePackageOrchestration(ensureCwd(withoutRuntimeOnlyFlags(argv), cwd), cwd);
 }
 
 async function emitFullOrchestration(context) {
-  const result = await captureFullOrchestration(context.rootArgv, context.cwd);
-  if (result.stdout) process.stdout.write(result.stdout);
-  if (result.stderr) process.stderr.write(result.stderr);
-  return result.exitCode;
+  return emitPackageOrchestration({
+    ...context,
+    rootArgv: ensureCwd(withoutRuntimeOnlyFlags(context.rootArgv), context.cwd),
+  });
 }
 
 module.exports = {

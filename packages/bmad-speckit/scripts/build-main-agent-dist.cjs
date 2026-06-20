@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 const fs = require('node:fs');
 const path = require('node:path');
+const ts = require('typescript');
 
 const packageRoot = path.resolve(__dirname, '..');
 const repoRoot = path.resolve(packageRoot, '..', '..');
@@ -10,10 +11,47 @@ const packageSourceRoot = path.join(packageRoot, 'src');
 const packageDistRoot = path.join(packageRoot, 'dist');
 const packageBmadRoot = path.join(packageRoot, '_bmad');
 const excludedRuntimeFiles = new Set([]);
-const fullOrchestrationBridgeFiles = new Set([
-  'actions/full-orchestration.js',
-  'compiled/main-agent-orchestration.cjs',
+const sourceAuthorityRoot = path.join(sourceRoot, 'source-authority');
+const sourceAuthorityTypeScriptCompilerOptions = {
+  module: ts.ModuleKind.CommonJS,
+  target: ts.ScriptTarget.ES2022,
+  esModuleInterop: true,
+  sourceMap: false,
+  inlineSourceMap: false,
+  inlineSources: false,
+};
+const sourceAuthorityWorkspaceRuntimePackages = new Set([
+  'ralph-method',
+  'runtime-context',
+  'scoring',
 ]);
+
+function isTypeScriptFamilyFile(relativePath) {
+  return /\.(?:ts|tsx|cts|mts)$/u.test(relativePath.replace(/\\/g, '/'));
+}
+
+function isTypeScriptDeclarationFile(relativePath) {
+  return /\.d\.(?:ts|cts|mts)$/u.test(relativePath.replace(/\\/g, '/'));
+}
+
+function isTypeScriptRuntimeFile(relativePath) {
+  return isTypeScriptFamilyFile(relativePath) && !isTypeScriptDeclarationFile(relativePath);
+}
+
+function sourceAuthorityTypeScriptRuntimeDistRelativePath(relativePath) {
+  if (/\.(?:ts|tsx)$/u.test(relativePath)) return relativePath.replace(/\.(?:ts|tsx)$/u, '.js');
+  if (/\.cts$/u.test(relativePath)) return relativePath.replace(/\.cts$/u, '.cjs');
+  if (/\.mts$/u.test(relativePath)) return relativePath.replace(/\.mts$/u, '.mjs');
+  throw new Error(`unsupported source-authority TypeScript runtime file: ${relativePath}`);
+}
+
+function hasAdjacentSourceAuthorityTypeScript(relativePath, base = sourceRoot) {
+  if (!relativePath.startsWith('source-authority/') || !relativePath.endsWith('.js')) return false;
+  const withoutExtension = relativePath.replace(/\.js$/u, '');
+  return ['.ts', '.tsx'].some((extension) =>
+    fs.existsSync(path.join(base, `${withoutExtension}${extension}`))
+  );
+}
 
 function collectRuntimeFiles(dir = sourceRoot, base = sourceRoot) {
   const collected = [];
@@ -23,10 +61,97 @@ function collectRuntimeFiles(dir = sourceRoot, base = sourceRoot) {
       collected.push(...collectRuntimeFiles(fullPath, base));
       continue;
     }
-    if (!entry.isFile() || !/\.(?:js|cjs)$/u.test(entry.name)) continue;
     const relativePath = path.relative(base, fullPath).replace(/\\/g, '/');
+    const isSourceAuthorityFile = relativePath.startsWith('source-authority/');
+    const isSourceAuthorityDeclarationFile =
+      isSourceAuthorityFile && isTypeScriptDeclarationFile(relativePath);
+    const allowedRuntimeExtension = isSourceAuthorityFile
+      ? /\.(?:js|cjs|mjs|py|ps1|sh|md)$/u
+      : /\.(?:js|cjs)$/u;
+    if (!entry.isFile() || (!allowedRuntimeExtension.test(entry.name) && !isSourceAuthorityDeclarationFile)) {
+      continue;
+    }
     if (excludedRuntimeFiles.has(relativePath)) continue;
+    if (hasAdjacentSourceAuthorityTypeScript(relativePath, base)) continue;
     collected.push(relativePath);
+  }
+  return collected.sort();
+}
+
+function assertWorkspaceRuntimeTargetExists(packageName, runtimeSubpath, request, relativePath) {
+  const candidate = path.join(repoRoot, 'packages', packageName, 'dist', ...runtimeSubpath.split('/'));
+  const candidates = [
+    candidate,
+    `${candidate}.js`,
+    path.join(candidate, 'index.js'),
+  ];
+  if (candidates.some((runtimeTarget) => fs.existsSync(runtimeTarget))) return;
+  throw new Error(
+    [
+      `source-authority runtime import has no built JS target: ${request}`,
+      `source-authority file: ${relativePath}`,
+      `expected package dist target under: packages/${packageName}/dist/${runtimeSubpath}`,
+      `build the workspace package before build:main-agent-dist`,
+    ].join('\n')
+  );
+}
+
+function rewriteWorkspaceRuntimeRequest(request, relativePath) {
+  const normalizedRequest = request.replace(/\\/g, '/');
+  const match = normalizedRequest.match(/^((?:\.\.\/)+packages\/)([^/]+)(?:\/(.+))?$/u);
+  if (!match) return request;
+  const [, prefix, packageName, rawSubpath = ''] = match;
+  if (!sourceAuthorityWorkspaceRuntimePackages.has(packageName)) return request;
+  if (!rawSubpath) return request;
+
+  let runtimeSubpath = rawSubpath;
+  if (packageName === 'runtime-context' || packageName === 'ralph-method') {
+    if (!runtimeSubpath.startsWith('src/')) return request;
+    runtimeSubpath = runtimeSubpath.slice('src/'.length);
+  }
+
+  assertWorkspaceRuntimeTargetExists(packageName, runtimeSubpath, request, relativePath);
+  return `${prefix}${packageName}/dist/${runtimeSubpath}`;
+}
+
+function rewriteSourceAuthorityRuntimeImports(text, relativePath) {
+  return text
+    .replace(/(require\(\s*['"])([^'"]+)(['"]\s*\))/gu, (match, start, request, end) => {
+      const rewritten = rewriteWorkspaceRuntimeRequest(request, relativePath);
+      return `${start}${rewritten}${end}`;
+    })
+    .replace(/(from\s+['"])([^'"]+)(['"])/gu, (match, start, request, end) => {
+      const rewritten = rewriteWorkspaceRuntimeRequest(request, relativePath);
+      return `${start}${rewritten}${end}`;
+    });
+}
+
+function collectSourceAuthorityTypeScriptFiles(dir = sourceAuthorityRoot, base = sourceRoot) {
+  if (!fs.existsSync(dir)) return [];
+  const collected = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      collected.push(...collectSourceAuthorityTypeScriptFiles(fullPath, base));
+      continue;
+    }
+    if (!entry.isFile() || !isTypeScriptRuntimeFile(entry.name)) continue;
+    collected.push(path.relative(base, fullPath).replace(/\\/g, '/'));
+  }
+  return collected.sort();
+}
+
+function collectSourceAuthorityTypeScriptDeclarationFiles(dir = sourceAuthorityRoot, base = sourceRoot) {
+  if (!fs.existsSync(dir)) return [];
+  const collected = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      collected.push(...collectSourceAuthorityTypeScriptDeclarationFiles(fullPath, base));
+      continue;
+    }
+    if (!entry.isFile() || !isTypeScriptDeclarationFile(entry.name)) continue;
+    collected.push(path.relative(base, fullPath).replace(/\\/g, '/'));
   }
   return collected.sort();
 }
@@ -130,12 +255,35 @@ const staticFiles = [
   'helpers/write-runtime-context.cjs',
 ];
 const files = Array.from(new Set([...staticFiles, ...collectRuntimeFiles()]));
+const sourceAuthorityTypeScriptFiles = collectSourceAuthorityTypeScriptFiles();
+const sourceAuthorityTypeScriptDeclarationFiles = collectSourceAuthorityTypeScriptDeclarationFiles();
 const packageFiles = [
   'scoring-runtime.js',
 ];
 const runtimeAssetDirectories = [
+  '_bmad/_schemas',
+  '_bmad/runtime/hooks',
   '_bmad/core/agents/code-reviewer',
   '_bmad/core/skills/bmad-party-mode',
+];
+const sourceAuthorityAssetDirectories = [
+  '.specify',
+  '_bmad',
+  'packages/bmad-speckit/bin',
+  'packages/bmad-speckit/src',
+  'packages/ralph-method',
+  'packages/runtime-context',
+  'packages/runtime-emit',
+  'packages/schema',
+  'packages/scoring',
+  'tests/fixtures/goal-contract-release-gate',
+  'templates/consumer-mcp',
+];
+const sourceAuthorityAssetFiles = [
+  'package.json',
+  'packages/bmad-speckit/package.json',
+  '_bmad-output/runtime/requirement-records/index.json',
+  '_bmad-output/runtime/requirement-records/REQ-CI-GOVERNANCE-MAPPING-FIXTURE/requirement-record.json',
 ];
 
 function copyRuntimeFile(relativePath) {
@@ -144,24 +292,49 @@ function copyRuntimeFile(relativePath) {
   if (!fs.existsSync(source)) {
     throw new Error(`main-agent source file missing: ${relativePath}`);
   }
-  const text = fs.readFileSync(source, 'utf8');
-  if (
-    !fullOrchestrationBridgeFiles.has(relativePath) &&
-    /scripts[\\/]main-agent-orchestration\.ts/.test(text)
-  ) {
+  let text = fs.readFileSync(source, 'utf8');
+  if (/scripts[\\/]main-agent-orchestration\.ts/.test(text)) {
     throw new Error(`main-agent dist source references root orchestration script: ${relativePath}`);
   }
-  if (
-    !fullOrchestrationBridgeFiles.has(relativePath) &&
-    /compiled[\\/]main-agent-orchestration\.cjs/.test(text)
-  ) {
+  if (/compiled[\\/]main-agent-orchestration\.cjs/.test(text)) {
     throw new Error(`covered main-agent source references compiled fallback: ${relativePath}`);
+  }
+  if (relativePath.startsWith('source-authority/')) {
+    text = rewriteSourceAuthorityRuntimeImports(text, relativePath);
   }
   fs.mkdirSync(path.dirname(target), { recursive: true });
   fs.writeFileSync(target, text, 'utf8');
 }
 
+if (fs.existsSync(distRoot)) {
+  fs.rmSync(distRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+}
+
 for (const file of files) copyRuntimeFile(file);
+
+function compileSourceAuthorityTypeScriptFile(relativePath) {
+  const source = path.join(sourceRoot, relativePath);
+  const distRelativePath = sourceAuthorityTypeScriptRuntimeDistRelativePath(relativePath);
+  const target = path.join(distRoot, distRelativePath);
+  const text = fs.readFileSync(source, 'utf8');
+  const result = ts.transpileModule(text, {
+    compilerOptions: sourceAuthorityTypeScriptCompilerOptions,
+    fileName: source,
+    reportDiagnostics: true,
+  });
+  const diagnostics = result.diagnostics || [];
+  const blockingDiagnostics = diagnostics.filter((diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error);
+  if (blockingDiagnostics.length > 0) {
+    const messages = blockingDiagnostics.map((diagnostic) => ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n'));
+    throw new Error(`failed to compile source-authority TypeScript ${relativePath}: ${messages.join('; ')}`);
+  }
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  const rewrittenOutput = rewriteSourceAuthorityRuntimeImports(
+    result.outputText,
+    distRelativePath
+  );
+  fs.writeFileSync(target, rewrittenOutput, 'utf8');
+}
 
 function copyPackageFile(relativePath) {
   const source = path.join(packageSourceRoot, relativePath);
@@ -213,6 +386,87 @@ function copyRuntimeAssetDirectory(relativePath) {
 }
 
 for (const directory of runtimeAssetDirectories) copyRuntimeAssetDirectory(directory);
+function sanitizeSourceAuthorityPackageJson(source) {
+  const pkg = JSON.parse(fs.readFileSync(source, 'utf8'));
+  delete pkg.scripts;
+  delete pkg.bin;
+  delete pkg.devDependencies;
+  for (const field of ['dependencies', 'optionalDependencies', 'peerDependencies']) {
+    if (!pkg[field]) continue;
+    delete pkg[field].tsx;
+    delete pkg[field]['ts-node'];
+  }
+  return `${JSON.stringify(scrubSourceAuthorityPackageJsonFallbackTokens(pkg), null, 2)}\n`;
+}
+
+function scrubSourceAuthorityPackageJsonFallbackTokens(value) {
+  if (typeof value === 'string') {
+    return value
+      .replace(/\bts-node\b/giu, 'prebuilt JavaScript runtime')
+      .replace(/\btsx\b/giu, 'prebuilt JavaScript runtime');
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => scrubSourceAuthorityPackageJsonFallbackTokens(item));
+  }
+  if (value && typeof value === 'object') {
+    const scrubbed = {};
+    for (const [key, item] of Object.entries(value)) {
+      if (/\b(?:tsx|ts-node)\b/iu.test(key)) continue;
+      scrubbed[key] = scrubSourceAuthorityPackageJsonFallbackTokens(item);
+    }
+    return scrubbed;
+  }
+  return value;
+}
+
+function copySourceAuthorityDirectoryContents(source, target) {
+  if (!fs.existsSync(source) || !fs.statSync(source).isDirectory()) {
+    throw new Error(`runtime asset directory missing: ${path.relative(repoRoot, source).replace(/\\/g, '/')}`);
+  }
+  fs.mkdirSync(target, { recursive: true });
+  for (const entry of fs.readdirSync(source, { withFileTypes: true })) {
+    const sourcePath = path.join(source, entry.name);
+    const targetPath = path.join(target, entry.name);
+    if (entry.isDirectory()) {
+      copySourceAuthorityDirectoryContents(sourcePath, targetPath);
+      continue;
+    }
+    if (!entry.isFile()) continue;
+    fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+    if (entry.name === 'package.json') {
+      fs.writeFileSync(targetPath, sanitizeSourceAuthorityPackageJson(sourcePath), 'utf8');
+      continue;
+    }
+    fs.copyFileSync(sourcePath, targetPath);
+  }
+}
+
+function copySourceAuthorityAssetDirectory(relativePath) {
+  const source = path.join(repoRoot, relativePath);
+  const target = path.join(distRoot, 'source-authority', relativePath);
+  if (fs.existsSync(target)) {
+    fs.rmSync(target, { recursive: true, force: true });
+  }
+  copySourceAuthorityDirectoryContents(source, target);
+}
+
+for (const directory of sourceAuthorityAssetDirectories) copySourceAuthorityAssetDirectory(directory);
+function copySourceAuthorityAssetFile(relativePath) {
+  const source = path.join(repoRoot, relativePath);
+  const target = path.join(distRoot, 'source-authority', relativePath);
+  if (!fs.existsSync(source) || !fs.statSync(source).isFile()) {
+    throw new Error(`source-authority asset file missing: ${relativePath}`);
+  }
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  if (path.basename(relativePath) === 'package.json') {
+    fs.writeFileSync(target, sanitizeSourceAuthorityPackageJson(source), 'utf8');
+    return;
+  }
+  fs.copyFileSync(source, target);
+}
+
+for (const file of sourceAuthorityAssetFiles) copySourceAuthorityAssetFile(file);
+for (const file of sourceAuthorityTypeScriptFiles) compileSourceAuthorityTypeScriptFile(file);
 process.stdout.write(
-  `built dist/main-agent files=${files.length} package files=${packageFiles.length} runtime asset dirs=${runtimeAssetDirectories.length}\n`
+  `built dist/main-agent files=${files.length} sourceAuthorityTsRuntime=${sourceAuthorityTypeScriptFiles.length} sourceAuthorityTsDeclarations=${sourceAuthorityTypeScriptDeclarationFiles.length} package files=${packageFiles.length} runtime asset dirs=${runtimeAssetDirectories.length} sourceAuthority asset dirs=${sourceAuthorityAssetDirectories.length} sourceAuthority asset files=${sourceAuthorityAssetFiles.length}\n`
 );

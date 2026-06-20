@@ -1,0 +1,152 @@
+[
+  {
+    "originalPath": "scripts/main-agent-audit-review-gate.ts",
+    "scenarioId": "g004_main_agent_audit_review_gate_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-bmad-artifact-hardcut.ts",
+    "scenarioId": "g004_main_agent_bmad_artifact_hardcut_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-chaos-scenarios.ts",
+    "scenarioId": "g004_main_agent_chaos_scenarios_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-codex-worker-adapter.ts",
+    "scenarioId": "g004_main_agent_codex_worker_adapter_ts_no_args",
+    "expectedStderr": "main-agent-codex-worker-adapter: --packetPath is required\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-compiled-prompt-runner.ts",
+    "scenarioId": "g004_main_agent_compiled_prompt_runner_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-control-plane-isolation-check.ts",
+    "scenarioId": "g004_main_agent_control_plane_isolation_check_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-data-governance-gate.ts",
+    "scenarioId": "g004_main_agent_data_governance_gate_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-dataset-release-gate.ts",
+    "scenarioId": "g004_main_agent_dataset_release_gate_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-decision-field-check.ts",
+    "scenarioId": "g004_main_agent_decision_field_check_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-delivery-closeout-gate.ts",
+    "scenarioId": "g004_main_agent_delivery_closeout_gate_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-delivery-evidence-run.ts",
+    "scenarioId": "g004_main_agent_delivery_evidence_run_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-delivery-truth-gate.ts",
+    "scenarioId": "g004_main_agent_delivery_truth_gate_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-development-journey-matrix.ts",
+    "scenarioId": "g004_main_agent_development_journey_matrix_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-dual-host-pr-orchestrator.ts",
+    "scenarioId": "g004_main_agent_dual_host_pr_orchestrator_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-entryflow-traceability-check.ts",
+    "scenarioId": "g004_main_agent_entryflow_traceability_check_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-execution-closure-gate.ts",
+    "scenarioId": "g004_main_agent_execution_closure_gate_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-functional-resume-check.ts",
+    "scenarioId": "g004_main_agent_functional_resume_check_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-governed-data-products.ts",
+    "scenarioId": "g004_main_agent_governed_data_products_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-implementation-readiness-gate.ts",
+    "scenarioId": "g004_main_agent_implementation_readiness_gate_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-production-loop-ready-check.ts",
+    "scenarioId": "g004_main_agent_production_loop_ready_check_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-quality-gate.ts",
+    "scenarioId": "g004_main_agent_quality_gate_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-release-gate.ts",
+    "scenarioId": "g004_main_agent_release_gate_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-runtime-policy-snapshot-check.ts",
+    "scenarioId": "g004_main_agent_runtime_policy_snapshot_check_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-scoring-gates-check.ts",
+    "scenarioId": "g004_main_agent_scoring_gates_check_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-soak-runner.ts",
+    "scenarioId": "g004_main_agent_soak_runner_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-trace-status-policy-check.ts",
+    "scenarioId": "g004_main_agent_trace_status_policy_check_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-unified-ingress.ts",
+    "scenarioId": "g004_main_agent_unified_ingress_ts_no_args",
+    "expectedStderr": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\main-agent-unified-ingress.ts:136\n    throw new Error(`${fieldName} is required for requirement-scoped unified ingress output`);\n          ^\nError: recordId is required for requirement-scoped unified ingress output\n    at normalizeRecordId (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\main-agent-unified-ingress.ts:136:11)\n    at mainAsync (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\main-agent-unified-ingress.ts:992:20)\n    at Object.<anonymous> (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\main-agent-unified-ingress.ts:1044:8)\n    at Module._compile (node:internal/modules/cjs/loader:1705:14)\n    at Module.m._compile (D:\\Dev\\BMAD-Speckit-SDD-Flow\\node_modules\\ts-node\\src\\index.ts:1618:23)\n    at node:internal/modules/cjs/loader:1838:10\n    at Object.require.extensions.<computed> [as .ts] (D:\\Dev\\BMAD-Speckit-SDD-Flow\\node_modules\\ts-node\\src\\index.ts:1621:12)\n    at Module.load (node:internal/modules/cjs/loader:1441:32)\n    at Function._load (node:internal/modules/cjs/loader:1263:12)\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\n"
+  },
+  {
+    "originalPath": "scripts/mcp/consumer/install-consumer-mcp.ps1",
+    "scenarioId": "g004_mcp_consumer_install_consumer_mcp_ps1_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/mcp/consumer/install-consumer-mcp.sh",
+    "scenarioId": "g004_mcp_consumer_install_consumer_mcp_sh_no_args",
+    "expectedStderr": "<3>WSL (<relay> - Relay) ERROR: CreateProcessCommon:800: execvpe(/bin/bash) failed: No such file or directory\n"
+  },
+  {
+    "originalPath": "scripts/mcp/consumer/verify-consumer-mcp.ps1",
+    "scenarioId": "g004_mcp_consumer_verify_consumer_mcp_ps1_no_args",
+    "expectedStderr": ""
+  }
+]

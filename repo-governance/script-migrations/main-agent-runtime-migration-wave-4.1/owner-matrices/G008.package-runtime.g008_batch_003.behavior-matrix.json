@@ -1,0 +1,1670 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-wave-4-1-owner-initial-behavior-matrix/v1",
+  "waveId": "main-agent-runtime-migration-wave-4.1",
+  "ownerTaskId": "G008",
+  "generatedAt": "2026-06-20T11:31:37.181Z",
+  "artifactSuffix": "g008_batch_003",
+  "timeoutMs": 30000,
+  "coverageDecision": "passed_full_original_behavior_coverage",
+  "eligibleOwnerRowCount": 58,
+  "selectedRowCount": 10,
+  "matrixRowCount": 10,
+  "scenarioCount": 11,
+  "fullCoverageStillRequired": false,
+  "rows": [
+    {
+      "originalPath": "scripts/i18n/bootstrap-skill-bilingual-files.mjs",
+      "entryId": "i18n-bootstrap-skill-bilingual-files-mjs",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/bootstrap-skill-bilingual-files.mjs"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/bootstrap-skill-bilingual-files.mjs",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/i18n/bootstrap-skill-bilingual-files.mjs:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_i18n_bootstrap_skill_bilingual_files_mjs_no_args",
+          "originalEntryPoint": "scripts/i18n/bootstrap-skill-bilingual-files.mjs",
+          "originalEntryCommand": "node scripts/i18n/bootstrap-skill-bilingual-files.mjs",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/bootstrap-skill-bilingual-files.mjs",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/bootstrap-skill-bilingual-files.mjs",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_i18n_bootstrap_skill_bilingual_files_mjs_no_args_original_fixture_root",
+              "path": "<tmp>/g008_i18n_bootstrap_skill_bilingual_files_mjs_no_args-original-HB7I3C",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_i18n_bootstrap_skill_bilingual_files_mjs_no_args_package_fixture_root",
+              "path": "<tmp>/g008_i18n_bootstrap_skill_bilingual_files_mjs_no_args-package-4O5QZ3",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "Synced SKILL.md → SKILL.zh.md _bmad/cursor/skills/bmad-bug-assistant\nSynced SKILL.md → SKILL.zh.md _bmad/claude/skills/bmad-bug-assistant\nSynced SKILL.md → SKILL.zh.md _bmad/cursor/skills/bmad-story-assistant\nSynced SKILL.md → SKILL.zh.md _bmad/claude/skills/bmad-story-assistant\nSynced SKILL.md → SKILL.zh.md _bmad/skills/bmad-eval-analytics\nSynced SKILL.md → SKILL.zh.md _bmad/cursor/skills/speckit-workflow\nSynced SKILL.md → SKILL.zh.md _bmad/claude/skills/speckit-workflow\nSynced SKILL.md → SKILL.zh.md _bmad/cursor/skills/using-git-worktrees\nSynced SKILL.md → SKILL.zh.md _bmad/claude/skills/using-git-worktrees\nSynced SKILL.md → SKILL.zh.md _bmad/cursor/skills/bmad-standalone-tasks\nSynced SKILL.md → SKILL.zh.md _bmad/claude/skills/bmad-standalone-tasks\nSynced SKILL.md → SKILL.zh.md _bmad/cursor/skills/bmad-standalone-tasks-doc-review\nSynced SKILL.md → SKILL.zh.md _bmad/claude/skills/bmad-standalone-tasks-doc-review\nSynced SKILL.md → SKILL.zh.md _bmad/cursor/skills/bmad-rca-helper\nSynced SKILL.md → SKILL.zh.md _bmad/claude/skills/bmad-rca-helper\nSynced SKILL.md → SKILL.zh.md _bmad/cursor/skills/bmad-code-reviewer-lifecycle\nSynced SKILL.md → SKILL.zh.md _bmad/claude/skills/bmad-code-reviewer-lifecycle\nSynced SKILL.md → SKILL.zh.md _bmad/skills/bmad-party-mode\nSynced SKILL.md → SKILL.zh.md _bmad/core/skills/bmad-party-mode\nSynced SKILL.md → SKILL.zh.md _bmad/skills/bmad-customization-backup\nSynced SKILL.md → SKILL.zh.md _bmad/skills/git-push-monitor\nDone.\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/i18n/bootstrap-skill-bilingual-files.mjs:no_args",
+            "originalReplayArtifactHash": "sha256:82a2230a33e8206615816a9c39a869cb5684991970f26fe22fa992a088a55d30",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/i18n/bootstrap-skill-bilingual-files.mjs:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 52,
+                "anchor": "scripts/i18n/bootstrap-skill-bilingual-files.mjs:52",
+                "text": "console.warn('Skip (no SKILL.md):', rel);"
+              },
+              {
+                "line": 58,
+                "anchor": "scripts/i18n/bootstrap-skill-bilingual-files.mjs:58",
+                "text": "console.warn('Missing SKILL.en.md (add English translation):', rel);"
+              },
+              {
+                "line": 60,
+                "anchor": "scripts/i18n/bootstrap-skill-bilingual-files.mjs:60",
+                "text": "console.log('Synced SKILL.md → SKILL.zh.md', rel);"
+              },
+              {
+                "line": 63,
+                "anchor": "scripts/i18n/bootstrap-skill-bilingual-files.mjs:63",
+                "text": "console.log('Done.');"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/i18n/bootstrap-skill-bilingual-files.mjs",
+                "to": "scripts/i18n/bootstrap-skill-bilingual-files.mjs"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/bootstrap-skill-bilingual-files.mjs",
+                "to": "scripts/i18n/bootstrap-skill-bilingual-files.mjs"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/bootstrap-skill-bilingual-files.mjs",
+                "to": "scripts/i18n/bootstrap-skill-bilingual-files.mjs"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/i18n/bootstrap-skill-bilingual-files.mjs",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/i18n/han-outside-fences.mjs",
+      "entryId": "i18n-han-outside-fences-mjs",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/han-outside-fences.mjs"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/han-outside-fences.mjs",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/i18n/han-outside-fences.mjs:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 1,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 2,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 1,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 2,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [
+          "VERBOSE"
+        ],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [
+          "VERBOSE"
+        ],
+        "scenarioDefinitionCount": 2,
+        "coveredScenarioDefinitionIds": [
+          "no_args",
+          "env_verbose"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_i18n_han_outside_fences_mjs_no_args",
+          "originalEntryPoint": "scripts/i18n/han-outside-fences.mjs",
+          "originalEntryCommand": "node scripts/i18n/han-outside-fences.mjs",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/han-outside-fences.mjs",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/han-outside-fences.mjs",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_i18n_han_outside_fences_mjs_no_args_original_fixture_root",
+              "path": "<tmp>/g008_i18n_han_outside_fences_mjs_no_args-original-0gTx8o",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_i18n_han_outside_fences_mjs_no_args_package_fixture_root",
+              "path": "<tmp>/g008_i18n_han_outside_fences_mjs_no_args-package-wOfIte",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "Usage: node han-outside-fences.mjs <file>...\n",
+          "expectedExitCode": 2,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "Usage: node han-outside-fences.mjs <file>..."
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/i18n/han-outside-fences.mjs:no_args",
+            "originalReplayArtifactHash": "sha256:dc8c8a4fff6fe92ca4fb49c5bbaa074f859ba2ee4971c3952355cc99f0361e59",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/i18n/han-outside-fences.mjs:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 9,
+                "anchor": "scripts/i18n/han-outside-fences.mjs:9",
+                "text": "const files = process.argv.slice(2);"
+              },
+              {
+                "line": 11,
+                "anchor": "scripts/i18n/han-outside-fences.mjs:11",
+                "text": "console.error(\"Usage: node han-outside-fences.mjs <file>...\");"
+              },
+              {
+                "line": 31,
+                "anchor": "scripts/i18n/han-outside-fences.mjs:31",
+                "text": "console.log(`${fp}\\t${count}`);"
+              },
+              {
+                "line": 33,
+                "anchor": "scripts/i18n/han-outside-fences.mjs:33",
+                "text": "for (const h of hits) console.log(\"  sample:\", h);"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/i18n/han-outside-fences.mjs",
+                "to": "scripts/i18n/han-outside-fences.mjs"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/han-outside-fences.mjs",
+                "to": "scripts/i18n/han-outside-fences.mjs"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/han-outside-fences.mjs",
+                "to": "scripts/i18n/han-outside-fences.mjs"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/i18n/han-outside-fences.mjs",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 1,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 1,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [
+              "VERBOSE"
+            ],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [
+              "VERBOSE"
+            ],
+            "scenarioDefinitionCount": 2,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "env_verbose"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g008_i18n_han_outside_fences_mjs_env_verbose",
+          "originalEntryPoint": "scripts/i18n/han-outside-fences.mjs",
+          "originalEntryCommand": "node scripts/i18n/han-outside-fences.mjs",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/han-outside-fences.mjs",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/han-outside-fences.mjs",
+          "argumentCombination": "env VERBOSE=<source-derived-safe-value>",
+          "args": [],
+          "env": {
+            "VERBOSE": "source-derived-verbose"
+          },
+          "fixtures": [
+            {
+              "id": "g008_i18n_han_outside_fences_mjs_env_verbose_original_fixture_root",
+              "path": "<tmp>/g008_i18n_han_outside_fences_mjs_env_verbose-original-g5Avm3",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_i18n_han_outside_fences_mjs_env_verbose_package_fixture_root",
+              "path": "<tmp>/g008_i18n_han_outside_fences_mjs_env_verbose-package-UbASJf",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "Usage: node han-outside-fences.mjs <file>...\n",
+          "expectedExitCode": 2,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "Usage: node han-outside-fences.mjs <file>..."
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/i18n/han-outside-fences.mjs:env_verbose",
+            "originalReplayArtifactHash": "sha256:dc8c8a4fff6fe92ca4fb49c5bbaa074f859ba2ee4971c3952355cc99f0361e59",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/i18n/han-outside-fences.mjs:env_verbose",
+            "sourceLineAnchors": [
+              {
+                "line": 9,
+                "anchor": "scripts/i18n/han-outside-fences.mjs:9",
+                "text": "const files = process.argv.slice(2);"
+              },
+              {
+                "line": 11,
+                "anchor": "scripts/i18n/han-outside-fences.mjs:11",
+                "text": "console.error(\"Usage: node han-outside-fences.mjs <file>...\");"
+              },
+              {
+                "line": 31,
+                "anchor": "scripts/i18n/han-outside-fences.mjs:31",
+                "text": "console.log(`${fp}\\t${count}`);"
+              },
+              {
+                "line": 33,
+                "anchor": "scripts/i18n/han-outside-fences.mjs:33",
+                "text": "for (const h of hits) console.log(\"  sample:\", h);"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/i18n/han-outside-fences.mjs",
+                "to": "scripts/i18n/han-outside-fences.mjs"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/han-outside-fences.mjs",
+                "to": "scripts/i18n/han-outside-fences.mjs"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/han-outside-fences.mjs",
+                "to": "scripts/i18n/han-outside-fences.mjs"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/i18n/han-outside-fences.mjs",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 1,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 1,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [
+              "VERBOSE"
+            ],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [
+              "VERBOSE"
+            ],
+            "scenarioDefinitionCount": 2,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "env_verbose"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/i18n/phase3_translate_skill_en.py",
+      "entryId": "i18n-phase3-translate-skill-en-py",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/phase3_translate_skill_en.py"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/phase3_translate_skill_en.py",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/i18n/phase3_translate_skill_en.py:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 1,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 1,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_i18n_phase3_translate_skill_en_py_no_args",
+          "originalEntryPoint": "scripts/i18n/phase3_translate_skill_en.py",
+          "originalEntryCommand": "python scripts/i18n/phase3_translate_skill_en.py",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/phase3_translate_skill_en.py",
+          "packageEntryCommand": "python packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/phase3_translate_skill_en.py",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_i18n_phase3_translate_skill_en_py_no_args_original_fixture_root",
+              "path": "<tmp>/g008_i18n_phase3_translate_skill_en_py_no_args-original-Qce81Y",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_i18n_phase3_translate_skill_en_py_no_args_package_fixture_root",
+              "path": "<tmp>/g008_i18n_phase3_translate_skill_en_py_no_args-package-tBbYRD",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "Requested Python version (3) is not installed\n",
+          "expectedExitCode": 103,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "Requested Python version (3) is not installed"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/i18n/phase3_translate_skill_en.py:no_args",
+            "originalReplayArtifactHash": "sha256:777cd77fa0459e58810a6b53b8dc54db1d074a1c6fef03a6fc96d92af8687082",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/i18n/phase3_translate_skill_en.py:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 1,
+                "anchor": "scripts/i18n/phase3_translate_skill_en.py:1",
+                "text": "#!/usr/bin/env python3"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/i18n/phase3_translate_skill_en.py",
+                "to": "scripts/i18n/phase3_translate_skill_en.py"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/phase3_translate_skill_en.py",
+                "to": "scripts/i18n/phase3_translate_skill_en.py"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/phase3_translate_skill_en.py",
+                "to": "scripts/i18n/phase3_translate_skill_en.py"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/i18n/phase3_translate_skill_en.py",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/i18n/phase3-skill-en-transform.mjs",
+      "entryId": "i18n-phase3-skill-en-transform-mjs",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/phase3-skill-en-transform.mjs"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/phase3-skill-en-transform.mjs",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/i18n/phase3-skill-en-transform.mjs:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 1,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 1,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_i18n_phase3_skill_en_transform_mjs_no_args",
+          "originalEntryPoint": "scripts/i18n/phase3-skill-en-transform.mjs",
+          "originalEntryCommand": "node scripts/i18n/phase3-skill-en-transform.mjs",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/phase3-skill-en-transform.mjs",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/phase3-skill-en-transform.mjs",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_i18n_phase3_skill_en_transform_mjs_no_args_original_fixture_root",
+              "path": "<tmp>/g008_i18n_phase3_skill_en_transform_mjs_no_args-original-3x4vRh",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_i18n_phase3_skill_en_transform_mjs_no_args_package_fixture_root",
+              "path": "<tmp>/g008_i18n_phase3_skill_en_transform_mjs_no_args-package-9iDOL4",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "Usage: node phase3-skill-en-transform.mjs <file>\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "Usage: node phase3-skill-en-transform.mjs <file>"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/i18n/phase3-skill-en-transform.mjs:no_args",
+            "originalReplayArtifactHash": "sha256:f56872f005db25b6cdd50f5d1ab0d28b7663df849d90b680cb5bb6230c8897b2",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/i18n/phase3-skill-en-transform.mjs:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 145,
+                "anchor": "scripts/i18n/phase3-skill-en-transform.mjs:145",
+                "text": "function main() {"
+              },
+              {
+                "line": 146,
+                "anchor": "scripts/i18n/phase3-skill-en-transform.mjs:146",
+                "text": "const root = process.argv[2];"
+              },
+              {
+                "line": 148,
+                "anchor": "scripts/i18n/phase3-skill-en-transform.mjs:148",
+                "text": "console.error(\"Usage: node phase3-skill-en-transform.mjs <file>\");"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/i18n/phase3-skill-en-transform.mjs",
+                "to": "scripts/i18n/phase3-skill-en-transform.mjs"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/phase3-skill-en-transform.mjs",
+                "to": "scripts/i18n/phase3-skill-en-transform.mjs"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/phase3-skill-en-transform.mjs",
+                "to": "scripts/i18n/phase3-skill-en-transform.mjs"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/i18n/phase3-skill-en-transform.mjs",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/i18n/resolve-audit-prompt-path.ts",
+      "entryId": "resolve-audit-prompt-path",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/resolve-audit-prompt-path.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/resolve-audit-prompt-path.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/i18n/resolve-audit-prompt-path.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_i18n_resolve_audit_prompt_path_ts_no_args",
+          "originalEntryPoint": "scripts/i18n/resolve-audit-prompt-path.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/i18n/resolve-audit-prompt-path.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/resolve-audit-prompt-path.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/resolve-audit-prompt-path.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_i18n_resolve_audit_prompt_path_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g008_i18n_resolve_audit_prompt_path_ts_no_args-original-aUuudl",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_i18n_resolve_audit_prompt_path_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g008_i18n_resolve_audit_prompt_path_ts_no_args-package-cDfnSS",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/i18n/resolve-audit-prompt-path.ts:no_args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/i18n/resolve-audit-prompt-path.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 27,
+                "anchor": "scripts/i18n/resolve-audit-prompt-path.ts:27",
+                "text": "export function getAuditPromptLocaleFromRuntimeContext("
+              },
+              {
+                "line": 66,
+                "anchor": "scripts/i18n/resolve-audit-prompt-path.ts:66",
+                "text": "export function resolveAuditPromptPath("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/i18n/resolve-audit-prompt-path.ts",
+                "to": "scripts/i18n/resolve-audit-prompt-path.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/resolve-audit-prompt-path.ts",
+                "to": "scripts/i18n/resolve-audit-prompt-path.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/resolve-audit-prompt-path.js",
+                "to": "scripts/i18n/resolve-audit-prompt-path.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/i18n/resolve-audit-prompt-path.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/normalize-pack-manifests.js",
+      "entryId": "normalize-pack-manifests-js",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/normalize-pack-manifests.js"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/normalize-pack-manifests.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/normalize-pack-manifests.js:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 1,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 1,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_normalize_pack_manifests_js_no_args",
+          "originalEntryPoint": "scripts/normalize-pack-manifests.js",
+          "originalEntryCommand": "node scripts/normalize-pack-manifests.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/normalize-pack-manifests.js",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/normalize-pack-manifests.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_normalize_pack_manifests_js_no_args_original_fixture_root",
+              "path": "<tmp>/g008_normalize_pack_manifests_js_no_args-original-oFHaBt",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_normalize_pack_manifests_js_no_args_package_fixture_root",
+              "path": "<tmp>/g008_normalize_pack_manifests_js_no_args-package-DvzL1y",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "Usage: node scripts/normalize-pack-manifests.js <prepare|restore>\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "Usage: node scripts/normalize-pack-manifests.js <prepare|restore>"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/normalize-pack-manifests.js:no_args",
+            "originalReplayArtifactHash": "sha256:d228a3a1a4f960acfa5c5f342c5f53b9d947747044d616b8f94cbf4ac9ebda63",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/normalize-pack-manifests.js:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 195,
+                "anchor": "scripts/normalize-pack-manifests.js:195",
+                "text": "const mode = process.argv[2];"
+              },
+              {
+                "line": 201,
+                "anchor": "scripts/normalize-pack-manifests.js:201",
+                "text": "process.stderr.write('Usage: node scripts/normalize-pack-manifests.js <prepare|restore>\\n');"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/normalize-pack-manifests.js",
+                "to": "scripts/normalize-pack-manifests.js"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/normalize-pack-manifests.js",
+                "to": "scripts/normalize-pack-manifests.js"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/normalize-pack-manifests.js",
+                "to": "scripts/normalize-pack-manifests.js"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/normalize-pack-manifests.js",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/parallel-mission-control.ts",
+      "entryId": "parallel-mission-control",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/parallel-mission-control.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/parallel-mission-control.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/parallel-mission-control.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_parallel_mission_control_ts_no_args",
+          "originalEntryPoint": "scripts/parallel-mission-control.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/parallel-mission-control.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/parallel-mission-control.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/parallel-mission-control.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_parallel_mission_control_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g008_parallel_mission_control_ts_no_args-original-4k8WIO",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_parallel_mission_control_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g008_parallel_mission_control_ts_no_args-package-X5vYEX",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/parallel-mission-control.ts:no_args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/parallel-mission-control.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 297,
+                "anchor": "scripts/parallel-mission-control.ts:297",
+                "text": "export function evaluateParallelMissionEvidenceIntegration("
+              },
+              {
+                "line": 399,
+                "anchor": "scripts/parallel-mission-control.ts:399",
+                "text": "export function buildParallelMissionPlan(input: {"
+              },
+              {
+                "line": 454,
+                "anchor": "scripts/parallel-mission-control.ts:454",
+                "text": "export function buildPrTopology(input: {"
+              },
+              {
+                "line": 477,
+                "anchor": "scripts/parallel-mission-control.ts:477",
+                "text": "export function validatePrTopologyForReleaseGate(topology: PrTopology): {"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/parallel-mission-control.ts",
+                "to": "scripts/parallel-mission-control.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/parallel-mission-control.ts",
+                "to": "scripts/parallel-mission-control.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/parallel-mission-control.js",
+                "to": "scripts/parallel-mission-control.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/parallel-mission-control.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/parse-bmad-audit-result.ts",
+      "entryId": "parse-bmad-audit-result",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/parse-bmad-audit-result.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/parse-bmad-audit-result.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/parse-bmad-audit-result.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_parse_bmad_audit_result_ts_no_args",
+          "originalEntryPoint": "scripts/parse-bmad-audit-result.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/parse-bmad-audit-result.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/parse-bmad-audit-result.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/parse-bmad-audit-result.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_parse_bmad_audit_result_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g008_parse_bmad_audit_result_ts_no_args-original-XWdZpi",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_parse_bmad_audit_result_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g008_parse_bmad_audit_result_ts_no_args-package-fpjzlc",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/parse-bmad-audit-result.ts:no_args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/parse-bmad-audit-result.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 55,
+                "anchor": "scripts/parse-bmad-audit-result.ts:55",
+                "text": "export function parseBmadAuditResult(input: string): ParseBmadAuditResultInput {"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/parse-bmad-audit-result.ts",
+                "to": "scripts/parse-bmad-audit-result.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/parse-bmad-audit-result.ts",
+                "to": "scripts/parse-bmad-audit-result.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/parse-bmad-audit-result.js",
+                "to": "scripts/parse-bmad-audit-result.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/parse-bmad-audit-result.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/party-mode-gate-check.ts",
+      "entryId": "party-mode-gate-check",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-gate-check.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/party-mode-gate-check.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/party-mode-gate-check.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 1,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 1,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_party_mode_gate_check_ts_no_args",
+          "originalEntryPoint": "scripts/party-mode-gate-check.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/party-mode-gate-check.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-gate-check.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/party-mode-gate-check.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_party_mode_gate_check_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g008_party_mode_gate_check_ts_no_args-original-DTARJK",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_party_mode_gate_check_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g008_party_mode_gate_check_ts_no_args-package-RU8ynV",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "Missing required --session-key or --meta-path\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "Missing required --session-key or --meta-path"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/party-mode-gate-check.ts:no_args",
+            "originalReplayArtifactHash": "sha256:05de48181e748b71d6a638d373d64247f096c79d75e0bbd4a448cb23cb6f26b8",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/party-mode-gate-check.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 5,
+                "anchor": "scripts/party-mode-gate-check.ts:5",
+                "text": "if (require.main === module) {"
+              },
+              {
+                "line": 7,
+                "anchor": "scripts/party-mode-gate-check.ts:7",
+                "text": "const result = runCli(process.argv.slice(2));"
+              },
+              {
+                "line": 8,
+                "anchor": "scripts/party-mode-gate-check.ts:8",
+                "text": "process.stdout.write(`${JSON.stringify(result, null, 2)}\\n`);"
+              },
+              {
+                "line": 11,
+                "anchor": "scripts/party-mode-gate-check.ts:11",
+                "text": "process.stderr.write(`${message}\\n`);"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/party-mode-gate-check.ts",
+                "to": "scripts/party-mode-gate-check.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-gate-check.ts",
+                "to": "scripts/party-mode-gate-check.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/party-mode-gate-check.js",
+                "to": "scripts/party-mode-gate-check.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/party-mode-gate-check.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/ralph-method/pathing.ts",
+      "entryId": "ralph-method-pathing-ts",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/pathing.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ralph-method/pathing.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/ralph-method/pathing.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_ralph_method_pathing_ts_no_args",
+          "originalEntryPoint": "scripts/ralph-method/pathing.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/ralph-method/pathing.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/pathing.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/ralph-method/pathing.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_ralph_method_pathing_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g008_ralph_method_pathing_ts_no_args-original-yd8beW",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_ralph_method_pathing_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g008_ralph_method_pathing_ts_no_args-package-7gJ3v2",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/ralph-method/pathing.ts:no_args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/ralph-method/pathing.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 1,
+                "anchor": "scripts/ralph-method/pathing.ts:1",
+                "text": "export * from '../../packages/ralph-method/src/pathing';"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/ralph-method/pathing.ts",
+                "to": "scripts/ralph-method/pathing.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/pathing.ts",
+                "to": "scripts/ralph-method/pathing.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ralph-method/pathing.js",
+                "to": "scripts/ralph-method/pathing.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/ralph-method/pathing.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,2080 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-wave-4-1-owner-initial-behavior-matrix/v1",
+  "waveId": "main-agent-runtime-migration-wave-4.1",
+  "ownerTaskId": "G005",
+  "generatedAt": "2026-06-20T10:27:54.676Z",
+  "artifactSuffix": "g005_init_probe",
+  "timeoutMs": 30000,
+  "coverageDecision": "passed_full_original_behavior_coverage",
+  "eligibleOwnerRowCount": 12,
+  "selectedRowCount": 1,
+  "matrixRowCount": 1,
+  "scenarioCount": 10,
+  "fullCoverageStillRequired": false,
+  "rows": [
+    {
+      "originalPath": "scripts/init-to-root.js",
+      "entryId": "init-to-root-js",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/init-to-root.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/init-to-root.js:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 6,
+        "envKeyCount": 4,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 10,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 6,
+        "coveredEnvKeyCount": 4,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 10,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [
+          "--agent",
+          "--full",
+          "--no-package-json",
+          "--with-mcp",
+          "--with-package-json"
+        ],
+        "discoveredEnvKeys": [
+          "BMAD_SKIP_CONSUMER_MCP_INSTALL",
+          "INIT_CWD",
+          "NODE_ENV",
+          "VITEST"
+        ],
+        "requiredArgumentCombinations": [
+          "<no-args>",
+          "--agent <source-derived-safe-value>",
+          "--full <present>",
+          "--no-package-json <present>",
+          "--with-mcp <present>",
+          "--with-package-json <present>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>",
+          "--agent <source-derived-safe-value>",
+          "--full <present>",
+          "--no-package-json <present>",
+          "--with-mcp <present>",
+          "--with-package-json <present>"
+        ],
+        "coveredEnvKeys": [
+          "BMAD_SKIP_CONSUMER_MCP_INSTALL",
+          "INIT_CWD",
+          "NODE_ENV",
+          "VITEST"
+        ],
+        "scenarioDefinitionCount": 10,
+        "coveredScenarioDefinitionIds": [
+          "no_args",
+          "flag_agent",
+          "flag_full",
+          "flag_no_package_json",
+          "flag_with_mcp",
+          "flag_with_package_json",
+          "env_bmad_skip_consumer_mcp_install",
+          "env_init_cwd",
+          "env_node_env",
+          "env_vitest"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g005_init_to_root_js_no_args",
+          "originalEntryPoint": "scripts/init-to-root.js",
+          "originalEntryCommand": "node scripts/init-to-root.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/init-to-root.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g005_init_to_root_js_no_args_original_fixture_root",
+              "path": "<tmp>/g005_init_to_root_js_no_args-original-zHPQAy",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_init_to_root_js_no_args_package_fixture_root",
+              "path": "<tmp>/g005_init_to_root_js_no_args-package-gCVBW6",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "BMAD-Speckit-SDD-Flow init: deploy to D:\\Dev\\BMAD-Speckit-SDD-Flow  [agent=cursor]\nCopy _bmad -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\nForce-sync _bmad/runtime/hooks/party-mode-read-current-session.cjs\nSync _bmad\\commands -> .cursor/commands\nSync _bmad\\speckit\\commands -> .cursor/commands\nSync _bmad\\cursor\\rules -> .cursor/rules\nSync _bmad\\shared -> .cursor/shared\nSync _bmad\\skills -> .cursor/skills\nSync _bmad\\cursor\\skills -> .cursor/skills\nSync _bmad\\i18n -> .cursor/i18n\nSync _bmad\\bmm\\workflows\\1-analysis\\bmad-create-product-brief -> .cursor\\skills\\bmad-create-product-brief\nSync _bmad\\bmm\\workflows\\1-analysis\\bmad-product-brief-preview -> .cursor\\skills\\bmad-product-brief-preview\nSync _bmad\\bmm\\workflows\\1-analysis\\research\\bmad-domain-research -> .cursor\\skills\\bmad-domain-research\nSync _bmad\\bmm\\workflows\\1-analysis\\research\\bmad-market-research -> .cursor\\skills\\bmad-market-research\nSync _bmad\\bmm\\workflows\\1-analysis\\research\\bmad-technical-research -> .cursor\\skills\\bmad-technical-research\nSync _bmad\\bmm\\workflows\\2-plan-workflows\\bmad-create-prd -> .cursor\\skills\\bmad-create-prd\nSync _bmad\\bmm\\workflows\\2-plan-workflows\\bmad-create-ux-design -> .cursor\\skills\\bmad-create-ux-design\nSync _bmad\\bmm\\workflows\\2-plan-workflows\\bmad-edit-prd -> .cursor\\skills\\bmad-edit-prd\nSync _bmad\\bmm\\workflows\\2-plan-workflows\\bmad-validate-prd -> .cursor\\skills\\bmad-validate-prd\nSync _bmad\\bmm\\workflows\\3-solutioning\\bmad-check-implementation-readiness -> .cursor\\skills\\bmad-check-implementation-readiness\nSync _bmad\\bmm\\workflows\\3-solutioning\\bmad-create-architecture -> .cursor\\skills\\bmad-create-architecture\nSync _bmad\\bmm\\workflows\\3-solutioning\\bmad-create-epics-and-stories -> .cursor\\skills\\bmad-create-epics-and-stories\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-code-review -> .cursor\\skills\\bmad-code-review\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-correct-course -> .cursor\\skills\\bmad-correct-course\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-create-story -> .cursor\\skills\\bmad-create-story\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-dev-story -> .cursor\\skills\\bmad-dev-story\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-retrospective -> .cursor\\skills\\bmad-retrospective\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-sprint-planning -> .cursor\\skills\\bmad-sprint-planning\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-sprint-status -> .cursor\\skills\\bmad-sprint-status\nSync _bmad\\bmm\\workflows\\bmad-document-project -> .cursor\\skills\\bmad-document-project\nSync _bmad\\bmm\\workflows\\bmad-generate-project-context -> .cursor\\skills\\bmad-generate-project-context\nSync _bmad\\bmm\\workflows\\bmad-qa-generate-e2e-tests -> .cursor\\skills\\bmad-qa-generate-e2e-tests\nSync _bmad\\bmm\\workflows\\bmad-quick-flow\\bmad-quick-dev -> .cursor\\skills\\bmad-quick-dev\nSync _bmad\\bmm\\workflows\\bmad-quick-flow\\bmad-quick-dev-new-preview -> .cursor\\skills\\bmad-quick-dev-new-preview\nSync _bmad\\bmm\\workflows\\bmad-quick-flow\\bmad-quick-spec -> .cursor\\skills\\bmad-quick-spec\nSync _bmad\\bmm\\agents\\bmad-agent-analyst -> .cursor\\skills\\bmad-agent-analyst\nSync _bmad\\bmm\\agents\\bmad-agent-architect -> .cursor\\skills\\bmad-agent-architect\nSync _bmad\\bmm\\agents\\bmad-agent-dev -> .cursor\\skills\\bmad-agent-dev\nSync _bmad\\bmm\\agents\\bmad-agent-pm -> .cursor\\skills\\bmad-agent-pm\nSync _bmad\\bmm\\agents\\bmad-agent-qa -> .cursor\\skills\\bmad-agent-qa\nSync _bmad\\bmm\\agents\\bmad-agent-quick-flow-solo-dev -> .cursor\\skills\\bmad-agent-quick-flow-solo-dev\nSync _bmad\\bmm\\agents\\bmad-agent-sm -> .cursor\\skills\\bmad-agent-sm\nSync _bmad\\bmm\\agents\\bmad-agent-tech-writer -> .cursor\\skills\\bmad-agent-tech-writer\nSync _bmad\\bmm\\agents\\bmad-agent-ux-designer -> .cursor\\skills\\bmad-agent-ux-designer\nSync _bmad\\core\\tasks\\bmad-create-prd -> .cursor\\skills\\bmad-create-prd\nSync _bmad\\core\\skills\\bmad-advanced-elicitation -> .cursor\\skills\\bmad-advanced-elicitation\nSync _bmad\\core\\skills\\bmad-brainstorming -> .cursor\\skills\\bmad-brainstorming\nSync _bmad\\core\\skills\\bmad-distillator -> .cursor\\skills\\bmad-distillator\nSync _bmad\\core\\skills\\bmad-editorial-review-prose -> .cursor\\skills\\bmad-editorial-review-prose\nSync _bmad\\core\\skills\\bmad-editorial-review-structure -> .cursor\\skills\\bmad-editorial-review-structure\nSync _bmad\\core\\skills\\bmad-help -> .cursor\\skills\\bmad-help\nSync _bmad\\core\\skills\\bmad-index-docs -> .cursor\\skills\\bmad-index-docs\nSync _bmad\\core\\skills\\bmad-init -> .cursor\\skills\\bmad-init\nSync _bmad\\core\\skills\\bmad-party-mode -> .cursor\\skills\\bmad-party-mode\nSync _bmad\\core\\skills\\bmad-review-adversarial-general -> .cursor\\skills\\bmad-review-adversarial-general\nSync _bmad\\core\\skills\\bmad-review-edge-case-hunter -> .cursor\\skills\\bmad-review-edge-case-hunter\nSync _bmad\\core\\skills\\bmad-shard-doc -> .cursor\\skills\\bmad-shard-doc\nRe-apply Cursor skill overrides _bmad\\cursor\\skills -> .cursor/skills\nSync _bmad/_config/code-reviewer-config.yaml -> .cursor/agents/\nSync _bmad/cursor/agents/ -> .cursor/agents/\nSync _bmad\\runtime\\hooks -> .cursor\\hooks\nForce-sync .cursor/hooks/party-mode-read-current-session.cjs\nSync _bmad\\cursor\\hooks\\emit-runtime-policy-cli.cjs -> .cursor\\hooks\\emit-runtime-policy-cli.cjs\nSync _bmad\\cursor\\hooks\\runtime-policy-inject.cjs -> .cursor\\hooks\\runtime-policy-inject.cjs\nSync _bmad\\cursor\\hooks\\post-tool-use.cjs -> .cursor\\hooks\\post-tool-use.cjs\nSync _bmad\\cursor\\hooks\\runtime-dashboard-session-start.cjs -> .cursor\\hooks\\runtime-dashboard-session-start.cjs\nSync _bmad\\runtime\\hooks\\pre-continue-check.cjs -> .cursor\\hooks\\pre-continue-check.cjs\nSync _bmad\\cursor\\hooks\\subagent-result-summary.cjs -> .cursor\\hooks\\subagent-result-summary.cjs\nSync _bmad\\_config\\architecture-gates.yaml -> _bmad\\_config\\architecture-gates.yaml\nSync _bmad\\_config\\continue-gate-routing.yaml -> _bmad\\_config\\continue-gate-routing.yaml\nWrote D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\runtime\\context\\bootstrap.json\nWrote install surface manifest + install-state snapshot metadata to _bmad-output/config/.\nDone. Copied 1 dirs, 3932 files.\nVerify with: _bmad/speckit/scripts/powershell/check-prerequisites.ps1\n",
+          "expectedStderr": "Target exists, merging: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\n",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "Target exists, merging: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/init-to-root.js:no_args",
+            "originalReplayArtifactHash": "sha256:3c07470ca436470685c2b6346090e50aab30cdf405147090bd6c95996e4597d6",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/init-to-root.js:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 44,
+                "anchor": "scripts/init-to-root.js:44",
+                "text": "const args = process.argv.slice(2);"
+              },
+              {
+                "line": 113,
+                "anchor": "scripts/init-to-root.js:113",
+                "text": "console.log('Sync', path.relative(targetDir, src), '->', dest);"
+              },
+              {
+                "line": 124,
+                "anchor": "scripts/init-to-root.js:124",
+                "text": "console.log('Re-apply Cursor skill overrides', path.relative(targetDir, cursorSkillOverridesSrc), '-> .cursor/skills');"
+              },
+              {
+                "line": 133,
+                "anchor": "scripts/init-to-root.js:133",
+                "text": "console.log('Sync _bmad/_config/code-reviewer-config.yaml -> .cursor/agents/');"
+              },
+              {
+                "line": 141,
+                "anchor": "scripts/init-to-root.js:141",
+                "text": "console.log('Sync _bmad/cursor/agents/ -> .cursor/agents/');"
+              },
+              {
+                "line": 169,
+                "anchor": "scripts/init-to-root.js:169",
+                "text": "console.log('Sync', path.relative(targetDir, src), '->', dest);"
+              },
+              {
+                "line": 196,
+                "anchor": "scripts/init-to-root.js:196",
+                "text": "console.log('Merged global ~/.claude/settings.json hooks into project settings');"
+              },
+              {
+                "line": 199,
+                "anchor": "scripts/init-to-root.js:199",
+                "text": "console.warn('Failed to read global settings, using BMAD defaults:', e.message);"
+              },
+              {
+                "line": 203,
+                "anchor": "scripts/init-to-root.js:203",
+                "text": "console.log('Sync _bmad/claude/settings.json -> .claude/settings.json');"
+              },
+              {
+                "line": 212,
+                "anchor": "scripts/init-to-root.js:212",
+                "text": "console.log('Generated CLAUDE.md from template');"
+              },
+              {
+                "line": 239,
+                "anchor": "scripts/init-to-root.js:239",
+                "text": "console.log('Sync', path.relative(targetDir, src), '->', dest);"
+              },
+              {
+                "line": 288,
+                "anchor": "scripts/init-to-root.js:288",
+                "text": "console.error("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/init-to-root.js",
+                "to": "scripts/init-to-root.js"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+                "to": "scripts/init-to-root.js"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/init-to-root.js",
+                "to": "scripts/init-to-root.js"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/init-to-root.js",
+            "entryPointCount": 1,
+            "argCombinationCount": 6,
+            "envKeyCount": 4,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 6,
+            "coveredEnvKeyCount": 4,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--agent",
+              "--full",
+              "--no-package-json",
+              "--with-mcp",
+              "--with-package-json"
+            ],
+            "discoveredEnvKeys": [
+              "BMAD_SKIP_CONSUMER_MCP_INSTALL",
+              "INIT_CWD",
+              "NODE_ENV",
+              "VITEST"
+            ],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--agent <source-derived-safe-value>",
+              "--full <present>",
+              "--no-package-json <present>",
+              "--with-mcp <present>",
+              "--with-package-json <present>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--agent <source-derived-safe-value>",
+              "--full <present>",
+              "--no-package-json <present>",
+              "--with-mcp <present>",
+              "--with-package-json <present>"
+            ],
+            "coveredEnvKeys": [
+              "BMAD_SKIP_CONSUMER_MCP_INSTALL",
+              "INIT_CWD",
+              "NODE_ENV",
+              "VITEST"
+            ],
+            "scenarioDefinitionCount": 10,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_agent",
+              "flag_full",
+              "flag_no_package_json",
+              "flag_with_mcp",
+              "flag_with_package_json",
+              "env_bmad_skip_consumer_mcp_install",
+              "env_init_cwd",
+              "env_node_env",
+              "env_vitest"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g005_init_to_root_js_flag_agent",
+          "originalEntryPoint": "scripts/init-to-root.js",
+          "originalEntryCommand": "node scripts/init-to-root.js --agent source-derived-agent",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/init-to-root.js --agent source-derived-agent",
+          "argumentCombination": "--agent <source-derived-safe-value>",
+          "args": [
+            "--agent",
+            "source-derived-agent"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g005_init_to_root_js_flag_agent_original_fixture_root",
+              "path": "<tmp>/g005_init_to_root_js_flag_agent-original-17SkVa",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_init_to_root_js_flag_agent_package_fixture_root",
+              "path": "<tmp>/g005_init_to_root_js_flag_agent-package-MMf9sq",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "Unsupported --agent value: source-derived-agent. Valid: cursor, claude-code, codex, cursor-agent, claude\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "Unsupported --agent value: source-derived-agent. Valid: cursor, claude-code, codex, cursor-agent, claude"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/init-to-root.js:flag_agent",
+            "originalReplayArtifactHash": "sha256:9740c3a6476eeab34c7b939295eb252867a66101d5bffdc827c0de3c5c76a41d",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/init-to-root.js:flag_agent",
+            "sourceLineAnchors": [
+              {
+                "line": 44,
+                "anchor": "scripts/init-to-root.js:44",
+                "text": "const args = process.argv.slice(2);"
+              },
+              {
+                "line": 113,
+                "anchor": "scripts/init-to-root.js:113",
+                "text": "console.log('Sync', path.relative(targetDir, src), '->', dest);"
+              },
+              {
+                "line": 124,
+                "anchor": "scripts/init-to-root.js:124",
+                "text": "console.log('Re-apply Cursor skill overrides', path.relative(targetDir, cursorSkillOverridesSrc), '-> .cursor/skills');"
+              },
+              {
+                "line": 133,
+                "anchor": "scripts/init-to-root.js:133",
+                "text": "console.log('Sync _bmad/_config/code-reviewer-config.yaml -> .cursor/agents/');"
+              },
+              {
+                "line": 141,
+                "anchor": "scripts/init-to-root.js:141",
+                "text": "console.log('Sync _bmad/cursor/agents/ -> .cursor/agents/');"
+              },
+              {
+                "line": 169,
+                "anchor": "scripts/init-to-root.js:169",
+                "text": "console.log('Sync', path.relative(targetDir, src), '->', dest);"
+              },
+              {
+                "line": 196,
+                "anchor": "scripts/init-to-root.js:196",
+                "text": "console.log('Merged global ~/.claude/settings.json hooks into project settings');"
+              },
+              {
+                "line": 199,
+                "anchor": "scripts/init-to-root.js:199",
+                "text": "console.warn('Failed to read global settings, using BMAD defaults:', e.message);"
+              },
+              {
+                "line": 203,
+                "anchor": "scripts/init-to-root.js:203",
+                "text": "console.log('Sync _bmad/claude/settings.json -> .claude/settings.json');"
+              },
+              {
+                "line": 212,
+                "anchor": "scripts/init-to-root.js:212",
+                "text": "console.log('Generated CLAUDE.md from template');"
+              },
+              {
+                "line": 239,
+                "anchor": "scripts/init-to-root.js:239",
+                "text": "console.log('Sync', path.relative(targetDir, src), '->', dest);"
+              },
+              {
+                "line": 288,
+                "anchor": "scripts/init-to-root.js:288",
+                "text": "console.error("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/init-to-root.js",
+                "to": "scripts/init-to-root.js"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+                "to": "scripts/init-to-root.js"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/init-to-root.js",
+                "to": "scripts/init-to-root.js"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/init-to-root.js",
+            "entryPointCount": 1,
+            "argCombinationCount": 6,
+            "envKeyCount": 4,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 6,
+            "coveredEnvKeyCount": 4,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--agent",
+              "--full",
+              "--no-package-json",
+              "--with-mcp",
+              "--with-package-json"
+            ],
+            "discoveredEnvKeys": [
+              "BMAD_SKIP_CONSUMER_MCP_INSTALL",
+              "INIT_CWD",
+              "NODE_ENV",
+              "VITEST"
+            ],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--agent <source-derived-safe-value>",
+              "--full <present>",
+              "--no-package-json <present>",
+              "--with-mcp <present>",
+              "--with-package-json <present>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--agent <source-derived-safe-value>",
+              "--full <present>",
+              "--no-package-json <present>",
+              "--with-mcp <present>",
+              "--with-package-json <present>"
+            ],
+            "coveredEnvKeys": [
+              "BMAD_SKIP_CONSUMER_MCP_INSTALL",
+              "INIT_CWD",
+              "NODE_ENV",
+              "VITEST"
+            ],
+            "scenarioDefinitionCount": 10,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_agent",
+              "flag_full",
+              "flag_no_package_json",
+              "flag_with_mcp",
+              "flag_with_package_json",
+              "env_bmad_skip_consumer_mcp_install",
+              "env_init_cwd",
+              "env_node_env",
+              "env_vitest"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g005_init_to_root_js_flag_full",
+          "originalEntryPoint": "scripts/init-to-root.js",
+          "originalEntryCommand": "node scripts/init-to-root.js --full",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/init-to-root.js --full",
+          "argumentCombination": "--full <present>",
+          "args": [
+            "--full"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g005_init_to_root_js_flag_full_original_fixture_root",
+              "path": "<tmp>/g005_init_to_root_js_flag_full-original-qc3uEm",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_init_to_root_js_flag_full_package_fixture_root",
+              "path": "<tmp>/g005_init_to_root_js_flag_full-package-tPqR6X",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "BMAD-Speckit-SDD-Flow init: deploy to D:\\Dev\\BMAD-Speckit-SDD-Flow (full mode) [agent=cursor]\nCopy _bmad -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\nForce-sync _bmad/runtime/hooks/party-mode-read-current-session.cjs\nSync _bmad\\commands -> .cursor/commands\nSync _bmad\\speckit\\commands -> .cursor/commands\nSync _bmad\\cursor\\rules -> .cursor/rules\nSync _bmad\\shared -> .cursor/shared\nSync _bmad\\skills -> .cursor/skills\nSync _bmad\\cursor\\skills -> .cursor/skills\nSync _bmad\\i18n -> .cursor/i18n\nSync _bmad\\bmm\\workflows\\1-analysis\\bmad-create-product-brief -> .cursor\\skills\\bmad-create-product-brief\nSync _bmad\\bmm\\workflows\\1-analysis\\bmad-product-brief-preview -> .cursor\\skills\\bmad-product-brief-preview\nSync _bmad\\bmm\\workflows\\1-analysis\\research\\bmad-domain-research -> .cursor\\skills\\bmad-domain-research\nSync _bmad\\bmm\\workflows\\1-analysis\\research\\bmad-market-research -> .cursor\\skills\\bmad-market-research\nSync _bmad\\bmm\\workflows\\1-analysis\\research\\bmad-technical-research -> .cursor\\skills\\bmad-technical-research\nSync _bmad\\bmm\\workflows\\2-plan-workflows\\bmad-create-prd -> .cursor\\skills\\bmad-create-prd\nSync _bmad\\bmm\\workflows\\2-plan-workflows\\bmad-create-ux-design -> .cursor\\skills\\bmad-create-ux-design\nSync _bmad\\bmm\\workflows\\2-plan-workflows\\bmad-edit-prd -> .cursor\\skills\\bmad-edit-prd\nSync _bmad\\bmm\\workflows\\2-plan-workflows\\bmad-validate-prd -> .cursor\\skills\\bmad-validate-prd\nSync _bmad\\bmm\\workflows\\3-solutioning\\bmad-check-implementation-readiness -> .cursor\\skills\\bmad-check-implementation-readiness\nSync _bmad\\bmm\\workflows\\3-solutioning\\bmad-create-architecture -> .cursor\\skills\\bmad-create-architecture\nSync _bmad\\bmm\\workflows\\3-solutioning\\bmad-create-epics-and-stories -> .cursor\\skills\\bmad-create-epics-and-stories\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-code-review -> .cursor\\skills\\bmad-code-review\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-correct-course -> .cursor\\skills\\bmad-correct-course\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-create-story -> .cursor\\skills\\bmad-create-story\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-dev-story -> .cursor\\skills\\bmad-dev-story\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-retrospective -> .cursor\\skills\\bmad-retrospective\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-sprint-planning -> .cursor\\skills\\bmad-sprint-planning\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-sprint-status -> .cursor\\skills\\bmad-sprint-status\nSync _bmad\\bmm\\workflows\\bmad-document-project -> .cursor\\skills\\bmad-document-project\nSync _bmad\\bmm\\workflows\\bmad-generate-project-context -> .cursor\\skills\\bmad-generate-project-context\nSync _bmad\\bmm\\workflows\\bmad-qa-generate-e2e-tests -> .cursor\\skills\\bmad-qa-generate-e2e-tests\nSync _bmad\\bmm\\workflows\\bmad-quick-flow\\bmad-quick-dev -> .cursor\\skills\\bmad-quick-dev\nSync _bmad\\bmm\\workflows\\bmad-quick-flow\\bmad-quick-dev-new-preview -> .cursor\\skills\\bmad-quick-dev-new-preview\nSync _bmad\\bmm\\workflows\\bmad-quick-flow\\bmad-quick-spec -> .cursor\\skills\\bmad-quick-spec\nSync _bmad\\bmm\\agents\\bmad-agent-analyst -> .cursor\\skills\\bmad-agent-analyst\nSync _bmad\\bmm\\agents\\bmad-agent-architect -> .cursor\\skills\\bmad-agent-architect\nSync _bmad\\bmm\\agents\\bmad-agent-dev -> .cursor\\skills\\bmad-agent-dev\nSync _bmad\\bmm\\agents\\bmad-agent-pm -> .cursor\\skills\\bmad-agent-pm\nSync _bmad\\bmm\\agents\\bmad-agent-qa -> .cursor\\skills\\bmad-agent-qa\nSync _bmad\\bmm\\agents\\bmad-agent-quick-flow-solo-dev -> .cursor\\skills\\bmad-agent-quick-flow-solo-dev\nSync _bmad\\bmm\\agents\\bmad-agent-sm -> .cursor\\skills\\bmad-agent-sm\nSync _bmad\\bmm\\agents\\bmad-agent-tech-writer -> .cursor\\skills\\bmad-agent-tech-writer\nSync _bmad\\bmm\\agents\\bmad-agent-ux-designer -> .cursor\\skills\\bmad-agent-ux-designer\nSync _bmad\\core\\tasks\\bmad-create-prd -> .cursor\\skills\\bmad-create-prd\nSync _bmad\\core\\skills\\bmad-advanced-elicitation -> .cursor\\skills\\bmad-advanced-elicitation\nSync _bmad\\core\\skills\\bmad-brainstorming -> .cursor\\skills\\bmad-brainstorming\nSync _bmad\\core\\skills\\bmad-distillator -> .cursor\\skills\\bmad-distillator\nSync _bmad\\core\\skills\\bmad-editorial-review-prose -> .cursor\\skills\\bmad-editorial-review-prose\nSync _bmad\\core\\skills\\bmad-editorial-review-structure -> .cursor\\skills\\bmad-editorial-review-structure\nSync _bmad\\core\\skills\\bmad-help -> .cursor\\skills\\bmad-help\nSync _bmad\\core\\skills\\bmad-index-docs -> .cursor\\skills\\bmad-index-docs\nSync _bmad\\core\\skills\\bmad-init -> .cursor\\skills\\bmad-init\nSync _bmad\\core\\skills\\bmad-party-mode -> .cursor\\skills\\bmad-party-mode\nSync _bmad\\core\\skills\\bmad-review-adversarial-general -> .cursor\\skills\\bmad-review-adversarial-general\nSync _bmad\\core\\skills\\bmad-review-edge-case-hunter -> .cursor\\skills\\bmad-review-edge-case-hunter\nSync _bmad\\core\\skills\\bmad-shard-doc -> .cursor\\skills\\bmad-shard-doc\nRe-apply Cursor skill overrides _bmad\\cursor\\skills -> .cursor/skills\nSync _bmad/_config/code-reviewer-config.yaml -> .cursor/agents/\nSync _bmad/cursor/agents/ -> .cursor/agents/\nSync _bmad\\runtime\\hooks -> .cursor\\hooks\nForce-sync .cursor/hooks/party-mode-read-current-session.cjs\nSync _bmad\\cursor\\hooks\\emit-runtime-policy-cli.cjs -> .cursor\\hooks\\emit-runtime-policy-cli.cjs\nSync _bmad\\cursor\\hooks\\runtime-policy-inject.cjs -> .cursor\\hooks\\runtime-policy-inject.cjs\nSync _bmad\\cursor\\hooks\\post-tool-use.cjs -> .cursor\\hooks\\post-tool-use.cjs\nSync _bmad\\cursor\\hooks\\runtime-dashboard-session-start.cjs -> .cursor\\hooks\\runtime-dashboard-session-start.cjs\nSync _bmad\\runtime\\hooks\\pre-continue-check.cjs -> .cursor\\hooks\\pre-continue-check.cjs\nSync _bmad\\cursor\\hooks\\subagent-result-summary.cjs -> .cursor\\hooks\\subagent-result-summary.cjs\nSync _bmad\\_config\\architecture-gates.yaml -> _bmad\\_config\\architecture-gates.yaml\nSync _bmad\\_config\\continue-gate-routing.yaml -> _bmad\\_config\\continue-gate-routing.yaml\nWrote D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\runtime\\context\\bootstrap.json\nWrote install surface manifest + install-state snapshot metadata to _bmad-output/config/.\nDone. Copied 1 dirs, 3932 files.\nVerify with: _bmad/speckit/scripts/powershell/check-prerequisites.ps1\n",
+          "expectedStderr": "Target exists, merging: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\n",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "Target exists, merging: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/init-to-root.js:flag_full",
+            "originalReplayArtifactHash": "sha256:ed3ef5bbe94670b833a17d082050f0dcef85e88ce7c02ffa0554c6ffea154c3f",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/init-to-root.js:flag_full",
+            "sourceLineAnchors": [
+              {
+                "line": 44,
+                "anchor": "scripts/init-to-root.js:44",
+                "text": "const args = process.argv.slice(2);"
+              },
+              {
+                "line": 113,
+                "anchor": "scripts/init-to-root.js:113",
+                "text": "console.log('Sync', path.relative(targetDir, src), '->', dest);"
+              },
+              {
+                "line": 124,
+                "anchor": "scripts/init-to-root.js:124",
+                "text": "console.log('Re-apply Cursor skill overrides', path.relative(targetDir, cursorSkillOverridesSrc), '-> .cursor/skills');"
+              },
+              {
+                "line": 133,
+                "anchor": "scripts/init-to-root.js:133",
+                "text": "console.log('Sync _bmad/_config/code-reviewer-config.yaml -> .cursor/agents/');"
+              },
+              {
+                "line": 141,
+                "anchor": "scripts/init-to-root.js:141",
+                "text": "console.log('Sync _bmad/cursor/agents/ -> .cursor/agents/');"
+              },
+              {
+                "line": 169,
+                "anchor": "scripts/init-to-root.js:169",
+                "text": "console.log('Sync', path.relative(targetDir, src), '->', dest);"
+              },
+              {
+                "line": 196,
+                "anchor": "scripts/init-to-root.js:196",
+                "text": "console.log('Merged global ~/.claude/settings.json hooks into project settings');"
+              },
+              {
+                "line": 199,
+                "anchor": "scripts/init-to-root.js:199",
+                "text": "console.warn('Failed to read global settings, using BMAD defaults:', e.message);"
+              },
+              {
+                "line": 203,
+                "anchor": "scripts/init-to-root.js:203",
+                "text": "console.log('Sync _bmad/claude/settings.json -> .claude/settings.json');"
+              },
+              {
+                "line": 212,
+                "anchor": "scripts/init-to-root.js:212",
+                "text": "console.log('Generated CLAUDE.md from template');"
+              },
+              {
+                "line": 239,
+                "anchor": "scripts/init-to-root.js:239",
+                "text": "console.log('Sync', path.relative(targetDir, src), '->', dest);"
+              },
+              {
+                "line": 288,
+                "anchor": "scripts/init-to-root.js:288",
+                "text": "console.error("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/init-to-root.js",
+                "to": "scripts/init-to-root.js"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+                "to": "scripts/init-to-root.js"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/init-to-root.js",
+                "to": "scripts/init-to-root.js"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/init-to-root.js",
+            "entryPointCount": 1,
+            "argCombinationCount": 6,
+            "envKeyCount": 4,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 6,
+            "coveredEnvKeyCount": 4,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--agent",
+              "--full",
+              "--no-package-json",
+              "--with-mcp",
+              "--with-package-json"
+            ],
+            "discoveredEnvKeys": [
+              "BMAD_SKIP_CONSUMER_MCP_INSTALL",
+              "INIT_CWD",
+              "NODE_ENV",
+              "VITEST"
+            ],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--agent <source-derived-safe-value>",
+              "--full <present>",
+              "--no-package-json <present>",
+              "--with-mcp <present>",
+              "--with-package-json <present>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--agent <source-derived-safe-value>",
+              "--full <present>",
+              "--no-package-json <present>",
+              "--with-mcp <present>",
+              "--with-package-json <present>"
+            ],
+            "coveredEnvKeys": [
+              "BMAD_SKIP_CONSUMER_MCP_INSTALL",
+              "INIT_CWD",
+              "NODE_ENV",
+              "VITEST"
+            ],
+            "scenarioDefinitionCount": 10,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_agent",
+              "flag_full",
+              "flag_no_package_json",
+              "flag_with_mcp",
+              "flag_with_package_json",
+              "env_bmad_skip_consumer_mcp_install",
+              "env_init_cwd",
+              "env_node_env",
+              "env_vitest"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g005_init_to_root_js_flag_no_package_json",
+          "originalEntryPoint": "scripts/init-to-root.js",
+          "originalEntryCommand": "node scripts/init-to-root.js --no-package-json",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/init-to-root.js --no-package-json",
+          "argumentCombination": "--no-package-json <present>",
+          "args": [
+            "--no-package-json"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g005_init_to_root_js_flag_no_package_json_original_fixture_root",
+              "path": "<tmp>/g005_init_to_root_js_flag_no_package_json-original-aWk9qU",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_init_to_root_js_flag_no_package_json_package_fixture_root",
+              "path": "<tmp>/g005_init_to_root_js_flag_no_package_json-package-m1pT41",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "BMAD-Speckit-SDD-Flow init: deploy to D:\\Dev\\BMAD-Speckit-SDD-Flow  [agent=cursor]\nCopy _bmad -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\nForce-sync _bmad/runtime/hooks/party-mode-read-current-session.cjs\nSync _bmad\\commands -> .cursor/commands\nSync _bmad\\speckit\\commands -> .cursor/commands\nSync _bmad\\cursor\\rules -> .cursor/rules\nSync _bmad\\shared -> .cursor/shared\nSync _bmad\\skills -> .cursor/skills\nSync _bmad\\cursor\\skills -> .cursor/skills\nSync _bmad\\i18n -> .cursor/i18n\nSync _bmad\\bmm\\workflows\\1-analysis\\bmad-create-product-brief -> .cursor\\skills\\bmad-create-product-brief\nSync _bmad\\bmm\\workflows\\1-analysis\\bmad-product-brief-preview -> .cursor\\skills\\bmad-product-brief-preview\nSync _bmad\\bmm\\workflows\\1-analysis\\research\\bmad-domain-research -> .cursor\\skills\\bmad-domain-research\nSync _bmad\\bmm\\workflows\\1-analysis\\research\\bmad-market-research -> .cursor\\skills\\bmad-market-research\nSync _bmad\\bmm\\workflows\\1-analysis\\research\\bmad-technical-research -> .cursor\\skills\\bmad-technical-research\nSync _bmad\\bmm\\workflows\\2-plan-workflows\\bmad-create-prd -> .cursor\\skills\\bmad-create-prd\nSync _bmad\\bmm\\workflows\\2-plan-workflows\\bmad-create-ux-design -> .cursor\\skills\\bmad-create-ux-design\nSync _bmad\\bmm\\workflows\\2-plan-workflows\\bmad-edit-prd -> .cursor\\skills\\bmad-edit-prd\nSync _bmad\\bmm\\workflows\\2-plan-workflows\\bmad-validate-prd -> .cursor\\skills\\bmad-validate-prd\nSync _bmad\\bmm\\workflows\\3-solutioning\\bmad-check-implementation-readiness -> .cursor\\skills\\bmad-check-implementation-readiness\nSync _bmad\\bmm\\workflows\\3-solutioning\\bmad-create-architecture -> .cursor\\skills\\bmad-create-architecture\nSync _bmad\\bmm\\workflows\\3-solutioning\\bmad-create-epics-and-stories -> .cursor\\skills\\bmad-create-epics-and-stories\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-code-review -> .cursor\\skills\\bmad-code-review\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-correct-course -> .cursor\\skills\\bmad-correct-course\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-create-story -> .cursor\\skills\\bmad-create-story\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-dev-story -> .cursor\\skills\\bmad-dev-story\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-retrospective -> .cursor\\skills\\bmad-retrospective\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-sprint-planning -> .cursor\\skills\\bmad-sprint-planning\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-sprint-status -> .cursor\\skills\\bmad-sprint-status\nSync _bmad\\bmm\\workflows\\bmad-document-project -> .cursor\\skills\\bmad-document-project\nSync _bmad\\bmm\\workflows\\bmad-generate-project-context -> .cursor\\skills\\bmad-generate-project-context\nSync _bmad\\bmm\\workflows\\bmad-qa-generate-e2e-tests -> .cursor\\skills\\bmad-qa-generate-e2e-tests\nSync _bmad\\bmm\\workflows\\bmad-quick-flow\\bmad-quick-dev -> .cursor\\skills\\bmad-quick-dev\nSync _bmad\\bmm\\workflows\\bmad-quick-flow\\bmad-quick-dev-new-preview -> .cursor\\skills\\bmad-quick-dev-new-preview\nSync _bmad\\bmm\\workflows\\bmad-quick-flow\\bmad-quick-spec -> .cursor\\skills\\bmad-quick-spec\nSync _bmad\\bmm\\agents\\bmad-agent-analyst -> .cursor\\skills\\bmad-agent-analyst\nSync _bmad\\bmm\\agents\\bmad-agent-architect -> .cursor\\skills\\bmad-agent-architect\nSync _bmad\\bmm\\agents\\bmad-agent-dev -> .cursor\\skills\\bmad-agent-dev\nSync _bmad\\bmm\\agents\\bmad-agent-pm -> .cursor\\skills\\bmad-agent-pm\nSync _bmad\\bmm\\agents\\bmad-agent-qa -> .cursor\\skills\\bmad-agent-qa\nSync _bmad\\bmm\\agents\\bmad-agent-quick-flow-solo-dev -> .cursor\\skills\\bmad-agent-quick-flow-solo-dev\nSync _bmad\\bmm\\agents\\bmad-agent-sm -> .cursor\\skills\\bmad-agent-sm\nSync _bmad\\bmm\\agents\\bmad-agent-tech-writer -> .cursor\\skills\\bmad-agent-tech-writer\nSync _bmad\\bmm\\agents\\bmad-agent-ux-designer -> .cursor\\skills\\bmad-agent-ux-designer\nSync _bmad\\core\\tasks\\bmad-create-prd -> .cursor\\skills\\bmad-create-prd\nSync _bmad\\core\\skills\\bmad-advanced-elicitation -> .cursor\\skills\\bmad-advanced-elicitation\nSync _bmad\\core\\skills\\bmad-brainstorming -> .cursor\\skills\\bmad-brainstorming\nSync _bmad\\core\\skills\\bmad-distillator -> .cursor\\skills\\bmad-distillator\nSync _bmad\\core\\skills\\bmad-editorial-review-prose -> .cursor\\skills\\bmad-editorial-review-prose\nSync _bmad\\core\\skills\\bmad-editorial-review-structure -> .cursor\\skills\\bmad-editorial-review-structure\nSync _bmad\\core\\skills\\bmad-help -> .cursor\\skills\\bmad-help\nSync _bmad\\core\\skills\\bmad-index-docs -> .cursor\\skills\\bmad-index-docs\nSync _bmad\\core\\skills\\bmad-init -> .cursor\\skills\\bmad-init\nSync _bmad\\core\\skills\\bmad-party-mode -> .cursor\\skills\\bmad-party-mode\nSync _bmad\\core\\skills\\bmad-review-adversarial-general -> .cursor\\skills\\bmad-review-adversarial-general\nSync _bmad\\core\\skills\\bmad-review-edge-case-hunter -> .cursor\\skills\\bmad-review-edge-case-hunter\nSync _bmad\\core\\skills\\bmad-shard-doc -> .cursor\\skills\\bmad-shard-doc\nRe-apply Cursor skill overrides _bmad\\cursor\\skills -> .cursor/skills\nSync _bmad/_config/code-reviewer-config.yaml -> .cursor/agents/\nSync _bmad/cursor/agents/ -> .cursor/agents/\nSync _bmad\\runtime\\hooks -> .cursor\\hooks\nForce-sync .cursor/hooks/party-mode-read-current-session.cjs\nSync _bmad\\cursor\\hooks\\emit-runtime-policy-cli.cjs -> .cursor\\hooks\\emit-runtime-policy-cli.cjs\nSync _bmad\\cursor\\hooks\\runtime-policy-inject.cjs -> .cursor\\hooks\\runtime-policy-inject.cjs\nSync _bmad\\cursor\\hooks\\post-tool-use.cjs -> .cursor\\hooks\\post-tool-use.cjs\nSync _bmad\\cursor\\hooks\\runtime-dashboard-session-start.cjs -> .cursor\\hooks\\runtime-dashboard-session-start.cjs\nSync _bmad\\runtime\\hooks\\pre-continue-check.cjs -> .cursor\\hooks\\pre-continue-check.cjs\nSync _bmad\\cursor\\hooks\\subagent-result-summary.cjs -> .cursor\\hooks\\subagent-result-summary.cjs\nSync _bmad\\_config\\architecture-gates.yaml -> _bmad\\_config\\architecture-gates.yaml\nSync _bmad\\_config\\continue-gate-routing.yaml -> _bmad\\_config\\continue-gate-routing.yaml\nWrote D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\runtime\\context\\bootstrap.json\nWrote install surface manifest + install-state snapshot metadata to _bmad-output/config/.\nDone. Copied 1 dirs, 3932 files.\nVerify with: _bmad/speckit/scripts/powershell/check-prerequisites.ps1\n",
+          "expectedStderr": "Target exists, merging: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\n",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "Target exists, merging: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/init-to-root.js:flag_no_package_json",
+            "originalReplayArtifactHash": "sha256:3c07470ca436470685c2b6346090e50aab30cdf405147090bd6c95996e4597d6",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/init-to-root.js:flag_no_package_json",
+            "sourceLineAnchors": [
+              {
+                "line": 44,
+                "anchor": "scripts/init-to-root.js:44",
+                "text": "const args = process.argv.slice(2);"
+              },
+              {
+                "line": 113,
+                "anchor": "scripts/init-to-root.js:113",
+                "text": "console.log('Sync', path.relative(targetDir, src), '->', dest);"
+              },
+              {
+                "line": 124,
+                "anchor": "scripts/init-to-root.js:124",
+                "text": "console.log('Re-apply Cursor skill overrides', path.relative(targetDir, cursorSkillOverridesSrc), '-> .cursor/skills');"
+              },
+              {
+                "line": 133,
+                "anchor": "scripts/init-to-root.js:133",
+                "text": "console.log('Sync _bmad/_config/code-reviewer-config.yaml -> .cursor/agents/');"
+              },
+              {
+                "line": 141,
+                "anchor": "scripts/init-to-root.js:141",
+                "text": "console.log('Sync _bmad/cursor/agents/ -> .cursor/agents/');"
+              },
+              {
+                "line": 169,
+                "anchor": "scripts/init-to-root.js:169",
+                "text": "console.log('Sync', path.relative(targetDir, src), '->', dest);"
+              },
+              {
+                "line": 196,
+                "anchor": "scripts/init-to-root.js:196",
+                "text": "console.log('Merged global ~/.claude/settings.json hooks into project settings');"
+              },
+              {
+                "line": 199,
+                "anchor": "scripts/init-to-root.js:199",
+                "text": "console.warn('Failed to read global settings, using BMAD defaults:', e.message);"
+              },
+              {
+                "line": 203,
+                "anchor": "scripts/init-to-root.js:203",
+                "text": "console.log('Sync _bmad/claude/settings.json -> .claude/settings.json');"
+              },
+              {
+                "line": 212,
+                "anchor": "scripts/init-to-root.js:212",
+                "text": "console.log('Generated CLAUDE.md from template');"
+              },
+              {
+                "line": 239,
+                "anchor": "scripts/init-to-root.js:239",
+                "text": "console.log('Sync', path.relative(targetDir, src), '->', dest);"
+              },
+              {
+                "line": 288,
+                "anchor": "scripts/init-to-root.js:288",
+                "text": "console.error("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/init-to-root.js",
+                "to": "scripts/init-to-root.js"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+                "to": "scripts/init-to-root.js"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/init-to-root.js",
+                "to": "scripts/init-to-root.js"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/init-to-root.js",
+            "entryPointCount": 1,
+            "argCombinationCount": 6,
+            "envKeyCount": 4,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 6,
+            "coveredEnvKeyCount": 4,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--agent",
+              "--full",
+              "--no-package-json",
+              "--with-mcp",
+              "--with-package-json"
+            ],
+            "discoveredEnvKeys": [
+              "BMAD_SKIP_CONSUMER_MCP_INSTALL",
+              "INIT_CWD",
+              "NODE_ENV",
+              "VITEST"
+            ],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--agent <source-derived-safe-value>",
+              "--full <present>",
+              "--no-package-json <present>",
+              "--with-mcp <present>",
+              "--with-package-json <present>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--agent <source-derived-safe-value>",
+              "--full <present>",
+              "--no-package-json <present>",
+              "--with-mcp <present>",
+              "--with-package-json <present>"
+            ],
+            "coveredEnvKeys": [
+              "BMAD_SKIP_CONSUMER_MCP_INSTALL",
+              "INIT_CWD",
+              "NODE_ENV",
+              "VITEST"
+            ],
+            "scenarioDefinitionCount": 10,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_agent",
+              "flag_full",
+              "flag_no_package_json",
+              "flag_with_mcp",
+              "flag_with_package_json",
+              "env_bmad_skip_consumer_mcp_install",
+              "env_init_cwd",
+              "env_node_env",
+              "env_vitest"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g005_init_to_root_js_flag_with_mcp",
+          "originalEntryPoint": "scripts/init-to-root.js",
+          "originalEntryCommand": "node scripts/init-to-root.js --with-mcp",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/init-to-root.js --with-mcp",
+          "argumentCombination": "--with-mcp <present>",
+          "args": [
+            "--with-mcp"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g005_init_to_root_js_flag_with_mcp_original_fixture_root",
+              "path": "<tmp>/g005_init_to_root_js_flag_with_mcp-original-ra1FMJ",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_init_to_root_js_flag_with_mcp_package_fixture_root",
+              "path": "<tmp>/g005_init_to_root_js_flag_with_mcp-package-jOyIde",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "BMAD-Speckit-SDD-Flow init: deploy to D:\\Dev\\BMAD-Speckit-SDD-Flow  [agent=cursor]\nCopy _bmad -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\nForce-sync _bmad/runtime/hooks/party-mode-read-current-session.cjs\nSync _bmad\\commands -> .cursor/commands\nSync _bmad\\speckit\\commands -> .cursor/commands\nSync _bmad\\cursor\\rules -> .cursor/rules\nSync _bmad\\shared -> .cursor/shared\nSync _bmad\\skills -> .cursor/skills\nSync _bmad\\cursor\\skills -> .cursor/skills\nSync _bmad\\i18n -> .cursor/i18n\nSync _bmad\\bmm\\workflows\\1-analysis\\bmad-create-product-brief -> .cursor\\skills\\bmad-create-product-brief\nSync _bmad\\bmm\\workflows\\1-analysis\\bmad-product-brief-preview -> .cursor\\skills\\bmad-product-brief-preview\nSync _bmad\\bmm\\workflows\\1-analysis\\research\\bmad-domain-research -> .cursor\\skills\\bmad-domain-research\nSync _bmad\\bmm\\workflows\\1-analysis\\research\\bmad-market-research -> .cursor\\skills\\bmad-market-research\nSync _bmad\\bmm\\workflows\\1-analysis\\research\\bmad-technical-research -> .cursor\\skills\\bmad-technical-research\nSync _bmad\\bmm\\workflows\\2-plan-workflows\\bmad-create-prd -> .cursor\\skills\\bmad-create-prd\nSync _bmad\\bmm\\workflows\\2-plan-workflows\\bmad-create-ux-design -> .cursor\\skills\\bmad-create-ux-design\nSync _bmad\\bmm\\workflows\\2-plan-workflows\\bmad-edit-prd -> .cursor\\skills\\bmad-edit-prd\nSync _bmad\\bmm\\workflows\\2-plan-workflows\\bmad-validate-prd -> .cursor\\skills\\bmad-validate-prd\nSync _bmad\\bmm\\workflows\\3-solutioning\\bmad-check-implementation-readiness -> .cursor\\skills\\bmad-check-implementation-readiness\nSync _bmad\\bmm\\workflows\\3-solutioning\\bmad-create-architecture -> .cursor\\skills\\bmad-create-architecture\nSync _bmad\\bmm\\workflows\\3-solutioning\\bmad-create-epics-and-stories -> .cursor\\skills\\bmad-create-epics-and-stories\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-code-review -> .cursor\\skills\\bmad-code-review\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-correct-course -> .cursor\\skills\\bmad-correct-course\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-create-story -> .cursor\\skills\\bmad-create-story\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-dev-story -> .cursor\\skills\\bmad-dev-story\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-retrospective -> .cursor\\skills\\bmad-retrospective\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-sprint-planning -> .cursor\\skills\\bmad-sprint-planning\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-sprint-status -> .cursor\\skills\\bmad-sprint-status\nSync _bmad\\bmm\\workflows\\bmad-document-project -> .cursor\\skills\\bmad-document-project\nSync _bmad\\bmm\\workflows\\bmad-generate-project-context -> .cursor\\skills\\bmad-generate-project-context\nSync _bmad\\bmm\\workflows\\bmad-qa-generate-e2e-tests -> .cursor\\skills\\bmad-qa-generate-e2e-tests\nSync _bmad\\bmm\\workflows\\bmad-quick-flow\\bmad-quick-dev -> .cursor\\skills\\bmad-quick-dev\nSync _bmad\\bmm\\workflows\\bmad-quick-flow\\bmad-quick-dev-new-preview -> .cursor\\skills\\bmad-quick-dev-new-preview\nSync _bmad\\bmm\\workflows\\bmad-quick-flow\\bmad-quick-spec -> .cursor\\skills\\bmad-quick-spec\nSync _bmad\\bmm\\agents\\bmad-agent-analyst -> .cursor\\skills\\bmad-agent-analyst\nSync _bmad\\bmm\\agents\\bmad-agent-architect -> .cursor\\skills\\bmad-agent-architect\nSync _bmad\\bmm\\agents\\bmad-agent-dev -> .cursor\\skills\\bmad-agent-dev\nSync _bmad\\bmm\\agents\\bmad-agent-pm -> .cursor\\skills\\bmad-agent-pm\nSync _bmad\\bmm\\agents\\bmad-agent-qa -> .cursor\\skills\\bmad-agent-qa\nSync _bmad\\bmm\\agents\\bmad-agent-quick-flow-solo-dev -> .cursor\\skills\\bmad-agent-quick-flow-solo-dev\nSync _bmad\\bmm\\agents\\bmad-agent-sm -> .cursor\\skills\\bmad-agent-sm\nSync _bmad\\bmm\\agents\\bmad-agent-tech-writer -> .cursor\\skills\\bmad-agent-tech-writer\nSync _bmad\\bmm\\agents\\bmad-agent-ux-designer -> .cursor\\skills\\bmad-agent-ux-designer\nSync _bmad\\core\\tasks\\bmad-create-prd -> .cursor\\skills\\bmad-create-prd\nSync _bmad\\core\\skills\\bmad-advanced-elicitation -> .cursor\\skills\\bmad-advanced-elicitation\nSync _bmad\\core\\skills\\bmad-brainstorming -> .cursor\\skills\\bmad-brainstorming\nSync _bmad\\core\\skills\\bmad-distillator -> .cursor\\skills\\bmad-distillator\nSync _bmad\\core\\skills\\bmad-editorial-review-prose -> .cursor\\skills\\bmad-editorial-review-prose\nSync _bmad\\core\\skills\\bmad-editorial-review-structure -> .cursor\\skills\\bmad-editorial-review-structure\nSync _bmad\\core\\skills\\bmad-help -> .cursor\\skills\\bmad-help\nSync _bmad\\core\\skills\\bmad-index-docs -> .cursor\\skills\\bmad-index-docs\nSync _bmad\\core\\skills\\bmad-init -> .cursor\\skills\\bmad-init\nSync _bmad\\core\\skills\\bmad-party-mode -> .cursor\\skills\\bmad-party-mode\nSync _bmad\\core\\skills\\bmad-review-adversarial-general -> .cursor\\skills\\bmad-review-adversarial-general\nSync _bmad\\core\\skills\\bmad-review-edge-case-hunter -> .cursor\\skills\\bmad-review-edge-case-hunter\nSync _bmad\\core\\skills\\bmad-shard-doc -> .cursor\\skills\\bmad-shard-doc\nRe-apply Cursor skill overrides _bmad\\cursor\\skills -> .cursor/skills\nSync _bmad/_config/code-reviewer-config.yaml -> .cursor/agents/\nSync _bmad/cursor/agents/ -> .cursor/agents/\nSync _bmad\\runtime\\hooks -> .cursor\\hooks\nForce-sync .cursor/hooks/party-mode-read-current-session.cjs\nSync _bmad\\cursor\\hooks\\emit-runtime-policy-cli.cjs -> .cursor\\hooks\\emit-runtime-policy-cli.cjs\nSync _bmad\\cursor\\hooks\\runtime-policy-inject.cjs -> .cursor\\hooks\\runtime-policy-inject.cjs\nSync _bmad\\cursor\\hooks\\post-tool-use.cjs -> .cursor\\hooks\\post-tool-use.cjs\nSync _bmad\\cursor\\hooks\\runtime-dashboard-session-start.cjs -> .cursor\\hooks\\runtime-dashboard-session-start.cjs\nSync _bmad\\runtime\\hooks\\pre-continue-check.cjs -> .cursor\\hooks\\pre-continue-check.cjs\nSync _bmad\\cursor\\hooks\\subagent-result-summary.cjs -> .cursor\\hooks\\subagent-result-summary.cjs\nSync _bmad\\_config\\architecture-gates.yaml -> _bmad\\_config\\architecture-gates.yaml\nSync _bmad\\_config\\continue-gate-routing.yaml -> _bmad\\_config\\continue-gate-routing.yaml\nWrote D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\runtime\\context\\bootstrap.json\nWrote install surface manifest + install-state snapshot metadata to _bmad-output/config/.\nDone. Copied 1 dirs, 3932 files.\nVerify with: _bmad/speckit/scripts/powershell/check-prerequisites.ps1\n",
+          "expectedStderr": "Target exists, merging: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\n",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "Target exists, merging: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/init-to-root.js:flag_with_mcp",
+            "originalReplayArtifactHash": "sha256:3c07470ca436470685c2b6346090e50aab30cdf405147090bd6c95996e4597d6",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/init-to-root.js:flag_with_mcp",
+            "sourceLineAnchors": [
+              {
+                "line": 44,
+                "anchor": "scripts/init-to-root.js:44",
+                "text": "const args = process.argv.slice(2);"
+              },
+              {
+                "line": 113,
+                "anchor": "scripts/init-to-root.js:113",
+                "text": "console.log('Sync', path.relative(targetDir, src), '->', dest);"
+              },
+              {
+                "line": 124,
+                "anchor": "scripts/init-to-root.js:124",
+                "text": "console.log('Re-apply Cursor skill overrides', path.relative(targetDir, cursorSkillOverridesSrc), '-> .cursor/skills');"
+              },
+              {
+                "line": 133,
+                "anchor": "scripts/init-to-root.js:133",
+                "text": "console.log('Sync _bmad/_config/code-reviewer-config.yaml -> .cursor/agents/');"
+              },
+              {
+                "line": 141,
+                "anchor": "scripts/init-to-root.js:141",
+                "text": "console.log('Sync _bmad/cursor/agents/ -> .cursor/agents/');"
+              },
+              {
+                "line": 169,
+                "anchor": "scripts/init-to-root.js:169",
+                "text": "console.log('Sync', path.relative(targetDir, src), '->', dest);"
+              },
+              {
+                "line": 196,
+                "anchor": "scripts/init-to-root.js:196",
+                "text": "console.log('Merged global ~/.claude/settings.json hooks into project settings');"
+              },
+              {
+                "line": 199,
+                "anchor": "scripts/init-to-root.js:199",
+                "text": "console.warn('Failed to read global settings, using BMAD defaults:', e.message);"
+              },
+              {
+                "line": 203,
+                "anchor": "scripts/init-to-root.js:203",
+                "text": "console.log('Sync _bmad/claude/settings.json -> .claude/settings.json');"
+              },
+              {
+                "line": 212,
+                "anchor": "scripts/init-to-root.js:212",
+                "text": "console.log('Generated CLAUDE.md from template');"
+              },
+              {
+                "line": 239,
+                "anchor": "scripts/init-to-root.js:239",
+                "text": "console.log('Sync', path.relative(targetDir, src), '->', dest);"
+              },
+              {
+                "line": 288,
+                "anchor": "scripts/init-to-root.js:288",
+                "text": "console.error("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/init-to-root.js",
+                "to": "scripts/init-to-root.js"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+                "to": "scripts/init-to-root.js"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/init-to-root.js",
+                "to": "scripts/init-to-root.js"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/init-to-root.js",
+            "entryPointCount": 1,
+            "argCombinationCount": 6,
+            "envKeyCount": 4,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 6,
+            "coveredEnvKeyCount": 4,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--agent",
+              "--full",
+              "--no-package-json",
+              "--with-mcp",
+              "--with-package-json"
+            ],
+            "discoveredEnvKeys": [
+              "BMAD_SKIP_CONSUMER_MCP_INSTALL",
+              "INIT_CWD",
+              "NODE_ENV",
+              "VITEST"
+            ],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--agent <source-derived-safe-value>",
+              "--full <present>",
+              "--no-package-json <present>",
+              "--with-mcp <present>",
+              "--with-package-json <present>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--agent <source-derived-safe-value>",
+              "--full <present>",
+              "--no-package-json <present>",
+              "--with-mcp <present>",
+              "--with-package-json <present>"
+            ],
+            "coveredEnvKeys": [
+              "BMAD_SKIP_CONSUMER_MCP_INSTALL",
+              "INIT_CWD",
+              "NODE_ENV",
+              "VITEST"
+            ],
+            "scenarioDefinitionCount": 10,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_agent",
+              "flag_full",
+              "flag_no_package_json",
+              "flag_with_mcp",
+              "flag_with_package_json",
+              "env_bmad_skip_consumer_mcp_install",
+              "env_init_cwd",
+              "env_node_env",
+              "env_vitest"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g005_init_to_root_js_flag_with_package_json",
+          "originalEntryPoint": "scripts/init-to-root.js",
+          "originalEntryCommand": "node scripts/init-to-root.js --with-package-json D:\\Dev\\BMAD-Speckit-SDD-Flow",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/init-to-root.js --with-package-json D:\\Dev\\BMAD-Speckit-SDD-Flow",
+          "argumentCombination": "--with-package-json <present> <source-root-self-target>",
+          "args": [
+            "--with-package-json",
+            "D:\\Dev\\BMAD-Speckit-SDD-Flow"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g005_init_to_root_js_flag_with_package_json_original_fixture_root",
+              "path": "<tmp>/g005_init_to_root_js_flag_with_package_json-original-OVlHSy",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_init_to_root_js_flag_with_package_json_package_fixture_root",
+              "path": "<tmp>/g005_init_to_root_js_flag_with_package_json-package-bfCDoa",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "BMAD-Speckit-SDD-Flow init: deploy to D:\\Dev\\BMAD-Speckit-SDD-Flow  [agent=cursor]\nCopy _bmad -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\nForce-sync _bmad/runtime/hooks/party-mode-read-current-session.cjs\nSync _bmad\\commands -> .cursor/commands\nSync _bmad\\speckit\\commands -> .cursor/commands\nSync _bmad\\cursor\\rules -> .cursor/rules\nSync _bmad\\shared -> .cursor/shared\nSync _bmad\\skills -> .cursor/skills\nSync _bmad\\cursor\\skills -> .cursor/skills\nSync _bmad\\i18n -> .cursor/i18n\nSync _bmad\\bmm\\workflows\\1-analysis\\bmad-create-product-brief -> .cursor\\skills\\bmad-create-product-brief\nSync _bmad\\bmm\\workflows\\1-analysis\\bmad-product-brief-preview -> .cursor\\skills\\bmad-product-brief-preview\nSync _bmad\\bmm\\workflows\\1-analysis\\research\\bmad-domain-research -> .cursor\\skills\\bmad-domain-research\nSync _bmad\\bmm\\workflows\\1-analysis\\research\\bmad-market-research -> .cursor\\skills\\bmad-market-research\nSync _bmad\\bmm\\workflows\\1-analysis\\research\\bmad-technical-research -> .cursor\\skills\\bmad-technical-research\nSync _bmad\\bmm\\workflows\\2-plan-workflows\\bmad-create-prd -> .cursor\\skills\\bmad-create-prd\nSync _bmad\\bmm\\workflows\\2-plan-workflows\\bmad-create-ux-design -> .cursor\\skills\\bmad-create-ux-design\nSync _bmad\\bmm\\workflows\\2-plan-workflows\\bmad-edit-prd -> .cursor\\skills\\bmad-edit-prd\nSync _bmad\\bmm\\workflows\\2-plan-workflows\\bmad-validate-prd -> .cursor\\skills\\bmad-validate-prd\nSync _bmad\\bmm\\workflows\\3-solutioning\\bmad-check-implementation-readiness -> .cursor\\skills\\bmad-check-implementation-readiness\nSync _bmad\\bmm\\workflows\\3-solutioning\\bmad-create-architecture -> .cursor\\skills\\bmad-create-architecture\nSync _bmad\\bmm\\workflows\\3-solutioning\\bmad-create-epics-and-stories -> .cursor\\skills\\bmad-create-epics-and-stories\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-code-review -> .cursor\\skills\\bmad-code-review\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-correct-course -> .cursor\\skills\\bmad-correct-course\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-create-story -> .cursor\\skills\\bmad-create-story\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-dev-story -> .cursor\\skills\\bmad-dev-story\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-retrospective -> .cursor\\skills\\bmad-retrospective\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-sprint-planning -> .cursor\\skills\\bmad-sprint-planning\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-sprint-status -> .cursor\\skills\\bmad-sprint-status\nSync _bmad\\bmm\\workflows\\bmad-document-project -> .cursor\\skills\\bmad-document-project\nSync _bmad\\bmm\\workflows\\bmad-generate-project-context -> .cursor\\skills\\bmad-generate-project-context\nSync _bmad\\bmm\\workflows\\bmad-qa-generate-e2e-tests -> .cursor\\skills\\bmad-qa-generate-e2e-tests\nSync _bmad\\bmm\\workflows\\bmad-quick-flow\\bmad-quick-dev -> .cursor\\skills\\bmad-quick-dev\nSync _bmad\\bmm\\workflows\\bmad-quick-flow\\bmad-quick-dev-new-preview -> .cursor\\skills\\bmad-quick-dev-new-preview\nSync _bmad\\bmm\\workflows\\bmad-quick-flow\\bmad-quick-spec -> .cursor\\skills\\bmad-quick-spec\nSync _bmad\\bmm\\agents\\bmad-agent-analyst -> .cursor\\skills\\bmad-agent-analyst\nSync _bmad\\bmm\\agents\\bmad-agent-architect -> .cursor\\skills\\bmad-agent-architect\nSync _bmad\\bmm\\agents\\bmad-agent-dev -> .cursor\\skills\\bmad-agent-dev\nSync _bmad\\bmm\\agents\\bmad-agent-pm -> .cursor\\skills\\bmad-agent-pm\nSync _bmad\\bmm\\agents\\bmad-agent-qa -> .cursor\\skills\\bmad-agent-qa\nSync _bmad\\bmm\\agents\\bmad-agent-quick-flow-solo-dev -> .cursor\\skills\\bmad-agent-quick-flow-solo-dev\nSync _bmad\\bmm\\agents\\bmad-agent-sm -> .cursor\\skills\\bmad-agent-sm\nSync _bmad\\bmm\\agents\\bmad-agent-tech-writer -> .cursor\\skills\\bmad-agent-tech-writer\nSync _bmad\\bmm\\agents\\bmad-agent-ux-designer -> .cursor\\skills\\bmad-agent-ux-designer\nSync _bmad\\core\\tasks\\bmad-create-prd -> .cursor\\skills\\bmad-create-prd\nSync _bmad\\core\\skills\\bmad-advanced-elicitation -> .cursor\\skills\\bmad-advanced-elicitation\nSync _bmad\\core\\skills\\bmad-brainstorming -> .cursor\\skills\\bmad-brainstorming\nSync _bmad\\core\\skills\\bmad-distillator -> .cursor\\skills\\bmad-distillator\nSync _bmad\\core\\skills\\bmad-editorial-review-prose -> .cursor\\skills\\bmad-editorial-review-prose\nSync _bmad\\core\\skills\\bmad-editorial-review-structure -> .cursor\\skills\\bmad-editorial-review-structure\nSync _bmad\\core\\skills\\bmad-help -> .cursor\\skills\\bmad-help\nSync _bmad\\core\\skills\\bmad-index-docs -> .cursor\\skills\\bmad-index-docs\nSync _bmad\\core\\skills\\bmad-init -> .cursor\\skills\\bmad-init\nSync _bmad\\core\\skills\\bmad-party-mode -> .cursor\\skills\\bmad-party-mode\nSync _bmad\\core\\skills\\bmad-review-adversarial-general -> .cursor\\skills\\bmad-review-adversarial-general\nSync _bmad\\core\\skills\\bmad-review-edge-case-hunter -> .cursor\\skills\\bmad-review-edge-case-hunter\nSync _bmad\\core\\skills\\bmad-shard-doc -> .cursor\\skills\\bmad-shard-doc\nRe-apply Cursor skill overrides _bmad\\cursor\\skills -> .cursor/skills\nSync _bmad/_config/code-reviewer-config.yaml -> .cursor/agents/\nSync _bmad/cursor/agents/ -> .cursor/agents/\nSync _bmad\\runtime\\hooks -> .cursor\\hooks\nForce-sync .cursor/hooks/party-mode-read-current-session.cjs\nSync _bmad\\cursor\\hooks\\emit-runtime-policy-cli.cjs -> .cursor\\hooks\\emit-runtime-policy-cli.cjs\nSync _bmad\\cursor\\hooks\\runtime-policy-inject.cjs -> .cursor\\hooks\\runtime-policy-inject.cjs\nSync _bmad\\cursor\\hooks\\post-tool-use.cjs -> .cursor\\hooks\\post-tool-use.cjs\nSync _bmad\\cursor\\hooks\\runtime-dashboard-session-start.cjs -> .cursor\\hooks\\runtime-dashboard-session-start.cjs\nSync _bmad\\runtime\\hooks\\pre-continue-check.cjs -> .cursor\\hooks\\pre-continue-check.cjs\nSync _bmad\\cursor\\hooks\\subagent-result-summary.cjs -> .cursor\\hooks\\subagent-result-summary.cjs\nSync _bmad\\_config\\architecture-gates.yaml -> _bmad\\_config\\architecture-gates.yaml\nSync _bmad\\_config\\continue-gate-routing.yaml -> _bmad\\_config\\continue-gate-routing.yaml\nWrote D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\runtime\\context\\bootstrap.json\nWrote install surface manifest + install-state snapshot metadata to _bmad-output/config/.\nDone. Copied 1 dirs, 3932 files.\nVerify with: _bmad/speckit/scripts/powershell/check-prerequisites.ps1\n",
+          "expectedStderr": "Target exists, merging: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\n",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "Target exists, merging: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/init-to-root.js:flag_with_package_json",
+            "originalReplayArtifactHash": "sha256:3c07470ca436470685c2b6346090e50aab30cdf405147090bd6c95996e4597d6",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/init-to-root.js:flag_with_package_json",
+            "sourceLineAnchors": [
+              {
+                "line": 44,
+                "anchor": "scripts/init-to-root.js:44",
+                "text": "const args = process.argv.slice(2);"
+              },
+              {
+                "line": 113,
+                "anchor": "scripts/init-to-root.js:113",
+                "text": "console.log('Sync', path.relative(targetDir, src), '->', dest);"
+              },
+              {
+                "line": 124,
+                "anchor": "scripts/init-to-root.js:124",
+                "text": "console.log('Re-apply Cursor skill overrides', path.relative(targetDir, cursorSkillOverridesSrc), '-> .cursor/skills');"
+              },
+              {
+                "line": 133,
+                "anchor": "scripts/init-to-root.js:133",
+                "text": "console.log('Sync _bmad/_config/code-reviewer-config.yaml -> .cursor/agents/');"
+              },
+              {
+                "line": 141,
+                "anchor": "scripts/init-to-root.js:141",
+                "text": "console.log('Sync _bmad/cursor/agents/ -> .cursor/agents/');"
+              },
+              {
+                "line": 169,
+                "anchor": "scripts/init-to-root.js:169",
+                "text": "console.log('Sync', path.relative(targetDir, src), '->', dest);"
+              },
+              {
+                "line": 196,
+                "anchor": "scripts/init-to-root.js:196",
+                "text": "console.log('Merged global ~/.claude/settings.json hooks into project settings');"
+              },
+              {
+                "line": 199,
+                "anchor": "scripts/init-to-root.js:199",
+                "text": "console.warn('Failed to read global settings, using BMAD defaults:', e.message);"
+              },
+              {
+                "line": 203,
+                "anchor": "scripts/init-to-root.js:203",
+                "text": "console.log('Sync _bmad/claude/settings.json -> .claude/settings.json');"
+              },
+              {
+                "line": 212,
+                "anchor": "scripts/init-to-root.js:212",
+                "text": "console.log('Generated CLAUDE.md from template');"
+              },
+              {
+                "line": 239,
+                "anchor": "scripts/init-to-root.js:239",
+                "text": "console.log('Sync', path.relative(targetDir, src), '->', dest);"
+              },
+              {
+                "line": 288,
+                "anchor": "scripts/init-to-root.js:288",
+                "text": "console.error("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/init-to-root.js",
+                "to": "scripts/init-to-root.js"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+                "to": "scripts/init-to-root.js"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/init-to-root.js",
+                "to": "scripts/init-to-root.js"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/init-to-root.js",
+            "entryPointCount": 1,
+            "argCombinationCount": 6,
+            "envKeyCount": 4,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 6,
+            "coveredEnvKeyCount": 4,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--agent",
+              "--full",
+              "--no-package-json",
+              "--with-mcp",
+              "--with-package-json"
+            ],
+            "discoveredEnvKeys": [
+              "BMAD_SKIP_CONSUMER_MCP_INSTALL",
+              "INIT_CWD",
+              "NODE_ENV",
+              "VITEST"
+            ],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--agent <source-derived-safe-value>",
+              "--full <present>",
+              "--no-package-json <present>",
+              "--with-mcp <present>",
+              "--with-package-json <present>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--agent <source-derived-safe-value>",
+              "--full <present>",
+              "--no-package-json <present>",
+              "--with-mcp <present>",
+              "--with-package-json <present>"
+            ],
+            "coveredEnvKeys": [
+              "BMAD_SKIP_CONSUMER_MCP_INSTALL",
+              "INIT_CWD",
+              "NODE_ENV",
+              "VITEST"
+            ],
+            "scenarioDefinitionCount": 10,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_agent",
+              "flag_full",
+              "flag_no_package_json",
+              "flag_with_mcp",
+              "flag_with_package_json",
+              "env_bmad_skip_consumer_mcp_install",
+              "env_init_cwd",
+              "env_node_env",
+              "env_vitest"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g005_init_to_root_js_env_bmad_skip_consumer_mcp_install",
+          "originalEntryPoint": "scripts/init-to-root.js",
+          "originalEntryCommand": "node scripts/init-to-root.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/init-to-root.js",
+          "argumentCombination": "env BMAD_SKIP_CONSUMER_MCP_INSTALL=<source-derived-safe-value>",
+          "args": [],
+          "env": {
+            "BMAD_SKIP_CONSUMER_MCP_INSTALL": "<source-derived-safe-value>"
+          },
+          "fixtures": [
+            {
+              "id": "g005_init_to_root_js_env_bmad_skip_consumer_mcp_install_original_fixture_root",
+              "path": "<tmp>/g005_init_to_root_js_env_bmad_skip_consumer_mcp_install-original-XxVgfk",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_init_to_root_js_env_bmad_skip_consumer_mcp_install_package_fixture_root",
+              "path": "<tmp>/g005_init_to_root_js_env_bmad_skip_consumer_mcp_install-package-dLNHPm",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "BMAD-Speckit-SDD-Flow init: deploy to D:\\Dev\\BMAD-Speckit-SDD-Flow  [agent=cursor]\nCopy _bmad -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\nForce-sync _bmad/runtime/hooks/party-mode-read-current-session.cjs\nSync _bmad\\commands -> .cursor/commands\nSync _bmad\\speckit\\commands -> .cursor/commands\nSync _bmad\\cursor\\rules -> .cursor/rules\nSync _bmad\\shared -> .cursor/shared\nSync _bmad\\skills -> .cursor/skills\nSync _bmad\\cursor\\skills -> .cursor/skills\nSync _bmad\\i18n -> .cursor/i18n\nSync _bmad\\bmm\\workflows\\1-analysis\\bmad-create-product-brief -> .cursor\\skills\\bmad-create-product-brief\nSync _bmad\\bmm\\workflows\\1-analysis\\bmad-product-brief-preview -> .cursor\\skills\\bmad-product-brief-preview\nSync _bmad\\bmm\\workflows\\1-analysis\\research\\bmad-domain-research -> .cursor\\skills\\bmad-domain-research\nSync _bmad\\bmm\\workflows\\1-analysis\\research\\bmad-market-research -> .cursor\\skills\\bmad-market-research\nSync _bmad\\bmm\\workflows\\1-analysis\\research\\bmad-technical-research -> .cursor\\skills\\bmad-technical-research\nSync _bmad\\bmm\\workflows\\2-plan-workflows\\bmad-create-prd -> .cursor\\skills\\bmad-create-prd\nSync _bmad\\bmm\\workflows\\2-plan-workflows\\bmad-create-ux-design -> .cursor\\skills\\bmad-create-ux-design\nSync _bmad\\bmm\\workflows\\2-plan-workflows\\bmad-edit-prd -> .cursor\\skills\\bmad-edit-prd\nSync _bmad\\bmm\\workflows\\2-plan-workflows\\bmad-validate-prd -> .cursor\\skills\\bmad-validate-prd\nSync _bmad\\bmm\\workflows\\3-solutioning\\bmad-check-implementation-readiness -> .cursor\\skills\\bmad-check-implementation-readiness\nSync _bmad\\bmm\\workflows\\3-solutioning\\bmad-create-architecture -> .cursor\\skills\\bmad-create-architecture\nSync _bmad\\bmm\\workflows\\3-solutioning\\bmad-create-epics-and-stories -> .cursor\\skills\\bmad-create-epics-and-stories\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-code-review -> .cursor\\skills\\bmad-code-review\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-correct-course -> .cursor\\skills\\bmad-correct-course\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-create-story -> .cursor\\skills\\bmad-create-story\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-dev-story -> .cursor\\skills\\bmad-dev-story\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-retrospective -> .cursor\\skills\\bmad-retrospective\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-sprint-planning -> .cursor\\skills\\bmad-sprint-planning\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-sprint-status -> .cursor\\skills\\bmad-sprint-status\nSync _bmad\\bmm\\workflows\\bmad-document-project -> .cursor\\skills\\bmad-document-project\nSync _bmad\\bmm\\workflows\\bmad-generate-project-context -> .cursor\\skills\\bmad-generate-project-context\nSync _bmad\\bmm\\workflows\\bmad-qa-generate-e2e-tests -> .cursor\\skills\\bmad-qa-generate-e2e-tests\nSync _bmad\\bmm\\workflows\\bmad-quick-flow\\bmad-quick-dev -> .cursor\\skills\\bmad-quick-dev\nSync _bmad\\bmm\\workflows\\bmad-quick-flow\\bmad-quick-dev-new-preview -> .cursor\\skills\\bmad-quick-dev-new-preview\nSync _bmad\\bmm\\workflows\\bmad-quick-flow\\bmad-quick-spec -> .cursor\\skills\\bmad-quick-spec\nSync _bmad\\bmm\\agents\\bmad-agent-analyst -> .cursor\\skills\\bmad-agent-analyst\nSync _bmad\\bmm\\agents\\bmad-agent-architect -> .cursor\\skills\\bmad-agent-architect\nSync _bmad\\bmm\\agents\\bmad-agent-dev -> .cursor\\skills\\bmad-agent-dev\nSync _bmad\\bmm\\agents\\bmad-agent-pm -> .cursor\\skills\\bmad-agent-pm\nSync _bmad\\bmm\\agents\\bmad-agent-qa -> .cursor\\skills\\bmad-agent-qa\nSync _bmad\\bmm\\agents\\bmad-agent-quick-flow-solo-dev -> .cursor\\skills\\bmad-agent-quick-flow-solo-dev\nSync _bmad\\bmm\\agents\\bmad-agent-sm -> .cursor\\skills\\bmad-agent-sm\nSync _bmad\\bmm\\agents\\bmad-agent-tech-writer -> .cursor\\skills\\bmad-agent-tech-writer\nSync _bmad\\bmm\\agents\\bmad-agent-ux-designer -> .cursor\\skills\\bmad-agent-ux-designer\nSync _bmad\\core\\tasks\\bmad-create-prd -> .cursor\\skills\\bmad-create-prd\nSync _bmad\\core\\skills\\bmad-advanced-elicitation -> .cursor\\skills\\bmad-advanced-elicitation\nSync _bmad\\core\\skills\\bmad-brainstorming -> .cursor\\skills\\bmad-brainstorming\nSync _bmad\\core\\skills\\bmad-distillator -> .cursor\\skills\\bmad-distillator\nSync _bmad\\core\\skills\\bmad-editorial-review-prose -> .cursor\\skills\\bmad-editorial-review-prose\nSync _bmad\\core\\skills\\bmad-editorial-review-structure -> .cursor\\skills\\bmad-editorial-review-structure\nSync _bmad\\core\\skills\\bmad-help -> .cursor\\skills\\bmad-help\nSync _bmad\\core\\skills\\bmad-index-docs -> .cursor\\skills\\bmad-index-docs\nSync _bmad\\core\\skills\\bmad-init -> .cursor\\skills\\bmad-init\nSync _bmad\\core\\skills\\bmad-party-mode -> .cursor\\skills\\bmad-party-mode\nSync _bmad\\core\\skills\\bmad-review-adversarial-general -> .cursor\\skills\\bmad-review-adversarial-general\nSync _bmad\\core\\skills\\bmad-review-edge-case-hunter -> .cursor\\skills\\bmad-review-edge-case-hunter\nSync _bmad\\core\\skills\\bmad-shard-doc -> .cursor\\skills\\bmad-shard-doc\nRe-apply Cursor skill overrides _bmad\\cursor\\skills -> .cursor/skills\nSync _bmad/_config/code-reviewer-config.yaml -> .cursor/agents/\nSync _bmad/cursor/agents/ -> .cursor/agents/\nSync _bmad\\runtime\\hooks -> .cursor\\hooks\nForce-sync .cursor/hooks/party-mode-read-current-session.cjs\nSync _bmad\\cursor\\hooks\\emit-runtime-policy-cli.cjs -> .cursor\\hooks\\emit-runtime-policy-cli.cjs\nSync _bmad\\cursor\\hooks\\runtime-policy-inject.cjs -> .cursor\\hooks\\runtime-policy-inject.cjs\nSync _bmad\\cursor\\hooks\\post-tool-use.cjs -> .cursor\\hooks\\post-tool-use.cjs\nSync _bmad\\cursor\\hooks\\runtime-dashboard-session-start.cjs -> .cursor\\hooks\\runtime-dashboard-session-start.cjs\nSync _bmad\\runtime\\hooks\\pre-continue-check.cjs -> .cursor\\hooks\\pre-continue-check.cjs\nSync _bmad\\cursor\\hooks\\subagent-result-summary.cjs -> .cursor\\hooks\\subagent-result-summary.cjs\nSync _bmad\\_config\\architecture-gates.yaml -> _bmad\\_config\\architecture-gates.yaml\nSync _bmad\\_config\\continue-gate-routing.yaml -> _bmad\\_config\\continue-gate-routing.yaml\nWrote D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\runtime\\context\\bootstrap.json\nWrote install surface manifest + install-state snapshot metadata to _bmad-output/config/.\nDone. Copied 1 dirs, 3932 files.\nVerify with: _bmad/speckit/scripts/powershell/check-prerequisites.ps1\n",
+          "expectedStderr": "Target exists, merging: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\n",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "Target exists, merging: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/init-to-root.js:env_bmad_skip_consumer_mcp_install",
+            "originalReplayArtifactHash": "sha256:3c07470ca436470685c2b6346090e50aab30cdf405147090bd6c95996e4597d6",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/init-to-root.js:env_bmad_skip_consumer_mcp_install",
+            "sourceLineAnchors": [
+              {
+                "line": 44,
+                "anchor": "scripts/init-to-root.js:44",
+                "text": "const args = process.argv.slice(2);"
+              },
+              {
+                "line": 113,
+                "anchor": "scripts/init-to-root.js:113",
+                "text": "console.log('Sync', path.relative(targetDir, src), '->', dest);"
+              },
+              {
+                "line": 124,
+                "anchor": "scripts/init-to-root.js:124",
+                "text": "console.log('Re-apply Cursor skill overrides', path.relative(targetDir, cursorSkillOverridesSrc), '-> .cursor/skills');"
+              },
+              {
+                "line": 133,
+                "anchor": "scripts/init-to-root.js:133",
+                "text": "console.log('Sync _bmad/_config/code-reviewer-config.yaml -> .cursor/agents/');"
+              },
+              {
+                "line": 141,
+                "anchor": "scripts/init-to-root.js:141",
+                "text": "console.log('Sync _bmad/cursor/agents/ -> .cursor/agents/');"
+              },
+              {
+                "line": 169,
+                "anchor": "scripts/init-to-root.js:169",
+                "text": "console.log('Sync', path.relative(targetDir, src), '->', dest);"
+              },
+              {
+                "line": 196,
+                "anchor": "scripts/init-to-root.js:196",
+                "text": "console.log('Merged global ~/.claude/settings.json hooks into project settings');"
+              },
+              {
+                "line": 199,
+                "anchor": "scripts/init-to-root.js:199",
+                "text": "console.warn('Failed to read global settings, using BMAD defaults:', e.message);"
+              },
+              {
+                "line": 203,
+                "anchor": "scripts/init-to-root.js:203",
+                "text": "console.log('Sync _bmad/claude/settings.json -> .claude/settings.json');"
+              },
+              {
+                "line": 212,
+                "anchor": "scripts/init-to-root.js:212",
+                "text": "console.log('Generated CLAUDE.md from template');"
+              },
+              {
+                "line": 239,
+                "anchor": "scripts/init-to-root.js:239",
+                "text": "console.log('Sync', path.relative(targetDir, src), '->', dest);"
+              },
+              {
+                "line": 288,
+                "anchor": "scripts/init-to-root.js:288",
+                "text": "console.error("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/init-to-root.js",
+                "to": "scripts/init-to-root.js"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+                "to": "scripts/init-to-root.js"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/init-to-root.js",
+                "to": "scripts/init-to-root.js"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/init-to-root.js",
+            "entryPointCount": 1,
+            "argCombinationCount": 6,
+            "envKeyCount": 4,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 6,
+            "coveredEnvKeyCount": 4,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--agent",
+              "--full",
+              "--no-package-json",
+              "--with-mcp",
+              "--with-package-json"
+            ],
+            "discoveredEnvKeys": [
+              "BMAD_SKIP_CONSUMER_MCP_INSTALL",
+              "INIT_CWD",
+              "NODE_ENV",
+              "VITEST"
+            ],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--agent <source-derived-safe-value>",
+              "--full <present>",
+              "--no-package-json <present>",
+              "--with-mcp <present>",
+              "--with-package-json <present>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--agent <source-derived-safe-value>",
+              "--full <present>",
+              "--no-package-json <present>",
+              "--with-mcp <present>",
+              "--with-package-json <present>"
+            ],
+            "coveredEnvKeys": [
+              "BMAD_SKIP_CONSUMER_MCP_INSTALL",
+              "INIT_CWD",
+              "NODE_ENV",
+              "VITEST"
+            ],
+            "scenarioDefinitionCount": 10,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_agent",
+              "flag_full",
+              "flag_no_package_json",
+              "flag_with_mcp",
+              "flag_with_package_json",
+              "env_bmad_skip_consumer_mcp_install",
+              "env_init_cwd",
+              "env_node_env",
+              "env_vitest"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g005_init_to_root_js_env_init_cwd",
+          "originalEntryPoint": "scripts/init-to-root.js",
+          "originalEntryCommand": "node scripts/init-to-root.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/init-to-root.js",
+          "argumentCombination": "env INIT_CWD=<source-derived-safe-value>",
+          "args": [],
+          "env": {
+            "INIT_CWD": "<source-derived-safe-value>"
+          },
+          "fixtures": [
+            {
+              "id": "g005_init_to_root_js_env_init_cwd_original_fixture_root",
+              "path": "<tmp>/g005_init_to_root_js_env_init_cwd-original-yUZCYd",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_init_to_root_js_env_init_cwd_package_fixture_root",
+              "path": "<tmp>/g005_init_to_root_js_env_init_cwd-package-o0rY3m",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "BMAD-Speckit-SDD-Flow init: deploy to D:\\Dev\\BMAD-Speckit-SDD-Flow\\source-derived-init_cwd  [agent=cursor]\nCopy _bmad -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\source-derived-init_cwd\\_bmad\nForce-sync _bmad/runtime/hooks/party-mode-read-current-session.cjs\nSync _bmad\\commands -> .cursor/commands\nSync _bmad\\speckit\\commands -> .cursor/commands\nSync _bmad\\cursor\\rules -> .cursor/rules\nSync _bmad\\shared -> .cursor/shared\nSync _bmad\\skills -> .cursor/skills\nSync _bmad\\cursor\\skills -> .cursor/skills\nSync _bmad\\i18n -> .cursor/i18n\nSync _bmad\\bmm\\workflows\\1-analysis\\bmad-create-product-brief -> .cursor\\skills\\bmad-create-product-brief\nSync _bmad\\bmm\\workflows\\1-analysis\\bmad-product-brief-preview -> .cursor\\skills\\bmad-product-brief-preview\nSync _bmad\\bmm\\workflows\\1-analysis\\research\\bmad-domain-research -> .cursor\\skills\\bmad-domain-research\nSync _bmad\\bmm\\workflows\\1-analysis\\research\\bmad-market-research -> .cursor\\skills\\bmad-market-research\nSync _bmad\\bmm\\workflows\\1-analysis\\research\\bmad-technical-research -> .cursor\\skills\\bmad-technical-research\nSync _bmad\\bmm\\workflows\\2-plan-workflows\\bmad-create-prd -> .cursor\\skills\\bmad-create-prd\nSync _bmad\\bmm\\workflows\\2-plan-workflows\\bmad-create-ux-design -> .cursor\\skills\\bmad-create-ux-design\nSync _bmad\\bmm\\workflows\\2-plan-workflows\\bmad-edit-prd -> .cursor\\skills\\bmad-edit-prd\nSync _bmad\\bmm\\workflows\\2-plan-workflows\\bmad-validate-prd -> .cursor\\skills\\bmad-validate-prd\nSync _bmad\\bmm\\workflows\\3-solutioning\\bmad-check-implementation-readiness -> .cursor\\skills\\bmad-check-implementation-readiness\nSync _bmad\\bmm\\workflows\\3-solutioning\\bmad-create-architecture -> .cursor\\skills\\bmad-create-architecture\nSync _bmad\\bmm\\workflows\\3-solutioning\\bmad-create-epics-and-stories -> .cursor\\skills\\bmad-create-epics-and-stories\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-code-review -> .cursor\\skills\\bmad-code-review\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-correct-course -> .cursor\\skills\\bmad-correct-course\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-create-story -> .cursor\\skills\\bmad-create-story\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-dev-story -> .cursor\\skills\\bmad-dev-story\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-retrospective -> .cursor\\skills\\bmad-retrospective\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-sprint-planning -> .cursor\\skills\\bmad-sprint-planning\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-sprint-status -> .cursor\\skills\\bmad-sprint-status\nSync _bmad\\bmm\\workflows\\bmad-document-project -> .cursor\\skills\\bmad-document-project\nSync _bmad\\bmm\\workflows\\bmad-generate-project-context -> .cursor\\skills\\bmad-generate-project-context\nSync _bmad\\bmm\\workflows\\bmad-qa-generate-e2e-tests -> .cursor\\skills\\bmad-qa-generate-e2e-tests\nSync _bmad\\bmm\\workflows\\bmad-quick-flow\\bmad-quick-dev -> .cursor\\skills\\bmad-quick-dev\nSync _bmad\\bmm\\workflows\\bmad-quick-flow\\bmad-quick-dev-new-preview -> .cursor\\skills\\bmad-quick-dev-new-preview\nSync _bmad\\bmm\\workflows\\bmad-quick-flow\\bmad-quick-spec -> .cursor\\skills\\bmad-quick-spec\nSync _bmad\\bmm\\agents\\bmad-agent-analyst -> .cursor\\skills\\bmad-agent-analyst\nSync _bmad\\bmm\\agents\\bmad-agent-architect -> .cursor\\skills\\bmad-agent-architect\nSync _bmad\\bmm\\agents\\bmad-agent-dev -> .cursor\\skills\\bmad-agent-dev\nSync _bmad\\bmm\\agents\\bmad-agent-pm -> .cursor\\skills\\bmad-agent-pm\nSync _bmad\\bmm\\agents\\bmad-agent-qa -> .cursor\\skills\\bmad-agent-qa\nSync _bmad\\bmm\\agents\\bmad-agent-quick-flow-solo-dev -> .cursor\\skills\\bmad-agent-quick-flow-solo-dev\nSync _bmad\\bmm\\agents\\bmad-agent-sm -> .cursor\\skills\\bmad-agent-sm\nSync _bmad\\bmm\\agents\\bmad-agent-tech-writer -> .cursor\\skills\\bmad-agent-tech-writer\nSync _bmad\\bmm\\agents\\bmad-agent-ux-designer -> .cursor\\skills\\bmad-agent-ux-designer\nSync _bmad\\core\\tasks\\bmad-create-prd -> .cursor\\skills\\bmad-create-prd\nSync _bmad\\core\\skills\\bmad-advanced-elicitation -> .cursor\\skills\\bmad-advanced-elicitation\nSync _bmad\\core\\skills\\bmad-brainstorming -> .cursor\\skills\\bmad-brainstorming\nSync _bmad\\core\\skills\\bmad-distillator -> .cursor\\skills\\bmad-distillator\nSync _bmad\\core\\skills\\bmad-editorial-review-prose -> .cursor\\skills\\bmad-editorial-review-prose\nSync _bmad\\core\\skills\\bmad-editorial-review-structure -> .cursor\\skills\\bmad-editorial-review-structure\nSync _bmad\\core\\skills\\bmad-help -> .cursor\\skills\\bmad-help\nSync _bmad\\core\\skills\\bmad-index-docs -> .cursor\\skills\\bmad-index-docs\nSync _bmad\\core\\skills\\bmad-init -> .cursor\\skills\\bmad-init\nSync _bmad\\core\\skills\\bmad-party-mode -> .cursor\\skills\\bmad-party-mode\nSync _bmad\\core\\skills\\bmad-review-adversarial-general -> .cursor\\skills\\bmad-review-adversarial-general\nSync _bmad\\core\\skills\\bmad-review-edge-case-hunter -> .cursor\\skills\\bmad-review-edge-case-hunter\nSync _bmad\\core\\skills\\bmad-shard-doc -> .cursor\\skills\\bmad-shard-doc\nRe-apply Cursor skill overrides _bmad\\cursor\\skills -> .cursor/skills\nSync _bmad/_config/code-reviewer-config.yaml -> .cursor/agents/\nSync _bmad/cursor/agents/ -> .cursor/agents/\nSync _bmad\\runtime\\hooks -> .cursor\\hooks\nForce-sync .cursor/hooks/party-mode-read-current-session.cjs\nSync _bmad\\cursor\\hooks\\emit-runtime-policy-cli.cjs -> .cursor\\hooks\\emit-runtime-policy-cli.cjs\nSync _bmad\\cursor\\hooks\\runtime-policy-inject.cjs -> .cursor\\hooks\\runtime-policy-inject.cjs\nSync _bmad\\cursor\\hooks\\post-tool-use.cjs -> .cursor\\hooks\\post-tool-use.cjs\nSync _bmad\\cursor\\hooks\\runtime-dashboard-session-start.cjs -> .cursor\\hooks\\runtime-dashboard-session-start.cjs\nSync _bmad\\runtime\\hooks\\pre-continue-check.cjs -> .cursor\\hooks\\pre-continue-check.cjs\nSync _bmad\\cursor\\hooks\\subagent-result-summary.cjs -> .cursor\\hooks\\subagent-result-summary.cjs\nDeployed emit-runtime-policy.cjs, resolve-for-session.cjs, render-audit-block.cjs (+ write-runtime-context.cjs) under .cursor/hooks and/or .claude/hooks; removed legacy worker/dispatch/launcher hook-local bundles from the accepted install surface (no project-root scripts/).\nSkipped runtime MCP layout (pass --with-mcp to enable consumer MCP files).\nSync _bmad\\_config\\architecture-gates.yaml -> _bmad\\_config\\architecture-gates.yaml\nSync _bmad\\_config\\continue-gate-routing.yaml -> _bmad\\_config\\continue-gate-routing.yaml\nWrote D:\\Dev\\BMAD-Speckit-SDD-Flow\\source-derived-init_cwd\\_bmad-output\\runtime\\context\\bootstrap.json\nWrote install surface manifest + install-state snapshot metadata to _bmad-output/config/.\nSkipped package.json / npm install (pass --with-package-json for local bmad-speckit devDependency in target).\nDone. Copied 1 dirs, 3923 files.\nVerify with: _bmad/speckit/scripts/powershell/check-prerequisites.ps1\n",
+          "expectedStderr": "Target exists, merging: D:\\Dev\\BMAD-Speckit-SDD-Flow\\source-derived-init_cwd\\_bmad\n",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "Target exists, merging: D:\\Dev\\BMAD-Speckit-SDD-Flow\\source-derived-init_cwd\\_bmad"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/init-to-root.js:env_init_cwd",
+            "originalReplayArtifactHash": "sha256:5736b44ac5c8b61c2228088f84029250f9c8ea2458f180b5c0efa29b318f8185",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/init-to-root.js:env_init_cwd",
+            "sourceLineAnchors": [
+              {
+                "line": 44,
+                "anchor": "scripts/init-to-root.js:44",
+                "text": "const args = process.argv.slice(2);"
+              },
+              {
+                "line": 113,
+                "anchor": "scripts/init-to-root.js:113",
+                "text": "console.log('Sync', path.relative(targetDir, src), '->', dest);"
+              },
+              {
+                "line": 124,
+                "anchor": "scripts/init-to-root.js:124",
+                "text": "console.log('Re-apply Cursor skill overrides', path.relative(targetDir, cursorSkillOverridesSrc), '-> .cursor/skills');"
+              },
+              {
+                "line": 133,
+                "anchor": "scripts/init-to-root.js:133",
+                "text": "console.log('Sync _bmad/_config/code-reviewer-config.yaml -> .cursor/agents/');"
+              },
+              {
+                "line": 141,
+                "anchor": "scripts/init-to-root.js:141",
+                "text": "console.log('Sync _bmad/cursor/agents/ -> .cursor/agents/');"
+              },
+              {
+                "line": 169,
+                "anchor": "scripts/init-to-root.js:169",
+                "text": "console.log('Sync', path.relative(targetDir, src), '->', dest);"
+              },
+              {
+                "line": 196,
+                "anchor": "scripts/init-to-root.js:196",
+                "text": "console.log('Merged global ~/.claude/settings.json hooks into project settings');"
+              },
+              {
+                "line": 199,
+                "anchor": "scripts/init-to-root.js:199",
+                "text": "console.warn('Failed to read global settings, using BMAD defaults:', e.message);"
+              },
+              {
+                "line": 203,
+                "anchor": "scripts/init-to-root.js:203",
+                "text": "console.log('Sync _bmad/claude/settings.json -> .claude/settings.json');"
+              },
+              {
+                "line": 212,
+                "anchor": "scripts/init-to-root.js:212",
+                "text": "console.log('Generated CLAUDE.md from template');"
+              },
+              {
+                "line": 239,
+                "anchor": "scripts/init-to-root.js:239",
+                "text": "console.log('Sync', path.relative(targetDir, src), '->', dest);"
+              },
+              {
+                "line": 288,
+                "anchor": "scripts/init-to-root.js:288",
+                "text": "console.error("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/init-to-root.js",
+                "to": "scripts/init-to-root.js"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+                "to": "scripts/init-to-root.js"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/init-to-root.js",
+                "to": "scripts/init-to-root.js"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/init-to-root.js",
+            "entryPointCount": 1,
+            "argCombinationCount": 6,
+            "envKeyCount": 4,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 6,
+            "coveredEnvKeyCount": 4,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--agent",
+              "--full",
+              "--no-package-json",
+              "--with-mcp",
+              "--with-package-json"
+            ],
+            "discoveredEnvKeys": [
+              "BMAD_SKIP_CONSUMER_MCP_INSTALL",
+              "INIT_CWD",
+              "NODE_ENV",
+              "VITEST"
+            ],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--agent <source-derived-safe-value>",
+              "--full <present>",
+              "--no-package-json <present>",
+              "--with-mcp <present>",
+              "--with-package-json <present>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--agent <source-derived-safe-value>",
+              "--full <present>",
+              "--no-package-json <present>",
+              "--with-mcp <present>",
+              "--with-package-json <present>"
+            ],
+            "coveredEnvKeys": [
+              "BMAD_SKIP_CONSUMER_MCP_INSTALL",
+              "INIT_CWD",
+              "NODE_ENV",
+              "VITEST"
+            ],
+            "scenarioDefinitionCount": 10,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_agent",
+              "flag_full",
+              "flag_no_package_json",
+              "flag_with_mcp",
+              "flag_with_package_json",
+              "env_bmad_skip_consumer_mcp_install",
+              "env_init_cwd",
+              "env_node_env",
+              "env_vitest"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g005_init_to_root_js_env_node_env",
+          "originalEntryPoint": "scripts/init-to-root.js",
+          "originalEntryCommand": "node scripts/init-to-root.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/init-to-root.js",
+          "argumentCombination": "env NODE_ENV=<source-derived-safe-value>",
+          "args": [],
+          "env": {
+            "NODE_ENV": "<source-derived-safe-value>"
+          },
+          "fixtures": [
+            {
+              "id": "g005_init_to_root_js_env_node_env_original_fixture_root",
+              "path": "<tmp>/g005_init_to_root_js_env_node_env-original-na2tJA",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_init_to_root_js_env_node_env_package_fixture_root",
+              "path": "<tmp>/g005_init_to_root_js_env_node_env-package-vqLWWV",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "BMAD-Speckit-SDD-Flow init: deploy to D:\\Dev\\BMAD-Speckit-SDD-Flow  [agent=cursor]\nCopy _bmad -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\nForce-sync _bmad/runtime/hooks/party-mode-read-current-session.cjs\nSync _bmad\\commands -> .cursor/commands\nSync _bmad\\speckit\\commands -> .cursor/commands\nSync _bmad\\cursor\\rules -> .cursor/rules\nSync _bmad\\shared -> .cursor/shared\nSync _bmad\\skills -> .cursor/skills\nSync _bmad\\cursor\\skills -> .cursor/skills\nSync _bmad\\i18n -> .cursor/i18n\nSync _bmad\\bmm\\workflows\\1-analysis\\bmad-create-product-brief -> .cursor\\skills\\bmad-create-product-brief\nSync _bmad\\bmm\\workflows\\1-analysis\\bmad-product-brief-preview -> .cursor\\skills\\bmad-product-brief-preview\nSync _bmad\\bmm\\workflows\\1-analysis\\research\\bmad-domain-research -> .cursor\\skills\\bmad-domain-research\nSync _bmad\\bmm\\workflows\\1-analysis\\research\\bmad-market-research -> .cursor\\skills\\bmad-market-research\nSync _bmad\\bmm\\workflows\\1-analysis\\research\\bmad-technical-research -> .cursor\\skills\\bmad-technical-research\nSync _bmad\\bmm\\workflows\\2-plan-workflows\\bmad-create-prd -> .cursor\\skills\\bmad-create-prd\nSync _bmad\\bmm\\workflows\\2-plan-workflows\\bmad-create-ux-design -> .cursor\\skills\\bmad-create-ux-design\nSync _bmad\\bmm\\workflows\\2-plan-workflows\\bmad-edit-prd -> .cursor\\skills\\bmad-edit-prd\nSync _bmad\\bmm\\workflows\\2-plan-workflows\\bmad-validate-prd -> .cursor\\skills\\bmad-validate-prd\nSync _bmad\\bmm\\workflows\\3-solutioning\\bmad-check-implementation-readiness -> .cursor\\skills\\bmad-check-implementation-readiness\nSync _bmad\\bmm\\workflows\\3-solutioning\\bmad-create-architecture -> .cursor\\skills\\bmad-create-architecture\nSync _bmad\\bmm\\workflows\\3-solutioning\\bmad-create-epics-and-stories -> .cursor\\skills\\bmad-create-epics-and-stories\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-code-review -> .cursor\\skills\\bmad-code-review\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-correct-course -> .cursor\\skills\\bmad-correct-course\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-create-story -> .cursor\\skills\\bmad-create-story\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-dev-story -> .cursor\\skills\\bmad-dev-story\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-retrospective -> .cursor\\skills\\bmad-retrospective\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-sprint-planning -> .cursor\\skills\\bmad-sprint-planning\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-sprint-status -> .cursor\\skills\\bmad-sprint-status\nSync _bmad\\bmm\\workflows\\bmad-document-project -> .cursor\\skills\\bmad-document-project\nSync _bmad\\bmm\\workflows\\bmad-generate-project-context -> .cursor\\skills\\bmad-generate-project-context\nSync _bmad\\bmm\\workflows\\bmad-qa-generate-e2e-tests -> .cursor\\skills\\bmad-qa-generate-e2e-tests\nSync _bmad\\bmm\\workflows\\bmad-quick-flow\\bmad-quick-dev -> .cursor\\skills\\bmad-quick-dev\nSync _bmad\\bmm\\workflows\\bmad-quick-flow\\bmad-quick-dev-new-preview -> .cursor\\skills\\bmad-quick-dev-new-preview\nSync _bmad\\bmm\\workflows\\bmad-quick-flow\\bmad-quick-spec -> .cursor\\skills\\bmad-quick-spec\nSync _bmad\\bmm\\agents\\bmad-agent-analyst -> .cursor\\skills\\bmad-agent-analyst\nSync _bmad\\bmm\\agents\\bmad-agent-architect -> .cursor\\skills\\bmad-agent-architect\nSync _bmad\\bmm\\agents\\bmad-agent-dev -> .cursor\\skills\\bmad-agent-dev\nSync _bmad\\bmm\\agents\\bmad-agent-pm -> .cursor\\skills\\bmad-agent-pm\nSync _bmad\\bmm\\agents\\bmad-agent-qa -> .cursor\\skills\\bmad-agent-qa\nSync _bmad\\bmm\\agents\\bmad-agent-quick-flow-solo-dev -> .cursor\\skills\\bmad-agent-quick-flow-solo-dev\nSync _bmad\\bmm\\agents\\bmad-agent-sm -> .cursor\\skills\\bmad-agent-sm\nSync _bmad\\bmm\\agents\\bmad-agent-tech-writer -> .cursor\\skills\\bmad-agent-tech-writer\nSync _bmad\\bmm\\agents\\bmad-agent-ux-designer -> .cursor\\skills\\bmad-agent-ux-designer\nSync _bmad\\core\\tasks\\bmad-create-prd -> .cursor\\skills\\bmad-create-prd\nSync _bmad\\core\\skills\\bmad-advanced-elicitation -> .cursor\\skills\\bmad-advanced-elicitation\nSync _bmad\\core\\skills\\bmad-brainstorming -> .cursor\\skills\\bmad-brainstorming\nSync _bmad\\core\\skills\\bmad-distillator -> .cursor\\skills\\bmad-distillator\nSync _bmad\\core\\skills\\bmad-editorial-review-prose -> .cursor\\skills\\bmad-editorial-review-prose\nSync _bmad\\core\\skills\\bmad-editorial-review-structure -> .cursor\\skills\\bmad-editorial-review-structure\nSync _bmad\\core\\skills\\bmad-help -> .cursor\\skills\\bmad-help\nSync _bmad\\core\\skills\\bmad-index-docs -> .cursor\\skills\\bmad-index-docs\nSync _bmad\\core\\skills\\bmad-init -> .cursor\\skills\\bmad-init\nSync _bmad\\core\\skills\\bmad-party-mode -> .cursor\\skills\\bmad-party-mode\nSync _bmad\\core\\skills\\bmad-review-adversarial-general -> .cursor\\skills\\bmad-review-adversarial-general\nSync _bmad\\core\\skills\\bmad-review-edge-case-hunter -> .cursor\\skills\\bmad-review-edge-case-hunter\nSync _bmad\\core\\skills\\bmad-shard-doc -> .cursor\\skills\\bmad-shard-doc\nRe-apply Cursor skill overrides _bmad\\cursor\\skills -> .cursor/skills\nSync _bmad/_config/code-reviewer-config.yaml -> .cursor/agents/\nSync _bmad/cursor/agents/ -> .cursor/agents/\nSync _bmad\\runtime\\hooks -> .cursor\\hooks\nForce-sync .cursor/hooks/party-mode-read-current-session.cjs\nSync _bmad\\cursor\\hooks\\emit-runtime-policy-cli.cjs -> .cursor\\hooks\\emit-runtime-policy-cli.cjs\nSync _bmad\\cursor\\hooks\\runtime-policy-inject.cjs -> .cursor\\hooks\\runtime-policy-inject.cjs\nSync _bmad\\cursor\\hooks\\post-tool-use.cjs -> .cursor\\hooks\\post-tool-use.cjs\nSync _bmad\\cursor\\hooks\\runtime-dashboard-session-start.cjs -> .cursor\\hooks\\runtime-dashboard-session-start.cjs\nSync _bmad\\runtime\\hooks\\pre-continue-check.cjs -> .cursor\\hooks\\pre-continue-check.cjs\nSync _bmad\\cursor\\hooks\\subagent-result-summary.cjs -> .cursor\\hooks\\subagent-result-summary.cjs\nSync _bmad\\_config\\architecture-gates.yaml -> _bmad\\_config\\architecture-gates.yaml\nSync _bmad\\_config\\continue-gate-routing.yaml -> _bmad\\_config\\continue-gate-routing.yaml\nWrote D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\runtime\\context\\bootstrap.json\nWrote install surface manifest + install-state snapshot metadata to _bmad-output/config/.\nDone. Copied 1 dirs, 3932 files.\nVerify with: _bmad/speckit/scripts/powershell/check-prerequisites.ps1\n",
+          "expectedStderr": "Target exists, merging: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\n",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "Target exists, merging: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/init-to-root.js:env_node_env",
+            "originalReplayArtifactHash": "sha256:3c07470ca436470685c2b6346090e50aab30cdf405147090bd6c95996e4597d6",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/init-to-root.js:env_node_env",
+            "sourceLineAnchors": [
+              {
+                "line": 44,
+                "anchor": "scripts/init-to-root.js:44",
+                "text": "const args = process.argv.slice(2);"
+              },
+              {
+                "line": 113,
+                "anchor": "scripts/init-to-root.js:113",
+                "text": "console.log('Sync', path.relative(targetDir, src), '->', dest);"
+              },
+              {
+                "line": 124,
+                "anchor": "scripts/init-to-root.js:124",
+                "text": "console.log('Re-apply Cursor skill overrides', path.relative(targetDir, cursorSkillOverridesSrc), '-> .cursor/skills');"
+              },
+              {
+                "line": 133,
+                "anchor": "scripts/init-to-root.js:133",
+                "text": "console.log('Sync _bmad/_config/code-reviewer-config.yaml -> .cursor/agents/');"
+              },
+              {
+                "line": 141,
+                "anchor": "scripts/init-to-root.js:141",
+                "text": "console.log('Sync _bmad/cursor/agents/ -> .cursor/agents/');"
+              },
+              {
+                "line": 169,
+                "anchor": "scripts/init-to-root.js:169",
+                "text": "console.log('Sync', path.relative(targetDir, src), '->', dest);"
+              },
+              {
+                "line": 196,
+                "anchor": "scripts/init-to-root.js:196",
+                "text": "console.log('Merged global ~/.claude/settings.json hooks into project settings');"
+              },
+              {
+                "line": 199,
+                "anchor": "scripts/init-to-root.js:199",
+                "text": "console.warn('Failed to read global settings, using BMAD defaults:', e.message);"
+              },
+              {
+                "line": 203,
+                "anchor": "scripts/init-to-root.js:203",
+                "text": "console.log('Sync _bmad/claude/settings.json -> .claude/settings.json');"
+              },
+              {
+                "line": 212,
+                "anchor": "scripts/init-to-root.js:212",
+                "text": "console.log('Generated CLAUDE.md from template');"
+              },
+              {
+                "line": 239,
+                "anchor": "scripts/init-to-root.js:239",
+                "text": "console.log('Sync', path.relative(targetDir, src), '->', dest);"
+              },
+              {
+                "line": 288,
+                "anchor": "scripts/init-to-root.js:288",
+                "text": "console.error("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/init-to-root.js",
+                "to": "scripts/init-to-root.js"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+                "to": "scripts/init-to-root.js"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/init-to-root.js",
+                "to": "scripts/init-to-root.js"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/init-to-root.js",
+            "entryPointCount": 1,
+            "argCombinationCount": 6,
+            "envKeyCount": 4,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 6,
+            "coveredEnvKeyCount": 4,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--agent",
+              "--full",
+              "--no-package-json",
+              "--with-mcp",
+              "--with-package-json"
+            ],
+            "discoveredEnvKeys": [
+              "BMAD_SKIP_CONSUMER_MCP_INSTALL",
+              "INIT_CWD",
+              "NODE_ENV",
+              "VITEST"
+            ],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--agent <source-derived-safe-value>",
+              "--full <present>",
+              "--no-package-json <present>",
+              "--with-mcp <present>",
+              "--with-package-json <present>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--agent <source-derived-safe-value>",
+              "--full <present>",
+              "--no-package-json <present>",
+              "--with-mcp <present>",
+              "--with-package-json <present>"
+            ],
+            "coveredEnvKeys": [
+              "BMAD_SKIP_CONSUMER_MCP_INSTALL",
+              "INIT_CWD",
+              "NODE_ENV",
+              "VITEST"
+            ],
+            "scenarioDefinitionCount": 10,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_agent",
+              "flag_full",
+              "flag_no_package_json",
+              "flag_with_mcp",
+              "flag_with_package_json",
+              "env_bmad_skip_consumer_mcp_install",
+              "env_init_cwd",
+              "env_node_env",
+              "env_vitest"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g005_init_to_root_js_env_vitest",
+          "originalEntryPoint": "scripts/init-to-root.js",
+          "originalEntryCommand": "node scripts/init-to-root.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/init-to-root.js",
+          "argumentCombination": "env VITEST=<source-derived-safe-value>",
+          "args": [],
+          "env": {
+            "VITEST": "<source-derived-safe-value>"
+          },
+          "fixtures": [
+            {
+              "id": "g005_init_to_root_js_env_vitest_original_fixture_root",
+              "path": "<tmp>/g005_init_to_root_js_env_vitest-original-jVjUdk",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_init_to_root_js_env_vitest_package_fixture_root",
+              "path": "<tmp>/g005_init_to_root_js_env_vitest-package-ifMGsq",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "BMAD-Speckit-SDD-Flow init: deploy to D:\\Dev\\BMAD-Speckit-SDD-Flow  [agent=cursor]\nCopy _bmad -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\nForce-sync _bmad/runtime/hooks/party-mode-read-current-session.cjs\nSync _bmad\\commands -> .cursor/commands\nSync _bmad\\speckit\\commands -> .cursor/commands\nSync _bmad\\cursor\\rules -> .cursor/rules\nSync _bmad\\shared -> .cursor/shared\nSync _bmad\\skills -> .cursor/skills\nSync _bmad\\cursor\\skills -> .cursor/skills\nSync _bmad\\i18n -> .cursor/i18n\nSync _bmad\\bmm\\workflows\\1-analysis\\bmad-create-product-brief -> .cursor\\skills\\bmad-create-product-brief\nSync _bmad\\bmm\\workflows\\1-analysis\\bmad-product-brief-preview -> .cursor\\skills\\bmad-product-brief-preview\nSync _bmad\\bmm\\workflows\\1-analysis\\research\\bmad-domain-research -> .cursor\\skills\\bmad-domain-research\nSync _bmad\\bmm\\workflows\\1-analysis\\research\\bmad-market-research -> .cursor\\skills\\bmad-market-research\nSync _bmad\\bmm\\workflows\\1-analysis\\research\\bmad-technical-research -> .cursor\\skills\\bmad-technical-research\nSync _bmad\\bmm\\workflows\\2-plan-workflows\\bmad-create-prd -> .cursor\\skills\\bmad-create-prd\nSync _bmad\\bmm\\workflows\\2-plan-workflows\\bmad-create-ux-design -> .cursor\\skills\\bmad-create-ux-design\nSync _bmad\\bmm\\workflows\\2-plan-workflows\\bmad-edit-prd -> .cursor\\skills\\bmad-edit-prd\nSync _bmad\\bmm\\workflows\\2-plan-workflows\\bmad-validate-prd -> .cursor\\skills\\bmad-validate-prd\nSync _bmad\\bmm\\workflows\\3-solutioning\\bmad-check-implementation-readiness -> .cursor\\skills\\bmad-check-implementation-readiness\nSync _bmad\\bmm\\workflows\\3-solutioning\\bmad-create-architecture -> .cursor\\skills\\bmad-create-architecture\nSync _bmad\\bmm\\workflows\\3-solutioning\\bmad-create-epics-and-stories -> .cursor\\skills\\bmad-create-epics-and-stories\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-code-review -> .cursor\\skills\\bmad-code-review\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-correct-course -> .cursor\\skills\\bmad-correct-course\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-create-story -> .cursor\\skills\\bmad-create-story\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-dev-story -> .cursor\\skills\\bmad-dev-story\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-retrospective -> .cursor\\skills\\bmad-retrospective\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-sprint-planning -> .cursor\\skills\\bmad-sprint-planning\nSync _bmad\\bmm\\workflows\\4-implementation\\bmad-sprint-status -> .cursor\\skills\\bmad-sprint-status\nSync _bmad\\bmm\\workflows\\bmad-document-project -> .cursor\\skills\\bmad-document-project\nSync _bmad\\bmm\\workflows\\bmad-generate-project-context -> .cursor\\skills\\bmad-generate-project-context\nSync _bmad\\bmm\\workflows\\bmad-qa-generate-e2e-tests -> .cursor\\skills\\bmad-qa-generate-e2e-tests\nSync _bmad\\bmm\\workflows\\bmad-quick-flow\\bmad-quick-dev -> .cursor\\skills\\bmad-quick-dev\nSync _bmad\\bmm\\workflows\\bmad-quick-flow\\bmad-quick-dev-new-preview -> .cursor\\skills\\bmad-quick-dev-new-preview\nSync _bmad\\bmm\\workflows\\bmad-quick-flow\\bmad-quick-spec -> .cursor\\skills\\bmad-quick-spec\nSync _bmad\\bmm\\agents\\bmad-agent-analyst -> .cursor\\skills\\bmad-agent-analyst\nSync _bmad\\bmm\\agents\\bmad-agent-architect -> .cursor\\skills\\bmad-agent-architect\nSync _bmad\\bmm\\agents\\bmad-agent-dev -> .cursor\\skills\\bmad-agent-dev\nSync _bmad\\bmm\\agents\\bmad-agent-pm -> .cursor\\skills\\bmad-agent-pm\nSync _bmad\\bmm\\agents\\bmad-agent-qa -> .cursor\\skills\\bmad-agent-qa\nSync _bmad\\bmm\\agents\\bmad-agent-quick-flow-solo-dev -> .cursor\\skills\\bmad-agent-quick-flow-solo-dev\nSync _bmad\\bmm\\agents\\bmad-agent-sm -> .cursor\\skills\\bmad-agent-sm\nSync _bmad\\bmm\\agents\\bmad-agent-tech-writer -> .cursor\\skills\\bmad-agent-tech-writer\nSync _bmad\\bmm\\agents\\bmad-agent-ux-designer -> .cursor\\skills\\bmad-agent-ux-designer\nSync _bmad\\core\\tasks\\bmad-create-prd -> .cursor\\skills\\bmad-create-prd\nSync _bmad\\core\\skills\\bmad-advanced-elicitation -> .cursor\\skills\\bmad-advanced-elicitation\nSync _bmad\\core\\skills\\bmad-brainstorming -> .cursor\\skills\\bmad-brainstorming\nSync _bmad\\core\\skills\\bmad-distillator -> .cursor\\skills\\bmad-distillator\nSync _bmad\\core\\skills\\bmad-editorial-review-prose -> .cursor\\skills\\bmad-editorial-review-prose\nSync _bmad\\core\\skills\\bmad-editorial-review-structure -> .cursor\\skills\\bmad-editorial-review-structure\nSync _bmad\\core\\skills\\bmad-help -> .cursor\\skills\\bmad-help\nSync _bmad\\core\\skills\\bmad-index-docs -> .cursor\\skills\\bmad-index-docs\nSync _bmad\\core\\skills\\bmad-init -> .cursor\\skills\\bmad-init\nSync _bmad\\core\\skills\\bmad-party-mode -> .cursor\\skills\\bmad-party-mode\nSync _bmad\\core\\skills\\bmad-review-adversarial-general -> .cursor\\skills\\bmad-review-adversarial-general\nSync _bmad\\core\\skills\\bmad-review-edge-case-hunter -> .cursor\\skills\\bmad-review-edge-case-hunter\nSync _bmad\\core\\skills\\bmad-shard-doc -> .cursor\\skills\\bmad-shard-doc\nRe-apply Cursor skill overrides _bmad\\cursor\\skills -> .cursor/skills\nSync _bmad/_config/code-reviewer-config.yaml -> .cursor/agents/\nSync _bmad/cursor/agents/ -> .cursor/agents/\nSync _bmad\\runtime\\hooks -> .cursor\\hooks\nForce-sync .cursor/hooks/party-mode-read-current-session.cjs\nSync _bmad\\cursor\\hooks\\emit-runtime-policy-cli.cjs -> .cursor\\hooks\\emit-runtime-policy-cli.cjs\nSync _bmad\\cursor\\hooks\\runtime-policy-inject.cjs -> .cursor\\hooks\\runtime-policy-inject.cjs\nSync _bmad\\cursor\\hooks\\post-tool-use.cjs -> .cursor\\hooks\\post-tool-use.cjs\nSync _bmad\\cursor\\hooks\\runtime-dashboard-session-start.cjs -> .cursor\\hooks\\runtime-dashboard-session-start.cjs\nSync _bmad\\runtime\\hooks\\pre-continue-check.cjs -> .cursor\\hooks\\pre-continue-check.cjs\nSync _bmad\\cursor\\hooks\\subagent-result-summary.cjs -> .cursor\\hooks\\subagent-result-summary.cjs\nSync _bmad\\_config\\architecture-gates.yaml -> _bmad\\_config\\architecture-gates.yaml\nSync _bmad\\_config\\continue-gate-routing.yaml -> _bmad\\_config\\continue-gate-routing.yaml\nWrote D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\runtime\\context\\bootstrap.json\nWrote install surface manifest + install-state snapshot metadata to _bmad-output/config/.\nDone. Copied 1 dirs, 3932 files.\nVerify with: _bmad/speckit/scripts/powershell/check-prerequisites.ps1\n",
+          "expectedStderr": "Target exists, merging: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\n",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "Target exists, merging: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/init-to-root.js:env_vitest",
+            "originalReplayArtifactHash": "sha256:3c07470ca436470685c2b6346090e50aab30cdf405147090bd6c95996e4597d6",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/init-to-root.js:env_vitest",
+            "sourceLineAnchors": [
+              {
+                "line": 44,
+                "anchor": "scripts/init-to-root.js:44",
+                "text": "const args = process.argv.slice(2);"
+              },
+              {
+                "line": 113,
+                "anchor": "scripts/init-to-root.js:113",
+                "text": "console.log('Sync', path.relative(targetDir, src), '->', dest);"
+              },
+              {
+                "line": 124,
+                "anchor": "scripts/init-to-root.js:124",
+                "text": "console.log('Re-apply Cursor skill overrides', path.relative(targetDir, cursorSkillOverridesSrc), '-> .cursor/skills');"
+              },
+              {
+                "line": 133,
+                "anchor": "scripts/init-to-root.js:133",
+                "text": "console.log('Sync _bmad/_config/code-reviewer-config.yaml -> .cursor/agents/');"
+              },
+              {
+                "line": 141,
+                "anchor": "scripts/init-to-root.js:141",
+                "text": "console.log('Sync _bmad/cursor/agents/ -> .cursor/agents/');"
+              },
+              {
+                "line": 169,
+                "anchor": "scripts/init-to-root.js:169",
+                "text": "console.log('Sync', path.relative(targetDir, src), '->', dest);"
+              },
+              {
+                "line": 196,
+                "anchor": "scripts/init-to-root.js:196",
+                "text": "console.log('Merged global ~/.claude/settings.json hooks into project settings');"
+              },
+              {
+                "line": 199,
+                "anchor": "scripts/init-to-root.js:199",
+                "text": "console.warn('Failed to read global settings, using BMAD defaults:', e.message);"
+              },
+              {
+                "line": 203,
+                "anchor": "scripts/init-to-root.js:203",
+                "text": "console.log('Sync _bmad/claude/settings.json -> .claude/settings.json');"
+              },
+              {
+                "line": 212,
+                "anchor": "scripts/init-to-root.js:212",
+                "text": "console.log('Generated CLAUDE.md from template');"
+              },
+              {
+                "line": 239,
+                "anchor": "scripts/init-to-root.js:239",
+                "text": "console.log('Sync', path.relative(targetDir, src), '->', dest);"
+              },
+              {
+                "line": 288,
+                "anchor": "scripts/init-to-root.js:288",
+                "text": "console.error("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/init-to-root.js",
+                "to": "scripts/init-to-root.js"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+                "to": "scripts/init-to-root.js"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/init-to-root.js",
+                "to": "scripts/init-to-root.js"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/init-to-root.js",
+            "entryPointCount": 1,
+            "argCombinationCount": 6,
+            "envKeyCount": 4,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 6,
+            "coveredEnvKeyCount": 4,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--agent",
+              "--full",
+              "--no-package-json",
+              "--with-mcp",
+              "--with-package-json"
+            ],
+            "discoveredEnvKeys": [
+              "BMAD_SKIP_CONSUMER_MCP_INSTALL",
+              "INIT_CWD",
+              "NODE_ENV",
+              "VITEST"
+            ],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--agent <source-derived-safe-value>",
+              "--full <present>",
+              "--no-package-json <present>",
+              "--with-mcp <present>",
+              "--with-package-json <present>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--agent <source-derived-safe-value>",
+              "--full <present>",
+              "--no-package-json <present>",
+              "--with-mcp <present>",
+              "--with-package-json <present>"
+            ],
+            "coveredEnvKeys": [
+              "BMAD_SKIP_CONSUMER_MCP_INSTALL",
+              "INIT_CWD",
+              "NODE_ENV",
+              "VITEST"
+            ],
+            "scenarioDefinitionCount": 10,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_agent",
+              "flag_full",
+              "flag_no_package_json",
+              "flag_with_mcp",
+              "flag_with_package_json",
+              "env_bmad_skip_consumer_mcp_install",
+              "env_init_cwd",
+              "env_node_env",
+              "env_vitest"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
