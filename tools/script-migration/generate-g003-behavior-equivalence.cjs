@@ -53,22 +53,27 @@ function parseArgs(argv) {
 }
 
 function sha256Text(value) {
-  return `sha256:${crypto.createHash('sha256').update(value, 'utf8').digest('hex')}`;
+  return `sha256:${crypto.createHash('sha256').update(canonicalizeText(value), 'utf8').digest('hex')}`;
 }
 
 function readText(relativePath) {
-  return fs.readFileSync(repoPath(relativePath), 'utf8');
+  return canonicalizeText(fs.readFileSync(repoPath(relativePath), 'utf8'));
 }
 
 function writeText(relativePath, text) {
+  const canonicalText = canonicalizeText(text);
   const absolute = repoPath(relativePath);
   fs.mkdirSync(path.dirname(absolute), { recursive: true });
-  fs.writeFileSync(absolute, text, 'utf8');
+  fs.writeFileSync(absolute, canonicalText, 'utf8');
   return {
     path: normalizePath(relativePath),
-    bytes: Buffer.byteLength(text, 'utf8'),
-    hash: sha256Text(text),
+    bytes: Buffer.byteLength(canonicalText, 'utf8'),
+    hash: sha256Text(canonicalText),
   };
+}
+
+function canonicalizeText(value) {
+  return String(value || '').replace(/\r\n|\r/gu, '\n');
 }
 
 function round4(value) {
@@ -387,6 +392,13 @@ function updateG003Ledger({ ledger, matrixArtifactHash, replayResultsHash, stdou
   row.originalBytes = originalInfo.bytes;
   row.originalLoc = originalInfo.lines;
   row.sourceSha256 = originalInfo.sha256;
+  row.sourceFacts = {
+    ...(row.sourceFacts && typeof row.sourceFacts === 'object' ? row.sourceFacts : {}),
+    originalCanonicalBytes: originalInfo.bytes,
+    originalCanonicalLoc: originalInfo.lines,
+    originalCanonicalSha256: originalInfo.sha256,
+    originalSizeHashPolicy: 'canonical_lf_text',
+  };
   row.packageBytes = packageInfo.bytes;
   row.packageLoc = packageInfo.lines;
   row.semanticPackageBytes = packageInfo.bytes;

@@ -107,18 +107,23 @@ function acceptanceIdsForOwner(ownerTaskId) {
 }
 
 function sha256Text(value) {
-  return `sha256:${crypto.createHash('sha256').update(value, 'utf8').digest('hex')}`;
+  return `sha256:${crypto.createHash('sha256').update(canonicalizeText(value), 'utf8').digest('hex')}`;
 }
 
 function writeText(relativePath, text) {
+  const canonicalText = canonicalizeText(text);
   const absolute = repoPath(relativePath);
   fs.mkdirSync(path.dirname(absolute), { recursive: true });
-  fs.writeFileSync(absolute, text, 'utf8');
+  fs.writeFileSync(absolute, canonicalText, 'utf8');
   return {
     path: normalizePath(relativePath),
-    bytes: Buffer.byteLength(text, 'utf8'),
-    hash: sha256Text(text),
+    bytes: Buffer.byteLength(canonicalText, 'utf8'),
+    hash: sha256Text(canonicalText),
   };
+}
+
+function canonicalizeText(value) {
+  return String(value || '').replace(/\r\n|\r/gu, '\n');
 }
 
 function escapeRegExp(value) {
@@ -254,8 +259,8 @@ function safeId(value) {
 }
 
 function lineAnchorsForSource(originalPath) {
-  const text = fs.readFileSync(repoPath(originalPath), 'utf8');
-  const lines = text.split(/\r?\n/u);
+  const text = canonicalizeText(fs.readFileSync(repoPath(originalPath), 'utf8'));
+  const lines = text.split(/\n/u);
   const anchors = [];
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index];
@@ -311,7 +316,7 @@ function discoverCliFlags(text) {
 }
 
 function discoverOriginalBehavior(originalPath) {
-  const text = fs.readFileSync(repoPath(originalPath), 'utf8');
+  const text = canonicalizeText(fs.readFileSync(repoPath(originalPath), 'utf8'));
   const flagMatches = discoverCliFlags(text);
   const dotEnvMatches = [...text.matchAll(/\bprocess\.env\.([A-Z0-9_]+)/gu)].map((match) => match[1]);
   const bracketEnvMatches = [...text.matchAll(/\bprocess\.env\[['"`]([A-Z0-9_]+)['"`]\]/gu)].map((match) => match[1]);

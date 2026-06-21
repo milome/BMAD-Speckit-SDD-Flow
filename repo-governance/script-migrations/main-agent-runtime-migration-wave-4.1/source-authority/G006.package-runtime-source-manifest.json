@@ -1,8 +1,8 @@
 {
-  "schemaVersion": "main-agent-runtime-migration-wave-4-1-g004-package-source-manifest/v1",
+  "schemaVersion": "main-agent-runtime-migration-wave-4-1-owner-package-source-manifest/v1",
   "waveId": "main-agent-runtime-migration-wave-4.1",
   "ownerTaskId": "G006",
-  "generatedAt": "2026-06-20T04:57:38.359Z",
+  "generatedAt": "2026-06-21T08:30:33.580Z",
   "selectedRowCount": 4,
   "skippedRowCount": 0,
   "targetRoot": "packages/bmad-speckit/src/main-agent/source-authority",
@@ -27,43 +27,43 @@
     },
     {
       "source": "_bmad/shared/contract-execution-manifest/build-contract-execution-manifest.js",
-      "sourceSha256": "sha256:a6a7d81f0dcf4c9e02fa0367a03ae6b361e188145a07e94578191cbdc33936ea",
+      "sourceSha256": "sha256:7dc15a992866aa875bb1a5344a93e3d7975d8c9fae05d1d0bcd1516511637cfc",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/build-contract-execution-manifest.js",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/build-contract-execution-manifest.js",
-      "bytes": 35507,
-      "sha256": "sha256:a6a7d81f0dcf4c9e02fa0367a03ae6b361e188145a07e94578191cbdc33936ea"
+      "bytes": 34692,
+      "sha256": "sha256:7dc15a992866aa875bb1a5344a93e3d7975d8c9fae05d1d0bcd1516511637cfc"
     },
     {
       "source": "_bmad/shared/contract-execution-manifest/hash-contract-execution-manifest.js",
-      "sourceSha256": "sha256:45e7d8b066dedccee269fca0493cbbd2bf1b6e5f53a128ae41fb5285e1112404",
+      "sourceSha256": "sha256:a8dceb5327347f7dd16b6edc5bf09a70ec09c9b4cfcd1bcd56061dbef8290586",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/hash-contract-execution-manifest.js",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/hash-contract-execution-manifest.js",
-      "bytes": 5595,
-      "sha256": "sha256:45e7d8b066dedccee269fca0493cbbd2bf1b6e5f53a128ae41fb5285e1112404"
+      "bytes": 5417,
+      "sha256": "sha256:a8dceb5327347f7dd16b6edc5bf09a70ec09c9b4cfcd1bcd56061dbef8290586"
     },
     {
       "source": "_bmad/shared/contract-execution-manifest/normalize-contract-execution-manifest.js",
-      "sourceSha256": "sha256:5659650990621b0e8192badf955ccfdd3c30aa7632faf6f9c5a328345b2d870e",
+      "sourceSha256": "sha256:fb40ac3a6d579e3b1d8e0e6031664bfdc0a61b7d74f68e6c0f47e0d5eb4a435d",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/normalize-contract-execution-manifest.js",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/normalize-contract-execution-manifest.js",
-      "bytes": 4026,
-      "sha256": "sha256:5659650990621b0e8192badf955ccfdd3c30aa7632faf6f9c5a328345b2d870e"
+      "bytes": 3918,
+      "sha256": "sha256:fb40ac3a6d579e3b1d8e0e6031664bfdc0a61b7d74f68e6c0f47e0d5eb4a435d"
     },
     {
       "source": "_bmad/shared/critical-auditor-profile/load-critical-auditor-profile.js",
-      "sourceSha256": "sha256:8a6aa28542eed50f882f68a758c3b32c722ba6ff14cf7580733f0cff3c592be3",
+      "sourceSha256": "sha256:c08f6f36eadfb129cec39fbdfb7d62d1f42908ba48ea9b658507cda562e1907f",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/critical-auditor-profile/load-critical-auditor-profile.js",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/critical-auditor-profile/load-critical-auditor-profile.js",
-      "bytes": 9714,
-      "sha256": "sha256:8a6aa28542eed50f882f68a758c3b32c722ba6ff14cf7580733f0cff3c592be3"
+      "bytes": 9445,
+      "sha256": "sha256:c08f6f36eadfb129cec39fbdfb7d62d1f42908ba48ea9b658507cda562e1907f"
     },
     {
       "source": "_bmad/shared/critical-auditor-profile/validate-critical-auditor-profile.js",
-      "sourceSha256": "sha256:8b11688c322e190e64113f5f309ca4c607c492d36651284539db4e73af685ddf",
+      "sourceSha256": "sha256:db049edd364ed8069aa82606519bca4e69744e1272f14e112773b176db41cfc6",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/critical-auditor-profile/validate-critical-auditor-profile.js",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/critical-auditor-profile/validate-critical-auditor-profile.js",
-      "bytes": 6239,
-      "sha256": "sha256:8b11688c322e190e64113f5f309ca4c607c492d36651284539db4e73af685ddf"
+      "bytes": 6062,
+      "sha256": "sha256:db049edd364ed8069aa82606519bca4e69744e1272f14e112773b176db41cfc6"
     },
     {
       "source": "packages/bmad-speckit/src/commands/score.js",
@@ -74,52 +74,52 @@
       "sha256": "sha256:5eccc84f3679141bd6fdc8d1bc6aa0f0c6d2c20e26a40255faf3371143abf7c4"
     },
     {
-      "source": "packages/bmad-speckit/src/main-agent/actions/native-goal-command.js",
-      "sourceSha256": "sha256:b9bcba3d2ac0df251a28094a1b6c5f8a4589d3800b9945833775c437fba6355a",
-      "target": "packages/bmad-speckit/src/main-agent/source-authority/packages/bmad-speckit/src/main-agent/actions/native-goal-command.js",
-      "path": "packages/bmad-speckit/src/main-agent/source-authority/packages/bmad-speckit/src/main-agent/actions/native-goal-command.js",
-      "bytes": 4240,
-      "sha256": "sha256:b9bcba3d2ac0df251a28094a1b6c5f8a4589d3800b9945833775c437fba6355a"
+      "source": "packages/bmad-speckit/src/main-agent/actions/native-goal-command.ts",
+      "sourceSha256": "sha256:9033fb1b88e7f8d978640612c593f234be2afa9051f89a81ebe213a9dc190431",
+      "target": "packages/bmad-speckit/src/main-agent/source-authority/packages/bmad-speckit/src/main-agent/actions/native-goal-command.ts",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/packages/bmad-speckit/src/main-agent/actions/native-goal-command.ts",
+      "bytes": 5296,
+      "sha256": "sha256:9033fb1b88e7f8d978640612c593f234be2afa9051f89a81ebe213a9dc190431"
     },
     {
-      "source": "packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js",
-      "sourceSha256": "sha256:c5a7b4948f2e0014b3ef230dd1c83697b36ab4351228b57113a2faf009d1c6af",
-      "target": "packages/bmad-speckit/src/main-agent/source-authority/packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js",
-      "path": "packages/bmad-speckit/src/main-agent/source-authority/packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js",
-      "bytes": 7429,
-      "sha256": "sha256:c5a7b4948f2e0014b3ef230dd1c83697b36ab4351228b57113a2faf009d1c6af"
+      "source": "packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.ts",
+      "sourceSha256": "sha256:2390b1e15ffb4abfc9c8d390e2305d9dce21f0f82dfa8716773338563f201489",
+      "target": "packages/bmad-speckit/src/main-agent/source-authority/packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.ts",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.ts",
+      "bytes": 5185,
+      "sha256": "sha256:2390b1e15ffb4abfc9c8d390e2305d9dce21f0f82dfa8716773338563f201489"
     },
     {
-      "source": "packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.js",
-      "sourceSha256": "sha256:c1933e7a1d5907d2f28c7ac07d6a4e2fb328197a902104cc30b3e7d8e454b36d",
-      "target": "packages/bmad-speckit/src/main-agent/source-authority/packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.js",
-      "path": "packages/bmad-speckit/src/main-agent/source-authority/packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.js",
-      "bytes": 9244,
-      "sha256": "sha256:c1933e7a1d5907d2f28c7ac07d6a4e2fb328197a902104cc30b3e7d8e454b36d"
+      "source": "packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.ts",
+      "sourceSha256": "sha256:c6c231e949de670fc447dc816ea5427f90f56d97a5a02eb8fd2662e599769e9f",
+      "target": "packages/bmad-speckit/src/main-agent/source-authority/packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.ts",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.ts",
+      "bytes": 11689,
+      "sha256": "sha256:c6c231e949de670fc447dc816ea5427f90f56d97a5a02eb8fd2662e599769e9f"
     },
     {
       "source": "packages/bmad-speckit/src/runtime-client.js",
-      "sourceSha256": "sha256:513e0a32fa6f054fc430c0a6759465e117c599c87e51c3fea659a39e595e03a8",
+      "sourceSha256": "sha256:10272021c05e263833dab95bba2bfdfa3331b0a34fb78ccb74659508560fa763",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/packages/bmad-speckit/src/runtime-client.js",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/packages/bmad-speckit/src/runtime-client.js",
-      "bytes": 12641,
-      "sha256": "sha256:513e0a32fa6f054fc430c0a6759465e117c599c87e51c3fea659a39e595e03a8"
+      "bytes": 12242,
+      "sha256": "sha256:10272021c05e263833dab95bba2bfdfa3331b0a34fb78ccb74659508560fa763"
     },
     {
       "source": "packages/bmad-speckit/src/scoring-runtime.js",
-      "sourceSha256": "sha256:977d70f327d9e53939aae11161b86fc8e98e2ff3811253d9acc6e53e366e4c4c",
+      "sourceSha256": "sha256:5ac44ccf31993b92ed451dca85ae46539fb26fec5abc969a8dd5f41554a44e7a",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/packages/bmad-speckit/src/scoring-runtime.js",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/packages/bmad-speckit/src/scoring-runtime.js",
-      "bytes": 928,
-      "sha256": "sha256:977d70f327d9e53939aae11161b86fc8e98e2ff3811253d9acc6e53e366e4c4c"
+      "bytes": 895,
+      "sha256": "sha256:5ac44ccf31993b92ed451dca85ae46539fb26fec5abc969a8dd5f41554a44e7a"
     },
     {
       "source": "packages/runtime-context/src/context.ts",
-      "sourceSha256": "sha256:2ef69e9be3040fe0964f4b4deaf2774b256ad7aeffd73705a6c452b1ac4d38df",
+      "sourceSha256": "sha256:d99bba2f8106950eb30eafb28a956dde5600932f2fe4718fd59d63f4f9e1929d",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/packages/runtime-context/src/context.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/packages/runtime-context/src/context.ts",
-      "bytes": 16560,
-      "sha256": "sha256:2ef69e9be3040fe0964f4b4deaf2774b256ad7aeffd73705a6c452b1ac4d38df"
+      "bytes": 16044,
+      "sha256": "sha256:d99bba2f8106950eb30eafb28a956dde5600932f2fe4718fd59d63f4f9e1929d"
     },
     {
       "source": "packages/runtime-context/src/facilitator.ts",
@@ -147,19 +147,19 @@
     },
     {
       "source": "packages/runtime-context/src/types.ts",
-      "sourceSha256": "sha256:adefb2331c4e550300dc2256055ec3b2593bdf74790863918bda9e305b4ce558",
+      "sourceSha256": "sha256:738bd6cfc85748547c6c049c3ad5d1a4a0e0281ce3e81335c1f1231babccb4fc",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/packages/runtime-context/src/types.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/packages/runtime-context/src/types.ts",
-      "bytes": 1705,
-      "sha256": "sha256:adefb2331c4e550300dc2256055ec3b2593bdf74790863918bda9e305b4ce558"
+      "bytes": 1645,
+      "sha256": "sha256:738bd6cfc85748547c6c049c3ad5d1a4a0e0281ce3e81335c1f1231babccb4fc"
     },
     {
       "source": "packages/scoring/analytics/journey-contract-remediation.ts",
-      "sourceSha256": "sha256:1263d976580c504d3ad5192f3310692f9b5a0e4632c0f8d16d70c979cf8571ce",
+      "sourceSha256": "sha256:f6cf72160dc4fe4d0c71988118889479697fcaa10a3161246003365453c15104",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/analytics/journey-contract-remediation.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/analytics/journey-contract-remediation.ts",
-      "bytes": 1979,
-      "sha256": "sha256:1263d976580c504d3ad5192f3310692f9b5a0e4632c0f8d16d70c979cf8571ce"
+      "bytes": 1931,
+      "sha256": "sha256:f6cf72160dc4fe4d0c71988118889479697fcaa10a3161246003365453c15104"
     },
     {
       "source": "packages/scoring/analytics/journey-contract-signals.ts",
@@ -171,11 +171,11 @@
     },
     {
       "source": "packages/scoring/constants/path.ts",
-      "sourceSha256": "sha256:1b030fa21a6c35665611c0ab5d81213dfbafaeebb94f9222bcfbf83ba66d1255",
+      "sourceSha256": "sha256:dee96eeb9990d9035e61f28cc126ec86ccb59ea221868803290ad4d4a04f5774",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/constants/path.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/constants/path.ts",
-      "bytes": 3019,
-      "sha256": "sha256:1b030fa21a6c35665611c0ab5d81213dfbafaeebb94f9222bcfbf83ba66d1255"
+      "bytes": 2926,
+      "sha256": "sha256:dee96eeb9990d9035e61f28cc126ec86ccb59ea221868803290ad4d4a04f5774"
     },
     {
       "source": "packages/scoring/constants/weights.ts",
@@ -187,11 +187,11 @@
     },
     {
       "source": "packages/scoring/contracts/dimension-contracts.ts",
-      "sourceSha256": "sha256:2240e2cafeeac82c335ef862ce98581c48f4b6bb695ec896d2e13e6a3d248903",
+      "sourceSha256": "sha256:958e9c2caa7d22387e8c59c44bebf98180190d7c18afc3676ac2a73715928fd8",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/contracts/dimension-contracts.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/contracts/dimension-contracts.ts",
-      "bytes": 6242,
-      "sha256": "sha256:2240e2cafeeac82c335ef862ce98581c48f4b6bb695ec896d2e13e6a3d248903"
+      "bytes": 6073,
+      "sha256": "sha256:958e9c2caa7d22387e8c59c44bebf98180190d7c18afc3676ac2a73715928fd8"
     },
     {
       "source": "packages/scoring/gate/remediation-hints.ts",
@@ -203,27 +203,27 @@
     },
     {
       "source": "packages/scoring/gate/version-lock.ts",
-      "sourceSha256": "sha256:a3b4ee1577cab95106d1cd9bc5fc6b096c052f1ab367d9178331c3de977f56d0",
+      "sourceSha256": "sha256:1c83aa2545086e9c1a2f1ff403158af4e34378e6328cbfc928ca0f7aceb4877c",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/gate/version-lock.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/gate/version-lock.ts",
-      "bytes": 4783,
-      "sha256": "sha256:a3b4ee1577cab95106d1cd9bc5fc6b096c052f1ab367d9178331c3de977f56d0"
+      "bytes": 4635,
+      "sha256": "sha256:1c83aa2545086e9c1a2f1ff403158af4e34378e6328cbfc928ca0f7aceb4877c"
     },
     {
       "source": "packages/scoring/governance/readiness-drift.ts",
-      "sourceSha256": "sha256:f1af5f09ddfcd2e272a1036012ce8d4889f165b4c7d960b1852fddfe4ea9d83e",
+      "sourceSha256": "sha256:27ab2666eb970dafbfb00b051ab00744051efb1e4225ab76e285fa16b161734a",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/governance/readiness-drift.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/governance/readiness-drift.ts",
-      "bytes": 13055,
-      "sha256": "sha256:f1af5f09ddfcd2e272a1036012ce8d4889f165b4c7d960b1852fddfe4ea9d83e"
+      "bytes": 12680,
+      "sha256": "sha256:27ab2666eb970dafbfb00b051ab00744051efb1e4225ab76e285fa16b161734a"
     },
     {
       "source": "packages/scoring/orchestrator/parse-and-write.ts",
-      "sourceSha256": "sha256:63f0364ba141b9f6fb27da30ed6aafc04236d68010ad7a3afa9d40a58eb695f6",
+      "sourceSha256": "sha256:396dd81138abb6c36a234096c78fc968cca154d622b23c1edc981565fdf43600",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/orchestrator/parse-and-write.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/orchestrator/parse-and-write.ts",
-      "bytes": 20467,
-      "sha256": "sha256:63f0364ba141b9f6fb27da30ed6aafc04236d68010ad7a3afa9d40a58eb695f6"
+      "bytes": 19935,
+      "sha256": "sha256:396dd81138abb6c36a234096c78fc968cca154d622b23c1edc981565fdf43600"
     },
     {
       "source": "packages/scoring/parsers/audit-arch.ts",
@@ -235,11 +235,11 @@
     },
     {
       "source": "packages/scoring/parsers/audit-generic.ts",
-      "sourceSha256": "sha256:fb6a0ff08c0c8d0481f9757f25fdbf2aa3278bdf8abf16734f42135cf5c4095e",
+      "sourceSha256": "sha256:5443453fbb3a81ab2661a1451518bac21a88b3f3ab7a03a8487d3450ae175fe6",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/parsers/audit-generic.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/parsers/audit-generic.ts",
-      "bytes": 8600,
-      "sha256": "sha256:fb6a0ff08c0c8d0481f9757f25fdbf2aa3278bdf8abf16734f42135cf5c4095e"
+      "bytes": 8313,
+      "sha256": "sha256:5443453fbb3a81ab2661a1451518bac21a88b3f3ab7a03a8487d3450ae175fe6"
     },
     {
       "source": "packages/scoring/parsers/audit-index.ts",
@@ -259,11 +259,11 @@
     },
     {
       "source": "packages/scoring/parsers/audit-prd.ts",
-      "sourceSha256": "sha256:345f508175d71a3cf5ebc45cede1aeb64b1f6223ecf9ff375b1f5f6f95f711d9",
+      "sourceSha256": "sha256:66f5c4c7b9ec1cb5ce26c5794f584a7d933b62456dac05e6d1d518b775006034",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/parsers/audit-prd.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/parsers/audit-prd.ts",
-      "bytes": 3227,
-      "sha256": "sha256:345f508175d71a3cf5ebc45cede1aeb64b1f6223ecf9ff375b1f5f6f95f711d9"
+      "bytes": 3127,
+      "sha256": "sha256:66f5c4c7b9ec1cb5ce26c5794f584a7d933b62456dac05e6d1d518b775006034"
     },
     {
       "source": "packages/scoring/parsers/audit-story.ts",
@@ -275,51 +275,51 @@
     },
     {
       "source": "packages/scoring/parsers/dimension-parser.ts",
-      "sourceSha256": "sha256:e37fe4522a51cc09fc6236aebc0dfec3411b65e2b1b892a409118603a5cd15b3",
+      "sourceSha256": "sha256:7eddac9d0e28992b998e41c41313dc3144b124e86fd296f5c7e1b90124ea8a1a",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/parsers/dimension-parser.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/parsers/dimension-parser.ts",
-      "bytes": 5097,
-      "sha256": "sha256:e37fe4522a51cc09fc6236aebc0dfec3411b65e2b1b892a409118603a5cd15b3"
+      "bytes": 4933,
+      "sha256": "sha256:7eddac9d0e28992b998e41c41313dc3144b124e86fd296f5c7e1b90124ea8a1a"
     },
     {
       "source": "packages/scoring/parsers/index.ts",
-      "sourceSha256": "sha256:f74d143e76057563857ab3a896fc99a393e9858aefd013b25ca2d01b6334051c",
+      "sourceSha256": "sha256:79cef9ef80d3697773c1c39204cf7969769ac3f9cedb6f0bf2bbfe4099ea3837",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/parsers/index.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/parsers/index.ts",
-      "bytes": 1154,
-      "sha256": "sha256:f74d143e76057563857ab3a896fc99a393e9858aefd013b25ca2d01b6334051c"
+      "bytes": 1116,
+      "sha256": "sha256:79cef9ef80d3697773c1c39204cf7969769ac3f9cedb6f0bf2bbfe4099ea3837"
     },
     {
       "source": "packages/scoring/parsers/llm-fallback.ts",
-      "sourceSha256": "sha256:d56b69ac49ae84586f6f9aa2648fdfd450a809a28bff905077032ce51f164286",
+      "sourceSha256": "sha256:c854206b02f5ac0824fab5302de8dabdab3bfd1a326144dae566d815a852bffe",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/parsers/llm-fallback.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/parsers/llm-fallback.ts",
-      "bytes": 8816,
-      "sha256": "sha256:d56b69ac49ae84586f6f9aa2648fdfd450a809a28bff905077032ce51f164286"
+      "bytes": 8567,
+      "sha256": "sha256:c854206b02f5ac0824fab5302de8dabdab3bfd1a326144dae566d815a852bffe"
     },
     {
       "source": "packages/scoring/parsers/rules.ts",
-      "sourceSha256": "sha256:0f17663c919f04c6eddc9ebdebd78b2a4c951e2b9afc1ac3ceb57f40feb1bc85",
+      "sourceSha256": "sha256:b5ca4710b8773517b3f3218ef0363ce928b4babe56c03010a1cdfc1d45380385",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/parsers/rules.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/parsers/rules.ts",
-      "bytes": 7321,
-      "sha256": "sha256:0f17663c919f04c6eddc9ebdebd78b2a4c951e2b9afc1ac3ceb57f40feb1bc85"
+      "bytes": 7132,
+      "sha256": "sha256:b5ca4710b8773517b3f3218ef0363ce928b4babe56c03010a1cdfc1d45380385"
     },
     {
       "source": "packages/scoring/parsers/types.ts",
-      "sourceSha256": "sha256:9b5ac8de1197dcdb3b7d91890378a87ecbcaf89234d8c3abc3204b30f0de148d",
+      "sourceSha256": "sha256:2908970f4a21b91e9eadc3e0d82b7bd279be9faa684cbb2689b0431f13f73f6d",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/parsers/types.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/parsers/types.ts",
-      "bytes": 1540,
-      "sha256": "sha256:9b5ac8de1197dcdb3b7d91890378a87ecbcaf89234d8c3abc3204b30f0de148d"
+      "bytes": 1476,
+      "sha256": "sha256:2908970f4a21b91e9eadc3e0d82b7bd279be9faa684cbb2689b0431f13f73f6d"
     },
     {
       "source": "packages/scoring/query/index.ts",
-      "sourceSha256": "sha256:70626bc436b7d139bfdb95e69ebe83efdb83268592c74bc833e7f13d4cb73020",
+      "sourceSha256": "sha256:a64ea9a2d70509ef2b73b0405c212958f123397cef854102425e3b66d31dee63",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/query/index.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/query/index.ts",
-      "bytes": 3526,
-      "sha256": "sha256:70626bc436b7d139bfdb95e69ebe83efdb83268592c74bc833e7f13d4cb73020"
+      "bytes": 3434,
+      "sha256": "sha256:a64ea9a2d70509ef2b73b0405c212958f123397cef854102425e3b66d31dee63"
     },
     {
       "source": "packages/scoring/query/loader.ts",
@@ -339,11 +339,11 @@
     },
     {
       "source": "packages/scoring/runtime/event-store.ts",
-      "sourceSha256": "sha256:f37440c2ec9fa2e546ba8c8b20c696d06211c16be02ba3edaa7e96294933350e",
+      "sourceSha256": "sha256:3bddf891605420b546f014e4e1555677fbd73fe673ebbf3905c0c4f063723e91",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/runtime/event-store.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/runtime/event-store.ts",
-      "bytes": 3008,
-      "sha256": "sha256:f37440c2ec9fa2e546ba8c8b20c696d06211c16be02ba3edaa7e96294933350e"
+      "bytes": 2903,
+      "sha256": "sha256:3bddf891605420b546f014e4e1555677fbd73fe673ebbf3905c0c4f063723e91"
     },
     {
       "source": "packages/scoring/runtime/index.ts",
@@ -363,27 +363,27 @@
     },
     {
       "source": "packages/scoring/runtime/projection.ts",
-      "sourceSha256": "sha256:38da97f5c245004a2adc0e2b68055360bdeaa6560c1f20fab598d051a7c24230",
+      "sourceSha256": "sha256:c7c829902463455a8b6f08f654859be79f768b408bfbad6a56f7cceee4ff8f0c",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/runtime/projection.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/runtime/projection.ts",
-      "bytes": 7259,
-      "sha256": "sha256:38da97f5c245004a2adc0e2b68055360bdeaa6560c1f20fab598d051a7c24230"
+      "bytes": 7002,
+      "sha256": "sha256:c7c829902463455a8b6f08f654859be79f768b408bfbad6a56f7cceee4ff8f0c"
     },
     {
       "source": "packages/scoring/runtime/types.ts",
-      "sourceSha256": "sha256:1f6df319cbc202e928feac780b1a05baffa73b00a6ef0dfc70c94dbf51655390",
+      "sourceSha256": "sha256:3f9fcf3bd88397ef6be6e0378d94c3113c62f6582d4a9b52d3f52b230f791cd0",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/runtime/types.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/runtime/types.ts",
-      "bytes": 1745,
-      "sha256": "sha256:1f6df319cbc202e928feac780b1a05baffa73b00a6ef0dfc70c94dbf51655390"
+      "bytes": 1675,
+      "sha256": "sha256:3f9fcf3bd88397ef6be6e0378d94c3113c62f6582d4a9b52d3f52b230f791cd0"
     },
     {
       "source": "packages/scoring/trigger/trigger-loader.ts",
-      "sourceSha256": "sha256:9d44db6b0100141e5334ce7bd122388e6740d28343f2014e029dcab1b8ea3242",
+      "sourceSha256": "sha256:f26ba689326715201293b1f77f2050cf1955fd931f337c09de57ee25891eb2c9",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/trigger/trigger-loader.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/trigger/trigger-loader.ts",
-      "bytes": 5149,
-      "sha256": "sha256:9d44db6b0100141e5334ce7bd122388e6740d28343f2014e029dcab1b8ea3242"
+      "bytes": 5012,
+      "sha256": "sha256:f26ba689326715201293b1f77f2050cf1955fd931f337c09de57ee25891eb2c9"
     },
     {
       "source": "packages/scoring/utils/hash.ts",
@@ -419,11 +419,11 @@
     },
     {
       "source": "packages/scoring/veto/tier.ts",
-      "sourceSha256": "sha256:ab0420c6d5f4414f26d6a30e15ffbdc74b8bb13d462fa7a8b95bc63042ad5eaa",
+      "sourceSha256": "sha256:8fda5a7c9df8b2125a022d11aaf4585ddd7b3d802b759f376c00ae3c0383da4e",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/veto/tier.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/veto/tier.ts",
-      "bytes": 2985,
-      "sha256": "sha256:ab0420c6d5f4414f26d6a30e15ffbdc74b8bb13d462fa7a8b95bc63042ad5eaa"
+      "bytes": 2904,
+      "sha256": "sha256:8fda5a7c9df8b2125a022d11aaf4585ddd7b3d802b759f376c00ae3c0383da4e"
     },
     {
       "source": "packages/scoring/veto/types.ts",
@@ -435,43 +435,43 @@
     },
     {
       "source": "packages/scoring/veto/veto.ts",
-      "sourceSha256": "sha256:6e906898c9d7d80723df462df449f052f02c9780a6f8eb9a7a50e6575b5faf89",
+      "sourceSha256": "sha256:04e585e8a1c0f5b8998650809aacb7b78164247f1678e8654fe87b1bc9677bce",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/veto/veto.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/veto/veto.ts",
-      "bytes": 2206,
-      "sha256": "sha256:6e906898c9d7d80723df462df449f052f02c9780a6f8eb9a7a50e6575b5faf89"
+      "bytes": 2148,
+      "sha256": "sha256:04e585e8a1c0f5b8998650809aacb7b78164247f1678e8654fe87b1bc9677bce"
     },
     {
       "source": "packages/scoring/writer/index.ts",
-      "sourceSha256": "sha256:4410cf0273e0054827c0d490a2f381c8bf8e116f856ca7abf7e267a0936608e1",
+      "sourceSha256": "sha256:de2675d0caf110a50d4ceecee11897da1d7d1f105bc5912a4f40427caf9d093c",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/writer/index.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/writer/index.ts",
-      "bytes": 1269,
-      "sha256": "sha256:4410cf0273e0054827c0d490a2f381c8bf8e116f856ca7abf7e267a0936608e1"
+      "bytes": 1234,
+      "sha256": "sha256:de2675d0caf110a50d4ceecee11897da1d7d1f105bc5912a4f40427caf9d093c"
     },
     {
       "source": "packages/scoring/writer/types.ts",
-      "sourceSha256": "sha256:4884a2866f9787ecbe816ba065ecbf9bcffb6bc264a2d4b678001bc2fc1a2bd1",
+      "sourceSha256": "sha256:0078c8ff1dc7756c5253873e130a5d36e100284d9620c2ac4a2d4bb01f656a55",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/writer/types.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/writer/types.ts",
-      "bytes": 5160,
-      "sha256": "sha256:4884a2866f9787ecbe816ba065ecbf9bcffb6bc264a2d4b678001bc2fc1a2bd1"
+      "bytes": 5014,
+      "sha256": "sha256:0078c8ff1dc7756c5253873e130a5d36e100284d9620c2ac4a2d4bb01f656a55"
     },
     {
       "source": "packages/scoring/writer/validate.ts",
-      "sourceSha256": "sha256:22c12a5c3e85614920804316a89a7b9d0077b175e914afee4d19cb789a9b6710",
+      "sourceSha256": "sha256:5b3dd9d9eb6a2cb2a34eebf4a26bb664e1d02899fa6f625b4a0952481f53dae5",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/writer/validate.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/writer/validate.ts",
-      "bytes": 2002,
-      "sha256": "sha256:22c12a5c3e85614920804316a89a7b9d0077b175e914afee4d19cb789a9b6710"
+      "bytes": 1945,
+      "sha256": "sha256:5b3dd9d9eb6a2cb2a34eebf4a26bb664e1d02899fa6f625b4a0952481f53dae5"
     },
     {
       "source": "packages/scoring/writer/write-score.ts",
-      "sourceSha256": "sha256:b3909743599899b2202f3f8660fb7aad368532670542118bdaae96b50f352e71",
+      "sourceSha256": "sha256:8068b152b129069308aeca987d850d2b7702eaf9ee2f015f657db10920732502",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/writer/write-score.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/writer/write-score.ts",
-      "bytes": 5643,
-      "sha256": "sha256:b3909743599899b2202f3f8660fb7aad368532670542118bdaae96b50f352e71"
+      "bytes": 5466,
+      "sha256": "sha256:8068b152b129069308aeca987d850d2b7702eaf9ee2f015f657db10920732502"
     },
     {
       "source": "scripts/adaptive-intake-governance-gate.ts",
@@ -483,27 +483,27 @@
     },
     {
       "source": "scripts/ai-tdd-contract-gate.ts",
-      "sourceSha256": "sha256:e6f700d0586a90dac234f2c958383338c66451057adb60366396f4dd77688256",
+      "sourceSha256": "sha256:e6896c6f0d8492f4b1d184928d9e989f750ce07f15b278f00131bea20baf2e3e",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts",
-      "bytes": 105634,
-      "sha256": "sha256:e6f700d0586a90dac234f2c958383338c66451057adb60366396f4dd77688256"
+      "bytes": 103407,
+      "sha256": "sha256:9f47b33dafb1bf10c5a708361342f351a7b6341245d8ef4ad1715eca67471413"
     },
     {
       "source": "scripts/architecture-confirmation-hash-recipe.ts",
-      "sourceSha256": "sha256:4a1d062e6c6628c2902c33fd2221c823c56f2d69e898bd30093a07ef9c0184ba",
+      "sourceSha256": "sha256:7c298a6f3b0d18cbf441685cb88a9813e838b6ba97da199500771144f869f735",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-confirmation-hash-recipe.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-confirmation-hash-recipe.ts",
-      "bytes": 5098,
-      "sha256": "sha256:4a1d062e6c6628c2902c33fd2221c823c56f2d69e898bd30093a07ef9c0184ba"
+      "bytes": 4970,
+      "sha256": "sha256:7c298a6f3b0d18cbf441685cb88a9813e838b6ba97da199500771144f869f735"
     },
     {
       "source": "scripts/audit-triad-orchestrator.ts",
-      "sourceSha256": "sha256:8316eb204166630cb836af07dbaacea3ef7f821ddc281ed3c50acaf4005c3382",
+      "sourceSha256": "sha256:1be1c52d4e0cdc4d84892195eac9bd3aabceec495c27085693839183ea02454e",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/audit-triad-orchestrator.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/audit-triad-orchestrator.ts",
-      "bytes": 15780,
-      "sha256": "sha256:8316eb204166630cb836af07dbaacea3ef7f821ddc281ed3c50acaf4005c3382"
+      "bytes": 15393,
+      "sha256": "sha256:1be1c52d4e0cdc4d84892195eac9bd3aabceec495c27085693839183ea02454e"
     },
     {
       "source": "scripts/auditor-post-actions.ts",
@@ -515,27 +515,27 @@
     },
     {
       "source": "scripts/bmad-config.ts",
-      "sourceSha256": "sha256:2ddab521fd9956ac2b2ff80dc54f9cc799624ee634cce607700442d4cb8caedb",
+      "sourceSha256": "sha256:495c2a94f258e451469c8bc3d698600582e1cc954ac4874321103766534fee07",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-config.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-config.ts",
-      "bytes": 33153,
-      "sha256": "sha256:2ddab521fd9956ac2b2ff80dc54f9cc799624ee634cce607700442d4cb8caedb"
+      "bytes": 32135,
+      "sha256": "sha256:495c2a94f258e451469c8bc3d698600582e1cc954ac4874321103766534fee07"
     },
     {
       "source": "scripts/bmad-help-five-layer-progress-marker.ts",
-      "sourceSha256": "sha256:7dc387e23fb8cee13aa55a47b9c365cdb350848194466676048a1e40ed2a2fe9",
+      "sourceSha256": "sha256:2d22d041d107bcc192b27f0f3c0e9c075904f78c1d6f4c3defe9f85f4e925d98",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-help-five-layer-progress-marker.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-help-five-layer-progress-marker.ts",
-      "bytes": 9325,
-      "sha256": "sha256:7dc387e23fb8cee13aa55a47b9c365cdb350848194466676048a1e40ed2a2fe9"
+      "bytes": 9062,
+      "sha256": "sha256:2d22d041d107bcc192b27f0f3c0e9c075904f78c1d6f4c3defe9f85f4e925d98"
     },
     {
       "source": "scripts/bmad-help-routing-state.ts",
-      "sourceSha256": "sha256:dab544db599cdfe05f233914737669ebc7c12c4a75d9f144f574653cbdc3e892",
+      "sourceSha256": "sha256:368859cb7e025a1c875f40be9d58aa24530765dd8a5749cfbf521cfc74f3da77",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-help-routing-state.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-help-routing-state.ts",
-      "bytes": 42352,
-      "sha256": "sha256:dab544db599cdfe05f233914737669ebc7c12c4a75d9f144f574653cbdc3e892"
+      "bytes": 41106,
+      "sha256": "sha256:368859cb7e025a1c875f40be9d58aa24530765dd8a5749cfbf521cfc74f3da77"
     },
     {
       "source": "scripts/bmad-speckit-cli.js",
@@ -547,27 +547,27 @@
     },
     {
       "source": "scripts/continue-state-contract.ts",
-      "sourceSha256": "sha256:65fd1b54e93d6ff37a54881fdab23b881f824ab7750d83cb1e13b1e77f753a12",
+      "sourceSha256": "sha256:6ee2a8b5fa0f9646ded4d835087bc85552b2b626fb31618d7fcc256791084f6c",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/continue-state-contract.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/continue-state-contract.ts",
-      "bytes": 1617,
-      "sha256": "sha256:65fd1b54e93d6ff37a54881fdab23b881f824ab7750d83cb1e13b1e77f753a12"
+      "bytes": 1567,
+      "sha256": "sha256:6ee2a8b5fa0f9646ded4d835087bc85552b2b626fb31618d7fcc256791084f6c"
     },
     {
       "source": "scripts/controlled-readiness-audit-bridge.ts",
-      "sourceSha256": "sha256:13603725fec56275dba879f2920a88963517509b2da110d30fb7d6444947357a",
+      "sourceSha256": "sha256:2a9b744c5279c1ab6caee592655cd14ac115ce3626a22a7a4fbfb0f956e8fc12",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/controlled-readiness-audit-bridge.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/controlled-readiness-audit-bridge.ts",
-      "bytes": 14940,
-      "sha256": "sha256:13603725fec56275dba879f2920a88963517509b2da110d30fb7d6444947357a"
+      "bytes": 14525,
+      "sha256": "sha256:2a9b744c5279c1ab6caee592655cd14ac115ce3626a22a7a4fbfb0f956e8fc12"
     },
     {
       "source": "scripts/critical-auditor-profile.ts",
-      "sourceSha256": "sha256:67f93fcaef3ec459e345c73089848bba09a30e58d1e11b397b7fad20fdbb8998",
+      "sourceSha256": "sha256:ec2bf6a871ea93399e7404b6b045051e88f82798d35cef23353fef5db3468762",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/critical-auditor-profile.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/critical-auditor-profile.ts",
-      "bytes": 3281,
-      "sha256": "sha256:67f93fcaef3ec459e345c73089848bba09a30e58d1e11b397b7fad20fdbb8998"
+      "bytes": 3203,
+      "sha256": "sha256:ffb55bf30edf52f702e58de6063cc8a83134e4d9d1deae162aab515c8ade05c8"
     },
     {
       "source": "scripts/deferred-gap-governance.cjs",
@@ -579,115 +579,115 @@
     },
     {
       "source": "scripts/emit-runtime-policy.ts",
-      "sourceSha256": "sha256:f343e711dea04796cdd14a7021ff5d525086d835e7b7836aaf57710b1bfa37a0",
+      "sourceSha256": "sha256:5864339500e19d157fc971542a051c2361eb5f96f98ccfe051a5197916e451d6",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/emit-runtime-policy.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/emit-runtime-policy.ts",
-      "bytes": 28633,
-      "sha256": "sha256:f343e711dea04796cdd14a7021ff5d525086d835e7b7836aaf57710b1bfa37a0"
+      "bytes": 27811,
+      "sha256": "sha256:5864339500e19d157fc971542a051c2361eb5f96f98ccfe051a5197916e451d6"
     },
     {
       "source": "scripts/execution-discipline-profiles.ts",
-      "sourceSha256": "sha256:0644bfca950f3073ebaebe2674e2f31e07965470644762a669c4d82fa1b1d5bb",
+      "sourceSha256": "sha256:d0362885cdbdc70195b3cac6e1aa2a0cd831f76914e0c643852cd7cf8842338b",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/execution-discipline-profiles.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/execution-discipline-profiles.ts",
-      "bytes": 4584,
-      "sha256": "sha256:0644bfca950f3073ebaebe2674e2f31e07965470644762a669c4d82fa1b1d5bb"
+      "bytes": 4436,
+      "sha256": "sha256:d0362885cdbdc70195b3cac6e1aa2a0cd831f76914e0c643852cd7cf8842338b"
     },
     {
       "source": "scripts/execution-intent-schema.ts",
-      "sourceSha256": "sha256:b871315783c3b7330792900039bd66b5cf7190cbf28a12b645cbd9fe8416b4c5",
+      "sourceSha256": "sha256:08e533ebbe286e7a92dde0205c788e560d4cc0d15054e551c67b8f23438204f4",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/execution-intent-schema.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/execution-intent-schema.ts",
-      "bytes": 22758,
-      "sha256": "sha256:b871315783c3b7330792900039bd66b5cf7190cbf28a12b645cbd9fe8416b4c5"
+      "bytes": 22100,
+      "sha256": "sha256:08e533ebbe286e7a92dde0205c788e560d4cc0d15054e551c67b8f23438204f4"
     },
     {
       "source": "scripts/execution-strategy-selection.ts",
-      "sourceSha256": "sha256:c2138f40f3befc716e90093d66cc409098158fb6bd34e840df13fd22cbb2c1c7",
+      "sourceSha256": "sha256:85eb82eecb8cc051fb55bae22a2daefeea22ef6f223beeb9e05ab7873766edba",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/execution-strategy-selection.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/execution-strategy-selection.ts",
-      "bytes": 13228,
-      "sha256": "sha256:c2138f40f3befc716e90093d66cc409098158fb6bd34e840df13fd22cbb2c1c7"
+      "bytes": 12863,
+      "sha256": "sha256:85eb82eecb8cc051fb55bae22a2daefeea22ef6f223beeb9e05ab7873766edba"
     },
     {
       "source": "scripts/facilitator-registry.ts",
-      "sourceSha256": "sha256:75b0639242e56283a3e9f0b25725bb411746da1bf152ef1e7da7da2ac37e2fa0",
+      "sourceSha256": "sha256:c731f93b451722b1a22b24aeb95718480139ba5ab7e3c93c1839bb7630983a33",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/facilitator-registry.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/facilitator-registry.ts",
-      "bytes": 3274,
-      "sha256": "sha256:75b0639242e56283a3e9f0b25725bb411746da1bf152ef1e7da7da2ac37e2fa0"
+      "bytes": 3176,
+      "sha256": "sha256:c731f93b451722b1a22b24aeb95718480139ba5ab7e3c93c1839bb7630983a33"
     },
     {
       "source": "scripts/facilitator-runtime-definition.ts",
-      "sourceSha256": "sha256:e0e11bd3613b3167546d558a17ec119126e9f277df41dfbabbd241dddc375548",
+      "sourceSha256": "sha256:832188e1f1b202d9e7bce554597c4c9666f8f28fe1b791290c49dd135ad908fc",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/facilitator-runtime-definition.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/facilitator-runtime-definition.ts",
-      "bytes": 9778,
-      "sha256": "sha256:e0e11bd3613b3167546d558a17ec119126e9f277df41dfbabbd241dddc375548"
+      "bytes": 9492,
+      "sha256": "sha256:832188e1f1b202d9e7bce554597c4c9666f8f28fe1b791290c49dd135ad908fc"
     },
     {
       "source": "scripts/governance-packet-execution-store.ts",
-      "sourceSha256": "sha256:3b07c18a6d91686eec5859fcbba5162c1c4ec51b5676b1b60a7e137633eb1326",
+      "sourceSha256": "sha256:c500b862b17550df0d1ce7098762bfb746f3ba69e9cf9055b14f18e3b99fd95a",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-packet-execution-store.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-packet-execution-store.ts",
-      "bytes": 8629,
-      "sha256": "sha256:3b07c18a6d91686eec5859fcbba5162c1c4ec51b5676b1b60a7e137633eb1326"
+      "bytes": 8357,
+      "sha256": "sha256:c500b862b17550df0d1ce7098762bfb746f3ba69e9cf9055b14f18e3b99fd95a"
     },
     {
       "source": "scripts/governance-provider-adapter.ts",
-      "sourceSha256": "sha256:2c42f9a2b56a83bc739006695c9e9567099a2199a55f65c93fccdf4e6cab0118",
+      "sourceSha256": "sha256:8541a3b3fdd9020becfe50f5c8dc7d77926d697cdcf440f108b2494e1b243049",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-provider-adapter.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-provider-adapter.ts",
-      "bytes": 19030,
-      "sha256": "sha256:2c42f9a2b56a83bc739006695c9e9567099a2199a55f65c93fccdf4e6cab0118"
+      "bytes": 18503,
+      "sha256": "sha256:8541a3b3fdd9020becfe50f5c8dc7d77926d697cdcf440f108b2494e1b243049"
     },
     {
       "source": "scripts/governance-remediation-artifact.ts",
-      "sourceSha256": "sha256:eed3859cc0af563cd5061f92e77a8c65fbc4226ee75c8cae773ab2730f972d01",
+      "sourceSha256": "sha256:0ce820f065fb270f0b170be40f32a11f80af82abd0498ec76b03b03a376c8c90",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-artifact.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-artifact.ts",
-      "bytes": 32960,
-      "sha256": "sha256:eed3859cc0af563cd5061f92e77a8c65fbc4226ee75c8cae773ab2730f972d01"
+      "bytes": 32203,
+      "sha256": "sha256:0ce820f065fb270f0b170be40f32a11f80af82abd0498ec76b03b03a376c8c90"
     },
     {
       "source": "scripts/governance-remediation-config.ts",
-      "sourceSha256": "sha256:0290035daa912d5258f82ec97a154438a56c4cf1c8892e02ccc6bb14be802a12",
+      "sourceSha256": "sha256:3ea50319eecaa16ed5f991b90f9526d0594f2fd56a56f6aa5a551691468cda2b",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-config.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-config.ts",
-      "bytes": 12803,
-      "sha256": "sha256:0290035daa912d5258f82ec97a154438a56c4cf1c8892e02ccc6bb14be802a12"
+      "bytes": 12455,
+      "sha256": "sha256:3ea50319eecaa16ed5f991b90f9526d0594f2fd56a56f6aa5a551691468cda2b"
     },
     {
       "source": "scripts/governance-remediation-runner.ts",
-      "sourceSha256": "sha256:0bf8fe1ef17eb22b976abadc012ec548bfc92586158343d8ab98b142fe5a5823",
+      "sourceSha256": "sha256:dfc1afbb072164aeaa207c5f957bbcf578a0ec0e7e7dd5077c9cfaac6d3d6686",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-runner.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-runner.ts",
-      "bytes": 57020,
-      "sha256": "sha256:0bf8fe1ef17eb22b976abadc012ec548bfc92586158343d8ab98b142fe5a5823"
+      "bytes": 56074,
+      "sha256": "sha256:36bc453a22c5186768c6eb5049b55a674a143179ee2ab0e4f4d1c0c433ab736b"
     },
     {
       "source": "scripts/governance-transport-envelope.ts",
-      "sourceSha256": "sha256:af3d9a74d554125794bf693be0dd9fecac0c04b053e48f33489337623b84d9fd",
+      "sourceSha256": "sha256:6dfca5e1dd96b49eeca0082597928ef760b413541704b9a7ae07194883a7f2c7",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-transport-envelope.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-transport-envelope.ts",
-      "bytes": 24537,
-      "sha256": "sha256:af3d9a74d554125794bf693be0dd9fecac0c04b053e48f33489337623b84d9fd"
+      "bytes": 23911,
+      "sha256": "sha256:6dfca5e1dd96b49eeca0082597928ef760b413541704b9a7ae07194883a7f2c7"
     },
     {
       "source": "scripts/host-runtime-mode.ts",
-      "sourceSha256": "sha256:7b6ce53d4637e6e6875250e6d8df6b03a093625ab3bb8f6483df7e680098117e",
+      "sourceSha256": "sha256:05ad0030c4308d77a7cf8ce498ec0226146735d3e2e4954f21c9fea869911da5",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/host-runtime-mode.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/host-runtime-mode.ts",
-      "bytes": 13160,
-      "sha256": "sha256:7b6ce53d4637e6e6875250e6d8df6b03a093625ab3bb8f6483df7e680098117e"
+      "bytes": 12828,
+      "sha256": "sha256:91723594e7d333f1cc08e0750d7031c9c7f4c80cccdf88d3666cbe7fd26a4ad7"
     },
     {
       "source": "scripts/i18n/agent-display-names.ts",
-      "sourceSha256": "sha256:e5889a967756a096418bceff9a62db6d683c9f96f250eabfdc3290108b3431e1",
+      "sourceSha256": "sha256:cd1b42cd8564cd74a5bcb93453a1ca62ecda5fb0895992e1dd6da8bb90a52fa9",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/agent-display-names.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/agent-display-names.ts",
-      "bytes": 5600,
-      "sha256": "sha256:e5889a967756a096418bceff9a62db6d683c9f96f250eabfdc3290108b3431e1"
+      "bytes": 5409,
+      "sha256": "sha256:cd1b42cd8564cd74a5bcb93453a1ca62ecda5fb0895992e1dd6da8bb90a52fa9"
     },
     {
       "source": "scripts/i18n/agent-manifest.ts",
@@ -715,51 +715,51 @@
     },
     {
       "source": "scripts/ingest-implementation-evidence.ts",
-      "sourceSha256": "sha256:9e46c566d100813c556290c58df1abfd9172b7f3939fc4d5a26bf20477f558fa",
+      "sourceSha256": "sha256:e4d7906e011d052aa4b8b34a1ab6c51d5c90c53a8941a0823134fdc8981b52e0",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ingest-implementation-evidence.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ingest-implementation-evidence.ts",
-      "bytes": 55052,
-      "sha256": "sha256:9e46c566d100813c556290c58df1abfd9172b7f3939fc4d5a26bf20477f558fa"
+      "bytes": 53745,
+      "sha256": "sha256:e4d7906e011d052aa4b8b34a1ab6c51d5c90c53a8941a0823134fdc8981b52e0"
     },
     {
       "source": "scripts/long-run-runtime-policy.ts",
-      "sourceSha256": "sha256:1d6451306a7da3cf884b65b7aeddbc0c902fa439686f2c60095a205ea4633ce6",
+      "sourceSha256": "sha256:919d02940a48861dd34800bf77366190b5ca3f1216bd76acaf28f8dd8f2b8126",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/long-run-runtime-policy.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/long-run-runtime-policy.ts",
-      "bytes": 5756,
-      "sha256": "sha256:1d6451306a7da3cf884b65b7aeddbc0c902fa439686f2c60095a205ea4633ce6"
+      "bytes": 5573,
+      "sha256": "sha256:919d02940a48861dd34800bf77366190b5ca3f1216bd76acaf28f8dd8f2b8126"
     },
     {
       "source": "scripts/main-agent-codex-worker-adapter.ts",
-      "sourceSha256": "sha256:83a0436083399328b00580735193d269c9ae95e3db73be0d32d6e6d1ab36c9fa",
+      "sourceSha256": "sha256:9092fcaad75b12f7fa1b9df9b3cef495413c77f1700fce5353f5115dac56ab19",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-codex-worker-adapter.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-codex-worker-adapter.ts",
-      "bytes": 59738,
-      "sha256": "sha256:83a0436083399328b00580735193d269c9ae95e3db73be0d32d6e6d1ab36c9fa"
+      "bytes": 58192,
+      "sha256": "sha256:9092fcaad75b12f7fa1b9df9b3cef495413c77f1700fce5353f5115dac56ab19"
     },
     {
       "source": "scripts/main-agent-compiled-prompt-runner.ts",
-      "sourceSha256": "sha256:bb9425f579fe49905f5c74dd60086f0ee0e23c4a4aff035b19cd762bb8b13ffc",
+      "sourceSha256": "sha256:350582a0ce47fd029cbb0df8929e1d79c4a4f04b4a62108530dd8bd781799176",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-compiled-prompt-runner.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-compiled-prompt-runner.ts",
-      "bytes": 15358,
-      "sha256": "sha256:bb9425f579fe49905f5c74dd60086f0ee0e23c4a4aff035b19cd762bb8b13ffc"
+      "bytes": 14983,
+      "sha256": "sha256:350582a0ce47fd029cbb0df8929e1d79c4a4f04b4a62108530dd8bd781799176"
     },
     {
       "source": "scripts/main-agent-implementation-readiness-gate.ts",
-      "sourceSha256": "sha256:f1fadf4275a0b5541ea224fea292e3bd87a71fa40ab0e6b32b02606a77fb6ec5",
+      "sourceSha256": "sha256:7c93687daa7dd84e9e1ff3b188520d02be8775ee19e6dd0f3851c922d605fc0b",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-implementation-readiness-gate.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-implementation-readiness-gate.ts",
-      "bytes": 31133,
-      "sha256": "sha256:f1fadf4275a0b5541ea224fea292e3bd87a71fa40ab0e6b32b02606a77fb6ec5"
+      "bytes": 30332,
+      "sha256": "sha256:7c93687daa7dd84e9e1ff3b188520d02be8775ee19e6dd0f3851c922d605fc0b"
     },
     {
       "source": "scripts/main-agent-orchestration.ts",
-      "sourceSha256": "sha256:d5414b5d806ad3c12b751a1f7d3013c518024cc13c07f29a38970cca190f82d5",
+      "sourceSha256": "sha256:fddd80c76a5540a04c071715e4391605492aef5a7a6105c4168e18fd41034095",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
-      "bytes": 440347,
-      "sha256": "sha256:d5414b5d806ad3c12b751a1f7d3013c518024cc13c07f29a38970cca190f82d5"
+      "bytes": 428767,
+      "sha256": "sha256:fddd80c76a5540a04c071715e4391605492aef5a7a6105c4168e18fd41034095"
     },
     {
       "source": "scripts/model-governance-hint-resolver.ts",
@@ -779,19 +779,19 @@
     },
     {
       "source": "scripts/model-governance-policy-filter.ts",
-      "sourceSha256": "sha256:5d245eaa93f0023a5aff3ac4cd4710ddc695841c8af379586d7618f99c960bbd",
+      "sourceSha256": "sha256:cebbd776d19d5c2021f2bb9bc4bdbf40f572ce47bd094381a52f396fff93d067",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/model-governance-policy-filter.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/model-governance-policy-filter.ts",
-      "bytes": 6983,
-      "sha256": "sha256:5d245eaa93f0023a5aff3ac4cd4710ddc695841c8af379586d7618f99c960bbd"
+      "bytes": 6800,
+      "sha256": "sha256:cebbd776d19d5c2021f2bb9bc4bdbf40f572ce47bd094381a52f396fff93d067"
     },
     {
       "source": "scripts/orchestration-dispatch-contract.ts",
-      "sourceSha256": "sha256:b0bcebb36a44983998f28f1d2fdf00d6eba1b7df4405ebac248bde158a02cf84",
+      "sourceSha256": "sha256:ae34a2500ee81e4432ec5cbe0da50a5d448a0001024c3e9fac38a74e20895af2",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-dispatch-contract.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-dispatch-contract.ts",
-      "bytes": 18292,
-      "sha256": "sha256:b0bcebb36a44983998f28f1d2fdf00d6eba1b7df4405ebac248bde158a02cf84"
+      "bytes": 17756,
+      "sha256": "sha256:ae34a2500ee81e4432ec5cbe0da50a5d448a0001024c3e9fac38a74e20895af2"
     },
     {
       "source": "scripts/orchestration-governance-contract.ts",
@@ -803,91 +803,91 @@
     },
     {
       "source": "scripts/orchestration-state.ts",
-      "sourceSha256": "sha256:5fb3631f8d144ba06e60391451f9a56a0216057f65ae2923c586826d71e6f742",
+      "sourceSha256": "sha256:2cdcb4029262f44c8af6dacc95cd972669c764a26398ab06ea5ed8c0d6b834e2",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-state.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-state.ts",
-      "bytes": 15293,
-      "sha256": "sha256:5fb3631f8d144ba06e60391451f9a56a0216057f65ae2923c586826d71e6f742"
+      "bytes": 14797,
+      "sha256": "sha256:2cdcb4029262f44c8af6dacc95cd972669c764a26398ab06ea5ed8c0d6b834e2"
     },
     {
       "source": "scripts/parse-bmad-audit-result.ts",
-      "sourceSha256": "sha256:247c2b212404e15c7f3e4729288add8a351975fcd58a2f6f52dd4ba31d824420",
+      "sourceSha256": "sha256:bf6e83101c335ad051fa8ab5665fa645f55d926932e260b78e96c00797b65db5",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/parse-bmad-audit-result.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/parse-bmad-audit-result.ts",
-      "bytes": 3423,
-      "sha256": "sha256:247c2b212404e15c7f3e4729288add8a351975fcd58a2f6f52dd4ba31d824420"
+      "bytes": 3308,
+      "sha256": "sha256:bf6e83101c335ad051fa8ab5665fa645f55d926932e260b78e96c00797b65db5"
     },
     {
       "source": "scripts/prompt-routing-governance.ts",
-      "sourceSha256": "sha256:337d1a662ff4abaa9e5c3d0c0508359dd629c477d001b236640393c2a894e78a",
+      "sourceSha256": "sha256:cec2be3e275c50b07f2968dabffc3ed1fdcbe05f847d15e33c4860ba2f3ba675",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prompt-routing-governance.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prompt-routing-governance.ts",
-      "bytes": 38838,
-      "sha256": "sha256:337d1a662ff4abaa9e5c3d0c0508359dd629c477d001b236640393c2a894e78a"
+      "bytes": 37772,
+      "sha256": "sha256:cec2be3e275c50b07f2968dabffc3ed1fdcbe05f847d15e33c4860ba2f3ba675"
     },
     {
       "source": "scripts/prompt-routing-hints-schema.ts",
-      "sourceSha256": "sha256:e3c884215e4210e40af413e4b947a6038b06b5aa56f49bd2b20c16697fb769e0",
+      "sourceSha256": "sha256:e80adc0fca1f8adb429e81cdf34b4ee5fab8a5c50378a64fb929c09bfe84baa0",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prompt-routing-hints-schema.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prompt-routing-hints-schema.ts",
-      "bytes": 7146,
-      "sha256": "sha256:e3c884215e4210e40af413e4b947a6038b06b5aa56f49bd2b20c16697fb769e0"
+      "bytes": 6924,
+      "sha256": "sha256:e80adc0fca1f8adb429e81cdf34b4ee5fab8a5c50378a64fb929c09bfe84baa0"
     },
     {
       "source": "scripts/prompt-routing-hints.ts",
-      "sourceSha256": "sha256:35a59f4754ddb663abf883f7a3bfa2db09374016016e600cf18ffd00dac7d032",
+      "sourceSha256": "sha256:15ba941223a94192aeea3107f8795217c76d72ad693bede240cff9ed21046074",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prompt-routing-hints.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prompt-routing-hints.ts",
-      "bytes": 5954,
-      "sha256": "sha256:35a59f4754ddb663abf883f7a3bfa2db09374016016e600cf18ffd00dac7d032"
+      "bytes": 5781,
+      "sha256": "sha256:15ba941223a94192aeea3107f8795217c76d72ad693bede240cff9ed21046074"
     },
     {
       "source": "scripts/reconfirmation-runtime.ts",
-      "sourceSha256": "sha256:499b747d7229d80c2de6561bfd9347acf157f6cd253a694d04af5a3549c4152f",
+      "sourceSha256": "sha256:803ed4a979a19e90719007e6a877d5be5c50c70abcaf46af2cb0862e751b0aab",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/reconfirmation-runtime.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/reconfirmation-runtime.ts",
-      "bytes": 14489,
-      "sha256": "sha256:499b747d7229d80c2de6561bfd9347acf157f6cd253a694d04af5a3549c4152f"
+      "bytes": 14085,
+      "sha256": "sha256:803ed4a979a19e90719007e6a877d5be5c50c70abcaf46af2cb0862e751b0aab"
     },
     {
       "source": "scripts/requirement-record-control-store.ts",
-      "sourceSha256": "sha256:ff42c11292d9766467028817b37a42d4f4645fa03716aa89af8edd668581032a",
+      "sourceSha256": "sha256:4eddda36871c81700653d564903cc3e5c070d00ce0b809683a5d0643b3993b6e",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirement-record-control-store.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirement-record-control-store.ts",
-      "bytes": 46823,
-      "sha256": "sha256:ff42c11292d9766467028817b37a42d4f4645fa03716aa89af8edd668581032a"
+      "bytes": 45618,
+      "sha256": "sha256:4eddda36871c81700653d564903cc3e5c070d00ce0b809683a5d0643b3993b6e"
     },
     {
       "source": "scripts/requirement-record-live-schema-gate.ts",
-      "sourceSha256": "sha256:e884f69f816bf23bf14387d47e7306ef88ff7e562d2ef484cafefea0a9c5830f",
+      "sourceSha256": "sha256:68f97a3aaacd50be5deeacd13b3a3f1bea66c4d11683f0a7e024820cffae0a43",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirement-record-live-schema-gate.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirement-record-live-schema-gate.ts",
-      "bytes": 2948,
-      "sha256": "sha256:e884f69f816bf23bf14387d47e7306ef88ff7e562d2ef484cafefea0a9c5830f"
+      "bytes": 3124,
+      "sha256": "sha256:27eb142c1fd1c78f910723d1f132aa7b10039e563c6128ab582f74a9624492bd"
     },
     {
       "source": "scripts/resolve-active-requirement.ts",
-      "sourceSha256": "sha256:f5ac9a8be72ddb020f74a215cf10234091b9081f822414977d31332cf959fecf",
+      "sourceSha256": "sha256:54081ab47790815848c7cabbbe94480df268be46f836bd938d2e0811a360cc42",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/resolve-active-requirement.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/resolve-active-requirement.ts",
-      "bytes": 29173,
-      "sha256": "sha256:f5ac9a8be72ddb020f74a215cf10234091b9081f822414977d31332cf959fecf"
+      "bytes": 28390,
+      "sha256": "sha256:54081ab47790815848c7cabbbe94480df268be46f836bd938d2e0811a360cc42"
     },
     {
       "source": "scripts/reviewer-contract.ts",
-      "sourceSha256": "sha256:c45ddfce5eb4263e6a6fae09879fecfceccd47c1fb0e7566d95d9eec102e563e",
+      "sourceSha256": "sha256:2d8ac15b6ba71abfd2fd1f800aa17e132c790a519a915c9ea3b7fa93a8b0aedf",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-contract.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-contract.ts",
-      "bytes": 11105,
-      "sha256": "sha256:c45ddfce5eb4263e6a6fae09879fecfceccd47c1fb0e7566d95d9eec102e563e"
+      "bytes": 10835,
+      "sha256": "sha256:2d8ac15b6ba71abfd2fd1f800aa17e132c790a519a915c9ea3b7fa93a8b0aedf"
     },
     {
       "source": "scripts/reviewer-registry.ts",
-      "sourceSha256": "sha256:a554a99cbd9f5652971330c0d2b8ac6af4c3aeccfb873a58f6acfbda7c190dc5",
+      "sourceSha256": "sha256:56dbd3fa5e9fbfe975f32d226fb84afd5e8395d31a928ebcd6d3bf961a15c4f8",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-registry.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-registry.ts",
-      "bytes": 17724,
-      "sha256": "sha256:a554a99cbd9f5652971330c0d2b8ac6af4c3aeccfb873a58f6acfbda7c190dc5"
+      "bytes": 17215,
+      "sha256": "sha256:56dbd3fa5e9fbfe975f32d226fb84afd5e8395d31a928ebcd6d3bf961a15c4f8"
     },
     {
       "source": "scripts/reviewer-rollout-gate.ts",
@@ -899,19 +899,19 @@
     },
     {
       "source": "scripts/reviewer-runtime-definition.ts",
-      "sourceSha256": "sha256:6139ec1d2511fc8aa9cc489cf7f9195ad77fbae7c38009a5a0bc76c4f14b9720",
+      "sourceSha256": "sha256:3e2e1205f03a340af7fdd527f6a07415345f04e4ece6b963efa5d07ccfa1858f",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-runtime-definition.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-runtime-definition.ts",
-      "bytes": 4832,
-      "sha256": "sha256:6139ec1d2511fc8aa9cc489cf7f9195ad77fbae7c38009a5a0bc76c4f14b9720"
+      "bytes": 4684,
+      "sha256": "sha256:3e2e1205f03a340af7fdd527f6a07415345f04e4ece6b963efa5d07ccfa1858f"
     },
     {
       "source": "scripts/reviewer-schema.ts",
-      "sourceSha256": "sha256:067a2a83300f556949205d5e22b1cc3bc97f9825a80ec031f66126f40d130cc3",
+      "sourceSha256": "sha256:179c7dae6277fbebe0a4d9b36be1d5d2d5fbcc66721edb5dfdd31fd9f6a072ec",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-schema.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-schema.ts",
-      "bytes": 16635,
-      "sha256": "sha256:067a2a83300f556949205d5e22b1cc3bc97f9825a80ec031f66126f40d130cc3"
+      "bytes": 16102,
+      "sha256": "sha256:179c7dae6277fbebe0a4d9b36be1d5d2d5fbcc66721edb5dfdd31fd9f6a072ec"
     },
     {
       "source": "scripts/reviewer-shared-core.ts",
@@ -923,19 +923,19 @@
     },
     {
       "source": "scripts/run-auditor-host.ts",
-      "sourceSha256": "sha256:b7441d5281caef9b5e742dd4e7ce44249af85e7cc8f1d09f685528501e2059bf",
+      "sourceSha256": "sha256:cbe6bec86536d8795327907023e7cb6a12b34f1696d1e0b2a940901d3d5e9a4b",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-auditor-host.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-auditor-host.ts",
-      "bytes": 19644,
-      "sha256": "sha256:b7441d5281caef9b5e742dd4e7ce44249af85e7cc8f1d09f685528501e2059bf"
+      "bytes": 19106,
+      "sha256": "sha256:cbe6bec86536d8795327907023e7cb6a12b34f1696d1e0b2a940901d3d5e9a4b"
     },
     {
       "source": "scripts/run-required-commands-from-ai-tdd-manifest.ts",
-      "sourceSha256": "sha256:e4b4fac538148ef78bb9610c5b3f102fee5a03565f2acaa1e079d25456bd23b4",
+      "sourceSha256": "sha256:e42ca05a8b518a3ad07997290a8ebba84d696815027d87a74b7610708cc32969",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts",
-      "bytes": 49223,
-      "sha256": "sha256:e4b4fac538148ef78bb9610c5b3f102fee5a03565f2acaa1e079d25456bd23b4"
+      "bytes": 47858,
+      "sha256": "sha256:e42ca05a8b518a3ad07997290a8ebba84d696815027d87a74b7610708cc32969"
     },
     {
       "source": "scripts/runtime-context-registry.ts",
@@ -947,11 +947,11 @@
     },
     {
       "source": "scripts/runtime-context.ts",
-      "sourceSha256": "sha256:2311131ef13cf7d645c09257c056544b34a3d97d56114a1df45efff0d89e4312",
+      "sourceSha256": "sha256:f13877297fe557da0f402cd0961bd68b8546c4774a6a0674a14119bb9a752920",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context.ts",
-      "bytes": 16769,
-      "sha256": "sha256:2311131ef13cf7d645c09257c056544b34a3d97d56114a1df45efff0d89e4312"
+      "bytes": 16261,
+      "sha256": "sha256:f13877297fe557da0f402cd0961bd68b8546c4774a6a0674a14119bb9a752920"
     },
     {
       "source": "scripts/runtime-governance-registry.ts",
@@ -971,43 +971,43 @@
     },
     {
       "source": "scripts/runtime-governance.ts",
-      "sourceSha256": "sha256:cfa6236b33f9c1e7a2e7fec6985c9f01f94db9e7e3ec6733b868ce9f7a3c8981",
+      "sourceSha256": "sha256:b598d4600a7d192da599e201d1fb0d534b4484513375b7347cfcf011be2573cd",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-governance.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-governance.ts",
-      "bytes": 21286,
-      "sha256": "sha256:cfa6236b33f9c1e7a2e7fec6985c9f01f94db9e7e3ec6733b868ce9f7a3c8981"
+      "bytes": 20647,
+      "sha256": "sha256:b598d4600a7d192da599e201d1fb0d534b4484513375b7347cfcf011be2573cd"
     },
     {
       "source": "scripts/runtime-scoring-data-path.ts",
-      "sourceSha256": "sha256:ffd570149d8f598216dc4334f5a600e9b12613ca57b501e7745cb8b8348062d9",
+      "sourceSha256": "sha256:efd48a3bf89a5c8b353df80e3eca6f63205814f3d3085e90aa5e20a50202d231",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-scoring-data-path.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-scoring-data-path.ts",
-      "bytes": 536,
-      "sha256": "sha256:ffd570149d8f598216dc4334f5a600e9b12613ca57b501e7745cb8b8348062d9"
+      "bytes": 523,
+      "sha256": "sha256:efd48a3bf89a5c8b353df80e3eca6f63205814f3d3085e90aa5e20a50202d231"
     },
     {
       "source": "scripts/sdd-artifact-manifest.ts",
-      "sourceSha256": "sha256:a16e80dc9974b4b4133ffe79999df219eb487c4aa37cf07f3ecf3e7c8d030fa9",
+      "sourceSha256": "sha256:edaaa14ec4f391ef98ed9e45ab8e83ddb49e0b355f31107031ed83ffbef488d4",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/sdd-artifact-manifest.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/sdd-artifact-manifest.ts",
-      "bytes": 10472,
-      "sha256": "sha256:a16e80dc9974b4b4133ffe79999df219eb487c4aa37cf07f3ecf3e7c8d030fa9"
+      "bytes": 10197,
+      "sha256": "sha256:edaaa14ec4f391ef98ed9e45ab8e83ddb49e0b355f31107031ed83ffbef488d4"
     },
     {
       "source": "scripts/six-model-runtime-decision.ts",
-      "sourceSha256": "sha256:ea2cfc5cf17fc5cf79343814873eaeb36fefece90a72e5f024a7a3ae014dc51c",
+      "sourceSha256": "sha256:ed9d376a8a6a277e25a407898d3b5c24fb9360cdc94715301411d0b3dbde765e",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/six-model-runtime-decision.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/six-model-runtime-decision.ts",
-      "bytes": 12943,
-      "sha256": "sha256:ea2cfc5cf17fc5cf79343814873eaeb36fefece90a72e5f024a7a3ae014dc51c"
+      "bytes": 12579,
+      "sha256": "sha256:ed9d376a8a6a277e25a407898d3b5c24fb9360cdc94715301411d0b3dbde765e"
     },
     {
       "source": "scripts/skill-inventory-provider.ts",
-      "sourceSha256": "sha256:2a943758a7b22bfad5322491510158e73256a74623960468cf00ad1c2206fbe3",
+      "sourceSha256": "sha256:0a0f91ace34006f02a5ace60e6d499a28759f864299dc78ebc4b18a4efcc966b",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/skill-inventory-provider.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/skill-inventory-provider.ts",
-      "bytes": 8452,
-      "sha256": "sha256:2a943758a7b22bfad5322491510158e73256a74623960468cf00ad1c2206fbe3"
+      "bytes": 8154,
+      "sha256": "sha256:0a0f91ace34006f02a5ace60e6d499a28759f864299dc78ebc4b18a4efcc966b"
     },
     {
       "source": "scripts/skill-semantic-features-config.ts",
@@ -1027,35 +1027,35 @@
     },
     {
       "source": "scripts/strict-closeout-proof-gate.ts",
-      "sourceSha256": "sha256:0ebb85d0a1bb5d656ca3ee7c5c36e8bb8c0f8fe9416cba30ad0d1e8f197eb900",
+      "sourceSha256": "sha256:1b8e4cbfea7c076ebe07180298d9c93329d2e873556c6b78832dad00589c0ca0",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/strict-closeout-proof-gate.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/strict-closeout-proof-gate.ts",
-      "bytes": 27623,
-      "sha256": "sha256:0ebb85d0a1bb5d656ca3ee7c5c36e8bb8c0f8fe9416cba30ad0d1e8f197eb900"
+      "bytes": 26854,
+      "sha256": "sha256:1b8e4cbfea7c076ebe07180298d9c93329d2e873556c6b78832dad00589c0ca0"
     },
     {
       "source": "scripts/subagent-evidence-envelope.ts",
-      "sourceSha256": "sha256:47480f80b85f9113c3ededcae6dacec21259d73551f569b7bc36d95f99e994ed",
+      "sourceSha256": "sha256:fd39078fb1d5ed5e1aac12caca842beeda82422f3a986f71e770c9eb0dbd8dc5",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-evidence-envelope.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-evidence-envelope.ts",
-      "bytes": 27159,
-      "sha256": "sha256:47480f80b85f9113c3ededcae6dacec21259d73551f569b7bc36d95f99e994ed"
+      "bytes": 26417,
+      "sha256": "sha256:fd39078fb1d5ed5e1aac12caca842beeda82422f3a986f71e770c9eb0dbd8dc5"
     },
     {
       "source": "scripts/target-artifact-realization-gate.ts",
-      "sourceSha256": "sha256:b3c99f96ede6d96488d32ed14ce0b6e0e29966ee98a8986d12b0f69bf35707ec",
+      "sourceSha256": "sha256:fa3720ad4e78894507ed87ab049ec4ea618db78af99f34e1a299b2e7b984d2f3",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/target-artifact-realization-gate.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/target-artifact-realization-gate.ts",
-      "bytes": 67901,
-      "sha256": "sha256:b3c99f96ede6d96488d32ed14ce0b6e0e29966ee98a8986d12b0f69bf35707ec"
+      "bytes": 65979,
+      "sha256": "sha256:fa3720ad4e78894507ed87ab049ec4ea618db78af99f34e1a299b2e7b984d2f3"
     },
     {
       "source": "scripts/user-story-mapping.ts",
-      "sourceSha256": "sha256:26cfe4d4510f8767dc528f57f5120c9bb3173159e15d05867d2af68bc7bb06af",
+      "sourceSha256": "sha256:405cb32c1ac5b9a8d862d6da0a1fc2c66644bd659d2b47e54f4d55bf5651ad12",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/user-story-mapping.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/user-story-mapping.ts",
-      "bytes": 10656,
-      "sha256": "sha256:26cfe4d4510f8767dc528f57f5120c9bb3173159e15d05867d2af68bc7bb06af"
+      "bytes": 10341,
+      "sha256": "sha256:405cb32c1ac5b9a8d862d6da0a1fc2c66644bd659d2b47e54f4d55bf5651ad12"
     },
     {
       "source": "scripts/write-runtime-context.cjs",
@@ -1107,13 +1107,13 @@
         "packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-auditor-host.js"
       ],
       "runtimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-auditor-host.js",
-      "packageBytes": 19644,
+      "packageBytes": 19106,
       "packageLoc": 539,
-      "packageSha256": "sha256:b7441d5281caef9b5e742dd4e7ce44249af85e7cc8f1d09f685528501e2059bf",
+      "packageSha256": "sha256:cbe6bec86536d8795327907023e7cb6a12b34f1696d1e0b2a940901d3d5e9a4b",
       "runtimeExists": true,
-      "runtimeBytes": 19646,
+      "runtimeBytes": 19651,
       "runtimeLoc": 430,
-      "runtimeSha256": "sha256:24a2b0ab5b699c796c2cca44d13d27d95e0f49c3a4c43dd2cffe7ecd206aa717",
+      "runtimeSha256": "sha256:79bf63fe4e6738093bdeb24af1d6e0f24a6dbad8f49a3bc7611ac98bbd657cf7",
       "sourceKindParityProblems": [],
       "sizeDeltaDecision": "passed_within_strict_threshold"
     },
@@ -1201,19 +1201,19 @@
       "to": "packages/bmad-speckit/src/scoring-runtime.js"
     },
     {
-      "from": "packages/bmad-speckit/src/main-agent/actions/native-goal-command.js",
-      "specifier": "../runtime/host-runtime-mode.js",
-      "to": "packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.js"
+      "from": "packages/bmad-speckit/src/main-agent/actions/native-goal-command.ts",
+      "specifier": "../runtime/host-runtime-mode",
+      "to": "packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.ts"
     },
     {
-      "from": "packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js",
-      "specifier": "./native-goal-command.js",
-      "to": "packages/bmad-speckit/src/main-agent/actions/native-goal-command.js"
+      "from": "packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.ts",
+      "specifier": "./native-goal-command",
+      "to": "packages/bmad-speckit/src/main-agent/actions/native-goal-command.ts"
     },
     {
-      "from": "packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js",
-      "specifier": "../runtime/host-runtime-mode.js",
-      "to": "packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.js"
+      "from": "packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.ts",
+      "specifier": "../runtime/host-runtime-mode",
+      "to": "packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.ts"
     },
     {
       "from": "packages/runtime-context/src/context.ts",
@@ -2362,8 +2362,8 @@
     },
     {
       "from": "scripts/main-agent-orchestration.ts",
-      "specifier": "../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js",
-      "to": "packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js"
+      "specifier": "../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker",
+      "to": "packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.ts"
     },
     {
       "from": "scripts/main-agent-orchestration.ts",
@@ -2906,19 +2906,19 @@
       "to": "_bmad/shared/critical-auditor-profile/load-critical-auditor-profile.js"
     },
     {
-      "from": "packages/bmad-speckit/src/main-agent/actions/native-goal-command.js",
-      "specifier": "../runtime/host-runtime-mode.js",
-      "to": "packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.js"
+      "from": "packages/bmad-speckit/src/main-agent/actions/native-goal-command.ts",
+      "specifier": "../runtime/host-runtime-mode",
+      "to": "packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.ts"
     },
     {
-      "from": "packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js",
-      "specifier": "./native-goal-command.js",
-      "to": "packages/bmad-speckit/src/main-agent/actions/native-goal-command.js"
+      "from": "packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.ts",
+      "specifier": "./native-goal-command",
+      "to": "packages/bmad-speckit/src/main-agent/actions/native-goal-command.ts"
     },
     {
-      "from": "packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js",
-      "specifier": "../runtime/host-runtime-mode.js",
-      "to": "packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.js"
+      "from": "packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.ts",
+      "specifier": "../runtime/host-runtime-mode",
+      "to": "packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.ts"
     },
     {
       "from": "packages/runtime-context/src/context.ts",
@@ -4047,8 +4047,8 @@
     },
     {
       "from": "scripts/main-agent-orchestration.ts",
-      "specifier": "../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js",
-      "to": "packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js"
+      "specifier": "../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker",
+      "to": "packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.ts"
     },
     {
       "from": "scripts/main-agent-orchestration.ts",

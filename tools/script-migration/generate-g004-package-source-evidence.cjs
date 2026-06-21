@@ -48,7 +48,11 @@ function manifestPathForOwner(ownerTaskId) {
 }
 
 function sha256Text(value) {
-  return `sha256:${crypto.createHash('sha256').update(value, 'utf8').digest('hex')}`;
+  return `sha256:${crypto.createHash('sha256').update(canonicalizeText(value), 'utf8').digest('hex')}`;
+}
+
+function canonicalizeText(value) {
+  return String(value || '').replace(/\r\n|\r/gu, '\n');
 }
 
 function round4(value) {
@@ -70,7 +74,7 @@ function runtimeReplayPathForSource(sourceRelativePath) {
 }
 
 function repoText(relativePath) {
-  return fs.readFileSync(repoPath(relativePath), 'utf8');
+  return canonicalizeText(fs.readFileSync(repoPath(relativePath), 'utf8'));
 }
 
 function sourcePathForImport(importerRelativePath, specifier) {
@@ -126,13 +130,14 @@ function collectSourceGraph(entrySource) {
 }
 
 function writeText(relativePath, text) {
+  const canonicalText = canonicalizeText(text);
   const absolute = repoPath(relativePath);
   fs.mkdirSync(path.dirname(absolute), { recursive: true });
-  fs.writeFileSync(absolute, text, 'utf8');
+  fs.writeFileSync(absolute, canonicalText, 'utf8');
   return {
     path: normalizePath(relativePath),
-    bytes: Buffer.byteLength(text, 'utf8'),
-    sha256: sha256Text(text),
+    bytes: Buffer.byteLength(canonicalText, 'utf8'),
+    sha256: sha256Text(canonicalText),
   };
 }
 
@@ -195,9 +200,9 @@ function sourceAuthorityEntryInfo(originalPath) {
   };
 }
 
-function isWithinStrictSize(row, generatedInfo) {
-  const byteRatio = generatedInfo.bytes / row.originalBytes;
-  const locRatio = generatedInfo.lines / row.originalLoc;
+function isWithinStrictSize(originalInfo, generatedInfo) {
+  const byteRatio = generatedInfo.bytes / originalInfo.bytes;
+  const locRatio = generatedInfo.lines / originalInfo.lines;
   return (
     generatedInfo.sourceKindParityProblems.length === 0 &&
     byteRatio >= STRICT_SIZE_RATIO_MIN &&
@@ -209,6 +214,7 @@ function isWithinStrictSize(row, generatedInfo) {
 
 function updateLedgerRow(
   row,
+  originalInfo,
   packageInfo,
   runtimeInfo,
   runtimeReplayPath,
@@ -219,9 +225,19 @@ function updateLedgerRow(
   sourceKindProblems,
   ownerTaskId
 ) {
-  const byteRatio = round4(packageInfo.bytes / row.originalBytes);
-  const locRatio = round4(packageInfo.lines / row.originalLoc);
+  const byteRatio = round4(packageInfo.bytes / originalInfo.bytes);
+  const locRatio = round4(packageInfo.lines / originalInfo.lines);
   const sizePassed = sizeDecision === 'passed_within_strict_threshold';
+  row.sourceSha256 = originalInfo.sha256;
+  row.originalBytes = originalInfo.bytes;
+  row.originalLoc = originalInfo.lines;
+  row.sourceFacts = {
+    ...(row.sourceFacts && typeof row.sourceFacts === 'object' ? row.sourceFacts : {}),
+    originalCanonicalBytes: originalInfo.bytes,
+    originalCanonicalLoc: originalInfo.lines,
+    originalCanonicalSha256: originalInfo.sha256,
+    originalSizeHashPolicy: 'canonical_lf_text',
+  };
   row.packageImplementationSet = [packageInfo.path];
   row.sourceAuthorityPaths = [packageInfo.path];
   row.runtimeReplayPaths = runtimeReplayPath ? [runtimeReplayPath] : [];
@@ -279,8 +295,8 @@ function updateLedgerRow(
       : 'failed_size_delta_threshold_rework_required',
     originalPath: row.originalPath,
     packageImplementationSet: [packageInfo.path],
-    originalBytes: row.originalBytes,
-    originalLoc: row.originalLoc,
+    originalBytes: originalInfo.bytes,
+    originalLoc: originalInfo.lines,
     packageBytes: packageInfo.bytes,
     packageLoc: packageInfo.lines,
     packageByteRatio: byteRatio,
@@ -289,10 +305,10 @@ function updateLedgerRow(
     semanticPackageLoc: packageInfo.lines,
     semanticPackageByteRatio: byteRatio,
     semanticPackageLocRatio: locRatio,
-    rawByteDelta: packageInfo.bytes - row.originalBytes,
-    rawLocDelta: packageInfo.lines - row.originalLoc,
-    semanticByteDelta: packageInfo.bytes - row.originalBytes,
-    semanticLocDelta: packageInfo.lines - row.originalLoc,
+    rawByteDelta: packageInfo.bytes - originalInfo.bytes,
+    rawLocDelta: packageInfo.lines - originalInfo.lines,
+    semanticByteDelta: packageInfo.bytes - originalInfo.bytes,
+    semanticLocDelta: packageInfo.lines - originalInfo.lines,
     sourceKindParityDecision:
       sourceKindProblems.length === 0 ? 'passed_source_kind_parity' : 'failed_source_kind_parity',
     sourceKindParityProblems: sourceKindProblems,
@@ -330,16 +346,19 @@ function generate(updateLedger, ownerTaskId = DEFAULT_OWNER_TASK_ID) {
   const selectedRows = [];
   const skippedRows = [];
   for (const row of rows) {
+    const originalInfo = fileInfo(row.originalPath);
     const generatedInfo = sourceAuthorityEntryInfo(row.originalPath);
-    if (isWithinStrictSize(row, generatedInfo)) selectedRows.push(row);
+    if (isWithinStrictSize(originalInfo, generatedInfo)) selectedRows.push(row);
     else {
       skippedRows.push({
         originalPath: row.originalPath,
         reason: 'generated_entry_size_outside_strict_threshold',
+        originalBytes: originalInfo.bytes,
+        originalLoc: originalInfo.lines,
         generatedBytes: generatedInfo.bytes,
         generatedLoc: generatedInfo.lines,
-        packageByteRatio: round4(generatedInfo.bytes / row.originalBytes),
-        packageLocRatio: round4(generatedInfo.lines / row.originalLoc),
+        packageByteRatio: round4(generatedInfo.bytes / originalInfo.bytes),
+        packageLocRatio: round4(generatedInfo.lines / originalInfo.lines),
         sourceKindParityProblems: generatedInfo.sourceKindParityProblems,
       });
     }
@@ -371,11 +390,12 @@ function generate(updateLedger, ownerTaskId = DEFAULT_OWNER_TASK_ID) {
   const entryPackages = rows.map((row) => {
     const entryTarget = packageImplementationPath(row.originalPath);
     const runtimeTarget = runtimeReplayPathForSource(row.originalPath);
+    const originalInfo = fileInfo(row.originalPath);
     const packageInfo = fileInfo(entryTarget);
     const runtimeInfo = optionalFileInfo(runtimeTarget);
     const sourceKindProblems = sourceKindParityProblems(row.originalPath, repoText(entryTarget), entryTarget);
-    const byteRatio = packageInfo.bytes / row.originalBytes;
-    const locRatio = packageInfo.lines / row.originalLoc;
+    const byteRatio = packageInfo.bytes / originalInfo.bytes;
+    const locRatio = packageInfo.lines / originalInfo.lines;
     const passedStrictSize =
       sourceKindProblems.length === 0 &&
       byteRatio >= STRICT_SIZE_RATIO_MIN &&
@@ -389,6 +409,7 @@ function generate(updateLedger, ownerTaskId = DEFAULT_OWNER_TASK_ID) {
       runtimeReplayPaths: runtimeTarget ? [runtimeTarget] : [],
       distOutputPaths: runtimeTarget ? [runtimeTarget] : [],
       runtimeEntryPoint: runtimeTarget,
+      originalInfo,
       packageInfo,
       runtimeInfo,
       sourceKindParityProblems: sourceKindProblems,
@@ -440,6 +461,7 @@ function generate(updateLedger, ownerTaskId = DEFAULT_OWNER_TASK_ID) {
       const row = ledger.entries.find((candidate) => candidate.originalPath === entry.originalPath);
       updateLedgerRow(
         row,
+        entry.originalInfo,
         entry.packageInfo,
         entry.runtimeInfo,
         entry.runtimeEntryPoint,

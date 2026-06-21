@@ -49,7 +49,15 @@ function normalizePath(value) {
 }
 
 function sha256Text(value) {
-  return `sha256:${crypto.createHash('sha256').update(value).digest('hex')}`;
+  return `sha256:${crypto.createHash('sha256').update(canonicalizeText(value), 'utf8').digest('hex')}`;
+}
+
+function canonicalizeText(value) {
+  return String(value || '').replace(/\r\n|\r/gu, '\n');
+}
+
+function readCanonicalText(relativePath) {
+  return canonicalizeText(fs.readFileSync(repoPath(relativePath), 'utf8'));
 }
 
 function uniqueSorted(values) {
@@ -103,8 +111,8 @@ function parseArgs(argv) {
 }
 
 function discover() {
-  const source = fs.readFileSync(repoPath(ORIGINAL_PATH), 'utf8');
-  const lines = source.split(/\r?\n/u);
+  const source = readCanonicalText(ORIGINAL_PATH);
+  const lines = source.split(/\n/u);
   const actionsFromComparisons = collectMatches(source, /action\s*(?:={2,3}|!={1,2})\s*['"]([^'"]+)['"]/gu);
   const actionsFromCases = collectMatches(source, /case\s+['"]([^'"]+)['"]\s*:/gu);
   const actionAliases = uniqueSorted([...actionsFromComparisons, ...actionsFromCases]);

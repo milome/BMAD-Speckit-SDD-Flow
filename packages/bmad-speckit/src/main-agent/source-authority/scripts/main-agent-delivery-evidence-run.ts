@@ -5,7 +5,7 @@ import { buildEvidenceProvenance } from './evidence-provenance';
 
 type ProviderMode = 'mock' | 'real';
 const TOOL_ROOT = path.resolve(__dirname, '..');
-const PKG_RUNTIME = path.normalize(__dirname).includes(path.normalize('dist/main-agent/source-authority/scripts'));
+const PKG_RUNTIME = __dirname.includes(`${path.sep}dist${path.sep}`);
 
 interface StepResult {
   id: string;

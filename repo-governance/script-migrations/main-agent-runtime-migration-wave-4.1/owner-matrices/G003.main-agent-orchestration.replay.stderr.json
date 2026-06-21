@@ -122,6 +122,6 @@
   {
     "scenarioId": "g003_controlled_readiness_audit",
     "action": "controlled-readiness-audit",
-    "stderr": "main-agent-orchestration controlled-readiness-audit: NO_ACTIVE_REQUIREMENT: no active requirement record found under D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-4.1\\owner-matrices\\G003.replay-fixtures\\2026-06-21T04-46-37-598Z\\g003_controlled_readiness_audit\\_bmad-output\\runtime\\requirement-records; nextRequiredAction=contract_authoring_required\n"
+    "stderr": "main-agent-orchestration controlled-readiness-audit: NO_ACTIVE_REQUIREMENT: no active requirement record found under D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-4.1\\owner-matrices\\G003.replay-fixtures\\2026-06-21T08-34-39-765Z\\g003_controlled_readiness_audit\\_bmad-output\\runtime\\requirement-records; nextRequiredAction=contract_authoring_required\n"
   }
 ]

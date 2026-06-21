@@ -204,6 +204,43 @@ function normalizePath(value) {
   return String(value || '').replace(/\\/g, '/');
 }
 
+const CANONICAL_TEXT_EXTENSIONS = new Set([
+  '.cjs',
+  '.css',
+  '.csv',
+  '.cts',
+  '.html',
+  '.js',
+  '.json',
+  '.jsx',
+  '.mjs',
+  '.mts',
+  '.md',
+  '.ps1',
+  '.sh',
+  '.ts',
+  '.tsx',
+  '.txt',
+  '.yaml',
+  '.yml',
+]);
+
+function isCanonicalTextPath(relativePath) {
+  const normalized = normalizePath(relativePath).toLowerCase();
+  if (normalized.endsWith('/package.json')) return true;
+  return CANONICAL_TEXT_EXTENSIONS.has(path.extname(normalized));
+}
+
+function canonicalizeText(value) {
+  return String(value || '').replace(/\r\n|\r/gu, '\n');
+}
+
+function canonicalFileBuffer(relativePath) {
+  const raw = fs.readFileSync(repoPath(relativePath));
+  if (!isCanonicalTextPath(relativePath) || raw.includes(0)) return raw;
+  return Buffer.from(canonicalizeText(raw.toString('utf8')), 'utf8');
+}
+
 function hasOwn(value, field) {
   return value && Object.prototype.hasOwnProperty.call(value, field);
 }
@@ -837,7 +874,7 @@ function repoPath(relativePath) {
 }
 
 function readText(relativePath) {
-  return fs.readFileSync(repoPath(relativePath), 'utf8');
+  return canonicalFileBuffer(relativePath).toString('utf8');
 }
 
 function readJson(relativePath) {
@@ -849,7 +886,7 @@ function sha256Buffer(buffer) {
 }
 
 function sha256File(relativePath) {
-  return sha256Buffer(fs.readFileSync(repoPath(relativePath)));
+  return sha256Buffer(canonicalFileBuffer(relativePath));
 }
 
 function nowIso() {
@@ -876,12 +913,11 @@ function writeJson(relativePath, value) {
 }
 
 function fileInfo(relativePath) {
-  const absolute = repoPath(relativePath);
-  const text = fs.readFileSync(absolute, 'utf8');
+  const text = readText(relativePath);
   return {
     path: normalizePath(relativePath),
     bytes: Buffer.byteLength(text, 'utf8'),
-    lines: text.split(/\r?\n/).length,
+    lines: text.split(/\n/u).length,
     sha256: sha256File(relativePath),
   };
 }

@@ -21,11 +21,25 @@ function normalizePath(value) {
 }
 
 function sha256Text(value) {
-  return `sha256:${crypto.createHash('sha256').update(value, 'utf8').digest('hex')}`;
+  return `sha256:${crypto.createHash('sha256').update(canonicalizeText(value), 'utf8').digest('hex')}`;
 }
 
 function sha256File(relativePath) {
-  return `sha256:${crypto.createHash('sha256').update(fs.readFileSync(repoPath(relativePath))).digest('hex')}`;
+  return `sha256:${crypto.createHash('sha256').update(readCanonicalBuffer(relativePath)).digest('hex')}`;
+}
+
+function canonicalizeText(value) {
+  return String(value || '').replace(/\r\n|\r/gu, '\n');
+}
+
+function readCanonicalText(relativePath) {
+  return canonicalizeText(fs.readFileSync(repoPath(relativePath), 'utf8'));
+}
+
+function readCanonicalBuffer(relativePath) {
+  const raw = fs.readFileSync(repoPath(relativePath));
+  if (raw.includes(0)) return raw;
+  return Buffer.from(canonicalizeText(raw.toString('utf8')), 'utf8');
 }
 
 function parseArgs(argv) {
@@ -88,7 +102,7 @@ function collectSourceGraph(entrySource) {
     const current = normalizePath(queue.shift());
     if (seen.has(current)) continue;
     seen.add(current);
-    const text = fs.readFileSync(repoPath(current), 'utf8');
+    const text = readCanonicalText(current);
     for (const specifier of importSpecifiers(text)) {
       const resolved = sourcePathForImport(current, specifier);
       if (!resolved) continue;
@@ -103,15 +117,16 @@ function collectSourceGraph(entrySource) {
 }
 
 function writeFile(relativePath, text, dryRun) {
+  const canonicalText = canonicalizeText(text);
   if (!dryRun) {
     const absolute = repoPath(relativePath);
     fs.mkdirSync(path.dirname(absolute), { recursive: true });
-    fs.writeFileSync(absolute, text, 'utf8');
+    fs.writeFileSync(absolute, canonicalText, 'utf8');
   }
   return {
     path: relativePath,
-    bytes: Buffer.byteLength(text, 'utf8'),
-    sha256: sha256Text(text),
+    bytes: Buffer.byteLength(canonicalText, 'utf8'),
+    sha256: sha256Text(canonicalText),
   };
 }
 
@@ -131,8 +146,8 @@ function generate(dryRun = false) {
     const sourceAuthorityTarget = sourceAuthorityPathForSource(source);
     const sourceText =
       source === ENTRY_SOURCE || !fs.existsSync(repoPath(sourceAuthorityTarget))
-        ? fs.readFileSync(repoPath(source), 'utf8')
-        : fs.readFileSync(repoPath(sourceAuthorityTarget), 'utf8');
+        ? readCanonicalText(source)
+        : readCanonicalText(sourceAuthorityTarget);
     copiedSourceFiles.push({
       source,
       sourceSha256: sha256File(source),
