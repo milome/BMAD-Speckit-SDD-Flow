@@ -1,7 +1,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { createRequire } from 'node:module';
 import * as crypto from 'node:crypto';
 import * as yaml from 'js-yaml';
 import type {
@@ -109,8 +108,7 @@ import {
   hasOpenReconfirmationRequest,
   requestSemanticReconfirmation,
 } from './reconfirmation-runtime';
-
-const requireCommonJs = createRequire(__filename);
+import { runNativeGoalInvocation as runNativeGoalInvocationUntyped } from '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js';
 
 export type NativeGoalSpawnSyncFn = (
   command: string,
@@ -151,11 +149,9 @@ type RunNativeGoalInvocationInput = {
   attemptId?: string;
 };
 
-const { runNativeGoalInvocation } = requireCommonJs(
-  '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'
-) as {
-  runNativeGoalInvocation: (input: RunNativeGoalInvocationInput) => NativeGoalInvocationResult;
-};
+const runNativeGoalInvocation = runNativeGoalInvocationUntyped as (
+  input: RunNativeGoalInvocationInput
+) => NativeGoalInvocationResult;
 
 export type MainAgentContinueDecision = 'continue' | 'rerun' | 'blocked' | null;
 export type MainAgentOrchestrationSource =
