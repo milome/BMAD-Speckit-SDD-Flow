@@ -260,7 +260,7 @@ function replayComparisonRows(scenarios, replays) {
   });
 }
 
-function updateG003Ledger({ ledger, matrixArtifactHash, replayResultsHash, stdoutHash, stderrHash, coverage, scenarios, generatedAt, ledgerHashBefore }) {
+function updateG003Ledger({ ledger, matrixArtifactHash, replayResultsHash, stdoutHash: _stdoutHash, stderrHash: _stderrHash, coverage, scenarios, generatedAt, ledgerHashBefore }) {
   const row = ledger.entries.find((entry) => entry.originalPath === ORIGINAL_PATH);
   if (!row) throw new Error(`missing ledger row: ${ORIGINAL_PATH}`);
 
@@ -384,6 +384,7 @@ function updateG003Ledger({ ledger, matrixArtifactHash, replayResultsHash, stdou
   };
   row.originalBytes = originalInfo.bytes;
   row.originalLoc = originalInfo.lines;
+  row.sourceSha256 = originalInfo.sha256;
   row.packageBytes = packageInfo.bytes;
   row.packageLoc = packageInfo.lines;
   row.semanticPackageBytes = packageInfo.bytes;

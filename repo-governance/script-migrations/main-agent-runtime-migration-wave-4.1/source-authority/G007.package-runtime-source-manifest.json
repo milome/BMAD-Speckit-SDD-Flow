@@ -2,7 +2,7 @@
   "schemaVersion": "main-agent-runtime-migration-wave-4-1-owner-package-source-manifest/v1",
   "waveId": "main-agent-runtime-migration-wave-4.1",
   "ownerTaskId": "G007",
-  "generatedAt": "2026-06-20T06:38:07.300Z",
+  "generatedAt": "2026-06-21T01:39:00.926Z",
   "selectedRowCount": 74,
   "skippedRowCount": 0,
   "targetRoot": "packages/bmad-speckit/src/main-agent/source-authority",
@@ -462,8 +462,8 @@
       "sourceSha256": "sha256:e6f700d0586a90dac234f2c958383338c66451057adb60366396f4dd77688256",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts",
-      "bytes": 105634,
-      "sha256": "sha256:e6f700d0586a90dac234f2c958383338c66451057adb60366396f4dd77688256"
+      "bytes": 105716,
+      "sha256": "sha256:ea46c963b70a6b3f5d3938bdf5cce619b596d33c653b8be846d977f28d5a5948"
     },
     {
       "source": "scripts/architecture-confirmation-hash-recipe.ts",
@@ -718,8 +718,8 @@
       "sourceSha256": "sha256:0bf8fe1ef17eb22b976abadc012ec548bfc92586158343d8ab98b142fe5a5823",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-runner.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-runner.ts",
-      "bytes": 57020,
-      "sha256": "sha256:0bf8fe1ef17eb22b976abadc012ec548bfc92586158343d8ab98b142fe5a5823"
+      "bytes": 57108,
+      "sha256": "sha256:1116f473764f37084a15f686d449e4d01aa5fe92c3c76fc07883a9a86a1bdaa2"
     },
     {
       "source": "scripts/governance-transport-envelope.ts",
@@ -907,11 +907,11 @@
     },
     {
       "source": "scripts/main-agent-orchestration.ts",
-      "sourceSha256": "sha256:d5414b5d806ad3c12b751a1f7d3013c518024cc13c07f29a38970cca190f82d5",
+      "sourceSha256": "sha256:8471f99abfb0c369d2d92eacc432f635184c26d05beb0db6b4f2ae564b6f86ff",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
-      "bytes": 440347,
-      "sha256": "sha256:d5414b5d806ad3c12b751a1f7d3013c518024cc13c07f29a38970cca190f82d5"
+      "bytes": 440388,
+      "sha256": "sha256:8471f99abfb0c369d2d92eacc432f635184c26d05beb0db6b4f2ae564b6f86ff"
     },
     {
       "source": "scripts/model-governance-hint-resolver.ts",
@@ -990,8 +990,8 @@
       "sourceSha256": "sha256:3aa7fa65d7d12ccf00259c46de22d735ec21194e3af9a424b01c3f5f38c2dd1f",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.js",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.js",
-      "bytes": 17249,
-      "sha256": "sha256:42e3e00d3b3e390facf5eabbf048f987fe66560faa47dd4b5476d05dc98910a4"
+      "bytes": 17345,
+      "sha256": "sha256:0f52b5829c19f6134f5cb676da80ffc693415d59f3277faa936a4e504864cc21"
     },
     {
       "source": "scripts/prompt-routing-governance.ts",
@@ -1062,8 +1062,8 @@
       "sourceSha256": "sha256:e884f69f816bf23bf14387d47e7306ef88ff7e562d2ef484cafefea0a9c5830f",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirement-record-live-schema-gate.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirement-record-live-schema-gate.ts",
-      "bytes": 2948,
-      "sha256": "sha256:e884f69f816bf23bf14387d47e7306ef88ff7e562d2ef484cafefea0a9c5830f"
+      "bytes": 3210,
+      "sha256": "sha256:fc2ddcaf44a0d269d131bb7d63057f3e9a2fb80d049dc0d1e8024da174ce79bb"
     },
     {
       "source": "scripts/resolve-active-requirement.ts",
@@ -1214,8 +1214,8 @@
       "sourceSha256": "sha256:b83d91a0d9ce22cb4e2d8833f9cbe287c86cdee685550f64b2169ff65ccc6621",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-step-state.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-step-state.ts",
-      "bytes": 1929,
-      "sha256": "sha256:b83d91a0d9ce22cb4e2d8833f9cbe287c86cdee685550f64b2169ff65ccc6621"
+      "bytes": 2024,
+      "sha256": "sha256:128fb9f200fdc3ad706c4da991055c2d3c9485d8520413a6de2b37d6247737b7"
     },
     {
       "source": "scripts/sdd-artifact-manifest.ts",
@@ -1432,9 +1432,9 @@
       "packageLoc": 1247,
       "packageSha256": "sha256:dab544db599cdfe05f233914737669ebc7c12c4a75d9f144f574653cbdc3e892",
       "runtimeExists": true,
-      "runtimeBytes": 36821,
+      "runtimeBytes": 36822,
       "runtimeLoc": 894,
-      "runtimeSha256": "sha256:5a1320ee3fd72d4f9bc30072bd85f79f7876f81d8c2444d4ee5af6d97502166d",
+      "runtimeSha256": "sha256:f4cca8871537fe90b808775999a132690662b3d40ea478b9fa43889b860fbc15",
       "sourceKindParityProblems": [],
       "sizeDeltaDecision": "passed_within_strict_threshold"
     },
@@ -1932,9 +1932,9 @@
       "packageLoc": 758,
       "packageSha256": "sha256:eed3859cc0af563cd5061f92e77a8c65fbc4226ee75c8cae773ab2730f972d01",
       "runtimeExists": true,
-      "runtimeBytes": 32114,
+      "runtimeBytes": 32124,
       "runtimeLoc": 622,
-      "runtimeSha256": "sha256:84e67a1ab6b8b5509b9e7b5bb0e6810ea85e97b05116c5c6654002772126ed13",
+      "runtimeSha256": "sha256:c777181e2c53b8b0d500e29dd6e964f7a814e0e95d9be948e883b4de6ba2b619",
       "sourceKindParityProblems": [],
       "sizeDeltaDecision": "passed_within_strict_threshold"
     },
@@ -1978,13 +1978,13 @@
         "packages/bmad-speckit/dist/main-agent/source-authority/scripts/governance-remediation-runner.js"
       ],
       "runtimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/governance-remediation-runner.js",
-      "packageBytes": 57020,
-      "packageLoc": 1551,
-      "packageSha256": "sha256:0bf8fe1ef17eb22b976abadc012ec548bfc92586158343d8ab98b142fe5a5823",
+      "packageBytes": 57108,
+      "packageLoc": 1554,
+      "packageSha256": "sha256:1116f473764f37084a15f686d449e4d01aa5fe92c3c76fc07883a9a86a1bdaa2",
       "runtimeExists": true,
-      "runtimeBytes": 52044,
-      "runtimeLoc": 1178,
-      "runtimeSha256": "sha256:bfe5a45dd01890770b5455c52cabe982a733e9f2aa55bfdcb3076e9ea05fb685",
+      "runtimeBytes": 52173,
+      "runtimeLoc": 1180,
+      "runtimeSha256": "sha256:0cd56cf83d44ab614a67ff91d1255a2633b4d1ee213d62db46cc0f8428b2cdbd",
       "sourceKindParityProblems": [],
       "sizeDeltaDecision": "passed_within_strict_threshold"
     },
@@ -2553,13 +2553,13 @@
         "packages/bmad-speckit/dist/main-agent/source-authority/scripts/prepublish-check.js"
       ],
       "runtimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/prepublish-check.js",
-      "packageBytes": 17249,
+      "packageBytes": 17345,
       "packageLoc": 515,
-      "packageSha256": "sha256:42e3e00d3b3e390facf5eabbf048f987fe66560faa47dd4b5476d05dc98910a4",
+      "packageSha256": "sha256:0f52b5829c19f6134f5cb676da80ffc693415d59f3277faa936a4e504864cc21",
       "runtimeExists": true,
-      "runtimeBytes": 17249,
+      "runtimeBytes": 17345,
       "runtimeLoc": 515,
-      "runtimeSha256": "sha256:42e3e00d3b3e390facf5eabbf048f987fe66560faa47dd4b5476d05dc98910a4",
+      "runtimeSha256": "sha256:0f52b5829c19f6134f5cb676da80ffc693415d59f3277faa936a4e504864cc21",
       "sourceKindParityProblems": [],
       "sizeDeltaDecision": "passed_within_strict_threshold"
     },
@@ -2657,9 +2657,9 @@
       "packageLoc": 52,
       "packageSha256": "sha256:61e837c184b48dceac96042621118885216db7028166a8e88849c514e4d2f114",
       "runtimeExists": true,
-      "runtimeBytes": 3032,
+      "runtimeBytes": 3037,
       "runtimeLoc": 76,
-      "runtimeSha256": "sha256:b8c4425bceaac4e2c507c0b896a6bf61d40d8cb3d6707fe3b4a07c20448f07d2",
+      "runtimeSha256": "sha256:f7de6af876b86cd90959a9a1708650e8693f8e967e63f30ad46f80777ffb4318",
       "sourceKindParityProblems": [],
       "sizeDeltaDecision": "passed_within_strict_threshold"
     },
@@ -2878,13 +2878,13 @@
         "packages/bmad-speckit/dist/main-agent/source-authority/scripts/runtime-step-state.js"
       ],
       "runtimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/runtime-step-state.js",
-      "packageBytes": 1929,
-      "packageLoc": 63,
-      "packageSha256": "sha256:b83d91a0d9ce22cb4e2d8833f9cbe287c86cdee685550f64b2169ff65ccc6621",
+      "packageBytes": 2024,
+      "packageLoc": 66,
+      "packageSha256": "sha256:128fb9f200fdc3ad706c4da991055c2d3c9485d8520413a6de2b37d6247737b7",
       "runtimeExists": true,
-      "runtimeBytes": 2402,
-      "runtimeLoc": 54,
-      "runtimeSha256": "sha256:db860efbc49319b1176e29616eddb89b23e483a7d15b8d735570e0d0fdece1a8",
+      "runtimeBytes": 2516,
+      "runtimeLoc": 56,
+      "runtimeSha256": "sha256:895b326d33e3d6220b8a8e177facec1c843ddc07fde9bdcce183d824db412e7a",
       "sourceKindParityProblems": [],
       "sizeDeltaDecision": "passed_within_strict_threshold"
     },

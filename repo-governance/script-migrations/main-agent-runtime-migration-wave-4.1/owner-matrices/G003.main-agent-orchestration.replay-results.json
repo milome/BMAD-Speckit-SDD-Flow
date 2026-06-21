@@ -2,9 +2,9 @@
   "schemaVersion": "main-agent-runtime-migration-wave-4-1-g003-replay-results/v1",
   "waveId": "main-agent-runtime-migration-wave-4.1",
   "ownerTaskId": "G003",
-  "generatedAt": "2026-06-20T04:58:23.868Z",
+  "generatedAt": "2026-06-21T01:38:34.618Z",
   "matrixPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.main-agent-orchestration.behavior-equivalence-matrix.json",
-  "matrixHash": "sha256:30fc86fdf3a38502b5760e5433af605df89f220c1b3430f8acdf5658f1a90b1e",
+  "matrixHash": "sha256:b179e6523e27ca726603925406f877f03d2d7a2ab34ab2f526974c4be4087ed2",
   "packageSourceEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
   "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-orchestration.js",
   "replayRows": [

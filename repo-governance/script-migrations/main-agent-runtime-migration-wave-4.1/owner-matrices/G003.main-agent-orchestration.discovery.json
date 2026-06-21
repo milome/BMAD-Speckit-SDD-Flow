@@ -11,55 +11,55 @@
   "behaviorEquivalenceMatrixAllowed": false,
   "source": {
     "path": "scripts/main-agent-orchestration.ts",
-    "sha256": "sha256:d5414b5d806ad3c12b751a1f7d3013c518024cc13c07f29a38970cca190f82d5",
-    "bytes": 440347,
-    "loc": 11936
+    "sha256": "sha256:8471f99abfb0c369d2d92eacc432f635184c26d05beb0db6b4f2ae564b6f86ff",
+    "bytes": 440388,
+    "loc": 11935
   },
   "discovered": {
     "entryPoints": [
       {
-        "line": 8707,
-        "anchor": "scripts/main-agent-orchestration.ts:8707",
+        "line": 8706,
+        "anchor": "scripts/main-agent-orchestration.ts:8706",
         "text": "function parseArgs(argv: string[]): Record<string, string | undefined> {"
+      },
+      {
+        "line": 11593,
+        "anchor": "scripts/main-agent-orchestration.ts:11593",
+        "text": "export function mainMainAgentOrchestration(argv: string[]): number {"
       },
       {
         "line": 11594,
         "anchor": "scripts/main-agent-orchestration.ts:11594",
-        "text": "export function mainMainAgentOrchestration(argv: string[]): number {"
+        "text": "const args = parseArgs(argv);"
       },
       {
-        "line": 11595,
-        "anchor": "scripts/main-agent-orchestration.ts:11595",
-        "text": "const args = parseArgs(argv);"
+        "line": 11872,
+        "anchor": "scripts/main-agent-orchestration.ts:11872",
+        "text": "export async function mainMainAgentOrchestrationAsync(argv: string[]): Promise<number> {"
       },
       {
         "line": 11873,
         "anchor": "scripts/main-agent-orchestration.ts:11873",
-        "text": "export async function mainMainAgentOrchestrationAsync(argv: string[]): Promise<number> {"
-      },
-      {
-        "line": 11874,
-        "anchor": "scripts/main-agent-orchestration.ts:11874",
         "text": "const args = parseArgs(argv);"
       },
       {
-        "line": 11910,
-        "anchor": "scripts/main-agent-orchestration.ts:11910",
+        "line": 11909,
+        "anchor": "scripts/main-agent-orchestration.ts:11909",
         "text": "return mainMainAgentOrchestration(argv);"
       },
       {
-        "line": 11926,
-        "anchor": "scripts/main-agent-orchestration.ts:11926",
+        "line": 11925,
+        "anchor": "scripts/main-agent-orchestration.ts:11925",
         "text": "function isDirectMainAgentOrchestrationCli(): boolean {"
+      },
+      {
+        "line": 11930,
+        "anchor": "scripts/main-agent-orchestration.ts:11930",
+        "text": "if (require.main === module && isDirectMainAgentOrchestrationCli()) {"
       },
       {
         "line": 11931,
         "anchor": "scripts/main-agent-orchestration.ts:11931",
-        "text": "if (require.main === module && isDirectMainAgentOrchestrationCli()) {"
-      },
-      {
-        "line": 11932,
-        "anchor": "scripts/main-agent-orchestration.ts:11932",
         "text": "void mainMainAgentOrchestrationAsync(process.argv.slice(2)).then((code) => {"
       }
     ],
@@ -117,33 +117,33 @@
         "discovered": true,
         "sourceLineAnchors": [
           {
-            "line": 7962,
-            "anchor": "scripts/main-agent-orchestration.ts:7962",
+            "line": 7961,
+            "anchor": "scripts/main-agent-orchestration.ts:7961",
             "text": "'inspect';"
           },
           {
-            "line": 8626,
-            "anchor": "scripts/main-agent-orchestration.ts:8626",
+            "line": 8625,
+            "anchor": "scripts/main-agent-orchestration.ts:8625",
             "text": "'inspect',"
           },
           {
-            "line": 11597,
-            "anchor": "scripts/main-agent-orchestration.ts:11597",
+            "line": 11596,
+            "anchor": "scripts/main-agent-orchestration.ts:11596",
             "text": "const action = normalizeText(args.action) || 'inspect';"
           },
           {
-            "line": 11758,
-            "anchor": "scripts/main-agent-orchestration.ts:11758",
+            "line": 11757,
+            "anchor": "scripts/main-agent-orchestration.ts:11757",
             "text": "case 'inspect': {"
           },
           {
-            "line": 11787,
-            "anchor": "scripts/main-agent-orchestration.ts:11787",
+            "line": 11786,
+            "anchor": "scripts/main-agent-orchestration.ts:11786",
             "text": "case 'inspect': {"
           },
           {
-            "line": 11876,
-            "anchor": "scripts/main-agent-orchestration.ts:11876",
+            "line": 11875,
+            "anchor": "scripts/main-agent-orchestration.ts:11875",
             "text": "const action = normalizeText(args.action) || 'inspect';"
           }
         ]
@@ -153,28 +153,28 @@
         "discovered": true,
         "sourceLineAnchors": [
           {
-            "line": 8628,
-            "anchor": "scripts/main-agent-orchestration.ts:8628",
+            "line": 8627,
+            "anchor": "scripts/main-agent-orchestration.ts:8627",
             "text": "'dispatch-plan',"
           },
           {
-            "line": 11168,
-            "anchor": "scripts/main-agent-orchestration.ts:11168",
+            "line": 11167,
+            "anchor": "scripts/main-agent-orchestration.ts:11167",
             "text": "step: 'dispatch-plan',"
           },
           {
-            "line": 11180,
-            "anchor": "scripts/main-agent-orchestration.ts:11180",
+            "line": 11179,
+            "anchor": "scripts/main-agent-orchestration.ts:11179",
             "text": "step: 'dispatch-plan',"
           },
           {
-            "line": 11763,
-            "anchor": "scripts/main-agent-orchestration.ts:11763",
+            "line": 11762,
+            "anchor": "scripts/main-agent-orchestration.ts:11762",
             "text": "case 'dispatch-plan': {"
           },
           {
-            "line": 11792,
-            "anchor": "scripts/main-agent-orchestration.ts:11792",
+            "line": 11791,
+            "anchor": "scripts/main-agent-orchestration.ts:11791",
             "text": "case 'dispatch-plan': {"
           }
         ]
@@ -184,23 +184,23 @@
         "discovered": true,
         "sourceLineAnchors": [
           {
-            "line": 8629,
-            "anchor": "scripts/main-agent-orchestration.ts:8629",
+            "line": 8628,
+            "anchor": "scripts/main-agent-orchestration.ts:8628",
             "text": "'run-loop',"
           },
           {
-            "line": 11767,
-            "anchor": "scripts/main-agent-orchestration.ts:11767",
+            "line": 11766,
+            "anchor": "scripts/main-agent-orchestration.ts:11766",
             "text": "case 'run-loop': {"
           },
           {
-            "line": 11806,
-            "anchor": "scripts/main-agent-orchestration.ts:11806",
+            "line": 11805,
+            "anchor": "scripts/main-agent-orchestration.ts:11805",
             "text": "case 'run-loop': {"
           },
           {
-            "line": 11877,
-            "anchor": "scripts/main-agent-orchestration.ts:11877",
+            "line": 11876,
+            "anchor": "scripts/main-agent-orchestration.ts:11876",
             "text": "if (action === 'run-loop') {"
           }
         ]
@@ -210,18 +210,18 @@
         "discovered": true,
         "sourceLineAnchors": [
           {
-            "line": 8630,
-            "anchor": "scripts/main-agent-orchestration.ts:8630",
+            "line": 8629,
+            "anchor": "scripts/main-agent-orchestration.ts:8629",
             "text": "'claim',"
           },
           {
-            "line": 11193,
-            "anchor": "scripts/main-agent-orchestration.ts:11193",
+            "line": 11192,
+            "anchor": "scripts/main-agent-orchestration.ts:11192",
             "text": "step: 'claim',"
           },
           {
-            "line": 11839,
-            "anchor": "scripts/main-agent-orchestration.ts:11839",
+            "line": 11838,
+            "anchor": "scripts/main-agent-orchestration.ts:11838",
             "text": "case 'claim': {"
           }
         ]
@@ -231,18 +231,18 @@
         "discovered": true,
         "sourceLineAnchors": [
           {
-            "line": 8631,
-            "anchor": "scripts/main-agent-orchestration.ts:8631",
+            "line": 8630,
+            "anchor": "scripts/main-agent-orchestration.ts:8630",
             "text": "'dispatch',"
           },
           {
-            "line": 11205,
-            "anchor": "scripts/main-agent-orchestration.ts:11205",
+            "line": 11204,
+            "anchor": "scripts/main-agent-orchestration.ts:11204",
             "text": "step: 'dispatch',"
           },
           {
-            "line": 11849,
-            "anchor": "scripts/main-agent-orchestration.ts:11849",
+            "line": 11848,
+            "anchor": "scripts/main-agent-orchestration.ts:11848",
             "text": "case 'dispatch': {"
           }
         ]
@@ -252,33 +252,33 @@
         "discovered": true,
         "sourceLineAnchors": [
           {
-            "line": 3189,
-            "anchor": "scripts/main-agent-orchestration.ts:3189",
+            "line": 3188,
+            "anchor": "scripts/main-agent-orchestration.ts:3188",
             "text": "coverageVerdict: 'complete',"
           },
           {
-            "line": 3193,
-            "anchor": "scripts/main-agent-orchestration.ts:3193",
+            "line": 3192,
+            "anchor": "scripts/main-agent-orchestration.ts:3192",
             "text": "completenessVerdict: 'complete',"
           },
           {
-            "line": 3545,
-            "anchor": "scripts/main-agent-orchestration.ts:3545",
+            "line": 3544,
+            "anchor": "scripts/main-agent-orchestration.ts:3544",
             "text": "coverageVerdict: 'complete',"
           },
           {
-            "line": 3549,
-            "anchor": "scripts/main-agent-orchestration.ts:3549",
+            "line": 3548,
+            "anchor": "scripts/main-agent-orchestration.ts:3548",
             "text": "completenessVerdict: 'complete',"
           },
           {
-            "line": 8632,
-            "anchor": "scripts/main-agent-orchestration.ts:8632",
+            "line": 8631,
+            "anchor": "scripts/main-agent-orchestration.ts:8631",
             "text": "'complete',"
           },
           {
-            "line": 11855,
-            "anchor": "scripts/main-agent-orchestration.ts:11855",
+            "line": 11854,
+            "anchor": "scripts/main-agent-orchestration.ts:11854",
             "text": "case 'complete': {"
           }
         ]
@@ -288,13 +288,13 @@
         "discovered": true,
         "sourceLineAnchors": [
           {
-            "line": 8633,
-            "anchor": "scripts/main-agent-orchestration.ts:8633",
+            "line": 8632,
+            "anchor": "scripts/main-agent-orchestration.ts:8632",
             "text": "'invalidate',"
           },
           {
-            "line": 11861,
-            "anchor": "scripts/main-agent-orchestration.ts:11861",
+            "line": 11860,
+            "anchor": "scripts/main-agent-orchestration.ts:11860",
             "text": "case 'invalidate': {"
           }
         ]
@@ -304,13 +304,13 @@
         "discovered": true,
         "sourceLineAnchors": [
           {
-            "line": 8634,
-            "anchor": "scripts/main-agent-orchestration.ts:8634",
+            "line": 8633,
+            "anchor": "scripts/main-agent-orchestration.ts:8633",
             "text": "'route-intake',"
           },
           {
-            "line": 11599,
-            "anchor": "scripts/main-agent-orchestration.ts:11599",
+            "line": 11598,
+            "anchor": "scripts/main-agent-orchestration.ts:11598",
             "text": "if (action === 'route-intake' || action === 'adaptive-intake') {"
           }
         ]
@@ -320,13 +320,13 @@
         "discovered": true,
         "sourceLineAnchors": [
           {
-            "line": 8635,
-            "anchor": "scripts/main-agent-orchestration.ts:8635",
+            "line": 8634,
+            "anchor": "scripts/main-agent-orchestration.ts:8634",
             "text": "'adaptive-intake',"
           },
           {
-            "line": 11599,
-            "anchor": "scripts/main-agent-orchestration.ts:11599",
+            "line": 11598,
+            "anchor": "scripts/main-agent-orchestration.ts:11598",
             "text": "if (action === 'route-intake' || action === 'adaptive-intake') {"
           }
         ]
@@ -336,23 +336,23 @@
         "discovered": true,
         "sourceLineAnchors": [
           {
-            "line": 8636,
-            "anchor": "scripts/main-agent-orchestration.ts:8636",
+            "line": 8635,
+            "anchor": "scripts/main-agent-orchestration.ts:8635",
             "text": "'confirm-scope',"
           },
           {
-            "line": 8850,
-            "anchor": "scripts/main-agent-orchestration.ts:8850",
+            "line": 8849,
+            "anchor": "scripts/main-agent-orchestration.ts:8849",
             "text": "| 'confirm-scope'"
           },
           {
-            "line": 9086,
-            "anchor": "scripts/main-agent-orchestration.ts:9086",
+            "line": 9085,
+            "anchor": "scripts/main-agent-orchestration.ts:9085",
             "text": "action: 'confirm-scope',"
           },
           {
-            "line": 11618,
-            "anchor": "scripts/main-agent-orchestration.ts:11618",
+            "line": 11617,
+            "anchor": "scripts/main-agent-orchestration.ts:11617",
             "text": "if (action === 'confirm-scope' || action === 'confirmation-ingest') {"
           }
         ]
@@ -362,13 +362,13 @@
         "discovered": true,
         "sourceLineAnchors": [
           {
-            "line": 8637,
-            "anchor": "scripts/main-agent-orchestration.ts:8637",
+            "line": 8636,
+            "anchor": "scripts/main-agent-orchestration.ts:8636",
             "text": "'confirmation-ingest',"
           },
           {
-            "line": 11618,
-            "anchor": "scripts/main-agent-orchestration.ts:11618",
+            "line": 11617,
+            "anchor": "scripts/main-agent-orchestration.ts:11617",
             "text": "if (action === 'confirm-scope' || action === 'confirmation-ingest') {"
           }
         ]
@@ -378,28 +378,28 @@
         "discovered": true,
         "sourceLineAnchors": [
           {
-            "line": 8638,
-            "anchor": "scripts/main-agent-orchestration.ts:8638",
+            "line": 8637,
+            "anchor": "scripts/main-agent-orchestration.ts:8637",
             "text": "'confirm-closeout-acceptance',"
           },
           {
-            "line": 8851,
-            "anchor": "scripts/main-agent-orchestration.ts:8851",
+            "line": 8850,
+            "anchor": "scripts/main-agent-orchestration.ts:8850",
             "text": "| 'confirm-closeout-acceptance'"
           },
           {
-            "line": 8991,
-            "anchor": "scripts/main-agent-orchestration.ts:8991",
+            "line": 8990,
+            "anchor": "scripts/main-agent-orchestration.ts:8990",
             "text": "'confirm-closeout-acceptance',"
           },
           {
-            "line": 9026,
-            "anchor": "scripts/main-agent-orchestration.ts:9026",
+            "line": 9025,
+            "anchor": "scripts/main-agent-orchestration.ts:9025",
             "text": "action: 'confirm-closeout-acceptance',"
           },
           {
-            "line": 11633,
-            "anchor": "scripts/main-agent-orchestration.ts:11633",
+            "line": 11632,
+            "anchor": "scripts/main-agent-orchestration.ts:11632",
             "text": "if (action === 'confirm-closeout-acceptance' || action === 'closeout-acceptance-ingest') {"
           }
         ]
@@ -409,13 +409,13 @@
         "discovered": true,
         "sourceLineAnchors": [
           {
-            "line": 8639,
-            "anchor": "scripts/main-agent-orchestration.ts:8639",
+            "line": 8638,
+            "anchor": "scripts/main-agent-orchestration.ts:8638",
             "text": "'closeout-acceptance-ingest',"
           },
           {
-            "line": 11633,
-            "anchor": "scripts/main-agent-orchestration.ts:11633",
+            "line": 11632,
+            "anchor": "scripts/main-agent-orchestration.ts:11632",
             "text": "if (action === 'confirm-closeout-acceptance' || action === 'closeout-acceptance-ingest') {"
           }
         ]
@@ -425,53 +425,53 @@
         "discovered": true,
         "sourceLineAnchors": [
           {
-            "line": 8641,
-            "anchor": "scripts/main-agent-orchestration.ts:8641",
+            "line": 8640,
+            "anchor": "scripts/main-agent-orchestration.ts:8640",
             "text": "'route-confirmation-drift',"
           },
           {
-            "line": 8853,
-            "anchor": "scripts/main-agent-orchestration.ts:8853",
+            "line": 8852,
+            "anchor": "scripts/main-agent-orchestration.ts:8852",
             "text": "| 'route-confirmation-drift';"
           },
           {
-            "line": 9237,
-            "anchor": "scripts/main-agent-orchestration.ts:9237",
+            "line": 9236,
+            "anchor": "scripts/main-agent-orchestration.ts:9236",
             "text": "action: 'route-confirmation-drift',"
           },
           {
-            "line": 9251,
-            "anchor": "scripts/main-agent-orchestration.ts:9251",
+            "line": 9250,
+            "anchor": "scripts/main-agent-orchestration.ts:9250",
             "text": "action: 'route-confirmation-drift',"
           },
           {
-            "line": 9264,
-            "anchor": "scripts/main-agent-orchestration.ts:9264",
+            "line": 9263,
+            "anchor": "scripts/main-agent-orchestration.ts:9263",
             "text": "action: 'route-confirmation-drift',"
           },
           {
-            "line": 9283,
-            "anchor": "scripts/main-agent-orchestration.ts:9283",
+            "line": 9282,
+            "anchor": "scripts/main-agent-orchestration.ts:9282",
             "text": "action: 'route-confirmation-drift',"
           },
           {
-            "line": 9304,
-            "anchor": "scripts/main-agent-orchestration.ts:9304",
+            "line": 9303,
+            "anchor": "scripts/main-agent-orchestration.ts:9303",
             "text": "action: 'route-confirmation-drift',"
           },
           {
-            "line": 9321,
-            "anchor": "scripts/main-agent-orchestration.ts:9321",
+            "line": 9320,
+            "anchor": "scripts/main-agent-orchestration.ts:9320",
             "text": "action: 'route-confirmation-drift',"
           },
           {
-            "line": 9342,
-            "anchor": "scripts/main-agent-orchestration.ts:9342",
+            "line": 9341,
+            "anchor": "scripts/main-agent-orchestration.ts:9341",
             "text": "action: 'route-confirmation-drift',"
           },
           {
-            "line": 11648,
-            "anchor": "scripts/main-agent-orchestration.ts:11648",
+            "line": 11647,
+            "anchor": "scripts/main-agent-orchestration.ts:11647",
             "text": "if (action === 'route-confirmation-drift' || action === 'confirmation-drift-route') {"
           }
         ]
@@ -481,13 +481,13 @@
         "discovered": true,
         "sourceLineAnchors": [
           {
-            "line": 8642,
-            "anchor": "scripts/main-agent-orchestration.ts:8642",
+            "line": 8641,
+            "anchor": "scripts/main-agent-orchestration.ts:8641",
             "text": "'confirmation-drift-route',"
           },
           {
-            "line": 11648,
-            "anchor": "scripts/main-agent-orchestration.ts:11648",
+            "line": 11647,
+            "anchor": "scripts/main-agent-orchestration.ts:11647",
             "text": "if (action === 'route-confirmation-drift' || action === 'confirmation-drift-route') {"
           }
         ]
@@ -497,23 +497,23 @@
         "discovered": true,
         "sourceLineAnchors": [
           {
-            "line": 8643,
-            "anchor": "scripts/main-agent-orchestration.ts:8643",
+            "line": 8642,
+            "anchor": "scripts/main-agent-orchestration.ts:8642",
             "text": "'repair-confirmation-bookkeeping',"
           },
           {
-            "line": 8852,
-            "anchor": "scripts/main-agent-orchestration.ts:8852",
+            "line": 8851,
+            "anchor": "scripts/main-agent-orchestration.ts:8851",
             "text": "| 'repair-confirmation-bookkeeping'"
           },
           {
-            "line": 9144,
-            "anchor": "scripts/main-agent-orchestration.ts:9144",
+            "line": 9143,
+            "anchor": "scripts/main-agent-orchestration.ts:9143",
             "text": "action: 'repair-confirmation-bookkeeping',"
           },
           {
-            "line": 11664,
-            "anchor": "scripts/main-agent-orchestration.ts:11664",
+            "line": 11663,
+            "anchor": "scripts/main-agent-orchestration.ts:11663",
             "text": "action === 'repair-confirmation-bookkeeping' ||"
           }
         ]
@@ -523,13 +523,13 @@
         "discovered": true,
         "sourceLineAnchors": [
           {
-            "line": 8644,
-            "anchor": "scripts/main-agent-orchestration.ts:8644",
+            "line": 8643,
+            "anchor": "scripts/main-agent-orchestration.ts:8643",
             "text": "'confirmation-bookkeeping-repair',"
           },
           {
-            "line": 11665,
-            "anchor": "scripts/main-agent-orchestration.ts:11665",
+            "line": 11664,
+            "anchor": "scripts/main-agent-orchestration.ts:11664",
             "text": "action === 'confirmation-bookkeeping-repair'"
           }
         ]
@@ -539,18 +539,18 @@
         "discovered": true,
         "sourceLineAnchors": [
           {
-            "line": 8645,
-            "anchor": "scripts/main-agent-orchestration.ts:8645",
+            "line": 8644,
+            "anchor": "scripts/main-agent-orchestration.ts:8644",
             "text": "'pre-confirmation-drilldown',"
           },
           {
-            "line": 11682,
-            "anchor": "scripts/main-agent-orchestration.ts:11682",
+            "line": 11681,
+            "anchor": "scripts/main-agent-orchestration.ts:11681",
             "text": "action === 'pre-confirmation-drilldown' ||"
           },
           {
-            "line": 11703,
-            "anchor": "scripts/main-agent-orchestration.ts:11703",
+            "line": 11702,
+            "anchor": "scripts/main-agent-orchestration.ts:11702",
             "text": ": 'pre-confirmation-drilldown';"
           }
         ]
@@ -560,63 +560,63 @@
         "discovered": true,
         "sourceLineAnchors": [
           {
-            "line": 241,
-            "anchor": "scripts/main-agent-orchestration.ts:241",
+            "line": 240,
+            "anchor": "scripts/main-agent-orchestration.ts:240",
             "text": "lane: 'pre_confirmation_drilldown';"
           },
           {
-            "line": 3100,
-            "anchor": "scripts/main-agent-orchestration.ts:3100",
+            "line": 3099,
+            "anchor": "scripts/main-agent-orchestration.ts:3099",
             "text": "lane: 'pre_confirmation_drilldown',"
           },
           {
-            "line": 5498,
-            "anchor": "scripts/main-agent-orchestration.ts:5498",
+            "line": 5497,
+            "anchor": "scripts/main-agent-orchestration.ts:5497",
             "text": "lane: 'pre_confirmation_drilldown',"
           },
           {
-            "line": 5534,
-            "anchor": "scripts/main-agent-orchestration.ts:5534",
+            "line": 5533,
+            "anchor": "scripts/main-agent-orchestration.ts:5533",
             "text": "lane: 'pre_confirmation_drilldown',"
           },
           {
-            "line": 5876,
-            "anchor": "scripts/main-agent-orchestration.ts:5876",
+            "line": 5875,
+            "anchor": "scripts/main-agent-orchestration.ts:5875",
             "text": "lane: 'pre_confirmation_drilldown',"
           },
           {
-            "line": 6000,
-            "anchor": "scripts/main-agent-orchestration.ts:6000",
+            "line": 5999,
+            "anchor": "scripts/main-agent-orchestration.ts:5999",
             "text": "lane: 'pre_confirmation_drilldown',"
           },
           {
-            "line": 6151,
-            "anchor": "scripts/main-agent-orchestration.ts:6151",
+            "line": 6150,
+            "anchor": "scripts/main-agent-orchestration.ts:6150",
             "text": "lane: 'pre_confirmation_drilldown',"
           },
           {
-            "line": 6157,
-            "anchor": "scripts/main-agent-orchestration.ts:6157",
+            "line": 6156,
+            "anchor": "scripts/main-agent-orchestration.ts:6156",
             "text": "lane: 'pre_confirmation_drilldown',"
           },
           {
-            "line": 7505,
-            "anchor": "scripts/main-agent-orchestration.ts:7505",
+            "line": 7504,
+            "anchor": "scripts/main-agent-orchestration.ts:7504",
             "text": "lane: 'pre_confirmation_drilldown',"
           },
           {
-            "line": 7574,
-            "anchor": "scripts/main-agent-orchestration.ts:7574",
+            "line": 7573,
+            "anchor": "scripts/main-agent-orchestration.ts:7573",
             "text": "? 'pre_confirmation_drilldown'"
           },
           {
-            "line": 8646,
-            "anchor": "scripts/main-agent-orchestration.ts:8646",
+            "line": 8645,
+            "anchor": "scripts/main-agent-orchestration.ts:8645",
             "text": "'pre_confirmation_drilldown',"
           },
           {
-            "line": 11683,
-            "anchor": "scripts/main-agent-orchestration.ts:11683",
+            "line": 11682,
+            "anchor": "scripts/main-agent-orchestration.ts:11682",
             "text": "action === 'pre_confirmation_drilldown' ||"
           }
         ]
@@ -626,38 +626,38 @@
         "discovered": true,
         "sourceLineAnchors": [
           {
-            "line": 1628,
-            "anchor": "scripts/main-agent-orchestration.ts:1628",
+            "line": 1627,
+            "anchor": "scripts/main-agent-orchestration.ts:1627",
             "text": "selectedAuthoringLane?: 'author-confirmation-ready-source';"
           },
           {
-            "line": 5834,
-            "anchor": "scripts/main-agent-orchestration.ts:5834",
+            "line": 5833,
+            "anchor": "scripts/main-agent-orchestration.ts:5833",
             "text": "selectedAuthoringLane?: 'author-confirmation-ready-source';"
           },
           {
-            "line": 5853,
-            "anchor": "scripts/main-agent-orchestration.ts:5853",
+            "line": 5852,
+            "anchor": "scripts/main-agent-orchestration.ts:5852",
             "text": "selectedAuthoringLane: input.selectedAuthoringLane ?? 'author-confirmation-ready-source',"
           },
           {
-            "line": 8647,
-            "anchor": "scripts/main-agent-orchestration.ts:8647",
+            "line": 8646,
+            "anchor": "scripts/main-agent-orchestration.ts:8646",
             "text": "'author-confirmation-ready-source',"
           },
           {
-            "line": 11684,
-            "anchor": "scripts/main-agent-orchestration.ts:11684",
+            "line": 11683,
+            "anchor": "scripts/main-agent-orchestration.ts:11683",
             "text": "action === 'author-confirmation-ready-source' ||"
           },
           {
-            "line": 11700,
-            "anchor": "scripts/main-agent-orchestration.ts:11700",
+            "line": 11699,
+            "anchor": "scripts/main-agent-orchestration.ts:11699",
             "text": "action === 'author-confirmation-ready-source' ||"
           },
           {
-            "line": 11702,
-            "anchor": "scripts/main-agent-orchestration.ts:11702",
+            "line": 11701,
+            "anchor": "scripts/main-agent-orchestration.ts:11701",
             "text": "? 'author-confirmation-ready-source'"
           }
         ]
@@ -667,18 +667,18 @@
         "discovered": true,
         "sourceLineAnchors": [
           {
-            "line": 8648,
-            "anchor": "scripts/main-agent-orchestration.ts:8648",
+            "line": 8647,
+            "anchor": "scripts/main-agent-orchestration.ts:8647",
             "text": "'author_confirmation_ready_source',"
           },
           {
-            "line": 11685,
-            "anchor": "scripts/main-agent-orchestration.ts:11685",
+            "line": 11684,
+            "anchor": "scripts/main-agent-orchestration.ts:11684",
             "text": "action === 'author_confirmation_ready_source'"
           },
           {
-            "line": 11701,
-            "anchor": "scripts/main-agent-orchestration.ts:11701",
+            "line": 11700,
+            "anchor": "scripts/main-agent-orchestration.ts:11700",
             "text": "action === 'author_confirmation_ready_source'"
           }
         ]
@@ -688,13 +688,13 @@
         "discovered": true,
         "sourceLineAnchors": [
           {
-            "line": 8649,
-            "anchor": "scripts/main-agent-orchestration.ts:8649",
+            "line": 8648,
+            "anchor": "scripts/main-agent-orchestration.ts:8648",
             "text": "'authoring-repair',"
           },
           {
-            "line": 11713,
-            "anchor": "scripts/main-agent-orchestration.ts:11713",
+            "line": 11712,
+            "anchor": "scripts/main-agent-orchestration.ts:11712",
             "text": "if (action === 'authoring-repair' || action === 'authoring_repair') {"
           }
         ]
@@ -704,23 +704,23 @@
         "discovered": true,
         "sourceLineAnchors": [
           {
-            "line": 3483,
-            "anchor": "scripts/main-agent-orchestration.ts:3483",
+            "line": 3482,
+            "anchor": "scripts/main-agent-orchestration.ts:3482",
             "text": "lane: 'authoring_repair',"
           },
           {
-            "line": 4919,
-            "anchor": "scripts/main-agent-orchestration.ts:4919",
+            "line": 4918,
+            "anchor": "scripts/main-agent-orchestration.ts:4918",
             "text": "'authoring_repair'"
           },
           {
-            "line": 8650,
-            "anchor": "scripts/main-agent-orchestration.ts:8650",
+            "line": 8649,
+            "anchor": "scripts/main-agent-orchestration.ts:8649",
             "text": "'authoring_repair',"
           },
           {
-            "line": 11713,
-            "anchor": "scripts/main-agent-orchestration.ts:11713",
+            "line": 11712,
+            "anchor": "scripts/main-agent-orchestration.ts:11712",
             "text": "if (action === 'authoring-repair' || action === 'authoring_repair') {"
           }
         ]
@@ -730,18 +730,18 @@
         "discovered": true,
         "sourceLineAnchors": [
           {
-            "line": 8640,
-            "anchor": "scripts/main-agent-orchestration.ts:8640",
+            "line": 8639,
+            "anchor": "scripts/main-agent-orchestration.ts:8639",
             "text": "'post-close-defect-intake',"
           },
           {
-            "line": 10442,
-            "anchor": "scripts/main-agent-orchestration.ts:10442",
+            "line": 10441,
+            "anchor": "scripts/main-agent-orchestration.ts:10441",
             "text": "action: 'post-close-defect-intake',"
           },
           {
-            "line": 11734,
-            "anchor": "scripts/main-agent-orchestration.ts:11734",
+            "line": 11733,
+            "anchor": "scripts/main-agent-orchestration.ts:11733",
             "text": "if (action === 'post-close-defect-intake') {"
           }
         ]
@@ -751,13 +751,13 @@
         "discovered": true,
         "sourceLineAnchors": [
           {
-            "line": 8651,
-            "anchor": "scripts/main-agent-orchestration.ts:8651",
+            "line": 8650,
+            "anchor": "scripts/main-agent-orchestration.ts:8650",
             "text": "'controlled-readiness-audit',"
           },
           {
-            "line": 11909,
-            "anchor": "scripts/main-agent-orchestration.ts:11909",
+            "line": 11908,
+            "anchor": "scripts/main-agent-orchestration.ts:11908",
             "text": "if (action !== 'controlled-readiness-audit') {"
           }
         ]
@@ -827,670 +827,670 @@
     ],
     "fileOperationAnchors": [
       {
-        "line": 546,
-        "anchor": "scripts/main-agent-orchestration.ts:546",
+        "line": 545,
+        "anchor": "scripts/main-agent-orchestration.ts:545",
         "text": "if (seen.has(normalizedDir) || !fs.existsSync(normalizedDir)) {"
       },
       {
-        "line": 564,
-        "anchor": "scripts/main-agent-orchestration.ts:564",
+        "line": 563,
+        "anchor": "scripts/main-agent-orchestration.ts:563",
         "text": "if (!recordPath || !fs.existsSync(recordPath)) return null;"
       },
       {
-        "line": 566,
-        "anchor": "scripts/main-agent-orchestration.ts:566",
+        "line": 565,
+        "anchor": "scripts/main-agent-orchestration.ts:565",
         "text": "const parsed = JSON.parse(fs.readFileSync(recordPath, 'utf8')) as unknown;"
       },
       {
-        "line": 981,
-        "anchor": "scripts/main-agent-orchestration.ts:981",
+        "line": 980,
+        "anchor": "scripts/main-agent-orchestration.ts:980",
         "text": "if (!packetPath || !fs.existsSync(packetPath)) {"
       },
       {
-        "line": 985,
-        "anchor": "scripts/main-agent-orchestration.ts:985",
+        "line": 984,
+        "anchor": "scripts/main-agent-orchestration.ts:984",
         "text": "return JSON.parse(fs.readFileSync(packetPath, 'utf8')) as"
       },
       {
-        "line": 1004,
-        "anchor": "scripts/main-agent-orchestration.ts:1004",
+        "line": 1003,
+        "anchor": "scripts/main-agent-orchestration.ts:1003",
         "text": "!fs.existsSync(state.pendingPacket.packetPath)"
+      },
+      {
+        "line": 1205,
+        "anchor": "scripts/main-agent-orchestration.ts:1205",
+        "text": "fs.mkdirSync(path.dirname(file), { recursive: true });"
       },
       {
         "line": 1206,
         "anchor": "scripts/main-agent-orchestration.ts:1206",
-        "text": "fs.mkdirSync(path.dirname(file), { recursive: true });"
-      },
-      {
-        "line": 1207,
-        "anchor": "scripts/main-agent-orchestration.ts:1207",
         "text": "fs.writeFileSync(file, JSON.stringify(packet, null, 2) + '\\n', 'utf8');"
       },
       {
-        "line": 1226,
-        "anchor": "scripts/main-agent-orchestration.ts:1226",
+        "line": 1225,
+        "anchor": "scripts/main-agent-orchestration.ts:1225",
         "text": "if (recordPath && fs.existsSync(recordPath)) {"
       },
       {
-        "line": 1228,
-        "anchor": "scripts/main-agent-orchestration.ts:1228",
+        "line": 1227,
+        "anchor": "scripts/main-agent-orchestration.ts:1227",
         "text": "const record = JSON.parse(fs.readFileSync(recordPath, 'utf8')) as Record<string, unknown>;"
       },
       {
-        "line": 1300,
-        "anchor": "scripts/main-agent-orchestration.ts:1300",
+        "line": 1299,
+        "anchor": "scripts/main-agent-orchestration.ts:1299",
         "text": "contentHash: sha256Text(fs.readFileSync(manifestPath, 'utf8')),"
+      },
+      {
+        "line": 1307,
+        "anchor": "scripts/main-agent-orchestration.ts:1307",
+        "text": "if (!filePath || !fs.existsSync(filePath)) return null;"
       },
       {
         "line": 1308,
         "anchor": "scripts/main-agent-orchestration.ts:1308",
-        "text": "if (!filePath || !fs.existsSync(filePath)) return null;"
-      },
-      {
-        "line": 1309,
-        "anchor": "scripts/main-agent-orchestration.ts:1309",
         "text": "const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8')) as unknown;"
       },
       {
-        "line": 1333,
-        "anchor": "scripts/main-agent-orchestration.ts:1333",
+        "line": 1332,
+        "anchor": "scripts/main-agent-orchestration.ts:1332",
         "text": "if (!fs.existsSync(packetDir)) return null;"
       },
       {
-        "line": 1413,
-        "anchor": "scripts/main-agent-orchestration.ts:1413",
+        "line": 1412,
+        "anchor": "scripts/main-agent-orchestration.ts:1412",
         "text": "contentHash: sha256Text(fs.readFileSync(triadPath, 'utf8')),"
+      },
+      {
+        "line": 1462,
+        "anchor": "scripts/main-agent-orchestration.ts:1462",
+        "text": "fs.mkdirSync(path.dirname(filePath), { recursive: true });"
       },
       {
         "line": 1463,
         "anchor": "scripts/main-agent-orchestration.ts:1463",
-        "text": "fs.mkdirSync(path.dirname(filePath), { recursive: true });"
+        "text": "fs.writeFileSync(filePath, `${JSON.stringify(profile, null, 2)}\\n`, 'utf8');"
       },
       {
-        "line": 1464,
-        "anchor": "scripts/main-agent-orchestration.ts:1464",
-        "text": "fs.writeFileSync(filePath, `${JSON.stringify(profile, null, 2)}\\n`, 'utf8');"
+        "line": 1491,
+        "anchor": "scripts/main-agent-orchestration.ts:1491",
+        "text": "fs.mkdirSync(path.dirname(filePath), { recursive: true });"
       },
       {
         "line": 1492,
         "anchor": "scripts/main-agent-orchestration.ts:1492",
-        "text": "fs.mkdirSync(path.dirname(filePath), { recursive: true });"
-      },
-      {
-        "line": 1493,
-        "anchor": "scripts/main-agent-orchestration.ts:1493",
         "text": "fs.writeFileSync(filePath, `${JSON.stringify(payload, null, 2)}\\n`, 'utf8');"
       },
       {
-        "line": 1497,
-        "anchor": "scripts/main-agent-orchestration.ts:1497",
+        "line": 1496,
+        "anchor": "scripts/main-agent-orchestration.ts:1496",
         "text": "if (!fs.existsSync(filePath)) {"
       },
       {
-        "line": 1501,
-        "anchor": "scripts/main-agent-orchestration.ts:1501",
+        "line": 1500,
+        "anchor": "scripts/main-agent-orchestration.ts:1500",
         "text": "const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8')) as unknown;"
       },
       {
-        "line": 1511,
-        "anchor": "scripts/main-agent-orchestration.ts:1511",
+        "line": 1510,
+        "anchor": "scripts/main-agent-orchestration.ts:1510",
         "text": "return `sha256:${crypto.createHash('sha256').update(fs.readFileSync(filePath)).digest('hex')}`;"
       },
       {
-        "line": 1993,
-        "anchor": "scripts/main-agent-orchestration.ts:1993",
+        "line": 1992,
+        "anchor": "scripts/main-agent-orchestration.ts:1992",
         "text": "const sourceText = fs.readFileSync(sourcePath, 'utf8');"
       },
       {
-        "line": 2592,
-        "anchor": "scripts/main-agent-orchestration.ts:2592",
+        "line": 2591,
+        "anchor": "scripts/main-agent-orchestration.ts:2591",
         "text": "const sourceText = fs.readFileSync(sourcePath, 'utf8');"
       },
       {
-        "line": 2597,
-        "anchor": "scripts/main-agent-orchestration.ts:2597",
+        "line": 2596,
+        "anchor": "scripts/main-agent-orchestration.ts:2596",
         "text": "fs.writeFileSync(sourcePath, next, 'utf8');"
       },
       {
-        "line": 2603,
-        "anchor": "scripts/main-agent-orchestration.ts:2603",
+        "line": 2602,
+        "anchor": "scripts/main-agent-orchestration.ts:2602",
         "text": "fs.writeFileSync(sourcePath, next.endsWith('\\n') ? next : `${next}\\n`, 'utf8');"
       },
       {
-        "line": 2608,
-        "anchor": "scripts/main-agent-orchestration.ts:2608",
+        "line": 2607,
+        "anchor": "scripts/main-agent-orchestration.ts:2607",
         "text": "const sourceText = fs.existsSync(sourcePath) ? fs.readFileSync(sourcePath, 'utf8') : '';"
       },
       {
-        "line": 2743,
-        "anchor": "scripts/main-agent-orchestration.ts:2743",
+        "line": 2742,
+        "anchor": "scripts/main-agent-orchestration.ts:2742",
         "text": "if (!fs.existsSync(receiptPath)) {"
       },
       {
-        "line": 3000,
-        "anchor": "scripts/main-agent-orchestration.ts:3000",
+        "line": 2999,
+        "anchor": "scripts/main-agent-orchestration.ts:2999",
         "text": "const sourceText = fs.readFileSync(sourcePath, 'utf8');"
       },
       {
-        "line": 4053,
-        "anchor": "scripts/main-agent-orchestration.ts:4053",
+        "line": 4052,
+        "anchor": "scripts/main-agent-orchestration.ts:4052",
         "text": "if (!fs.existsSync(authoringDir)) {"
       },
       {
-        "line": 4281,
-        "anchor": "scripts/main-agent-orchestration.ts:4281",
+        "line": 4280,
+        "anchor": "scripts/main-agent-orchestration.ts:4280",
         "text": "if (!fs.existsSync(input.authoringDir)) {"
       },
       {
-        "line": 4303,
-        "anchor": "scripts/main-agent-orchestration.ts:4303",
+        "line": 4302,
+        "anchor": "scripts/main-agent-orchestration.ts:4302",
         "text": "fs.mkdirSync(archiveDir, { recursive: true });"
       },
       {
-        "line": 4324,
-        "anchor": "scripts/main-agent-orchestration.ts:4324",
+        "line": 4323,
+        "anchor": "scripts/main-agent-orchestration.ts:4323",
         "text": "if (!fs.existsSync(input.authoringDir)) {"
       },
       {
-        "line": 4869,
-        "anchor": "scripts/main-agent-orchestration.ts:4869",
+        "line": 4868,
+        "anchor": "scripts/main-agent-orchestration.ts:4868",
         "text": "if (!fs.existsSync(gitignorePath)) {"
       },
       {
-        "line": 4872,
-        "anchor": "scripts/main-agent-orchestration.ts:4872",
+        "line": 4871,
+        "anchor": "scripts/main-agent-orchestration.ts:4871",
         "text": "const gitignoreText = fs.readFileSync(gitignorePath, 'utf8');"
       },
       {
-        "line": 4896,
-        "anchor": "scripts/main-agent-orchestration.ts:4896",
+        "line": 4895,
+        "anchor": "scripts/main-agent-orchestration.ts:4895",
         "text": "if (!fs.existsSync(sourcePath)) {"
       },
       {
-        "line": 4902,
-        "anchor": "scripts/main-agent-orchestration.ts:4902",
+        "line": 4901,
+        "anchor": "scripts/main-agent-orchestration.ts:4901",
         "text": "const sourceText = fs.readFileSync(sourcePath, 'utf8');"
       },
       {
-        "line": 5202,
-        "anchor": "scripts/main-agent-orchestration.ts:5202",
+        "line": 5201,
+        "anchor": "scripts/main-agent-orchestration.ts:5201",
         "text": "if (fs.existsSync(responsePath) && path.dirname(responsePath) !== path.dirname(sourcePath)) {"
       },
       {
-        "line": 5207,
-        "anchor": "scripts/main-agent-orchestration.ts:5207",
+        "line": 5206,
+        "anchor": "scripts/main-agent-orchestration.ts:5206",
         "text": "if (!fs.existsSync(archivedResponsePath)) {"
       },
       {
-        "line": 5576,
-        "anchor": "scripts/main-agent-orchestration.ts:5576",
+        "line": 5575,
+        "anchor": "scripts/main-agent-orchestration.ts:5575",
         "text": "if (!fs.existsSync(path.join(skillDir, 'SKILL.md'))) continue;"
       },
       {
-        "line": 5578,
-        "anchor": "scripts/main-agent-orchestration.ts:5578",
+        "line": 5577,
+        "anchor": "scripts/main-agent-orchestration.ts:5577",
         "text": "if (fs.existsSync(scriptPath)) return scriptPath;"
       },
       {
-        "line": 5656,
-        "anchor": "scripts/main-agent-orchestration.ts:5656",
+        "line": 5655,
+        "anchor": "scripts/main-agent-orchestration.ts:5655",
         "text": "if (!fs.existsSync(absoluteDocumentPath)) {"
       },
       {
-        "line": 5892,
-        "anchor": "scripts/main-agent-orchestration.ts:5892",
+        "line": 5891,
+        "anchor": "scripts/main-agent-orchestration.ts:5891",
         "text": "confirmationHtmlPath: fs.existsSync(input.paths.confirmationHtml)"
       },
       {
-        "line": 5895,
-        "anchor": "scripts/main-agent-orchestration.ts:5895",
+        "line": 5894,
+        "anchor": "scripts/main-agent-orchestration.ts:5894",
         "text": "confirmationRenderReportPath: fs.existsSync(input.paths.confirmationRenderReport)"
       },
       {
-        "line": 5902,
-        "anchor": "scripts/main-agent-orchestration.ts:5902",
+        "line": 5901,
+        "anchor": "scripts/main-agent-orchestration.ts:5901",
         "text": "(fs.existsSync(input.paths.sourceMaterializationReceipt)"
       },
       {
-        "line": 6121,
-        "anchor": "scripts/main-agent-orchestration.ts:6121",
+        "line": 6120,
+        "anchor": "scripts/main-agent-orchestration.ts:6120",
         "text": "if (!fs.existsSync(sourcePath)) {"
+      },
+      {
+        "line": 6914,
+        "anchor": "scripts/main-agent-orchestration.ts:6914",
+        "text": "fs.mkdirSync(path.dirname(probeSource), { recursive: true });"
       },
       {
         "line": 6915,
         "anchor": "scripts/main-agent-orchestration.ts:6915",
-        "text": "fs.mkdirSync(path.dirname(probeSource), { recursive: true });"
+        "text": "fs.copyFileSync(sourcePath, probeSource);"
       },
       {
-        "line": 6916,
-        "anchor": "scripts/main-agent-orchestration.ts:6916",
-        "text": "fs.copyFileSync(sourcePath, probeSource);"
+        "line": 8542,
+        "anchor": "scripts/main-agent-orchestration.ts:8542",
+        "text": "fs.mkdirSync(path.dirname(file), { recursive: true });"
       },
       {
         "line": 8543,
         "anchor": "scripts/main-agent-orchestration.ts:8543",
-        "text": "fs.mkdirSync(path.dirname(file), { recursive: true });"
-      },
-      {
-        "line": 8544,
-        "anchor": "scripts/main-agent-orchestration.ts:8544",
         "text": "fs.writeFileSync(file, JSON.stringify(writtenState, null, 2) + '\\n', 'utf8');"
       },
       {
-        "line": 8676,
-        "anchor": "scripts/main-agent-orchestration.ts:8676",
+        "line": 8675,
+        "anchor": "scripts/main-agent-orchestration.ts:8675",
         "text": "if (!receiptPath || !fs.existsSync(receiptPath)) return '';"
       },
       {
-        "line": 8678,
-        "anchor": "scripts/main-agent-orchestration.ts:8678",
+        "line": 8677,
+        "anchor": "scripts/main-agent-orchestration.ts:8677",
         "text": "const receipt = JSON.parse(fs.readFileSync(receiptPath, 'utf8')) as Record<string, unknown>;"
       },
       {
-        "line": 8971,
-        "anchor": "scripts/main-agent-orchestration.ts:8971",
+        "line": 8970,
+        "anchor": "scripts/main-agent-orchestration.ts:8970",
         "text": "if (!fs.existsSync(entry)) {"
       },
       {
-        "line": 9040,
-        "anchor": "scripts/main-agent-orchestration.ts:9040",
+        "line": 9039,
+        "anchor": "scripts/main-agent-orchestration.ts:9039",
         "text": "if (!fs.existsSync(entry)) {"
       },
       {
-        "line": 9100,
-        "anchor": "scripts/main-agent-orchestration.ts:9100",
+        "line": 9099,
+        "anchor": "scripts/main-agent-orchestration.ts:9099",
         "text": "if (!fs.existsSync(entry)) {"
       },
       {
-        "line": 9157,
-        "anchor": "scripts/main-agent-orchestration.ts:9157",
+        "line": 9156,
+        "anchor": "scripts/main-agent-orchestration.ts:9156",
         "text": "if (!fs.existsSync(classifierPath)) {"
       },
       {
-        "line": 9170,
-        "anchor": "scripts/main-agent-orchestration.ts:9170",
+        "line": 9169,
+        "anchor": "scripts/main-agent-orchestration.ts:9169",
         "text": "const sourceText = fs.readFileSync(sourcePath, 'utf8');"
       },
       {
-        "line": 9216,
-        "anchor": "scripts/main-agent-orchestration.ts:9216",
+        "line": 9215,
+        "anchor": "scripts/main-agent-orchestration.ts:9215",
         "text": "const record = fs.existsSync(recordPath) ? (readJsonIfExists(recordPath) ?? {}) : {};"
       },
       {
-        "line": 9479,
-        "anchor": "scripts/main-agent-orchestration.ts:9479",
+        "line": 9478,
+        "anchor": "scripts/main-agent-orchestration.ts:9478",
         "text": "const parsed = JSON.parse(fs.readFileSync(resolved, 'utf8')) as unknown;"
       },
       {
-        "line": 9491,
-        "anchor": "scripts/main-agent-orchestration.ts:9491",
+        "line": 9490,
+        "anchor": "scripts/main-agent-orchestration.ts:9490",
         "text": "if (!normalized || !fs.existsSync(normalized)) return null;"
       },
       {
-        "line": 9493,
-        "anchor": "scripts/main-agent-orchestration.ts:9493",
+        "line": 9492,
+        "anchor": "scripts/main-agent-orchestration.ts:9492",
         "text": "const parsed = JSON.parse(fs.readFileSync(path.resolve(normalized), 'utf8')) as unknown;"
+      },
+      {
+        "line": 9658,
+        "anchor": "scripts/main-agent-orchestration.ts:9658",
+        "text": "fs.mkdirSync(path.dirname(reportPath), { recursive: true });"
       },
       {
         "line": 9659,
         "anchor": "scripts/main-agent-orchestration.ts:9659",
-        "text": "fs.mkdirSync(path.dirname(reportPath), { recursive: true });"
-      },
-      {
-        "line": 9660,
-        "anchor": "scripts/main-agent-orchestration.ts:9660",
         "text": "fs.writeFileSync(reportPath, JSON.stringify(report, null, 2) + '\\n', 'utf8');"
       },
       {
-        "line": 10096,
-        "anchor": "scripts/main-agent-orchestration.ts:10096",
+        "line": 10095,
+        "anchor": "scripts/main-agent-orchestration.ts:10095",
         "text": "if (!fs.existsSync(filePath)) return [];"
       },
       {
-        "line": 10168,
-        "anchor": "scripts/main-agent-orchestration.ts:10168",
+        "line": 10167,
+        "anchor": "scripts/main-agent-orchestration.ts:10167",
         "text": "if (!fs.existsSync(snapshot.absolutePath)) {"
       },
       {
-        "line": 10243,
-        "anchor": "scripts/main-agent-orchestration.ts:10243",
+        "line": 10242,
+        "anchor": "scripts/main-agent-orchestration.ts:10242",
         "text": "hash: fs.existsSync(filePath) ? sha256File(filePath) : sha256Json(report),"
       },
       {
-        "line": 10323,
-        "anchor": "scripts/main-agent-orchestration.ts:10323",
+        "line": 10322,
+        "anchor": "scripts/main-agent-orchestration.ts:10322",
         "text": "fs.mkdirSync(input.reportDir, { recursive: true });"
+      },
+      {
+        "line": 10588,
+        "anchor": "scripts/main-agent-orchestration.ts:10588",
+        "text": "if (fs.existsSync(filePath)) return;"
       },
       {
         "line": 10589,
         "anchor": "scripts/main-agent-orchestration.ts:10589",
-        "text": "if (fs.existsSync(filePath)) return;"
+        "text": "fs.mkdirSync(path.dirname(filePath), { recursive: true });"
       },
       {
         "line": 10590,
         "anchor": "scripts/main-agent-orchestration.ts:10590",
-        "text": "fs.mkdirSync(path.dirname(filePath), { recursive: true });"
-      },
-      {
-        "line": 10591,
-        "anchor": "scripts/main-agent-orchestration.ts:10591",
         "text": "fs.writeFileSync("
       },
       {
-        "line": 10675,
-        "anchor": "scripts/main-agent-orchestration.ts:10675",
+        "line": 10674,
+        "anchor": "scripts/main-agent-orchestration.ts:10674",
         "text": "(candidate) => !fs.existsSync(resolveProjectPath(root, candidate))"
       },
       {
-        "line": 10888,
-        "anchor": "scripts/main-agent-orchestration.ts:10888",
+        "line": 10887,
+        "anchor": "scripts/main-agent-orchestration.ts:10887",
         "text": "const existed = fs.existsSync(absolute);"
       },
       {
-        "line": 10898,
-        "anchor": "scripts/main-agent-orchestration.ts:10898",
+        "line": 10897,
+        "anchor": "scripts/main-agent-orchestration.ts:10897",
         "text": "const existed = fs.existsSync(absolute);"
       },
       {
-        "line": 11609,
-        "anchor": "scripts/main-agent-orchestration.ts:11609",
+        "line": 11608,
+        "anchor": "scripts/main-agent-orchestration.ts:11608",
         "text": "payload || fs.readFileSync(path.resolve(root, inputPath), 'utf8')"
       }
     ],
     "errorPathAnchors": [
       {
-        "line": 1384,
-        "anchor": "scripts/main-agent-orchestration.ts:1384",
+        "line": 1383,
+        "anchor": "scripts/main-agent-orchestration.ts:1383",
         "text": "throw new Error(`audit_execution_profile_invalid:${validation.blockingReasons.join(',')}`);"
       },
       {
-        "line": 1742,
-        "anchor": "scripts/main-agent-orchestration.ts:1742",
+        "line": 1741,
+        "anchor": "scripts/main-agent-orchestration.ts:1741",
         "text": "throw new Error(`${label} must not be absolute: ${value}`);"
       },
       {
-        "line": 1745,
-        "anchor": "scripts/main-agent-orchestration.ts:1745",
+        "line": 1744,
+        "anchor": "scripts/main-agent-orchestration.ts:1744",
         "text": "throw new Error(`${label} must not contain path separators or traversal segments: ${value}`);"
       },
       {
-        "line": 1748,
-        "anchor": "scripts/main-agent-orchestration.ts:1748",
+        "line": 1747,
+        "anchor": "scripts/main-agent-orchestration.ts:1747",
         "text": "throw new Error("
       },
       {
-        "line": 3003,
-        "anchor": "scripts/main-agent-orchestration.ts:3003",
+        "line": 3002,
+        "anchor": "scripts/main-agent-orchestration.ts:3002",
         "text": "throw new Error("
       },
       {
-        "line": 4890,
-        "anchor": "scripts/main-agent-orchestration.ts:4890",
+        "line": 4889,
+        "anchor": "scripts/main-agent-orchestration.ts:4889",
         "text": "throw new Error('authoring-repair requires --source <source-document.md>');"
       },
       {
-        "line": 4893,
-        "anchor": "scripts/main-agent-orchestration.ts:4893",
+        "line": 4892,
+        "anchor": "scripts/main-agent-orchestration.ts:4892",
         "text": "throw new Error('authoring-repair currently requires --mode preserve-existing');"
       },
       {
-        "line": 4897,
-        "anchor": "scripts/main-agent-orchestration.ts:4897",
+        "line": 4896,
+        "anchor": "scripts/main-agent-orchestration.ts:4896",
         "text": "throw new Error(`source document not found: ${sourcePath}`);"
       },
       {
-        "line": 6118,
-        "anchor": "scripts/main-agent-orchestration.ts:6118",
+        "line": 6117,
+        "anchor": "scripts/main-agent-orchestration.ts:6117",
         "text": "throw new Error('pre-confirmation-drilldown requires --source <source-document.md>');"
       },
       {
-        "line": 6122,
-        "anchor": "scripts/main-agent-orchestration.ts:6122",
+        "line": 6121,
+        "anchor": "scripts/main-agent-orchestration.ts:6121",
         "text": "throw new Error(`source document not found: ${sourcePath}`);"
       },
       {
-        "line": 8171,
-        "anchor": "scripts/main-agent-orchestration.ts:8171",
+        "line": 8170,
+        "anchor": "scripts/main-agent-orchestration.ts:8170",
         "text": "throw new Error(`Main-agent ingestion failed: session not found (${sessionId})`);"
       },
       {
-        "line": 8972,
-        "anchor": "scripts/main-agent-orchestration.ts:8972",
+        "line": 8971,
+        "anchor": "scripts/main-agent-orchestration.ts:8971",
         "text": "throw new Error(`controlled closeout acceptance entry missing: ${entry}`);"
       },
       {
-        "line": 8976,
-        "anchor": "scripts/main-agent-orchestration.ts:8976",
+        "line": 8975,
+        "anchor": "scripts/main-agent-orchestration.ts:8975",
         "text": "throw new Error('confirm-closeout-acceptance requires --source <source-document.md>');"
       },
       {
-        "line": 8979,
-        "anchor": "scripts/main-agent-orchestration.ts:8979",
+        "line": 8978,
+        "anchor": "scripts/main-agent-orchestration.ts:8978",
         "text": "throw new Error("
       },
       {
-        "line": 8984,
-        "anchor": "scripts/main-agent-orchestration.ts:8984",
+        "line": 8983,
+        "anchor": "scripts/main-agent-orchestration.ts:8983",
         "text": "throw new Error("
       },
       {
-        "line": 9041,
-        "anchor": "scripts/main-agent-orchestration.ts:9041",
+        "line": 9040,
+        "anchor": "scripts/main-agent-orchestration.ts:9040",
         "text": "throw new Error(`controlled confirmation entry missing: ${entry}`);"
       },
       {
-        "line": 9045,
-        "anchor": "scripts/main-agent-orchestration.ts:9045",
+        "line": 9044,
+        "anchor": "scripts/main-agent-orchestration.ts:9044",
         "text": "throw new Error('confirm-scope requires --source <source-document.md>');"
       },
       {
-        "line": 9048,
-        "anchor": "scripts/main-agent-orchestration.ts:9048",
+        "line": 9047,
+        "anchor": "scripts/main-agent-orchestration.ts:9047",
         "text": "throw new Error("
       },
       {
-        "line": 9101,
-        "anchor": "scripts/main-agent-orchestration.ts:9101",
+        "line": 9100,
+        "anchor": "scripts/main-agent-orchestration.ts:9100",
         "text": "throw new Error(`controlled confirmation repair entry missing: ${entry}`);"
       },
       {
-        "line": 9105,
-        "anchor": "scripts/main-agent-orchestration.ts:9105",
+        "line": 9104,
+        "anchor": "scripts/main-agent-orchestration.ts:9104",
         "text": "throw new Error('repair-confirmation-bookkeeping requires --source <source-document.md>');"
       },
       {
-        "line": 9109,
-        "anchor": "scripts/main-agent-orchestration.ts:9109",
+        "line": 9108,
+        "anchor": "scripts/main-agent-orchestration.ts:9108",
         "text": "throw new Error('repair-confirmation-bookkeeping requires --requirement-record <path>');"
       },
       {
-        "line": 9158,
-        "anchor": "scripts/main-agent-orchestration.ts:9158",
+        "line": 9157,
+        "anchor": "scripts/main-agent-orchestration.ts:9157",
         "text": "throw new Error(`confirmation drift classifier missing: ${classifierPath}`);"
       },
       {
-        "line": 9173,
-        "anchor": "scripts/main-agent-orchestration.ts:9173",
+        "line": 9172,
+        "anchor": "scripts/main-agent-orchestration.ts:9172",
         "text": "throw new Error(`implementationConfirmation block missing: ${sourcePath}`);"
       },
       {
-        "line": 9193,
-        "anchor": "scripts/main-agent-orchestration.ts:9193",
+        "line": 9192,
+        "anchor": "scripts/main-agent-orchestration.ts:9192",
         "text": "throw new Error('route-confirmation-drift projection refresh requires render report hashes');"
       },
       {
-        "line": 9208,
-        "anchor": "scripts/main-agent-orchestration.ts:9208",
+        "line": 9207,
+        "anchor": "scripts/main-agent-orchestration.ts:9207",
         "text": "throw new Error('route-confirmation-drift requires --source <source-document.md>');"
       },
       {
-        "line": 9212,
-        "anchor": "scripts/main-agent-orchestration.ts:9212",
+        "line": 9211,
+        "anchor": "scripts/main-agent-orchestration.ts:9211",
         "text": "throw new Error('route-confirmation-drift requires --requirement-record <path>');"
       },
       {
-        "line": 9452,
-        "anchor": "scripts/main-agent-orchestration.ts:9452",
+        "line": 9451,
+        "anchor": "scripts/main-agent-orchestration.ts:9451",
         "text": "throw new Error('sessionId and packetId are required for packet lifecycle actions');"
       },
       {
-        "line": 9481,
-        "anchor": "scripts/main-agent-orchestration.ts:9481",
+        "line": 9480,
+        "anchor": "scripts/main-agent-orchestration.ts:9480",
         "text": "throw new Error(`Invalid task report shape: ${resolved}`);"
       },
       {
-        "line": 9484,
-        "anchor": "scripts/main-agent-orchestration.ts:9484",
+        "line": 9483,
+        "anchor": "scripts/main-agent-orchestration.ts:9483",
         "text": "throw new Error(`Task report packetId mismatch: expected ${packetId}, got ${parsed.packetId}`);"
       },
       {
-        "line": 10267,
-        "anchor": "scripts/main-agent-orchestration.ts:10267",
+        "line": 10266,
+        "anchor": "scripts/main-agent-orchestration.ts:10266",
         "text": "const originalConsoleError = console.error;"
       },
       {
-        "line": 10276,
-        "anchor": "scripts/main-agent-orchestration.ts:10276",
+        "line": 10275,
+        "anchor": "scripts/main-agent-orchestration.ts:10275",
         "text": "console.error = (...args: unknown[]) => {"
       },
       {
-        "line": 10284,
-        "anchor": "scripts/main-agent-orchestration.ts:10284",
+        "line": 10283,
+        "anchor": "scripts/main-agent-orchestration.ts:10283",
         "text": "console.error = originalConsoleError;"
       },
       {
-        "line": 10421,
-        "anchor": "scripts/main-agent-orchestration.ts:10421",
+        "line": 10420,
+        "anchor": "scripts/main-agent-orchestration.ts:10420",
         "text": "if (!source) throw new Error('post-close-defect-intake requires --source <source-document.md>');"
       },
       {
-        "line": 10423,
-        "anchor": "scripts/main-agent-orchestration.ts:10423",
+        "line": 10422,
+        "anchor": "scripts/main-agent-orchestration.ts:10422",
         "text": "throw new Error('post-close-defect-intake requires --requirement-record <path>');"
       },
       {
-        "line": 10427,
-        "anchor": "scripts/main-agent-orchestration.ts:10427",
+        "line": 10426,
+        "anchor": "scripts/main-agent-orchestration.ts:10426",
         "text": "if (!record) throw new Error(`requirement record missing or invalid: ${recordPath}`);"
       },
       {
-        "line": 11603,
-        "anchor": "scripts/main-agent-orchestration.ts:11603",
+        "line": 11602,
+        "anchor": "scripts/main-agent-orchestration.ts:11602",
         "text": "console.error("
       },
       {
-        "line": 11606,
-        "anchor": "scripts/main-agent-orchestration.ts:11606",
+        "line": 11605,
+        "anchor": "scripts/main-agent-orchestration.ts:11605",
         "text": "return 1;"
       },
       {
-        "line": 11624,
-        "anchor": "scripts/main-agent-orchestration.ts:11624",
+        "line": 11623,
+        "anchor": "scripts/main-agent-orchestration.ts:11623",
         "text": "console.error("
       },
       {
-        "line": 11629,
-        "anchor": "scripts/main-agent-orchestration.ts:11629",
+        "line": 11628,
+        "anchor": "scripts/main-agent-orchestration.ts:11628",
         "text": "return 1;"
       },
       {
-        "line": 11639,
-        "anchor": "scripts/main-agent-orchestration.ts:11639",
+        "line": 11638,
+        "anchor": "scripts/main-agent-orchestration.ts:11638",
         "text": "console.error("
       },
       {
-        "line": 11644,
-        "anchor": "scripts/main-agent-orchestration.ts:11644",
+        "line": 11643,
+        "anchor": "scripts/main-agent-orchestration.ts:11643",
         "text": "return 1;"
       },
       {
-        "line": 11654,
-        "anchor": "scripts/main-agent-orchestration.ts:11654",
+        "line": 11653,
+        "anchor": "scripts/main-agent-orchestration.ts:11653",
         "text": "console.error("
       },
       {
-        "line": 11659,
-        "anchor": "scripts/main-agent-orchestration.ts:11659",
+        "line": 11658,
+        "anchor": "scripts/main-agent-orchestration.ts:11658",
         "text": "return 1;"
       },
       {
-        "line": 11672,
-        "anchor": "scripts/main-agent-orchestration.ts:11672",
+        "line": 11671,
+        "anchor": "scripts/main-agent-orchestration.ts:11671",
         "text": "console.error("
       },
       {
-        "line": 11677,
-        "anchor": "scripts/main-agent-orchestration.ts:11677",
+        "line": 11676,
+        "anchor": "scripts/main-agent-orchestration.ts:11676",
         "text": "return 1;"
       },
       {
-        "line": 11704,
-        "anchor": "scripts/main-agent-orchestration.ts:11704",
+        "line": 11703,
+        "anchor": "scripts/main-agent-orchestration.ts:11703",
         "text": "console.error("
       },
       {
-        "line": 11709,
-        "anchor": "scripts/main-agent-orchestration.ts:11709",
+        "line": 11708,
+        "anchor": "scripts/main-agent-orchestration.ts:11708",
         "text": "return 1;"
       },
       {
-        "line": 11725,
-        "anchor": "scripts/main-agent-orchestration.ts:11725",
+        "line": 11724,
+        "anchor": "scripts/main-agent-orchestration.ts:11724",
         "text": "console.error("
       },
       {
-        "line": 11730,
-        "anchor": "scripts/main-agent-orchestration.ts:11730",
+        "line": 11729,
+        "anchor": "scripts/main-agent-orchestration.ts:11729",
         "text": "return 1;"
       },
       {
-        "line": 11740,
-        "anchor": "scripts/main-agent-orchestration.ts:11740",
+        "line": 11739,
+        "anchor": "scripts/main-agent-orchestration.ts:11739",
         "text": "console.error("
       },
       {
-        "line": 11745,
-        "anchor": "scripts/main-agent-orchestration.ts:11745",
+        "line": 11744,
+        "anchor": "scripts/main-agent-orchestration.ts:11744",
         "text": "return 1;"
       },
       {
-        "line": 11765,
-        "anchor": "scripts/main-agent-orchestration.ts:11765",
+        "line": 11764,
+        "anchor": "scripts/main-agent-orchestration.ts:11764",
         "text": "return 1;"
       },
       {
-        "line": 11770,
-        "anchor": "scripts/main-agent-orchestration.ts:11770",
+        "line": 11769,
+        "anchor": "scripts/main-agent-orchestration.ts:11769",
         "text": "return 1;"
       },
       {
-        "line": 11774,
-        "anchor": "scripts/main-agent-orchestration.ts:11774",
+        "line": 11773,
+        "anchor": "scripts/main-agent-orchestration.ts:11773",
         "text": "return 1;"
+      },
+      {
+        "line": 11867,
+        "anchor": "scripts/main-agent-orchestration.ts:11867",
+        "text": "console.error(`main-agent-orchestration: unsupported action=${action}`);"
       },
       {
         "line": 11868,
         "anchor": "scripts/main-agent-orchestration.ts:11868",
-        "text": "console.error(`main-agent-orchestration: unsupported action=${action}`);"
-      },
-      {
-        "line": 11869,
-        "anchor": "scripts/main-agent-orchestration.ts:11869",
         "text": "return 1;"
       },
       {
-        "line": 11882,
-        "anchor": "scripts/main-agent-orchestration.ts:11882",
+        "line": 11881,
+        "anchor": "scripts/main-agent-orchestration.ts:11881",
         "text": "return 1;"
       },
       {
-        "line": 11917,
-        "anchor": "scripts/main-agent-orchestration.ts:11917",
+        "line": 11916,
+        "anchor": "scripts/main-agent-orchestration.ts:11916",
         "text": "console.error("
       },
       {
-        "line": 11922,
-        "anchor": "scripts/main-agent-orchestration.ts:11922",
+        "line": 11921,
+        "anchor": "scripts/main-agent-orchestration.ts:11921",
         "text": "return 1;"
       }
     ]
@@ -1508,33 +1508,33 @@
       "replayStatus": "blocked_until_package_implementation_exists",
       "sourceLineAnchors": [
         {
-          "line": 7962,
-          "anchor": "scripts/main-agent-orchestration.ts:7962",
+          "line": 7961,
+          "anchor": "scripts/main-agent-orchestration.ts:7961",
           "text": "'inspect';"
         },
         {
-          "line": 8626,
-          "anchor": "scripts/main-agent-orchestration.ts:8626",
+          "line": 8625,
+          "anchor": "scripts/main-agent-orchestration.ts:8625",
           "text": "'inspect',"
         },
         {
-          "line": 11597,
-          "anchor": "scripts/main-agent-orchestration.ts:11597",
+          "line": 11596,
+          "anchor": "scripts/main-agent-orchestration.ts:11596",
           "text": "const action = normalizeText(args.action) || 'inspect';"
         },
         {
-          "line": 11758,
-          "anchor": "scripts/main-agent-orchestration.ts:11758",
+          "line": 11757,
+          "anchor": "scripts/main-agent-orchestration.ts:11757",
           "text": "case 'inspect': {"
         },
         {
-          "line": 11787,
-          "anchor": "scripts/main-agent-orchestration.ts:11787",
+          "line": 11786,
+          "anchor": "scripts/main-agent-orchestration.ts:11786",
           "text": "case 'inspect': {"
         },
         {
-          "line": 11876,
-          "anchor": "scripts/main-agent-orchestration.ts:11876",
+          "line": 11875,
+          "anchor": "scripts/main-agent-orchestration.ts:11875",
           "text": "const action = normalizeText(args.action) || 'inspect';"
         }
       ]
@@ -1551,28 +1551,28 @@
       "replayStatus": "blocked_until_package_implementation_exists",
       "sourceLineAnchors": [
         {
-          "line": 8628,
-          "anchor": "scripts/main-agent-orchestration.ts:8628",
+          "line": 8627,
+          "anchor": "scripts/main-agent-orchestration.ts:8627",
           "text": "'dispatch-plan',"
         },
         {
-          "line": 11168,
-          "anchor": "scripts/main-agent-orchestration.ts:11168",
+          "line": 11167,
+          "anchor": "scripts/main-agent-orchestration.ts:11167",
           "text": "step: 'dispatch-plan',"
         },
         {
-          "line": 11180,
-          "anchor": "scripts/main-agent-orchestration.ts:11180",
+          "line": 11179,
+          "anchor": "scripts/main-agent-orchestration.ts:11179",
           "text": "step: 'dispatch-plan',"
         },
         {
-          "line": 11763,
-          "anchor": "scripts/main-agent-orchestration.ts:11763",
+          "line": 11762,
+          "anchor": "scripts/main-agent-orchestration.ts:11762",
           "text": "case 'dispatch-plan': {"
         },
         {
-          "line": 11792,
-          "anchor": "scripts/main-agent-orchestration.ts:11792",
+          "line": 11791,
+          "anchor": "scripts/main-agent-orchestration.ts:11791",
           "text": "case 'dispatch-plan': {"
         }
       ]
@@ -1589,23 +1589,23 @@
       "replayStatus": "blocked_until_package_implementation_exists",
       "sourceLineAnchors": [
         {
-          "line": 8629,
-          "anchor": "scripts/main-agent-orchestration.ts:8629",
+          "line": 8628,
+          "anchor": "scripts/main-agent-orchestration.ts:8628",
           "text": "'run-loop',"
         },
         {
-          "line": 11767,
-          "anchor": "scripts/main-agent-orchestration.ts:11767",
+          "line": 11766,
+          "anchor": "scripts/main-agent-orchestration.ts:11766",
           "text": "case 'run-loop': {"
         },
         {
-          "line": 11806,
-          "anchor": "scripts/main-agent-orchestration.ts:11806",
+          "line": 11805,
+          "anchor": "scripts/main-agent-orchestration.ts:11805",
           "text": "case 'run-loop': {"
         },
         {
-          "line": 11877,
-          "anchor": "scripts/main-agent-orchestration.ts:11877",
+          "line": 11876,
+          "anchor": "scripts/main-agent-orchestration.ts:11876",
           "text": "if (action === 'run-loop') {"
         }
       ]
@@ -1622,18 +1622,18 @@
       "replayStatus": "blocked_until_package_implementation_exists",
       "sourceLineAnchors": [
         {
-          "line": 8630,
-          "anchor": "scripts/main-agent-orchestration.ts:8630",
+          "line": 8629,
+          "anchor": "scripts/main-agent-orchestration.ts:8629",
           "text": "'claim',"
         },
         {
-          "line": 11193,
-          "anchor": "scripts/main-agent-orchestration.ts:11193",
+          "line": 11192,
+          "anchor": "scripts/main-agent-orchestration.ts:11192",
           "text": "step: 'claim',"
         },
         {
-          "line": 11839,
-          "anchor": "scripts/main-agent-orchestration.ts:11839",
+          "line": 11838,
+          "anchor": "scripts/main-agent-orchestration.ts:11838",
           "text": "case 'claim': {"
         }
       ]
@@ -1650,18 +1650,18 @@
       "replayStatus": "blocked_until_package_implementation_exists",
       "sourceLineAnchors": [
         {
-          "line": 8631,
-          "anchor": "scripts/main-agent-orchestration.ts:8631",
+          "line": 8630,
+          "anchor": "scripts/main-agent-orchestration.ts:8630",
           "text": "'dispatch',"
         },
         {
-          "line": 11205,
-          "anchor": "scripts/main-agent-orchestration.ts:11205",
+          "line": 11204,
+          "anchor": "scripts/main-agent-orchestration.ts:11204",
           "text": "step: 'dispatch',"
         },
         {
-          "line": 11849,
-          "anchor": "scripts/main-agent-orchestration.ts:11849",
+          "line": 11848,
+          "anchor": "scripts/main-agent-orchestration.ts:11848",
           "text": "case 'dispatch': {"
         }
       ]
@@ -1678,33 +1678,33 @@
       "replayStatus": "blocked_until_package_implementation_exists",
       "sourceLineAnchors": [
         {
-          "line": 3189,
-          "anchor": "scripts/main-agent-orchestration.ts:3189",
+          "line": 3188,
+          "anchor": "scripts/main-agent-orchestration.ts:3188",
           "text": "coverageVerdict: 'complete',"
         },
         {
-          "line": 3193,
-          "anchor": "scripts/main-agent-orchestration.ts:3193",
+          "line": 3192,
+          "anchor": "scripts/main-agent-orchestration.ts:3192",
           "text": "completenessVerdict: 'complete',"
         },
         {
-          "line": 3545,
-          "anchor": "scripts/main-agent-orchestration.ts:3545",
+          "line": 3544,
+          "anchor": "scripts/main-agent-orchestration.ts:3544",
           "text": "coverageVerdict: 'complete',"
         },
         {
-          "line": 3549,
-          "anchor": "scripts/main-agent-orchestration.ts:3549",
+          "line": 3548,
+          "anchor": "scripts/main-agent-orchestration.ts:3548",
           "text": "completenessVerdict: 'complete',"
         },
         {
-          "line": 8632,
-          "anchor": "scripts/main-agent-orchestration.ts:8632",
+          "line": 8631,
+          "anchor": "scripts/main-agent-orchestration.ts:8631",
           "text": "'complete',"
         },
         {
-          "line": 11855,
-          "anchor": "scripts/main-agent-orchestration.ts:11855",
+          "line": 11854,
+          "anchor": "scripts/main-agent-orchestration.ts:11854",
           "text": "case 'complete': {"
         }
       ]
@@ -1721,13 +1721,13 @@
       "replayStatus": "blocked_until_package_implementation_exists",
       "sourceLineAnchors": [
         {
-          "line": 8633,
-          "anchor": "scripts/main-agent-orchestration.ts:8633",
+          "line": 8632,
+          "anchor": "scripts/main-agent-orchestration.ts:8632",
           "text": "'invalidate',"
         },
         {
-          "line": 11861,
-          "anchor": "scripts/main-agent-orchestration.ts:11861",
+          "line": 11860,
+          "anchor": "scripts/main-agent-orchestration.ts:11860",
           "text": "case 'invalidate': {"
         }
       ]
@@ -1744,13 +1744,13 @@
       "replayStatus": "blocked_until_package_implementation_exists",
       "sourceLineAnchors": [
         {
-          "line": 8634,
-          "anchor": "scripts/main-agent-orchestration.ts:8634",
+          "line": 8633,
+          "anchor": "scripts/main-agent-orchestration.ts:8633",
           "text": "'route-intake',"
         },
         {
-          "line": 11599,
-          "anchor": "scripts/main-agent-orchestration.ts:11599",
+          "line": 11598,
+          "anchor": "scripts/main-agent-orchestration.ts:11598",
           "text": "if (action === 'route-intake' || action === 'adaptive-intake') {"
         }
       ]
@@ -1767,13 +1767,13 @@
       "replayStatus": "blocked_until_package_implementation_exists",
       "sourceLineAnchors": [
         {
-          "line": 8635,
-          "anchor": "scripts/main-agent-orchestration.ts:8635",
+          "line": 8634,
+          "anchor": "scripts/main-agent-orchestration.ts:8634",
           "text": "'adaptive-intake',"
         },
         {
-          "line": 11599,
-          "anchor": "scripts/main-agent-orchestration.ts:11599",
+          "line": 11598,
+          "anchor": "scripts/main-agent-orchestration.ts:11598",
           "text": "if (action === 'route-intake' || action === 'adaptive-intake') {"
         }
       ]
@@ -1790,23 +1790,23 @@
       "replayStatus": "blocked_until_package_implementation_exists",
       "sourceLineAnchors": [
         {
-          "line": 8636,
-          "anchor": "scripts/main-agent-orchestration.ts:8636",
+          "line": 8635,
+          "anchor": "scripts/main-agent-orchestration.ts:8635",
           "text": "'confirm-scope',"
         },
         {
-          "line": 8850,
-          "anchor": "scripts/main-agent-orchestration.ts:8850",
+          "line": 8849,
+          "anchor": "scripts/main-agent-orchestration.ts:8849",
           "text": "| 'confirm-scope'"
         },
         {
-          "line": 9086,
-          "anchor": "scripts/main-agent-orchestration.ts:9086",
+          "line": 9085,
+          "anchor": "scripts/main-agent-orchestration.ts:9085",
           "text": "action: 'confirm-scope',"
         },
         {
-          "line": 11618,
-          "anchor": "scripts/main-agent-orchestration.ts:11618",
+          "line": 11617,
+          "anchor": "scripts/main-agent-orchestration.ts:11617",
           "text": "if (action === 'confirm-scope' || action === 'confirmation-ingest') {"
         }
       ]
@@ -1823,13 +1823,13 @@
       "replayStatus": "blocked_until_package_implementation_exists",
       "sourceLineAnchors": [
         {
-          "line": 8637,
-          "anchor": "scripts/main-agent-orchestration.ts:8637",
+          "line": 8636,
+          "anchor": "scripts/main-agent-orchestration.ts:8636",
           "text": "'confirmation-ingest',"
         },
         {
-          "line": 11618,
-          "anchor": "scripts/main-agent-orchestration.ts:11618",
+          "line": 11617,
+          "anchor": "scripts/main-agent-orchestration.ts:11617",
           "text": "if (action === 'confirm-scope' || action === 'confirmation-ingest') {"
         }
       ]
@@ -1846,28 +1846,28 @@
       "replayStatus": "blocked_until_package_implementation_exists",
       "sourceLineAnchors": [
         {
-          "line": 8638,
-          "anchor": "scripts/main-agent-orchestration.ts:8638",
+          "line": 8637,
+          "anchor": "scripts/main-agent-orchestration.ts:8637",
           "text": "'confirm-closeout-acceptance',"
         },
         {
-          "line": 8851,
-          "anchor": "scripts/main-agent-orchestration.ts:8851",
+          "line": 8850,
+          "anchor": "scripts/main-agent-orchestration.ts:8850",
           "text": "| 'confirm-closeout-acceptance'"
         },
         {
-          "line": 8991,
-          "anchor": "scripts/main-agent-orchestration.ts:8991",
+          "line": 8990,
+          "anchor": "scripts/main-agent-orchestration.ts:8990",
           "text": "'confirm-closeout-acceptance',"
         },
         {
-          "line": 9026,
-          "anchor": "scripts/main-agent-orchestration.ts:9026",
+          "line": 9025,
+          "anchor": "scripts/main-agent-orchestration.ts:9025",
           "text": "action: 'confirm-closeout-acceptance',"
         },
         {
-          "line": 11633,
-          "anchor": "scripts/main-agent-orchestration.ts:11633",
+          "line": 11632,
+          "anchor": "scripts/main-agent-orchestration.ts:11632",
           "text": "if (action === 'confirm-closeout-acceptance' || action === 'closeout-acceptance-ingest') {"
         }
       ]
@@ -1884,13 +1884,13 @@
       "replayStatus": "blocked_until_package_implementation_exists",
       "sourceLineAnchors": [
         {
-          "line": 8639,
-          "anchor": "scripts/main-agent-orchestration.ts:8639",
+          "line": 8638,
+          "anchor": "scripts/main-agent-orchestration.ts:8638",
           "text": "'closeout-acceptance-ingest',"
         },
         {
-          "line": 11633,
-          "anchor": "scripts/main-agent-orchestration.ts:11633",
+          "line": 11632,
+          "anchor": "scripts/main-agent-orchestration.ts:11632",
           "text": "if (action === 'confirm-closeout-acceptance' || action === 'closeout-acceptance-ingest') {"
         }
       ]
@@ -1907,53 +1907,53 @@
       "replayStatus": "blocked_until_package_implementation_exists",
       "sourceLineAnchors": [
         {
-          "line": 8641,
-          "anchor": "scripts/main-agent-orchestration.ts:8641",
+          "line": 8640,
+          "anchor": "scripts/main-agent-orchestration.ts:8640",
           "text": "'route-confirmation-drift',"
         },
         {
-          "line": 8853,
-          "anchor": "scripts/main-agent-orchestration.ts:8853",
+          "line": 8852,
+          "anchor": "scripts/main-agent-orchestration.ts:8852",
           "text": "| 'route-confirmation-drift';"
         },
         {
-          "line": 9237,
-          "anchor": "scripts/main-agent-orchestration.ts:9237",
+          "line": 9236,
+          "anchor": "scripts/main-agent-orchestration.ts:9236",
           "text": "action: 'route-confirmation-drift',"
         },
         {
-          "line": 9251,
-          "anchor": "scripts/main-agent-orchestration.ts:9251",
+          "line": 9250,
+          "anchor": "scripts/main-agent-orchestration.ts:9250",
           "text": "action: 'route-confirmation-drift',"
         },
         {
-          "line": 9264,
-          "anchor": "scripts/main-agent-orchestration.ts:9264",
+          "line": 9263,
+          "anchor": "scripts/main-agent-orchestration.ts:9263",
           "text": "action: 'route-confirmation-drift',"
         },
         {
-          "line": 9283,
-          "anchor": "scripts/main-agent-orchestration.ts:9283",
+          "line": 9282,
+          "anchor": "scripts/main-agent-orchestration.ts:9282",
           "text": "action: 'route-confirmation-drift',"
         },
         {
-          "line": 9304,
-          "anchor": "scripts/main-agent-orchestration.ts:9304",
+          "line": 9303,
+          "anchor": "scripts/main-agent-orchestration.ts:9303",
           "text": "action: 'route-confirmation-drift',"
         },
         {
-          "line": 9321,
-          "anchor": "scripts/main-agent-orchestration.ts:9321",
+          "line": 9320,
+          "anchor": "scripts/main-agent-orchestration.ts:9320",
           "text": "action: 'route-confirmation-drift',"
         },
         {
-          "line": 9342,
-          "anchor": "scripts/main-agent-orchestration.ts:9342",
+          "line": 9341,
+          "anchor": "scripts/main-agent-orchestration.ts:9341",
           "text": "action: 'route-confirmation-drift',"
         },
         {
-          "line": 11648,
-          "anchor": "scripts/main-agent-orchestration.ts:11648",
+          "line": 11647,
+          "anchor": "scripts/main-agent-orchestration.ts:11647",
           "text": "if (action === 'route-confirmation-drift' || action === 'confirmation-drift-route') {"
         }
       ]
@@ -1970,13 +1970,13 @@
       "replayStatus": "blocked_until_package_implementation_exists",
       "sourceLineAnchors": [
         {
-          "line": 8642,
-          "anchor": "scripts/main-agent-orchestration.ts:8642",
+          "line": 8641,
+          "anchor": "scripts/main-agent-orchestration.ts:8641",
           "text": "'confirmation-drift-route',"
         },
         {
-          "line": 11648,
-          "anchor": "scripts/main-agent-orchestration.ts:11648",
+          "line": 11647,
+          "anchor": "scripts/main-agent-orchestration.ts:11647",
           "text": "if (action === 'route-confirmation-drift' || action === 'confirmation-drift-route') {"
         }
       ]
@@ -1993,23 +1993,23 @@
       "replayStatus": "blocked_until_package_implementation_exists",
       "sourceLineAnchors": [
         {
-          "line": 8643,
-          "anchor": "scripts/main-agent-orchestration.ts:8643",
+          "line": 8642,
+          "anchor": "scripts/main-agent-orchestration.ts:8642",
           "text": "'repair-confirmation-bookkeeping',"
         },
         {
-          "line": 8852,
-          "anchor": "scripts/main-agent-orchestration.ts:8852",
+          "line": 8851,
+          "anchor": "scripts/main-agent-orchestration.ts:8851",
           "text": "| 'repair-confirmation-bookkeeping'"
         },
         {
-          "line": 9144,
-          "anchor": "scripts/main-agent-orchestration.ts:9144",
+          "line": 9143,
+          "anchor": "scripts/main-agent-orchestration.ts:9143",
           "text": "action: 'repair-confirmation-bookkeeping',"
         },
         {
-          "line": 11664,
-          "anchor": "scripts/main-agent-orchestration.ts:11664",
+          "line": 11663,
+          "anchor": "scripts/main-agent-orchestration.ts:11663",
           "text": "action === 'repair-confirmation-bookkeeping' ||"
         }
       ]
@@ -2026,13 +2026,13 @@
       "replayStatus": "blocked_until_package_implementation_exists",
       "sourceLineAnchors": [
         {
-          "line": 8644,
-          "anchor": "scripts/main-agent-orchestration.ts:8644",
+          "line": 8643,
+          "anchor": "scripts/main-agent-orchestration.ts:8643",
           "text": "'confirmation-bookkeeping-repair',"
         },
         {
-          "line": 11665,
-          "anchor": "scripts/main-agent-orchestration.ts:11665",
+          "line": 11664,
+          "anchor": "scripts/main-agent-orchestration.ts:11664",
           "text": "action === 'confirmation-bookkeeping-repair'"
         }
       ]
@@ -2049,18 +2049,18 @@
       "replayStatus": "blocked_until_package_implementation_exists",
       "sourceLineAnchors": [
         {
-          "line": 8645,
-          "anchor": "scripts/main-agent-orchestration.ts:8645",
+          "line": 8644,
+          "anchor": "scripts/main-agent-orchestration.ts:8644",
           "text": "'pre-confirmation-drilldown',"
         },
         {
-          "line": 11682,
-          "anchor": "scripts/main-agent-orchestration.ts:11682",
+          "line": 11681,
+          "anchor": "scripts/main-agent-orchestration.ts:11681",
           "text": "action === 'pre-confirmation-drilldown' ||"
         },
         {
-          "line": 11703,
-          "anchor": "scripts/main-agent-orchestration.ts:11703",
+          "line": 11702,
+          "anchor": "scripts/main-agent-orchestration.ts:11702",
           "text": ": 'pre-confirmation-drilldown';"
         }
       ]
@@ -2077,63 +2077,63 @@
       "replayStatus": "blocked_until_package_implementation_exists",
       "sourceLineAnchors": [
         {
-          "line": 241,
-          "anchor": "scripts/main-agent-orchestration.ts:241",
+          "line": 240,
+          "anchor": "scripts/main-agent-orchestration.ts:240",
           "text": "lane: 'pre_confirmation_drilldown';"
         },
         {
-          "line": 3100,
-          "anchor": "scripts/main-agent-orchestration.ts:3100",
+          "line": 3099,
+          "anchor": "scripts/main-agent-orchestration.ts:3099",
           "text": "lane: 'pre_confirmation_drilldown',"
         },
         {
-          "line": 5498,
-          "anchor": "scripts/main-agent-orchestration.ts:5498",
+          "line": 5497,
+          "anchor": "scripts/main-agent-orchestration.ts:5497",
           "text": "lane: 'pre_confirmation_drilldown',"
         },
         {
-          "line": 5534,
-          "anchor": "scripts/main-agent-orchestration.ts:5534",
+          "line": 5533,
+          "anchor": "scripts/main-agent-orchestration.ts:5533",
           "text": "lane: 'pre_confirmation_drilldown',"
         },
         {
-          "line": 5876,
-          "anchor": "scripts/main-agent-orchestration.ts:5876",
+          "line": 5875,
+          "anchor": "scripts/main-agent-orchestration.ts:5875",
           "text": "lane: 'pre_confirmation_drilldown',"
         },
         {
-          "line": 6000,
-          "anchor": "scripts/main-agent-orchestration.ts:6000",
+          "line": 5999,
+          "anchor": "scripts/main-agent-orchestration.ts:5999",
           "text": "lane: 'pre_confirmation_drilldown',"
         },
         {
-          "line": 6151,
-          "anchor": "scripts/main-agent-orchestration.ts:6151",
+          "line": 6150,
+          "anchor": "scripts/main-agent-orchestration.ts:6150",
           "text": "lane: 'pre_confirmation_drilldown',"
         },
         {
-          "line": 6157,
-          "anchor": "scripts/main-agent-orchestration.ts:6157",
+          "line": 6156,
+          "anchor": "scripts/main-agent-orchestration.ts:6156",
           "text": "lane: 'pre_confirmation_drilldown',"
         },
         {
-          "line": 7505,
-          "anchor": "scripts/main-agent-orchestration.ts:7505",
+          "line": 7504,
+          "anchor": "scripts/main-agent-orchestration.ts:7504",
           "text": "lane: 'pre_confirmation_drilldown',"
         },
         {
-          "line": 7574,
-          "anchor": "scripts/main-agent-orchestration.ts:7574",
+          "line": 7573,
+          "anchor": "scripts/main-agent-orchestration.ts:7573",
           "text": "? 'pre_confirmation_drilldown'"
         },
         {
-          "line": 8646,
-          "anchor": "scripts/main-agent-orchestration.ts:8646",
+          "line": 8645,
+          "anchor": "scripts/main-agent-orchestration.ts:8645",
           "text": "'pre_confirmation_drilldown',"
         },
         {
-          "line": 11683,
-          "anchor": "scripts/main-agent-orchestration.ts:11683",
+          "line": 11682,
+          "anchor": "scripts/main-agent-orchestration.ts:11682",
           "text": "action === 'pre_confirmation_drilldown' ||"
         }
       ]
@@ -2150,38 +2150,38 @@
       "replayStatus": "blocked_until_package_implementation_exists",
       "sourceLineAnchors": [
         {
-          "line": 1628,
-          "anchor": "scripts/main-agent-orchestration.ts:1628",
+          "line": 1627,
+          "anchor": "scripts/main-agent-orchestration.ts:1627",
           "text": "selectedAuthoringLane?: 'author-confirmation-ready-source';"
         },
         {
-          "line": 5834,
-          "anchor": "scripts/main-agent-orchestration.ts:5834",
+          "line": 5833,
+          "anchor": "scripts/main-agent-orchestration.ts:5833",
           "text": "selectedAuthoringLane?: 'author-confirmation-ready-source';"
         },
         {
-          "line": 5853,
-          "anchor": "scripts/main-agent-orchestration.ts:5853",
+          "line": 5852,
+          "anchor": "scripts/main-agent-orchestration.ts:5852",
           "text": "selectedAuthoringLane: input.selectedAuthoringLane ?? 'author-confirmation-ready-source',"
         },
         {
-          "line": 8647,
-          "anchor": "scripts/main-agent-orchestration.ts:8647",
+          "line": 8646,
+          "anchor": "scripts/main-agent-orchestration.ts:8646",
           "text": "'author-confirmation-ready-source',"
         },
         {
-          "line": 11684,
-          "anchor": "scripts/main-agent-orchestration.ts:11684",
+          "line": 11683,
+          "anchor": "scripts/main-agent-orchestration.ts:11683",
           "text": "action === 'author-confirmation-ready-source' ||"
         },
         {
-          "line": 11700,
-          "anchor": "scripts/main-agent-orchestration.ts:11700",
+          "line": 11699,
+          "anchor": "scripts/main-agent-orchestration.ts:11699",
           "text": "action === 'author-confirmation-ready-source' ||"
         },
         {
-          "line": 11702,
-          "anchor": "scripts/main-agent-orchestration.ts:11702",
+          "line": 11701,
+          "anchor": "scripts/main-agent-orchestration.ts:11701",
           "text": "? 'author-confirmation-ready-source'"
         }
       ]
@@ -2198,18 +2198,18 @@
       "replayStatus": "blocked_until_package_implementation_exists",
       "sourceLineAnchors": [
         {
-          "line": 8648,
-          "anchor": "scripts/main-agent-orchestration.ts:8648",
+          "line": 8647,
+          "anchor": "scripts/main-agent-orchestration.ts:8647",
           "text": "'author_confirmation_ready_source',"
         },
         {
-          "line": 11685,
-          "anchor": "scripts/main-agent-orchestration.ts:11685",
+          "line": 11684,
+          "anchor": "scripts/main-agent-orchestration.ts:11684",
           "text": "action === 'author_confirmation_ready_source'"
         },
         {
-          "line": 11701,
-          "anchor": "scripts/main-agent-orchestration.ts:11701",
+          "line": 11700,
+          "anchor": "scripts/main-agent-orchestration.ts:11700",
           "text": "action === 'author_confirmation_ready_source'"
         }
       ]
@@ -2226,13 +2226,13 @@
       "replayStatus": "blocked_until_package_implementation_exists",
       "sourceLineAnchors": [
         {
-          "line": 8649,
-          "anchor": "scripts/main-agent-orchestration.ts:8649",
+          "line": 8648,
+          "anchor": "scripts/main-agent-orchestration.ts:8648",
           "text": "'authoring-repair',"
         },
         {
-          "line": 11713,
-          "anchor": "scripts/main-agent-orchestration.ts:11713",
+          "line": 11712,
+          "anchor": "scripts/main-agent-orchestration.ts:11712",
           "text": "if (action === 'authoring-repair' || action === 'authoring_repair') {"
         }
       ]
@@ -2249,23 +2249,23 @@
       "replayStatus": "blocked_until_package_implementation_exists",
       "sourceLineAnchors": [
         {
-          "line": 3483,
-          "anchor": "scripts/main-agent-orchestration.ts:3483",
+          "line": 3482,
+          "anchor": "scripts/main-agent-orchestration.ts:3482",
           "text": "lane: 'authoring_repair',"
         },
         {
-          "line": 4919,
-          "anchor": "scripts/main-agent-orchestration.ts:4919",
+          "line": 4918,
+          "anchor": "scripts/main-agent-orchestration.ts:4918",
           "text": "'authoring_repair'"
         },
         {
-          "line": 8650,
-          "anchor": "scripts/main-agent-orchestration.ts:8650",
+          "line": 8649,
+          "anchor": "scripts/main-agent-orchestration.ts:8649",
           "text": "'authoring_repair',"
         },
         {
-          "line": 11713,
-          "anchor": "scripts/main-agent-orchestration.ts:11713",
+          "line": 11712,
+          "anchor": "scripts/main-agent-orchestration.ts:11712",
           "text": "if (action === 'authoring-repair' || action === 'authoring_repair') {"
         }
       ]
@@ -2282,18 +2282,18 @@
       "replayStatus": "blocked_until_package_implementation_exists",
       "sourceLineAnchors": [
         {
-          "line": 8640,
-          "anchor": "scripts/main-agent-orchestration.ts:8640",
+          "line": 8639,
+          "anchor": "scripts/main-agent-orchestration.ts:8639",
           "text": "'post-close-defect-intake',"
         },
         {
-          "line": 10442,
-          "anchor": "scripts/main-agent-orchestration.ts:10442",
+          "line": 10441,
+          "anchor": "scripts/main-agent-orchestration.ts:10441",
           "text": "action: 'post-close-defect-intake',"
         },
         {
-          "line": 11734,
-          "anchor": "scripts/main-agent-orchestration.ts:11734",
+          "line": 11733,
+          "anchor": "scripts/main-agent-orchestration.ts:11733",
           "text": "if (action === 'post-close-defect-intake') {"
         }
       ]
@@ -2310,13 +2310,13 @@
       "replayStatus": "blocked_until_package_implementation_exists",
       "sourceLineAnchors": [
         {
-          "line": 8651,
-          "anchor": "scripts/main-agent-orchestration.ts:8651",
+          "line": 8650,
+          "anchor": "scripts/main-agent-orchestration.ts:8650",
           "text": "'controlled-readiness-audit',"
         },
         {
-          "line": 11909,
-          "anchor": "scripts/main-agent-orchestration.ts:11909",
+          "line": 11908,
+          "anchor": "scripts/main-agent-orchestration.ts:11908",
           "text": "if (action !== 'controlled-readiness-audit') {"
         }
       ]

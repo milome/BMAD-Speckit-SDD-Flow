@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { createRequire } from 'node:module';
 import * as crypto from 'node:crypto';
 import * as yaml from 'js-yaml';
 import type {
@@ -109,6 +110,8 @@ import {
   requestSemanticReconfirmation,
 } from './reconfirmation-runtime';
 import { runNativeGoalInvocation as runNativeGoalInvocationUntyped } from '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js';
+
+const requireCommonJs = createRequire(__filename);
 
 export type NativeGoalSpawnSyncFn = (
   command: string,

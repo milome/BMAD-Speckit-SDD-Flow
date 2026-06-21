@@ -2,7 +2,7 @@
   "schemaVersion": "main-agent-runtime-migration-wave-4-1-owner-package-source-manifest/v1",
   "waveId": "main-agent-runtime-migration-wave-4.1",
   "ownerTaskId": "G004",
-  "generatedAt": "2026-06-20T09:37:57.306Z",
+  "generatedAt": "2026-06-21T01:38:46.564Z",
   "selectedRowCount": 91,
   "skippedRowCount": 0,
   "targetRoot": "packages/bmad-speckit/src/main-agent/source-authority",
@@ -694,8 +694,8 @@
       "sourceSha256": "sha256:e6f700d0586a90dac234f2c958383338c66451057adb60366396f4dd77688256",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts",
-      "bytes": 105634,
-      "sha256": "sha256:e6f700d0586a90dac234f2c958383338c66451057adb60366396f4dd77688256"
+      "bytes": 105716,
+      "sha256": "sha256:ea46c963b70a6b3f5d3938bdf5cce619b596d33c653b8be846d977f28d5a5948"
     },
     {
       "source": "scripts/analytics-sft-extract.ts",
@@ -782,8 +782,8 @@
       "sourceSha256": "sha256:61aa383cb0484f18b549af8eeeaa75d7342e17714b43f2efc6ec2d1d0bb9f9fc",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-runtime-worker.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-runtime-worker.ts",
-      "bytes": 32066,
-      "sha256": "sha256:61aa383cb0484f18b549af8eeeaa75d7342e17714b43f2efc6ec2d1d0bb9f9fc"
+      "bytes": 32156,
+      "sha256": "sha256:4a9de9488292f2e78ebb61625ee6907271aa61e54cf3bb405d0fc4704951003f"
     },
     {
       "source": "scripts/check-sprint-ready.ps1",
@@ -846,8 +846,8 @@
       "sourceSha256": "sha256:9bbc90575e6f704d7fbdd9b30de149f6510122079c65f5af61fc6e34b9df69cb",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/e2e-dual-host-journey-runner.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/e2e-dual-host-journey-runner.ts",
-      "bytes": 381,
-      "sha256": "sha256:9bbc90575e6f704d7fbdd9b30de149f6510122079c65f5af61fc6e34b9df69cb"
+      "bytes": 374,
+      "sha256": "sha256:8e92edb5afc14eee0220240852348fb61972dd03203a02022e3e5392e2b5eac3"
     },
     {
       "source": "scripts/e2e-host-matrix-journey-runner.ts",
@@ -998,8 +998,8 @@
       "sourceSha256": "sha256:0bf8fe1ef17eb22b976abadc012ec548bfc92586158343d8ab98b142fe5a5823",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-runner.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-runner.ts",
-      "bytes": 57020,
-      "sha256": "sha256:0bf8fe1ef17eb22b976abadc012ec548bfc92586158343d8ab98b142fe5a5823"
+      "bytes": 57108,
+      "sha256": "sha256:1116f473764f37084a15f686d449e4d01aa5fe92c3c76fc07883a9a86a1bdaa2"
     },
     {
       "source": "scripts/governance-runtime-queue.ts",
@@ -1310,8 +1310,8 @@
       "sourceSha256": "sha256:60d66b0d12961f9d4a7fe0655ce752bd874b66a97820d4a28386393e6b5c904d",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-dual-host-pr-orchestrator.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-dual-host-pr-orchestrator.ts",
-      "bytes": 381,
-      "sha256": "sha256:60d66b0d12961f9d4a7fe0655ce752bd874b66a97820d4a28386393e6b5c904d"
+      "bytes": 413,
+      "sha256": "sha256:d2dbf1e5809c0f5335415f9542b174fae1c166a6070980f606b627ab330637a0"
     },
     {
       "source": "scripts/main-agent-entryflow-traceability-check.ts",
@@ -1363,11 +1363,11 @@
     },
     {
       "source": "scripts/main-agent-orchestration.ts",
-      "sourceSha256": "sha256:d5414b5d806ad3c12b751a1f7d3013c518024cc13c07f29a38970cca190f82d5",
+      "sourceSha256": "sha256:8471f99abfb0c369d2d92eacc432f635184c26d05beb0db6b4f2ae564b6f86ff",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
-      "bytes": 440347,
-      "sha256": "sha256:d5414b5d806ad3c12b751a1f7d3013c518024cc13c07f29a38970cca190f82d5"
+      "bytes": 440388,
+      "sha256": "sha256:8471f99abfb0c369d2d92eacc432f635184c26d05beb0db6b4f2ae564b6f86ff"
     },
     {
       "source": "scripts/main-agent-production-loop-ready-check.ts",
@@ -1382,8 +1382,8 @@
       "sourceSha256": "sha256:96ab514a85d8f040bc23da61fcee4da4976b1a73943e1a79d054248b4a219465",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-quality-gate.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-quality-gate.ts",
-      "bytes": 11906,
-      "sha256": "sha256:c1ee153cbc3841f57f81cd6f2ae6a0ccafeaeb472deb34859dd305950a0c2e5d"
+      "bytes": 11909,
+      "sha256": "sha256:acddb7bb2420e0701966fa3f948e4c7dcbce9f686fcd9465dce621658647e521"
     },
     {
       "source": "scripts/main-agent-release-gate.ts",
@@ -1430,8 +1430,8 @@
       "sourceSha256": "sha256:6c1c219eb898cb04f1f83597bf95cef70a6806e04ca6f0c38bc263d78434362c",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-unified-ingress.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-unified-ingress.ts",
-      "bytes": 39122,
-      "sha256": "sha256:6c1c219eb898cb04f1f83597bf95cef70a6806e04ca6f0c38bc263d78434362c"
+      "bytes": 39222,
+      "sha256": "sha256:78d9c14f15fb7628cc8590aa4e46f502ca0cdbbfc27b7aa395d83710cfc1b87c"
     },
     {
       "source": "scripts/mcp/consumer/install-consumer-mcp.ps1",
@@ -1862,8 +1862,8 @@
       "sourceSha256": "sha256:de2d80f9ec270fd97359249007b60e0c2154e4399dc9922aa470f9457301b69e",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-hooks-no-ts-node.js",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-hooks-no-ts-node.js",
-      "bytes": 4416,
-      "sha256": "sha256:0d2a491aad6b392359d47a95e29dc68bf6cce915b10d03cbdb74057db9b7e7c6"
+      "bytes": 4332,
+      "sha256": "sha256:e56bdbaf9853aff6cee6a9493cadbaa56eea1bec96f783724333c4d0e6dd789a"
     },
     {
       "source": "scripts/write-runtime-policy-snapshot-and-recovery-context.cjs",
@@ -1948,13 +1948,13 @@
         "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ai-tdd-contract-gate.js"
       ],
       "runtimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ai-tdd-contract-gate.js",
-      "packageBytes": 105634,
-      "packageLoc": 2831,
-      "packageSha256": "sha256:e6f700d0586a90dac234f2c958383338c66451057adb60366396f4dd77688256",
+      "packageBytes": 105716,
+      "packageLoc": 2833,
+      "packageSha256": "sha256:ea46c963b70a6b3f5d3938bdf5cce619b596d33c653b8be846d977f28d5a5948",
       "runtimeExists": true,
-      "runtimeBytes": 105451,
-      "runtimeLoc": 2367,
-      "runtimeSha256": "sha256:1641f9f1a6a82ca94d6532de51896fd3ee0442c50f5e46947583079db9e92062",
+      "runtimeBytes": 105565,
+      "runtimeLoc": 2369,
+      "runtimeSha256": "sha256:069c7cc115a7fa2688070a2c34881f5faec37333ff49cadd56f8636dfdb1966e",
       "sourceKindParityProblems": [],
       "sizeDeltaDecision": "passed_within_strict_threshold"
     },
@@ -1977,9 +1977,9 @@
       "packageLoc": 43,
       "packageSha256": "sha256:3a47b630c960fb4f4613e98d51f723e0600610bcc2ff3d1f1d24a6b8cc788a9d",
       "runtimeExists": true,
-      "runtimeBytes": 2831,
+      "runtimeBytes": 2841,
       "runtimeLoc": 75,
-      "runtimeSha256": "sha256:4b8bfa52c0389caae6e6d47ba61699d3b3ff3eafc988f3b6356060e13055c4ad",
+      "runtimeSha256": "sha256:422d2a7205d766e047eccbb69c4d4a065061c6a35b14c4ff990832686ddd02b1",
       "sourceKindParityProblems": [],
       "sizeDeltaDecision": "passed_within_strict_threshold"
     },
@@ -2123,13 +2123,13 @@
         "packages/bmad-speckit/dist/main-agent/source-authority/scripts/bmad-runtime-worker.js"
       ],
       "runtimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/bmad-runtime-worker.js",
-      "packageBytes": 32066,
-      "packageLoc": 858,
-      "packageSha256": "sha256:61aa383cb0484f18b549af8eeeaa75d7342e17714b43f2efc6ec2d1d0bb9f9fc",
+      "packageBytes": 32156,
+      "packageLoc": 861,
+      "packageSha256": "sha256:4a9de9488292f2e78ebb61625ee6907271aa61e54cf3bb405d0fc4704951003f",
       "runtimeExists": true,
-      "runtimeBytes": 30629,
-      "runtimeLoc": 616,
-      "runtimeSha256": "sha256:79d21b11ab32afe4fe4877bfdb3c9da11bf317e79f557073143c901bb34ec3f6",
+      "runtimeBytes": 30748,
+      "runtimeLoc": 618,
+      "runtimeSha256": "sha256:c03ef56ddf42b55930bfdd80df70492388c5a1afa03fb3e890be2378e2ae8c5f",
       "sourceKindParityProblems": [],
       "sizeDeltaDecision": "passed_within_strict_threshold"
     },
@@ -2202,9 +2202,9 @@
       "packageLoc": 257,
       "packageSha256": "sha256:ed5421bf3af405f0e4e01ed33b7b5742d36e1c557e050882373ed2e3002620e6",
       "runtimeExists": true,
-      "runtimeBytes": 9626,
+      "runtimeBytes": 9646,
       "runtimeLoc": 220,
-      "runtimeSha256": "sha256:2f0345cb97581e77f7387b0c5a59dbfc75a1341ca2dfaa99be2511e2b2584929",
+      "runtimeSha256": "sha256:ddac9e3523dbf83a72c62ed5f2af26b723be137f7089d865139ccee38214326b",
       "sourceKindParityProblems": [],
       "sizeDeltaDecision": "passed_within_strict_threshold"
     },
@@ -2223,13 +2223,13 @@
         "packages/bmad-speckit/dist/main-agent/source-authority/scripts/e2e-dual-host-journey-runner.js"
       ],
       "runtimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/e2e-dual-host-journey-runner.js",
-      "packageBytes": 381,
+      "packageBytes": 374,
       "packageLoc": 8,
-      "packageSha256": "sha256:9bbc90575e6f704d7fbdd9b30de149f6510122079c65f5af61fc6e34b9df69cb",
+      "packageSha256": "sha256:8e92edb5afc14eee0220240852348fb61972dd03203a02022e3e5392e2b5eac3",
       "runtimeExists": true,
-      "runtimeBytes": 653,
+      "runtimeBytes": 689,
       "runtimeLoc": 11,
-      "runtimeSha256": "sha256:62a13b4a6fa141878f924b21d6a038de1dfc064ddbe16c061a0bbf7d51797188",
+      "runtimeSha256": "sha256:12d1908f58097fc3819ea5edaa02f4331355699829178f4434f4c9c727c624d0",
       "sourceKindParityProblems": [],
       "sizeDeltaDecision": "passed_within_strict_threshold"
     },
@@ -2973,13 +2973,13 @@
         "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-dual-host-pr-orchestrator.js"
       ],
       "runtimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-dual-host-pr-orchestrator.js",
-      "packageBytes": 381,
-      "packageLoc": 11,
-      "packageSha256": "sha256:60d66b0d12961f9d4a7fe0655ce752bd874b66a97820d4a28386393e6b5c904d",
+      "packageBytes": 413,
+      "packageLoc": 12,
+      "packageSha256": "sha256:d2dbf1e5809c0f5335415f9542b174fae1c166a6070980f606b627ab330637a0",
       "runtimeExists": true,
-      "runtimeBytes": 813,
+      "runtimeBytes": 887,
       "runtimeLoc": 12,
-      "runtimeSha256": "sha256:927908c45b82f01aebce61aad546c8217b4b5b1e8b02a9ef270a089f2d6d0401",
+      "runtimeSha256": "sha256:61a6c2be84e8ae67cf66a899a337c5942eae6ac8769269d334bfc7ca59751734",
       "sourceKindParityProblems": [],
       "sizeDeltaDecision": "passed_within_strict_threshold"
     },
@@ -3148,13 +3148,13 @@
         "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-quality-gate.js"
       ],
       "runtimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-quality-gate.js",
-      "packageBytes": 11906,
+      "packageBytes": 11909,
       "packageLoc": 348,
-      "packageSha256": "sha256:c1ee153cbc3841f57f81cd6f2ae6a0ccafeaeb472deb34859dd305950a0c2e5d",
+      "packageSha256": "sha256:acddb7bb2420e0701966fa3f948e4c7dcbce9f686fcd9465dce621658647e521",
       "runtimeExists": true,
-      "runtimeBytes": 11563,
+      "runtimeBytes": 11566,
       "runtimeLoc": 264,
-      "runtimeSha256": "sha256:58f26c910a247d1afd0a2682971e370ea823df8e3c97f94c66ef3486209de5c7",
+      "runtimeSha256": "sha256:842da6ecace9cc677dfc614d201f850dfdca3c063c33c3a94257b2ee7707490a",
       "sourceKindParityProblems": [],
       "sizeDeltaDecision": "passed_within_strict_threshold"
     },
@@ -3227,9 +3227,9 @@
       "packageLoc": 405,
       "packageSha256": "sha256:711fd8f44ae95a60475bc822ee83dbe030dfdd274fe68d5437295b9fb66338b6",
       "runtimeExists": true,
-      "runtimeBytes": 16615,
+      "runtimeBytes": 16620,
       "runtimeLoc": 393,
-      "runtimeSha256": "sha256:1562517af698046ee4db6cf7471991fcc9e4c524837e40a466ced60672de32ab",
+      "runtimeSha256": "sha256:dd31cb43fea29193ba23dee5f502e7b693380528a52ea64df56b05ac3c758e45",
       "sourceKindParityProblems": [],
       "sizeDeltaDecision": "passed_within_strict_threshold"
     },
@@ -3298,13 +3298,13 @@
         "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-unified-ingress.js"
       ],
       "runtimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-unified-ingress.js",
-      "packageBytes": 39122,
-      "packageLoc": 1048,
-      "packageSha256": "sha256:6c1c219eb898cb04f1f83597bf95cef70a6806e04ca6f0c38bc263d78434362c",
+      "packageBytes": 39222,
+      "packageLoc": 1051,
+      "packageSha256": "sha256:78d9c14f15fb7628cc8590aa4e46f502ca0cdbbfc27b7aa395d83710cfc1b87c",
       "runtimeExists": true,
-      "runtimeBytes": 35947,
-      "runtimeLoc": 792,
-      "runtimeSha256": "sha256:aef15ea37ed2257e850d8e08c146fa4772e9bc34efc982194a28dc14feee22b3",
+      "runtimeBytes": 36076,
+      "runtimeLoc": 794,
+      "runtimeSha256": "sha256:3b09952997a8297073c2020b7b8254f7b5207841d267562ed613287eb6e9144e",
       "sourceKindParityProblems": [],
       "sizeDeltaDecision": "passed_within_strict_threshold"
     },
@@ -3527,9 +3527,9 @@
       "packageLoc": 168,
       "packageSha256": "sha256:8cfa46953e6c5b44ab472f6a548d0a8a4a282cbc7a45904ec1d1b9ff9e4c6ea1",
       "runtimeExists": true,
-      "runtimeBytes": 7269,
+      "runtimeBytes": 7279,
       "runtimeLoc": 160,
-      "runtimeSha256": "sha256:89374e03b24890c2a1795d2fcd9d934ac86875d87786edb7970254764e99744b",
+      "runtimeSha256": "sha256:67d6bd1c6c0ae5ed18a19673b0c5639bca8bbeb85f0a5ba9b4a1d89068f436cd",
       "sourceKindParityProblems": [],
       "sizeDeltaDecision": "passed_within_strict_threshold"
     },
@@ -3802,9 +3802,9 @@
       "packageLoc": 640,
       "packageSha256": "sha256:cfa6236b33f9c1e7a2e7fec6985c9f01f94db9e7e3ec6733b868ce9f7a3c8981",
       "runtimeExists": true,
-      "runtimeBytes": 17460,
+      "runtimeBytes": 17466,
       "runtimeLoc": 418,
-      "runtimeSha256": "sha256:a4fd5bd5ee19259617139b794de7ac7657883977f506ae8abd30c2e219621097",
+      "runtimeSha256": "sha256:1006506e451e63d13ff0a190cd234d716b4eb9a8b9e7911697e2f69e229ceb68",
       "sourceKindParityProblems": [],
       "sizeDeltaDecision": "passed_within_strict_threshold"
     },
@@ -3852,9 +3852,9 @@
       "packageLoc": 73,
       "packageSha256": "sha256:768d484a5ed4061cc313b8243fd0a581b0699f8508726f89ae787bf6ee088b32",
       "runtimeExists": true,
-      "runtimeBytes": 3601,
+      "runtimeBytes": 3611,
       "runtimeLoc": 102,
-      "runtimeSha256": "sha256:9a568ddb6dff69b349a685471b0f6ec1aa04c9f379568f8a5d369a2f0145bb26",
+      "runtimeSha256": "sha256:2d2bb1087753bca2ac0920c653fc869b93a4fa9f0c8c3cffe844b67221cf983d",
       "sourceKindParityProblems": [],
       "sizeDeltaDecision": "passed_within_strict_threshold"
     },
@@ -4098,13 +4098,13 @@
         "packages/bmad-speckit/dist/main-agent/source-authority/scripts/verify-hooks-no-ts-node.js"
       ],
       "runtimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/verify-hooks-no-ts-node.js",
-      "packageBytes": 4416,
-      "packageLoc": 183,
-      "packageSha256": "sha256:0d2a491aad6b392359d47a95e29dc68bf6cce915b10d03cbdb74057db9b7e7c6",
+      "packageBytes": 4332,
+      "packageLoc": 177,
+      "packageSha256": "sha256:e56bdbaf9853aff6cee6a9493cadbaa56eea1bec96f783724333c4d0e6dd789a",
       "runtimeExists": true,
-      "runtimeBytes": 4416,
-      "runtimeLoc": 183,
-      "runtimeSha256": "sha256:0d2a491aad6b392359d47a95e29dc68bf6cce915b10d03cbdb74057db9b7e7c6",
+      "runtimeBytes": 4332,
+      "runtimeLoc": 177,
+      "runtimeSha256": "sha256:e56bdbaf9853aff6cee6a9493cadbaa56eea1bec96f783724333c4d0e6dd789a",
       "sourceKindParityProblems": [],
       "sizeDeltaDecision": "passed_within_strict_threshold"
     },
@@ -4152,9 +4152,9 @@
       "packageLoc": 279,
       "packageSha256": "sha256:633086a9682413dbf175ec5ec6c75adf79db434a8520886f6e6d2d2837da6120",
       "runtimeExists": true,
-      "runtimeBytes": 10761,
+      "runtimeBytes": 10766,
       "runtimeLoc": 265,
-      "runtimeSha256": "sha256:36ea035fd50537fc55fd0251119a3359c896420c0fc5264a90b197310b5cf90d",
+      "runtimeSha256": "sha256:1f48c2390611244e01095fd5952d52430467e682362db2a3556294459d603d52",
       "sourceKindParityProblems": [],
       "sizeDeltaDecision": "passed_within_strict_threshold"
     }

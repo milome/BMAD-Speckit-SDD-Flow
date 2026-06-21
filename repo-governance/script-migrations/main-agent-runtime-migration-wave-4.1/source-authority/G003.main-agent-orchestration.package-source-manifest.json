@@ -1,6 +1,6 @@
 {
   "schemaVersion": "main-agent-runtime-migration-wave-4-1-g003-package-source-authority/v1",
-  "generatedAt": "2026-06-20T04:57:19.088Z",
+  "generatedAt": "2026-06-21T01:38:04.902Z",
   "entrySource": "scripts/main-agent-orchestration.ts",
   "entryTarget": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-orchestration.js",
   "entrySourceAuthorityTarget": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
@@ -456,8 +456,8 @@
       "sourceSha256": "sha256:e6f700d0586a90dac234f2c958383338c66451057adb60366396f4dd77688256",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts",
-      "bytes": 105634,
-      "sha256": "sha256:e6f700d0586a90dac234f2c958383338c66451057adb60366396f4dd77688256"
+      "bytes": 105716,
+      "sha256": "sha256:ea46c963b70a6b3f5d3938bdf5cce619b596d33c653b8be846d977f28d5a5948"
     },
     {
       "source": "scripts/architecture-confirmation-hash-recipe.ts",
@@ -616,8 +616,8 @@
       "sourceSha256": "sha256:0bf8fe1ef17eb22b976abadc012ec548bfc92586158343d8ab98b142fe5a5823",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-runner.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-runner.ts",
-      "bytes": 57020,
-      "sha256": "sha256:0bf8fe1ef17eb22b976abadc012ec548bfc92586158343d8ab98b142fe5a5823"
+      "bytes": 57108,
+      "sha256": "sha256:1116f473764f37084a15f686d449e4d01aa5fe92c3c76fc07883a9a86a1bdaa2"
     },
     {
       "source": "scripts/governance-transport-envelope.ts",
@@ -709,11 +709,11 @@
     },
     {
       "source": "scripts/main-agent-orchestration.ts",
-      "sourceSha256": "sha256:d5414b5d806ad3c12b751a1f7d3013c518024cc13c07f29a38970cca190f82d5",
+      "sourceSha256": "sha256:8471f99abfb0c369d2d92eacc432f635184c26d05beb0db6b4f2ae564b6f86ff",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
-      "bytes": 440347,
-      "sha256": "sha256:d5414b5d806ad3c12b751a1f7d3013c518024cc13c07f29a38970cca190f82d5"
+      "bytes": 440388,
+      "sha256": "sha256:8471f99abfb0c369d2d92eacc432f635184c26d05beb0db6b4f2ae564b6f86ff"
     },
     {
       "source": "scripts/model-governance-hint-resolver.ts",
@@ -816,8 +816,8 @@
       "sourceSha256": "sha256:e884f69f816bf23bf14387d47e7306ef88ff7e562d2ef484cafefea0a9c5830f",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirement-record-live-schema-gate.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirement-record-live-schema-gate.ts",
-      "bytes": 2948,
-      "sha256": "sha256:e884f69f816bf23bf14387d47e7306ef88ff7e562d2ef484cafefea0a9c5830f"
+      "bytes": 3210,
+      "sha256": "sha256:fc2ddcaf44a0d269d131bb7d63057f3e9a2fb80d049dc0d1e8024da174ce79bb"
     },
     {
       "source": "scripts/resolve-active-requirement.ts",
@@ -1442,7 +1442,7 @@
     },
     {
       "source": "scripts/main-agent-orchestration.ts",
-      "sourceSha256": "sha256:d5414b5d806ad3c12b751a1f7d3013c518024cc13c07f29a38970cca190f82d5",
+      "sourceSha256": "sha256:8471f99abfb0c369d2d92eacc432f635184c26d05beb0db6b4f2ae564b6f86ff",
       "target": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-orchestration.js"
     },
     {

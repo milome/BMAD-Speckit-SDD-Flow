@@ -255,6 +255,12 @@ function sourceTargetIssues(entry) {
   const issues = [];
   for (const targetPath of entry.targetPaths || []) {
     const normalizedTarget = String(targetPath || '').replace(/\\/g, '/');
+    if (normalizedTarget.includes('compiled/main-agent-orchestration.cjs')) {
+      issues.push({
+        kind: 'compiled orchestration fallback',
+        targetPath: normalizedTarget,
+      });
+    }
     if (
       !normalizedTarget.startsWith('packages/') &&
       !normalizedTarget.startsWith('scripts/')
@@ -269,10 +275,7 @@ function sourceTargetIssues(entry) {
         targetPath: normalizedTarget,
       });
     }
-    if (
-      normalizedTarget.includes('compiled/main-agent-orchestration.cjs') ||
-      source.includes('main-agent-orchestration.cjs')
-    ) {
+    if (source.includes('main-agent-orchestration.cjs')) {
       issues.push({
         kind: 'compiled orchestration fallback',
         targetPath: normalizedTarget,

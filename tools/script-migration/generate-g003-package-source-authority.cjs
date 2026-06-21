@@ -129,7 +129,10 @@ function generate(dryRun = false) {
       target,
     });
     const sourceAuthorityTarget = sourceAuthorityPathForSource(source);
-    const sourceText = fs.readFileSync(repoPath(source), 'utf8');
+    const sourceText =
+      source === ENTRY_SOURCE || !fs.existsSync(repoPath(sourceAuthorityTarget))
+        ? fs.readFileSync(repoPath(source), 'utf8')
+        : fs.readFileSync(repoPath(sourceAuthorityTarget), 'utf8');
     copiedSourceFiles.push({
       source,
       sourceSha256: sha256File(source),

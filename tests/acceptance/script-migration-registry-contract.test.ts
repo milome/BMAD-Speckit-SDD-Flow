@@ -289,7 +289,7 @@ describe('script migration registry contract', () => {
           originalClassBeforeMigration: 'consumer_runtime_reachable',
           migrationStrategy: 'package_runtime_module',
           migrationStatus: 'validated',
-          targetPaths: ['packages/bmad-speckit/src/main-agent/actions/full-orchestration.js'],
+          targetPaths: ['packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs'],
           publicCommandsBeforeMigration: ['source repository scripts/main-agent-orchestration.ts'],
           publicCommandsAfterMigration: ['bmad-speckit main-agent run-loop'],
           callerSwitchStatus: 'switched',
