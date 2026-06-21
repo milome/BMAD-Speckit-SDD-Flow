@@ -94,11 +94,11 @@ jobs:
 
       - name: Build release artifacts
         run: |
-          npm run build:main-agent-dist
           npm run build:scoring
           npm run build:runtime-context
           npm run build:runtime-emit
           npm run build:ralph-method
+          npm run build:main-agent-dist
 
       - name: Lint
         run: npm run lint
