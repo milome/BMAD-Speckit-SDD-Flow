@@ -1,10 +1,133 @@
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
+import os from 'node:os';
 import path from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it } from 'vitest';
 
-const ROOT = process.cwd();
+const LIVE_ROOT = process.cwd();
+const WAVE_DIR_RELATIVE = 'repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1';
+const STRICT_BLOB_RESTORE_PATHS = [
+  'repo-governance/script-migrations/main-agent-runtime-migration-wave-4.0-rebaseline/source-inventory.json',
+  'repo-governance/script-migrations/main-agent-runtime-migration-wave-4.0-rebaseline/migration-queue.json',
+  'repo-governance/script-migrations/main-agent-runtime-migration-wave-4.0-rebaseline/package-source-parity-baseline.json',
+  'repo-governance/script-migration-registry.yaml',
+];
+const STRICT_LIVE_RESTORE_PATHS = [
+  'scripts/main-agent-orchestration.ts',
+  `${WAVE_DIR_RELATIVE}/install-matrix/no-save.json`,
+  `${WAVE_DIR_RELATIVE}/install-matrix/save-dev.json`,
+  `${WAVE_DIR_RELATIVE}/install-matrix/npx-package.json`,
+  `${WAVE_DIR_RELATIVE}/install-matrix/init-sync-consumer.json`,
+];
+
+function runSetupCommand(command: string, args: string[], cwd: string) {
+  const result = spawnSync(command, args, {
+    cwd,
+    encoding: 'utf8',
+    shell: process.platform === 'win32',
+  });
+  if (result.status !== 0) {
+    throw new Error(
+      [
+        `failed to prepare isolated Wave 4.1 validation tree: ${command} ${args.join(' ')}`,
+        `cwd=${cwd}`,
+        result.stdout,
+        result.stderr,
+      ]
+        .filter(Boolean)
+        .join('\n')
+    );
+  }
+  return result;
+}
+
+function linkNodeModules(targetRoot: string) {
+  const source = path.join(LIVE_ROOT, 'node_modules');
+  if (!fs.existsSync(source)) return;
+  const target = path.join(targetRoot, 'node_modules');
+  if (fs.existsSync(target)) return;
+  fs.symlinkSync(source, target, process.platform === 'win32' ? 'junction' : 'dir');
+}
+
+function copyGeneratedBuildInput(relativePath: string, targetRoot: string) {
+  const source = path.join(LIVE_ROOT, relativePath);
+  if (!fs.existsSync(source)) return;
+  const target = path.join(targetRoot, relativePath);
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.cpSync(source, target, { recursive: true, force: true });
+}
+
+function restoreHeadBlob(relativePath: string, targetRoot: string) {
+  const normalizedPath = relativePath.replace(/\\/g, '/');
+  const result = spawnSync('git', ['show', `HEAD:${normalizedPath}`], {
+    cwd: LIVE_ROOT,
+    encoding: 'buffer',
+  });
+  if (result.status !== 0) {
+    throw new Error(
+      [
+        `failed to restore HEAD blob for isolated Wave 4.1 validation: ${normalizedPath}`,
+        result.stderr.toString('utf8'),
+      ]
+        .filter(Boolean)
+        .join('\n')
+    );
+  }
+  const target = path.join(targetRoot, ...normalizedPath.split('/'));
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.writeFileSync(target, result.stdout);
+}
+
+function restoreLiveCheckoutFile(relativePath: string, targetRoot: string) {
+  const normalizedPath = relativePath.replace(/\\/g, '/');
+  const source = path.join(LIVE_ROOT, ...normalizedPath.split('/'));
+  if (!fs.existsSync(source) || !fs.statSync(source).isFile()) {
+    throw new Error(`failed to restore live checkout file for isolated Wave 4.1 validation: ${normalizedPath}`);
+  }
+  const target = path.join(targetRoot, ...normalizedPath.split('/'));
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.copyFileSync(source, target);
+}
+
+function restoreStrictValidationBlobs(targetRoot: string) {
+  const ledgerPath = path.join(targetRoot, WAVE_DIR_RELATIVE, 'migration-ledger.json');
+  const ledger = JSON.parse(fs.readFileSync(ledgerPath, 'utf8'));
+  const livePaths = new Set(STRICT_LIVE_RESTORE_PATHS);
+  for (const strictPath of STRICT_BLOB_RESTORE_PATHS) restoreHeadBlob(strictPath, targetRoot);
+  for (const entry of ledger.entries || []) {
+    for (const sourcePath of [...(entry.packageImplementationSet || []), ...(entry.sourceAuthorityPaths || [])]) {
+      livePaths.add(String(sourcePath).replace(/\\/g, '/'));
+    }
+  }
+  for (const livePath of livePaths) restoreLiveCheckoutFile(livePath, targetRoot);
+}
+
+function prepareValidationRoot() {
+  const tempParent = fs.mkdtempSync(path.join(os.tmpdir(), 'wave-4-1-contract-'));
+  const targetRoot = path.join(tempParent, 'repo');
+  fs.mkdirSync(targetRoot, { recursive: true });
+  const archivePath = path.join(tempParent, 'head.tar');
+  runSetupCommand('git', ['archive', '--format=tar', '-o', archivePath, 'HEAD'], LIVE_ROOT);
+  runSetupCommand('tar', ['-xf', archivePath, '-C', targetRoot], LIVE_ROOT);
+  fs.rmSync(archivePath, { force: true });
+  restoreStrictValidationBlobs(targetRoot);
+  linkNodeModules(targetRoot);
+  copyGeneratedBuildInput('.specify', targetRoot);
+  copyGeneratedBuildInput('_bmad-output/runtime/requirement-records/index.json', targetRoot);
+  copyGeneratedBuildInput(
+    '_bmad-output/runtime/requirement-records/REQ-CI-GOVERNANCE-MAPPING-FIXTURE/requirement-record.json',
+    targetRoot
+  );
+  runSetupCommand('npm', ['run', 'build:scoring'], targetRoot);
+  runSetupCommand('npm', ['run', 'build:runtime-context'], targetRoot);
+  runSetupCommand('npm', ['run', 'build:runtime-emit'], targetRoot);
+  runSetupCommand('npm', ['run', 'build:ralph-method'], targetRoot);
+  runSetupCommand('npm', ['run', 'build:main-agent-dist'], targetRoot);
+  return targetRoot;
+}
+
+const ROOT = prepareValidationRoot();
 const require = createRequire(import.meta.url);
 const WAVE_DIR = path.join(
   ROOT,
@@ -35,6 +158,10 @@ const {
   sourceAuthorityPathToDistRuntimePath,
   summarizeLedger,
 } = require(path.join(ROOT, 'tools', 'script-migration', 'main-agent-wave-4-1-utils.cjs'));
+
+afterAll(() => {
+  fs.rmSync(path.dirname(ROOT), { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+});
 
 function runNode(args: string[]) {
   return spawnSync('node', args, {
