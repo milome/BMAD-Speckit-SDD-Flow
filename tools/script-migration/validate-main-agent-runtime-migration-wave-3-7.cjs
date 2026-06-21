@@ -103,7 +103,10 @@ function registryValidatedScripts(registryText, ignoredWaveId) {
       const match = block.match(/originalPath:\s*'?([^'\r\n]+)'?/u);
       if (!match) continue;
       const originalPath = match[1].trim();
-      if (originalPath.startsWith('scripts/') && /validationStatus:\s*passed/u.test(block)) {
+      if (
+        originalPath.startsWith('scripts/') &&
+        (/validationStatus:\s*passed/u.test(block) || /migrationStatus:\s*blocked/u.test(block))
+      ) {
         validated.add(originalPath);
       }
     }
@@ -144,6 +147,24 @@ function expectArrayIncludes(errors, label, actual, expected) {
   if (!Array.isArray(actual) || !actual.includes(expected)) {
     errors.push(`${label} missing ${expected}`);
   }
+}
+
+function validateFunctionalParityBlockedEntry(entry, label, errors) {
+  expectEqual(errors, `${label} migrationStatus`, entry.migrationStatus, 'blocked');
+  expectEqual(errors, `${label} validationStatus`, entry.validationStatus, 'partial');
+  expectEqual(errors, `${label} implementationState`, entry.implementationState, 'blocked_pending_functional_parity');
+  if (!Array.isArray(entry.migrationBlockers) || entry.migrationBlockers.length === 0) {
+    errors.push(`${label} migrationBlockers must be non-empty`);
+  }
+  if (!entry.migrationBlockers?.every((blocker) => String(blocker).startsWith('report_only_package_runtime_action:'))) {
+    errors.push(`${label} migrationBlockers must identify report_only_package_runtime_action blockers`);
+  }
+  expectEqual(
+    errors,
+    `${label} parityEvidenceStatus`,
+    entry.parityEvidenceStatus,
+    'missing_functional_parity_evidence'
+  );
 }
 
 function validateManifest(errors) {
@@ -342,9 +363,9 @@ function validateRegistryWave(entries, errors) {
   }
   expectEqual(errors, 'registry wave contractPath', wave.contractPath, CONTRACT_PATH);
   expectEqual(errors, 'registry wave refinesWaveId', wave.refinesWaveId, REFINES_WAVE_ID);
-  expectEqual(errors, 'registry wave status', wave.status, 'validated');
+  expectEqual(errors, 'registry wave status', wave.status, 'blocked');
   if (!wave.startedAt) errors.push('registry wave startedAt must be set');
-  if (!wave.completedAt) errors.push('registry wave completedAt must be set');
+  if (wave.completedAt) errors.push('registry wave completedAt must not be set while blocked');
   if (!Array.isArray(wave.entries) || wave.entries.length !== entries.length) {
     errors.push(`registry wave must contain exactly ${entries.length} entries`);
     return;
@@ -365,9 +386,8 @@ function validateRegistryWave(entries, errors) {
       expected.originalClassBeforeMigration
     );
     expectEqual(errors, `${expected.entryId} migrationStrategy`, entry.migrationStrategy, 'package_runtime_module');
-    expectEqual(errors, `${expected.entryId} migrationStatus`, entry.migrationStatus, 'validated');
+    validateFunctionalParityBlockedEntry(entry, expected.entryId, errors);
     expectEqual(errors, `${expected.entryId} callerSwitchStatus`, entry.callerSwitchStatus, 'switched');
-    expectEqual(errors, `${expected.entryId} validationStatus`, entry.validationStatus, 'passed');
     expectEqual(errors, `${expected.entryId} oldPathDisposition`, entry.oldPathDisposition, 'retained_source_dev_only');
     expectEqual(errors, `${expected.entryId} deletionAllowed`, entry.deletionAllowed, false);
     expectEqual(errors, `${expected.entryId} deletionApprovalRef`, entry.deletionApprovalRef, null);

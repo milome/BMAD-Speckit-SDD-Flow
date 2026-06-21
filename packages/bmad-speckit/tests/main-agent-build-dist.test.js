@@ -161,6 +161,16 @@ function collectPackageSourceJavaScriptFiles(dir, base = dir) {
   return collected.sort();
 }
 
+function collectTrackedPackageSourceFiles() {
+  return execFileSync('git', ['ls-files', 'packages/bmad-speckit/src'], {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+  })
+    .split(/\r?\n/u)
+    .filter(Boolean)
+    .map((relativePath) => relativePath.replace(/\\/g, '/'));
+}
+
 function collectSourceAuthorityGeneratedJavaScriptTwins() {
   const sourceAuthorityScriptsRoot = path.join(
     PACKAGE_ROOT,
@@ -234,13 +244,20 @@ describe('main-agent dist build', () => {
 
     const allowed = new Set(manifest.allowedPaths);
     const actual = collectPackageSourceJavaScriptFiles(SRC_ROOT);
+    const tracked = new Set(collectTrackedPackageSourceFiles());
     const unexpected = actual.filter((relativePath) => !allowed.has(relativePath));
     const stale = manifest.allowedPaths.filter(
       (relativePath) => !fs.existsSync(path.join(REPO_ROOT, relativePath))
     );
+    const untracked = manifest.allowedPaths.filter((relativePath) => !tracked.has(relativePath));
 
     assert.deepEqual(unexpected, [], 'non-allowlisted package source JS files must fail closed');
     assert.deepEqual(stale, [], 'src JS allowlist must not contain stale deleted files');
+    assert.deepEqual(
+      untracked,
+      [],
+      'src JS allowlist must not contain ignored or generated files outside git source control'
+    );
     assert.equal(
       allowed.has('packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'),
       false,

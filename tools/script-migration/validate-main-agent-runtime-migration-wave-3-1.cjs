@@ -198,6 +198,40 @@ function expectedOriginalPathStatus(expected) {
   return expected.originalPathStatus || 'retained';
 }
 
+function validateFailClosedEntry(entry, expected, errors) {
+  const label = expected.entryId;
+  if (entry.migrationStatus !== 'blocked') errors.push(`${label} migrationStatus must be blocked`);
+  if (entry.validationStatus !== 'blocked') errors.push(`${label} validationStatus must be blocked`);
+  if (entry.implementationState !== 'blocked_package_source_parity_failed') {
+    errors.push(`${label} implementationState must be blocked_package_source_parity_failed`);
+  }
+  if (!Array.isArray(entry.migrationBlockers) || entry.migrationBlockers.length === 0) {
+    errors.push(`${label} migrationBlockers must be non-empty`);
+  }
+  if (expected.strategy === 'package_runtime_module') {
+    if (!entry.migrationBlockers?.includes('missing_package_source_parity_evidence')) {
+      errors.push(`${label} migrationBlockers missing missing_package_source_parity_evidence`);
+    }
+    if (!entry.migrationBlockers?.includes('package_source_parity_size_delta_blocked')) {
+      errors.push(`${label} migrationBlockers missing package_source_parity_size_delta_blocked`);
+    }
+  } else if (expected.strategy === 'runtime_emit_cjs' || expected.strategy === 'durable_helper_copy') {
+    if (!entry.migrationBlockers?.includes('cjs_target_cannot_satisfy_package_source_parity')) {
+      errors.push(`${label} migrationBlockers missing cjs_target_cannot_satisfy_package_source_parity`);
+    }
+    if (!entry.migrationBlockers?.includes('missing_package_source_equivalent')) {
+      errors.push(`${label} migrationBlockers missing missing_package_source_equivalent`);
+    }
+  } else if (expected.strategy === 'public_cli_de_surface') {
+    if (!entry.migrationBlockers?.includes('missing_package_source_equivalent')) {
+      errors.push(`${label} migrationBlockers missing missing_package_source_equivalent`);
+    }
+  }
+  if (entry.parityEvidenceStatus !== 'failed_package_source_parity_gate') {
+    errors.push(`${label} parityEvidenceStatus must be failed_package_source_parity_gate`);
+  }
+}
+
 function listFiles(dir) {
   if (!fs.existsSync(dir)) return [];
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -260,8 +294,8 @@ function validateRegistry(registry, errors) {
   }
   if (wave.contractPath !== CONTRACT_PATH) errors.push(`${WAVE_ID} contractPath mismatch`);
   if (wave.refinesWaveId !== REFINES_WAVE_ID) errors.push(`${WAVE_ID} refinesWaveId mismatch`);
-  if (wave.status !== 'validated') errors.push(`${WAVE_ID} status must be validated`);
-  if (!wave.completedAt) errors.push(`${WAVE_ID} completedAt must be set`);
+  if (wave.status !== 'blocked') errors.push(`${WAVE_ID} status must be blocked`);
+  if (wave.completedAt) errors.push(`${WAVE_ID} completedAt must not be set while blocked`);
   if (!Array.isArray(wave.entries) || wave.entries.length !== EXPECTED.length) {
     errors.push(`${WAVE_ID} must contain exactly ${EXPECTED.length} entries`);
     return;
@@ -287,9 +321,8 @@ function validateRegistry(registry, errors) {
       errors.push(`${expected.entryId} source_history_only requires de-surface, no deletion, and source-dev-only disposition`);
     }
     if (entry.migrationStrategy !== expected.strategy) errors.push(`${expected.entryId} migrationStrategy mismatch`);
-    if (entry.migrationStatus !== 'validated') errors.push(`${expected.entryId} migrationStatus must be validated`);
+    validateFailClosedEntry(entry, expected, errors);
     if (entry.callerSwitchStatus !== 'switched') errors.push(`${expected.entryId} callerSwitchStatus must be switched`);
-    if (entry.validationStatus !== 'passed') errors.push(`${expected.entryId} validationStatus must be passed`);
     if (entry.oldPathDisposition !== 'retained_source_dev_only') {
       errors.push(`${expected.entryId} oldPathDisposition must be retained_source_dev_only`);
     }

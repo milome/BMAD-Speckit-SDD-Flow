@@ -68,6 +68,16 @@ function p1p4Entries(registry: any): any[] {
   );
 }
 
+function expectFailClosedBlockedEntry(entry: any): void {
+  expect(entry.migrationStatus, entry.entryId).toBe('blocked');
+  expect(['blocked', 'partial'], entry.entryId).toContain(entry.validationStatus);
+  expect(String(entry.implementationState || ''), entry.entryId).toMatch(/^blocked_/);
+  expect(entry.migrationBlockers, entry.entryId).toEqual(expect.any(Array));
+  expect(entry.migrationBlockers.length, entry.entryId).toBeGreaterThan(0);
+  expect(String(entry.parityEvidenceStatus || ''), entry.entryId).toMatch(/^(failed|missing)_/);
+  expect(entry.evidenceRefs?.length ?? 0, entry.entryId).toBeGreaterThan(0);
+}
+
 describe('main-agent runtime migration P1-P4 contract closure', () => {
   it('keeps the P1-P4 closure under one frozen goal contract', () => {
     expect(fs.existsSync(path.join(ROOT, CONTRACT_PATH))).toBe(true);
@@ -83,7 +93,8 @@ describe('main-agent runtime migration P1-P4 contract closure', () => {
       const wave = getWave(registry, expectation.waveId);
       expect(wave, expectation.waveId).toBeTruthy();
       expect(wave.contractPath).toBe(CONTRACT_PATH);
-      expect(wave.status).toBe('validated');
+      expect(wave.status).toBe('blocked');
+      expect(wave.completedAt ?? null, expectation.waveId).toBeNull();
       expect(wave.entries).toHaveLength(expectation.count);
       expect(countStrategies(wave.entries)).toEqual(expectation.strategies);
     }
@@ -102,6 +113,7 @@ describe('main-agent runtime migration P1-P4 contract closure', () => {
       expect(entry.deletionAllowed, entry.entryId).toBe(false);
       expect(entry.deletionApprovalRef, entry.entryId).toBeNull();
       expect(String(entry.oldPathDisposition || ''), entry.entryId).not.toMatch(/deletion[-_ ]?ready/i);
+      if (entry.migrationStatus === 'blocked') expectFailClosedBlockedEntry(entry);
       expect(originalPaths.has(entry.originalPath), entry.originalPath).toBe(false);
       originalPaths.add(entry.originalPath);
     }
@@ -123,6 +135,7 @@ describe('main-agent runtime migration P1-P4 contract closure', () => {
 
     expect(p4Helpers).toHaveLength(14);
     for (const entry of p4Helpers) {
+      expectFailClosedBlockedEntry(entry);
       expect(entry.publicCommandsAfterMigration, entry.entryId).toEqual([]);
       expect(entry.callerSwitchStatus, entry.entryId).toBe('not_applicable');
       expect(entry.targetPaths.some((target: string) => target.includes('/helpers/')), entry.entryId).toBe(

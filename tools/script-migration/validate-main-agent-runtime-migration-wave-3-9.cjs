@@ -124,6 +124,24 @@ function expectArrayIncludes(errors, label, actual, expected) {
   }
 }
 
+function validateFunctionalParityBlockedEntry(entry, label, errors) {
+  expectEqual(errors, `${label} migrationStatus`, entry.migrationStatus, 'blocked');
+  expectEqual(errors, `${label} validationStatus`, entry.validationStatus, 'partial');
+  expectEqual(errors, `${label} implementationState`, entry.implementationState, 'blocked_pending_functional_parity');
+  if (!Array.isArray(entry.migrationBlockers) || entry.migrationBlockers.length === 0) {
+    errors.push(`${label} migrationBlockers must be non-empty`);
+  }
+  if (!entry.migrationBlockers?.every((blocker) => String(blocker).startsWith('descriptor_only_durable_helper:'))) {
+    errors.push(`${label} migrationBlockers must identify descriptor_only_durable_helper blockers`);
+  }
+  expectEqual(
+    errors,
+    `${label} parityEvidenceStatus`,
+    entry.parityEvidenceStatus,
+    'missing_functional_parity_evidence'
+  );
+}
+
 function validateManifest(errors) {
   const matrixText = readText(MATRIX_PATH, errors);
   const manifest = readJson(MANIFEST_PATH, errors);
@@ -297,7 +315,8 @@ function validateRegistryWave(manifestEntries, errors) {
   }
   expectEqual(errors, 'registry wave contractPath', wave.contractPath, CONTRACT_PATH);
   expectEqual(errors, 'registry wave refinesWaveId', wave.refinesWaveId, REFINES_WAVE_ID);
-  expectEqual(errors, 'registry wave status', wave.status, 'validated');
+  expectEqual(errors, 'registry wave status', wave.status, 'blocked');
+  if (wave.completedAt) errors.push('registry wave completedAt must not be set while blocked');
   if (!Array.isArray(wave.entries) || wave.entries.length !== EXPECTED_P4_TOTAL) {
     errors.push(`registry wave must contain exactly ${EXPECTED_P4_TOTAL} entries`);
     return;
@@ -310,10 +329,9 @@ function validateRegistryWave(manifestEntries, errors) {
     }
     expectEqual(errors, `${expected.entryId} refinesWaveId`, entry.refinesWaveId, ENTRY_REFINES_WAVE_ID);
     expectEqual(errors, `${expected.entryId} migrationStrategy`, entry.migrationStrategy, HELPER_ROUTE);
-    expectEqual(errors, `${expected.entryId} migrationStatus`, entry.migrationStatus, 'validated');
+    validateFunctionalParityBlockedEntry(entry, expected.entryId, errors);
     expectEqual(errors, `${expected.entryId} callerSwitchStatus`, entry.callerSwitchStatus, 'not_applicable');
     expectEqual(errors, `${expected.entryId} publicCommandsAfterMigration length`, entry.publicCommandsAfterMigration?.length, 0);
-    expectEqual(errors, `${expected.entryId} validationStatus`, entry.validationStatus, 'passed');
     expectEqual(errors, `${expected.entryId} oldPathDisposition`, entry.oldPathDisposition, 'retained_source_dev_only');
     expectEqual(errors, `${expected.entryId} deletionAllowed`, entry.deletionAllowed, false);
     expectEqual(errors, `${expected.entryId} deletionApprovalRef`, entry.deletionApprovalRef, null);

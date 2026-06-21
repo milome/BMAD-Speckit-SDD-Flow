@@ -74,6 +74,23 @@ function targetPaths(action) {
   ];
 }
 
+function validateFunctionalParityBlockedEntry(entry, label, errors) {
+  if (entry.migrationStatus !== 'blocked') errors.push(`${label} migrationStatus must be blocked`);
+  if (entry.validationStatus !== 'partial') errors.push(`${label} validationStatus must be partial`);
+  if (entry.implementationState !== 'blocked_pending_functional_parity') {
+    errors.push(`${label} implementationState must be blocked_pending_functional_parity`);
+  }
+  if (!Array.isArray(entry.migrationBlockers) || entry.migrationBlockers.length === 0) {
+    errors.push(`${label} migrationBlockers must be non-empty`);
+  }
+  if (!entry.migrationBlockers?.every((blocker) => String(blocker).startsWith('report_only_package_runtime_action:'))) {
+    errors.push(`${label} migrationBlockers must identify report_only_package_runtime_action blockers`);
+  }
+  if (entry.parityEvidenceStatus !== 'missing_functional_parity_evidence') {
+    errors.push(`${label} parityEvidenceStatus must be missing_functional_parity_evidence`);
+  }
+}
+
 function validateOriginals(entries, errors) {
   for (const entry of entries) {
     if (!fs.existsSync(path.join(ROOT, entry.originalPath))) {
@@ -131,8 +148,8 @@ function validateRegistryWave(registry, waveId, expectedEntries, previousWaveId,
   }
   if (wave.contractPath !== CONTRACT_PATH) errors.push(`${waveId} contractPath mismatch`);
   if (wave.refinesWaveId !== previousWaveId) errors.push(`${waveId} refinesWaveId must be ${previousWaveId}`);
-  if (wave.status !== 'validated') errors.push(`${waveId} status must be validated`);
-  if (!wave.completedAt) errors.push(`${waveId} completedAt must be set`);
+  if (wave.status !== 'blocked') errors.push(`${waveId} status must be blocked`);
+  if (wave.completedAt) errors.push(`${waveId} completedAt must not be set while blocked`);
   if (!Array.isArray(wave.entries) || wave.entries.length !== expectedEntries.length) {
     errors.push(`${waveId} must contain exactly ${expectedEntries.length} entries`);
     return;
@@ -148,9 +165,8 @@ function validateRegistryWave(registry, waveId, expectedEntries, previousWaveId,
     if (entry.originalPath !== expected.originalPath) errors.push(`${expected.entryId} originalPath mismatch`);
     if (entry.originalPathStatus !== 'retained') errors.push(`${expected.entryId} originalPathStatus must be retained`);
     if (entry.migrationStrategy !== 'package_runtime_module') errors.push(`${expected.entryId} migrationStrategy mismatch`);
-    if (entry.migrationStatus !== 'validated') errors.push(`${expected.entryId} migrationStatus must be validated`);
+    validateFunctionalParityBlockedEntry(entry, expected.entryId, errors);
     if (entry.callerSwitchStatus !== 'switched') errors.push(`${expected.entryId} callerSwitchStatus must be switched`);
-    if (entry.validationStatus !== 'passed') errors.push(`${expected.entryId} validationStatus must be passed`);
     if (entry.oldPathDisposition !== 'retained_source_dev_only') {
       errors.push(`${expected.entryId} oldPathDisposition must be retained_source_dev_only`);
     }
