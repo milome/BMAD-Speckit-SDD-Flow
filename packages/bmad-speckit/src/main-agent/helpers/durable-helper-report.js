@@ -64,18 +64,18 @@ function loadSourceAuthorityHelper(helperId) {
     };
   }
   try {
-    const loaded = require(runtimePath);
+    const source = fs.readFileSync(runtimePath, 'utf8');
     return {
-      status: 'source_authority_helper_loaded',
+      status: 'source_authority_helper_resolved_static',
       runtimePath: path.relative(packageRoot(), runtimePath).replace(/\\/g, '/'),
-      exportedKeys: Object.keys(loaded).sort(),
+      exportedKeys: staticExportedKeys(source),
       usedRootScript: false,
       usedCompiledFallback: false,
       usedTypeScriptRunner: false,
     };
   } catch (error) {
     return {
-      status: 'source_authority_helper_load_error',
+      status: 'source_authority_helper_resolve_error',
       runtimePath: path.relative(packageRoot(), runtimePath).replace(/\\/g, '/'),
       exportedKeys: [],
       error: error instanceof Error ? error.message : String(error),
@@ -84,6 +84,21 @@ function loadSourceAuthorityHelper(helperId) {
       usedTypeScriptRunner: false,
     };
   }
+}
+
+function staticExportedKeys(source) {
+  const keys = new Set();
+  const text = String(source || '');
+  for (const match of text.matchAll(/\bexports\.([A-Za-z_$][\w$]*)\s*=/gu)) {
+    keys.add(match[1]);
+  }
+  const moduleExports = text.match(/\bmodule\.exports\s*=\s*\{([\s\S]*?)\}\s*;?/u);
+  if (moduleExports) {
+    for (const match of moduleExports[1].matchAll(/\b([A-Za-z_$][\w$]*)\s*[:,]/gu)) {
+      keys.add(match[1]);
+    }
+  }
+  return [...keys].sort();
 }
 
 function createDurableHelperDescriptor({ helperId, purpose, ownedFiles = [] }) {

@@ -367,7 +367,9 @@ function durableHelperFactoryHasSourceAuthorityLoadProof() {
   return (
     content.includes('sourceAuthorityRuntimeProof') &&
     content.includes('loadSourceAuthorityHelper') &&
-    content.includes('require(runtimePath)')
+    content.includes('source_authority_helper_resolved_static') &&
+    content.includes('staticExportedKeys') &&
+    content.includes('fs.readFileSync(runtimePath')
   );
 }
 

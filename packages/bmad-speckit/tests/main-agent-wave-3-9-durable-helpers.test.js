@@ -110,7 +110,7 @@ describe('main-agent wave 3.9 durable helpers', () => {
         assert.equal(descriptor.consumerRuntimeProof.usedTypeScriptRunner, false);
         assert.equal(
           descriptor.sourceAuthorityRuntimeProof.status,
-          'source_authority_helper_loaded'
+          'source_authority_helper_resolved_static'
         );
         assert.match(
           descriptor.sourceAuthorityRuntimeProof.runtimePath,

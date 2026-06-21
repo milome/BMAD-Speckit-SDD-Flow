@@ -3,14 +3,28 @@ import { createRequire } from 'node:module';
 import * as path from 'node:path';
 
 const cjsRequire = createRequire(__filename);
+
+function requirePackageBmadModule<T>(relativePath: string): T {
+  const normalizedRelativePath = relativePath.replace(/\\/gu, '/');
+  const candidates = [
+    path.resolve(__dirname, '..', normalizedRelativePath),
+    path.resolve(__dirname, '..', '..', '..', '..', normalizedRelativePath),
+  ];
+  const target = candidates.find((candidate) => fs.existsSync(candidate));
+  if (!target) {
+    throw new Error(`Package _bmad module missing: ${relativePath}`);
+  }
+  return cjsRequire(target) as T;
+}
+
 const { appendRunnerSummaryToArtifactMarkdown, renderGovernanceRunnerSummaryLines } =
-  cjsRequire('../_bmad/runtime/hooks/governance-runner-summary-format.cjs') as {
+  requirePackageBmadModule<{
     appendRunnerSummaryToArtifactMarkdown: (
       artifactMarkdown: string,
       runnerSummaryLines: string[]
     ) => string;
     renderGovernanceRunnerSummaryLines: (runnerSummaryLines: string[]) => string;
-  };
+  }>('_bmad/runtime/hooks/governance-runner-summary-format.cjs');
 import type {
   GovernanceRemediationArtifactResult,
   GovernanceRemediationArtifactInput,

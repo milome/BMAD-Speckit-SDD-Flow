@@ -2,7 +2,7 @@
   "schemaVersion": "main-agent-runtime-migration-wave-4-1-owner-package-source-manifest/v1",
   "waveId": "main-agent-runtime-migration-wave-4.1",
   "ownerTaskId": "G004",
-  "generatedAt": "2026-06-21T01:38:46.564Z",
+  "generatedAt": "2026-06-21T02:25:31.713Z",
   "selectedRowCount": 91,
   "skippedRowCount": 0,
   "targetRoot": "packages/bmad-speckit/src/main-agent/source-authority",
@@ -694,8 +694,8 @@
       "sourceSha256": "sha256:e6f700d0586a90dac234f2c958383338c66451057adb60366396f4dd77688256",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts",
-      "bytes": 105716,
-      "sha256": "sha256:ea46c963b70a6b3f5d3938bdf5cce619b596d33c653b8be846d977f28d5a5948"
+      "bytes": 106220,
+      "sha256": "sha256:82b9795ab851f1c69aabaf1c6c505b48910e2a5b460f3a569917b088a2efc7a3"
     },
     {
       "source": "scripts/analytics-sft-extract.ts",
@@ -998,8 +998,8 @@
       "sourceSha256": "sha256:0bf8fe1ef17eb22b976abadc012ec548bfc92586158343d8ab98b142fe5a5823",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-runner.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-runner.ts",
-      "bytes": 57108,
-      "sha256": "sha256:1116f473764f37084a15f686d449e4d01aa5fe92c3c76fc07883a9a86a1bdaa2"
+      "bytes": 57614,
+      "sha256": "sha256:929f98a34b9759dfbeed4f871cca6ae7e067c975d0ae60c713989fc3bde67ccc"
     },
     {
       "source": "scripts/governance-runtime-queue.ts",
@@ -1948,13 +1948,13 @@
         "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ai-tdd-contract-gate.js"
       ],
       "runtimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ai-tdd-contract-gate.js",
-      "packageBytes": 105716,
-      "packageLoc": 2833,
-      "packageSha256": "sha256:ea46c963b70a6b3f5d3938bdf5cce619b596d33c653b8be846d977f28d5a5948",
+      "packageBytes": 106220,
+      "packageLoc": 2847,
+      "packageSha256": "sha256:82b9795ab851f1c69aabaf1c6c505b48910e2a5b460f3a569917b088a2efc7a3",
       "runtimeExists": true,
-      "runtimeBytes": 105565,
-      "runtimeLoc": 2369,
-      "runtimeSha256": "sha256:069c7cc115a7fa2688070a2c34881f5faec37333ff49cadd56f8636dfdb1966e",
+      "runtimeBytes": 106081,
+      "runtimeLoc": 2381,
+      "runtimeSha256": "sha256:11ff0560c3db6d86afa0f26e7d9ec954516d7444dd15a04e1f22d1c31c482c96",
       "sourceKindParityProblems": [],
       "sizeDeltaDecision": "passed_within_strict_threshold"
     },

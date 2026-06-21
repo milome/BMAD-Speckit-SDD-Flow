@@ -19,8 +19,22 @@ import {
 import { evaluateStrictCloseoutProof } from './strict-closeout-proof-gate';
 
 const cjsRequire = createRequire(__filename);
+
+function requirePackageBmadModule<T>(relativePath: string): T {
+  const normalizedRelativePath = relativePath.replace(/\\/gu, '/');
+  const candidates = [
+    path.resolve(__dirname, '..', normalizedRelativePath),
+    path.resolve(__dirname, '..', '..', '..', '..', normalizedRelativePath),
+  ];
+  const target = candidates.find((candidate) => fs.existsSync(candidate));
+  if (!target) {
+    throw new Error(`Package _bmad module missing: ${relativePath}`);
+  }
+  return cjsRequire(target) as T;
+}
+
 const { buildDerivedContractExecutionManifest } =
-  cjsRequire('../_bmad/shared/contract-execution-manifest/build-contract-execution-manifest.js') as {
+  requirePackageBmadModule<{
     buildDerivedContractExecutionManifest(input: {
       confirmation: JsonObject;
       manifest: JsonObject;
@@ -31,7 +45,7 @@ const { buildDerivedContractExecutionManifest } =
       sourceDocumentHash?: string;
       implementationConfirmationHash?: string;
     }): JsonObject;
-  };
+  }>('_bmad/shared/contract-execution-manifest/build-contract-execution-manifest.js');
 
 type AiTddMode = 'pre-implementation' | 'pre-rerun' | 'iteration' | 'closeout';
 type Decision = 'pass' | 'blocked';

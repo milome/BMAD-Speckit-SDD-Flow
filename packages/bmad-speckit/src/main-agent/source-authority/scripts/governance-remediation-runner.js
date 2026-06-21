@@ -44,7 +44,19 @@ exports.runGovernanceRemediation = runGovernanceRemediation;
 exports.buildGovernanceRemediationRunnerSummaryLines = buildGovernanceRemediationRunnerSummaryLines;
 const fs = __importStar(require("node:fs"));
 const path = __importStar(require("node:path"));
-const { appendRunnerSummaryToArtifactMarkdown, renderGovernanceRunnerSummaryLines } = require('../_bmad/runtime/hooks/governance-runner-summary-format.cjs');
+function requirePackageBmadModule(relativePath) {
+    const normalizedRelativePath = relativePath.replace(/\\/gu, '/');
+    const candidates = [
+        path.resolve(__dirname, '..', normalizedRelativePath),
+        path.resolve(__dirname, '..', '..', '..', '..', normalizedRelativePath),
+    ];
+    const target = candidates.find((candidate) => fs.existsSync(candidate));
+    if (!target) {
+        throw new Error(`Package _bmad module missing: ${relativePath}`);
+    }
+    return require(target);
+}
+const { appendRunnerSummaryToArtifactMarkdown, renderGovernanceRunnerSummaryLines } = requirePackageBmadModule('_bmad/runtime/hooks/governance-runner-summary-format.cjs');
 const governance_remediation_artifact_1 = require("./governance-remediation-artifact");
 const prompt_routing_governance_1 = require("./prompt-routing-governance");
 const governance_provider_adapter_1 = require("./governance-provider-adapter");

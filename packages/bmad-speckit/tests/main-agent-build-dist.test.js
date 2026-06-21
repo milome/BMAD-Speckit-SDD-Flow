@@ -33,6 +33,8 @@ const EXPECTED_PACKAGE_RUNTIME_ASSETS = [
   '_bmad/core/skills/bmad-party-mode/steps/step-01-agent-loading.md',
   '_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md',
   '_bmad/core/skills/bmad-party-mode/steps/step-03-graceful-exit.md',
+  '_bmad/shared/contract-execution-manifest/build-contract-execution-manifest.js',
+  '_bmad/shared/contract-execution-manifest/schema/contract-execution-manifest.schema.json',
 ];
 const EXPECTED_DIST_FILES = [
   'index.js',

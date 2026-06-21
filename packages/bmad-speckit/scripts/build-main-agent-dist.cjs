@@ -263,6 +263,7 @@ const packageFiles = [
 const runtimeAssetDirectories = [
   '_bmad/_schemas',
   '_bmad/runtime/hooks',
+  '_bmad/shared/contract-execution-manifest',
   '_bmad/core/agents/code-reviewer',
   '_bmad/core/skills/bmad-party-mode',
 ];

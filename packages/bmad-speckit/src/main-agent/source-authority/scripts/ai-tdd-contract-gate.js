@@ -42,7 +42,19 @@ const fs = __importStar(require("node:fs"));
 const path = __importStar(require("node:path"));
 const target_artifact_realization_gate_1 = require("./target-artifact-realization-gate");
 const strict_closeout_proof_gate_1 = require("./strict-closeout-proof-gate");
-const { buildDerivedContractExecutionManifest } = require('../_bmad/shared/contract-execution-manifest/build-contract-execution-manifest.js');
+function requirePackageBmadModule(relativePath) {
+    const normalizedRelativePath = relativePath.replace(/\\/gu, '/');
+    const candidates = [
+        path.resolve(__dirname, '..', normalizedRelativePath),
+        path.resolve(__dirname, '..', '..', '..', '..', normalizedRelativePath),
+    ];
+    const target = candidates.find((candidate) => fs.existsSync(candidate));
+    if (!target) {
+        throw new Error(`Package _bmad module missing: ${relativePath}`);
+    }
+    return require(target);
+}
+const { buildDerivedContractExecutionManifest } = requirePackageBmadModule('_bmad/shared/contract-execution-manifest/build-contract-execution-manifest.js');
 function isDirectAiTddContractGateCli(entry) {
     return /(^|[\\/])ai-tdd-contract-gate(\.[cm]?js|\.ts)?$/iu.test(entry ?? '');
 }
