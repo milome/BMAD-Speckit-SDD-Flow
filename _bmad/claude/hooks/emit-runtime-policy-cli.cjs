@@ -1,10 +1,7 @@
 #!/usr/bin/env node
 /**
  * Launcher: (1) emit-runtime-policy.cjs next to this file (init deploy),
- * (2) project-local scripts/emit-runtime-policy.cjs,
- * (3) require.resolve('@bmad-speckit/runtime-emit/dist/emit-runtime-policy.cjs') from project root,
- * (4) project-local scripts/emit-runtime-policy.ts + ts-node,
- * (5) legacy bundle fallback.
+ * (2) require.resolve('@bmad-speckit/runtime-emit/dist/emit-runtime-policy.cjs') from project root.
  */
 'use strict';
 
@@ -75,42 +72,14 @@ const spawnOpts = {
 
 const emitAdjacent = path.join(__dirname, 'emit-runtime-policy.cjs');
 const emitBundled = resolveBundledEmitCjs(root);
-const emitScripts = path.join(root, 'scripts', 'emit-runtime-policy.cjs');
-const emitBundleLegacy = path.join(root, 'scripts', 'emit-runtime-policy.bundle.cjs');
-const emitTs = path.join(root, 'scripts', 'emit-runtime-policy.ts');
 let result;
 if (fs.existsSync(emitAdjacent)) {
   result = spawnSync(node, [emitAdjacent, ...extraArgs], spawnOpts);
-} else if (fs.existsSync(emitScripts)) {
-  result = spawnSync(node, [emitScripts, ...extraArgs], spawnOpts);
 } else if (emitBundled) {
   result = spawnSync(node, [emitBundled, ...extraArgs], spawnOpts);
-} else if (fs.existsSync(emitTs)) {
-  const tsNodeBin = path.join(root, 'node_modules', 'ts-node', 'dist', 'bin.js');
-  const tsconfigNode = path.join(root, 'tsconfig.node.json');
-  if (fs.existsSync(tsNodeBin)) {
-    const tsNodeArgs = [];
-    if (fs.existsSync(tsconfigNode)) {
-      tsNodeArgs.push('--project', tsconfigNode);
-    }
-    tsNodeArgs.push('--transpile-only', emitTs, ...extraArgs);
-    result = spawnSync(node, [tsNodeBin, ...tsNodeArgs], spawnOpts);
-  } else {
-    const tsNodeArgs = ['ts-node'];
-    if (fs.existsSync(tsconfigNode)) {
-      tsNodeArgs.push('--project', tsconfigNode);
-    }
-    tsNodeArgs.push('--transpile-only', emitTs, ...extraArgs);
-    result = spawnSync('npx', tsNodeArgs, {
-      ...spawnOpts,
-      shell: true,
-    });
-  }
-} else if (fs.existsSync(emitBundleLegacy)) {
-  result = spawnSync(node, [emitBundleLegacy, ...extraArgs], spawnOpts);
 } else {
   process.stderr.write(
-    'emit-runtime-policy-cli: missing emit entry (hook-adjacent cjs, project scripts, or @bmad-speckit/runtime-emit). Run: npm install, npm run build:runtime-emit, npx bmad-speckit init.\n'
+    'emit-runtime-policy-cli: missing emit entry (hook-adjacent cjs or @bmad-speckit/runtime-emit). Run: npm install, npm run build:runtime-emit, npx bmad-speckit init.\n'
   );
   process.exit(1);
 }

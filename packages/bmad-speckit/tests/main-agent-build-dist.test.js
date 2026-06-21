@@ -9,6 +9,8 @@ const REPO_ROOT = path.resolve(PACKAGE_ROOT, '..', '..');
 const BUILD_SCRIPT = path.join(PACKAGE_ROOT, 'scripts', 'build-main-agent-dist.cjs');
 const PACKAGE_JSON = path.join(PACKAGE_ROOT, 'package.json');
 const RELEASE_WORKFLOW = path.join(REPO_ROOT, '.github', 'workflows', 'release.yml');
+const SRC_ROOT = path.join(PACKAGE_ROOT, 'src');
+const SRC_JS_ALLOWLIST = path.join(PACKAGE_ROOT, 'scripts', 'src-js-allowlist.json');
 const DIST_ROOT = path.join(PACKAGE_ROOT, 'dist', 'main-agent');
 const WAVE_4_1_LEDGER = path.join(
   REPO_ROOT,
@@ -25,6 +27,11 @@ const { sourceAuthorityPathToDistRuntimePath } = require(path.join(
 ));
 const TYPE_SCRIPT_FAMILY_SOURCE_RE = /\.(?:ts|tsx|cts|mts)$/u;
 const TYPE_SCRIPT_DECLARATION_SOURCE_RE = /\.d\.(?:ts|cts|mts)$/u;
+const EXPECTED_PACKAGE_RUNTIME_TYPESCRIPT_FILES = [
+  'runtime/host-runtime-mode.ts',
+  'actions/native-goal-command.ts',
+  'actions/native-goal-invoker.ts',
+];
 const EXPECTED_PACKAGE_RUNTIME_ASSETS = [
   '_bmad/core/agents/code-reviewer/base-prompt.md',
   '_bmad/core/agents/code-reviewer/metadata.json',
@@ -35,6 +42,10 @@ const EXPECTED_PACKAGE_RUNTIME_ASSETS = [
   '_bmad/core/skills/bmad-party-mode/steps/step-03-graceful-exit.md',
   '_bmad/shared/contract-execution-manifest/build-contract-execution-manifest.js',
   '_bmad/shared/contract-execution-manifest/schema/contract-execution-manifest.schema.json',
+  '_bmad/shared/critical-auditor-profile/load-critical-auditor-profile.js',
+  '_bmad/shared/critical-auditor-profile/validate-critical-auditor-profile.js',
+  '_bmad/shared/critical-auditor-profile/critical-auditor-profile.schema.json',
+  '_bmad/shared/critical-auditor-profile/critical-auditor-profile.json',
 ];
 const EXPECTED_DIST_FILES = [
   'index.js',
@@ -55,6 +66,7 @@ const EXPECTED_DIST_FILES = [
   'actions/full-orchestration.js',
   'actions/implementation-readiness-gate.js',
   'actions/run-loop.js',
+  'actions/native-goal-invoker.js',
   'actions/release-gate.js',
   'actions/quality-gate.js',
   'actions/delivery-truth-gate.js',
@@ -134,6 +146,56 @@ function collectPackageJsonFiles(dir, base = dir) {
   return collected.sort();
 }
 
+function collectPackageSourceJavaScriptFiles(dir, base = dir) {
+  const collected = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      collected.push(...collectPackageSourceJavaScriptFiles(fullPath, base));
+      continue;
+    }
+    if (!entry.isFile() || !entry.name.endsWith('.js')) continue;
+    collected.push(`packages/bmad-speckit/src/${path.relative(base, fullPath).replace(/\\/g, '/')}`);
+  }
+  return collected.sort();
+}
+
+function collectSourceAuthorityGeneratedJavaScriptTwins() {
+  const sourceAuthorityScriptsRoot = path.join(
+    PACKAGE_ROOT,
+    'src',
+    'main-agent',
+    'source-authority',
+    'scripts'
+  );
+  const twins = [];
+  const visit = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        visit(fullPath);
+        continue;
+      }
+      if (!entry.isFile() || !entry.name.endsWith('.js')) continue;
+      const withoutExtension = fullPath.replace(/\.js$/u, '');
+      if (fs.existsSync(`${withoutExtension}.ts`) || fs.existsSync(`${withoutExtension}.tsx`)) {
+        twins.push(
+          `packages/bmad-speckit/src/main-agent/source-authority/scripts/${path.relative(sourceAuthorityScriptsRoot, fullPath).replace(/\\/g, '/')}`
+        );
+      }
+    }
+  };
+  visit(sourceAuthorityScriptsRoot);
+  return twins.sort();
+}
+
+function packageRuntimeTypeScriptDistRelativePath(relativePath) {
+  if (/\.(?:ts|tsx)$/u.test(relativePath)) return relativePath.replace(/\.(?:ts|tsx)$/u, '.js');
+  if (/\.cts$/u.test(relativePath)) return relativePath.replace(/\.cts$/u, '.cjs');
+  if (/\.mts$/u.test(relativePath)) return relativePath.replace(/\.mts$/u, '.mjs');
+  throw new Error(`unsupported package runtime TypeScript source: ${relativePath}`);
+}
+
 describe('main-agent dist build', () => {
   it('declares package build and pack surface for main-agent dist', () => {
     const pkg = JSON.parse(fs.readFileSync(PACKAGE_JSON, 'utf8'));
@@ -155,6 +217,54 @@ describe('main-agent dist build', () => {
     );
   });
 
+  it('fails closed when package source JavaScript is not explicitly allowlisted', () => {
+    const manifest = JSON.parse(fs.readFileSync(SRC_JS_ALLOWLIST, 'utf8'));
+    assert.equal(manifest.schemaVersion, 'bmad-speckit-src-js-allowlist/v1');
+    assert.deepEqual(
+      [...manifest.allowedPaths].sort(),
+      manifest.allowedPaths,
+      'src JS allowlist must stay sorted for reviewability'
+    );
+    assert.equal(
+      new Set(manifest.allowedPaths).size,
+      manifest.allowedPaths.length,
+      'src JS allowlist must not contain duplicate paths'
+    );
+
+    const allowed = new Set(manifest.allowedPaths);
+    const actual = collectPackageSourceJavaScriptFiles(SRC_ROOT);
+    const unexpected = actual.filter((relativePath) => !allowed.has(relativePath));
+    const stale = manifest.allowedPaths.filter(
+      (relativePath) => !fs.existsSync(path.join(REPO_ROOT, relativePath))
+    );
+
+    assert.deepEqual(unexpected, [], 'non-allowlisted package source JS files must fail closed');
+    assert.deepEqual(stale, [], 'src JS allowlist must not contain stale deleted files');
+    assert.equal(
+      allowed.has('packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'),
+      false,
+      'native-goal-invoker source authority must be TypeScript only'
+    );
+    assert.equal(
+      allowed.has('packages/bmad-speckit/src/main-agent/actions/native-goal-command.js'),
+      false,
+      'native-goal-command source authority must be TypeScript only'
+    );
+    assert.equal(
+      allowed.has('packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.js'),
+      false,
+      'host-runtime-mode source authority must be TypeScript only'
+    );
+  });
+
+  it('does not retain generated JavaScript twins for source-authority TypeScript scripts', () => {
+    assert.deepEqual(
+      collectSourceAuthorityGeneratedJavaScriptTwins(),
+      [],
+      'source-authority/scripts must keep TS source only when an equivalent TS file exists'
+    );
+  });
+
   it('generates required dist runtime files from package source', () => {
     execFileSync(process.execPath, [BUILD_SCRIPT], {
       cwd: PACKAGE_ROOT,
@@ -168,6 +278,38 @@ describe('main-agent dist build', () => {
       const source = fs.readFileSync(distFile, 'utf8');
       assert.doesNotMatch(source, /scripts[\\/]main-agent-orchestration\.ts/);
       assert.doesNotMatch(source, /compiled[\\/]main-agent-orchestration\.cjs/);
+    }
+
+    for (const relativePath of EXPECTED_PACKAGE_RUNTIME_TYPESCRIPT_FILES) {
+      const sourceFile = path.join(PACKAGE_ROOT, 'src', 'main-agent', relativePath);
+      const forbiddenSourceJs = sourceFile.replace(/\.(?:ts|tsx)$/u, '.js');
+      const distRelativePath = packageRuntimeTypeScriptDistRelativePath(relativePath);
+      const distFile = path.join(DIST_ROOT, distRelativePath);
+      const sourceAuthorityDistFile = path.join(
+        DIST_ROOT,
+        'source-authority',
+        'packages',
+        'bmad-speckit',
+        'src',
+        'main-agent',
+        distRelativePath
+      );
+
+      assert.equal(fs.existsSync(sourceFile), true, `missing package TS source ${relativePath}`);
+      assert.equal(
+        fs.existsSync(forbiddenSourceJs),
+        false,
+        `package source JS must not coexist with TS source authority: ${relativePath}`
+      );
+      assert.equal(fs.existsSync(distFile), true, `package TS source was not compiled: ${relativePath}`);
+      assert.equal(
+        fs.existsSync(sourceAuthorityDistFile),
+        true,
+        `package TS source was not compiled inside source-authority dist mirror: ${relativePath}`
+      );
+      const distSource = fs.readFileSync(distFile, 'utf8');
+      assert.doesNotMatch(distSource, /\b(?:tsx|ts-node)\b/i);
+      assert.doesNotMatch(distSource, /packages[\\/]bmad-speckit[\\/]src[\\/]main-agent/u);
     }
 
     assert.equal(

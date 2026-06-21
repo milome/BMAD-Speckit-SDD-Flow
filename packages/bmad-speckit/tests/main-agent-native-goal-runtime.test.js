@@ -32,12 +32,30 @@ function assertPackageRuntimeModule(root, fileName, exportNames) {
   }
 }
 
+function assertPackageTypeScriptSource(root, fileName, exportNames) {
+  const filePath = path.join(root, fileName);
+  assert.equal(fs.existsSync(filePath), true, `${fileName} must exist as package TypeScript source`);
+  assert.equal(
+    fs.existsSync(filePath.replace(/\.(?:ts|tsx)$/u, '.js')),
+    false,
+    `${fileName} must not have a hand-maintained package source JS twin`
+  );
+  const source = readRuntimeSource(root, fileName);
+  assert.doesNotMatch(source, /scripts[\\/](?:native-goal-command|main-agent-native-goal-invoker)\.ts/);
+  assert.doesNotMatch(source, /require\(['"].*scripts[\\/]/);
+  assert.doesNotMatch(source, /\btsx\b/);
+  assert.doesNotMatch(source, /\bts-node\b/);
+  for (const exportName of exportNames) {
+    assert.match(source, new RegExp(`export\\s+function\\s+${exportName}\\b`));
+  }
+}
+
 describe('main-agent native goal package runtime authority', () => {
-  it('keeps native goal source authority inside the package runtime only', () => {
-    assertPackageRuntimeModule(SOURCE_ACTIONS_ROOT, 'native-goal-command.js', [
+  it('keeps native goal source authority inside package TypeScript source only', () => {
+    assertPackageTypeScriptSource(SOURCE_ACTIONS_ROOT, 'native-goal-command.ts', [
       'resolveNativeGoalCommand',
     ]);
-    assertPackageRuntimeModule(SOURCE_ACTIONS_ROOT, 'native-goal-invoker.js', [
+    assertPackageTypeScriptSource(SOURCE_ACTIONS_ROOT, 'native-goal-invoker.ts', [
       'runNativeGoalInvocation',
     ]);
 

@@ -6,34 +6,76 @@ description: |
   并接入仓库内已实现的多 agent、hooks、状态机、handoff、评分写入与 commit gate 机制。
 ---
 <!-- CLOSEOUT-APPROVED-CANONICAL -->
+> Deferred gap contract：读取并验证 `deferred-gap-register.yaml`；读取并验证 `journey-ledger`、`trace-map`、`closure-notes`；若存在 active deferred gap 但无 task binding、Smoke Task Chain、Closure Task ID 或 production path 映射，不得进入实施。
+> Party-mode final-output contract：`quick_probe_20`、`decision_root_cause_50`、`final_solution_task_list_100` 均可展示；若低档位被要求产出最终方案，必须拒绝当前档位并升级到 `final_solution_task_list_100`。
 > Closeout 术语收紧：本文件中“完成 / 通过 / 可进入下一阶段”一律指 `runAuditorHost` 返回 `closeout approved`。审计报告 `PASS` 仅表示可以进入 host close-out，单独的 `PASS` 不得视为完成、准入或放行。
+
+> **统一 closeout 硬门禁（适用于本技能全部审计闭环）**：
+> - 主 Agent 在每个阶段的完整 prompt 模板结尾、resume 指令结尾、以及审计通过后的 host 收口指令结尾，必须原样追加下列固定句；同时必须自动写入评分数据与本技能要求的交接文档（handoff / state / progress / 审计收口文档），禁止留给用户手动完成。
+> - 未执行 `runAuditorHost` 并验证评分写入成功前，禁止结束、禁止交还用户手动操作。
+> - 只有 `runAuditorHost` 返回 `closeout approved` 才算完成；其余都算未完成。
+> - 禁止给“你可以手动做下一步”的建议，除非用户明确要求。
+> - `runAuditorHost` 失败时必须自动重试，并在每次重试时记录失败原因与修复动作；未成功前不得退出当前闭环。
+> - 最终回复必须显式包含以下 4 行，缺一视为未完成：
+>   - `runAuditorHost 调用参数`
+>   - `runAuditorHost 返回结果`
+>   - `评分写入结果（成功/失败码）`
+>   - `closeout 状态（approved/未approved）`
 
 # Claude Adapter: BMAD Story Assistant
 
 > **Party-mode source of truth**：`{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`。所有 party-mode 的 rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit gate 语义都以该文件为准；本 skill 只定义 Story 场景何时进入 party-mode，不得维护第二套 gate 语义。
 
+## Party-Mode 主 Agent 编排约束（Wave 4）
+
+- 进入 party-mode 前，主 Agent 必须先向用户展示 `20 / 50 / 100` 三档强度，并按请求类型给出推荐档位。
+- 普通 RCA / 方案分析推荐 `decision_root_cause_50`；Create Story / Story 设计定稿 / 最终任务列表等高置信最终产物推荐 `final_solution_task_list_100`。
+- 主 Agent 必须等待用户明确回复 `20` / `50` / `100` 后，才能正式发起 `@"party-mode-facilitator (agent)"`；禁止把推荐档位表述成已替用户完成的选择。
+- `quick_probe_20` 仅用于 probe-only；若用户当前选择 `quick_probe_20` 或 `decision_root_cause_50`，却又明确要求高置信最终产物，主 Agent 必须拒绝当前档位并要求升级到 `final_solution_task_list_100`。
+- 每 20 轮必须向用户展示一次 checkpoint；checkpoint 展示后默认自动继续下一批，不要求逐批人工确认。
+- `S / F / C` 只在 checkpoint 窗口内有效；`checkpoint_window_ms = 15000`。
+- `C` 的语义固定为“立即继续下一批”，会立即关闭当前 checkpoint 窗口并跳过剩余等待时间。
+- 若用户在 checkpoint 窗口内输入普通业务补充文本，而不是 `S / F / C`，主 Agent 必须立即停止自动继续，取消窗口计时，并按新补充进入下一批前的重新编排。
+- checkpoint 窗口外的 `S / F / C` 必须显式拒绝，不缓存、不当作普通业务输入。
+- heartbeat 由 facilitator 负责；主 Agent 只负责批次结束后的 checkpoint 展示，不负责单批执行中的实时 heartbeat 插入。
+
 ## Purpose
 
 本 skill 是 Cursor `bmad-story-assistant` 在 Claude Code CLI / OMC 环境下的统一适配入口。
 
-## 主 Agent 编排面（强制）
+## Main Agent Orchestration Surface
 
-消费项目用户通过 `$bmad-speckit`、`/bmad-speckit` 或 `bmad-speckit` 在当前 AI 宿主会话中激活主控。不得把 `npm run main-agent-orchestration` 或 `npx bmad-speckit main-agent-orchestration ...` 写成普通消费用户默认步骤；这些命令只允许用于安装验证、CI、debug 或 no-skill fallback。
+Consumer users activate governance through `$bmad-speckit`, `/bmad-speckit`, or `bmad-speckit` in the active AI host session. Do not present `npm run main-agent-orchestration` or `npx bmad-speckit main-agent-orchestration ...` as the default consumer-user step; those commands are install validation, CI, debug, or no-skill fallback only.
 
-在 interactive main-agent 模式下，主 Agent 在发起、继续或收口本链路前，必须内部运行或等价消费 Main Agent control plane：
+In interactive main-agent mode, before starting, continuing, or closing this flow, the main Agent must internally run or equivalently consume the Main Agent control plane:
 
 ```text
 main-agent-orchestration --action inspect --host <codex|cursor|claude>
 main-agent-orchestration --action dispatch-plan --host <codex|cursor|claude>
 ```
 
-全局分支只能由 `requirement-record.json`、`currentMentalModel` 和六个心智模型链路决定：需求确认、架构确认、实施准备、执行闭合、审计复核、交付确认。`bmad-help`、Dashboard、score、SFT、legacy report、`orchestrationState`、`pendingPacket`、`continueDecision`、`mainAgentNextAction` 和 `mainAgentReady` 只能作为 projection / compatibility hint / evidence；子代理返回、host closeout、rerun 或阻断事件后必须重新 inspect，再决定下一条全局分支。
+Global branching can only be derived from `requirement-record.json`, `currentMentalModel`, and the six mental model chain: requirement confirmation, architecture confirmation, implementation readiness, execution closure, audit review, and delivery confirmation. `bmad-help`, dashboard, score, SFT, legacy reports, `orchestrationState`, `pendingPacket`, `continueDecision`, `mainAgentNextAction`, and `mainAgentReady` are projections, compatibility hints, or evidence only; after any subagent result, host closeout, rerun, or blocking event, re-run inspect before choosing the next global branch.
 
-硬禁止事项：
-- 禁止要求普通消费用户通过 npm / npx 激活主控。
-- 禁止仅根据 `PASS`、reviewer prose、host summary、`runAuditorHost closeout approved`、handoff summary 或旧 runtime 文件继续派发。
-- interactive mode 下禁止手写 packet 文件或默认写 worker-consumable queue item。
-- 禁止让子代理决定下一条全局执行链；子代理只执行 bounded packet，下一步永远由主 Agent 回读受控记录后决定。
+Hard prohibitions:
+- Do not ask normal consumer users to activate governance through npm or npx.
+- Do not continue dispatch from `PASS`, reviewer prose, host summary, `runAuditorHost closeout approved`, handoff summary, or old runtime files alone.
+- Do not hand-write packet files or default to worker-consumable queue items in interactive mode.
+- Do not let subagents choose the next global branch; subagents execute bounded packets only, and the main Agent chooses the next step after re-reading controlled records.
+
+## Uninterrupted Execution Contract
+
+- Story implementation must continue through all remaining scoped User Stories/tasks until the blocker or post-audit boundary is reached.
+- If post-audit fails, the main Agent must resume the same execution chain instead of stopping for manual continuation.
+- post-audit is ready only after `runAuditorHost` confirms closeout and the ralph-method tracking files remain aligned.
+
+目标不是简单复制 Cursor skill，而是：
+
+1. **继承 Cursor 已验证的流程语义**
+2. **在 Claude/OMC 运行时中选择正确执行器并定义 fallback**
+3. **接入仓库中已开发完成的状态机、hooks、handoff、审计闭环、评分写入与 commit gate**
+4. **确保在 Claude Code CLI 中能完整、连续、正确地执行 Story 创建 → 开发 → 审计闭环迭代等全流程**
+
+---
 
 ## 核心验收标准
 
@@ -172,6 +214,7 @@ Claude 版 `bmad-story-assistant` 必须满足：
   - `run-auditor-host.ts`
   - 审计通过标记
   - 状态更新
+- 审计通过后、真正进入 Dev Story 前，必须执行统一 `implementation-readiness` gate 断言；仅 `decision=pass` 可进入实现
 - 实施完成但 post-audit 未执行时，禁止重新进入开发阶段
 - 如 hooks 可用，仅允许 hooks 做：
   - 观测
@@ -351,7 +394,7 @@ Claude 端 Stage 1 Create Story 执行体，负责在 BMAD Story 流程中生成
   - 输出 Story 文档到 `_bmad-output/implementation-artifacts/epic-{epic_num}-{epic-slug}/story-{story_num}-{slug}/{epic_num}-{story_num}-<slug>.md`。
   - 创建 Story 文档时必须使用明确描述，禁止使用 Story 禁止词表中的词（可选、可考虑、后续、先实现、后续扩展、待定、酌情、视情况、技术债）。
   - 当功能不在本 Story 范围但属本 Epic 时，须写明「由 Story X.Y 负责」及任务具体描述；确保 X.Y 存在且 scope 含该功能。禁止模糊推迟表述。
-  - **party-mode 强制**：无论 Epic/Story 文档是否已存在，只要涉及以下任一情形，**必须**进入 party-mode 进行多角色辩论（最少 100 轮）：① 有多个实现方案可选；② 存在架构/设计决策或 trade-off；③ 方案或范围存在歧义或未决点。
+  - **party-mode 强制**：无论 Epic/Story 文档是否已存在，只要涉及以下任一情形，**必须**进入 party-mode 进行多角色辩论。主 Agent 在发起前必须先展示 `20 / 50 / 100` 强度选项；若要形成 Story 设计定稿或最终任务列表，推荐 `final_solution_task_list_100`（100 轮）；仅普通分析推荐 `decision_root_cause_50`（50 轮）；`quick_probe_20` 不得用于定稿。必须等待用户明确回复 `20` / `50` / `100` 后，才能正式发起 `@"party-mode-facilitator (agent)"`。
   - 全程必须使用中文。
 - Create Story 产出后，Story 文档通常保存在：`_bmad-output/implementation-artifacts/epic-{epic_num}-{epic-slug}/story-{story_num}-{slug}/{epic_num}-{story_num}-<slug>.md`。
 
@@ -378,7 +421,7 @@ prompt: |
   **强制约束**：
   - 创建 story 文档必须使用明确描述，禁止使用本 skill「§ 禁止词表（Story 文档）」中的词（可选、可考虑、后续、先实现、后续扩展、待定、酌情、视情况、技术债）。
   - 当功能不在本 Story 范围但属本 Epic 时，须写明「由 Story X.Y 负责」及任务具体描述；确保 X.Y 存在且 scope 含该功能（若 X.Y 不存在，审计将判不通过并建议创建）。禁止「先实现 X，或后续扩展」「其余由 X.Y 负责」等模糊表述。
-  - **party-mode 强制**：无论 Epic/Story 文档是否已存在，只要涉及以下任一情形，**必须**进入 party-mode 进行多角色辩论（**最少 100 轮**，见 party-mode step-02 的「生成最终方案和最终任务列表」或 Create Story 产出方案场景）：① 有多个实现方案可选；② 存在架构/设计决策或 trade-off；③ 方案或范围存在歧义或未决点。**禁止**以「Epic 已存在」「Story 已生成」为由跳过 party-mode。共识前须达最少轮次；若未达成单一方案或仍有未闭合的 gaps/risks，继续辩论直至满足或达上限轮次。
+  - **party-mode 强制**：无论 Epic/Story 文档是否已存在，只要涉及以下任一情形，**必须**进入 party-mode 进行多角色辩论：① 有多个实现方案可选；② 存在架构/设计决策或 trade-off；③ 方案或范围存在歧义或未决点。主 Agent 在发起前必须先展示 `20 / 50 / 100` 强度选项；若要形成 Story 设计定稿或最终任务列表，推荐 `final_solution_task_list_100`（100 轮）；仅普通分析推荐 `decision_root_cause_50`（50 轮）；`quick_probe_20` 不得用于定稿。**禁止**以「Epic 已存在」「Story 已生成」为由跳过 party-mode。必须等待用户明确回复 `20` / `50` / `100` 后，才能正式发起 `@"party-mode-facilitator (agent)"`。共识前须达最少轮次；若未达成单一方案或仍有未闭合的 gaps/risks，继续辩论直至满足或达上限轮次。每 20 轮必须展示一次 checkpoint，`S / F / C` 只在 `checkpoint_window_ms = 15000` 的窗口内有效；其中 `C` 表示“立即继续下一批”，普通业务补充会打断自动继续并进入重新编排。
   - 全程必须使用中文。
 ```
 
@@ -451,7 +494,7 @@ subagent_type: general-purpose
       ## 用户选择
       强度: {主 Agent 按用户明确回复填入，例如 50 (decision_root_cause_50)}
 
-     [读取 .claude/agents/party-mode-facilitator.md 的完整内容]
+      [读取 .claude/agents/party-mode-facilitator.md 的完整内容]
 
      议题:
      - Story Create 前的方案辩论 / 范围澄清 / 架构取舍
@@ -831,6 +874,7 @@ Claude 端 Stage 3 Dev Story 执行体，负责按 TDD 红绿灯模式执行任�
 - 严格执行 TDD 红绿灯顺序
 - 维护 ralph-method 追踪文件
 - 实施后必须发起 Stage 4 Post Audit
+- 进入 Dev Story 前必须满足统一 `implementation-readiness` gate；若先经过纯文档子阶段，则在首个 `implement` 子阶段前再次重算同一个 gate
 
 #### Required Inputs
 
@@ -2169,4 +2213,3 @@ Claude 版 skill 落地后，至少应满足以下验证：
 > Claude 版 `bmad-story-assistant` 不是 Cursor skill 的直接复制品，而是一个以 Cursor 为语义基线、以 Claude/OMC 为执行适配层、以本仓规则为增强层的统一编排入口 skill。
 
 <!-- ADAPTATION_COMPLETE: 2026-03-15 -->
-

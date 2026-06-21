@@ -22,19 +22,6 @@ function run(command: string, cwd: string): string {
   });
 }
 
-function hasCodexCli(): boolean {
-  try {
-    execSync('codex --version', {
-      cwd: ROOT,
-      stdio: 'ignore',
-      env: { ...process.env },
-    });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 function writeJson(filePath: string, value: unknown): void {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, JSON.stringify(value, null, 2) + '\n', 'utf8');
@@ -47,6 +34,23 @@ function writeText(filePath: string, value: string): void {
 
 function sha256File(filePath: string): string {
   return createHash('sha256').update(fs.readFileSync(filePath)).digest('hex');
+}
+
+function runBlockedJson(command: string, cwd: string, env: NodeJS.ProcessEnv = process.env): string {
+  try {
+    execSync(command, {
+      cwd,
+      encoding: 'utf8',
+      env: { ...env },
+    });
+  } catch (error) {
+    const failure = error as { status?: number; stdout?: Buffer | string };
+    expect(failure.status).toBe(1);
+    return Buffer.isBuffer(failure.stdout)
+      ? failure.stdout.toString('utf8')
+      : String(failure.stdout ?? '');
+  }
+  throw new Error(`Expected command to block: ${command}`);
 }
 
 function writeLayer1PrdCompletionEvidence(root: string): void {
@@ -98,41 +102,6 @@ function writeLayer1PrdCompletionEvidence(root: string): void {
   });
 }
 
-function writeFakeCodexBinary(root: string): string {
-  const fakeCodexPath = path.join(root, 'fake-codex.cjs');
-  writeText(
-    fakeCodexPath,
-    [
-      "const fs = require('fs');",
-      "const path = require('path');",
-      "const input = fs.readFileSync(0, 'utf8');",
-      'const reportPath = input.match(/write a JSON TaskReport to: (.+)/i)?.[1]?.trim();',
-      'const packetId = input.match(/Packet ID: (.+)/i)?.[1]?.trim();',
-      'const allowedScopeLine = input.match(/Allowed write scope: (.+)/i)?.[1] || "";',
-      'const evidencePath = allowedScopeLine.split(",").map((item) => item.trim()).find((item) => item && !item.endsWith("/**") && fs.existsSync(path.resolve(item))) || reportPath;',
-      'if (!reportPath || !packetId) process.exit(2);',
-      'fs.mkdirSync(path.dirname(reportPath), { recursive: true });',
-      "fs.writeFileSync(reportPath, JSON.stringify({ packetId, status: 'done', filesChanged: [], validationsRun: ['fake-codex-consumer-exec'], evidence: [evidencePath], downstreamContext: ['consumer codex exec completed'] }, null, 2) + '\\n', 'utf8');",
-      'process.exit(0);',
-      '',
-    ].join('\n')
-  );
-  const fakeCodexBin =
-    process.platform === 'win32'
-      ? path.join(root, 'fake-codex.cmd')
-      : path.join(root, 'fake-codex');
-  writeText(
-    fakeCodexBin,
-    process.platform === 'win32'
-      ? `@echo off\r\n"${process.execPath}" "${fakeCodexPath}" %*\r\n`
-      : `#!/usr/bin/env sh\n"${process.execPath}" "${fakeCodexPath}" "$@"\n`
-  );
-  if (process.platform !== 'win32') {
-    fs.chmodSync(fakeCodexBin, 0o755);
-  }
-  return fakeCodexBin;
-}
-
 function materializeConfirmedImplementationRequirement(
   root: string,
   opts: { storyId: string; runId: string }
@@ -153,7 +122,7 @@ function materializeConfirmedImplementationRequirement(
 }
 
 describe('Codex consumer five-layer main-agent e2e', () => {
-  it('runs installed Codex no-hooks main-agent loop through the public bmad-speckit CLI', () => {
+  it('prepares installed Codex native /goal for main-session execution through the public CLI', () => {
     const target = fs.mkdtempSync(path.join(os.tmpdir(), 'codex-consumer-five-layer-'));
     try {
       fs.writeFileSync(
@@ -198,32 +167,32 @@ describe('Codex consumer five-layer main-agent e2e', () => {
         runId: registry.activeScope?.runId ?? 'codex-consumer-run',
       });
 
-      const fakeCodexBin = writeFakeCodexBinary(target);
-      const output = execSync(
+      const output = runBlockedJson(
         'npx bmad-speckit main-agent-orchestration --action run-loop --flow story --stage implement --host codex',
+        target,
         {
-          cwd: target,
-          encoding: 'utf8',
-          env: {
-            ...process.env,
-            CODEX_WORKER_ADAPTER_BIN: fakeCodexBin,
-            MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE: 'true',
-          },
+          ...process.env,
+          CODEX_WORKER_ADAPTER_BIN: path.join(target, 'fake-codex-must-not-run'),
+          MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE: 'true',
         }
       );
       const result = JSON.parse(output) as {
         status: string;
+        steps?: Array<{ step?: string }>;
         dispatchInstruction?: { host?: string; packetId?: string };
-        taskReport?: { status?: string; validationsRun?: string[] };
+        taskReport?: { status?: string; validationsRun?: string[]; driftFlags?: string[] };
         finalSurface?: { pendingPacketStatus?: string; orchestrationState?: { host?: string } };
       };
 
-      expect(result.status).toBe('completed');
+      expect(result.status).toBe('blocked');
       expect(result.dispatchInstruction?.host).toBe('codex');
-      expect(result.taskReport?.status).toBe('done');
-      expect(result.taskReport?.validationsRun).toContain('fake-codex-consumer-exec');
+      expect(result.taskReport?.status).toBe('blocked');
+      expect(result.taskReport?.validationsRun).toContain('main-session-native-goal-preparation');
+      expect(result.taskReport?.driftFlags).toContain('main-session-native-goal-required');
       expect(result.taskReport?.validationsRun).not.toContain('codex-worker-adapter-smoke');
-      expect(result.finalSurface?.pendingPacketStatus).toBe('completed');
+      expect(result.steps?.some((step) => step.step === 'native-goal-invocation')).toBe(true);
+      expect(result.steps?.some((step) => step.step === 'codex-worker-adapter')).toBe(false);
+      expect(result.finalSurface?.pendingPacketStatus).toBe('invalidated');
       expect(result.finalSurface?.orchestrationState?.host).toBe('codex');
 
       const deliveryOutput = run(
@@ -252,6 +221,53 @@ describe('Codex consumer five-layer main-agent e2e', () => {
       expect(matrixAlias.status).toBe('deprecated');
       expect(matrixAlias.replacement).toBe('bmad-help');
       expect(matrixAlias.exitCode).toBe(0);
+    } finally {
+      fs.rmSync(target, { recursive: true, force: true });
+    }
+  }, 180_000);
+
+  it('prepares installed Claude Code CLI native /goal for main-session execution without Codex fallback', () => {
+    const target = fs.mkdtempSync(path.join(os.tmpdir(), 'claude-consumer-five-layer-'));
+    try {
+      fs.writeFileSync(
+        path.join(target, 'package.json'),
+        JSON.stringify({ name: 'claude-consumer-five-layer', version: '1.0.0', private: true }),
+        'utf8'
+      );
+      run(`npm install --save-dev "file:${ROOT.replace(/\\/g, '/')}"`, target);
+      run('npx bmad-speckit-init --agent claude-code', target);
+      run(
+        'npx bmad-speckit ensure-run-runtime-context --story-key 16-4-claude-consumer --lifecycle dev_story',
+        target
+      );
+      const registryPath = path.join(target, '_bmad-output', 'runtime', 'registry.json');
+      const registry = JSON.parse(fs.readFileSync(registryPath, 'utf8')) as {
+        activeScope?: { runId?: string };
+      };
+      materializeConfirmedImplementationRequirement(target, {
+        storyId: '16-4-claude-consumer',
+        runId: registry.activeScope?.runId ?? 'claude-consumer-run',
+      });
+
+      const output = runBlockedJson(
+        'npx bmad-speckit main-agent-orchestration --action run-loop --flow story --stage implement --host claude',
+        target
+      );
+      const result = JSON.parse(output) as {
+        status: string;
+        steps?: Array<{ step?: string }>;
+        dispatchInstruction?: { host?: string; packetId?: string };
+        taskReport?: { status?: string; validationsRun?: string[]; driftFlags?: string[] };
+      };
+
+      expect(result.status).toBe('blocked');
+      expect(result.dispatchInstruction?.host).toBe('claude');
+      expect(result.taskReport?.status).toBe('blocked');
+      expect(result.taskReport?.validationsRun).toContain('main-session-native-goal-preparation');
+      expect(result.taskReport?.driftFlags).toContain('main-session-native-goal-required');
+      expect(result.taskReport?.validationsRun).not.toContain('codex-worker-adapter-smoke');
+      expect(result.steps?.some((step) => step.step === 'native-goal-invocation')).toBe(true);
+      expect(result.steps?.some((step) => step.step === 'codex-worker-adapter')).toBe(false);
     } finally {
       fs.rmSync(target, { recursive: true, force: true });
     }
@@ -304,12 +320,11 @@ describe('Codex consumer five-layer main-agent e2e', () => {
     }
   }, 180_000);
 
-  it.skipIf(!hasCodexCli())(
-    'fails closed instead of claiming success when real Codex CLI produces no TaskReport',
+  it(
+    'fails closed before invoking real Codex CLI because native /goal must run in the main session',
     () => {
       const target = fs.mkdtempSync(path.join(os.tmpdir(), 'codex-consumer-real-cli-'));
       try {
-        run('codex --version', ROOT);
         fs.writeFileSync(
           path.join(target, 'package.json'),
           JSON.stringify({ name: 'codex-consumer-real-cli', version: '1.0.0', private: true }),
@@ -328,25 +343,37 @@ describe('Codex consumer five-layer main-agent e2e', () => {
           storyId: '16-3-codex-real-cli',
           runId: registry.activeScope?.runId ?? 'codex-real-cli-run',
         });
-        let output = '';
-        expect(() => {
-          output = run(
-            'npx --no-install bmad-speckit main-agent-orchestration --action run-loop --flow story --stage implement --host codex',
-            target
-          );
-        }).toThrow();
-        const reportPath = path.join(target, '_bmad-output', 'runtime', 'codex', 'task-reports');
-        const taskReports = fs.existsSync(reportPath) ? fs.readdirSync(reportPath) : [];
+        const output = runBlockedJson(
+          'npx --no-install bmad-speckit main-agent-orchestration --action run-loop --flow story --stage implement --host codex',
+          target
+        );
+        const result = JSON.parse(output) as {
+          taskReport?: { status?: string; evidence?: string[]; driftFlags?: string[] };
+        };
+        expect(result.taskReport?.status).toBe('blocked');
+        expect(result.taskReport?.driftFlags).toContain('main-session-native-goal-required');
+        const reportPath = path.join(
+          target,
+          '_bmad-output',
+          'runtime',
+          'governance',
+          'task-reports'
+        );
+        const taskReports = fs.readdirSync(path.join(reportPath, registry.activeScope?.runId ?? ''));
         expect(taskReports.length).toBeGreaterThan(0);
         const blockedReport = JSON.parse(
-          fs.readFileSync(path.join(reportPath, taskReports[0]), 'utf8')
+          fs.readFileSync(
+            path.join(reportPath, registry.activeScope?.runId ?? '', taskReports[0]),
+            'utf8'
+          )
         ) as {
           status: string;
           evidence?: string[];
+          driftFlags?: string[];
         };
         expect(blockedReport.status).toBe('blocked');
-        expect(blockedReport.evidence).toContain('codex did not produce task report');
-        expect(output).toBe('');
+        expect(blockedReport.driftFlags).toContain('main-session-native-goal-required');
+        expect(blockedReport.evidence?.some((item) => item.includes('/goal'))).toBe(true);
         const stateFilesRoot = path.join(
           target,
           '_bmad-output',
@@ -423,31 +450,28 @@ describe('Codex consumer five-layer main-agent e2e', () => {
         storyId: '16-2-codex-packed',
         runId: registry.activeScope?.runId ?? 'codex-packed-run',
       });
-      const fakeCodexBin = writeFakeCodexBinary(target);
       const runLoop = JSON.parse(
-        execSync(
+        runBlockedJson(
           'npx --no-install bmad-speckit main-agent-orchestration --action run-loop --flow story --stage implement --host codex',
+          target,
           {
-            cwd: target,
-            encoding: 'utf8',
-            env: {
-              ...process.env,
-              CODEX_WORKER_ADAPTER_BIN: fakeCodexBin,
-              MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE: 'true',
-            },
+            ...process.env,
+            CODEX_WORKER_ADAPTER_BIN: path.join(target, 'packed-fake-codex-must-not-run'),
+            MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE: 'true',
           }
         )
       ) as {
         status: string;
         dispatchInstruction?: { host?: string };
-        taskReport?: { status?: string; validationsRun?: string[] };
+        taskReport?: { status?: string; validationsRun?: string[]; driftFlags?: string[] };
         finalSurface?: { pendingPacketStatus?: string };
       };
-      expect(runLoop.status).toBe('completed');
+      expect(runLoop.status).toBe('blocked');
       expect(runLoop.dispatchInstruction?.host).toBe('codex');
-      expect(runLoop.taskReport?.status).toBe('done');
-      expect(runLoop.taskReport?.validationsRun).toContain('fake-codex-consumer-exec');
-      expect(runLoop.finalSurface?.pendingPacketStatus).toBe('completed');
+      expect(runLoop.taskReport?.status).toBe('blocked');
+      expect(runLoop.taskReport?.validationsRun).toContain('main-session-native-goal-preparation');
+      expect(runLoop.taskReport?.driftFlags).toContain('main-session-native-goal-required');
+      expect(runLoop.finalSurface?.pendingPacketStatus).toBe('invalidated');
       const matrixAlias = JSON.parse(
         run('npx --no-install bmad-speckit main-agent:bmad-help-five-layer-matrix --json', target)
       ) as {

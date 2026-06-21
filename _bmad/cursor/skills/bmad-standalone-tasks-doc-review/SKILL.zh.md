@@ -1,70 +1,71 @@
+<!-- BLOCK_LABEL_POLICY=B -->
 ---
 name: bmad-standalone-tasks-doc-review
 description: |
-  Strict audit for TASKS/TASKS-like documents (TASKS_*.md, tasks-E*.md) with 批判审计员 >70%, 3-round no-gap convergence, and audit subagent directly modifying the document when gaps are found. Use when: (1) User requests audit of a TASKS document with strict convergence, (2) "对 {文档路径} 发起审计子任务" or "TASKS 文档审计", (3) Pre-implementation document quality gate. Supports code-reviewer (Cursor Task) or mcp_task generalPurpose fallback. Follows audit-document-iteration-rules.
+  Strict audit for TASKS / TASKS-like documents (TASKS_*.md, tasks-E*.md): Critical Auditor >70%, 3-round no-gap convergence, and the audit subagent must edit the audited document when gaps are found. Use when: (1) The user requests an audit of a TASKS document with strict convergence, (2) “Run an audit subtask on {doc path}” or “TASKS document audit”, (3) Pre-implementation document quality gate. Supports code-reviewer (Cursor Task) or mcp_task generalPurpose fallback. Follows audit-document-iteration-rules.
 ---
 
-# BMAD Standalone Tasks 文档审计
+# BMAD standalone tasks document audit
 
-对 TASKS_*.md、tasks-E*.md 等任务文档发起严格审计，要求批判审计员 >70%、连续 3 轮无 gap 收敛，审计子代理在发现 gap 时直接修改被审文档。
+Run a strict audit on `TASKS_*.md`, `tasks-E*.md`, and similar task documents. Requires Critical Auditor >70%, three consecutive rounds with no new gap, and the audit subagent must **directly edit** the audited document when gaps are found.
 
-**Orphan TASKS doc-review closeout contract**：当被审文档位于 `_orphan/` 路径时，结构化审计报告必须显式提供 `stage=standalone_tasks`、`artifactDocPath`、`reportPath`。缺失任一字段、仍返回 `stage=document`、或仅写 PASS 文本时，不得视为 authoritative closeout。
+**Orphan TASKS doc-review closeout contract**: when the audited document lives under `_orphan/`, the structured audit report must explicitly provide `stage=standalone_tasks`, `artifactDocPath`, and `reportPath`. Missing any field, returning `stage=document`, or relying on prose-only `PASS` must not count as authoritative closeout.
 
-## 适用场景
+## When to use
 
-- 用户指定文档路径并要求发起审计子任务
-- TASKS 文档实施前的质量门控
-- 需「完全覆盖、验证通过」且 3 轮无 gap 收敛的文档审计
+- The user gives a document path and asks to launch an audit subtask
+- Quality gate before implementing a TASKS document
+- Document audit that must reach “full coverage, verified pass” with 3-round no-gap convergence
 
-## 主 Agent 编排面（强制）
+## Main Agent Orchestration Surface
 
-消费项目用户通过 `$bmad-speckit`、`/bmad-speckit` 或 `bmad-speckit` 在当前 AI 宿主会话中激活主控。不得把 `npm run main-agent-orchestration` 或 `npx bmad-speckit main-agent-orchestration ...` 写成普通消费用户默认步骤；这些命令只允许用于安装验证、CI、debug 或 no-skill fallback。
+Consumer users activate governance through `$bmad-speckit`, `/bmad-speckit`, or `bmad-speckit` in the active AI host session. Do not present `npm run main-agent-orchestration` or `npx bmad-speckit main-agent-orchestration ...` as the default consumer-user step; those commands are install validation, CI, debug, or no-skill fallback only.
 
-在 interactive main-agent 模式下，主 Agent 在发起、继续或收口本链路前，必须内部运行或等价消费 Main Agent control plane：
+In interactive main-agent mode, before starting, continuing, or closing this flow, the main Agent must internally run or equivalently consume the Main Agent control plane:
 
 ```text
 main-agent-orchestration --action inspect --host <codex|cursor|claude>
 main-agent-orchestration --action dispatch-plan --host <codex|cursor|claude>
 ```
 
-全局分支只能由 `requirement-record.json`、`currentMentalModel` 和六个心智模型链路决定：需求确认、架构确认、实施准备、执行闭合、审计复核、交付确认。`bmad-help`、Dashboard、score、SFT、legacy report、`orchestrationState`、`pendingPacket`、`continueDecision`、`mainAgentNextAction` 和 `mainAgentReady` 只能作为 projection / compatibility hint / evidence；子代理返回、host closeout、rerun 或阻断事件后必须重新 inspect，再决定下一条全局分支。
+Global branching can only be derived from `requirement-record.json`, `currentMentalModel`, and the six mental model chain: requirement confirmation, architecture confirmation, implementation readiness, execution closure, audit review, and delivery confirmation. `bmad-help`, dashboard, score, SFT, legacy reports, `orchestrationState`, `pendingPacket`, `pendingPacketStatus`, `continueDecision`, `mainAgentNextAction`, and `mainAgentReady` are projections, compatibility hints, or evidence only; after any subagent result, host closeout, rerun, or blocking event, re-run inspect before choosing the next global branch.
 
-硬禁止事项：
-- 禁止要求普通消费用户通过 npm / npx 激活主控。
-- 禁止仅根据 `PASS`、reviewer prose、host summary、`runAuditorHost closeout approved`、handoff summary 或旧 runtime 文件继续派发。
-- interactive mode 下禁止手写 packet 文件或默认写 worker-consumable queue item。
-- 禁止让子代理决定下一条全局执行链；子代理只执行 bounded packet，下一步永远由主 Agent 回读受控记录后决定。
+Hard prohibitions:
+- Do not ask normal consumer users to activate governance through npm or npx.
+- Do not continue dispatch from `PASS`, reviewer prose, host summary, `runAuditorHost closeout approved`, handoff summary, or old runtime files alone.
+- Do not hand-write packet files or default to worker-consumable queue items in interactive mode.
+- Do not let subagents choose the next global branch; subagents execute bounded packets only, and the main Agent chooses the next step after re-reading controlled records.
 
-## 强制约束
+## Mandatory constraints
 
-| 约束 | 说明 |
-|------|------|
-| 批判审计员 | 必须出场，发言占比 **>70%** |
-| 收敛条件 | **连续 3 轮无 gap**（针对被审文档） |
-| 发现 gap 时 | **审计子代理须在本轮内直接修改被审文档**，禁止仅输出建议 |
-| 子代理类型 | 优先 code-reviewer；若无效则 mcp_task generalPurpose |
+| Constraint | Description |
+|------------|-------------|
+| Critical Auditor | Must participate; speaking share **>70%** |
+| Convergence | **Three consecutive rounds with no new gap** (on the audited document) |
+| When a gap is found | **The audit subagent must edit the audited document in the same round**; suggestions-only is forbidden |
+| Subagent type | Prefer code-reviewer; if unavailable use `mcp_task` + `subagent_type: generalPurpose` |
 
-## 工作流
+## Workflow
 
-1. **解析文档路径**：从用户输入获取 `{文档路径}`（如 `_bmad-output/implementation-artifacts/_orphan/TASKS_xxx.md`）
-2. **确定需求依据**：若 TASKS 文档头部有「参考」字段，读取该文档作为需求依据；否则以 TASKS 自身为自洽依据（此时 `{需求依据路径}` 填被审文档路径）
-3. **发起审计**：将 [references/audit-prompt-tasks-doc.md](references/audit-prompt-tasks-doc.md) 完整 prompt 复制，替换 `{文档路径}`、`{需求依据路径}`、`{项目根}`、`{报告路径}`、`{轮次}`；**报告保存部分须为「每轮报告（无论通过与否）均须保存至 {报告路径}」**，与步骤 7 一致（若模板为「审计通过时」则须覆盖）
-4. **子代理选择**：优先 Cursor Task 调度 code-reviewer；若 code-reviewer 不可用（如 Cursor Task 不存在、调用失败或超时），使用 `mcp_task` + `subagent_type: generalPurpose`
-5. **收敛检查**：收到报告后，若结论「通过」且批判审计员注明「本轮无新 gap」→ `consecutive_pass_count + 1`；若「未通过」或存在 gap → 置 0。**通过判定**：报告结论含「完全覆盖、验证通过」或「通过」；批判审计员段落含「本轮无新 gap」「无新 gap」或「无 gap」。
-6. **迭代**：未达 3 轮无 gap 时，发起下一轮审计（审计上一轮修改后的文档）。**禁止死循环**：`consecutive_pass_count >= 3` 时**立即结束**，不再发起审计；**最大轮次上限 10 轮**，超过则强制结束并输出「已达最大轮次，请人工检查」。
-7. **报告落盘**：每轮报告（无论通过与否）均须保存至 `_bmad-output/implementation-artifacts/_orphan/AUDIT_TASKS_{slug}_§4_round{N}.md`；主 Agent 发起审计时须在 prompt 中明确此要求。**注意**：报告保存是子代理职责，主 Agent 收到报告后**仅做收敛检查**，通过则结束，未通过则发起下一轮；**不得**因「保存报告」而重复发起审计。
+1. **Resolve document path**: From user input, get `{document-path}` (e.g. `_bmad-output/implementation-artifacts/_orphan/TASKS_xxx.md`).
+2. **Determine requirements baseline**: If the TASKS doc header has a `reference` (or equivalent) field pointing to a baseline document, read that document as the baseline; otherwise the TASKS doc is self-contained (then `{baseline-path}` is the audited doc path).
+3. **Launch audit**: Copy the full prompt from [references/audit-prompt-tasks-doc.md](references/audit-prompt-tasks-doc.md), replace `{document-path}`, `{baseline-path}`, `{project-root}`, `{report-path}`, `{round}`; the **report save** section must say that **every round’s report (pass or fail) is saved to `{report-path}`**, consistent with step 7 (if the template says “only when audit passes”, override it).
+4. **Subagent choice**: Prefer Cursor Task → code-reviewer; if code-reviewer is unavailable (no Task, failure, timeout), use `mcp_task` + `subagent_type: generalPurpose`.
+5. **Convergence check**: After each report, if the verdict is pass and the Critical Auditor states “no new gap this round” → `consecutive_pass_count + 1`; otherwise reset to 0. **Pass** means the conclusion contains “完全覆盖、验证通过” or “通过”; Critical Auditor section contains “本轮无新 gap”, “无新 gap”, or “无 gap”.
+6. **Iterate**: Until 3 no-gap rounds, launch the next audit on the updated document. **No infinite loops**: when `consecutive_pass_count >= 3`, **stop immediately**; **max 10 rounds**, then force-stop with “max rounds reached—manual review required”.
+7. **Persist reports**: Every round’s report (pass or fail) must be saved to `_bmad-output/implementation-artifacts/_orphan/AUDIT_TASKS_{slug}_§4_round{N}.md`; the main Agent must state this in the subagent prompt. **Note**: saving reports is the subagent’s job; the main Agent **only** checks convergence—do not re-launch audits just to “save reports”.
 
-## 引用
+## References
 
-- **audit-document-iteration-rules**：`.cursor/skills/speckit-workflow/references/audit-document-iteration-rules.md`
-- **audit-prompts §4**：`.cursor/skills/speckit-workflow/references/audit-prompts.md` §4（主流程 TASKS 文档审计）
-- **audit-prompts §5**：`.cursor/skills/speckit-workflow/references/audit-prompts.md` §5（模式 B 实施后审计）
-- **audit-prompts-critical-auditor-appendix**：`.cursor/skills/speckit-workflow/references/audit-prompts-critical-auditor-appendix.md`
-- **audit-post-impl-rules**：`.cursor/skills/speckit-workflow/references/audit-post-impl-rules.md`（模式 B 收敛规则）
+- **audit-document-iteration-rules**: `.cursor/skills/speckit-workflow/references/audit-document-iteration-rules.md`
+- **audit-prompts §4**: `.cursor/skills/speckit-workflow/references/audit-prompts.md` §4 (main TASKS document audit flow)
+- **audit-prompts §5**: `.cursor/skills/speckit-workflow/references/audit-prompts.md` §5 (mode B post-implementation audit)
+- **audit-prompts-critical-auditor-appendix**: `.cursor/skills/speckit-workflow/references/audit-prompts-critical-auditor-appendix.md`
+- **audit-post-impl-rules**: `.cursor/skills/speckit-workflow/references/audit-post-impl-rules.md` (mode B convergence rules)
 
-## 可解析评分块（强制）
+## Mandatory parseable scoring block
 
-主流程（TASKS 文档审计）报告结尾须含：
+Main flow (TASKS document audit) reports must end with:
 
 ```markdown
 ## 可解析评分块（供 parseAndWriteScore）
@@ -76,13 +77,14 @@ main-agent-orchestration --action dispatch-plan --host <codex|cursor|claude>
 - 可追溯性: XX/100
 ```
 
-模式 B（实施后审计）的可解析评分块维度见 audit-prompts §5.1（功能性、代码质量、测试覆盖、安全性），与主流程四维不同。
+Mode B (post-implementation audit) dimensions differ; see audit-prompts §5.1 (functionality, code quality, test coverage, security).
 
-## 模式 B：实施后审计（§5）
+## Mode B: post-implementation audit (§5)
 
-当用户要求对**实施完成后的结果**（代码、prd、progress）审计时，使用 audit-prompts §5。此时：
-- 被审对象为代码/实现，非文档
-- 发现 gap 时由**实施子代理**修改代码，非审计子代理
-- 收敛规则见 `.cursor/skills/speckit-workflow/references/audit-post-impl-rules.md`
+When the user audits **implementation results** (code, prd, progress), use audit-prompts §5. Then:
 
-详见 [references/audit-prompt-impl.md](references/audit-prompt-impl.md)。
+- The audited object is code/implementation, not the TASKS doc alone
+- Gaps are fixed by the **implementation** subagent, not the audit subagent
+- Convergence rules: `.cursor/skills/speckit-workflow/references/audit-post-impl-rules.md`
+
+See [references/audit-prompt-impl.md](references/audit-prompt-impl.md).

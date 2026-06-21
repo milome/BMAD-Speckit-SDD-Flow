@@ -78,9 +78,9 @@ function addGoalCommandText(input: {
 
 describe('main-agent run-loop native goal invocation routing', () => {
   it.each([
-    { host: 'codex' as const, expectedCommand: 'codex' },
-    { host: 'claude' as const, expectedCommand: 'claude' },
-  ])('routes $host native goal packet through host-native invoker', ({ host, expectedCommand }) => {
+    { host: 'codex' as const },
+    { host: 'claude' as const },
+  ])('prepares $host native goal packet for main-session execution without host subprocess', ({ host }) => {
     const packetId = `implement-native-${host}`;
     const fixture = materializeRequirementFixture({
       orchestrationNextAction: 'dispatch_implement',
@@ -104,18 +104,8 @@ describe('main-agent run-loop native goal invocation routing', () => {
         fixture.requirementSetId,
         packetId
       );
-      const calls: Array<{ command: string; args: string[] }> = [];
-      const spawnSyncFn: NativeGoalSpawnSyncFn = (command, args) => {
-        calls.push({ command, args });
-        writeJson(requestedTaskReportPath, {
-          packetId,
-          status: 'done',
-          filesChanged: ['scripts/main-agent-orchestration.ts'],
-          validationsRun: ['run-loop-native-goal-fixture'],
-          evidence: ['native goal run-loop fixture completed'],
-          downstreamContext: ['native goal run-loop completed'],
-        });
-        return { status: 0, stdout: `${host} stdout`, stderr: '' };
+      const spawnSyncFn: NativeGoalSpawnSyncFn = () => {
+        throw new Error('run-loop must not spawn a host CLI for native /goal');
       };
 
       const result = runMainAgentAutomaticLoop({
@@ -129,17 +119,20 @@ describe('main-agent run-loop native goal invocation routing', () => {
         nativeGoalSpawnSyncFn: spawnSyncFn,
       });
 
-      expect(result.status).toBe('completed');
-      expect(result.taskReport?.status).toBe('done');
+      expect(result.status).toBe('blocked');
+      expect(result.taskReport?.status).toBe('blocked');
+      expect(result.taskReport?.validationsRun).toContain('main-session-native-goal-preparation');
+      expect(result.taskReport?.driftFlags).toContain('main-session-native-goal-required');
       expect(result.steps.some((step) => step.step === 'native-goal-invocation')).toBe(true);
       expect(result.steps.some((step) => step.step === 'codex-worker-adapter')).toBe(false);
-      expect(calls).toHaveLength(1);
-      expect(calls[0].command).toBe(expectedCommand);
-      expect(calls[0].args).toContain(commandText);
       const receipt = JSON.parse(
         fs.readFileSync(receiptPath(fixture.root, fixture.recordId, packetId), 'utf8')
       );
-      expect(receipt.invokedCommandKind).toBe('host_native_goal');
+      expect(receipt.invokedCommandKind).toBe('main_session_native_goal_required');
+      expect(receipt.executionSurface).toBe('main_session_native_goal_required');
+      expect(receipt.args).toEqual([commandText]);
+      expect(receipt.nativeGoalCommandPrepared).toBe(true);
+      expect(receipt.nativeGoalCommandUsed).toBe(false);
       expect(receipt.packetId).toBe(packetId);
       expect(receipt.taskReportPath).toBe(requestedTaskReportPath);
     } finally {

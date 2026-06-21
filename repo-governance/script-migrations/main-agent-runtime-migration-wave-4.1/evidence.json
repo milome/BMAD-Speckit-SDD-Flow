@@ -2,7 +2,7 @@
   "schemaVersion": "main-agent-runtime-migration-wave-4-1-evidence/v1",
   "waveId": "main-agent-runtime-migration-wave-4.1",
   "contractPath": "docs/plans/2026-06-20-main-agent-runtime-migration-wave-4-1-goal-execution-plan.md",
-  "generatedAt": "2026-06-21T02:27:49.830Z",
+  "generatedAt": "2026-06-21T03:06:08.785Z",
   "status": "passed_strict_closeout",
   "strictGateState": {
     "finalPassed": true,
@@ -32,21 +32,21 @@
   "artifactReceipts": {
     "packageSourceParityEvidence": {
       "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/package-source-parity-evidence.json",
-      "bytes": 768353,
-      "hash": "sha256:ea56874eeb652e9fbc08cf33d16a62210a80cc10b9d860466c685415b2690bf7",
-      "backupPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/package-source-parity-evidence.json.backup-35672-1782008869800"
+      "bytes": 768375,
+      "hash": "sha256:a883bccba9f2ec92774ce4985808522f179f8149d463383c5c5ab11b33f619a8",
+      "backupPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/package-source-parity-evidence.json.backup-21336-1782011168758"
     },
     "summary": {
       "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/summary.md",
       "bytes": 2299,
       "hash": "sha256:116ceaca5312027a94845201bff56178dcf87eabddc8c944569b31250d8a51a9",
-      "backupPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/summary.md.backup-35672-1782008869807"
+      "backupPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/summary.md.backup-21336-1782011168766"
     },
     "finalEvidencePacket": {
       "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/final-evidence-packet.json",
       "bytes": 25536,
-      "hash": "sha256:b0c6604f8de5832238252cc6af441d752c19753da03507571ed345be58936f9a",
-      "backupPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/final-evidence-packet.json.backup-35672-1782008869825"
+      "hash": "sha256:46a2bb1dd48071136a74e5f6f93143ad513da41766fc31ffe04e93b2fd03354e",
+      "backupPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/final-evidence-packet.json.backup-21336-1782011168782"
     }
   }
 }

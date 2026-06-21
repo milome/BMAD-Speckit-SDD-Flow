@@ -6,8 +6,10 @@ description: |
   主 Agent 发起任一子任务时**必须**将本 skill 内该阶段的「完整 prompt 模板」整段复制并填入占位符后传入，禁止省略、概括或自行改写提示词；
   主 Agent 禁止直接修改生产代码，实施须通过 Agent tool 子代理（subagent_type: general-purpose）。
   party-mode 主路径显式调用示例已统一为：`.claude/agents/party-mode-facilitator.md` / `@"party-mode-facilitator (agent)"`。
-  使用 party-mode 进行**至少 100 轮**多角色辩论（BUGFIX 产出最终方案与 §7 任务列表，属 party-mode step-02「生成最终方案和最终任务列表」场景），
-  满足收敛条件（共识 + 近 2–3 轮无新 gap）再结束；审计优先 `.claude/agents/auditors/auditor-bugfix`，按 Fallback 链降级。
+  主 Agent 进入 party-mode 前必须先展示 `20 / 50 / 100` 强度选项；普通 RCA / 方案分析推荐 `decision_root_cause_50`，BUGFIX 最终方案与 §7 推荐 `final_solution_task_list_100`；但必须等待用户明确回复后，才能发起 `@"party-mode-facilitator (agent)"`。
+  `quick_probe_20` 仅用于 probe-only；若当前档位不足以产出高置信最终产物，主 Agent 必须拒绝当前档位并要求升级到 `final_solution_task_list_100`。
+  每 20 轮必须展示一次 checkpoint，且 `S / F / C` 仅在 `checkpoint_window_ms = 15000` 的窗口内生效；heartbeat 由 facilitator 负责。
+  审计优先 `.claude/agents/auditors/auditor-bugfix`，按 Fallback 链降级。
   遵循 ralph-method、TDD 红绿灯、speckit-workflow。
   适用场景：用户报告 BUG、要求根因分析、生成/更新 BUGFIX 文档、补充 §7 任务列表、实施 BUGFIX。全程中文。
 when_to_use: |
@@ -23,7 +25,19 @@ references:
   - speckit-workflow: 禁止伪实现、必须运行验收命令、架构忠实
 ---
 <!-- CLOSEOUT-APPROVED-CANONICAL -->
+> Party-mode final-output contract：`quick_probe_20`、`decision_root_cause_50`、`final_solution_task_list_100` 均可展示；若低档位被要求产出最终方案，必须拒绝当前档位并升级到 `final_solution_task_list_100`。
 > Closeout 术语收紧：本文件中“完成 / 通过 / 可进入下一阶段”一律指 `runAuditorHost` 返回 `closeout approved`。审计报告 `PASS` 仅表示可以进入 host close-out，单独的 `PASS` 不得视为完成、准入或放行。
+> **统一 closeout 硬门禁（适用于本技能全部审计闭环）**：
+> - 主 Agent 在每个阶段的完整 prompt 模板结尾、resume 指令结尾、以及审计通过后的 host 收口指令结尾，必须原样追加下列固定句；同时必须自动写入评分数据与本技能要求的交接文档（handoff / state / progress / 审计收口文档），禁止留给用户手动完成。
+> - 未执行 `runAuditorHost` 并验证评分写入成功前，禁止结束、禁止交还用户手动操作。
+> - 只有 `runAuditorHost` 返回 `closeout approved` 才算完成；其余都算未完成。
+> - 禁止给“你可以手动做下一步”的建议，除非用户明确要求。
+> - `runAuditorHost` 失败时必须自动重试，并在每次重试时记录失败原因与修复动作；未成功前不得退出当前闭环。
+> - 最终回复必须显式包含以下 4 行，缺一视为未完成：
+>   - `runAuditorHost 调用参数`
+>   - `runAuditorHost 返回结果`
+>   - `评分写入结果（成功/失败码）`
+>   - `closeout 状态（approved/未approved）`
 
 > **Orphan bugfix closeout contract**：当 BUGFIX 文档位于 `_bmad-output/implementation-artifacts/_orphan/` 时，结构化审计报告必须显式提供 `stage=bugfix`、`artifactDocPath`、`reportPath`，且三者必须与真实 BUGFIX 文档路径 / 报告路径一致；缺失任一字段或仍停留在 prose-only PASS 时，主 Agent 不得宣称通过，host closeout 必须 fail-closed。
 
@@ -31,28 +45,60 @@ references:
 
 > **Party-mode source of truth**：`{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`。所有 party-mode 的 rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit gate 语义都以该文件为准；本 skill 不得定义第二套 gate 语义。
 
+## Party-Mode 主 Agent 编排约束（Wave 4）
+
+- 进入 party-mode 前，主 Agent 必须先向用户展示 `20 / 50 / 100` 三档强度，并按请求类型给出推荐档位。
+- 普通 RCA / 方案分析推荐 `decision_root_cause_50`；需要 BUGFIX §7 / 最终方案 / 最终任务列表等高置信最终产物时推荐 `final_solution_task_list_100`。
+- 主 Agent 必须等待用户明确回复 `20` / `50` / `100` 后，才能正式发起 `@"party-mode-facilitator (agent)"`；禁止把推荐档位表述成已替用户完成的选择。
+- 用户一旦明确回复 `20` / `50` / `100`，主 Agent 必须将该回复自动编译进 facilitator prompt 的专用确认块：
+  `## 用户选择`
+  `强度: 50 (decision_root_cause_50)` / `强度: 20 (quick_probe_20)` / `强度: 100 (final_solution_task_list_100)`。
+- 若运行时已携带结构化 `gateProfileId` / `gate_profile_id`，其值必须与上述确认块一致；若 Agent tool 无法透传该字段，则仍必须保留确认块作为授权证明。
+- `quick_probe_20` 仅用于 probe-only；若用户当前选择 `quick_probe_20` 或 `decision_root_cause_50`，却又明确要求高置信最终产物，主 Agent 必须拒绝当前档位并要求升级到 `final_solution_task_list_100`。
+- 每 20 轮必须向用户展示一次 checkpoint；checkpoint 展示后默认自动继续下一批，不要求逐批人工确认。
+- `S / F / C` 只在 checkpoint 窗口内有效；`checkpoint_window_ms = 15000`。
+- `C` 的语义固定为“立即继续下一批”，会立即关闭当前 checkpoint 窗口并跳过剩余等待时间。
+- 若用户在 checkpoint 窗口内输入普通业务补充文本，而不是 `S / F / C`，主 Agent 必须立即停止自动继续，取消窗口计时，并按新补充进入下一批前的重新编排。
+- checkpoint 窗口外的 `S / F / C` 必须显式拒绝，不缓存、不当作普通业务输入。
+- heartbeat 由 facilitator 负责；主 Agent 只负责批次结束后的 checkpoint 展示，不负责单批执行中的实时 heartbeat 插入。
+
 ## Purpose
 
 本 skill 是 Cursor `bmad-bug-assistant` 在 Claude Code CLI / OMC 环境下的统一适配入口。
 
-## 主 Agent 编排面（强制）
+## Main Agent Orchestration Surface
 
-消费项目用户通过 `$bmad-speckit`、`/bmad-speckit` 或 `bmad-speckit` 在当前 AI 宿主会话中激活主控。不得把 `npm run main-agent-orchestration` 或 `npx bmad-speckit main-agent-orchestration ...` 写成普通消费用户默认步骤；这些命令只允许用于安装验证、CI、debug 或 no-skill fallback。
+Consumer users activate governance through `$bmad-speckit`, `/bmad-speckit`, or `bmad-speckit` in the active AI host session. Do not present `npm run main-agent-orchestration` or `npx bmad-speckit main-agent-orchestration ...` as the default consumer-user step; those commands are install validation, CI, debug, or no-skill fallback only.
 
-在 interactive main-agent 模式下，主 Agent 在发起、继续或收口本链路前，必须内部运行或等价消费 Main Agent control plane：
+In interactive main-agent mode, before starting, continuing, or closing this flow, the main Agent must internally run or equivalently consume the Main Agent control plane:
 
 ```text
 main-agent-orchestration --action inspect --host <codex|cursor|claude>
 main-agent-orchestration --action dispatch-plan --host <codex|cursor|claude>
 ```
 
-全局分支只能由 `requirement-record.json`、`currentMentalModel` 和六个心智模型链路决定：需求确认、架构确认、实施准备、执行闭合、审计复核、交付确认。`bmad-help`、Dashboard、score、SFT、legacy report、`orchestrationState`、`pendingPacket`、`continueDecision`、`mainAgentNextAction` 和 `mainAgentReady` 只能作为 projection / compatibility hint / evidence；子代理返回、host closeout、rerun 或阻断事件后必须重新 inspect，再决定下一条全局分支。
+Global branching can only be derived from `requirement-record.json`, `currentMentalModel`, and the six mental model chain: requirement confirmation, architecture confirmation, implementation readiness, execution closure, audit review, and delivery confirmation. `bmad-help`, dashboard, score, SFT, legacy reports, `orchestrationState`, `pendingPacket`, `continueDecision`, `mainAgentNextAction`, and `mainAgentReady` are projections, compatibility hints, or evidence only; after any subagent result, host closeout, rerun, or blocking event, re-run inspect before choosing the next global branch.
 
-硬禁止事项：
-- 禁止要求普通消费用户通过 npm / npx 激活主控。
-- 禁止仅根据 `PASS`、reviewer prose、host summary、`runAuditorHost closeout approved`、handoff summary 或旧 runtime 文件继续派发。
-- interactive mode 下禁止手写 packet 文件或默认写 worker-consumable queue item。
-- 禁止让子代理决定下一条全局执行链；子代理只执行 bounded packet，下一步永远由主 Agent 回读受控记录后决定。
+Hard prohibitions:
+- Do not ask normal consumer users to activate governance through npm or npx.
+- Do not continue dispatch from `PASS`, reviewer prose, host summary, `runAuditorHost closeout approved`, handoff summary, or old runtime files alone.
+- Do not hand-write packet files or default to worker-consumable queue items in interactive mode.
+- Do not let subagents choose the next global branch; subagents execute bounded packets only, and the main Agent chooses the next step after re-reading controlled records.
+
+## Uninterrupted Execution Contract
+
+- 不中断执行 contract：bugfix implementation must **连续完成当前作用域内的全部剩余 US/任务** until a blocker or post-audit boundary is reached.
+- If post-audit fails, the main Agent must rerun implementation and rerun audit instead of stopping after one failed audit.
+- The chain remains active until `runAuditorHost` confirms closeout.
+
+目标不是简单复制 Cursor skill，而是：
+
+1. **继承 Cursor 已验证的 BUG 修复全流程语义**（根因分析 → BUGFIX 文档 → 审计 → 实施 → 实施后审计）
+2. **在 Claude/OMC 运行时中将审计执行体映射到 `.claude/agents/auditors/auditor-bugfix` 等**
+3. **接入仓库中已开发完成的 handoff、scoring、commit gate 机制**
+4. **确保在 Claude Code CLI 中能完整、连续、正确地执行 BUG 修复全流程**
+
+---
 
 ## 核心验收标准
 
@@ -83,6 +129,7 @@ Claude 版 `bmad-bug-assistant` 必须满足：
 4. **主 Agent 禁止直接生成 BUGFIX 文档**：阶段一、二的 BUGFIX 文档（含 §1–§5）必须由 party-mode 或子代理产出；主 Agent 不得以「已有分析文档」「根因已共识」等为由跳过子代理并自行撰写 BUGFIX 文档。
 5. **凡更新必审计**：凡产出或更新 BUGFIX 文档（含 §4、§7），完成后**必须**发起审计子任务并迭代至通过；**禁止**省略审计步骤。无论是否经过辩论，审计闭环为必做项。
 6. **BUGFIX 文档审计是实施前硬门槛**：`auditor-bugfix` 的职责是 **BUGFIX 文档审计**，不是实施后代码审计。只要 `auditor-bugfix` 尚未通过，**禁止**进入任何修复实现、代码修改、测试实现或“先修后补审计”的路径。
+7. **Implementation Entry Gate 是实施前第二硬门槛**：`auditor-bugfix` 通过后，主 Agent **仍必须**执行统一 `implementation-readiness` gate 断言。仅当结果为 `decision=pass` 时，方可进入阶段四实施；若结果为 `block` 或 `reroute`，必须先补齐 readiness 事实或按推荐 flow 调整，禁止直接发起实现。
 
 ### 主 Agent 传递提示词规则（必守）
 
@@ -576,7 +623,11 @@ artifacts:
 
 ### 4.1 发起实施子任务
 
-**实施前硬门槛**：进入本节前，`auditor-bugfix` 必须已对 BUGFIX 文档完成审计并给出通过结论。若 BUGFIX 文档审计未通过、未执行或结论不明，**禁止**发起实施子任务。
+**实施前双重硬门槛**：进入本节前，必须同时满足：
+1. `auditor-bugfix` 已对 BUGFIX 文档完成审计并给出通过结论；
+2. 统一 `implementation-readiness` gate 断言结果为 `decision=pass`。
+
+若 BUGFIX 文档审计未通过、未执行、结论不明，或 gate 结果为 `block` / `reroute`，**禁止**发起实施子任务。
 
 | 项 | 内容 |
 | -- | ---- |
@@ -677,6 +728,7 @@ Amelia 开发 的规范已在上方 5 条中列出，子代理按内联执行即
 **未通过时必做（禁止只跑一轮即结束）**：若审计结论为「**未通过**」或审计报告中列出未通过项及修改建议，主 Agent **必须**按修改建议执行（委托子代理修改代码或更新 BUGFIX/文档），然后**再次发起**实施后审计（使用同一模板 BUG-A4-POSTAUDIT）；重复「审计 → 若未通过则按建议修改 → 再审计」直至结论为「**完全覆盖、验证通过**」。禁止在结论为未通过时仅做一轮审计即结束或向用户报告完成。
 
 **审计通过后统一 Host 收口（必须执行）**：实施后审计结论为「完全覆盖、验证通过」后，主 Agent **不得**再手工调用 `parseAndWriteScore` 或其它 auditIndex CLI；必须统一调用 `runAuditorHost`。当存在 BUGFIX 文档时，必须确保 host/runner 收到 `artifactDocPath=<BUGFIX 文档路径>`，以保证评分记录与 registry auditIndex 都绑定到 BUGFIX 文档而非审计报告路径。
+调用 `runAuditorHost` 后，主 Agent 必须验证评分写入成功与 `closeout approved`；若失败，必须自动重试并记录失败原因与修复动作，未成功前不得结束或交还用户手动操作。
 
 **路径约定**：`artifactDocPath` 取值与「产出路径约定」一致——有 story 时：`_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/BUGFIX_{slug}.md`；无 story 时：`_bmad-output/implementation-artifacts/_orphan/BUGFIX_{slug}.md`。
 
@@ -744,4 +796,3 @@ Amelia 开发 的规范已在上方 5 条中列出，子代理按内联执行即
 主 Agent：执行阶段四——将「阶段四实施详细提示词」整段复制，仅替换 BUGFIX 文档路径与项目根目录后通过 Agent tool（`subagent_type: general-purpose`）发起子任务；实施完成后，将「阶段四实施后审计完整 prompt 模板」整段复制后发起审计子任务；若审计结论为未通过，须按修改建议委托子代理修改后再次发起审计，直至结论为「完全覆盖、验证通过」。禁止直接改生产代码。
 
 <!-- ADAPTATION_COMPLETE: 2026-03-15 -->
-

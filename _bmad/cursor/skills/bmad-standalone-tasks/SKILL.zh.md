@@ -1,33 +1,49 @@
 ---
 name: bmad-standalone-tasks
 description: |
-  Execute unfinished tasks from a user-provided TASKS/BUGFIX document via subagents only. Use when the user says "/bmad 按 {文档} 中的未完成任务实施" or "按 BUGFIX_xxx.md / TASKS_xxx.md 实施". Enforces mcp_task subagent for implementation, ralph-method (prd + progress, TDD), speckit-workflow (no pseudo-impl, acceptance commands), and code-reviewer audit with 批判审计员 >50% and 3 rounds no-gap convergence. Main Agent must NOT edit production code.
+  Execute unfinished tasks from a user-provided TASKS/BUGFIX document via subagents only. Use when the user says "/bmad 按 {文档} 中的未完成任务实施" or "按 BUGFIX_xxx.md / TASKS_xxx.md 实施". Enforces **TASKS/BUGFIX 文档前置审计先于实施执行**、mcp_task subagent for implementation, ralph-method (prd + progress, TDD), speckit-workflow (no pseudo-impl, acceptance commands), and code-reviewer audit with 批判审计员 >50% and 3 rounds no-gap convergence. Standalone implementation-entry gating must prefer **auto-remediation loop** over user-facing pause: if readiness facts are incomplete but auto-repairable, the host/main Agent should repair facts and immediately continue the same execution. Main Agent must NOT edit production code.
 ---
 
 # BMAD Standalone Tasks
 
-## 主 Agent 编排面（强制）
+> Party-mode final-output contract：`quick_probe_20`、`decision_root_cause_50`、`final_solution_task_list_100` 均可展示；若低档位被要求产出最终方案，必须拒绝当前档位并升级到 `final_solution_task_list_100`。
 
-消费项目用户通过 `$bmad-speckit`、`/bmad-speckit` 或 `bmad-speckit` 在当前 AI 宿主会话中激活主控。不得把 `npm run main-agent-orchestration` 或 `npx bmad-speckit main-agent-orchestration ...` 写成普通消费用户默认步骤；这些命令只允许用于安装验证、CI、debug 或 no-skill fallback。
+## Main Agent Orchestration Surface
 
-在 interactive main-agent 模式下，主 Agent 在发起、继续或收口本链路前，必须内部运行或等价消费 Main Agent control plane：
+Consumer users activate governance through `$bmad-speckit`, `/bmad-speckit`, or `bmad-speckit` in the active AI host session. Do not present `npm run main-agent-orchestration` or `npx bmad-speckit main-agent-orchestration ...` as the default consumer-user step; those commands are install validation, CI, debug, or no-skill fallback only.
+
+In interactive main-agent mode, before starting, continuing, or closing this flow, the main Agent must internally run or equivalently consume the Main Agent control plane:
 
 ```text
 main-agent-orchestration --action inspect --host <codex|cursor|claude>
 main-agent-orchestration --action dispatch-plan --host <codex|cursor|claude>
 ```
 
-全局分支只能由 `requirement-record.json`、`currentMentalModel` 和六个心智模型链路决定：需求确认、架构确认、实施准备、执行闭合、审计复核、交付确认。`bmad-help`、Dashboard、score、SFT、legacy report、`orchestrationState`、`pendingPacket`、`continueDecision`、`mainAgentNextAction` 和 `mainAgentReady` 只能作为 projection / compatibility hint / evidence；子代理返回、host closeout、rerun 或阻断事件后必须重新 inspect，再决定下一条全局分支。
+Global branching can only be derived from `requirement-record.json`, `currentMentalModel`, and the six mental model chain: requirement confirmation, architecture confirmation, implementation readiness, execution closure, audit review, and delivery confirmation. `bmad-help`, dashboard, score, SFT, legacy reports, `orchestrationState`, `pendingPacket`, `continueDecision`, `mainAgentNextAction`, and `mainAgentReady` are projections, compatibility hints, or evidence only; after any subagent result, host closeout, rerun, or blocking event, re-run inspect before choosing the next global branch.
 
-硬禁止事项：
-- 禁止要求普通消费用户通过 npm / npx 激活主控。
-- 禁止仅根据 `PASS`、reviewer prose、host summary、`runAuditorHost closeout approved`、handoff summary 或旧 runtime 文件继续派发。
-- interactive mode 下禁止手写 packet 文件或默认写 worker-consumable queue item。
-- 禁止让子代理决定下一条全局执行链；子代理只执行 bounded packet，下一步永远由主 Agent 回读受控记录后决定。
+Hard prohibitions:
+- Do not ask normal consumer users to activate governance through npm or npx.
+- Do not continue dispatch from `PASS`, reviewer prose, host summary, `runAuditorHost closeout approved`, handoff summary, or old runtime files alone.
+- Do not hand-write packet files or default to worker-consumable queue items in interactive mode.
+- Do not let subagents choose the next global branch; subagents execute bounded packets only, and the main Agent chooses the next step after re-reading controlled records.
 
 Execute unfinished work from a **single TASKS or BUGFIX document** in a single session. Implementation and code edits are **only** done by subagents; the main Agent orchestrates and audits.
 
+**实施前的 `auditor-tasks-doc` 属于 TASKS/BUGFIX 文档前置审计，且必须先于任何实施执行。** 不允许把文档前置审计降级成建议项、可选步骤或实施后补做项。
+
 **Orphan standalone closeout contract**：当 TASKS / BUGFIX 文档位于 `_orphan/` 路径时，结构化审计报告必须显式提供 `stage=standalone_tasks`、`artifactDocPath`、`reportPath`；不得继续使用 `stage=document` 作为 orphan closeout 返回值。缺失任一字段或仅有 PASS 文本时，主 Agent 不得进入实现执行，host closeout 必须 fail-closed。
+
+**统一 closeout 硬门禁（适用于本技能全部审计闭环）**：
+- 主 Agent 在每个阶段的完整 prompt 模板结尾、resume 指令结尾、以及审计通过后的 host 收口指令结尾，必须原样追加下列固定句；同时必须自动写入评分数据与本技能要求的交接文档（handoff / state / progress / 审计收口文档），禁止留给用户手动完成。
+- 未执行 `runAuditorHost` 并验证评分写入成功前，禁止结束、禁止交还用户手动操作。
+- 只有 `runAuditorHost` 返回 `closeout approved` 才算完成；其余都算未完成。
+- 禁止给“你可以手动做下一步”的建议，除非用户明确要求。
+- `runAuditorHost` 失败时必须自动重试，并在每次重试时记录失败原因与修复动作；未成功前不得退出当前闭环。
+- 最终回复必须显式包含以下 4 行，缺一视为未完成：
+  - `runAuditorHost 调用参数`
+  - `runAuditorHost 返回结果`
+  - `评分写入结果（成功/失败码）`
+  - `closeout 状态（approved/未approved）`
 
 ## When to use
 
@@ -63,8 +79,12 @@ Execute unfinished work from a **single TASKS or BUGFIX document** in a single s
 5. **Forbidden**  
    - Do not add "将在后续迭代" (or similar) in task descriptions.  
    - Do not mark a task complete if the behavior is not actually invoked or verified.
+6. **TASKS/BUGFIX 文档前置审计是实施前硬门槛**
+   `auditor-tasks-doc` 的职责是 **TASKS/BUGFIX 文档前置审计**。只要该审计尚未通过、尚未执行或结论不明，**禁止**进入任何实施执行、代码修改、测试实现或“先做再补审计”的路径。
 
 ## Main Agent responsibilities
+
+- **Do**: Before any implementation sub-task, ensure `auditor-tasks-doc` has audited the TASKS/BUGFIX document and passed.
 
 - **Do**: Resolve document path, read task list, **launch mcp_task** (implementation and audit), pass full context, **collect and summarize** subagent output.  
 - **Do**: If subagent returns incomplete, launch a **resume** mcp_task with the same agent ID; do **not** replace the subagent by editing code yourself.  
@@ -72,10 +92,37 @@ Execute unfinished work from a **single TASKS or BUGFIX document** in a single s
 
 ---
 
+## Step 0: Pre-Implementation Document Audit
+
+**Mandatory gate**: Before Step 1, the main Agent **must** launch a TASKS/BUGFIX document pre-audit and obtain PASS. This pre-audit is not optional and cannot be deferred until after implementation.
+
+**Mandatory gate 2**: After `auditor-tasks-doc` PASS and before Step 1 starts, the main Agent **must** execute the unified `implementation-readiness` gate assertion. Only `decision=pass` may enter Step 1. `decision=block` means **repair facts first via auto-remediation loop and then immediately re-run the same gate**; do not bounce the user back for routine fact repair. `decision=reroute` means `standalone_tasks` may not continue directly and must switch to the recommended flow.
+
+**Auto-remediation preference (critical UX rule)**:
+- For `standalone_tasks`, `implementation-readiness` is **not** a user-facing pause by default.
+- If the gate is blocked because implementation-entry facts are incomplete but can be normalized from the current TASKS/BUGFIX artifact set (for example: authoritative `auditor-tasks-doc` closeout exists but the unified gate still lacks enough machine-readable evidence), the host/main Agent must **repair those facts automatically**, re-run the gate, and continue the same execution.
+- Only escalate to the user when the gate returns a **real blocker** that cannot be repaired from current project facts, or when the gate returns `reroute`.
+- The desired behavior is analogous to a **rerun gate loop**: repair facts -> re-evaluate gate -> continue Ralph / implementation / audit loop without adding user burden.
+
+**Tool**: 优先 Cursor Task 调度 `code-reviewer`；若不可用，则 `mcp_task` + `generalPurpose`
+
+**Audit target**:
+- TASKS 文档是否可执行、任务边界是否明确
+- BUGFIX 文档是否已具备可实施的 §7 / §8.1 任务列表
+- 文档中的验收命令、产出路径、范围限制是否足以支撑实施
+
+**Rule**:
+- PASS before implementation
+- FAIL or missing audit means **do not start Step 1**
+
+---
+
 ## Step 1: Implementation sub-task
 
 **Tool**: `mcp_task`  
 **subagent_type**: `generalPurpose`
+
+**Implementation precondition**: `auditor-tasks-doc` must have passed the TASKS/BUGFIX document pre-audit before this step starts, **and** the unified `implementation-readiness` gate assertion must currently return `decision=pass` after any required auto-remediation loop has been completed.
 
 **Prompt template** (fill placeholders; pass full TASKS path and constraints):
 
@@ -147,6 +194,8 @@ Execute unfinished work from a **single TASKS or BUGFIX document** in a single s
 ```
 
 - Main Agent: launch this mcp_task after Step 1 (and after any resume). 主 Agent 在发起第 2、3 轮审计前，可输出「第 N 轮审计通过，继续验证…」以提示用户。If the report is "未通过"，主 Agent 通过再次发起实施子任务（或 resume）由子代理修复代码与 prd/progress；主 Agent 仅可做说明性/文档类编辑，不得编辑 prd.*.json、progress.*.txt 或生产代码。然后重新发起审计直至连续 3 轮无 gap 收敛。
+
+- **不中断执行 contract**：实施子代理必须从当前批次的第一项开始，连续完成当前作用域内的全部剩余 US/任务，不得在单项完成、批中 milestone 或“先等你确认”节点暂停。控制权仅可在以下三种情况下返回主 Agent：① 当前作用域任务全部完成且进入 post-audit / closeout；② 出现真实 blocker，需要 reroute / remediation；③ 本技能显式定义的审计边界或 resume checkpoint 到达。
 
 ---
 

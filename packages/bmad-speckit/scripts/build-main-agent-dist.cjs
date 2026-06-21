@@ -12,6 +12,14 @@ const packageDistRoot = path.join(packageRoot, 'dist');
 const packageBmadRoot = path.join(packageRoot, '_bmad');
 const excludedRuntimeFiles = new Set([]);
 const sourceAuthorityRoot = path.join(sourceRoot, 'source-authority');
+const packageRuntimeTypeScriptCompilerOptions = {
+  module: ts.ModuleKind.CommonJS,
+  target: ts.ScriptTarget.ES2022,
+  esModuleInterop: true,
+  sourceMap: false,
+  inlineSourceMap: false,
+  inlineSources: false,
+};
 const sourceAuthorityTypeScriptCompilerOptions = {
   module: ts.ModuleKind.CommonJS,
   target: ts.ScriptTarget.ES2022,
@@ -159,7 +167,6 @@ function collectSourceAuthorityTypeScriptDeclarationFiles(dir = sourceAuthorityR
 const staticFiles = [
   'index.js',
   'runtime.js',
-  'runtime/host-runtime-mode.js',
   'runtime/supervised-worker-runtime.js',
   'runtime/diagnose-bmad-state.js',
   'runtime/parallel-mission-control.js',
@@ -255,6 +262,11 @@ const staticFiles = [
   'helpers/write-runtime-context.cjs',
 ];
 const files = Array.from(new Set([...staticFiles, ...collectRuntimeFiles()]));
+const packageRuntimeTypeScriptFiles = [
+  'runtime/host-runtime-mode.ts',
+  'actions/native-goal-command.ts',
+  'actions/native-goal-invoker.ts',
+];
 const sourceAuthorityTypeScriptFiles = collectSourceAuthorityTypeScriptFiles();
 const sourceAuthorityTypeScriptDeclarationFiles = collectSourceAuthorityTypeScriptDeclarationFiles();
 const packageFiles = [
@@ -264,6 +276,7 @@ const runtimeAssetDirectories = [
   '_bmad/_schemas',
   '_bmad/runtime/hooks',
   '_bmad/shared/contract-execution-manifest',
+  '_bmad/shared/critical-auditor-profile',
   '_bmad/core/agents/code-reviewer',
   '_bmad/core/skills/bmad-party-mode',
 ];
@@ -312,6 +325,42 @@ if (fs.existsSync(distRoot)) {
 }
 
 for (const file of files) copyRuntimeFile(file);
+
+function packageRuntimeTypeScriptDistRelativePath(relativePath) {
+  if (/\.(?:ts|tsx)$/u.test(relativePath)) return relativePath.replace(/\.(?:ts|tsx)$/u, '.js');
+  if (/\.cts$/u.test(relativePath)) return relativePath.replace(/\.cts$/u, '.cjs');
+  if (/\.mts$/u.test(relativePath)) return relativePath.replace(/\.mts$/u, '.mjs');
+  throw new Error(`unsupported package runtime TypeScript runtime file: ${relativePath}`);
+}
+
+function compilePackageRuntimeTypeScriptFile(relativePath, targetRoot = distRoot) {
+  const source = path.join(sourceRoot, relativePath);
+  const distRelativePath = packageRuntimeTypeScriptDistRelativePath(relativePath);
+  const target = path.join(targetRoot, distRelativePath);
+  if (!fs.existsSync(source)) {
+    throw new Error(`package runtime TypeScript source file missing: ${relativePath}`);
+  }
+  const adjacentJavaScriptSource = source.replace(/\.(?:ts|tsx)$/u, '.js');
+  if (fs.existsSync(adjacentJavaScriptSource)) {
+    throw new Error(`package runtime TypeScript source has forbidden source JS twin: ${relativePath}`);
+  }
+  const text = fs.readFileSync(source, 'utf8');
+  const result = ts.transpileModule(text, {
+    compilerOptions: packageRuntimeTypeScriptCompilerOptions,
+    fileName: source,
+    reportDiagnostics: true,
+  });
+  const diagnostics = result.diagnostics || [];
+  const blockingDiagnostics = diagnostics.filter((diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error);
+  if (blockingDiagnostics.length > 0) {
+    const messages = blockingDiagnostics.map((diagnostic) => ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n'));
+    throw new Error(`failed to compile package runtime TypeScript ${relativePath}: ${messages.join('; ')}`);
+  }
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.writeFileSync(target, result.outputText, 'utf8');
+}
+
+for (const file of packageRuntimeTypeScriptFiles) compilePackageRuntimeTypeScriptFile(file);
 
 function compileSourceAuthorityTypeScriptFile(relativePath) {
   const source = path.join(sourceRoot, relativePath);
@@ -467,7 +516,13 @@ function copySourceAuthorityAssetFile(relativePath) {
 }
 
 for (const file of sourceAuthorityAssetFiles) copySourceAuthorityAssetFile(file);
+for (const file of packageRuntimeTypeScriptFiles) {
+  compilePackageRuntimeTypeScriptFile(
+    file,
+    path.join(distRoot, 'source-authority', 'packages', 'bmad-speckit', 'src', 'main-agent')
+  );
+}
 for (const file of sourceAuthorityTypeScriptFiles) compileSourceAuthorityTypeScriptFile(file);
 process.stdout.write(
-  `built dist/main-agent files=${files.length} sourceAuthorityTsRuntime=${sourceAuthorityTypeScriptFiles.length} sourceAuthorityTsDeclarations=${sourceAuthorityTypeScriptDeclarationFiles.length} package files=${packageFiles.length} runtime asset dirs=${runtimeAssetDirectories.length} sourceAuthority asset dirs=${sourceAuthorityAssetDirectories.length} sourceAuthority asset files=${sourceAuthorityAssetFiles.length}\n`
+  `built dist/main-agent files=${files.length} packageTsRuntime=${packageRuntimeTypeScriptFiles.length} sourceAuthorityTsRuntime=${sourceAuthorityTypeScriptFiles.length} sourceAuthorityTsDeclarations=${sourceAuthorityTypeScriptDeclarationFiles.length} package files=${packageFiles.length} runtime asset dirs=${runtimeAssetDirectories.length} sourceAuthority asset dirs=${sourceAuthorityAssetDirectories.length} sourceAuthority asset files=${sourceAuthorityAssetFiles.length}\n`
 );

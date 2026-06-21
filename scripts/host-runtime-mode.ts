@@ -50,14 +50,16 @@ export interface NativeGoalInvocationReceipt {
   schemaVersion: 'native-goal-invocation-receipt/v1';
   host: string;
   executionRuntimeMode: 'native_goal';
+  executionSurface: 'host_native_goal' | 'main_session_native_goal_required';
   goalExecutionPath: string;
   goalExecutionHash: string;
   goalCommandTextHash: string;
-  invokedCommandKind: 'host_native_goal';
+  invokedCommandKind: 'host_native_goal' | 'main_session_native_goal_required';
   command: string;
   args: string[];
   taskReportPath: string;
-  nativeGoalCommandUsed: true;
+  nativeGoalCommandPrepared: boolean;
+  nativeGoalCommandUsed: boolean;
   startedAt: string;
   endedAt: string;
   exitCode: number;
@@ -262,9 +264,12 @@ export function writeNativeGoalInvocationReceipt(input: {
   host: string;
   goalExecutionPath: string;
   goalCommandTextHash?: string;
+  invokedCommandKind?: NativeGoalInvocationReceipt['invokedCommandKind'];
+  executionSurface?: NativeGoalInvocationReceipt['executionSurface'];
   command?: string;
   args?: string[];
   taskReportPath?: string;
+  nativeGoalCommandPrepared?: boolean;
   nativeGoalCommandUsed?: boolean;
   stdoutRef: string;
   stderrRef: string;
@@ -276,14 +281,16 @@ export function writeNativeGoalInvocationReceipt(input: {
     schemaVersion: 'native-goal-invocation-receipt/v1',
     host: input.host,
     executionRuntimeMode: 'native_goal',
+    executionSurface: input.executionSurface ?? 'host_native_goal',
     goalExecutionPath: input.goalExecutionPath,
     goalExecutionHash: sha256File(input.goalExecutionPath),
     goalCommandTextHash: input.goalCommandTextHash ?? 'not_available',
-    invokedCommandKind: 'host_native_goal',
+    invokedCommandKind: input.invokedCommandKind ?? 'host_native_goal',
     command: input.command ?? 'not_available',
     args: input.args ?? [],
     taskReportPath: input.taskReportPath ?? 'not_available',
-    nativeGoalCommandUsed: input.nativeGoalCommandUsed === false ? true : true,
+    nativeGoalCommandPrepared: input.nativeGoalCommandPrepared !== false,
+    nativeGoalCommandUsed: input.nativeGoalCommandUsed !== false,
     startedAt: input.startedAt ?? new Date().toISOString(),
     endedAt: input.endedAt ?? new Date().toISOString(),
     exitCode: input.exitCode,

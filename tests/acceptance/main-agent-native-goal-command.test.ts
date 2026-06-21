@@ -4,29 +4,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { CompiledPromptRef } from '../../scripts/orchestration-dispatch-contract';
-
-const { resolveNativeGoalCommand } = require(
-  '../../packages/bmad-speckit/src/main-agent/actions/native-goal-command.js'
-) as {
-  resolveNativeGoalCommand: (input: {
-    projectRoot: string;
-    host: string;
-    compiledPromptRef: CompiledPromptRef;
-    packetId: string;
-  }) => {
-    ok: boolean;
-    commandText?: string;
-    goalExecutionPath?: string;
-    goalExecutionHash?: string;
-    auditReceiptPath?: string;
-    goalCommand?: {
-      nativeGoalCommandUsed: true;
-      [key: string]: unknown;
-    };
-    reasonCode?: string;
-    driftFlags?: string[];
-  };
-};
+import { resolveNativeGoalCommand } from '../../packages/bmad-speckit/src/main-agent/actions/native-goal-command';
 
 const roots: string[] = [];
 

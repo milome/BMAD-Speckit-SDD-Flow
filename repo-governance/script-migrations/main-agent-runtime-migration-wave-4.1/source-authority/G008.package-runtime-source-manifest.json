@@ -2,7 +2,7 @@
   "schemaVersion": "main-agent-runtime-migration-wave-4-1-owner-package-source-manifest/v1",
   "waveId": "main-agent-runtime-migration-wave-4.1",
   "ownerTaskId": "G008",
-  "generatedAt": "2026-06-20T11:47:52.019Z",
+  "generatedAt": "2026-06-21T03:05:14.461Z",
   "selectedRowCount": 58,
   "skippedRowCount": 0,
   "targetRoot": "packages/bmad-speckit/src/main-agent/source-authority",
@@ -894,8 +894,8 @@
       "sourceSha256": "sha256:e6f700d0586a90dac234f2c958383338c66451057adb60366396f4dd77688256",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts",
-      "bytes": 105634,
-      "sha256": "sha256:e6f700d0586a90dac234f2c958383338c66451057adb60366396f4dd77688256"
+      "bytes": 106220,
+      "sha256": "sha256:82b9795ab851f1c69aabaf1c6c505b48910e2a5b460f3a569917b088a2efc7a3"
     },
     {
       "source": "scripts/analytics-cluster.ts",
@@ -1030,8 +1030,8 @@
       "sourceSha256": "sha256:67f93fcaef3ec459e345c73089848bba09a30e58d1e11b397b7fad20fdbb8998",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/critical-auditor-profile.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/critical-auditor-profile.ts",
-      "bytes": 3281,
-      "sha256": "sha256:67f93fcaef3ec459e345c73089848bba09a30e58d1e11b397b7fad20fdbb8998"
+      "bytes": 3292,
+      "sha256": "sha256:13ff491386724f5cc7770dd539419f0561d489fbdf313f41d3c61ce9ab159388"
     },
     {
       "source": "scripts/dashboard-projection-mapping.ts",
@@ -1190,8 +1190,8 @@
       "sourceSha256": "sha256:0bf8fe1ef17eb22b976abadc012ec548bfc92586158343d8ab98b142fe5a5823",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-runner.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-runner.ts",
-      "bytes": 57020,
-      "sha256": "sha256:0bf8fe1ef17eb22b976abadc012ec548bfc92586158343d8ab98b142fe5a5823"
+      "bytes": 57614,
+      "sha256": "sha256:929f98a34b9759dfbeed4f871cca6ae7e067c975d0ae60c713989fc3bde67ccc"
     },
     {
       "source": "scripts/governance-transport-envelope.ts",
@@ -1323,11 +1323,11 @@
     },
     {
       "source": "scripts/main-agent-orchestration.ts",
-      "sourceSha256": "sha256:d5414b5d806ad3c12b751a1f7d3013c518024cc13c07f29a38970cca190f82d5",
+      "sourceSha256": "sha256:8471f99abfb0c369d2d92eacc432f635184c26d05beb0db6b4f2ae564b6f86ff",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
-      "bytes": 440347,
-      "sha256": "sha256:d5414b5d806ad3c12b751a1f7d3013c518024cc13c07f29a38970cca190f82d5"
+      "bytes": 440388,
+      "sha256": "sha256:8471f99abfb0c369d2d92eacc432f635184c26d05beb0db6b4f2ae564b6f86ff"
     },
     {
       "source": "scripts/model-governance-hint-resolver.ts",
@@ -2133,13 +2133,13 @@
         "packages/bmad-speckit/dist/main-agent/source-authority/scripts/critical-auditor-profile.js"
       ],
       "runtimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/critical-auditor-profile.js",
-      "packageBytes": 3281,
+      "packageBytes": 3292,
       "packageLoc": 97,
-      "packageSha256": "sha256:67f93fcaef3ec459e345c73089848bba09a30e58d1e11b397b7fad20fdbb8998",
+      "packageSha256": "sha256:13ff491386724f5cc7770dd539419f0561d489fbdf313f41d3c61ce9ab159388",
       "runtimeExists": true,
-      "runtimeBytes": 2184,
+      "runtimeBytes": 2202,
       "runtimeLoc": 40,
-      "runtimeSha256": "sha256:5c616925642a70769547a3eaddbed48217ed4f531b30f2328abc05ed79e9cd7b",
+      "runtimeSha256": "sha256:aa488bd046f6b1cd5a0d9cf8de091723d3209f36713f8964d837d631d56cefe1",
       "sourceKindParityProblems": [],
       "sizeDeltaDecision": "passed_within_strict_threshold"
     },

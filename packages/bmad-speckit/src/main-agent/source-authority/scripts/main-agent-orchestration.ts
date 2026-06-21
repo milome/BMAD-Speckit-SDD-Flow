@@ -109,7 +109,7 @@ import {
   hasOpenReconfirmationRequest,
   requestSemanticReconfirmation,
 } from './reconfirmation-runtime';
-import { runNativeGoalInvocation as runNativeGoalInvocationUntyped } from '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js';
+import { runNativeGoalInvocation as runNativeGoalInvocationUntyped } from '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker';
 
 const requireCommonJs = createRequire(__filename);
 
