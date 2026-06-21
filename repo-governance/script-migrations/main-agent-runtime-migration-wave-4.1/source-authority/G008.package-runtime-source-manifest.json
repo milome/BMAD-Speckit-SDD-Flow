@@ -1075,11 +1075,11 @@
     },
     {
       "source": "scripts/ensure-governance-user-story-mapping-fixture.js",
-      "sourceSha256": "sha256:25696de81bfde55531f93d05729be182a35dd077aa8d79f0d7f079da815a14a7",
+      "sourceSha256": "sha256:4280f527ecea81b6bdeef9c7e8b8826c85bea87a612234c94cb74f15fe48d447",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.js",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.js",
-      "bytes": 4064,
-      "sha256": "sha256:25696de81bfde55531f93d05729be182a35dd077aa8d79f0d7f079da815a14a7"
+      "bytes": 5286,
+      "sha256": "sha256:4280f527ecea81b6bdeef9c7e8b8826c85bea87a612234c94cb74f15fe48d447"
     },
     {
       "source": "scripts/eval-question-generate.ts",
@@ -2258,13 +2258,13 @@
         "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.js"
       ],
       "runtimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.js",
-      "packageBytes": 4064,
-      "packageLoc": 132,
-      "packageSha256": "sha256:25696de81bfde55531f93d05729be182a35dd077aa8d79f0d7f079da815a14a7",
+      "packageBytes": 5286,
+      "packageLoc": 168,
+      "packageSha256": "sha256:4280f527ecea81b6bdeef9c7e8b8826c85bea87a612234c94cb74f15fe48d447",
       "runtimeExists": true,
-      "runtimeBytes": 4064,
-      "runtimeLoc": 132,
-      "runtimeSha256": "sha256:25696de81bfde55531f93d05729be182a35dd077aa8d79f0d7f079da815a14a7",
+      "runtimeBytes": 5286,
+      "runtimeLoc": 168,
+      "runtimeSha256": "sha256:4280f527ecea81b6bdeef9c7e8b8826c85bea87a612234c94cb74f15fe48d447",
       "sourceKindParityProblems": [],
       "sizeDeltaDecision": "passed_within_strict_threshold"
     },

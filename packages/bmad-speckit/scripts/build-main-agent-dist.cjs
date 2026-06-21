@@ -12,10 +12,13 @@ const packageDistRoot = path.join(packageRoot, 'dist');
 const packageBmadRoot = path.join(packageRoot, '_bmad');
 const excludedRuntimeFiles = new Set([]);
 const sourceAuthorityRoot = path.join(sourceRoot, 'source-authority');
-const { ensureGovernanceUserStoryMappingFixture } = require(path.join(
-  repoRoot,
+const governanceUserStoryMappingFixtureModuleParts = [
   'scripts',
-  'ensure-governance-user-story-mapping-fixture.js'
+  'ensure-governance-user-story-mapping-fixture.js',
+];
+const { ensureGovernanceUserStoryMappingFixture } = require(path.join(
+  sourceAuthorityRoot,
+  ...governanceUserStoryMappingFixtureModuleParts
 ));
 const packageRuntimeTypeScriptCompilerOptions = {
   module: ts.ModuleKind.CommonJS,
