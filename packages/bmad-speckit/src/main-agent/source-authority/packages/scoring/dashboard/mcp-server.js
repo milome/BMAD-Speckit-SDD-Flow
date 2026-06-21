@@ -6,7 +6,7 @@ const live_server_1 = require("./live-server");
 const runtime_query_1 = require("./runtime-query");
 const SERVER_INFO = {
     name: 'bmad-runtime-dashboard',
-    version: '2.0.2',
+    version: '2.0.3',
 };
 function writeMessage(payload) {
     const body = JSON.stringify(payload);
